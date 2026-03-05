@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function SignupPage() {
+function SignupInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -31,11 +31,7 @@ export default function SignupPage() {
 
     try {
       // 1) Crear usuario en Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
 
       const userId = data.user?.id;
@@ -50,9 +46,7 @@ export default function SignupPage() {
       });
 
       const json = await resp.json();
-      if (!resp.ok) {
-        throw new Error(json?.detail || json?.error || "Error provisionando tenant");
-      }
+      if (!resp.ok) throw new Error(json?.detail || json?.error || "Error provisionando tenant");
 
       // 3) Ir a onboarding
       router.push(`/onboarding?tenant_id=${json.tenant_id}`);
@@ -66,7 +60,9 @@ export default function SignupPage() {
   return (
     <div style={{ maxWidth: 420, margin: "40px auto", padding: 16 }}>
       <h1 style={{ fontSize: 28, fontWeight: 700 }}>Crear cuenta</h1>
-      <p style={{ opacity: 0.8 }}>Plan seleccionado: <b>{plan}</b></p>
+      <p style={{ opacity: 0.8 }}>
+        Plan seleccionado: <b>{plan}</b>
+      </p>
 
       <form onSubmit={handleSignup} style={{ display: "grid", gap: 12, marginTop: 16 }}>
         <input
@@ -88,13 +84,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
-          style={{
-            padding: 12,
-            borderRadius: 10,
-            border: "none",
-            cursor: "pointer",
-            fontWeight: 700,
-          }}
+          style={{ padding: 12, borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700 }}
         >
           {loading ? "Creando..." : "Crear cuenta"}
         </button>
@@ -102,5 +92,13 @@ export default function SignupPage() {
         {msg && <p style={{ color: "crimson" }}>{msg}</p>}
       </form>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 16 }}>Cargando...</div>}>
+      <SignupInner />
+    </Suspense>
   );
 }
