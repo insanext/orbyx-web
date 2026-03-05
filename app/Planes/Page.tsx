@@ -1,6 +1,6 @@
-export default function Precios() {
+export default function Planes() {
   return (
-    <main style={{fontFamily:"Arial", padding:"60px", maxWidth:"1000px", margin:"auto"}}>
+    <main style={{fontFamily:"Arial", padding:"60px", maxWidth:"1100px", margin:"auto"}}>
 
       <h1 style={{fontSize:"42px", marginBottom:"40px"}}>
         Planes Orbyx
