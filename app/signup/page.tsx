@@ -49,7 +49,7 @@ function SignupInner() {
       if (!resp.ok) throw new Error(json?.detail || json?.error || "Error provisionando tenant");
 
       // 3) Ir a onboarding
-      router.push(`/onboarding?tenant_id=${json.tenant_id}`);
+      router.push(`/onboarding?tenant_id=${json.tenant_id}&calendar_id=${json.calendar_id}`);
     } catch (err: any) {
       setMsg(err?.message || "Error");
     } finally {
