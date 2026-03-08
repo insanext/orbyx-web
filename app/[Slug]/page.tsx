@@ -13,7 +13,7 @@ export default function Page() {
   useEffect(() => {
     if (!slug) return;
 
-    fetch(`https://orbyx-backend.onrender.com/public/services/${slug}`)
+    fetch(`/api/public-services/${slug}`)
       .then((res) => res.json())
       .then((data) => {
         setBusiness(data.business);
