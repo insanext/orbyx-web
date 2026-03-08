@@ -83,22 +83,17 @@ export default function Page() {
         </button>
       ))}
 
-      {selectedService && (
-        <>
-          <h2 style={{ marginTop: 30 }}>Fecha</h2>
+      <h2 style={{ marginTop: 30 }}>Fecha</h2>
 
-          <Calendar
-            onChange={(value: any) => {
-              const pickedDate = Array.isArray(value) ? value[0] : value;
-              if (!pickedDate) return;
+<Calendar
+  onChange={(value: any) => {
+    const pickedDate = Array.isArray(value) ? value[0] : value;
+    if (!pickedDate) return;
 
-              setSelectedDate(formatDate(new Date(pickedDate)));
-              setSelectedSlot(null);
-            }}
-          />
-        </>
-      )}
-
+    setSelectedDate(formatDate(new Date(pickedDate)));
+    setSelectedSlot(null);
+  }}
+/>
       {selectedDate && (
         <>
           <h2 style={{ marginTop: 30 }}>Horarios disponibles</h2>
