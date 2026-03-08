@@ -66,48 +66,49 @@ export default function Page() {
     return dates;
   }
 
-  async function handleBooking() {
-    if (!selectedSlot || !selectedService) return;
+async function handleBooking() {
+  if (!selectedSlot || !selectedService || !business) return;
 
-    if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
-      alert("Completa nombre, teléfono y email");
+  if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
+    alert("Completa nombre, teléfono y email");
+    return;
+  }
+
+  setLoadingBooking(true);
+
+  try {
+    const res = await fetch("/api/appointments/slot", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        calendar_id: business.calendar_id,
+        service_id: selectedService.id,
+        date: formatDate(new Date(selectedSlot.slot_start)),
+        slot_start: selectedSlot.slot_start,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
+        source: "public_page",
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "No se pudo crear la reserva");
       return;
     }
 
-    setLoadingBooking(true);
-
-    try {
-      const res = await fetch("/api/appointments/slot", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          service_id: selectedService.id,
-          start_at: selectedSlot.slot_start,
-          end_at: selectedSlot.slot_end,
-          customer_name: customerName,
-          customer_phone: customerPhone,
-          customer_email: customerEmail,
-          source: "public_page",
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "No se pudo crear la reserva");
-        return;
-      }
-
-      setBookingSuccess(true);
-      setShowForm(false);
-    } catch (error) {
-      alert("Error al crear la reserva");
-    } finally {
-      setLoadingBooking(false);
-    }
+    setBookingSuccess(true);
+    setShowForm(false);
+  } catch (error) {
+    alert("Error al crear la reserva");
+  } finally {
+    setLoadingBooking(false);
   }
+}
 
   useEffect(() => {
     if (!slug) return;
