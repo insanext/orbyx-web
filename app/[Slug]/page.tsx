@@ -1,14 +1,15 @@
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+"use client";
+
+import { useParams } from "next/navigation";
+
+export default function Page() {
+  const params = useParams();
+  const slug = params?.slug;
 
   return (
     <main style={{ padding: 40 }}>
       <h1>Slug detectado:</h1>
-      <p>{slug}</p>
+      <p>{typeof slug === "string" ? slug : ""}</p>
     </main>
   );
 }
