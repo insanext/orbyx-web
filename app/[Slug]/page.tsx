@@ -11,6 +11,7 @@ export default function Page() {
   const [services, setServices] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState("");
+  const [slots, setSlots] = useState<any[]>([]);
 
   useEffect(() => {
     if (!slug) return;
@@ -22,6 +23,18 @@ export default function Page() {
         setServices(data.services);
       });
   }, [slug]);
+
+  useEffect(() => {
+    if (!slug || !selectedService || !selectedDate) return;
+
+    fetch(
+      `/api/public-slots/${slug}/${selectedService.id}?date=${selectedDate}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        setSlots(data.slots || []);
+      });
+  }, [slug, selectedService, selectedDate]);
 
   return (
     <main style={{ padding: 40 }}>
@@ -37,7 +50,10 @@ export default function Page() {
             display: "block",
             marginBottom: 12,
             padding: 12,
-            border: selectedService?.id === service.id ? "2px solid white" : "1px solid #444",
+            border:
+              selectedService?.id === service.id
+                ? "2px solid white"
+                : "1px solid #444",
             borderRadius: 6,
             background: "#111",
             color: "white",
@@ -67,6 +83,22 @@ export default function Page() {
               color: "white",
             }}
           />
+        </>
+      )}
+
+      {selectedDate && (
+        <>
+          <h2 style={{ marginTop: 30 }}>Horarios disponibles</h2>
+
+          {slots.length === 0 ? (
+            <p>No hay horarios disponibles.</p>
+          ) : (
+            slots.map((slot, index) => (
+              <div key={index} style={{ marginBottom: 10 }}>
+                {slot.slot_start}
+              </div>
+            ))
+          )}
         </>
       )}
     </main>
