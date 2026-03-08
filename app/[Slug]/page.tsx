@@ -23,6 +23,9 @@ export default function Page() {
   const [customerPhone, setCustomerPhone] = useState("+569");
   const [customerEmail, setCustomerEmail] = useState("");
 
+  const [loadingBooking, setLoadingBooking] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+
   function formatDate(date: Date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -61,6 +64,49 @@ export default function Page() {
     }
 
     return dates;
+  }
+
+  async function handleBooking() {
+    if (!selectedSlot || !selectedService) return;
+
+    if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
+      alert("Completa nombre, teléfono y email");
+      return;
+    }
+
+    setLoadingBooking(true);
+
+    try {
+      const res = await fetch("/api/appointments/slot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          service_id: selectedService.id,
+          start_at: selectedSlot.slot_start,
+          end_at: selectedSlot.slot_end,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_email: customerEmail,
+          source: "public_page",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "No se pudo crear la reserva");
+        return;
+      }
+
+      setBookingSuccess(true);
+      setShowForm(false);
+    } catch (error) {
+      alert("Error al crear la reserva");
+    } finally {
+      setLoadingBooking(false);
+    }
   }
 
   useEffect(() => {
@@ -124,6 +170,7 @@ export default function Page() {
             setSelectedService(service);
             setSelectedSlot(null);
             setShowForm(false);
+            setBookingSuccess(false);
           }}
           style={{
             display: "block",
@@ -166,6 +213,7 @@ export default function Page() {
               setSelectedDate(new Date(picked));
               setSelectedSlot(null);
               setShowForm(false);
+              setBookingSuccess(false);
             }}
             value={selectedDate}
           />
@@ -212,6 +260,7 @@ export default function Page() {
                           onClick={() => {
                             setSelectedSlot(slot);
                             setShowForm(false);
+                            setBookingSuccess(false);
                           }}
                           style={{
                             display: "block",
@@ -257,24 +306,26 @@ export default function Page() {
             Hora: <strong>{formatHour(selectedSlot.slot_start)}</strong>
           </p>
 
-          <button
-            onClick={() => setShowForm(true)}
-            style={{
-              marginTop: 10,
-              padding: 12,
-              borderRadius: 6,
-              background: "#2563eb",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Continuar
-          </button>
+          {!showForm && !bookingSuccess && (
+            <button
+              onClick={() => setShowForm(true)}
+              style={{
+                marginTop: 10,
+                padding: 12,
+                borderRadius: 6,
+                background: "#2563eb",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Continuar
+            </button>
+          )}
         </div>
       )}
 
-      {showForm && selectedSlot && (
+      {showForm && selectedSlot && !bookingSuccess && (
         <div
           style={{
             marginTop: 20,
@@ -344,6 +395,8 @@ export default function Page() {
           </div>
 
           <button
+            onClick={handleBooking}
+            disabled={loadingBooking}
             style={{
               marginTop: 8,
               padding: 12,
@@ -351,11 +404,32 @@ export default function Page() {
               background: "#16a34a",
               color: "white",
               border: "none",
-              cursor: "pointer",
+              cursor: loadingBooking ? "not-allowed" : "pointer",
+              opacity: loadingBooking ? 0.7 : 1,
             }}
           >
-            Confirmar Reserva
+            {loadingBooking ? "Reservando..." : "Confirmar reserva"}
           </button>
+        </div>
+      )}
+
+      {bookingSuccess && selectedSlot && (
+        <div style={{ marginTop: 20 }}>
+          <h3>Reserva confirmada ✅</h3>
+
+          <p>
+            Servicio: <strong>{selectedService?.name}</strong>
+          </p>
+
+          <p>
+            Fecha: <strong>{formatSelectedDate(selectedSlot.slot_start)}</strong>
+          </p>
+
+          <p>
+            Hora: <strong>{formatHour(selectedSlot.slot_start)}</strong>
+          </p>
+
+          <p>Te enviamos un correo con los detalles.</p>
         </div>
       )}
     </main>
