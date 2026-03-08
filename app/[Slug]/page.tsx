@@ -28,7 +28,26 @@ export default function Page() {
       <h2>Servicios</h2>
 
       {services.map((service) => (
-        <div key={service.id} style={{ marginBottom: 10 }}>
+  <button
+    key={service.id}
+    style={{
+      display: "block",
+      marginBottom: 12,
+      padding: 12,
+      border: "1px solid #444",
+      borderRadius: 6,
+      background: "#111",
+      color: "white",
+      cursor: "pointer",
+    }}
+  >
+    <strong>{service.name}</strong>
+    <br />
+    Duración: {service.duration_minutes} min
+    <br />
+    Precio: ${service.price}
+  </button>
+))}
           <strong>{service.name}</strong>
           <br />
           Duración: {service.duration_minutes} min
