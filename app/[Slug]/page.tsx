@@ -7,7 +7,8 @@ import "react-calendar/dist/Calendar.css";
 
 export default function Page() {
   const params = useParams();
-  const slug = (params as any)?.slug as string;;
+  const slug =
+    ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
   const [business, setBusiness] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
@@ -30,13 +31,22 @@ export default function Page() {
   useEffect(() => {
     if (!slug || !selectedService || !selectedDate) return;
 
-    fetch(`/api/public-slots/${slug}/${selectedService.id}?date=${selectedDate}`)
+    fetch(
+      `/api/public-slots/${slug}/${selectedService.id}?date=${selectedDate}`
+    )
       .then((res) => res.json())
       .then((data) => {
         setSlots(data.slots || []);
         setSelectedSlot(null);
       });
   }, [slug, selectedService, selectedDate]);
+
+  function formatDate(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
 
   return (
     <main style={{ padding: 40 }}>
@@ -76,25 +86,14 @@ export default function Page() {
       {selectedService && (
         <>
           <h2 style={{ marginTop: 30 }}>Fecha</h2>
-          <Calendar
-  onChange={(date: any) => {
-    const d = new Date(date);
-    const formatted =
-      d.getFullYear() +
-      "-" +
-      String(d.getMonth() + 1).padStart(2, "0") +
-      "-" +
-      String(d.getDate()).padStart(2, "0");
 
-    setSelectedDate(formatted);
-    setSelectedSlot(null);
-  }}
-/>            style={{
-              padding: 10,
-              borderRadius: 6,
-              border: "1px solid #444",
-              background: "#111",
-              color: "white",
+          <Calendar
+            onChange={(value: any) => {
+              const pickedDate = Array.isArray(value) ? value[0] : value;
+              if (!pickedDate) return;
+
+              setSelectedDate(formatDate(new Date(pickedDate)));
+              setSelectedSlot(null);
             }}
           />
         </>
