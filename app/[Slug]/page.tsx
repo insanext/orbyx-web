@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
+
 
 export default function Page() {
   const params = useParams();
