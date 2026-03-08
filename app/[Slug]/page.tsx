@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 
 export default function Page() {
   const params = useParams();
-  const slug = params?.slug as string;
+  const slug = (params as any)?.Slug as string;
 
   const [data, setData] = useState<any>(null);
 
