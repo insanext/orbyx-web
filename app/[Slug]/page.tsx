@@ -9,6 +9,8 @@ export default function Page() {
 
   const [business, setBusiness] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
+  const [selectedService, setSelectedService] = useState<any>(null);
+  const [selectedDate, setSelectedDate] = useState("");
 
   useEffect(() => {
     if (!slug) return;
@@ -30,11 +32,12 @@ export default function Page() {
       {services.map((service) => (
         <button
           key={service.id}
+          onClick={() => setSelectedService(service)}
           style={{
             display: "block",
             marginBottom: 12,
             padding: 12,
-            border: "1px solid #444",
+            border: selectedService?.id === service.id ? "2px solid white" : "1px solid #444",
             borderRadius: 6,
             background: "#111",
             color: "white",
@@ -48,6 +51,24 @@ export default function Page() {
           Precio: ${service.price}
         </button>
       ))}
+
+      {selectedService && (
+        <>
+          <h2 style={{ marginTop: 30 }}>Fecha</h2>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            style={{
+              padding: 10,
+              borderRadius: 6,
+              border: "1px solid #444",
+              background: "#111",
+              color: "white",
+            }}
+          />
+        </>
+      )}
     </main>
   );
 }
