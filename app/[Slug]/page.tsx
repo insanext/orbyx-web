@@ -65,27 +65,36 @@ function formatHour(dateString: string) {
   }, [selectedDate]);
 
   useEffect(() => {
-    if (!slug || !selectedService || weekDates.length === 0) return;
+  if (!slug || !selectedService || weekDates.length === 0) return;
 
-    async function loadWeek() {
-      const result: any = {};
+  async function loadWeek() {
+    const requests = weekDates.map(async (day) => {
+      const dateStr = formatDate(day);
 
-      for (const day of weekDates) {
-        const dateStr = formatDate(day);
+      const res = await fetch(
+        `/api/public-slots/${slug}/${selectedService.id}?date=${dateStr}`
+      );
 
-        const res = await fetch(
-          `/api/public-slots/${slug}/${selectedService.id}?date=${dateStr}`
-        );
+      const data = await res.json();
 
-        const data = await res.json();
-        result[dateStr] = data.slots || [];
-      }
+      return {
+        date: dateStr,
+        slots: data.slots || [],
+      };
+    });
 
-      setWeekSlots(result);
-    }
+    const responses = await Promise.all(requests);
 
-    loadWeek();
-  }, [slug, selectedService, weekDates]);
+    const result: any = {};
+    responses.forEach((r) => {
+      result[r.date] = r.slots;
+    });
+
+    setWeekSlots(result);
+  }
+
+  loadWeek();
+}, [slug, selectedService, weekDates]);
 
   return (
     <main style={{ padding: 40 }}>
