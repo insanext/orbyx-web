@@ -18,6 +18,11 @@ export default function Page() {
   const [weekSlots, setWeekSlots] = useState<any>({});
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
 
+  const [showForm, setShowForm] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("+569");
+  const [customerEmail, setCustomerEmail] = useState("");
+
   function formatDate(date: Date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -25,12 +30,22 @@ export default function Page() {
     return `${y}-${m}-${d}`;
   }
 
-function formatHour(dateString: string) {
-  const d = new Date(dateString);
-  const h = String(d.getHours()).padStart(2, "0");
-  const m = String(d.getMinutes()).padStart(2, "0");
-  return `${h}:${m}`;
-}
+  function formatHour(dateString: string) {
+    const d = new Date(dateString);
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
+  }
+
+  function formatSelectedDate(dateString: string) {
+    const d = new Date(dateString);
+    return d.toLocaleDateString("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
 
   function getWeekDates(baseDate: Date) {
     const dates: Date[] = [];
@@ -65,36 +80,36 @@ function formatHour(dateString: string) {
   }, [selectedDate]);
 
   useEffect(() => {
-  if (!slug || !selectedService || weekDates.length === 0) return;
+    if (!slug || !selectedService || weekDates.length === 0) return;
 
-  async function loadWeek() {
-    const requests = weekDates.map(async (day) => {
-      const dateStr = formatDate(day);
+    async function loadWeek() {
+      const requests = weekDates.map(async (day) => {
+        const dateStr = formatDate(day);
 
-      const res = await fetch(
-        `/api/public-slots/${slug}/${selectedService.id}?date=${dateStr}`
-      );
+        const res = await fetch(
+          `/api/public-slots/${slug}/${selectedService.id}?date=${dateStr}`
+        );
 
-      const data = await res.json();
+        const data = await res.json();
 
-      return {
-        date: dateStr,
-        slots: data.slots || [],
-      };
-    });
+        return {
+          date: dateStr,
+          slots: data.slots || [],
+        };
+      });
 
-    const responses = await Promise.all(requests);
+      const responses = await Promise.all(requests);
 
-    const result: any = {};
-    responses.forEach((r) => {
-      result[r.date] = r.slots;
-    });
+      const result: any = {};
+      responses.forEach((r) => {
+        result[r.date] = r.slots;
+      });
 
-    setWeekSlots(result);
-  }
+      setWeekSlots(result);
+    }
 
-  loadWeek();
-}, [slug, selectedService, weekDates]);
+    loadWeek();
+  }, [slug, selectedService, weekDates]);
 
   return (
     <main style={{ padding: 40 }}>
@@ -105,7 +120,11 @@ function formatHour(dateString: string) {
       {services.map((service) => (
         <button
           key={service.id}
-          onClick={() => setSelectedService(service)}
+          onClick={() => {
+            setSelectedService(service);
+            setSelectedSlot(null);
+            setShowForm(false);
+          }}
           style={{
             display: "block",
             marginBottom: 12,
@@ -146,6 +165,7 @@ function formatHour(dateString: string) {
 
               setSelectedDate(new Date(picked));
               setSelectedSlot(null);
+              setShowForm(false);
             }}
             value={selectedDate}
           />
@@ -184,21 +204,25 @@ function formatHour(dateString: string) {
 
                   <div style={{ marginTop: 10 }}>
                     {slots.length === 0 ? (
-                      <span style={{ fontSize: 12 }}>
-                        Sin horarios
-                      </span>
+                      <span style={{ fontSize: 12 }}>Sin horarios</span>
                     ) : (
                       slots.map((slot: any, i: number) => (
                         <button
                           key={i}
-                          onClick={() => setSelectedSlot(slot)}
+                          onClick={() => {
+                            setSelectedSlot(slot);
+                            setShowForm(false);
+                          }}
                           style={{
                             display: "block",
                             width: "100%",
                             marginBottom: 6,
                             padding: 6,
                             borderRadius: 6,
-                            border: "1px solid #444",
+                            border:
+                              selectedSlot?.slot_start === slot.slot_start
+                                ? "2px solid #22c55e"
+                                : "1px solid #444",
                             background: "#111",
                             color: "white",
                             cursor: "pointer",
@@ -225,10 +249,16 @@ function formatHour(dateString: string) {
           </p>
 
           <p>
+            Fecha:{" "}
+            <strong>{formatSelectedDate(selectedSlot.slot_start)}</strong>
+          </p>
+
+          <p>
             Hora: <strong>{formatHour(selectedSlot.slot_start)}</strong>
           </p>
 
           <button
+            onClick={() => setShowForm(true)}
             style={{
               marginTop: 10,
               padding: 12,
@@ -240,6 +270,91 @@ function formatHour(dateString: string) {
             }}
           >
             Confirmar
+          </button>
+        </div>
+      )}
+
+      {showForm && selectedSlot && (
+        <div
+          style={{
+            marginTop: 20,
+            maxWidth: 420,
+            border: "1px solid #333",
+            borderRadius: 8,
+            padding: 16,
+          }}
+        >
+          <h3 style={{ marginBottom: 16 }}>Tus datos</h3>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 6 }}>
+              Nombre y apellido
+            </label>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 6,
+                border: "1px solid #444",
+                background: "#111",
+                color: "white",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 6 }}>
+              Teléfono
+            </label>
+            <input
+              type="tel"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 6,
+                border: "1px solid #444",
+                background: "#111",
+                color: "white",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 6 }}>
+              Email
+            </label>
+            <input
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 6,
+                border: "1px solid #444",
+                background: "#111",
+                color: "white",
+              }}
+            />
+          </div>
+
+          <button
+            style={{
+              marginTop: 8,
+              padding: 12,
+              borderRadius: 6,
+              background: "#16a34a",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Reservar hora
           </button>
         </div>
       )}
