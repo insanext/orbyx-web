@@ -17,22 +17,26 @@ export default function Page() {
       .then((res) => res.json())
       .then((data) => {
         setBusiness(data.business);
-        setServices(data.services || []);
+        setServices(data.services);
       });
   }, [slug]);
 
   return (
     <main style={{ padding: 40 }}>
-      <h1>{business?.name || "Cargando negocio..."}</h1>
+      <h1>{business ? business.name : "Cargando negocio..."}</h1>
 
       <h2>Servicios</h2>
 
-      {services.map((service) => (
-        <div key={service.id} style={{ marginBottom: 10 }}>
-          <strong>{service.name}</strong> – {service.duration_minutes} min – $
-          {service.price}
-        </div>
-      ))}
+      {services.length === 0 ? (
+        <p>No hay servicios disponibles</p>
+      ) : (
+        services.map((service) => (
+          <div key={service.id} style={{ marginBottom: 10 }}>
+            <strong>{service.name}</strong> – {service.duration_minutes} min – $
+            {service.price}
+          </div>
+        ))
+      )}
     </main>
   );
 }
