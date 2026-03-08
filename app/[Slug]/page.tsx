@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 export default function Page() {
   const params = useParams();
-  const slug = (params as any)?.Slug as string;
+  const slug = (params as any)?.slug as string;;
 
   const [business, setBusiness] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
@@ -74,14 +76,20 @@ export default function Page() {
       {selectedService && (
         <>
           <h2 style={{ marginTop: 30 }}>Fecha</h2>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => {
-              setSelectedDate(e.target.value);
-              setSelectedSlot(null);
-            }}
-            style={{
+          <Calendar
+  onChange={(date: any) => {
+    const d = new Date(date);
+    const formatted =
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0");
+
+    setSelectedDate(formatted);
+    setSelectedSlot(null);
+  }}
+/>            style={{
               padding: 10,
               borderRadius: 6,
               border: "1px solid #444",
