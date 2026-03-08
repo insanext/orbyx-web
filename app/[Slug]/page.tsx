@@ -269,7 +269,7 @@ export default function Page() {
               cursor: "pointer",
             }}
           >
-            Confirmar
+            Continuar
           </button>
         </div>
       )}
@@ -354,7 +354,7 @@ export default function Page() {
               cursor: "pointer",
             }}
           >
-            Reservar hora
+            Confirmar Reserva
           </button>
         </div>
       )}
