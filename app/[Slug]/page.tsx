@@ -12,6 +12,7 @@ export default function Page() {
   const [selectedService, setSelectedService] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [slots, setSlots] = useState<any[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<any>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -27,12 +28,11 @@ export default function Page() {
   useEffect(() => {
     if (!slug || !selectedService || !selectedDate) return;
 
-    fetch(
-      `/api/public-slots/${slug}/${selectedService.id}?date=${selectedDate}`
-    )
+    fetch(`/api/public-slots/${slug}/${selectedService.id}?date=${selectedDate}`)
       .then((res) => res.json())
       .then((data) => {
         setSlots(data.slots || []);
+        setSelectedSlot(null);
       });
   }, [slug, selectedService, selectedDate]);
 
@@ -45,7 +45,10 @@ export default function Page() {
       {services.map((service) => (
         <button
           key={service.id}
-          onClick={() => setSelectedService(service)}
+          onClick={() => {
+            setSelectedService(service);
+            setSelectedSlot(null);
+          }}
           style={{
             display: "block",
             marginBottom: 12,
@@ -74,7 +77,10 @@ export default function Page() {
           <input
             type="date"
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            onChange={(e) => {
+              setSelectedDate(e.target.value);
+              setSelectedSlot(null);
+            }}
             style={{
               padding: 10,
               borderRadius: 6,
@@ -94,12 +100,35 @@ export default function Page() {
             <p>No hay horarios disponibles.</p>
           ) : (
             slots.map((slot, index) => (
-              <div key={index} style={{ marginBottom: 10 }}>
+              <button
+                key={index}
+                onClick={() => setSelectedSlot(slot)}
+                style={{
+                  display: "block",
+                  marginBottom: 10,
+                  padding: 10,
+                  borderRadius: 6,
+                  border:
+                    selectedSlot?.slot_start === slot.slot_start
+                      ? "2px solid white"
+                      : "1px solid #444",
+                  background: "#111",
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
                 {slot.slot_start}
-              </div>
+              </button>
             ))
           )}
         </>
+      )}
+
+      {selectedSlot && (
+        <div style={{ marginTop: 20 }}>
+          <strong>Horario seleccionado:</strong>
+          <div>{selectedSlot.slot_start}</div>
+        </div>
       )}
     </main>
   );
