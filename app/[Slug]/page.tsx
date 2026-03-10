@@ -159,10 +159,29 @@ async function handleBooking() {
   }, [slug, selectedService, weekDates]);
 
   return (
-    <main style={{ padding: 40 }}>
-      <h1>{business?.name}</h1>
 
-      <h2>Servicios</h2>
+<main style={{ padding: 40 }}>
+  <div style={{ marginBottom: 24 }}>
+    <h1 style={{ marginBottom: 8 }}>{business?.name}</h1>
+
+    {business?.description && (
+      <p style={{ margin: "0 0 8px 0" }}>{business.description}</p>
+    )}
+
+    {business?.phone && (
+      <p style={{ margin: "0 0 4px 0" }}>
+        <strong>Teléfono:</strong> {business.phone}
+      </p>
+    )}
+
+    {business?.address && (
+      <p style={{ margin: 0 }}>
+        <strong>Dirección:</strong> {business.address}
+      </p>
+    )}
+  </div>
+
+  <h2>Servicios</h2>
 
       {services.map((service) => (
         <button
@@ -309,20 +328,19 @@ async function handleBooking() {
 
           {!showForm && !bookingSuccess && (
             <button
-              onClick={() => setShowForm(true)}
-              style={{
-                marginTop: 10,
-                padding: 12,
-                borderRadius: 6,
-                background: "#2563eb",
-                color: "white",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              Continuar
-            </button>
-          )}
+  onClick={() => setShowForm(true)}
+  style={{
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 6,
+    background: business?.brand_color || "#2563eb",
+    color: "white",
+    border: "none",
+    cursor: "pointer",
+  }}
+>
+  Continuar
+</button>          )}
         </div>
       )}
 
