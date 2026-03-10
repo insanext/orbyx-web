@@ -160,7 +160,14 @@ async function handleBooking() {
 
   return (
 
-<main style={{ padding: 40 }}>
+<main
+  style={{
+    padding: 24,
+    maxWidth: 1100,
+    margin: "0 auto",
+    width: "100%",
+  }}
+>
   <div style={{ marginBottom: 24 }}>
 
 {business?.logo_url && (
