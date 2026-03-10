@@ -162,6 +162,22 @@ async function handleBooking() {
 
 <main style={{ padding: 40 }}>
   <div style={{ marginBottom: 24 }}>
+
+{business?.logo_url && (
+  <div style={{ marginBottom: 12 }}>
+    <img
+      src={business.logo_url}
+      alt={business.name || "Logo"}
+      style={{
+        maxWidth: 140,
+        maxHeight: 140,
+        objectFit: "contain",
+        display: "block"
+      }}
+    />
+  </div>
+)}
+
     <h1 style={{ marginBottom: 8 }}>{business?.name}</h1>
 
     {business?.description && (
