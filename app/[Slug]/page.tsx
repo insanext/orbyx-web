@@ -168,21 +168,49 @@ async function handleBooking() {
     width: "100%",
   }}
 >
-  <div style={{ marginBottom: 24 }}>
+  <div
+  style={{
+    marginBottom: 32,
+    display: "flex",
+    alignItems: "center",
+    gap: 20,
+  }}
+>
+  {business?.logo_url && (
+    <div>
+      <img
+        src={business.logo_url}
+        alt={business.name || "Logo"}
+        style={{
+          width: 110,
+          height: 110,
+          objectFit: "contain",
+          display: "block",
+        }}
+      />
+    </div>
+  )}
 
-{business?.logo_url && (
-  <div style={{ marginBottom: 12 }}>
-    <img
-      src={business.logo_url}
-      alt={business.name || "Logo"}
-      style={{
-        maxWidth: 140,
-        maxHeight: 140,
-        objectFit: "contain",
-        display: "block"
-      }}
-    />
+  <div>
+    <h1 style={{ margin: "0 0 8px 0" }}>{business?.name}</h1>
+
+    {business?.description && (
+      <p style={{ margin: "0 0 8px 0" }}>{business.description}</p>
+    )}
+
+    {business?.phone && (
+      <p style={{ margin: "0 0 4px 0" }}>
+        <strong>Teléfono:</strong> {business.phone}
+      </p>
+    )}
+
+    {business?.address && (
+      <p style={{ margin: 0 }}>
+        <strong>Dirección:</strong> {business.address}
+      </p>
+    )}
   </div>
+</div>
 )}
 
     <h1 style={{ marginBottom: 8 }}>{business?.name}</h1>
