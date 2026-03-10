@@ -204,6 +204,19 @@ async function handleBooking() {
     )}
   </div>
 
+
+
+     <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "340px minmax(700px, 1fr)",
+    gap: 32,
+    alignItems: "start",
+    marginTop: 30,
+  }}
+>       
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+
   <h2>Servicios</h2>
 
       {services.map((service) => (
@@ -237,17 +250,6 @@ async function handleBooking() {
         </button>
       ))}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "320px 1fr",
-          gap: 40,
-          marginTop: 30,
-        }}
-      >
-        <div>
-          <h2>Fecha</h2>
-
           <Calendar
             onChange={(value: any) => {
               const picked = Array.isArray(value) ? value[0] : value;
@@ -262,16 +264,17 @@ async function handleBooking() {
           />
         </div>
 
-        <div>
+        <div style={{ minWidth: 0, maxWidth: 820 }}>
           <h2>Semana</h2>
 
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7,1fr)",
-              gap: 12,
-            }}
-          >
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(7, minmax(90px, 1fr))",
+    gap: 12,
+    alignItems: "start",
+  }}
+>
             {weekDates.map((day) => {
               const dateStr = formatDate(day);
               const slots = weekSlots[dateStr] || [];
