@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Calendar from "react-calendar";
 
@@ -25,6 +25,7 @@ export default function Page() {
 
   const [loadingBooking, setLoadingBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+const formRef = useRef<HTMLDivElement | null>(null);
 
   function formatDate(date: Date) {
     const y = date.getFullYear();
@@ -268,11 +269,14 @@ export default function Page() {
                               <button
                                 key={i}
                                 onClick={() => {
-                                  setSelectedSlot(slot);
-                                  setShowForm(true);
-                                  setBookingSuccess(false);
-                                }}
-                                className={`w-full rounded-md border py-1.5 text-xs transition ${
+  setSelectedSlot(slot);
+  setShowForm(true);
+  setBookingSuccess(false);
+
+  setTimeout(() => {
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, 100);
+}}                                className={`w-full rounded-md border py-1.5 text-xs transition ${
                                   selectedSlot?.slot_start === slot.slot_start
                                     ? "border-green-500 bg-green-500 text-white"
                                     : "border-gray-300 bg-white hover:bg-gray-50"
@@ -290,8 +294,12 @@ export default function Page() {
               )}
             </div>
 
-            {selectedSlot && !bookingSuccess && (
-              <div className="rounded-xl border bg-white p-5 shadow-sm max-w-xl">
+            
+{selectedSlot && !bookingSuccess && (
+  <div
+    ref={formRef}
+    className="rounded-xl border bg-white p-5 shadow-sm max-w-xl"
+  >
                 <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
                   <h3 className="text-base font-semibold text-gray-900">
                     Hora seleccionada
