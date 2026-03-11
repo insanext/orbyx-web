@@ -66,49 +66,49 @@ export default function Page() {
     return dates;
   }
 
-async function handleBooking() {
-  if (!selectedSlot || !selectedService || !business) return;
+  async function handleBooking() {
+    if (!selectedSlot || !selectedService || !business) return;
 
-  if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
-    alert("Completa nombre, teléfono y email");
-    return;
-  }
-
-  setLoadingBooking(true);
-
-  try {
-    const res = await fetch("/api/appointments/slot", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        calendar_id: business.calendar_id,
-        service_id: selectedService.id,
-        date: formatDate(new Date(selectedSlot.slot_start)),
-        slot_start: selectedSlot.slot_start,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_email: customerEmail,
-        source: "public_page",
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.error || "No se pudo crear la reserva");
+    if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
+      alert("Completa nombre, teléfono y email");
       return;
     }
 
-    setBookingSuccess(true);
-    setShowForm(false);
-  } catch (error) {
-    alert("Error al crear la reserva");
-  } finally {
-    setLoadingBooking(false);
+    setLoadingBooking(true);
+
+    try {
+      const res = await fetch("/api/appointments/slot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          calendar_id: business.calendar_id,
+          service_id: selectedService.id,
+          date: formatDate(new Date(selectedSlot.slot_start)),
+          slot_start: selectedSlot.slot_start,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_email: customerEmail,
+          source: "public_page",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "No se pudo crear la reserva");
+        return;
+      }
+
+      setBookingSuccess(true);
+      setShowForm(false);
+    } catch (error) {
+      alert("Error al crear la reserva");
+    } finally {
+      setLoadingBooking(false);
+    }
   }
-}
 
   useEffect(() => {
     if (!slug) return;
@@ -159,352 +159,289 @@ async function handleBooking() {
   }, [slug, selectedService, weekDates]);
 
   return (
+    <main className="max-w-7xl mx-auto px-6 py-10">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <aside className="space-y-6">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            {business?.logo_url && (
+              <img
+                src={business.logo_url}
+                alt={business?.name || "Logo"}
+                className="mb-4 h-20 w-auto max-w-[140px] object-contain"
+              />
+            )}
 
-<main
-  style={{
-    padding: 24,
-    maxWidth: 1100,
-    margin: "0 auto",
-    width: "100%",
-  }}
->
-  <div
-  style={{
-    marginBottom: 32,
-    display: "flex",
-    alignItems: "center",
-    gap: 20,
-  }}
->
-  {business?.logo_url && (
-    <div>
-      <img
-        src={business.logo_url}
-        alt={business.name || "Logo"}
-        style={{
-          width: 110,
-          height: 110,
-          objectFit: "contain",
-          display: "block",
-        }}
-      />
-    </div>
-  )}
+            <h1 className="text-3xl font-semibold text-white">
+              {business?.name}
+            </h1>
 
-  <div>
-    <h1 style={{ margin: "0 0 8px 0" }}>{business?.name}</h1>
+            {business?.description && (
+              <p className="mt-2 text-sm text-zinc-300">
+                {business.description}
+              </p>
+            )}
 
-    {business?.description && (
-      <p style={{ margin: "0 0 8px 0" }}>{business.description}</p>
-    )}
+            <div className="mt-4 space-y-2 text-sm text-zinc-300">
+              {business?.phone && (
+                <p>
+                  <span className="font-semibold text-white">Teléfono:</span>{" "}
+                  {business.phone}
+                </p>
+              )}
 
-    {business?.phone && (
-      <p style={{ margin: "0 0 4px 0" }}>
-        <strong>Teléfono:</strong> {business.phone}
-      </p>
-    )}
+              {business?.address && (
+                <p>
+                  <span className="font-semibold text-white">Dirección:</span>{" "}
+                  {business.address}
+                </p>
+              )}
+            </div>
+          </div>
 
-    {business?.address && (
-      <p style={{ margin: 0 }}>
-        <strong>Dirección:</strong> {business.address}
-      </p>
-    )}
-  </div>
-</div>
-)}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <h2 className="mb-4 text-xl font-semibold text-white">Servicios</h2>
 
-    <h1 style={{ marginBottom: 8 }}>{business?.name}</h1>
+            <div className="space-y-3">
+              {services.map((service) => (
+                <button
+                  key={service.id}
+                  onClick={() => {
+                    setSelectedService(service);
+                    setSelectedSlot(null);
+                    setShowForm(false);
+                    setBookingSuccess(false);
+                  }}
+                  className={`w-full rounded-xl border p-4 text-left transition ${
+                    selectedService?.id === service.id
+                      ? "border-white bg-zinc-800 text-white"
+                      : "border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800"
+                  }`}
+                >
+                  <div className="font-semibold">{service.name}</div>
+                  <div className="mt-1 text-sm text-zinc-300">
+                    Duración: {service.duration_minutes} min
+                  </div>
+                  <div className="text-sm text-zinc-300">
+                    Precio: ${service.price}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
 
-    {business?.description && (
-      <p style={{ margin: "0 0 8px 0" }}>{business.description}</p>
-    )}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <h2 className="mb-4 text-xl font-semibold text-white">Fecha</h2>
 
-    {business?.phone && (
-      <p style={{ margin: "0 0 4px 0" }}>
-        <strong>Teléfono:</strong> {business.phone}
-      </p>
-    )}
+            <Calendar
+              onChange={(value: any) => {
+                const picked = Array.isArray(value) ? value[0] : value;
+                if (!picked) return;
 
-    {business?.address && (
-      <p style={{ margin: 0 }}>
-        <strong>Dirección:</strong> {business.address}
-      </p>
-    )}
-  </div>
+                setSelectedDate(new Date(picked));
+                setSelectedSlot(null);
+                setShowForm(false);
+                setBookingSuccess(false);
+              }}
+              value={selectedDate}
+            />
+          </div>
+        </aside>
 
+        <section className="space-y-6">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <h2 className="mb-4 text-2xl font-semibold text-white">
+              Selecciona un horario
+            </h2>
 
+            {!selectedService ? (
+              <p className="text-zinc-400">
+                Primero selecciona un servicio para ver los horarios
+                disponibles.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+                {weekDates.map((day) => {
+                  const dateStr = formatDate(day);
+                  const slots = weekSlots[dateStr] || [];
 
-     <div
-  style={{
-    display: "grid",
-    gridTemplateColumns: "340px minmax(700px, 1fr)",
-    gap: 32,
-    alignItems: "start",
-    marginTop: 30,
-  }}
->       
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  return (
+                    <div
+                      key={dateStr}
+                      className="rounded-xl border border-zinc-800 bg-zinc-900 p-3"
+                    >
+                      <div className="mb-3 border-b border-zinc-800 pb-2">
+                        <div className="text-sm font-semibold capitalize text-white">
+                          {day.toLocaleDateString("es-CL", {
+                            weekday: "short",
+                          })}
+                        </div>
+                        <div className="text-sm text-zinc-400">
+                          {day.toLocaleDateString("es-CL", {
+                            day: "2-digit",
+                            month: "2-digit",
+                          })}
+                        </div>
+                      </div>
 
-  <h2>Servicios</h2>
+                      <div className="space-y-2">
+                        {slots.length === 0 ? (
+                          <span className="text-xs text-zinc-500">
+                            Sin horarios
+                          </span>
+                        ) : (
+                          slots.map((slot: any, i: number) => (
+                            <button
+                              key={i}
+                              onClick={() => {
+                                setSelectedSlot(slot);
+                                setShowForm(false);
+                                setBookingSuccess(false);
+                              }}
+                              className={`w-full rounded-lg border px-3 py-2 text-sm transition ${
+                                selectedSlot?.slot_start === slot.slot_start
+                                  ? "border-green-500 bg-green-500/10 text-green-400"
+                                  : "border-zinc-700 bg-zinc-950 text-white hover:bg-zinc-800"
+                              }`}
+                            >
+                              {formatHour(slot.slot_start)}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
-      {services.map((service) => (
-        <button
-          key={service.id}
-          onClick={() => {
-            setSelectedService(service);
-            setSelectedSlot(null);
-            setShowForm(false);
-            setBookingSuccess(false);
-          }}
-          style={{
-            display: "block",
-            marginBottom: 12,
-            padding: 12,
-            border:
-              selectedService?.id === service.id
-                ? "2px solid white"
-                : "1px solid #444",
-            borderRadius: 6,
-            background: "#111",
-            color: "white",
-            cursor: "pointer",
-          }}
-        >
-          <strong>{service.name}</strong>
-          <br />
-          Duración: {service.duration_minutes} min
-          <br />
-          Precio: ${service.price}
-        </button>
-      ))}
+          {selectedSlot && (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+              <h3 className="text-xl font-semibold text-white">
+                Horario seleccionado
+              </h3>
 
-          <Calendar
-            onChange={(value: any) => {
-              const picked = Array.isArray(value) ? value[0] : value;
-              if (!picked) return;
+              <div className="mt-4 space-y-2 text-sm text-zinc-300">
+                <p>
+                  Servicio:{" "}
+                  <span className="font-semibold text-white">
+                    {selectedService?.name}
+                  </span>
+                </p>
+                <p>
+                  Fecha:{" "}
+                  <span className="font-semibold text-white">
+                    {formatSelectedDate(selectedSlot.slot_start)}
+                  </span>
+                </p>
+                <p>
+                  Hora:{" "}
+                  <span className="font-semibold text-white">
+                    {formatHour(selectedSlot.slot_start)}
+                  </span>
+                </p>
+              </div>
 
-              setSelectedDate(new Date(picked));
-              setSelectedSlot(null);
-              setShowForm(false);
-              setBookingSuccess(false);
-            }}
-            value={selectedDate}
-          />
-        </div>
-
-        <div style={{ minWidth: 0, maxWidth: 820 }}>
-          <h2>Semana</h2>
-
-          <div
-  style={{
-    display: "grid",
-    gridTemplateColumns: "repeat(7, minmax(90px, 1fr))",
-    gap: 12,
-    alignItems: "start",
-  }}
->
-            {weekDates.map((day) => {
-              const dateStr = formatDate(day);
-              const slots = weekSlots[dateStr] || [];
-
-              return (
-                <div
-                  key={dateStr}
+              {!showForm && !bookingSuccess && (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="mt-5 rounded-xl px-5 py-3 font-medium text-white"
                   style={{
-                    border: "1px solid #333",
-                    borderRadius: 8,
-                    padding: 10,
+                    background: business?.brand_color || "#2563eb",
                   }}
                 >
-                  <strong>
-                    {day.toLocaleDateString("es-CL", {
-                      weekday: "short",
-                    })}
-                  </strong>
-                  <br />
-                  {day.getDate()}
+                  Continuar
+                </button>
+              )}
+            </div>
+          )}
 
-                  <div style={{ marginTop: 10 }}>
-                    {slots.length === 0 ? (
-                      <span style={{ fontSize: 12 }}>Sin horarios</span>
-                    ) : (
-                      slots.map((slot: any, i: number) => (
-                        <button
-                          key={i}
-                          onClick={() => {
-                            setSelectedSlot(slot);
-                            setShowForm(false);
-                            setBookingSuccess(false);
-                          }}
-                          style={{
-                            display: "block",
-                            width: "100%",
-                            marginBottom: 6,
-                            padding: 6,
-                            borderRadius: 6,
-                            border:
-                              selectedSlot?.slot_start === slot.slot_start
-                                ? "2px solid #22c55e"
-                                : "1px solid #444",
-                            background: "#111",
-                            color: "white",
-                            cursor: "pointer",
-                          }}
-                        >
-                          {formatHour(slot.slot_start)}
-                        </button>
-                      ))
-                    )}
-                  </div>
+          {showForm && selectedSlot && !bookingSuccess && (
+            <div className="max-w-xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+              <h3 className="mb-5 text-xl font-semibold text-white">
+                Tus datos
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm text-zinc-300">
+                    Nombre y apellido
+                  </label>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-500"
+                  />
                 </div>
-              );
-            })}
-          </div>
-        </div>
+
+                <div>
+                  <label className="mb-2 block text-sm text-zinc-300">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm text-zinc-300">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-500"
+                  />
+                </div>
+
+                <button
+                  onClick={handleBooking}
+                  disabled={loadingBooking}
+                  className="rounded-xl bg-green-600 px-5 py-3 font-medium text-white transition hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {loadingBooking ? "Reservando..." : "Confirmar reserva"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {bookingSuccess && selectedSlot && (
+            <div className="rounded-2xl border border-green-700 bg-green-950/30 p-6">
+              <h3 className="text-xl font-semibold text-green-400">
+                Reserva confirmada ✅
+              </h3>
+
+              <div className="mt-4 space-y-2 text-sm text-zinc-200">
+                <p>
+                  Servicio:{" "}
+                  <span className="font-semibold">{selectedService?.name}</span>
+                </p>
+                <p>
+                  Fecha:{" "}
+                  <span className="font-semibold">
+                    {formatSelectedDate(selectedSlot.slot_start)}
+                  </span>
+                </p>
+                <p>
+                  Hora:{" "}
+                  <span className="font-semibold">
+                    {formatHour(selectedSlot.slot_start)}
+                  </span>
+                </p>
+              </div>
+
+              <p className="mt-4 text-sm text-zinc-300">
+                Te enviamos un correo con los detalles.
+              </p>
+            </div>
+          )}
+        </section>
       </div>
-
-      {selectedSlot && (
-        <div style={{ marginTop: 30 }}>
-          <h3>Horario seleccionado</h3>
-
-          <p>
-            Servicio: <strong>{selectedService?.name}</strong>
-          </p>
-
-          <p>
-            Fecha:{" "}
-            <strong>{formatSelectedDate(selectedSlot.slot_start)}</strong>
-          </p>
-
-          <p>
-            Hora: <strong>{formatHour(selectedSlot.slot_start)}</strong>
-          </p>
-
-          {!showForm && !bookingSuccess && (
-            <button
-  onClick={() => setShowForm(true)}
-  style={{
-    marginTop: 10,
-    padding: 12,
-    borderRadius: 6,
-    background: business?.brand_color || "#2563eb",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-  }}
->
-  Continuar
-</button>          )}
-        </div>
-      )}
-
-      {showForm && selectedSlot && !bookingSuccess && (
-        <div
-          style={{
-            marginTop: 20,
-            maxWidth: 420,
-            border: "1px solid #333",
-            borderRadius: 8,
-            padding: 16,
-          }}
-        >
-          <h3 style={{ marginBottom: 16 }}>Tus datos</h3>
-
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 6 }}>
-              Nombre y apellido
-            </label>
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 6,
-                border: "1px solid #444",
-                background: "#111",
-                color: "white",
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 6 }}>
-              Teléfono
-            </label>
-            <input
-              type="tel"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 6,
-                border: "1px solid #444",
-                background: "#111",
-                color: "white",
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 6 }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={customerEmail}
-              onChange={(e) => setCustomerEmail(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 6,
-                border: "1px solid #444",
-                background: "#111",
-                color: "white",
-              }}
-            />
-          </div>
-
-          <button
-            onClick={handleBooking}
-            disabled={loadingBooking}
-            style={{
-              marginTop: 8,
-              padding: 12,
-              borderRadius: 6,
-              background: "#16a34a",
-              color: "white",
-              border: "none",
-              cursor: loadingBooking ? "not-allowed" : "pointer",
-              opacity: loadingBooking ? 0.7 : 1,
-            }}
-          >
-            {loadingBooking ? "Reservando..." : "Confirmar reserva"}
-          </button>
-        </div>
-      )}
-
-      {bookingSuccess && selectedSlot && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Reserva confirmada ✅</h3>
-
-          <p>
-            Servicio: <strong>{selectedService?.name}</strong>
-          </p>
-
-          <p>
-            Fecha: <strong>{formatSelectedDate(selectedSlot.slot_start)}</strong>
-          </p>
-
-          <p>
-            Hora: <strong>{formatHour(selectedSlot.slot_start)}</strong>
-          </p>
-
-          <p>Te enviamos un correo con los detalles.</p>
-        </div>
-      )}
     </main>
   );
 }
