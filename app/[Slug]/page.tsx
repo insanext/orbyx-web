@@ -330,6 +330,14 @@ export default function Page() {
                   <p className="text-sm text-gray-600">
                     <strong>Hora:</strong> {formatHour(selectedSlot.slot_start)}
                   </p>
+{selectedService?.location_text && (
+  <p className="text-sm text-gray-600">
+    <strong>
+      {selectedService.location_type === "online" ? "Modalidad" : "Ubicación"}:
+    </strong>{" "}
+    {selectedService.location_text}
+  </p>
+)}
                 </div>
 
                 <h3 className="mb-4 text-lg font-semibold">Completa tus datos</h3>
