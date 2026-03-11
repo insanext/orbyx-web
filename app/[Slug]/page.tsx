@@ -25,6 +25,7 @@ export default function Page() {
 
   const [loadingBooking, setLoadingBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingError, setBookingError] = useState("");
 
   const formRef = useRef<HTMLDivElement | null>(null);
 
@@ -71,8 +72,10 @@ export default function Page() {
   async function handleBooking() {
     if (!selectedSlot || !selectedService || !business) return;
 
+    setBookingError("");
+
     if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
-      alert("Completa nombre, teléfono y email");
+      setBookingError("Completa nombre, teléfono y email.");
       return;
     }
 
@@ -99,14 +102,15 @@ export default function Page() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "No se pudo crear la reserva");
+        setBookingError(data.error || "No se pudo crear la reserva.");
         return;
       }
 
       setBookingSuccess(true);
       setShowForm(false);
+      setBookingError("");
     } catch {
-      alert("Error al crear la reserva");
+      setBookingError("Ocurrió un error al crear la reserva.");
     } finally {
       setLoadingBooking(false);
     }
@@ -191,11 +195,13 @@ export default function Page() {
               <select
                 value={selectedService?.id || ""}
                 onChange={(e) => {
-                  const service = services.find((s) => s.id === e.target.value) || null;
+                  const service =
+                    services.find((s) => s.id === e.target.value) || null;
                   setSelectedService(service);
                   setSelectedSlot(null);
                   setShowForm(false);
                   setBookingSuccess(false);
+                  setBookingError("");
                 }}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
               >
@@ -234,6 +240,7 @@ export default function Page() {
                   setSelectedSlot(null);
                   setShowForm(false);
                   setBookingSuccess(false);
+                  setBookingError("");
                 }}
                 value={selectedDate}
               />
@@ -285,6 +292,7 @@ export default function Page() {
                                   setSelectedSlot(slot);
                                   setShowForm(true);
                                   setBookingSuccess(false);
+                                  setBookingError("");
 
                                   setTimeout(() => {
                                     formRef.current?.scrollIntoView({
@@ -330,15 +338,36 @@ export default function Page() {
                   <p className="text-sm text-gray-600">
                     <strong>Hora:</strong> {formatHour(selectedSlot.slot_start)}
                   </p>
-{selectedService?.location_text && (
-  <p className="text-sm text-gray-600">
-    <strong>
-      {selectedService.location_type === "online" ? "Modalidad" : "Ubicación"}:
-    </strong>{" "}
-    {selectedService.location_text}
-  </p>
-)}
+                  {selectedService?.location_text && (
+                    <p className="text-sm text-gray-600">
+                      <strong>
+                        {selectedService.location_type === "online"
+                          ? "Modalidad"
+                          : "Ubicación"}
+                        :
+                      </strong>{" "}
+                      {selectedService.location_text}
+                    </p>
+                  )}
                 </div>
+
+                {bookingError && (
+                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                    <p className="text-sm font-medium text-red-700">
+                      {bookingError}
+                    </p>
+
+                    {bookingError
+                      .toLowerCase()
+                      .includes("ya tiene una reserva futura activa") && (
+                      <p className="mt-2 text-sm text-red-700">
+                        Ya tienes una reserva activa con este correo. Si deseas
+                        cambiar el horario, primero debes cancelar tu reserva
+                        actual.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <h3 className="mb-4 text-lg font-semibold">Completa tus datos</h3>
 
