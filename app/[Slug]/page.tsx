@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Calendar from "react-calendar";
 
@@ -25,7 +25,8 @@ export default function Page() {
 
   const [loadingBooking, setLoadingBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
-const formRef = useRef<HTMLDivElement | null>(null);
+
+  const formRef = useRef<HTMLDivElement | null>(null);
 
   function formatDate(date: Date) {
     const y = date.getFullYear();
@@ -165,7 +166,7 @@ const formRef = useRef<HTMLDivElement | null>(null);
         className="w-full text-white"
         style={{ background: business?.brand_color || "#2563eb" }}
       >
-        <div className="max-w-7xl mx-auto px-6 py-8 flex items-center gap-6">
+        <div className="mx-auto flex max-w-7xl items-center gap-6 px-6 py-8">
           {business?.logo_url && (
             <img
               src={business.logo_url}
@@ -181,38 +182,44 @@ const formRef = useRef<HTMLDivElement | null>(null);
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[320px_1fr]">
           <div className="space-y-5">
             <div className="rounded-xl border bg-white p-5 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold">Servicios</h2>
+              <h2 className="mb-4 text-lg font-semibold">Servicio</h2>
 
-              <div className="space-y-3">
+              <select
+                value={selectedService?.id || ""}
+                onChange={(e) => {
+                  const service = services.find((s) => s.id === e.target.value) || null;
+                  setSelectedService(service);
+                  setSelectedSlot(null);
+                  setShowForm(false);
+                  setBookingSuccess(false);
+                }}
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
+              >
+                <option value="">Selecciona un servicio</option>
                 {services.map((service) => (
-                  <button
-                    key={service.id}
-                    onClick={() => {
-                      setSelectedService(service);
-                      setSelectedSlot(null);
-                      setShowForm(false);
-                      setBookingSuccess(false);
-                    }}
-                    className={`w-full rounded-lg border p-4 text-left transition ${
-                      selectedService?.id === service.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="font-semibold">{service.name}</div>
-                    <div className="text-sm text-gray-500">
-                      Duración: {service.duration_minutes} min
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Precio: ${service.price}
-                    </div>
-                  </button>
+                  <option key={service.id} value={service.id}>
+                    {service.name} - {service.duration_minutes} min - ${service.price}
+                  </option>
                 ))}
-              </div>
+              </select>
+
+              {selectedService && (
+                <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
+                  <p className="text-sm text-gray-700">
+                    <strong>Servicio:</strong> {selectedService.name}
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    <strong>Duración:</strong> {selectedService.duration_minutes} min
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    <strong>Precio:</strong> ${selectedService.price}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="rounded-xl border bg-white p-5 shadow-sm">
@@ -257,6 +264,12 @@ const formRef = useRef<HTMLDivElement | null>(null);
                               weekday: "short",
                             })}
                           </div>
+                          <div className="text-xs text-gray-500">
+                            {day.toLocaleDateString("es-CL", {
+                              day: "2-digit",
+                              month: "2-digit",
+                            })}
+                          </div>
                         </div>
 
                         <div className="space-y-1.5">
@@ -269,14 +282,18 @@ const formRef = useRef<HTMLDivElement | null>(null);
                               <button
                                 key={i}
                                 onClick={() => {
-  setSelectedSlot(slot);
-  setShowForm(true);
-  setBookingSuccess(false);
+                                  setSelectedSlot(slot);
+                                  setShowForm(true);
+                                  setBookingSuccess(false);
 
-  setTimeout(() => {
-    formRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, 100);
-}}                                className={`w-full rounded-md border py-1.5 text-xs transition ${
+                                  setTimeout(() => {
+                                    formRef.current?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                  }, 100);
+                                }}
+                                className={`w-full rounded-md border py-1.5 text-xs transition ${
                                   selectedSlot?.slot_start === slot.slot_start
                                     ? "border-green-500 bg-green-500 text-white"
                                     : "border-gray-300 bg-white hover:bg-gray-50"
@@ -294,12 +311,11 @@ const formRef = useRef<HTMLDivElement | null>(null);
               )}
             </div>
 
-            
-{selectedSlot && !bookingSuccess && (
-  <div
-    ref={formRef}
-    className="rounded-xl border bg-white p-5 shadow-sm max-w-xl"
-  >
+            {selectedSlot && !bookingSuccess && (
+              <div
+                ref={formRef}
+                className="max-w-xl rounded-xl border bg-white p-5 shadow-sm"
+              >
                 <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
                   <h3 className="text-base font-semibold text-gray-900">
                     Hora seleccionada
