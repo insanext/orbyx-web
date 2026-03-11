@@ -160,9 +160,6 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-zinc-100">
-
-      {/* HEADER PROFESIONAL */}
-
       <div
         className="w-full text-white"
         style={{ background: business?.brand_color || "#2563eb" }}
@@ -171,42 +168,26 @@ export default function Page() {
           {business?.logo_url && (
             <img
               src={business.logo_url}
-              className="h-16 w-auto bg-white rounded p-2"
+              alt={business?.name || "Logo"}
+              className="h-16 w-auto rounded bg-white p-2"
             />
           )}
 
           <div>
-            <h1 className="text-3xl font-semibold">
-              Reserva tu hora
-            </h1>
-
-            <p className="opacity-90 text-sm">
-              {business?.name}
-            </p>
+            <h1 className="text-3xl font-semibold">Reserva tu hora</h1>
+            <p className="text-sm opacity-90">{business?.name}</p>
           </div>
         </div>
       </div>
 
-      {/* CONTENEDOR PRINCIPAL */}
-
       <div className="max-w-7xl mx-auto px-6 py-10">
-
-        <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-8">
-
-          {/* PANEL IZQUIERDO */}
-
-          <div className="space-y-6">
-
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-
-              <h2 className="text-lg font-semibold mb-4">
-                Servicios
-              </h2>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[320px_1fr]">
+          <div className="space-y-5">
+            <div className="rounded-xl border bg-white p-5 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold">Servicios</h2>
 
               <div className="space-y-3">
-
                 {services.map((service) => (
-
                   <button
                     key={service.id}
                     onClick={() => {
@@ -215,39 +196,26 @@ export default function Page() {
                       setShowForm(false);
                       setBookingSuccess(false);
                     }}
-                    className={`w-full text-left p-4 rounded-lg border transition
-                    ${
+                    className={`w-full rounded-lg border p-4 text-left transition ${
                       selectedService?.id === service.id
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-200 hover:bg-gray-50"
                     }`}
                   >
-
-                    <div className="font-semibold">
-                      {service.name}
-                    </div>
-
+                    <div className="font-semibold">{service.name}</div>
                     <div className="text-sm text-gray-500">
                       Duración: {service.duration_minutes} min
                     </div>
-
                     <div className="text-sm text-gray-500">
                       Precio: ${service.price}
                     </div>
-
                   </button>
-
                 ))}
-
               </div>
-
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-
-              <h2 className="text-lg font-semibold mb-4">
-                Selecciona fecha
-              </h2>
+            <div className="rounded-xl border bg-white p-5 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold">Selecciona fecha</h2>
 
               <Calendar
                 onChange={(value: any) => {
@@ -261,168 +229,139 @@ export default function Page() {
                 }}
                 value={selectedDate}
               />
-
             </div>
-
           </div>
 
-          {/* HORARIOS */}
+          <div className="space-y-5">
+            <div className="rounded-xl border bg-white p-5 shadow-sm">
+              <h2 className="mb-5 text-xl font-semibold">Horarios disponibles</h2>
 
-          <div className="bg-white rounded-xl shadow-sm border p-6">
+              {!selectedService && (
+                <p className="text-gray-500">
+                  Selecciona un servicio para ver las horas disponibles
+                </p>
+              )}
 
-            <h2 className="text-xl font-semibold mb-6">
-              Horarios disponibles
-            </h2>
+              {selectedService && (
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+                  {weekDates.map((day) => {
+                    const dateStr = formatDate(day);
+                    const slots = weekSlots[dateStr] || [];
 
-            {!selectedService && (
-              <p className="text-gray-500">
-                Selecciona un servicio para ver las horas disponibles
-              </p>
-            )}
-
-            {selectedService && (
-
-              <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4">
-
-                {weekDates.map((day) => {
-
-                  const dateStr = formatDate(day);
-                  const slots = weekSlots[dateStr] || [];
-
-                  return (
-
-                    <div
-                      key={dateStr}
-                      className="border rounded-lg p-3"
-                    >
-
-                      <div className="font-semibold text-sm mb-2">
-                        {day.toLocaleDateString("es-CL", {
-                          weekday: "short",
-                        })}
-                      </div>
-
-                      <div className="space-y-2">
-
-                        {slots.length === 0 ? (
-
-                          <div className="text-xs text-gray-400">
-                            Sin horarios
+                    return (
+                      <div key={dateStr} className="rounded-lg border p-2">
+                        <div className="mb-2">
+                          <div className="text-sm font-semibold">
+                            {day.toLocaleDateString("es-CL", {
+                              weekday: "short",
+                            })}
                           </div>
+                        </div>
 
-                        ) : (
-
-                          slots.map((slot: any, i: number) => (
-
-                            <button
-                              key={i}
-                              onClick={() => {
-                                setSelectedSlot(slot);
-                                setShowForm(false);
-                                setBookingSuccess(false);
-                              }}
-                              className={`w-full py-2 text-sm rounded border
-                              ${
-                                selectedSlot?.slot_start === slot.slot_start
-                                  ? "bg-green-500 text-white border-green-500"
-                                  : "hover:bg-gray-50"
-                              }`}
-                            >
-
-                              {formatHour(slot.slot_start)}
-
-                            </button>
-
-                          ))
-
-                        )}
-
+                        <div className="space-y-1.5">
+                          {slots.length === 0 ? (
+                            <div className="text-xs text-gray-400">
+                              Sin horarios
+                            </div>
+                          ) : (
+                            slots.map((slot: any, i: number) => (
+                              <button
+                                key={i}
+                                onClick={() => {
+                                  setSelectedSlot(slot);
+                                  setShowForm(true);
+                                  setBookingSuccess(false);
+                                }}
+                                className={`w-full rounded-md border py-1.5 text-xs transition ${
+                                  selectedSlot?.slot_start === slot.slot_start
+                                    ? "border-green-500 bg-green-500 text-white"
+                                    : "border-gray-300 bg-white hover:bg-gray-50"
+                                }`}
+                              >
+                                {formatHour(slot.slot_start)}
+                              </button>
+                            ))
+                          )}
+                        </div>
                       </div>
-
-                    </div>
-
-                  );
-
-                })}
-
-              </div>
-
-            )}
-
-          </div>
-
-        </div>
-
-        {/* FORMULARIO */}
-
-        {selectedSlot && !bookingSuccess && (
-
-          <div className="mt-8 bg-white rounded-xl shadow-sm border p-6 max-w-xl">
-
-            <h3 className="text-lg font-semibold mb-4">
-              Completa tus datos
-            </h3>
-
-            <div className="space-y-4">
-
-              <input
-                type="text"
-                placeholder="Nombre y apellido"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full border rounded-lg px-4 py-3"
-              />
-
-              <input
-                type="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                className="w-full border rounded-lg px-4 py-3"
-              />
-
-              <input
-                type="email"
-                placeholder="Email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                className="w-full border rounded-lg px-4 py-3"
-              />
-
-              <button
-                onClick={handleBooking}
-                disabled={loadingBooking}
-                className="w-full py-3 rounded-lg text-white font-medium"
-                style={{
-                  background: business?.brand_color || "#2563eb",
-                }}
-              >
-                {loadingBooking ? "Reservando..." : "Confirmar reserva"}
-              </button>
-
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
+            {selectedSlot && !bookingSuccess && (
+              <div className="rounded-xl border bg-white p-5 shadow-sm max-w-xl">
+                <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
+                  <h3 className="text-base font-semibold text-gray-900">
+                    Hora seleccionada
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-600">
+                    <strong>Servicio:</strong> {selectedService?.name}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Fecha:</strong>{" "}
+                    {formatSelectedDate(selectedSlot.slot_start)}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Hora:</strong> {formatHour(selectedSlot.slot_start)}
+                  </p>
+                </div>
+
+                <h3 className="mb-4 text-lg font-semibold">Completa tus datos</h3>
+
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Nombre y apellido"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full rounded-lg border px-4 py-3"
+                  />
+
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="w-full rounded-lg border px-4 py-3"
+                  />
+
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="w-full rounded-lg border px-4 py-3"
+                  />
+
+                  <button
+                    onClick={handleBooking}
+                    disabled={loadingBooking}
+                    className="w-full rounded-lg py-3 font-medium text-white"
+                    style={{
+                      background: business?.brand_color || "#2563eb",
+                    }}
+                  >
+                    {loadingBooking ? "Reservando..." : "Confirmar reserva"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bookingSuccess && (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-6">
+                <h3 className="text-lg font-semibold text-green-700">
+                  Reserva confirmada
+                </h3>
+
+                <p className="mt-2 text-sm text-green-700">
+                  Te enviamos un correo con los detalles.
+                </p>
+              </div>
+            )}
           </div>
-
-        )}
-
-        {bookingSuccess && (
-
-          <div className="mt-8 bg-green-50 border border-green-200 p-6 rounded-lg">
-
-            <h3 className="text-green-700 font-semibold text-lg">
-              Reserva confirmada
-            </h3>
-
-            <p className="text-sm text-green-700 mt-2">
-              Te enviamos un correo con los detalles.
-            </p>
-
-          </div>
-
-        )}
-
+        </div>
       </div>
-
     </div>
   );
 }
