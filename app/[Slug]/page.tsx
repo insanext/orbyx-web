@@ -187,7 +187,7 @@ export default function Page() {
           const dateStr = formatDate(day);
 
           const res = await fetch(
-            `/api/public-slots/${slug}/${selectedService.id}?date=${dateStr}`
+            `/api/public-slots/${slug}/${selectedService?.id}?date=${dateStr}`
           );
 
           const data = await res.json();
