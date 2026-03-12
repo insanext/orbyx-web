@@ -177,7 +177,7 @@ export default function Page() {
   }, [selectedDate]);
 
   useEffect(() => {
-    if (!slug || !selectedService || weekDates.length === 0) return;
+  if (!slug || !selectedService?.id || weekDates.length === 0) return;
 
     async function loadWeek() {
       setLoadingSlots(true);
