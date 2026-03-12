@@ -2,8 +2,8 @@
 @import "react-calendar/dist/Calendar.css";
 
 :root {
-  --background: #f5f5f5;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 @theme inline {
@@ -11,6 +11,14 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -23,42 +31,49 @@ body {
   width: 100%;
   max-width: 100%;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
-  color: #111827;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 18px;
+  color: #0f172a;
   font-family: inherit;
   box-shadow: none;
 }
 
 .react-calendar__navigation {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
 }
 
 .react-calendar__navigation button {
-  color: #111827;
+  color: #0f172a;
   background: transparent;
-  min-width: 40px;
-  height: 40px;
+  min-width: 42px;
+  height: 42px;
   font-size: 16px;
-  border-radius: 8px;
+  border-radius: 12px;
+  transition: background 0.2s ease;
 }
 
 .react-calendar__navigation button:hover,
 .react-calendar__navigation button:focus {
-  background: #f3f4f6;
+  background: #f1f5f9;
 }
 
 .react-calendar__navigation button:disabled {
   background: transparent;
-  color: #9ca3af;
+  color: #94a3b8;
+}
+
+.react-calendar__navigation__label {
+  font-weight: 700;
 }
 
 .react-calendar__month-view__weekdays {
   text-transform: uppercase;
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 600;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 700;
 }
 
 .react-calendar__month-view__weekdays__weekday {
@@ -71,32 +86,33 @@ body {
 
 .react-calendar__tile {
   background: transparent;
-  color: #111827;
-  border-radius: 10px;
+  color: #0f172a;
+  border-radius: 12px;
   padding: 12px 6px;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .react-calendar__tile:hover,
 .react-calendar__tile:focus {
-  background: #f3f4f6;
+  background: #f1f5f9;
 }
 
 .react-calendar__tile--active {
-  background: #2563eb !important;
+  background: #0f172a !important;
   color: #ffffff !important;
 }
 
 .react-calendar__tile--now {
-  background: #e5e7eb;
-  color: #111827;
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 .react-calendar__month-view__days__day--weekend {
-  color: #111827;
+  color: #0f172a;
 }
 
 .react-calendar__month-view__days__day--neighboringMonth {
-  color: #9ca3af;
+  color: #94a3b8;
 }
 
 @keyframes spin {
