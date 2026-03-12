@@ -19,6 +19,7 @@ export default function Page() {
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
 
   const [showForm, setShowForm] = useState(false);
+
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("+569");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -116,7 +117,6 @@ export default function Page() {
 
       setBookingSuccess(true);
       setShowForm(false);
-      setBookingError("");
     } catch {
       setBookingError("Ocurrió un error al crear la reserva.");
     } finally {
@@ -181,30 +181,29 @@ export default function Page() {
         className="w-full text-white"
         style={{ background: business?.brand_color || "#2563eb" }}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
 
           <div className="flex items-center gap-4">
+
             {business?.logo_url && (
               <img
                 src={business.logo_url}
                 alt={business?.name}
-                className="h-14 w-auto rounded bg-white p-2"
+                className="h-12 w-auto rounded bg-white p-2"
               />
             )}
 
             <div>
-              <h1 className="text-2xl font-semibold">{business?.name}</h1>
-              <p className="text-sm opacity-90">
-                Negocio demo de reservas Orbyx
+              <h1 className="text-xl font-semibold">{business?.name}</h1>
+              <p className="text-xs opacity-90">
+                Reserva online
               </p>
             </div>
+
           </div>
 
-          <div className="rounded-xl border border-white/30 bg-white/10 p-4 backdrop-blur">
-            <p className="text-xs uppercase tracking-wide opacity-80">
-              Reserva online
-            </p>
-            <p className="text-lg font-semibold">
+          <div className="rounded-lg border border-white/30 bg-white/10 px-4 py-2 backdrop-blur">
+            <p className="text-sm font-semibold">
               Rápido, claro y profesional
             </p>
           </div>
@@ -222,8 +221,6 @@ export default function Page() {
 
           <div className="space-y-5">
 
-            {/* SERVICE */}
-
             <div className="rounded-xl border bg-white p-5 shadow-sm">
 
               <h2 className="mb-4 text-lg font-semibold">
@@ -233,6 +230,7 @@ export default function Page() {
               <select
                 value={selectedService?.id || ""}
                 onChange={(e) => {
+
                   const service =
                     services.find((s) => s.id === e.target.value) || null;
 
@@ -241,6 +239,7 @@ export default function Page() {
                   setShowForm(false);
                   setBookingSuccess(false);
                   setBookingError("");
+
                 }}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm"
               >
@@ -254,27 +253,7 @@ export default function Page() {
 
               </select>
 
-              {selectedService && (
-                <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
-
-                  <p className="text-sm">
-                    <strong>Servicio:</strong> {selectedService.name}
-                  </p>
-
-                  <p className="text-sm">
-                    <strong>Duración:</strong> {selectedService.duration_minutes} min
-                  </p>
-
-                  <p className="text-sm">
-                    <strong>Precio:</strong> {formatPrice(selectedService.price)}
-                  </p>
-
-                </div>
-              )}
-
             </div>
-
-            {/* CALENDAR */}
 
             <div className="rounded-xl border bg-white p-5 shadow-sm">
 
@@ -284,6 +263,7 @@ export default function Page() {
 
               <Calendar
                 onChange={(value: any) => {
+
                   const picked = Array.isArray(value) ? value[0] : value;
 
                   if (!picked) return;
@@ -293,6 +273,7 @@ export default function Page() {
                   setShowForm(false);
                   setBookingSuccess(false);
                   setBookingError("");
+
                 }}
                 value={selectedDate}
               />
@@ -362,8 +343,6 @@ export default function Page() {
 
                                   setSelectedSlot(slot);
                                   setShowForm(true);
-                                  setBookingSuccess(false);
-                                  setBookingError("");
 
                                   setTimeout(() => {
                                     formRef.current?.scrollIntoView({
@@ -399,7 +378,7 @@ export default function Page() {
 
             </div>
 
-            {selectedSlot && !bookingSuccess && (
+            {showForm && selectedSlot && (
 
               <div
                 ref={formRef}
