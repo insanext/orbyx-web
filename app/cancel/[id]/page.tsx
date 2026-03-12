@@ -12,6 +12,7 @@ export default function CancelPage() {
 
   const [status, setStatus] = useState<"confirm" | "loading" | "ok" | "error">("confirm");
   const [message, setMessage] = useState("¿Seguro que deseas cancelar tu reserva?");
+const [reservation, setReservation] = useState<any>(null);
 
   const safeRedirect = useMemo(() => {
     if (!redirect) return "https://www.orbyx.cl";
@@ -22,6 +23,28 @@ export default function CancelPage() {
       return "https://www.orbyx.cl";
     }
   }, [redirect]);
+
+useEffect(() => {
+
+  async function loadReservation() {
+
+    if (!id || !token) return;
+
+    const res = await fetch(
+      `https://orbyx-backend.onrender.com/appointments/${id}?token=${token}`
+    );
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setReservation(data);
+    }
+
+  }
+
+  loadReservation();
+
+}, [id, token]);
 
   async function cancelReservation() {
     try {
@@ -76,6 +99,16 @@ export default function CancelPage() {
           {status === "ok" && "Reserva cancelada"}
           {status === "error" && "Hubo un problema"}
         </h1>
+
+{reservation && (
+  <div style={{marginTop:20, marginBottom:20}}>
+    <p><b>Servicio:</b> {reservation.service}</p>
+    <p><b>Fecha:</b> {new Date(reservation.start_at).toLocaleString()}</p>
+    {reservation.location && (
+      <p><b>Dirección:</b> {reservation.location}</p>
+    )}
+  </div>
+)}
 
         <p style={styles.description}>{message}</p>
 
