@@ -98,3 +98,9 @@ body {
 .react-calendar__month-view__days__day--neighboringMonth {
   color: #9ca3af;
 }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
