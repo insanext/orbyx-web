@@ -4,15 +4,24 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 
+type ReservationData = {
+  service?: string | null;
+  start_at?: string | null;
+  location?: string | null;
+  status?: string | null;
+};
+
 export default function CancelPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const redirect = searchParams.get("redirect");
 
-  const [status, setStatus] = useState<"confirm" | "loading" | "ok" | "error">("confirm");
+  const [status, setStatus] = useState<
+    "confirm" | "loading" | "ok" | "error" | "already"
+  >("confirm");
   const [message, setMessage] = useState("¿Seguro que deseas cancelar tu reserva?");
-const [reservation, setReservation] = useState<any>(null);
+  const [reservation, setReservation] = useState<ReservationData | null>(null);
 
   const safeRedirect = useMemo(() => {
     if (!redirect) return "https://www.orbyx.cl";
@@ -24,27 +33,37 @@ const [reservation, setReservation] = useState<any>(null);
     }
   }, [redirect]);
 
-useEffect(() => {
+  useEffect(() => {
+    async function loadReservation() {
+      try {
+        if (!id || !token) return;
 
-  async function loadReservation() {
+        const res = await fetch(
+          `https://orbyx-backend.onrender.com/appointments/${id}?token=${token}`
+        );
 
-    if (!id || !token) return;
+        const data = await res.json().catch(() => ({}));
 
-    const res = await fetch(
-      `https://orbyx-backend.onrender.com/appointments/${id}?token=${token}`
-    );
+        if (!res.ok) {
+          setStatus("error");
+          setMessage(data.error || "No se pudo cargar la reserva.");
+          return;
+        }
 
-    const data = await res.json();
+        setReservation(data);
 
-    if (res.ok) {
-      setReservation(data);
+        if (data.status === "canceled" || data.status === "cancelled") {
+          setStatus("already");
+          setMessage("Esta reserva ya fue cancelada anteriormente.");
+        }
+      } catch {
+        setStatus("error");
+        setMessage("No se pudo cargar la información de la reserva.");
+      }
     }
 
-  }
-
-  loadReservation();
-
-}, [id, token]);
+    loadReservation();
+  }, [id, token]);
 
   async function cancelReservation() {
     try {
@@ -72,6 +91,15 @@ useEffect(() => {
         return;
       }
 
+      if (
+        data?.appointment?.status === "canceled" &&
+        reservation?.status === "canceled"
+      ) {
+        setStatus("already");
+        setMessage("Esta reserva ya fue cancelada anteriormente.");
+        return;
+      }
+
       setStatus("ok");
       setMessage("Tu reserva fue cancelada correctamente.");
     } catch {
@@ -91,6 +119,7 @@ useEffect(() => {
           {status === "loading" && "Procesando"}
           {status === "ok" && "Reserva cancelada"}
           {status === "error" && "No se pudo cancelar"}
+          {status === "already" && "Reserva ya cancelada"}
         </div>
 
         <h1 style={styles.title}>
@@ -98,17 +127,27 @@ useEffect(() => {
           {status === "loading" && "Cancelando tu reserva..."}
           {status === "ok" && "Reserva cancelada"}
           {status === "error" && "Hubo un problema"}
+          {status === "already" && "Reserva ya cancelada"}
         </h1>
 
-{reservation && (
-  <div style={{marginTop:20, marginBottom:20}}>
-    <p><b>Servicio:</b> {reservation.service}</p>
-    <p><b>Fecha:</b> {new Date(reservation.start_at).toLocaleString()}</p>
-    {reservation.location && (
-      <p><b>Dirección:</b> {reservation.location}</p>
-    )}
-  </div>
-)}
+        {reservation && (
+          <div style={styles.infoBox}>
+            <p style={styles.infoItem}>
+              <strong>Servicio:</strong> {reservation.service || "Reserva"}
+            </p>
+            <p style={styles.infoItem}>
+              <strong>Fecha:</strong>{" "}
+              {reservation.start_at
+                ? new Date(reservation.start_at).toLocaleString("es-CL")
+                : "-"}
+            </p>
+            {reservation.location && (
+              <p style={styles.infoItem}>
+                <strong>Dirección:</strong> {reservation.location}
+              </p>
+            )}
+          </div>
+        )}
 
         <p style={styles.description}>{message}</p>
 
@@ -131,6 +170,14 @@ useEffect(() => {
         )}
 
         {status === "ok" && (
+          <div style={styles.actions}>
+            <a href={safeRedirect} style={styles.primaryButton}>
+              Reservar otra hora
+            </a>
+          </div>
+        )}
+
+        {status === "already" && (
           <div style={styles.actions}>
             <a href={safeRedirect} style={styles.primaryButton}>
               Reservar otra hora
@@ -212,6 +259,20 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.1,
     fontWeight: 700,
     color: "#0f172a",
+  },
+  infoBox: {
+    marginTop: "20px",
+    marginBottom: "20px",
+    padding: "16px",
+    borderRadius: "16px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+  },
+  infoItem: {
+    margin: "0 0 8px 0",
+    color: "#334155",
+    fontSize: "15px",
+    lineHeight: 1.5,
   },
   description: {
     marginTop: "14px",
