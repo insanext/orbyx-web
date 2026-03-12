@@ -380,6 +380,48 @@ export default function Page() {
 
             {showForm && selectedSlot && (
 
+  <div
+    ref={formRef}
+    className="max-w-xl rounded-xl border bg-white p-5 shadow-sm"
+  >
+
+  {/* formulario */}
+
+  </div>
+
+)}
+
+{bookingSuccess && (
+  <div className="max-w-xl rounded-xl border border-green-200 bg-green-50 p-6 shadow-sm">
+
+    <h3 className="text-lg font-semibold text-green-700">
+      ✅ Reserva confirmada
+    </h3>
+
+    <p className="mt-2 text-sm text-green-700">
+      Tu reserva fue creada correctamente.
+    </p>
+
+    <p className="mt-1 text-sm text-green-700">
+      Te enviamos un correo con los detalles de tu cita.
+    </p>
+
+    <div className="mt-4 text-sm text-green-800">
+      <p>
+        <strong>Servicio:</strong> {selectedService?.name}
+      </p>
+
+      <p>
+        <strong>Fecha:</strong> {formatSelectedDate(selectedSlot.slot_start)}
+      </p>
+
+      <p>
+        <strong>Hora:</strong> {formatHour(selectedSlot.slot_start)}
+      </p>
+    </div>
+
+  </div>
+)}
               <div
                 ref={formRef}
                 className="max-w-xl rounded-xl border bg-white p-5 shadow-sm"
