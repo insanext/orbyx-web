@@ -78,11 +78,11 @@ export default function OrbyxLandingPage() {
 
   const LogoMain = () => (
     <div className="flex items-center">
-      <div className="rounded-3xl border border-white/10 bg-white px-5 py-4 shadow-2xl shadow-cyan-500/10">
+      <div className="rounded-2xl border border-white/10 bg-white px-4 py-3 shadow-xl shadow-cyan-500/10">
         <img
           src="/orbyx-logo-dark.png"
           alt="Orbyx Technologies"
-          className="h-14 w-auto object-contain sm:h-16"
+          className="h-10 w-auto object-contain sm:h-12"
         />
       </div>
     </div>
@@ -111,8 +111,8 @@ export default function OrbyxLandingPage() {
     <main className="min-h-screen bg-zinc-950 text-white">
       <section className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.18),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(168,85,247,0.14),transparent_25%)]" />
-        <div className="relative mx-auto max-w-7xl px-6 py-20 lg:px-8 lg:py-28">
-          <div className="grid items-center gap-14 lg:grid-cols-2">
+        <div className="relative mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-20">
+          <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
               <LogoMain />
 
@@ -120,11 +120,11 @@ export default function OrbyxLandingPage() {
                 Orbyx • Automatización de reservas con inteligencia artificial
               </div>
 
-              <h1 className="max-w-4xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-[56px]">
                 Automatiza las reservas de tu negocio con IA y deja de coordinar horas manualmente.
               </h1>
 
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300">
+              <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-300 sm:text-lg">
                 En simple: Orbyx permite que tus clientes reserven solos, mientras el sistema ordena horarios, confirma citas, envía recordatorios y prepara una base real para automatizaciones inteligentes.
               </p>
 
@@ -151,8 +151,8 @@ export default function OrbyxLandingPage() {
                 <span>Base para WhatsApp + IA</span>
               </div>
 
-              <div className="mt-8 grid max-w-3xl gap-4 md:grid-cols-3">
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div className="mt-8 grid max-w-2xl gap-4 md:grid-cols-3">
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
                   <p className="text-xs font-medium uppercase tracking-[0.22em] text-cyan-300">
                     1. El cliente entra
                   </p>
@@ -160,7 +160,7 @@ export default function OrbyxLandingPage() {
                     Ve tus servicios y selecciona el horario disponible que más le acomoda.
                   </p>
                 </div>
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
                   <p className="text-xs font-medium uppercase tracking-[0.22em] text-cyan-300">
                     2. Orbyx automatiza
                   </p>
@@ -168,7 +168,7 @@ export default function OrbyxLandingPage() {
                     La plataforma confirma la reserva, bloquea el espacio y envía la información necesaria.
                   </p>
                 </div>
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
                   <p className="text-xs font-medium uppercase tracking-[0.22em] text-cyan-300">
                     3. Tú operas mejor
                   </p>
@@ -179,13 +179,13 @@ export default function OrbyxLandingPage() {
               </div>
             </div>
 
-            <div className="relative">
+            <div className="relative max-w-xl lg:ml-auto">
               <div className="rounded-[28px] border border-white/10 bg-white/5 p-3 shadow-2xl shadow-cyan-500/10 backdrop-blur">
                 <div className="rounded-[24px] border border-white/10 bg-zinc-900 p-5">
                   <div className="mb-4 flex items-center justify-between">
                     <div>
                       <p className="text-sm text-zinc-400">Producto estrella</p>
-                      <h3 className="text-xl font-semibold">Reserva automatizada con IA</h3>
+                      <h3 className="text-lg font-semibold sm:text-xl">Reserva automatizada con IA</h3>
                     </div>
                     <div className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs text-emerald-300">
                       Disponible
@@ -198,7 +198,7 @@ export default function OrbyxLandingPage() {
                       <p className="mt-1 font-medium">Toma reservas, ordena disponibilidad y automatiza confirmaciones</p>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-2.5">
                       {['Lun 12', 'Mar 13', 'Mié 14'].map((day) => (
                         <div
                           key={day}
@@ -209,7 +209,7 @@ export default function OrbyxLandingPage() {
                       ))}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2.5">
                       {['09:00', '10:30', '12:00', '16:30'].map((time) => (
                         <div
                           key={time}
