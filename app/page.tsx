@@ -20,21 +20,51 @@ export default function OrbyxLandingPage() {
 
   const plans = [
     {
-      name: "Demo",
-      price: "Gratis",
-      desc: "Para probar la experiencia y entender cómo funciona Orbyx.",
-      items: ["Página de reservas", "Confirmación automática", "Cancelación simple", "Vista profesional"],
+      name: "Starter",
+      price: "$9.990",
+      period: "/mes",
+      desc: "Para independientes o negocios pequeños que quieren comenzar a automatizar sus reservas.",
+      items: [
+        "1 página de reservas",
+        "Confirmaciones automáticas",
+        "Cancelación con enlace seguro",
+        "Horarios y servicios configurables",
+      ],
       primary: false,
-      cta: "Ver demo",
-      href: "/demo",
+      badge: "Ideal para comenzar",
+      cta: "Elegir Starter",
+      href: "#",
     },
     {
       name: "Business",
-      price: "Próximamente",
-      desc: "Para negocios que quieren automatizar reservas con una imagen más profesional.",
-      items: ["Todo lo de Demo", "Recordatorios", "Branding del negocio", "Base para WhatsApp + IA"],
+      price: "$19.990",
+      period: "/mes",
+      desc: "Para negocios que quieren una imagen más profesional y una operación más ordenada.",
+      items: [
+        "Todo lo de Starter",
+        "Recordatorios automáticos",
+        "Branding del negocio",
+        "Mejor experiencia comercial",
+      ],
       primary: true,
-      cta: "Comenzar",
+      badge: "Recomendado",
+      cta: "Elegir Business",
+      href: "#",
+    },
+    {
+      name: "Scale",
+      price: "$39.990",
+      period: "/mes",
+      desc: "Para negocios que quieren crecer con más automatización, integraciones y visión de IA.",
+      items: [
+        "Todo lo de Business",
+        "Base para WhatsApp + IA",
+        "Integraciones futuras",
+        "Prioridad en nuevas funciones",
+      ],
+      primary: false,
+      badge: "Más proyección",
+      cta: "Elegir Scale",
       href: "#",
     },
   ];
@@ -54,7 +84,7 @@ export default function OrbyxLandingPage() {
               </div>
 
               <div className="mt-5 inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-sm font-medium text-sky-700">
-                Automatización de reservas con IA
+                Agendamiento automático impulsado por IA
               </div>
 
               <motion.h1
@@ -63,7 +93,7 @@ export default function OrbyxLandingPage() {
                 transition={{ duration: 0.55 }}
                 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-[54px]"
               >
-                Tus clientes reservan solos. Tu negocio ahorra tiempo.
+                Automatiza el agendamiento de tu negocio con inteligencia artificial.
               </motion.h1>
 
               <motion.p
@@ -72,7 +102,7 @@ export default function OrbyxLandingPage() {
                 transition={{ duration: 0.55, delay: 0.08 }}
                 className="mt-5 max-w-2xl text-lg leading-8 text-slate-600"
               >
-                Orbyx muestra horarios disponibles, toma reservas online y confirma automáticamente. En simple: menos mensajes, menos coordinación manual y una agenda mucho más ordenada.
+                Orbyx permite que tus clientes agenden en línea mientras la plataforma organiza horarios, confirma citas automáticamente y mantiene tu agenda siempre ordenada. El resultado: menos coordinación manual y una operación mucho más eficiente.
               </motion.p>
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -226,11 +256,11 @@ export default function OrbyxLandingPage() {
             Una oferta clara, simple y profesional.
           </h2>
           <p className="mt-4 text-lg leading-8 text-slate-600">
-            Primero pruebas la experiencia. Luego escalas cuando quieras usar Orbyx en serio en tu negocio.
+            Estos planes son visuales por ahora. La idea es mostrar una oferta clara, profesional y fácil de entender desde el primer vistazo.
           </p>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => (
             <motion.div
               key={plan.name}
@@ -240,15 +270,16 @@ export default function OrbyxLandingPage() {
               transition={{ duration: 0.4 }}
               className={`rounded-3xl border p-8 ${plan.primary ? "border-sky-300 bg-sky-50 shadow-md" : "border-slate-200 bg-white shadow-sm"}`}
             >
-              {plan.primary ? (
-                <div className="mb-5 rounded-t-2xl bg-sky-600 px-4 py-2 text-center text-sm font-semibold text-white">
-                  Recomendado
-                </div>
-              ) : null}
+              <div className={`mb-5 rounded-t-2xl px-4 py-2 text-center text-sm font-semibold ${plan.primary ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-700"}`}>
+                {plan.badge}
+              </div>
 
               <h3 className="text-2xl font-semibold">{plan.name}</h3>
               <p className="mt-3 text-slate-600">{plan.desc}</p>
-              <div className="mt-6 text-4xl font-semibold text-slate-900">{plan.price}</div>
+              <div className="mt-6 flex items-end gap-1 text-slate-900">
+                <span className="text-4xl font-semibold">{plan.price}</span>
+                <span className="pb-1 text-sm text-slate-500">{plan.period}</span>
+              </div>
 
               <div className="mt-6 space-y-3">
                 {plan.items.map((item) => (
