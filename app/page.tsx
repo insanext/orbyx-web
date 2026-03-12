@@ -102,7 +102,7 @@ export default function OrbyxLandingPage() {
                 transition={{ duration: 0.55, delay: 0.08 }}
                 className="mt-5 max-w-2xl text-lg leading-8 text-slate-600"
               >
-                Orbyx permite que tus clientes agenden en línea mientras la plataforma organiza horarios, confirma citas automáticamente y mantiene tu agenda siempre ordenada. El resultado: menos coordinación manual y una operación mucho más eficiente.
+                Orbyx usa inteligencia artificial para gestionar tus reservas: tus clientes pueden agendar en línea o conversar por WhatsApp con la IA, que responde, propone horarios disponibles y agenda por ti automáticamente. El resultado: menos coordinación manual, respuestas más rápidas y una agenda siempre ordenada.
               </motion.p>
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
