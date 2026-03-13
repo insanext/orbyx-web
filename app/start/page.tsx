@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type BusinessData = {
   businessName: string;
@@ -63,6 +64,20 @@ function buildTime(hour: number, minute: number) {
 
 function sanitizePhone(value: string) {
   return value.replace(/[^\d+\s()-]/g, "");
+}
+
+function dayValueToNumber(value: string) {
+  const map: Record<string, number> = {
+    sunday: 0,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+  };
+
+  return map[value] ?? 0;
 }
 
 type TimeFieldProps = {
@@ -182,6 +197,7 @@ function SpecialDateCard({
 }
 
 export default function StartPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
 
   const [business, setBusiness] = useState<BusinessData>({
@@ -218,6 +234,9 @@ export default function StartPage() {
       endTime: "13:00",
     } as SpecialDayConfig,
   });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const slugPreview = useMemo(() => {
     return (
@@ -306,6 +325,91 @@ export default function StartPage() {
 
   function prevStep() {
     setStep((prev) => Math.max(prev - 1, 1));
+  }
+
+  async function handleFinishOnboarding() {
+    try {
+      setIsSubmitting(true);
+      setSubmitError("");
+
+      const weeklyHours = weeklySchedule.map((day) => ({
+        day_of_week: dayValueToNumber(day.value),
+        is_open: day.enabled,
+        start_time: day.enabled ? day.startTime : null,
+        end_time: day.enabled ? day.endTime : null,
+      }));
+
+      const currentYear = new Date().getFullYear();
+
+      const specialDatesPayload = [
+        {
+          date: `${currentYear}-12-24`,
+          is_open: specialDates.christmasEve.enabled,
+          start_time: specialDates.christmasEve.enabled
+            ? specialDates.christmasEve.startTime
+            : null,
+          end_time: specialDates.christmasEve.enabled
+            ? specialDates.christmasEve.endTime
+            : null,
+        },
+        {
+          date: `${currentYear}-12-31`,
+          is_open: specialDates.newYearsEve.enabled,
+          start_time: specialDates.newYearsEve.enabled
+            ? specialDates.newYearsEve.startTime
+            : null,
+          end_time: specialDates.newYearsEve.enabled
+            ? specialDates.newYearsEve.endTime
+            : null,
+        },
+        {
+          date: `${currentYear}-09-17`,
+          is_open: specialDates.nationalHolidayEve.enabled,
+          start_time: specialDates.nationalHolidayEve.enabled
+            ? specialDates.nationalHolidayEve.startTime
+            : null,
+          end_time: specialDates.nationalHolidayEve.enabled
+            ? specialDates.nationalHolidayEve.endTime
+            : null,
+        },
+      ];
+
+      const response = await fetch("https://orbyx-backend.onrender.com/onboarding/setup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          business: {
+            name: business.businessName,
+            slug: slugPreview,
+            contact_phone: business.phone,
+            address: business.category,
+          },
+          service: {
+            name: service.serviceName,
+            duration_minutes: Number(service.duration || 30),
+            buffer_before_minutes: 0,
+            buffer_after_minutes: 0,
+            price: Number(service.price || 0),
+          },
+          weekly_hours: weeklyHours,
+          special_dates: specialDatesPayload,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo completar el onboarding");
+      }
+
+      router.push(`/${data.slug}`);
+    } catch (error: any) {
+      setSubmitError(error?.message || "Ocurrió un error al guardar la configuración");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -778,6 +882,12 @@ export default function StartPage() {
                   </div>
                 </div>
 
+                {submitError ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {submitError}
+                  </div>
+                ) : null}
+
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <a
                     href="/"
@@ -788,9 +898,11 @@ export default function StartPage() {
 
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-700"
+                    onClick={handleFinishOnboarding}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Continuar después
+                    {isSubmitting ? "Guardando..." : "Finalizar y crear mi página"}
                   </button>
                 </div>
               </section>
