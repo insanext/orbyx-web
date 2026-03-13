@@ -38,20 +38,75 @@ const INITIAL_WEEKLY_SCHEDULE: WeeklyScheduleItem[] = [
   { label: "Domingo", value: "sunday", enabled: false, startTime: "09:00", endTime: "14:00" },
 ];
 
+function pad2(value: number | string) {
+  return String(value).padStart(2, "0");
+}
+
+function parseTime(value: string) {
+  const [hourStr = "00", minuteStr = "00"] = value.split(":");
+  const hour = Number(hourStr);
+  const minute = Number(minuteStr);
+
+  return {
+    hour: Number.isNaN(hour) ? 0 : hour,
+    minute: Number.isNaN(minute) ? 0 : minute,
+  };
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function buildTime(hour: number, minute: number) {
+  return `${pad2(clamp(hour, 0, 23))}:${pad2(clamp(minute, 0, 59))}`;
+}
+
 type TimeFieldProps = {
   value: string;
   onChange: (value: string) => void;
 };
 
 function TimeField({ value, onChange }: TimeFieldProps) {
+  const { hour, minute } = parseTime(value);
+
+  function updateHour(raw: string) {
+    if (raw === "") {
+      onChange(buildTime(0, minute));
+      return;
+    }
+    onChange(buildTime(Number(raw), minute));
+  }
+
+  function updateMinute(raw: string) {
+    if (raw === "") {
+      onChange(buildTime(hour, 0));
+      return;
+    }
+    onChange(buildTime(hour, Number(raw)));
+  }
+
   return (
-    <input
-      type="time"
-      step={60}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-    />
+    <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-3">
+      <input
+        type="number"
+        min={0}
+        max={23}
+        value={hour}
+        onChange={(e) => updateHour(e.target.value)}
+        className="w-20 rounded-lg border border-slate-200 px-3 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+      />
+
+      <span className="text-lg font-semibold text-slate-500">:</span>
+
+      <input
+        type="number"
+        min={0}
+        max={59}
+        value={minute}
+        onChange={(e) => updateMinute(e.target.value)}
+        className="w-20 rounded-lg border border-slate-200 px-3 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+      />
+    </div>
   );
 }
 
