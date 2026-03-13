@@ -1,330 +1,799 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useMemo, useState } from "react";
 
-export default function OrbyxLandingPage() {
-  const cards = [
-    {
-      title: "Tus clientes reservan solos",
-      text: "Ya no necesitas coordinar cada hora por WhatsApp, llamada o mensaje.",
-    },
-    {
-      title: "Orbyx organiza tu agenda",
-      text: "Muestra horarios disponibles, bloquea espacios ocupados y evita desorden.",
-    },
-    {
-      title: "Confirma automáticamente",
-      text: "La reserva queda lista y el cliente recibe la información sin trabajo manual.",
-    },
-  ];
+type BusinessData = {
+  businessName: string;
+  category: string;
+  phone: string;
+};
 
-  const plans = [
-    {
-      name: "Starter",
-      price: "$9.990",
-      period: "/mes",
-      desc: "Para independientes o negocios pequeños que quieren comenzar a automatizar sus reservas.",
-      items: [
-        "1 página de reservas",
-        "Confirmaciones automáticas",
-        "Cancelación con enlace seguro",
-        "Horarios y servicios configurables",
-      ],
-      primary: false,
-      badge: "Ideal para comenzar",
-      cta: "Elegir Starter",
-      href: "#",
-    },
-    {
-      name: "Business",
-      price: "$19.990",
-      period: "/mes",
-      desc: "Para negocios que quieren una imagen más profesional y una operación más ordenada.",
-      items: [
-        "Todo lo de Starter",
-        "Recordatorios automáticos",
-        "Branding del negocio",
-        "Mejor experiencia comercial",
-      ],
-      primary: true,
-      badge: "Recomendado",
-      cta: "Elegir Business",
-      href: "#",
-    },
-    {
-      name: "Scale",
-      price: "$39.990",
-      period: "/mes",
-      desc: "Para negocios que quieren crecer con más automatización, integraciones y visión de IA.",
-      items: [
-        "Todo lo de Business",
-        "Base para WhatsApp + IA",
-        "Integraciones futuras",
-        "Prioridad en nuevas funciones",
-      ],
-      primary: false,
-      badge: "Más proyección",
-      cta: "Elegir Scale",
-      href: "#",
-    },
-  ];
+type ServiceData = {
+  serviceName: string;
+  duration: string;
+  price: string;
+};
+
+type WeeklyScheduleItem = {
+  label: string;
+  value: string;
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+};
+
+type SpecialDayConfig = {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+};
+
+const INITIAL_WEEKLY_SCHEDULE: WeeklyScheduleItem[] = [
+  { label: "Lunes", value: "monday", enabled: true, startTime: "08:00", endTime: "18:00" },
+  { label: "Martes", value: "tuesday", enabled: true, startTime: "08:00", endTime: "18:00" },
+  { label: "Miércoles", value: "wednesday", enabled: true, startTime: "08:00", endTime: "18:00" },
+  { label: "Jueves", value: "thursday", enabled: true, startTime: "08:00", endTime: "18:00" },
+  { label: "Viernes", value: "friday", enabled: true, startTime: "08:00", endTime: "16:00" },
+  { label: "Sábado", value: "saturday", enabled: true, startTime: "09:00", endTime: "14:00" },
+  { label: "Domingo", value: "sunday", enabled: false, startTime: "09:00", endTime: "14:00" },
+];
+
+const TIME_OPTIONS = [
+  "06:00",
+  "06:30",
+  "07:00",
+  "07:30",
+  "08:00",
+  "08:30",
+  "09:00",
+  "09:30",
+  "10:00",
+  "10:30",
+  "11:00",
+  "11:30",
+  "12:00",
+  "12:30",
+  "13:00",
+  "13:30",
+  "14:00",
+  "14:30",
+  "15:00",
+  "15:30",
+  "16:00",
+  "16:30",
+  "17:00",
+  "17:30",
+  "18:00",
+  "18:30",
+  "19:00",
+  "19:30",
+  "20:00",
+  "20:30",
+  "21:00",
+  "21:30",
+  "22:00",
+];
+
+export default function StartPage() {
+  const [step, setStep] = useState(1);
+
+  const [business, setBusiness] = useState<BusinessData>({
+    businessName: "",
+    category: "",
+    phone: "",
+  });
+
+  const [service, setService] = useState<ServiceData>({
+    serviceName: "",
+    duration: "",
+    price: "",
+  });
+
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklyScheduleItem[]>(
+    INITIAL_WEEKLY_SCHEDULE
+  );
+
+  const [specialDates, setSpecialDates] = useState({
+    disableHolidays: true,
+    nationalHolidayEve: {
+      enabled: false,
+      startTime: "09:00",
+      endTime: "14:00",
+    } as SpecialDayConfig,
+    christmasEve: {
+      enabled: false,
+      startTime: "09:00",
+      endTime: "13:00",
+    } as SpecialDayConfig,
+    newYearsEve: {
+      enabled: false,
+      startTime: "09:00",
+      endTime: "13:00",
+    } as SpecialDayConfig,
+  });
+
+  const slugPreview = useMemo(() => {
+    return (
+      business.businessName
+        .toLowerCase()
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-") || "tunegocio"
+    );
+  }, [business.businessName]);
+
+  function updateWeeklyDay(
+    dayValue: string,
+    field: keyof WeeklyScheduleItem,
+    value: boolean | string
+  ) {
+    setWeeklySchedule((prev) =>
+      prev.map((day) =>
+        day.value === dayValue ? { ...day, [field]: value } : day
+      )
+    );
+  }
+
+  function updateSpecialDate(
+    key: "nationalHolidayEve" | "christmasEve" | "newYearsEve",
+    field: keyof SpecialDayConfig,
+    value: boolean | string
+  ) {
+    setSpecialDates((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        [field]: value,
+      },
+    }));
+  }
+
+  function canContinueStep1() {
+    return (
+      business.businessName.trim() !== "" &&
+      business.category.trim() !== "" &&
+      business.phone.trim() !== ""
+    );
+  }
+
+  function canContinueStep2() {
+    return service.serviceName.trim() !== "" && service.duration.trim() !== "";
+  }
+
+  function canContinueStep3() {
+    const enabledDays = weeklySchedule.filter((day) => day.enabled);
+    if (enabledDays.length === 0) return false;
+
+    return enabledDays.every(
+      (day) => day.startTime.trim() !== "" && day.endTime.trim() !== ""
+    );
+  }
+
+  function canContinueStep4() {
+    const specialConfigs = [
+      specialDates.nationalHolidayEve,
+      specialDates.christmasEve,
+      specialDates.newYearsEve,
+    ];
+
+    return specialConfigs.every((item) => {
+      if (!item.enabled) return true;
+      return item.startTime.trim() !== "" && item.endTime.trim() !== "";
+    });
+  }
+
+  function nextStep() {
+    if (step === 1 && !canContinueStep1()) return;
+    if (step === 2 && !canContinueStep2()) return;
+    if (step === 3 && !canContinueStep3()) return;
+    if (step === 4 && !canContinueStep4()) return;
+
+    setStep((prev) => Math.min(prev + 1, 5));
+  }
+
+  function prevStep() {
+    setStep((prev) => Math.max(prev - 1, 1));
+  }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="relative overflow-hidden border-b border-slate-200 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.12),transparent_35%),radial-gradient(circle_at_100%_0%,rgba(59,130,246,0.10),transparent_30%),linear-gradient(to_bottom,#ffffff,#f8fafc)]">
-        <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-16">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
-            <div>
-              <div className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <img
-                  src="/orbyx-logo-dark.png"
-                  alt="Orbyx Technologies"
-                  className="h-10 w-auto object-contain sm:h-12"
-                />
+    <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="mb-6">
+          <a
+            href="/"
+            className="text-sm font-medium text-sky-700 transition hover:text-sky-800"
+          >
+            ← Volver a Orbyx
+          </a>
+        </div>
+
+        <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <div className="border-b border-slate-200 bg-gradient-to-r from-sky-50 to-white px-6 py-6 sm:px-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
+                  Onboarding Orbyx
+                </p>
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                  Configura tu negocio
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                  Deja lista la base de tu sistema de reservas en pocos pasos.
+                </p>
               </div>
 
-              <div className="mt-5 inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-sm font-medium text-sky-700">
-                Agendamiento automático impulsado por IA
-              </div>
-
-              <motion.h1
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55 }}
-                className="mt-5 max-w-3xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-[54px]"
-              >
-                Automatiza el agendamiento de tu negocio con inteligencia artificial.
-              </motion.h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.08 }}
-                className="mt-5 max-w-2xl text-lg leading-8 text-slate-600"
-              >
-                Orbyx usa inteligencia artificial para gestionar tus reservas: tus clientes pueden agendar en línea o conversar por WhatsApp con la IA, que responde, propone horarios disponibles y agenda por ti automáticamente. El resultado: menos coordinación manual, respuestas más rápidas y una agenda siempre ordenada.
-              </motion.p>
-
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <a
-                  href="/demo"
-                  className="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-sky-700"
-                >
-                  Ver demo
-                </a>
-                <a
-                  href="#pricing"
-                  className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
-                >
-                  Ver precios
-                </a>
-              </div>
-
-              <div className="mt-7 flex flex-wrap gap-4 text-sm text-slate-600">
-                <span>Menos WhatsApp</span>
-                <span>•</span>
-                <span>Más orden</span>
-                <span>•</span>
-                <span>Confirmación automática</span>
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+                Paso <span className="font-semibold text-slate-900">{step}</span> de 5
               </div>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.12 }}
-              className="relative max-w-xl lg:ml-auto"
-            >
-              <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-slate-500">Producto estrella</p>
-                      <h3 className="text-lg font-semibold sm:text-xl">Reserva automatizada con IA</h3>
-                    </div>
-                    <div className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                      Activo
-                    </div>
+            <div className="mt-5 grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5].map((item) => (
+                <div
+                  key={item}
+                  className={`h-2 rounded-full ${
+                    item <= step ? "bg-sky-600" : "bg-slate-200"
+                  }`}
+                />
+              ))}
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-slate-500 sm:grid-cols-5">
+              <span className={step === 1 ? "font-semibold text-sky-700" : ""}>
+                Negocio
+              </span>
+              <span className={step === 2 ? "font-semibold text-sky-700" : ""}>
+                Servicio
+              </span>
+              <span className={step === 3 ? "font-semibold text-sky-700" : ""}>
+                Horarios
+              </span>
+              <span className={step === 4 ? "font-semibold text-sky-700" : ""}>
+                Fechas especiales
+              </span>
+              <span className={step === 5 ? "font-semibold text-sky-700" : ""}>
+                Resumen
+              </span>
+            </div>
+          </div>
+
+          <div className="px-6 py-6 sm:px-8 sm:py-8">
+            {step === 1 && (
+              <section className="space-y-5">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    Datos del negocio
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Esta información se usará para preparar tu página pública.
+                  </p>
+                </div>
+
+                <div className="grid gap-5">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      Nombre del negocio
+                    </label>
+                    <input
+                      type="text"
+                      value={business.businessName}
+                      onChange={(e) =>
+                        setBusiness((prev) => ({
+                          ...prev,
+                          businessName: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: Juan Barber"
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                    />
                   </div>
 
-                  <div className="grid gap-3">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <p className="text-sm text-slate-500">Qué hace Orbyx</p>
-                      <p className="mt-1 font-medium text-slate-800">Muestra horarios, toma la reserva y la confirma automáticamente.</p>
-                    </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      Rubro
+                    </label>
+                    <input
+                      type="text"
+                      value={business.category}
+                      onChange={(e) =>
+                        setBusiness((prev) => ({
+                          ...prev,
+                          category: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: Barbería"
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                    />
+                  </div>
 
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {['Lun 12', 'Mar 13', 'Mié 14'].map((day) => (
-                        <div key={day} className="rounded-2xl border border-slate-200 bg-white p-3 text-center text-sm font-medium text-slate-700">
-                          {day}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      Teléfono de contacto
+                    </label>
+                    <input
+                      type="tel"
+                      value={business.phone}
+                      onChange={(e) =>
+                        setBusiness((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: +56 9 1234 5678"
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-700">
+                    Vista previa de tu página
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    orbyx.cl/
+                    <span className="font-semibold text-sky-700">{slugPreview}</span>
+                  </p>
+                </div>
+              </section>
+            )}
+
+            {step === 2 && (
+              <section className="space-y-5">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    Crea tu primer servicio
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Este será el primer servicio que tus clientes podrán reservar. Más adelante podrás agregar todos los servicios que quieras.
+                  </p>
+                </div>
+
+                <div className="grid gap-5">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      Nombre del servicio
+                    </label>
+                    <input
+                      type="text"
+                      value={service.serviceName}
+                      onChange={(e) =>
+                        setService((prev) => ({
+                          ...prev,
+                          serviceName: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: Corte de cabello"
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      Duración (minutos)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={service.duration}
+                      onChange={(e) =>
+                        setService((prev) => ({
+                          ...prev,
+                          duration: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: 30"
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      Precio <span className="text-slate-400">(opcional)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={service.price}
+                      onChange={(e) =>
+                        setService((prev) => ({
+                          ...prev,
+                          price: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: 10000"
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {step === 3 && (
+              <section className="space-y-5">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    Define tus horarios de atención
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Configura el horario de cada día según cómo realmente atiendes.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {weeklySchedule.map((day) => (
+                    <div
+                      key={day.value}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <div className="grid gap-4 md:grid-cols-[180px_1fr] md:items-center">
+                        <div className="flex items-center gap-3">
+                          <input
+                            id={day.value}
+                            type="checkbox"
+                            checked={day.enabled}
+                            onChange={(e) =>
+                              updateWeeklyDay(day.value, "enabled", e.target.checked)
+                            }
+                            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                          />
+                          <label
+                            htmlFor={day.value}
+                            className="text-sm font-medium text-slate-800"
+                          >
+                            {day.label}
+                          </label>
+                        </div>
+
+                        {day.enabled ? (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                                Hora inicio
+                              </label>
+                              <select
+                                value={day.startTime}
+                                onChange={(e) =>
+                                  updateWeeklyDay(day.value, "startTime", e.target.value)
+                                }
+                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                              >
+                                {TIME_OPTIONS.map((time) => (
+                                  <option key={time} value={time}>
+                                    {time}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                                Hora fin
+                              </label>
+                              <select
+                                value={day.endTime}
+                                onChange={(e) =>
+                                  updateWeeklyDay(day.value, "endTime", e.target.value)
+                                }
+                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                              >
+                                {TIME_OPTIONS.map((time) => (
+                                  <option key={time} value={time}>
+                                    {time}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-slate-500">Cerrado</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {step === 4 && (
+              <section className="space-y-5">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    Fechas especiales
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Aquí puedes dejar reglas especiales para feriados y vísperas.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="disableHolidays"
+                      type="checkbox"
+                      checked={specialDates.disableHolidays}
+                      onChange={(e) =>
+                        setSpecialDates((prev) => ({
+                          ...prev,
+                          disableHolidays: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    <label
+                      htmlFor="disableHolidays"
+                      className="text-sm font-medium text-slate-800"
+                    >
+                      No atender feriados
+                    </label>
+                  </div>
+                </div>
+
+                <SpecialDateCard
+                  title="Víspera de Fiestas Patrias"
+                  config={specialDates.nationalHolidayEve}
+                  onToggle={(checked) =>
+                    updateSpecialDate("nationalHolidayEve", "enabled", checked)
+                  }
+                  onStartChange={(value) =>
+                    updateSpecialDate("nationalHolidayEve", "startTime", value)
+                  }
+                  onEndChange={(value) =>
+                    updateSpecialDate("nationalHolidayEve", "endTime", value)
+                  }
+                />
+
+                <SpecialDateCard
+                  title="Víspera de Navidad"
+                  config={specialDates.christmasEve}
+                  onToggle={(checked) =>
+                    updateSpecialDate("christmasEve", "enabled", checked)
+                  }
+                  onStartChange={(value) =>
+                    updateSpecialDate("christmasEve", "startTime", value)
+                  }
+                  onEndChange={(value) =>
+                    updateSpecialDate("christmasEve", "endTime", value)
+                  }
+                />
+
+                <SpecialDateCard
+                  title="Víspera de Año Nuevo"
+                  config={specialDates.newYearsEve}
+                  onToggle={(checked) =>
+                    updateSpecialDate("newYearsEve", "enabled", checked)
+                  }
+                  onStartChange={(value) =>
+                    updateSpecialDate("newYearsEve", "startTime", value)
+                  }
+                  onEndChange={(value) =>
+                    updateSpecialDate("newYearsEve", "endTime", value)
+                  }
+                />
+              </section>
+            )}
+
+            {step === 5 && (
+              <section className="space-y-6">
+                <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                    Configuración lista
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                    Tu negocio ya tiene una base configurada
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                    Ya definiste tus datos principales, tu primer servicio, tus horarios y tus fechas especiales.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                    <p className="text-sm text-slate-500">Negocio</p>
+                    <p className="mt-1 font-medium text-slate-900">
+                      {business.businessName || "Tu negocio"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">{business.category}</p>
+                    <p className="mt-1 text-sm text-slate-600">{business.phone}</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                    <p className="text-sm text-slate-500">Primer servicio</p>
+                    <p className="mt-1 font-medium text-slate-900">
+                      {service.serviceName || "Servicio"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {service.duration || "0"} min
+                      {service.price ? ` · $${service.price}` : " · Precio opcional"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-2">
+                    <p className="text-sm text-slate-500">Horarios semanales</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {weeklySchedule.map((day) => (
+                        <div
+                          key={day.value}
+                          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                        >
+                          <p className="text-sm font-medium text-slate-800">
+                            {day.label}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {day.enabled
+                              ? `${day.startTime} - ${day.endTime}`
+                              : "Cerrado"}
+                          </p>
                         </div>
                       ))}
                     </div>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {['09:00', '10:30', '12:00', '16:30'].map((time, i) => (
-                        <motion.div
-                          key={time}
-                          initial={{ opacity: 0.6, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.35, delay: 0.18 + i * 0.06 }}
-                          className="rounded-2xl border border-sky-200 bg-sky-50 p-3 text-center text-sm font-medium text-sky-800"
-                        >
-                          {time}
-                        </motion.div>
-                      ))}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-2">
+                    <p className="text-sm text-slate-500">Fechas especiales</p>
+                    <div className="mt-3 space-y-2 text-sm text-slate-700">
+                      <p>
+                        Feriados:{" "}
+                        <span className="font-medium">
+                          {specialDates.disableHolidays ? "No atender" : "Atención normal"}
+                        </span>
+                      </p>
+
+                      <p>
+                        Víspera de Fiestas Patrias:{" "}
+                        <span className="font-medium">
+                          {specialDates.nationalHolidayEve.enabled
+                            ? `${specialDates.nationalHolidayEve.startTime} - ${specialDates.nationalHolidayEve.endTime}`
+                            : "No configurada"}
+                        </span>
+                      </p>
+
+                      <p>
+                        Víspera de Navidad:{" "}
+                        <span className="font-medium">
+                          {specialDates.christmasEve.enabled
+                            ? `${specialDates.christmasEve.startTime} - ${specialDates.christmasEve.endTime}`
+                            : "No configurada"}
+                        </span>
+                      </p>
+
+                      <p>
+                        Víspera de Año Nuevo:{" "}
+                        <span className="font-medium">
+                          {specialDates.newYearsEve.enabled
+                            ? `${specialDates.newYearsEve.startTime} - ${specialDates.newYearsEve.endTime}`
+                            : "No configurada"}
+                        </span>
+                      </p>
                     </div>
+                  </div>
 
-                    <motion.div
-                      initial={{ opacity: 0.7, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.4, delay: 0.42 }}
-                      className="rounded-2xl bg-slate-900 px-4 py-3 text-center text-sm font-medium text-white"
-                    >
-                      Reserva confirmada automáticamente
-                    </motion.div>
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5 lg:col-span-2">
+                    <p className="text-sm text-slate-500">Vista previa de tu link</p>
+                    <p className="mt-1 font-medium text-sky-700">
+                      orbyx.cl/{slugPreview}
+                    </p>
                   </div>
                 </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <a
+                    href="/"
+                    className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
+                  >
+                    Volver al inicio
+                  </a>
+
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-700"
+                  >
+                    Continuar después
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {step < 5 && (
+              <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-between">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  disabled={step === 1}
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Volver
+                </button>
+
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-700"
+                >
+                  {step === 4 ? "Ver resumen" : "Continuar"}
+                </button>
               </div>
-            </motion.div>
+            )}
           </div>
         </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Cómo funciona</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Una forma clara y moderna de gestionar reservas.
-          </h2>
-          <p className="mt-4 text-lg leading-8 text-slate-600">
-            El cliente entra, reserva solo y Orbyx deja tu agenda ordenada sin que tengas que ir coordinando una por una.
-          </p>
-        </div>
-
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {cards.map((card, index) => (
-            <motion.div
-              key={card.title}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.06 }}
-              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-            >
-              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">
-                0{index + 1}
-              </div>
-              <h3 className="text-xl font-semibold">{card.title}</h3>
-              <p className="mt-3 leading-7 text-slate-600">{card.text}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      <section className="border-y border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Impacto real</p>
-              <h3 className="mt-3 text-2xl font-semibold">Lo que resuelve Orbyx</h3>
-              <div className="mt-6 space-y-3 text-slate-700">
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">Evita coordinar manualmente cada reserva</div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">Reduce errores y dobles agendamientos</div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">Entrega una imagen más profesional</div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-sky-200 bg-sky-50 p-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Ideal para</p>
-              <h3 className="mt-3 text-2xl font-semibold">Negocios que quieren ahorrar tiempo y vender mejor</h3>
-              <p className="mt-4 leading-7 text-slate-700">
-                Barberías, clínicas, consultas, profesionales independientes y cualquier negocio que hoy coordine horas por mensaje y quiera verse más moderno.
-              </p>
-              <div className="mt-6 inline-flex rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
-                Base para Google Calendar, WhatsApp e IA
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="pricing" className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Precios</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Una oferta clara, simple y profesional.
-          </h2>
-          <p className="mt-4 text-lg leading-8 text-slate-600">
-            Estos planes son visuales por ahora. La idea es mostrar una oferta clara, profesional y fácil de entender desde el primer vistazo.
-          </p>
-        </div>
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          {plans.map((plan) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4 }}
-              className={`rounded-3xl border p-8 ${plan.primary ? "border-sky-300 bg-sky-50 shadow-md" : "border-slate-200 bg-white shadow-sm"}`}
-            >
-              <div className={`mb-5 rounded-t-2xl px-4 py-2 text-center text-sm font-semibold ${plan.primary ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-700"}`}>
-                {plan.badge}
-              </div>
-
-              <h3 className="text-2xl font-semibold">{plan.name}</h3>
-              <p className="mt-3 text-slate-600">{plan.desc}</p>
-              <div className="mt-6 flex items-end gap-1 text-slate-900">
-                <span className="text-4xl font-semibold">{plan.price}</span>
-                <span className="pb-1 text-sm text-slate-500">{plan.period}</span>
-              </div>
-
-              <div className="mt-6 space-y-3">
-                {plan.items.map((item) => (
-                  <div key={item} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-700">
-                    {item}
-                  </div>
-                ))}
-              </div>
-
-              <a
-                href={plan.href}
-                className={`mt-7 inline-flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-medium transition ${plan.primary ? "bg-sky-600 text-white hover:bg-sky-700" : "border border-slate-300 bg-white text-slate-800 hover:bg-slate-100"}`}
-              >
-                {plan.cta}
-              </a>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      <section className="px-6 pb-14 lg:px-8">
-        <div className="mx-auto max-w-6xl rounded-[32px] border border-slate-200 bg-slate-900 p-8 text-center text-white shadow-[0_20px_60px_rgba(15,23,42,0.14)] sm:p-12">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">Comenzar</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
-            Haz que reservar sea fácil para tu cliente y simple para tu negocio.
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-300">
-            Prueba la demo y entiende en pocos minutos cómo Orbyx automatiza reservas con IA de una forma clara y profesional.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a
-              href="/demo"
-              className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-100"
-            >
-              Probar demo
-            </a>
-            <a
-              href="mailto:contacto@orbyx.cl"
-              className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/15"
-            >
-              Hablar con ventas
-            </a>
-          </div>
-        </div>
-      </section>
+      </div>
     </main>
+  );
+}
+
+type SpecialDateCardProps = {
+  title: string;
+  config: SpecialDayConfig;
+  onToggle: (checked: boolean) => void;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+};
+
+function SpecialDateCard({
+  title,
+  config,
+  onToggle,
+  onStartChange,
+  onEndChange,
+}: SpecialDateCardProps) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr] md:items-center">
+        <div className="flex items-center gap-3">
+          <input
+            id={title}
+            type="checkbox"
+            checked={config.enabled}
+            onChange={(e) => onToggle(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+          />
+          <label htmlFor={title} className="text-sm font-medium text-slate-800">
+            {title}
+          </label>
+        </div>
+
+        {config.enabled ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                Hora inicio
+              </label>
+              <select
+                value={config.startTime}
+                onChange={(e) => onStartChange(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+              >
+                {TIME_OPTIONS.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                Hora fin
+              </label>
+              <select
+                value={config.endTime}
+                onChange={(e) => onEndChange(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+              >
+                {TIME_OPTIONS.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-slate-500">No configurada</div>
+        )}
+      </div>
+    </div>
   );
 }
