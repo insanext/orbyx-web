@@ -61,6 +61,10 @@ function buildTime(hour: number, minute: number) {
   return `${pad2(clamp(hour, 0, 23))}:${pad2(clamp(minute, 0, 59))}`;
 }
 
+function sanitizePhone(value: string) {
+  return value.replace(/[^\d+\s()-]/g, "");
+}
+
 type TimeFieldProps = {
   value: string;
   onChange: (value: string) => void;
@@ -69,42 +73,54 @@ type TimeFieldProps = {
 function TimeField({ value, onChange }: TimeFieldProps) {
   const { hour, minute } = parseTime(value);
 
-  function updateHour(raw: string) {
-    if (raw === "") {
+  function handleHourChange(raw: string) {
+    const cleaned = raw.replace(/\D/g, "");
+    if (cleaned === "") {
       onChange(buildTime(0, minute));
       return;
     }
-    onChange(buildTime(Number(raw), minute));
+    onChange(buildTime(Number(cleaned), minute));
   }
 
-  function updateMinute(raw: string) {
-    if (raw === "") {
+  function handleMinuteChange(raw: string) {
+    const cleaned = raw.replace(/\D/g, "");
+    if (cleaned === "") {
       onChange(buildTime(hour, 0));
       return;
     }
-    onChange(buildTime(hour, Number(raw)));
+    onChange(buildTime(hour, Number(cleaned)));
+  }
+
+  function handleHourBlur() {
+    onChange(buildTime(hour, minute));
+  }
+
+  function handleMinuteBlur() {
+    onChange(buildTime(hour, minute));
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-3">
+    <div className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2.5">
       <input
         type="number"
         min={0}
         max={23}
         value={hour}
-        onChange={(e) => updateHour(e.target.value)}
-        className="w-20 rounded-lg border border-slate-200 px-3 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+        onChange={(e) => handleHourChange(e.target.value)}
+        onBlur={handleHourBlur}
+        className="w-16 rounded-lg border border-slate-200 px-2 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
       />
 
-      <span className="text-lg font-semibold text-slate-500">:</span>
+      <span className="text-base font-semibold text-slate-500">:</span>
 
       <input
         type="number"
         min={0}
         max={59}
         value={minute}
-        onChange={(e) => updateMinute(e.target.value)}
-        className="w-20 rounded-lg border border-slate-200 px-3 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+        onChange={(e) => handleMinuteChange(e.target.value)}
+        onBlur={handleMinuteBlur}
+        className="w-16 rounded-lg border border-slate-200 px-2 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
       />
     </div>
   );
@@ -243,10 +259,13 @@ export default function StartPage() {
   }
 
   function canContinueStep1() {
+    const phoneIsValid =
+      business.phone.trim() !== "" && /^[0-9+\s()-]+$/.test(business.phone);
+
     return (
       business.businessName.trim() !== "" &&
       business.category.trim() !== "" &&
-      business.phone.trim() !== ""
+      phoneIsValid
     );
   }
 
@@ -407,15 +426,19 @@ export default function StartPage() {
                     <input
                       type="tel"
                       value={business.phone}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const sanitized = sanitizePhone(e.target.value);
                         setBusiness((prev) => ({
                           ...prev,
-                          phone: e.target.value,
-                        }))
-                      }
+                          phone: sanitized,
+                        }));
+                      }}
                       placeholder="Ej: +56 9 1234 5678"
                       className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
                     />
+                    <p className="mt-2 text-xs text-slate-500">
+                      Solo números y símbolos válidos como + ( ) -
+                    </p>
                   </div>
                 </div>
 
