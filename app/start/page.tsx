@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 type BusinessData = {
   businessName: string;
   category: string;
-  email: string;
+  phone: string;
 };
 
 type ServiceData = {
@@ -14,29 +14,79 @@ type ServiceData = {
   price: string;
 };
 
-type ScheduleData = {
+type WeeklyScheduleItem = {
+  label: string;
+  value: string;
+  enabled: boolean;
   startTime: string;
   endTime: string;
-  days: string[];
 };
 
-const DAY_OPTIONS = [
-  { label: "Lun", value: "monday" },
-  { label: "Mar", value: "tuesday" },
-  { label: "Mié", value: "wednesday" },
-  { label: "Jue", value: "thursday" },
-  { label: "Vie", value: "friday" },
-  { label: "Sáb", value: "saturday" },
-  { label: "Dom", value: "sunday" },
+type SpecialDayConfig = {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+};
+
+const INITIAL_WEEKLY_SCHEDULE: WeeklyScheduleItem[] = [
+  {
+    label: "Lunes",
+    value: "monday",
+    enabled: true,
+    startTime: "08:00",
+    endTime: "18:00",
+  },
+  {
+    label: "Martes",
+    value: "tuesday",
+    enabled: true,
+    startTime: "08:00",
+    endTime: "18:00",
+  },
+  {
+    label: "Miércoles",
+    value: "wednesday",
+    enabled: true,
+    startTime: "08:00",
+    endTime: "18:00",
+  },
+  {
+    label: "Jueves",
+    value: "thursday",
+    enabled: true,
+    startTime: "08:00",
+    endTime: "18:00",
+  },
+  {
+    label: "Viernes",
+    value: "friday",
+    enabled: true,
+    startTime: "08:00",
+    endTime: "16:00",
+  },
+  {
+    label: "Sábado",
+    value: "saturday",
+    enabled: true,
+    startTime: "09:00",
+    endTime: "14:00",
+  },
+  {
+    label: "Domingo",
+    value: "sunday",
+    enabled: false,
+    startTime: "09:00",
+    endTime: "14:00",
+  },
 ];
 
 export default function StartPage() {
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState(1);
 
   const [business, setBusiness] = useState<BusinessData>({
     businessName: "",
     category: "",
-    email: "",
+    phone: "",
   });
 
   const [service, setService] = useState<ServiceData>({
@@ -45,10 +95,27 @@ export default function StartPage() {
     price: "",
   });
 
-  const [schedule, setSchedule] = useState<ScheduleData>({
-    startTime: "",
-    endTime: "",
-    days: [],
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklyScheduleItem[]>(
+    INITIAL_WEEKLY_SCHEDULE
+  );
+
+  const [specialDates, setSpecialDates] = useState({
+    disableHolidays: true,
+    nationalHolidayEve: {
+      enabled: false,
+      startTime: "09:00",
+      endTime: "14:00",
+    } as SpecialDayConfig,
+    christmasEve: {
+      enabled: false,
+      startTime: "09:00",
+      endTime: "13:00",
+    } as SpecialDayConfig,
+    newYearsEve: {
+      enabled: false,
+      startTime: "09:00",
+      endTime: "13:00",
+    } as SpecialDayConfig,
   });
 
   const slugPreview = useMemo(() => {
@@ -64,29 +131,37 @@ export default function StartPage() {
     );
   }, [business.businessName]);
 
-  function toggleDay(day: string) {
-    setSchedule((prev) => {
-      const exists = prev.days.includes(day);
+  function updateWeeklyDay(
+    dayValue: string,
+    field: keyof WeeklyScheduleItem,
+    value: boolean | string
+  ) {
+    setWeeklySchedule((prev) =>
+      prev.map((day) =>
+        day.value === dayValue ? { ...day, [field]: value } : day
+      )
+    );
+  }
 
-      if (exists) {
-        return {
-          ...prev,
-          days: prev.days.filter((d) => d !== day),
-        };
-      }
-
-      return {
-        ...prev,
-        days: [...prev.days, day],
-      };
-    });
+  function updateSpecialDate(
+    key: "nationalHolidayEve" | "christmasEve" | "newYearsEve",
+    field: keyof SpecialDayConfig,
+    value: boolean | string
+  ) {
+    setSpecialDates((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        [field]: value,
+      },
+    }));
   }
 
   function canContinueStep1() {
     return (
       business.businessName.trim() !== "" &&
       business.category.trim() !== "" &&
-      business.email.trim() !== ""
+      business.phone.trim() !== ""
     );
   }
 
@@ -95,28 +170,46 @@ export default function StartPage() {
   }
 
   function canContinueStep3() {
-    return (
-      schedule.startTime.trim() !== "" &&
-      schedule.endTime.trim() !== "" &&
-      schedule.days.length > 0
+    const enabledDays = weeklySchedule.filter((day) => day.enabled);
+
+    if (enabledDays.length === 0) return false;
+
+    return enabledDays.every(
+      (day) => day.startTime.trim() !== "" && day.endTime.trim() !== ""
     );
+  }
+
+  function canContinueStep4() {
+    const specialConfigs = [
+      specialDates.nationalHolidayEve,
+      specialDates.christmasEve,
+      specialDates.newYearsEve,
+    ];
+
+    return specialConfigs.every((item) => {
+      if (!item.enabled) return true;
+      return item.startTime.trim() !== "" && item.endTime.trim() !== "";
+    });
   }
 
   function nextStep() {
     if (step === 1 && !canContinueStep1()) return;
     if (step === 2 && !canContinueStep2()) return;
     if (step === 3 && !canContinueStep3()) return;
+    if (step === 4 && !canContinueStep4()) return;
 
-    setStep((prev) => Math.min(prev + 1, 4));
+    setStep((prev) => Math.min(prev + 1, 5));
   }
 
   function prevStep() {
     setStep((prev) => Math.max(prev - 1, 1));
   }
 
+  const enabledWeeklyDays = weeklySchedule.filter((day) => day.enabled);
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-5xl">
         <div className="mb-6">
           <a
             href="/"
@@ -137,17 +230,18 @@ export default function StartPage() {
                   Configura tu negocio
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                  En pocos pasos dejarás lista la base de tu sistema de reservas.
+                  Deja lista la base de tu sistema de reservas en pocos pasos.
                 </p>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-                Paso <span className="font-semibold text-slate-900">{step}</span> de 4
+                Paso <span className="font-semibold text-slate-900">{step}</span>{" "}
+                de 5
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-4 gap-2">
-              {[1, 2, 3, 4].map((item) => (
+            <div className="mt-5 grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5].map((item) => (
                 <div
                   key={item}
                   className={`h-2 rounded-full ${
@@ -157,7 +251,7 @@ export default function StartPage() {
               ))}
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-slate-500 sm:grid-cols-4">
+            <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-slate-500 sm:grid-cols-5">
               <span className={step === 1 ? "font-semibold text-sky-700" : ""}>
                 Negocio
               </span>
@@ -168,7 +262,10 @@ export default function StartPage() {
                 Horarios
               </span>
               <span className={step === 4 ? "font-semibold text-sky-700" : ""}>
-                Página lista
+                Fechas especiales
+              </span>
+              <span className={step === 5 ? "font-semibold text-sky-700" : ""}>
+                Resumen
               </span>
             </div>
           </div>
@@ -178,10 +275,10 @@ export default function StartPage() {
               <section className="space-y-5">
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">
-                    Cuéntanos sobre tu negocio
+                    Datos del negocio
                   </h2>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Estos datos servirán para crear tu página pública de reservas.
+                    Esta información se usará para preparar tu página pública.
                   </p>
                 </div>
 
@@ -224,18 +321,18 @@ export default function StartPage() {
 
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Correo de contacto
+                      Teléfono de contacto
                     </label>
                     <input
-                      type="email"
-                      value={business.email}
+                      type="tel"
+                      value={business.phone}
                       onChange={(e) =>
                         setBusiness((prev) => ({
                           ...prev,
-                          email: e.target.value,
+                          phone: e.target.value,
                         }))
                       }
-                      placeholder="Ej: contacto@tunegocio.cl"
+                      placeholder="Ej: +56 9 1234 5678"
                       className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
                     />
                   </div>
@@ -247,7 +344,9 @@ export default function StartPage() {
                   </p>
                   <p className="mt-2 text-sm text-slate-600">
                     orbyx.cl/
-                    <span className="font-semibold text-sky-700">{slugPreview}</span>
+                    <span className="font-semibold text-sky-700">
+                      {slugPreview}
+                    </span>
                   </p>
                 </div>
               </section>
@@ -285,7 +384,7 @@ export default function StartPage() {
 
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Duración
+                      Duración (minutos)
                     </label>
                     <input
                       type="number"
@@ -300,7 +399,6 @@ export default function StartPage() {
                       placeholder="Ej: 30"
                       className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
                     />
-                    <p className="mt-2 text-xs text-slate-500">En minutos.</p>
                   </div>
 
                   <div>
@@ -332,95 +430,184 @@ export default function StartPage() {
                     Define tus horarios de atención
                   </h2>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Selecciona los días en que atiendes y el rango horario base.
+                    Configura el horario de cada día según cómo realmente atiendes.
                   </p>
                 </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Días de atención
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {DAY_OPTIONS.map((day) => {
-                      const isActive = schedule.days.includes(day.value);
+                <div className="space-y-3">
+                  {weeklySchedule.map((day) => (
+                    <div
+                      key={day.value}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <div className="grid gap-4 md:grid-cols-[180px_1fr] md:items-center">
+                        <div className="flex items-center gap-3">
+                          <input
+                            id={day.value}
+                            type="checkbox"
+                            checked={day.enabled}
+                            onChange={(e) =>
+                              updateWeeklyDay(day.value, "enabled", e.target.checked)
+                            }
+                            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                          />
+                          <label
+                            htmlFor={day.value}
+                            className="text-sm font-medium text-slate-800"
+                          >
+                            {day.label}
+                          </label>
+                        </div>
 
-                      return (
-                        <button
-                          key={day.value}
-                          type="button"
-                          onClick={() => toggleDay(day.value)}
-                          className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
-                            isActive
-                              ? "border-sky-600 bg-sky-600 text-white"
-                              : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          {day.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                        {day.enabled ? (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                                Hora inicio
+                              </label>
+                              <input
+                                type="time"
+                                value={day.startTime}
+                                onChange={(e) =>
+                                  updateWeeklyDay(
+                                    day.value,
+                                    "startTime",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                              />
+                            </div>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Hora inicio
-                    </label>
-                    <input
-                      type="time"
-                      value={schedule.startTime}
-                      onChange={(e) =>
-                        setSchedule((prev) => ({
-                          ...prev,
-                          startTime: e.target.value,
-                        }))
-                      }
-                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Hora fin
-                    </label>
-                    <input
-                      type="time"
-                      value={schedule.endTime}
-                      onChange={(e) =>
-                        setSchedule((prev) => ({
-                          ...prev,
-                          endTime: e.target.value,
-                        }))
-                      }
-                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                    />
-                  </div>
+                            <div>
+                              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                                Hora fin
+                              </label>
+                              <input
+                                type="time"
+                                value={day.endTime}
+                                onChange={(e) =>
+                                  updateWeeklyDay(day.value, "endTime", e.target.value)
+                                }
+                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-slate-500">Cerrado</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </section>
             )}
 
             {step === 4 && (
+              <section className="space-y-5">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    Fechas especiales
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Aquí puedes dejar reglas especiales para feriados y vísperas.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="disableHolidays"
+                      type="checkbox"
+                      checked={specialDates.disableHolidays}
+                      onChange={(e) =>
+                        setSpecialDates((prev) => ({
+                          ...prev,
+                          disableHolidays: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    <label
+                      htmlFor="disableHolidays"
+                      className="text-sm font-medium text-slate-800"
+                    >
+                      No atender feriados
+                    </label>
+                  </div>
+                </div>
+
+                <SpecialDateCard
+                  title="Víspera de Fiestas Patrias"
+                  config={specialDates.nationalHolidayEve}
+                  onToggle={(checked) =>
+                    updateSpecialDate("nationalHolidayEve", "enabled", checked)
+                  }
+                  onStartChange={(value) =>
+                    updateSpecialDate("nationalHolidayEve", "startTime", value)
+                  }
+                  onEndChange={(value) =>
+                    updateSpecialDate("nationalHolidayEve", "endTime", value)
+                  }
+                />
+
+                <SpecialDateCard
+                  title="Víspera de Navidad"
+                  config={specialDates.christmasEve}
+                  onToggle={(checked) =>
+                    updateSpecialDate("christmasEve", "enabled", checked)
+                  }
+                  onStartChange={(value) =>
+                    updateSpecialDate("christmasEve", "startTime", value)
+                  }
+                  onEndChange={(value) =>
+                    updateSpecialDate("christmasEve", "endTime", value)
+                  }
+                />
+
+                <SpecialDateCard
+                  title="Víspera de Año Nuevo"
+                  config={specialDates.newYearsEve}
+                  onToggle={(checked) =>
+                    updateSpecialDate("newYearsEve", "enabled", checked)
+                  }
+                  onStartChange={(value) =>
+                    updateSpecialDate("newYearsEve", "startTime", value)
+                  }
+                  onEndChange={(value) =>
+                    updateSpecialDate("newYearsEve", "endTime", value)
+                  }
+                />
+              </section>
+            )}
+
+            {step === 5 && (
               <section className="space-y-6">
                 <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6">
                   <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
                     Configuración lista
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-900">
-                    Tu base ya está preparada
+                    Tu negocio ya tiene una base configurada
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                    Ya tienes definidos tu negocio, tu primer servicio y tu horario de atención.
+                    Ya definiste tus datos principales, tu primer servicio, tus
+                    horarios y tus fechas especiales.
                   </p>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-4 lg:grid-cols-2">
                   <div className="rounded-2xl border border-slate-200 bg-white p-5">
                     <p className="text-sm text-slate-500">Negocio</p>
                     <p className="mt-1 font-medium text-slate-900">
                       {business.businessName || "Tu negocio"}
                     </p>
-                    <p className="mt-1 text-sm text-slate-600">{business.category}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {business.category}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {business.phone}
+                    </p>
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -430,23 +617,73 @@ export default function StartPage() {
                     </p>
                     <p className="mt-1 text-sm text-slate-600">
                       {service.duration || "0"} min
-                      {service.price ? ` · $${service.price}` : " · Precio no visible"}
+                      {service.price ? ` · $${service.price}` : " · Precio opcional"}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                    <p className="text-sm text-slate-500">Horario base</p>
-                    <p className="mt-1 font-medium text-slate-900">
-                      {schedule.startTime} - {schedule.endTime}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {schedule.days.length > 0
-                        ? schedule.days.join(", ")
-                        : "Sin días seleccionados"}
-                    </p>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-2">
+                    <p className="text-sm text-slate-500">Horarios semanales</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {weeklySchedule.map((day) => (
+                        <div
+                          key={day.value}
+                          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                        >
+                          <p className="text-sm font-medium text-slate-800">
+                            {day.label}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {day.enabled
+                              ? `${day.startTime} - ${day.endTime}`
+                              : "Cerrado"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-2">
+                    <p className="text-sm text-slate-500">Fechas especiales</p>
+                    <div className="mt-3 space-y-2 text-sm text-slate-700">
+                      <p>
+                        Feriados:{" "}
+                        <span className="font-medium">
+                          {specialDates.disableHolidays
+                            ? "No atender"
+                            : "Atención normal"}
+                        </span>
+                      </p>
+
+                      <p>
+                        Víspera de Fiestas Patrias:{" "}
+                        <span className="font-medium">
+                          {specialDates.nationalHolidayEve.enabled
+                            ? `${specialDates.nationalHolidayEve.startTime} - ${specialDates.nationalHolidayEve.endTime}`
+                            : "No configurada"}
+                        </span>
+                      </p>
+
+                      <p>
+                        Víspera de Navidad:{" "}
+                        <span className="font-medium">
+                          {specialDates.christmasEve.enabled
+                            ? `${specialDates.christmasEve.startTime} - ${specialDates.christmasEve.endTime}`
+                            : "No configurada"}
+                        </span>
+                      </p>
+
+                      <p>
+                        Víspera de Año Nuevo:{" "}
+                        <span className="font-medium">
+                          {specialDates.newYearsEve.enabled
+                            ? `${specialDates.newYearsEve.startTime} - ${specialDates.newYearsEve.endTime}`
+                            : "No configurada"}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5 lg:col-span-2">
                     <p className="text-sm text-slate-500">Vista previa de tu link</p>
                     <p className="mt-1 font-medium text-sky-700">
                       orbyx.cl/{slugPreview}
@@ -472,7 +709,7 @@ export default function StartPage() {
               </section>
             )}
 
-            {step < 4 && (
+            {step < 5 && (
               <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-between">
                 <button
                   type="button"
@@ -488,7 +725,7 @@ export default function StartPage() {
                   onClick={nextStep}
                   className="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-700"
                 >
-                  {step === 3 ? "Finalizar" : "Continuar"}
+                  {step === 4 ? "Ver resumen" : "Continuar"}
                 </button>
               </div>
             )}
@@ -496,5 +733,70 @@ export default function StartPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+type SpecialDateCardProps = {
+  title: string;
+  config: SpecialDayConfig;
+  onToggle: (checked: boolean) => void;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+};
+
+function SpecialDateCard({
+  title,
+  config,
+  onToggle,
+  onStartChange,
+  onEndChange,
+}: SpecialDateCardProps) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr] md:items-center">
+        <div className="flex items-center gap-3">
+          <input
+            id={title}
+            type="checkbox"
+            checked={config.enabled}
+            onChange={(e) => onToggle(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+          />
+          <label htmlFor={title} className="text-sm font-medium text-slate-800">
+            {title}
+          </label>
+        </div>
+
+        {config.enabled ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                Hora inicio
+              </label>
+              <input
+                type="time"
+                value={config.startTime}
+                onChange={(e) => onStartChange(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                Hora fin
+              </label>
+              <input
+                type="time"
+                value={config.endTime}
+                onChange={(e) => onEndChange(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-slate-500">No configurada</div>
+        )}
+      </div>
+    </div>
   );
 }
