@@ -195,7 +195,7 @@ export default function OrbyxLandingPage() {
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Cómo funciona</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Explicado simple, para que cualquiera lo entienda.
+            Una forma clara y moderna de gestionar reservas.
           </h2>
           <p className="mt-4 text-lg leading-8 text-slate-600">
             El cliente entra, reserva solo y Orbyx deja tu agenda ordenada sin que tengas que ir coordinando una por una.
