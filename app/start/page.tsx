@@ -38,114 +38,20 @@ const INITIAL_WEEKLY_SCHEDULE: WeeklyScheduleItem[] = [
   { label: "Domingo", value: "sunday", enabled: false, startTime: "09:00", endTime: "14:00" },
 ];
 
-function pad2(value: number) {
-  return String(value).padStart(2, "0");
-}
-
-function parseTime(time: string) {
-  const [h = "00", m = "00"] = time.split(":");
-  return {
-    hour: Number.isNaN(Number(h)) ? 0 : Number(h),
-    minute: Number.isNaN(Number(m)) ? 0 : Number(m),
-  };
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function buildTime(hour: number, minute: number) {
-  return `${pad2(clamp(hour, 0, 23))}:${pad2(clamp(minute, 0, 59))}`;
-}
-
-type TimeEditorProps = {
+type TimeFieldProps = {
   value: string;
   onChange: (value: string) => void;
 };
 
-function TimeEditor({ value, onChange }: TimeEditorProps) {
-  const { hour, minute } = parseTime(value);
-
-  function setHour(newHour: number) {
-    onChange(buildTime(newHour, minute));
-  }
-
-  function setMinute(newMinute: number) {
-    onChange(buildTime(hour, newMinute));
-  }
-
-  function onHourInputChange(raw: string) {
-    const cleaned = raw.replace(/\D/g, "");
-    if (cleaned === "") {
-      onChange(buildTime(0, minute));
-      return;
-    }
-    setHour(Number(cleaned));
-  }
-
-  function onMinuteInputChange(raw: string) {
-    const cleaned = raw.replace(/\D/g, "");
-    if (cleaned === "") {
-      onChange(buildTime(hour, 0));
-      return;
-    }
-    setMinute(Number(cleaned));
-  }
-
+function TimeField({ value, onChange }: TimeFieldProps) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2">
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => setHour(hour - 1)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
-        >
-          −
-        </button>
-
-        <input
-          inputMode="numeric"
-          value={pad2(hour)}
-          onChange={(e) => onHourInputChange(e.target.value)}
-          className="w-14 rounded-lg border border-slate-200 px-2 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-        />
-
-        <button
-          type="button"
-          onClick={() => setHour(hour + 1)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
-        >
-          +
-        </button>
-      </div>
-
-      <span className="text-lg font-semibold text-slate-500">:</span>
-
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => setMinute(minute - 1)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
-        >
-          −
-        </button>
-
-        <input
-          inputMode="numeric"
-          value={pad2(minute)}
-          onChange={(e) => onMinuteInputChange(e.target.value)}
-          className="w-14 rounded-lg border border-slate-200 px-2 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-        />
-
-        <button
-          type="button"
-          onClick={() => setMinute(minute + 1)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
-        >
-          +
-        </button>
-      </div>
-    </div>
+    <input
+      type="time"
+      step={60}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+    />
   );
 }
 
@@ -186,14 +92,14 @@ function SpecialDateCard({
               <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
                 Hora inicio
               </label>
-              <TimeEditor value={config.startTime} onChange={onStartChange} />
+              <TimeField value={config.startTime} onChange={onStartChange} />
             </div>
 
             <div>
               <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
                 Hora fin
               </label>
-              <TimeEditor value={config.endTime} onChange={onEndChange} />
+              <TimeField value={config.endTime} onChange={onEndChange} />
             </div>
           </div>
         ) : (
@@ -583,7 +489,7 @@ export default function StartPage() {
                               <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
                                 Hora inicio
                               </label>
-                              <TimeEditor
+                              <TimeField
                                 value={day.startTime}
                                 onChange={(newValue) =>
                                   updateWeeklyDay(day.value, "startTime", newValue)
@@ -595,7 +501,7 @@ export default function StartPage() {
                               <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
                                 Hora fin
                               </label>
-                              <TimeEditor
+                              <TimeField
                                 value={day.endTime}
                                 onChange={(newValue) =>
                                   updateWeeklyDay(day.value, "endTime", newValue)
