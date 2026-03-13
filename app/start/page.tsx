@@ -38,41 +38,171 @@ const INITIAL_WEEKLY_SCHEDULE: WeeklyScheduleItem[] = [
   { label: "Domingo", value: "sunday", enabled: false, startTime: "09:00", endTime: "14:00" },
 ];
 
-const TIME_OPTIONS = [
-  "06:00",
-  "06:30",
-  "07:00",
-  "07:30",
-  "08:00",
-  "08:30",
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "12:30",
-  "13:00",
-  "13:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-  "18:00",
-  "18:30",
-  "19:00",
-  "19:30",
-  "20:00",
-  "20:30",
-  "21:00",
-  "21:30",
-  "22:00",
-];
+function pad2(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function parseTime(time: string) {
+  const [h = "00", m = "00"] = time.split(":");
+  return {
+    hour: Number.isNaN(Number(h)) ? 0 : Number(h),
+    minute: Number.isNaN(Number(m)) ? 0 : Number(m),
+  };
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function buildTime(hour: number, minute: number) {
+  return `${pad2(clamp(hour, 0, 23))}:${pad2(clamp(minute, 0, 59))}`;
+}
+
+type TimeEditorProps = {
+  value: string;
+  onChange: (value: string) => void;
+};
+
+function TimeEditor({ value, onChange }: TimeEditorProps) {
+  const { hour, minute } = parseTime(value);
+
+  function setHour(newHour: number) {
+    onChange(buildTime(newHour, minute));
+  }
+
+  function setMinute(newMinute: number) {
+    onChange(buildTime(hour, newMinute));
+  }
+
+  function onHourInputChange(raw: string) {
+    const cleaned = raw.replace(/\D/g, "");
+    if (cleaned === "") {
+      onChange(buildTime(0, minute));
+      return;
+    }
+    setHour(Number(cleaned));
+  }
+
+  function onMinuteInputChange(raw: string) {
+    const cleaned = raw.replace(/\D/g, "");
+    if (cleaned === "") {
+      onChange(buildTime(hour, 0));
+      return;
+    }
+    setMinute(Number(cleaned));
+  }
+
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2">
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setHour(hour - 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
+        >
+          −
+        </button>
+
+        <input
+          inputMode="numeric"
+          value={pad2(hour)}
+          onChange={(e) => onHourInputChange(e.target.value)}
+          className="w-14 rounded-lg border border-slate-200 px-2 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+        />
+
+        <button
+          type="button"
+          onClick={() => setHour(hour + 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
+        >
+          +
+        </button>
+      </div>
+
+      <span className="text-lg font-semibold text-slate-500">:</span>
+
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setMinute(minute - 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
+        >
+          −
+        </button>
+
+        <input
+          inputMode="numeric"
+          value={pad2(minute)}
+          onChange={(e) => onMinuteInputChange(e.target.value)}
+          className="w-14 rounded-lg border border-slate-200 px-2 py-2 text-center text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+        />
+
+        <button
+          type="button"
+          onClick={() => setMinute(minute + 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type SpecialDateCardProps = {
+  title: string;
+  config: SpecialDayConfig;
+  onToggle: (checked: boolean) => void;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+};
+
+function SpecialDateCard({
+  title,
+  config,
+  onToggle,
+  onStartChange,
+  onEndChange,
+}: SpecialDateCardProps) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr] md:items-center">
+        <div className="flex items-center gap-3">
+          <input
+            id={title}
+            type="checkbox"
+            checked={config.enabled}
+            onChange={(e) => onToggle(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+          />
+          <label htmlFor={title} className="text-sm font-medium text-slate-800">
+            {title}
+          </label>
+        </div>
+
+        {config.enabled ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                Hora inicio
+              </label>
+              <TimeEditor value={config.startTime} onChange={onStartChange} />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                Hora fin
+              </label>
+              <TimeEditor value={config.endTime} onChange={onEndChange} />
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-slate-500">No configurada</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function StartPage() {
   const [step, setStep] = useState(1);
@@ -453,38 +583,24 @@ export default function StartPage() {
                               <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
                                 Hora inicio
                               </label>
-                              <select
+                              <TimeEditor
                                 value={day.startTime}
-                                onChange={(e) =>
-                                  updateWeeklyDay(day.value, "startTime", e.target.value)
+                                onChange={(newValue) =>
+                                  updateWeeklyDay(day.value, "startTime", newValue)
                                 }
-                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                              >
-                                {TIME_OPTIONS.map((time) => (
-                                  <option key={time} value={time}>
-                                    {time}
-                                  </option>
-                                ))}
-                              </select>
+                              />
                             </div>
 
                             <div>
                               <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
                                 Hora fin
                               </label>
-                              <select
+                              <TimeEditor
                                 value={day.endTime}
-                                onChange={(e) =>
-                                  updateWeeklyDay(day.value, "endTime", e.target.value)
+                                onChange={(newValue) =>
+                                  updateWeeklyDay(day.value, "endTime", newValue)
                                 }
-                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                              >
-                                {TIME_OPTIONS.map((time) => (
-                                  <option key={time} value={time}>
-                                    {time}
-                                  </option>
-                                ))}
-                              </select>
+                              />
                             </div>
                           </div>
                         ) : (
@@ -720,80 +836,5 @@ export default function StartPage() {
         </div>
       </div>
     </main>
-  );
-}
-
-type SpecialDateCardProps = {
-  title: string;
-  config: SpecialDayConfig;
-  onToggle: (checked: boolean) => void;
-  onStartChange: (value: string) => void;
-  onEndChange: (value: string) => void;
-};
-
-function SpecialDateCard({
-  title,
-  config,
-  onToggle,
-  onStartChange,
-  onEndChange,
-}: SpecialDateCardProps) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <div className="grid gap-4 md:grid-cols-[240px_1fr] md:items-center">
-        <div className="flex items-center gap-3">
-          <input
-            id={title}
-            type="checkbox"
-            checked={config.enabled}
-            onChange={(e) => onToggle(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-          />
-          <label htmlFor={title} className="text-sm font-medium text-slate-800">
-            {title}
-          </label>
-        </div>
-
-        {config.enabled ? (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
-                Hora inicio
-              </label>
-              <select
-                value={config.startTime}
-                onChange={(e) => onStartChange(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-              >
-                {TIME_OPTIONS.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500">
-                Hora fin
-              </label>
-              <select
-                value={config.endTime}
-                onChange={(e) => onEndChange(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-              >
-                {TIME_OPTIONS.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        ) : (
-          <div className="text-sm text-slate-500">No configurada</div>
-        )}
-      </div>
-    </div>
   );
 }
