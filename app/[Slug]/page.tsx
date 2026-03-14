@@ -181,16 +181,16 @@ export default function Page() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%)]" />
 
         <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
               {business?.logo_url ? (
                 <img
                   src={business.logo_url}
                   alt={business?.name}
-                  className="h-14 w-14 rounded-2xl bg-white object-contain p-2 shadow-sm"
+                  className="h-16 w-16 rounded-2xl bg-white object-contain p-2 shadow-sm"
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-xl font-semibold">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 text-2xl font-semibold">
                   {business?.name?.slice(0, 1)?.toUpperCase() || "O"}
                 </div>
               )}
@@ -202,14 +202,48 @@ export default function Page() {
                 <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
                   {business?.name || "Cargando negocio..."}
                 </h1>
-                <p className="mt-1 text-sm text-white/85">
-                  Selecciona tu servicio, fecha y horario en pocos pasos.
-                </p>
+
+                {business?.description ? (
+                  <p className="mt-2 max-w-2xl text-sm text-white/85">
+                    {business.description}
+                  </p>
+                ) : (
+                  <p className="mt-2 max-w-2xl text-sm text-white/85">
+                    Agenda tu cita de forma simple, rápida y profesional.
+                  </p>
+                )}
+
+                <div className="mt-3 flex flex-wrap gap-2 text-xs sm:text-sm">
+                  {business?.address ? (
+                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">
+                      {business.address}
+                    </span>
+                  ) : null}
+
+                  {business?.phone ? (
+                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">
+                      +56 {business.phone}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            <div className="inline-flex w-fit items-center rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium backdrop-blur">
-              Rápido, claro y profesional
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur">
+                <p className="text-xs text-white/75">Reserva</p>
+                <p className="mt-1 text-sm font-semibold">En pocos pasos</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur">
+                <p className="text-xs text-white/75">Confirmación</p>
+                <p className="mt-1 text-sm font-semibold">Rápida y clara</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur">
+                <p className="text-xs text-white/75">Experiencia</p>
+                <p className="mt-1 text-sm font-semibold">Profesional</p>
+              </div>
             </div>
           </div>
         </div>
@@ -254,9 +288,20 @@ export default function Page() {
                   <p className="text-sm font-medium text-slate-800">
                     {selectedService.name}
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {selectedService.duration_minutes} min · {formatPrice(selectedService.price)}
-                  </p>
+                  <div className="mt-2 grid gap-2 text-sm text-slate-600">
+                    <p>
+                      Duración:{" "}
+                      <span className="font-medium">
+                        {selectedService.duration_minutes} min
+                      </span>
+                    </p>
+                    <p>
+                      Precio:{" "}
+                      <span className="font-medium">
+                        {formatPrice(selectedService.price)}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -283,6 +328,15 @@ export default function Page() {
                   }}
                   value={selectedDate}
                 />
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 className="text-base font-semibold">¿Cómo funciona?</h3>
+              <div className="mt-3 space-y-3 text-sm text-slate-600">
+                <p>1. Elige un servicio.</p>
+                <p>2. Selecciona una fecha y horario.</p>
+                <p>3. Completa tus datos y confirma.</p>
               </div>
             </div>
           </aside>
