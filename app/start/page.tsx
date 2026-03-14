@@ -404,7 +404,7 @@ export default function StartPage() {
         throw new Error(data?.error || "No se pudo completar el onboarding");
       }
 
-      router.push(`/${data.slug}`);
+      router.push(`/dashboard/${data.slug}`);
     } catch (error: any) {
       setSubmitError(error?.message || "Ocurrió un error al guardar la configuración");
     } finally {
