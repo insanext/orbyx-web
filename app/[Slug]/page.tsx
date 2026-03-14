@@ -388,7 +388,7 @@ export default function Page() {
                           </div>
                         </div>
 
-                        <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                        <div className="space-y-1">
                           {slots.length === 0 ? (
                             <div className="rounded-xl bg-white px-3 py-3 text-center text-xs text-slate-400">
                               Sin horarios
@@ -410,7 +410,7 @@ export default function Page() {
                                     });
                                   }, 100);
                                 }}
-                                className={`w-full rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                                className={`w-full rounded-lg border px-2 py-1 text-xs font-medium transition ${
                                   selectedSlot?.slot_start === slot.slot_start
                                     ? "border-green-500 bg-green-500 text-white shadow-sm"
                                     : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
