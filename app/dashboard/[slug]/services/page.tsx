@@ -32,6 +32,7 @@ export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saveOk, setSaveOk] = useState("");
@@ -40,6 +41,13 @@ export default function ServicesPage() {
     name: "",
     duration_minutes: "30",
     price: "",
+  });
+
+  const [editForm, setEditForm] = useState({
+    name: "",
+    duration_minutes: "30",
+    price: "",
+    active: true,
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
@@ -151,6 +159,70 @@ export default function ServicesPage() {
     }
   }
 
+  function startEditing(service: Service) {
+    setSaveError("");
+    setSaveOk("");
+    setEditingId(service.id);
+    setEditForm({
+      name: service.name || "",
+      duration_minutes: String(service.duration_minutes || 30),
+      price: service.price ? String(service.price) : "",
+      active: Boolean(service.active),
+    });
+  }
+
+  function cancelEditing() {
+    setEditingId(null);
+  }
+
+  async function handleSaveEdit(serviceId: string) {
+    try {
+      setSaving(true);
+      setSaveError("");
+      setSaveOk("");
+
+      if (!editForm.name.trim()) {
+        throw new Error("Debes ingresar el nombre del servicio");
+      }
+
+      if (!editForm.duration_minutes.trim()) {
+        throw new Error("Debes ingresar la duración");
+      }
+
+      const response = await fetch(
+        `https://orbyx-backend.onrender.com/services/${serviceId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: editForm.name.trim(),
+            duration_minutes: Number(editForm.duration_minutes || 30),
+            price: Number(editForm.price || 0),
+            buffer_before_minutes: 0,
+            buffer_after_minutes: 0,
+            active: editForm.active,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo actualizar el servicio");
+      }
+
+      setSaveOk("Servicio actualizado correctamente.");
+      setEditingId(null);
+      await loadAll();
+    } catch (error: any) {
+      setSaveError(error?.message || "No se pudo actualizar el servicio");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -159,13 +231,25 @@ export default function ServicesPage() {
           Servicios de {loading ? "tu negocio" : businessName}
         </h1>
         <p className="mt-2 text-slate-600">
-          Aquí puedes revisar y crear los servicios que tus clientes podrán reservar.
+          Aquí puedes revisar, crear y editar los servicios que tus clientes podrán reservar.
         </p>
       </div>
 
       {loadError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {loadError}
+        </div>
+      ) : null}
+
+      {saveError ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {saveError}
+        </div>
+      ) : null}
+
+      {saveOk ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {saveOk}
         </div>
       ) : null}
 
@@ -198,27 +282,129 @@ export default function ServicesPage() {
                   key={service.id}
                   className="rounded-xl border border-slate-200 bg-slate-50 p-4"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-medium text-slate-900">{service.name}</p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {service.duration_minutes} min
-                        {typeof service.price === "number" && service.price > 0
-                          ? ` · $${service.price}`
-                          : " · Sin precio"}
-                      </p>
-                    </div>
+                  {editingId === service.id ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Nombre del servicio
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.name}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
+                          className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                        />
+                      </div>
 
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        service.active
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-slate-200 text-slate-600"
-                      }`}
-                    >
-                      {service.active ? "Activo" : "Inactivo"}
-                    </span>
-                  </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Duración (minutos)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={editForm.duration_minutes}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              duration_minutes: e.target.value,
+                            }))
+                          }
+                          className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Precio
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editForm.price}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              price: e.target.value,
+                            }))
+                          }
+                          className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                        />
+                      </div>
+
+                      <label className="flex items-center gap-3 text-sm text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={editForm.active}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              active: e.target.checked,
+                            }))
+                          }
+                          className="h-4 w-4 rounded border-slate-300"
+                        />
+                        Servicio activo
+                      </label>
+
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveEdit(service.id)}
+                          disabled={saving}
+                          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {saving ? "Guardando..." : "Guardar"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={cancelEditing}
+                          disabled={saving}
+                          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-medium text-slate-900">{service.name}</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {service.duration_minutes} min
+                          {typeof service.price === "number" && service.price > 0
+                            ? ` · $${service.price}`
+                            : " · Sin precio"}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-2">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${
+                            service.active
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {service.active ? "Activo" : "Inactivo"}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => startEditing(service)}
+                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-white"
+                        >
+                          Editar
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -282,18 +468,6 @@ export default function ServicesPage() {
                 className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
               />
             </div>
-
-            {saveError ? (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {saveError}
-              </div>
-            ) : null}
-
-            {saveOk ? (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                {saveOk}
-              </div>
-            ) : null}
 
             <button
               type="button"
