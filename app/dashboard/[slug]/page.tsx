@@ -10,6 +10,7 @@ type BusinessResponse = {
     slug: string;
   };
   calendar_id: string;
+  google_connected?: boolean;
 };
 
 export default function DashboardPage() {
@@ -19,10 +20,11 @@ export default function DashboardPage() {
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
-  const googleConnected = searchParams.get("google_connected") === "1";
+  const googleConnectedFromUrl = searchParams.get("google_connected") === "1";
 
   const [calendarId, setCalendarId] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [googleConnected, setGoogleConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -54,6 +56,7 @@ export default function DashboardPage() {
 
         setBusinessName(data.business.name || slug);
         setCalendarId(data.calendar_id);
+        setGoogleConnected(Boolean(data.google_connected) || googleConnectedFromUrl);
       } catch (error: any) {
         setLoadError(error?.message || "No se pudo cargar el dashboard");
       } finally {
@@ -64,7 +67,7 @@ export default function DashboardPage() {
     if (slug) {
       loadBusiness();
     }
-  }, [slug]);
+  }, [slug, googleConnectedFromUrl]);
 
   function handleConnectGoogle() {
     if (!calendarId) return;
@@ -80,11 +83,11 @@ export default function DashboardPage() {
         </h1>
 
         <p className="mb-8 text-slate-500">
-          Tu negocio ya está configurado. Solo falta conectar tu Google Calendar
-          para comenzar a recibir reservas.
+          Desde aquí podrás revisar el estado de tu agenda y la página donde
+          reservarán tus clientes.
         </p>
 
-        {googleConnected ? (
+        {googleConnectedFromUrl ? (
           <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             Google Calendar conectado correctamente. Tu agenda ya puede recibir reservas.
           </div>
@@ -106,8 +109,22 @@ export default function DashboardPage() {
 
           <div className="rounded-xl border border-slate-200 p-4">
             <p className="text-sm text-slate-500">Estado Google Calendar</p>
-            <p className="font-medium text-amber-600">No conectado</p>
+            <p
+              className={`font-medium ${
+                googleConnected ? "text-emerald-600" : "text-amber-600"
+              }`}
+            >
+              {googleConnected ? "Conectado" : "No conectado"}
+            </p>
           </div>
+
+          {!googleConnected ? (
+            <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+              <p className="text-sm font-semibold text-sky-900">
+                Si Google muestra un aviso de seguridad, presiona Configuración avanzada → Ir a Orbyx para continuar.
+              </p>
+            </div>
+          ) : null}
 
           <div className="flex gap-3 pt-4">
             <a
@@ -118,13 +135,15 @@ export default function DashboardPage() {
               Ver página pública
             </a>
 
-            <button
-              onClick={handleConnectGoogle}
-              disabled={loading || !calendarId}
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Conectar Google Calendar
-            </button>
+            {!googleConnected ? (
+              <button
+                onClick={handleConnectGoogle}
+                disabled={loading || !calendarId}
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Conectar Google Calendar
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
