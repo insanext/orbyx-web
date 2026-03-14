@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 type BusinessResponse = {
   business: {
@@ -14,8 +14,12 @@ type BusinessResponse = {
 
 export default function DashboardPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
+
+  const googleConnected = searchParams.get("google_connected") === "1";
 
   const [calendarId, setCalendarId] = useState("");
   const [businessName, setBusinessName] = useState("");
@@ -80,6 +84,12 @@ export default function DashboardPage() {
           para comenzar a recibir reservas.
         </p>
 
+        {googleConnected ? (
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            Google Calendar conectado correctamente. Tu agenda ya puede recibir reservas.
+          </div>
+        ) : null}
+
         {loadError ? (
           <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {loadError}
@@ -99,7 +109,7 @@ export default function DashboardPage() {
             <p className="font-medium text-amber-600">No conectado</p>
           </div>
 
-          <div className="pt-4 flex gap-3">
+          <div className="flex gap-3 pt-4">
             <a
               href={publicUrl}
               target="_blank"
