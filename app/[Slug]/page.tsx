@@ -131,7 +131,7 @@ export default function Page() {
       .then((res) => res.json())
       .then((data) => {
         setBusiness(data.business);
-        setServices(data.services || []);
+        setServices((data.services || []).filter((service: any) => service.active));
       });
   }, [slug]);
 
@@ -486,34 +486,27 @@ export default function Page() {
                   />
 
                   {bookingError ? (
+                    bookingError.toLowerCase().includes("reserva") ? (
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+                        <p className="font-semibold">
+                          Ya tienes una reserva activa
+                        </p>
 
-  bookingError.toLowerCase().includes("reserva") ? (
+                        <p className="mt-1">
+                          Encontramos una reserva futura con este correo.
+                        </p>
 
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+                        <p className="mt-1">
+                          Si deseas cambiar el horario, primero debes cancelar tu reserva actual.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        {bookingError}
+                      </div>
+                    )
+                  ) : null}
 
-      <p className="font-semibold">
-        Ya tienes una reserva activa
-      </p>
-
-      <p className="mt-1">
-        Encontramos una reserva futura con este correo.
-      </p>
-
-      <p className="mt-1">
-        Si deseas cambiar el horario, primero debes cancelar tu reserva actual.
-      </p>
-
-    </div>
-
-  ) : (
-
-    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-      {bookingError}
-    </div>
-
-  )
-
-) : null}
                   <button
                     onClick={handleBooking}
                     disabled={loadingBooking}
