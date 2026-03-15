@@ -11,6 +11,7 @@ export default function Page() {
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
   const [business, setBusiness] = useState<any>(null);
+  const [calendarId, setCalendarId] = useState("");
   const [services, setServices] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<any>(null);
 
@@ -89,6 +90,11 @@ export default function Page() {
       return;
     }
 
+    if (!calendarId) {
+      setBookingError("No se encontró el calendario del negocio.");
+      return;
+    }
+
     setLoadingBooking(true);
 
     try {
@@ -96,7 +102,7 @@ export default function Page() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          calendar_id: business.calendar_id,
+          calendar_id: calendarId,
           service_id: selectedService.id,
           date: formatDate(new Date(selectedSlot.slot_start)),
           slot_start: selectedSlot.slot_start,
@@ -124,16 +130,17 @@ export default function Page() {
     }
   }
 
-useEffect(() => {
-  if (!slug) return;
+  useEffect(() => {
+    if (!slug) return;
 
-  fetch(`/api/public-services/${slug}`)
-    .then((res) => res.json())
-    .then((data) => {
-      setBusiness(data.business);
-      setServices(data.services || []);
-    });
-}, [slug]);
+    fetch(`/api/public-services/${slug}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setBusiness(data.business || null);
+        setCalendarId(data.calendar_id || data.business?.calendar_id || "");
+        setServices(data.services || []);
+      });
+  }, [slug]);
 
   useEffect(() => {
     const week = getWeekDates(selectedDate);
