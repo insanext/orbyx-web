@@ -64,6 +64,29 @@ export default function Page() {
     }).format(price || 0);
   }
 
+  function formatInstagramLabel(value?: string) {
+    if (!value) return "";
+    const clean = String(value).trim();
+
+    if (clean.startsWith("http")) {
+      const parts = clean.replace(/\/+$/, "").split("/");
+      const last = parts[parts.length - 1];
+      return last ? `@${last.replace("@", "")}` : "Instagram";
+    }
+
+    return clean.startsWith("@") ? clean : `@${clean}`;
+  }
+
+  function normalizeInstagramUrl(value?: string) {
+    if (!value) return "";
+    const clean = String(value).trim();
+
+    if (clean.startsWith("http")) return clean;
+
+    const username = clean.replace("@", "");
+    return `https://instagram.com/${username}`;
+  }
+
   function getWeekDates(baseDate: Date) {
     const dates: Date[] = [];
     const day = baseDate.getDay();
@@ -220,17 +243,28 @@ export default function Page() {
                   </p>
                 )}
 
-                <div className="mt-3 flex flex-wrap gap-2 text-xs sm:text-sm">
+                <div className="mt-4 flex flex-wrap gap-2 text-xs sm:text-sm">
                   {business?.address ? (
                     <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">
-                      {business.address}
+                      📍 {business.address}
                     </span>
                   ) : null}
 
                   {business?.phone ? (
                     <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">
-                      +56 {business.phone}
+                      📞 {business.phone}
                     </span>
+                  ) : null}
+
+                  {business?.instagram_url ? (
+                    <a
+                      href={normalizeInstagramUrl(business.instagram_url)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 transition hover:bg-white/20"
+                    >
+                      📷 {formatInstagramLabel(business.instagram_url)}
+                    </a>
                   ) : null}
                 </div>
               </div>
@@ -248,7 +282,7 @@ export default function Page() {
               </div>
 
               <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur">
-                <p className="text-xs text-white/75">Experiencia</p>
+                <p className="text-xs text-white/75">Atención</p>
                 <p className="mt-1 text-sm font-semibold">Profesional</p>
               </div>
             </div>
@@ -292,10 +326,17 @@ export default function Page() {
 
               {selectedService ? (
                 <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 p-4">
-                  <p className="text-sm font-medium text-slate-800">
+                  <p className="text-sm font-semibold text-slate-800">
                     {selectedService.name}
                   </p>
-                  <div className="mt-2 grid gap-2 text-sm text-slate-600">
+
+                  {selectedService?.description ? (
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {selectedService.description}
+                    </p>
+                  ) : null}
+
+                  <div className="mt-3 grid gap-2 text-sm text-slate-600">
                     <p>
                       Duración:{" "}
                       <span className="font-medium">
