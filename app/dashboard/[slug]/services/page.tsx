@@ -20,6 +20,7 @@ type BusinessResponse = {
 type Service = {
   id: string;
   name: string;
+  description?: string | null;
   duration_minutes: number;
   price: number | null;
   active: boolean;
@@ -42,12 +43,14 @@ export default function ServicesPage() {
 
   const [form, setForm] = useState({
     name: "",
+    description: "",
     duration_minutes: "30",
     price: "",
   });
 
   const [editForm, setEditForm] = useState({
     name: "",
+    description: "",
     duration_minutes: "30",
     price: "",
     active: true,
@@ -57,6 +60,9 @@ export default function ServicesPage() {
 
   const activeServicesCount = services.filter((service) => service.active).length;
   const inactiveServicesCount = services.filter((service) => !service.active).length;
+  const servicesWithDescriptionCount = services.filter(
+    (service) => String(service.description || "").trim() !== ""
+  ).length;
 
   function formatPrice(price: number | null) {
     if (typeof price !== "number" || price <= 0) return "Sin precio";
@@ -148,6 +154,7 @@ export default function ServicesPage() {
           body: JSON.stringify({
             tenant_id: tenantId,
             name: form.name.trim(),
+            description: form.description.trim(),
             duration_minutes: Number(form.duration_minutes || 30),
             buffer_before_minutes: 0,
             buffer_after_minutes: 0,
@@ -165,6 +172,7 @@ export default function ServicesPage() {
 
       setForm({
         name: "",
+        description: "",
         duration_minutes: "30",
         price: "",
       });
@@ -184,6 +192,7 @@ export default function ServicesPage() {
     setEditingId(service.id);
     setEditForm({
       name: service.name || "",
+      description: service.description || "",
       duration_minutes: String(service.duration_minutes || 30),
       price: service.price ? String(service.price) : "",
       active: Boolean(service.active),
@@ -217,6 +226,7 @@ export default function ServicesPage() {
           },
           body: JSON.stringify({
             name: editForm.name.trim(),
+            description: editForm.description.trim(),
             duration_minutes: Number(editForm.duration_minutes || 30),
             price: Number(editForm.price || 0),
             buffer_before_minutes: 0,
@@ -331,9 +341,9 @@ export default function ServicesPage() {
           helper="Servicios disponibles actualmente para reserva."
         />
         <StatCard
-          label="Inactivos"
-          value={loading ? "..." : String(inactiveServicesCount)}
-          helper="Servicios ocultos o pausados temporalmente."
+          label="Con descripción"
+          value={loading ? "..." : String(servicesWithDescriptionCount)}
+          helper="Servicios con detalle útil para clientes e IA."
         />
       </section>
 
@@ -365,7 +375,7 @@ export default function ServicesPage() {
                             Editar servicio
                           </p>
                           <p className="mt-1 text-sm text-slate-500">
-                            Actualiza nombre, duración, precio y estado.
+                            Actualiza nombre, descripción, duración, precio y estado.
                           </p>
                         </div>
 
@@ -389,6 +399,23 @@ export default function ServicesPage() {
                               }))
                             }
                             className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="mb-2 block text-sm font-medium text-slate-700">
+                            Descripción del servicio
+                          </label>
+                          <textarea
+                            value={editForm.description}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                description: e.target.value,
+                              }))
+                            }
+                            placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
+                            className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
                           />
                         </div>
 
@@ -485,7 +512,9 @@ export default function ServicesPage() {
                           </div>
 
                           <p className="mt-2 text-sm text-slate-500">
-                            Servicio disponible para agendamiento público.
+                            {service.description?.trim()
+                              ? service.description
+                              : "Agrega una descripción para explicar qué incluye este servicio."}
                           </p>
                         </div>
 
@@ -573,6 +602,20 @@ export default function ServicesPage() {
 
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
+                Descripción del servicio
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, description: e.target.value }))
+                }
+                placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
+                className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
                 Duración (minutos)
               </label>
               <input
@@ -606,12 +649,10 @@ export default function ServicesPage() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-700">
-                Consejo
-              </p>
+              <p className="text-sm font-medium text-slate-700">Consejo</p>
               <p className="mt-1 text-sm text-slate-500">
-                Mantén nombres claros y cortos para que tus clientes entiendan
-                rápido qué están reservando.
+                Describe qué incluye el servicio para que tus clientes entiendan mejor
+                lo que están reservando y para que la IA pueda responder dudas.
               </p>
             </div>
 
