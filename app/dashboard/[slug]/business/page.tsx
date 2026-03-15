@@ -24,13 +24,13 @@ type BusinessResponse = {
 };
 
 const days = [
+  "Domingo",
   "Lunes",
   "Martes",
   "Miércoles",
   "Jueves",
   "Viernes",
   "Sábado",
-  "Domingo",
 ];
 
 export default function BusinessPage() {
@@ -285,28 +285,29 @@ export default function BusinessPage() {
                 />
 
                 <input
-                  type="time"
-                  step="60"
-                  value={h.start_time?.slice(0, 5)}
-                  onChange={(e) =>
-                    updateHour(index, "start_time", e.target.value)
-                  }
-                  disabled={!h.enabled}
-                  className="border rounded-lg px-2 py-1"
-                />
-
+  type="time"
+  step="60"
+  lang="es-ES"
+  value={h.start_time?.slice(0,5)}
+  onChange={(e) =>
+    updateHour(index, "start_time", e.target.value)
+  }
+  disabled={!h.enabled}
+  className="border rounded-lg px-2 py-1"
+/>
                 <span>-</span>
 
-                <input
-                  type="time"
-                  step="60"
-                  value={h.end_time?.slice(0, 5)}
-                  onChange={(e) =>
-                    updateHour(index, "end_time", e.target.value)
-                  }
-                  disabled={!h.enabled}
-                  className="border rounded-lg px-2 py-1"
-                />
+               <input
+  type="time"
+  step="60"
+  lang="es-ES"
+  value={h.end_time?.slice(0,5)}
+  onChange={(e) =>
+    updateHour(index, "end_time", e.target.value)
+  }
+  disabled={!h.enabled}
+  className="border rounded-lg px-2 py-1"
+/>
               </div>
             );
           })}
