@@ -13,6 +13,11 @@ type BusinessResponse = {
     slug: string;
     phone?: string | null;
     address?: string | null;
+    email?: string | null;
+    whatsapp?: string | null;
+    instagram_url?: string | null;
+    facebook_url?: string | null;
+    description?: string | null;
   };
   calendar_id: string;
   google_connected?: boolean;
@@ -35,9 +40,27 @@ export default function BusinessPage() {
     name: "",
     phone: "",
     address: "",
+    email: "",
+    whatsapp: "",
+    instagram_url: "",
+    facebook_url: "",
+    description: "",
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
+
+  const profileCompleted = [
+    form.name,
+    form.phone,
+    form.address,
+    form.email,
+    form.whatsapp,
+    form.instagram_url,
+    form.facebook_url,
+    form.description,
+  ].filter((value) => String(value || "").trim() !== "").length;
+
+  const profilePercent = Math.round((profileCompleted / 8) * 100);
 
   useEffect(() => {
     async function loadBusiness() {
@@ -69,6 +92,11 @@ export default function BusinessPage() {
           name: data.business.name || "",
           phone: data.business.phone || "",
           address: data.business.address || "",
+          email: data.business.email || "",
+          whatsapp: data.business.whatsapp || "",
+          instagram_url: data.business.instagram_url || "",
+          facebook_url: data.business.facebook_url || "",
+          description: data.business.description || "",
         });
       } catch (error: any) {
         setLoadError(error?.message || "No se pudo cargar el negocio");
@@ -107,6 +135,11 @@ export default function BusinessPage() {
             name: form.name.trim(),
             phone: form.phone.trim(),
             address: form.address.trim(),
+            email: form.email.trim(),
+            whatsapp: form.whatsapp.trim(),
+            instagram_url: form.instagram_url.trim(),
+            facebook_url: form.facebook_url.trim(),
+            description: form.description.trim(),
           }),
         }
       );
@@ -130,7 +163,7 @@ export default function BusinessPage() {
       <PageHeader
         eyebrow="Negocio"
         title="Datos del negocio"
-        description="Actualiza la información principal que identifica a tu negocio dentro de Orbyx."
+        description="Actualiza la información principal, redes y canales de contacto de tu negocio."
         actions={
           <a
             href={publicUrl}
@@ -151,9 +184,9 @@ export default function BusinessPage() {
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard
-          label="Nombre público"
-          value={loading ? "..." : form.name || "-"}
-          helper="Nombre visible para tus clientes."
+          label="Perfil completado"
+          value={loading ? "..." : `${profilePercent}%`}
+          helper="Mientras más completo, más sólida se verá tu página pública."
         />
         <StatCard
           label="Google Calendar"
@@ -176,7 +209,7 @@ export default function BusinessPage() {
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <Panel
           title="Información principal"
-          description="Edita los datos base de tu negocio."
+          description="Edita los datos que verán tus clientes y que también podrá usar la IA."
         >
           {loading ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
@@ -198,17 +231,49 @@ export default function BusinessPage() {
                 />
               </div>
 
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Teléfono
+                  </label>
+                  <input
+                    type="text"
+                    value={form.phone}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, phone: e.target.value }))
+                    }
+                    placeholder="Ej: +56 9 1234 5678"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    WhatsApp
+                  </label>
+                  <input
+                    type="text"
+                    value={form.whatsapp}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, whatsapp: e.target.value }))
+                    }
+                    placeholder="Ej: +56 9 1234 5678"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Teléfono
+                  Correo de contacto
                 </label>
                 <input
-                  type="text"
-                  value={form.phone}
+                  type="email"
+                  value={form.email}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, phone: e.target.value }))
+                    setForm((prev) => ({ ...prev, email: e.target.value }))
                   }
-                  placeholder="Ej: +56 9 1234 5678"
+                  placeholder="Ej: contacto@tunegocio.cl"
                   className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
                 />
               </div>
@@ -225,6 +290,61 @@ export default function BusinessPage() {
                   }
                   placeholder="Ej: Avenida Principal 123, Concepción"
                   className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Instagram
+                  </label>
+                  <input
+                    type="text"
+                    value={form.instagram_url}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        instagram_url: e.target.value,
+                      }))
+                    }
+                    placeholder="Ej: https://instagram.com/tu_negocio"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Facebook
+                  </label>
+                  <input
+                    type="text"
+                    value={form.facebook_url}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        facebook_url: e.target.value,
+                      }))
+                    }
+                    placeholder="Ej: https://facebook.com/tu_negocio"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Descripción del negocio
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Describe tu negocio, especialidad, estilo de atención y lo que te diferencia."
+                  className="min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
                 />
               </div>
 
@@ -256,7 +376,7 @@ export default function BusinessPage() {
 
         <Panel
           title="Vista rápida"
-          description="Resumen visual de la información actual del negocio."
+          description="Resumen visual del perfil actual de tu negocio."
         >
           <div className="space-y-4">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -270,19 +390,32 @@ export default function BusinessPage() {
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Teléfono
+                Contacto
               </p>
               <p className="mt-2 text-sm font-semibold text-slate-900">
-                {loading ? "Cargando..." : form.phone || "No definido"}
+                {loading ? "Cargando..." : form.phone || form.whatsapp || "No definido"}
               </p>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Dirección
+                Correo
+              </p>
+              <p className="mt-2 break-all text-sm font-semibold text-slate-900">
+                {loading ? "Cargando..." : form.email || "No definido"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Redes sociales
               </p>
               <p className="mt-2 text-sm font-semibold text-slate-900">
-                {loading ? "Cargando..." : form.address || "No definida"}
+                {loading
+                  ? "Cargando..."
+                  : form.instagram_url || form.facebook_url
+                  ? "Configuradas"
+                  : "No configuradas"}
               </p>
             </div>
 
