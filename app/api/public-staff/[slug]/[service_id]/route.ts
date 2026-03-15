@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
-  _req: Request,
-  context: { params: { slug: string; service_id: string } }
+  _req: NextRequest,
+  context: { params: Promise<{ slug: string; service_id: string }> }
 ) {
   try {
-    const { slug, service_id } = context.params;
+    const { slug, service_id } = await context.params;
 
     const res = await fetch(
       `https://orbyx-backend.onrender.com/public/staff/${slug}/${service_id}`,
