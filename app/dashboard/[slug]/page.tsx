@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { PageHeader } from "@/components/dashboard/page-header";
-import { Panel } from "@/components/dashboard/panel";
-import { StatCard } from "@/components/dashboard/stat-card";
+import { PageHeader } from "../../../components/dashboard/page-header";
+import { Panel } from "../../../components/dashboard/panel";
+import { StatCard } from "../../../components/dashboard/stat-card";
 
 type BusinessResponse = {
   business: {
