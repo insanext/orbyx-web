@@ -124,16 +124,16 @@ export default function Page() {
     }
   }
 
-  useEffect(() => {
-    if (!slug) return;
+useEffect(() => {
+  if (!slug) return;
 
-    fetch(`/api/public-services/${slug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setBusiness(data.business);
-        setServices((data.services || []).filter((service: any) => service.active));
-      });
-  }, [slug]);
+  fetch(`/api/public-services/${slug}`)
+    .then((res) => res.json())
+    .then((data) => {
+      setBusiness(data.business);
+      setServices(data.services || []);
+    });
+}, [slug]);
 
   useEffect(() => {
     const week = getWeekDates(selectedDate);

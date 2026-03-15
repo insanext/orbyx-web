@@ -122,21 +122,24 @@ export default function ServicesPage() {
         throw new Error("Debes ingresar la duración");
       }
 
-      const response = await fetch("https://orbyx-backend.onrender.com/services", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          name: form.name.trim(),
-          duration_minutes: Number(form.duration_minutes || 30),
-          buffer_before_minutes: 0,
-          buffer_after_minutes: 0,
-          price: Number(form.price || 0),
-          active: true,
-        }),
-      });
+      const response = await fetch(
+        "https://orbyx-backend.onrender.com/services",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            name: form.name.trim(),
+            duration_minutes: Number(form.duration_minutes || 30),
+            buffer_before_minutes: 0,
+            buffer_after_minutes: 0,
+            price: Number(form.price || 0),
+            active: true,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -218,6 +221,46 @@ export default function ServicesPage() {
       await loadAll();
     } catch (error: any) {
       setSaveError(error?.message || "No se pudo actualizar el servicio");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteService(serviceId: string) {
+    try {
+      setSaveError("");
+      setSaveOk("");
+
+      const confirmed = window.confirm(
+        "¿Seguro que deseas eliminar este servicio?"
+      );
+
+      if (!confirmed) return;
+
+      setSaving(true);
+
+      const response = await fetch(
+        `https://orbyx-backend.onrender.com/services/${serviceId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo eliminar el servicio");
+      }
+
+      setSaveOk("Servicio eliminado correctamente.");
+
+      if (editingId === serviceId) {
+        setEditingId(null);
+      }
+
+      await loadAll();
+    } catch (error: any) {
+      setSaveError(error?.message || "No se pudo eliminar el servicio");
     } finally {
       setSaving(false);
     }
@@ -401,6 +444,15 @@ export default function ServicesPage() {
                           className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-white"
                         >
                           Editar
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteService(service.id)}
+                          disabled={saving}
+                          className="rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Eliminar
                         </button>
                       </div>
                     </div>
