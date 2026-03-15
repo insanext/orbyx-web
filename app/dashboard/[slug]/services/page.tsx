@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { PageHeader } from "../../../../components/dashboard/page-header";
+import { Panel } from "../../../../components/dashboard/panel";
+import { StatCard } from "../../../../components/dashboard/stat-card";
 
 type BusinessResponse = {
   business: {
@@ -51,6 +54,19 @@ export default function ServicesPage() {
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
+
+  const activeServicesCount = services.filter((service) => service.active).length;
+  const inactiveServicesCount = services.filter((service) => !service.active).length;
+
+  function formatPrice(price: number | null) {
+    if (typeof price !== "number" || price <= 0) return "Sin precio";
+
+    return new Intl.NumberFormat("es-CL", {
+      style: "currency",
+      currency: "CLP",
+      maximumFractionDigits: 0,
+    }).format(price);
+  }
 
   async function loadAll() {
     try {
@@ -267,120 +283,153 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="text-sm text-slate-500">Dashboard / Servicios</p>
-        <h1 className="mt-1 text-3xl font-semibold text-slate-900">
-          Servicios de {loading ? "tu negocio" : businessName}
-        </h1>
-        <p className="mt-2 text-slate-600">
-          Aquí puedes revisar, crear y editar los servicios que tus clientes podrán reservar.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Servicios"
+        title={loading ? "Cargando servicios..." : "Servicios del negocio"}
+        description={`Gestiona los servicios que tus clientes podrán reservar en ${loading ? "tu negocio" : businessName}.`}
+        actions={
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={publicUrl}
+              target="_blank"
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Ver página pública
+            </Link>
+          </div>
+        }
+      />
 
       {loadError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
           {loadError}
         </div>
       ) : null}
 
       {saveError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
           {saveError}
         </div>
       ) : null}
 
       {saveOk ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 shadow-sm">
           {saveOk}
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Servicios actuales
-            </h2>
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <StatCard
+          label="Total servicios"
+          value={loading ? "..." : String(services.length)}
+          helper="Cantidad total registrada en el negocio."
+        />
+        <StatCard
+          label="Activos"
+          value={loading ? "..." : String(activeServicesCount)}
+          helper="Servicios disponibles actualmente para reserva."
+        />
+        <StatCard
+          label="Inactivos"
+          value={loading ? "..." : String(inactiveServicesCount)}
+          helper="Servicios ocultos o pausados temporalmente."
+        />
+      </section>
 
-            <Link
-              href={publicUrl}
-              target="_blank"
-              className="text-sm font-medium text-sky-700 hover:underline"
-            >
-              Ver página pública
-            </Link>
-          </div>
-
+      <section className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+        <Panel
+          title="Servicios actuales"
+          description="Edita, activa o elimina los servicios de tu negocio."
+        >
           {loading ? (
-            <p className="text-sm text-slate-500">Cargando servicios...</p>
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+              Cargando servicios...
+            </div>
           ) : services.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
               Aún no tienes servicios creados.
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {services.map((service) => (
                 <div
                   key={service.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
                 >
                   {editingId === service.id ? (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-700">
-                          Nombre del servicio
-                        </label>
-                        <input
-                          type="text"
-                          value={editForm.name}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({
-                              ...prev,
-                              name: e.target.value,
-                            }))
-                          }
-                          className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                        />
+                    <div className="space-y-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-base font-semibold text-slate-900">
+                            Editar servicio
+                          </p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            Actualiza nombre, duración, precio y estado.
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                          Modo edición
+                        </span>
                       </div>
 
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-700">
-                          Duración (minutos)
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={editForm.duration_minutes}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({
-                              ...prev,
-                              duration_minutes: e.target.value,
-                            }))
-                          }
-                          className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                        />
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="md:col-span-2">
+                          <label className="mb-2 block text-sm font-medium text-slate-700">
+                            Nombre del servicio
+                          </label>
+                          <input
+                            type="text"
+                            value={editForm.name}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
+                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">
+                            Duración (minutos)
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={editForm.duration_minutes}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                duration_minutes: e.target.value,
+                              }))
+                            }
+                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">
+                            Precio
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editForm.price}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                price: e.target.value,
+                              }))
+                            }
+                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                          />
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-700">
-                          Precio
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={editForm.price}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({
-                              ...prev,
-                              price: e.target.value,
-                            }))
-                          }
-                          className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                        />
-                      </div>
-
-                      <label className="flex items-center gap-3 text-sm text-slate-700">
+                      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                         <input
                           type="checkbox"
                           checked={editForm.active}
@@ -395,65 +444,104 @@ export default function ServicesPage() {
                         Servicio activo
                       </label>
 
-                      <div className="flex gap-3">
+                      <div className="flex flex-wrap gap-3">
                         <button
                           type="button"
                           onClick={() => handleSaveEdit(service.id)}
                           disabled={saving}
-                          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {saving ? "Guardando..." : "Guardar"}
+                          {saving ? "Guardando..." : "Guardar cambios"}
                         </button>
 
                         <button
                           type="button"
                           onClick={cancelEditing}
                           disabled={saving}
-                          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                          className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                         >
                           Cancelar
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-slate-900">{service.name}</p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {service.duration_minutes} min
-                          {typeof service.price === "number" && service.price > 0
-                            ? ` · $${service.price}`
-                            : " · Sin precio"}
-                        </p>
+                    <div className="space-y-5">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+                              {service.name}
+                            </h3>
+
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                service.active
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {service.active ? "Activo" : "Inactivo"}
+                            </span>
+                          </div>
+
+                          <p className="mt-2 text-sm text-slate-500">
+                            Servicio disponible para agendamiento público.
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEditing(service)}
+                            className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Editar
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteService(service.id)}
+                            disabled={saving}
+                            className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-2">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${
-                            service.active
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-slate-200 text-slate-600"
-                          }`}
-                        >
-                          {service.active ? "Activo" : "Inactivo"}
-                        </span>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Duración
+                          </p>
+                          <p className="mt-2 text-sm font-semibold text-slate-900">
+                            {service.duration_minutes} min
+                          </p>
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => startEditing(service)}
-                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-white"
-                        >
-                          Editar
-                        </button>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Precio
+                          </p>
+                          <p className="mt-2 text-sm font-semibold text-slate-900">
+                            {formatPrice(service.price)}
+                          </p>
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteService(service.id)}
-                          disabled={saving}
-                          className="rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          Eliminar
-                        </button>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Estado
+                          </p>
+                          <p
+                            className={`mt-2 text-sm font-semibold ${
+                              service.active
+                                ? "text-emerald-600"
+                                : "text-slate-600"
+                            }`}
+                          >
+                            {service.active ? "Disponible" : "Oculto"}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -461,17 +549,13 @@ export default function ServicesPage() {
               ))}
             </div>
           )}
-        </section>
+        </Panel>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Crear nuevo servicio
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Agrega un nuevo servicio para ofrecer más opciones de reserva.
-          </p>
-
-          <div className="mt-5 space-y-4">
+        <Panel
+          title="Crear nuevo servicio"
+          description="Agrega un nuevo servicio para ofrecer más opciones de reserva."
+        >
+          <div className="space-y-5">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
                 Nombre del servicio
@@ -483,7 +567,7 @@ export default function ServicesPage() {
                   setForm((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder="Ej: Corte premium"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
               />
             </div>
 
@@ -501,7 +585,7 @@ export default function ServicesPage() {
                     duration_minutes: e.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
               />
             </div>
 
@@ -517,21 +601,31 @@ export default function ServicesPage() {
                   setForm((prev) => ({ ...prev, price: e.target.value }))
                 }
                 placeholder="Ej: 10000"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
               />
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-700">
+                Consejo
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Mantén nombres claros y cortos para que tus clientes entiendan
+                rápido qué están reservando.
+              </p>
             </div>
 
             <button
               type="button"
               onClick={handleCreateService}
               disabled={saving || loading}
-              className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "Guardando..." : "Crear servicio"}
             </button>
           </div>
-        </section>
-      </div>
+        </Panel>
+      </section>
     </div>
   );
 }
