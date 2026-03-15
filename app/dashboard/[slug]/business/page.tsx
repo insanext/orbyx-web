@@ -30,6 +30,15 @@ type BusinessHour = {
   end_time: string;
 };
 
+type SpecialDate = {
+  id?: string;
+  date: string;
+  label: string;
+  is_closed: boolean;
+  start_time: string;
+  end_time: string;
+};
+
 const days = [
   "Domingo",
   "Lunes",
@@ -56,8 +65,10 @@ export default function BusinessPage() {
   const [saveError, setSaveError] = useState("");
   const [saveOk, setSaveOk] = useState("");
 
-  const [googleConnected, setGoogleConnected] = useState(false);
-  const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
+const [googleConnected, setGoogleConnected] = useState(false);
+const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
+const [specialDates, setSpecialDates] = useState<SpecialDate[]>([]);
+const [savingSpecialDates, setSavingSpecialDates] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -124,6 +135,7 @@ export default function BusinessPage() {
         });
 
         await loadBusinessHours(data.business.id);
+await loadSpecialDates(data.business.id);
       } catch (error: any) {
         setLoadError(error?.message || "No se pudo cargar el negocio");
       } finally {
@@ -221,6 +233,127 @@ export default function BusinessPage() {
       setBusinessHours(getDefaultHours());
     }
   }
+
+
+async function loadSpecialDates(id: string) {
+  try {
+    const res = await fetch(
+      `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}`
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Error cargando fechas especiales");
+    }
+
+    const normalized = Array.isArray(data.special_dates)
+      ? data.special_dates.map((item: any) => ({
+          id: item.id,
+          date: item.date || "",
+          label: item.label || "",
+          is_closed: Boolean(item.is_closed),
+          start_time: String(item.start_time || "").slice(0, 5),
+          end_time: String(item.end_time || "").slice(0, 5),
+        }))
+      : [];
+
+    setSpecialDates(normalized);
+  } catch (err) {
+    console.error("Error cargando fechas especiales", err);
+    setSpecialDates([]);
+  }
+}
+
+function addSpecialDate() {
+  setSpecialDates((prev) => [
+    ...prev,
+    {
+      date: "",
+      label: "",
+      is_closed: true,
+      start_time: "",
+      end_time: "",
+    },
+  ]);
+}
+
+function updateSpecialDate(index: number, field: keyof SpecialDate, value: any) {
+  setSpecialDates((prev) =>
+    prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+  );
+}
+
+function removeSpecialDate(index: number) {
+  setSpecialDates((prev) => prev.filter((_, i) => i !== index));
+}
+
+async function saveSpecialDates() {
+  try {
+    setSavingSpecialDates(true);
+
+    const existingItems = specialDates.filter((item) => item.id);
+    const newItems = specialDates.filter((item) => !item.id);
+
+    for (const item of existingItems) {
+      const res = await fetch(
+        `https://orbyx-backend.onrender.com/business-special-dates/${item.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            date: item.date,
+            label: item.label,
+            is_closed: item.is_closed,
+            start_time: item.is_closed ? (item.start_time || null) : item.start_time,
+            end_time: item.is_closed ? (item.end_time || null) : item.end_time,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error actualizando fecha especial");
+      }
+    }
+
+    for (const item of newItems) {
+      const res = await fetch(
+        "https://orbyx-backend.onrender.com/business-special-dates",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            date: item.date,
+            label: item.label,
+            is_closed: item.is_closed,
+            start_time: item.is_closed ? (item.start_time || null) : item.start_time,
+            end_time: item.is_closed ? (item.end_time || null) : item.end_time,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error creando fecha especial");
+      }
+    }
+
+    await loadSpecialDates(tenantId);
+    alert("Fechas especiales guardadas correctamente");
+  } catch (err: any) {
+    alert(err.message || "No se pudieron guardar las fechas especiales");
+  } finally {
+    setSavingSpecialDates(false);
+  }
+}
 
   async function saveBusinessHours() {
     try {
@@ -577,7 +710,7 @@ export default function BusinessPage() {
         </Panel>
       </section>
 
-      <Panel
+            <Panel
         title="Horarios de atención"
         description="Define cuándo tu negocio está disponible para recibir reservas."
       >
@@ -685,6 +818,145 @@ export default function BusinessPage() {
           >
             {savingHours ? "Guardando..." : "Guardar horarios"}
           </button>
+        </div>
+      </Panel>
+
+      <Panel
+        title="Fechas especiales"
+        description="Configura feriados, vísperas, vacaciones, cierres y horarios especiales por fecha."
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-slate-900">
+                Excepciones del calendario
+              </p>
+              <p className="text-sm text-slate-500">
+                Ejemplos: 18 septiembre cerrado, 24 diciembre 09:00 a 13:00.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={addSpecialDate}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Agregar fecha especial
+            </button>
+          </div>
+
+          {specialDates.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+              Aún no has agregado fechas especiales.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {specialDates.map((item, index) => (
+                <div
+                  key={item.id || `new-${index}`}
+                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
+                        Fecha
+                      </label>
+                      <input
+                        type="date"
+                        value={item.date}
+                        onChange={(e) =>
+                          updateSpecialDate(index, "date", e.target.value)
+                        }
+                        className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
+                        Motivo o etiqueta
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Feriado, Navidad, Vacaciones"
+                        value={item.label}
+                        onChange={(e) =>
+                          updateSpecialDate(index, "label", e.target.value)
+                        }
+                        className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                      />
+                    </div>
+
+                    <div className="flex items-end">
+                      <label className="flex h-11 w-full items-center gap-3 rounded-2xl border border-slate-300 bg-slate-50 px-4 text-sm text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={item.is_closed}
+                          onChange={(e) =>
+                            updateSpecialDate(index, "is_closed", e.target.checked)
+                          }
+                          className="h-4 w-4 rounded border-slate-300"
+                        />
+                        Cerrado todo el día
+                      </label>
+                    </div>
+
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => removeSpecialDate(index)}
+                        className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+
+                  {!item.is_closed ? (
+                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Hora inicio
+                        </label>
+                        <input
+                          type="time"
+                          value={item.start_time}
+                          onChange={(e) =>
+                            updateSpecialDate(index, "start_time", e.target.value)
+                          }
+                          className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Hora fin
+                        </label>
+                        <input
+                          type="time"
+                          value={item.end_time}
+                          onChange={(e) =>
+                            updateSpecialDate(index, "end_time", e.target.value)
+                          }
+                          className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button
+              type="button"
+              onClick={saveSpecialDates}
+              disabled={savingSpecialDates}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {savingSpecialDates ? "Guardando..." : "Guardar fechas especiales"}
+            </button>
+          </div>
         </div>
       </Panel>
     </div>
