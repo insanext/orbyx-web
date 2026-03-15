@@ -255,6 +255,13 @@ export default function BusinessPage() {
         title="Horarios de atención"
         description="Define cuándo tu negocio está disponible para recibir reservas."
       >
+<div className="flex items-center gap-4 text-xs font-semibold text-slate-500 pb-2">
+  <div className="w-32"></div>
+  <div className="w-6"></div>
+  <div className="w-24">Inicio</div>
+  <div className="w-4"></div>
+  <div className="w-24">Fin</div>
+</div>
         <div className="space-y-3">
           {[1,2,3,4,5,6,0].map((dayIndex) => {
             const index = businessHours.findIndex(
