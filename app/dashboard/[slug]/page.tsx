@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { PageHeader } from "../../../components/dashboard/page-header";
 import { Panel } from "../../../components/dashboard/panel";
@@ -132,11 +133,6 @@ export default function DashboardPage() {
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard
-          label="Negocio"
-          value={loading ? "Cargando..." : businessName || slug || "-"}
-          helper="Nombre visible de tu negocio."
-        />
-        <StatCard
           label="Google Calendar"
           value={
             loading ? "Cargando..." : googleConnected ? "Conectado" : "Pendiente"
@@ -152,24 +148,29 @@ export default function DashboardPage() {
           value={slug ? "Activa" : "-"}
           helper="Tus clientes podrán reservar desde tu enlace."
         />
+        <StatCard
+          label="Slug público"
+          value={loading ? "Cargando..." : slug || "-"}
+          helper="Identificador usado en tu URL pública."
+        />
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Panel
-          title="Estado general"
-          description="Resumen principal de la configuración actual de tu negocio."
+          title="Estado del negocio"
+          description="Resumen principal de la configuración actual."
           className="xl:col-span-2"
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Negocio
+                Slug público
               </p>
               <p className="mt-2 text-base font-semibold text-slate-900">
-                {loading ? "Cargando..." : businessName || slug}
+                {loading ? "Cargando..." : slug || "-"}
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Identificador público: {slug || "-"}
+                Identificador visible en la URL de reservas.
               </p>
             </div>
 
@@ -222,6 +223,27 @@ export default function DashboardPage() {
             >
               Abrir página pública
             </a>
+
+            <Link
+              href={`/dashboard/${slug}/agenda`}
+              className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Ver agenda
+            </Link>
+
+            <Link
+              href={`/dashboard/${slug}/services`}
+              className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Administrar servicios
+            </Link>
+
+            <Link
+              href={`/dashboard/${slug}/business`}
+              className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Editar negocio
+            </Link>
 
             {!googleConnected ? (
               <button
