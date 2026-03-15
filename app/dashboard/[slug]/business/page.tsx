@@ -24,13 +24,13 @@ type BusinessResponse = {
 };
 
 const days = [
-  "Domingo",
   "Lunes",
   "Martes",
   "Miércoles",
   "Jueves",
   "Viernes",
   "Sábado",
+  "Domingo",
 ];
 
 export default function BusinessPage() {
@@ -48,7 +48,6 @@ export default function BusinessPage() {
   const [saveOk, setSaveOk] = useState("");
 
   const [googleConnected, setGoogleConnected] = useState(false);
-
   const [businessHours, setBusinessHours] = useState<any[]>([]);
 
   const [form, setForm] = useState({
@@ -140,12 +139,15 @@ export default function BusinessPage() {
         if (data.hours?.length) {
           setBusinessHours(data.hours);
         } else {
-          const defaultHours = days.map((_, i) => ({
-            day_of_week: i,
-            enabled: i !== 0 && i !== 6,
-            start_time: "09:00",
-            end_time: "18:00",
-          }));
+          const defaultHours = [
+            { day_of_week: 0, enabled: false, start_time: "09:00", end_time: "18:00" },
+            { day_of_week: 1, enabled: true, start_time: "09:00", end_time: "18:00" },
+            { day_of_week: 2, enabled: true, start_time: "09:00", end_time: "18:00" },
+            { day_of_week: 3, enabled: true, start_time: "09:00", end_time: "18:00" },
+            { day_of_week: 4, enabled: true, start_time: "09:00", end_time: "18:00" },
+            { day_of_week: 5, enabled: true, start_time: "09:00", end_time: "18:00" },
+            { day_of_week: 6, enabled: false, start_time: "09:00", end_time: "18:00" },
+          ];
 
           setBusinessHours(defaultHours);
         }
@@ -192,10 +194,6 @@ export default function BusinessPage() {
       setSaving(true);
       setSaveError("");
       setSaveOk("");
-
-      if (!tenantId) {
-        throw new Error("No se encontró el negocio");
-      }
 
       const res = await fetch(
         `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
@@ -258,44 +256,60 @@ export default function BusinessPage() {
         description="Define cuándo tu negocio está disponible para recibir reservas."
       >
         <div className="space-y-3">
-          {businessHours.map((h, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between gap-4 border-b pb-3"
-            >
-              <div className="w-32 font-medium">{days[h.day_of_week]}</div>
+          {[1,2,3,4,5,6,0].map((dayIndex) => {
+            const index = businessHours.findIndex(
+              (d) => d.day_of_week === dayIndex
+            );
 
-              <input
-                type="checkbox"
-                checked={h.enabled}
-                onChange={(e) =>
-                  updateHour(i, "enabled", e.target.checked)
-                }
-              />
+            const h =
+              businessHours[index] || {
+                day_of_week: dayIndex,
+                enabled: false,
+                start_time: "09:00",
+                end_time: "18:00",
+              };
 
-              <input
-                type="time"
-                value={h.start_time}
-                onChange={(e) =>
-                  updateHour(i, "start_time", e.target.value)
-                }
-                disabled={!h.enabled}
-                className="border rounded-lg px-2 py-1"
-              />
+            return (
+              <div
+                key={dayIndex}
+                className="flex items-center justify-between gap-4 border-b pb-3"
+              >
+                <div className="w-32 font-medium">{days[dayIndex]}</div>
 
-              <span>-</span>
+                <input
+                  type="checkbox"
+                  checked={h.enabled}
+                  onChange={(e) =>
+                    updateHour(index, "enabled", e.target.checked)
+                  }
+                />
 
-              <input
-                type="time"
-                value={h.end_time}
-                onChange={(e) =>
-                  updateHour(i, "end_time", e.target.value)
-                }
-                disabled={!h.enabled}
-                className="border rounded-lg px-2 py-1"
-              />
-            </div>
-          ))}
+                <input
+                  type="time"
+                  step="60"
+                  value={h.start_time?.slice(0, 5)}
+                  onChange={(e) =>
+                    updateHour(index, "start_time", e.target.value)
+                  }
+                  disabled={!h.enabled}
+                  className="border rounded-lg px-2 py-1"
+                />
+
+                <span>-</span>
+
+                <input
+                  type="time"
+                  step="60"
+                  value={h.end_time?.slice(0, 5)}
+                  onChange={(e) =>
+                    updateHour(index, "end_time", e.target.value)
+                  }
+                  disabled={!h.enabled}
+                  className="border rounded-lg px-2 py-1"
+                />
+              </div>
+            );
+          })}
         </div>
 
         <button
