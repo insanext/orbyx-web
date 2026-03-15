@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Briefcase,
   Scissors,
+  Users,
   ChevronRight,
 } from "lucide-react";
 import clsx from "clsx";
@@ -28,6 +29,11 @@ const navItems = [
     icon: Scissors,
   },
   {
+    label: "Staff",
+    href: "/staff",
+    icon: Users,
+  },
+  {
     label: "Negocio",
     href: "/business",
     icon: Briefcase,
@@ -44,6 +50,14 @@ export default function DashboardLayout({
 
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
+
+  function isItemActive(fullHref: string) {
+    if (fullHref === `/dashboard/${slug}`) {
+      return pathname === fullHref;
+    }
+
+    return pathname === fullHref || pathname.startsWith(`${fullHref}/`);
+  }
 
   return (
     <div className="min-h-screen bg-slate-100/70">
@@ -74,7 +88,7 @@ export default function DashboardLayout({
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const fullHref = `/dashboard/${slug}${item.href}`;
-                  const active = pathname === fullHref;
+                  const active = isItemActive(fullHref);
 
                   return (
                     <Link
@@ -105,7 +119,9 @@ export default function DashboardLayout({
                         size={16}
                         className={clsx(
                           "transition-opacity",
-                          active ? "opacity-100" : "opacity-0 group-hover:opacity-50"
+                          active
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-50"
                         )}
                       />
                     </Link>
@@ -123,7 +139,7 @@ export default function DashboardLayout({
                   {slug}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  Administra tu agenda, servicios y datos del negocio.
+                  Administra tu agenda, staff, servicios y datos del negocio.
                 </p>
               </div>
             </div>
@@ -144,7 +160,7 @@ export default function DashboardLayout({
                 </h2>
               </div>
 
-              <div className="hidden sm:flex items-center gap-3">
+              <div className="hidden items-center gap-3 sm:flex">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
                   /dashboard/{slug}
                 </div>

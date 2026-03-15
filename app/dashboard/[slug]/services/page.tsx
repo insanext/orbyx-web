@@ -26,6 +26,25 @@ type Service = {
   active: boolean;
 };
 
+type StaffItem = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  role?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  color?: string | null;
+  is_active: boolean;
+  sort_order: number;
+};
+
+type StaffServiceRow = {
+  id: string;
+  tenant_id: string;
+  staff_id: string;
+  service_id: string;
+};
+
 export default function ServicesPage() {
   const params = useParams();
   const slug =
@@ -34,6 +53,8 @@ export default function ServicesPage() {
   const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [services, setServices] = useState<Service[]>([]);
+  const [staff, setStaff] = useState<StaffItem[]>([]);
+  const [staffServices, setStaffServices] = useState<StaffServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,6 +67,7 @@ export default function ServicesPage() {
     description: "",
     duration_minutes: "30",
     price: "",
+    staff_ids: [] as string[],
   });
 
   const [editForm, setEditForm] = useState({
@@ -54,12 +76,12 @@ export default function ServicesPage() {
     duration_minutes: "30",
     price: "",
     active: true,
+    staff_ids: [] as string[],
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
 
   const activeServicesCount = services.filter((service) => service.active).length;
-  const inactiveServicesCount = services.filter((service) => !service.active).length;
   const servicesWithDescriptionCount = services.filter(
     (service) => String(service.description || "").trim() !== ""
   ).length;
@@ -72,6 +94,49 @@ export default function ServicesPage() {
       currency: "CLP",
       maximumFractionDigits: 0,
     }).format(price);
+  }
+
+  function getSelectedStaffIdsForService(serviceId: string) {
+    return staffServices
+      .filter((row) => row.service_id === serviceId)
+      .map((row) => row.staff_id);
+  }
+
+  function getStaffNamesForService(serviceId: string) {
+    const selectedIds = getSelectedStaffIdsForService(serviceId);
+
+    if (selectedIds.length === 0) return [];
+
+    return staff
+      .filter((item) => selectedIds.includes(item.id))
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      .map((item) => item.name);
+  }
+
+  function toggleCreateStaff(staffId: string) {
+    setForm((prev) => {
+      const exists = prev.staff_ids.includes(staffId);
+
+      return {
+        ...prev,
+        staff_ids: exists
+          ? prev.staff_ids.filter((id) => id !== staffId)
+          : [...prev.staff_ids, staffId],
+      };
+    });
+  }
+
+  function toggleEditStaff(staffId: string) {
+    setEditForm((prev) => {
+      const exists = prev.staff_ids.includes(staffId);
+
+      return {
+        ...prev,
+        staff_ids: exists
+          ? prev.staff_ids.filter((id) => id !== staffId)
+          : [...prev.staff_ids, staffId],
+      };
+    });
   }
 
   async function loadAll() {
@@ -97,14 +162,31 @@ export default function ServicesPage() {
         throw new Error("Respuesta inválida del backend");
       }
 
-      setTenantId(businessData.business.id);
+      const currentTenantId = businessData.business.id;
+
+      setTenantId(currentTenantId);
       setBusinessName(businessData.business.name || slug);
 
-      const servicesRes = await fetch(
-        `https://orbyx-backend.onrender.com/services?tenant_id=${businessData.business.id}`
-      );
+      const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
+        fetch(
+          `https://orbyx-backend.onrender.com/services?tenant_id=${currentTenantId}`
+        ),
+        fetch(
+          `https://orbyx-backend.onrender.com/staff?tenant_id=${currentTenantId}&active=true`
+        ),
+        fetch(
+          `https://orbyx-backend.onrender.com/staff-services?tenant_id=${currentTenantId}`
+        ),
+      ]);
+
       const servicesData: { services?: Service[]; error?: string } =
         await servicesRes.json();
+      const staffData: { staff?: StaffItem[]; error?: string } =
+        await staffRes.json();
+      const staffServicesData: {
+        staff_services?: StaffServiceRow[];
+        error?: string;
+      } = await staffServicesRes.json();
 
       if (!servicesRes.ok) {
         throw new Error(
@@ -112,7 +194,19 @@ export default function ServicesPage() {
         );
       }
 
+      if (!staffRes.ok) {
+        throw new Error(staffData.error || "No se pudo cargar el staff");
+      }
+
+      if (!staffServicesRes.ok) {
+        throw new Error(
+          staffServicesData.error || "No se pudieron cargar las relaciones staff-servicio"
+        );
+      }
+
       setServices(servicesData.services || []);
+      setStaff(staffData.staff || []);
+      setStaffServices(staffServicesData.staff_services || []);
     } catch (error: any) {
       setLoadError(error?.message || "No se pudo cargar la página");
     } finally {
@@ -125,6 +219,49 @@ export default function ServicesPage() {
       loadAll();
     }
   }, [slug]);
+
+  async function saveServiceStaffRelations(serviceId: string, selectedStaffIds: string[]) {
+    if (!tenantId) return;
+
+    const activeStaffIds = staff
+      .filter((item) => item.is_active)
+      .map((item) => item.id);
+
+    for (const staffId of activeStaffIds) {
+      const serviceIdsForStaff = staffServices
+        .filter((row) => row.staff_id === staffId && row.service_id !== serviceId)
+        .map((row) => row.service_id);
+
+      if (selectedStaffIds.includes(staffId)) {
+        serviceIdsForStaff.push(serviceId);
+      }
+
+      const uniqueServiceIds = [...new Set(serviceIdsForStaff)];
+
+      const response = await fetch(
+        "https://orbyx-backend.onrender.com/staff-services",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            staff_id: staffId,
+            service_ids: uniqueServiceIds,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "No se pudieron guardar las relaciones staff-servicio"
+        );
+      }
+    }
+  }
 
   async function handleCreateService() {
     try {
@@ -170,15 +307,24 @@ export default function ServicesPage() {
         throw new Error(data?.error || "No se pudo crear el servicio");
       }
 
+      const createdServiceId = data?.service?.id;
+
+      if (!createdServiceId) {
+        throw new Error("Servicio creado sin id válido");
+      }
+
+      await saveServiceStaffRelations(createdServiceId, form.staff_ids);
+
       setForm({
         name: "",
         description: "",
         duration_minutes: "30",
         price: "",
+        staff_ids: [],
       });
 
-      setSaveOk("Servicio creado correctamente.");
       await loadAll();
+      setSaveOk("Servicio creado correctamente.");
     } catch (error: any) {
       setSaveError(error?.message || "No se pudo crear el servicio");
     } finally {
@@ -196,6 +342,7 @@ export default function ServicesPage() {
       duration_minutes: String(service.duration_minutes || 30),
       price: service.price ? String(service.price) : "",
       active: Boolean(service.active),
+      staff_ids: getSelectedStaffIdsForService(service.id),
     });
   }
 
@@ -242,9 +389,11 @@ export default function ServicesPage() {
         throw new Error(data?.error || "No se pudo actualizar el servicio");
       }
 
+      await saveServiceStaffRelations(serviceId, editForm.staff_ids);
+
+      await loadAll();
       setSaveOk("Servicio actualizado correctamente.");
       setEditingId(null);
-      await loadAll();
     } catch (error: any) {
       setSaveError(error?.message || "No se pudo actualizar el servicio");
     } finally {
@@ -362,220 +511,280 @@ export default function ServicesPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {services.map((service) => (
-                <div
-                  key={service.id}
-                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
-                >
-                  {editingId === service.id ? (
-                    <div className="space-y-5">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-base font-semibold text-slate-900">
-                            Editar servicio
-                          </p>
-                          <p className="mt-1 text-sm text-slate-500">
-                            Actualiza nombre, descripción, duración, precio y estado.
-                          </p>
-                        </div>
+              {services.map((service) => {
+                const assignedStaffNames = getStaffNamesForService(service.id);
 
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                          Modo edición
-                        </span>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="md:col-span-2">
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Nombre del servicio
-                          </label>
-                          <input
-                            type="text"
-                            value={editForm.name}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                name: e.target.value,
-                              }))
-                            }
-                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                          />
-                        </div>
-
-                        <div className="md:col-span-2">
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Descripción del servicio
-                          </label>
-                          <textarea
-                            value={editForm.description}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                description: e.target.value,
-                              }))
-                            }
-                            placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
-                            className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Duración (minutos)
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={editForm.duration_minutes}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                duration_minutes: e.target.value,
-                              }))
-                            }
-                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Precio
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={editForm.price}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                price: e.target.value,
-                              }))
-                            }
-                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                          />
-                        </div>
-                      </div>
-
-                      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                        <input
-                          type="checkbox"
-                          checked={editForm.active}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({
-                              ...prev,
-                              active: e.target.checked,
-                            }))
-                          }
-                          className="h-4 w-4 rounded border-slate-300"
-                        />
-                        Servicio activo
-                      </label>
-
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          onClick={() => handleSaveEdit(service.id)}
-                          disabled={saving}
-                          className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {saving ? "Guardando..." : "Guardar cambios"}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={cancelEditing}
-                          disabled={saving}
-                          className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-5">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-                              {service.name}
-                            </h3>
-
-                            <span
-                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                service.active
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : "bg-slate-100 text-slate-600"
-                              }`}
-                            >
-                              {service.active ? "Activo" : "Inactivo"}
-                            </span>
+                return (
+                  <div
+                    key={service.id}
+                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                  >
+                    {editingId === service.id ? (
+                      <div className="space-y-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-base font-semibold text-slate-900">
+                              Editar servicio
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                              Actualiza nombre, descripción, duración, precio, estado y staff.
+                            </p>
                           </div>
 
-                          <p className="mt-2 text-sm text-slate-500">
-                            {service.description?.trim()
-                              ? service.description
-                              : "Agrega una descripción para explicar qué incluye este servicio."}
-                          </p>
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                            Modo edición
+                          </span>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => startEditing(service)}
-                            className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                          >
-                            Editar
-                          </button>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="md:col-span-2">
+                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                              Nombre del servicio
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.name}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  name: e.target.value,
+                                }))
+                              }
+                              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                            />
+                          </div>
 
+                          <div className="md:col-span-2">
+                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                              Descripción del servicio
+                            </label>
+                            <textarea
+                              value={editForm.description}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  description: e.target.value,
+                                }))
+                              }
+                              placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
+                              className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                              Duración (minutos)
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={editForm.duration_minutes}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  duration_minutes: e.target.value,
+                                }))
+                              }
+                              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                              Precio
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={editForm.price}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  price: e.target.value,
+                                }))
+                              }
+                              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">
+                              Staff que puede realizar este servicio
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                              Selecciona las personas del equipo que pueden atender este servicio.
+                            </p>
+                          </div>
+
+                          {staff.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                              Aún no tienes staff activo. Primero crea staff en el módulo Staff.
+                            </div>
+                          ) : (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              {staff.map((staffItem) => (
+                                <label
+                                  key={staffItem.id}
+                                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={editForm.staff_ids.includes(staffItem.id)}
+                                    onChange={() => toggleEditStaff(staffItem.id)}
+                                    className="h-4 w-4 rounded border-slate-300"
+                                  />
+                                  <span className="flex items-center gap-2">
+                                    <span
+                                      className="h-3 w-3 rounded-full"
+                                      style={{
+                                        backgroundColor: staffItem.color || "#0f172a",
+                                      }}
+                                    />
+                                    <span>
+                                      {staffItem.name}
+                                      {staffItem.role ? ` · ${staffItem.role}` : ""}
+                                    </span>
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={editForm.active}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                active: e.target.checked,
+                              }))
+                            }
+                            className="h-4 w-4 rounded border-slate-300"
+                          />
+                          Servicio activo
+                        </label>
+
+                        <div className="flex flex-wrap gap-3">
                           <button
                             type="button"
-                            onClick={() => handleDeleteService(service.id)}
+                            onClick={() => handleSaveEdit(service.id)}
                             disabled={saving}
-                            className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            Eliminar
+                            {saving ? "Guardando..." : "Guardar cambios"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={cancelEditing}
+                            disabled={saving}
+                            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Cancelar
                           </button>
                         </div>
                       </div>
+                    ) : (
+                      <div className="space-y-5">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+                                {service.name}
+                              </h3>
 
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                            Duración
-                          </p>
-                          <p className="mt-2 text-sm font-semibold text-slate-900">
-                            {service.duration_minutes} min
-                          </p>
+                              <span
+                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                  service.active
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}
+                              >
+                                {service.active ? "Activo" : "Inactivo"}
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-sm text-slate-500">
+                              {service.description?.trim()
+                                ? service.description
+                                : "Agrega una descripción para explicar qué incluye este servicio."}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startEditing(service)}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                            >
+                              Editar
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteService(service.id)}
+                              disabled={saving}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Duración
+                            </p>
+                            <p className="mt-2 text-sm font-semibold text-slate-900">
+                              {service.duration_minutes} min
+                            </p>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Precio
+                            </p>
+                            <p className="mt-2 text-sm font-semibold text-slate-900">
+                              {formatPrice(service.price)}
+                            </p>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Estado
+                            </p>
+                            <p
+                              className={`mt-2 text-sm font-semibold ${
+                                service.active
+                                  ? "text-emerald-600"
+                                  : "text-slate-600"
+                              }`}
+                            >
+                              {service.active ? "Disponible" : "Oculto"}
+                            </p>
+                          </div>
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                            Precio
+                            Staff asignado
                           </p>
                           <p className="mt-2 text-sm font-semibold text-slate-900">
-                            {formatPrice(service.price)}
-                          </p>
-                        </div>
-
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                            Estado
-                          </p>
-                          <p
-                            className={`mt-2 text-sm font-semibold ${
-                              service.active
-                                ? "text-emerald-600"
-                                : "text-slate-600"
-                            }`}
-                          >
-                            {service.active ? "Disponible" : "Oculto"}
+                            {assignedStaffNames.length > 0
+                              ? assignedStaffNames.join(", ")
+                              : "Sin staff asignado"}
                           </p>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </Panel>
@@ -646,6 +855,51 @@ export default function ServicesPage() {
                 placeholder="Ej: 10000"
                 className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
               />
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium text-slate-700">
+                  Staff que puede realizar este servicio
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Selecciona las personas del equipo que podrán atender este servicio.
+                </p>
+              </div>
+
+              {staff.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                  Aún no tienes staff activo. Primero crea staff en el módulo Staff.
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {staff.map((staffItem) => (
+                    <label
+                      key={staffItem.id}
+                      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={form.staff_ids.includes(staffItem.id)}
+                        onChange={() => toggleCreateStaff(staffItem.id)}
+                        className="h-4 w-4 rounded border-slate-300"
+                      />
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 rounded-full"
+                          style={{
+                            backgroundColor: staffItem.color || "#0f172a",
+                          }}
+                        />
+                        <span>
+                          {staffItem.name}
+                          {staffItem.role ? ` · ${staffItem.role}` : ""}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
