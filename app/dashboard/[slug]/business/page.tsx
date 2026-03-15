@@ -23,6 +23,16 @@ type BusinessResponse = {
   google_connected?: boolean;
 };
 
+const days = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+];
+
 export default function BusinessPage() {
   const params = useParams();
   const slug =
@@ -31,10 +41,15 @@ export default function BusinessPage() {
   const [tenantId, setTenantId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingHours, setSavingHours] = useState(false);
+
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saveOk, setSaveOk] = useState("");
+
   const [googleConnected, setGoogleConnected] = useState(false);
+
+  const [businessHours, setBusinessHours] = useState<any[]>([]);
 
   const [form, setForm] = useState({
     name: "",
@@ -88,6 +103,7 @@ export default function BusinessPage() {
 
         setTenantId(data.business.id);
         setGoogleConnected(Boolean(data.google_connected));
+
         setForm({
           name: data.business.name || "",
           phone: data.business.phone || "",
@@ -98,6 +114,8 @@ export default function BusinessPage() {
           facebook_url: data.business.facebook_url || "",
           description: data.business.description || "",
         });
+
+        loadBusinessHours(data.business.id);
       } catch (error: any) {
         setLoadError(error?.message || "No se pudo cargar el negocio");
       } finally {
@@ -110,6 +128,65 @@ export default function BusinessPage() {
     }
   }, [slug]);
 
+  async function loadBusinessHours(id: string) {
+    try {
+      const res = await fetch(
+        `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}`
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        if (data.hours?.length) {
+          setBusinessHours(data.hours);
+        } else {
+          const defaultHours = days.map((_, i) => ({
+            day_of_week: i,
+            enabled: i !== 0 && i !== 6,
+            start_time: "09:00",
+            end_time: "18:00",
+          }));
+
+          setBusinessHours(defaultHours);
+        }
+      }
+    } catch (err) {
+      console.error("Error cargando horarios", err);
+    }
+  }
+
+  async function saveBusinessHours() {
+    try {
+      setSavingHours(true);
+
+      const res = await fetch(
+        "https://orbyx-backend.onrender.com/business-hours",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            hours: businessHours,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error guardando horarios");
+      }
+
+      alert("Horarios guardados correctamente");
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSavingHours(false);
+    }
+  }
+
   async function handleSave() {
     try {
       setSaving(true);
@@ -120,10 +197,6 @@ export default function BusinessPage() {
         throw new Error("No se encontró el negocio");
       }
 
-      if (!form.name.trim()) {
-        throw new Error("Debes ingresar el nombre del negocio");
-      }
-
       const res = await fetch(
         `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
         {
@@ -131,16 +204,7 @@ export default function BusinessPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            name: form.name.trim(),
-            phone: form.phone.trim(),
-            address: form.address.trim(),
-            email: form.email.trim(),
-            whatsapp: form.whatsapp.trim(),
-            instagram_url: form.instagram_url.trim(),
-            facebook_url: form.facebook_url.trim(),
-            description: form.description.trim(),
-          }),
+          body: JSON.stringify(form),
         }
       );
 
@@ -158,278 +222,89 @@ export default function BusinessPage() {
     }
   }
 
+  function updateHour(index: number, field: string, value: any) {
+    const copy = [...businessHours];
+    copy[index] = { ...copy[index], [field]: value };
+    setBusinessHours(copy);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Negocio"
         title="Datos del negocio"
         description="Actualiza la información principal, redes y canales de contacto de tu negocio."
-        actions={
-          <a
-            href={publicUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Ver página pública
-          </a>
-        }
       />
-
-      {loadError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
-          {loadError}
-        </div>
-      ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard
           label="Perfil completado"
           value={loading ? "..." : `${profilePercent}%`}
-          helper="Mientras más completo, más sólida se verá tu página pública."
         />
         <StatCard
           label="Google Calendar"
           value={
             loading ? "..." : googleConnected ? "Conectado" : "Pendiente"
           }
-          helper={
-            googleConnected
-              ? "Tu agenda está conectada."
-              : "Aún falta integrar tu calendario."
-          }
         />
         <StatCard
           label="Página pública"
           value={loading ? "..." : slug ? "Activa" : "-"}
-          helper="Tu enlace público ya está disponible."
         />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <Panel
-          title="Información principal"
-          description="Edita los datos que verán tus clientes y que también podrá usar la IA."
+      <Panel
+        title="Horarios de atención"
+        description="Define cuándo tu negocio está disponible para recibir reservas."
+      >
+        <div className="space-y-3">
+          {businessHours.map((h, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between gap-4 border-b pb-3"
+            >
+              <div className="w-32 font-medium">{days[h.day_of_week]}</div>
+
+              <input
+                type="checkbox"
+                checked={h.enabled}
+                onChange={(e) =>
+                  updateHour(i, "enabled", e.target.checked)
+                }
+              />
+
+              <input
+                type="time"
+                value={h.start_time}
+                onChange={(e) =>
+                  updateHour(i, "start_time", e.target.value)
+                }
+                disabled={!h.enabled}
+                className="border rounded-lg px-2 py-1"
+              />
+
+              <span>-</span>
+
+              <input
+                type="time"
+                value={h.end_time}
+                onChange={(e) =>
+                  updateHour(i, "end_time", e.target.value)
+                }
+                disabled={!h.enabled}
+                className="border rounded-lg px-2 py-1"
+              />
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={saveBusinessHours}
+          className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-white"
         >
-          {loading ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
-              Cargando datos...
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Nombre del negocio
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Teléfono
-                  </label>
-                  <input
-                    type="text"
-                    value={form.phone}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, phone: e.target.value }))
-                    }
-                    placeholder="Ej: +56 9 1234 5678"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    WhatsApp
-                  </label>
-                  <input
-                    type="text"
-                    value={form.whatsapp}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, whatsapp: e.target.value }))
-                    }
-                    placeholder="Ej: +56 9 1234 5678"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Correo de contacto
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, email: e.target.value }))
-                  }
-                  placeholder="Ej: contacto@tunegocio.cl"
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Dirección
-                </label>
-                <input
-                  type="text"
-                  value={form.address}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, address: e.target.value }))
-                  }
-                  placeholder="Ej: Avenida Principal 123, Concepción"
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Instagram
-                  </label>
-                  <input
-                    type="text"
-                    value={form.instagram_url}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        instagram_url: e.target.value,
-                      }))
-                    }
-                    placeholder="Ej: https://instagram.com/tu_negocio"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Facebook
-                  </label>
-                  <input
-                    type="text"
-                    value={form.facebook_url}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        facebook_url: e.target.value,
-                      }))
-                    }
-                    placeholder="Ej: https://facebook.com/tu_negocio"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Descripción del negocio
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Describe tu negocio, especialidad, estilo de atención y lo que te diferencia."
-                  className="min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                />
-              </div>
-
-              {saveError ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {saveError}
-                </div>
-              ) : null}
-
-              {saveOk ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  {saveOk}
-                </div>
-              ) : null}
-
-              <div className="flex flex-wrap gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving ? "Guardando..." : "Guardar cambios"}
-                </button>
-              </div>
-            </div>
-          )}
-        </Panel>
-
-        <Panel
-          title="Vista rápida"
-          description="Resumen visual del perfil actual de tu negocio."
-        >
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Nombre
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {loading ? "Cargando..." : form.name || "No definido"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Contacto
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {loading ? "Cargando..." : form.phone || form.whatsapp || "No definido"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Correo
-              </p>
-              <p className="mt-2 break-all text-sm font-semibold text-slate-900">
-                {loading ? "Cargando..." : form.email || "No definido"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Redes sociales
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {loading
-                  ? "Cargando..."
-                  : form.instagram_url || form.facebook_url
-                  ? "Configuradas"
-                  : "No configuradas"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                URL pública
-              </p>
-              <p className="mt-2 break-all text-sm font-semibold text-slate-900">
-                {publicUrl}
-              </p>
-            </div>
-          </div>
-        </Panel>
-      </section>
+          {savingHours ? "Guardando..." : "Guardar horarios"}
+        </button>
+      </Panel>
     </div>
   );
 }
