@@ -5,6 +5,14 @@ import { useParams } from "next/navigation";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
+type StaffItem = {
+  id: string;
+  name: string;
+  role?: string | null;
+  color?: string | null;
+  is_active?: boolean;
+};
+
 export default function Page() {
   const params = useParams();
   const slug =
@@ -14,6 +22,9 @@ export default function Page() {
   const [calendarId, setCalendarId] = useState("");
   const [services, setServices] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<any>(null);
+
+  const [staffOptions, setStaffOptions] = useState<StaffItem[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState("");
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [weekDates, setWeekDates] = useState<Date[]>([]);
@@ -29,6 +40,7 @@ export default function Page() {
   const [loadingBooking, setLoadingBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState("");
+  const [loadingStaff, setLoadingStaff] = useState(false);
 
   const formRef = useRef<HTMLDivElement | null>(null);
 
@@ -103,6 +115,41 @@ export default function Page() {
     return dates;
   }
 
+  async function loadServiceStaff(serviceId: string) {
+    if (!slug || !serviceId) {
+      setStaffOptions([]);
+      setSelectedStaffId("");
+      return;
+    }
+
+    try {
+      setLoadingStaff(true);
+
+      const res = await fetch(`/api/public-staff/${slug}/${serviceId}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStaffOptions([]);
+        setSelectedStaffId("");
+        return;
+      }
+
+      const rows = Array.isArray(data.staff) ? data.staff : [];
+      setStaffOptions(rows);
+
+      if (rows.length === 1) {
+        setSelectedStaffId(rows[0].id);
+      } else {
+        setSelectedStaffId("");
+      }
+    } catch {
+      setStaffOptions([]);
+      setSelectedStaffId("");
+    } finally {
+      setLoadingStaff(false);
+    }
+  }
+
   async function handleBooking() {
     if (!selectedSlot || !selectedService || !business) return;
 
@@ -127,6 +174,7 @@ export default function Page() {
         body: JSON.stringify({
           calendar_id: calendarId,
           service_id: selectedService.id,
+          staff_id: selectedStaffId || null,
           date: formatDate(new Date(selectedSlot.slot_start)),
           slot_start: selectedSlot.slot_start,
           customer_name: customerName,
@@ -171,14 +219,30 @@ export default function Page() {
   }, [selectedDate]);
 
   useEffect(() => {
+    if (!selectedService?.id) {
+      setStaffOptions([]);
+      setSelectedStaffId("");
+      return;
+    }
+
+    loadServiceStaff(selectedService.id);
+  }, [slug, selectedService?.id]);
+
+  useEffect(() => {
     if (!slug || !selectedService?.id || weekDates.length === 0) return;
 
     async function loadWeek() {
       const requests = weekDates.map(async (day) => {
         const dateStr = formatDate(day);
 
+        const query = new URLSearchParams({ date: dateStr });
+
+        if (selectedStaffId) {
+          query.set("staff_id", selectedStaffId);
+        }
+
         const res = await fetch(
-          `/api/public-slots/${slug}/${selectedService.id}?date=${dateStr}`
+          `/api/public-slots/${slug}/${selectedService.id}?${query.toString()}`
         );
 
         const data = await res.json();
@@ -200,7 +264,7 @@ export default function Page() {
     }
 
     loadWeek();
-  }, [slug, selectedService, weekDates]);
+  }, [slug, selectedService, selectedStaffId, weekDates]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -312,6 +376,9 @@ export default function Page() {
                   setShowForm(false);
                   setBookingSuccess(false);
                   setBookingError("");
+                  setWeekSlots({});
+                  setStaffOptions([]);
+                  setSelectedStaffId("");
                 }}
                 className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
               >
@@ -354,6 +421,77 @@ export default function Page() {
               ) : null}
             </div>
 
+            {selectedService ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold">Elige profesional</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Puedes reservar con un profesional específico o dejarlo automático.
+                  </p>
+                </div>
+
+                {loadingStaff ? (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                    Cargando staff...
+                  </div>
+                ) : staffOptions.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                    Este servicio aún no tiene staff asignado. Se mostrará disponibilidad general.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                      <input
+                        type="radio"
+                        name="staff"
+                        checked={selectedStaffId === ""}
+                        onChange={() => {
+                          setSelectedStaffId("");
+                          setSelectedSlot(null);
+                          setShowForm(false);
+                          setBookingSuccess(false);
+                          setBookingError("");
+                        }}
+                        className="h-4 w-4 border-slate-300"
+                      />
+                      Cualquiera disponible
+                    </label>
+
+                    {staffOptions.map((item) => (
+                      <label
+                        key={item.id}
+                        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                      >
+                        <input
+                          type="radio"
+                          name="staff"
+                          checked={selectedStaffId === item.id}
+                          onChange={() => {
+                            setSelectedStaffId(item.id);
+                            setSelectedSlot(null);
+                            setShowForm(false);
+                            setBookingSuccess(false);
+                            setBookingError("");
+                          }}
+                          className="h-4 w-4 border-slate-300"
+                        />
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: item.color || "#0f172a" }}
+                          />
+                          <span>
+                            {item.name}
+                            {item.role ? ` · ${item.role}` : ""}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-4">
                 <h2 className="text-lg font-semibold">Selecciona la fecha</h2>
@@ -383,8 +521,9 @@ export default function Page() {
               <h3 className="text-base font-semibold">¿Cómo funciona?</h3>
               <div className="mt-3 space-y-3 text-sm text-slate-600">
                 <p>1. Elige un servicio.</p>
-                <p>2. Selecciona una fecha y horario.</p>
-                <p>3. Completa tus datos y confirma.</p>
+                <p>2. Opcionalmente elige profesional.</p>
+                <p>3. Selecciona una fecha y horario.</p>
+                <p>4. Completa tus datos y confirma.</p>
               </div>
             </div>
           </aside>
