@@ -287,28 +287,26 @@ export default function BusinessPage() {
                 <input
   type="time"
   step="60"
-  lang="es-ES"
   value={h.start_time?.slice(0,5)}
   onChange={(e) =>
     updateHour(index, "start_time", e.target.value)
   }
   disabled={!h.enabled}
   className="border rounded-lg px-2 py-1"
-/>
-                <span>-</span>
+  style={{fontVariantNumeric:"tabular-nums"}}
+/>                <span>-</span>
 
                <input
   type="time"
   step="60"
-  lang="es-ES"
   value={h.end_time?.slice(0,5)}
   onChange={(e) =>
     updateHour(index, "end_time", e.target.value)
   }
   disabled={!h.enabled}
   className="border rounded-lg px-2 py-1"
-/>
-              </div>
+  style={{fontVariantNumeric:"tabular-nums"}}
+/>              </div>
             );
           })}
         </div>
