@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import { PageHeader } from "../../../components/dashboard/page-header";
+import { Panel } from "../../../components/dashboard/panel";
+import { StatCard } from "../../../components/dashboard/stat-card";
 
 type Appointment = {
   id: string;
@@ -141,6 +144,20 @@ export default function AgendaPage() {
     return result;
   }, [appointments, weekDays]);
 
+  const todayKey = formatDateYYYYMMDD(new Date());
+  const appointmentsToday = appointmentsByDay[todayKey] || [];
+
+  const nextAppointment = useMemo(() => {
+    const now = Date.now();
+
+    return appointments
+      .filter((appt) => new Date(appt.start_at).getTime() >= now)
+      .sort(
+        (a, b) =>
+          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+      )[0];
+  }, [appointments]);
+
   function goPrevWeek() {
     setWeekBaseDate((prev) => addDays(prev, -7));
     setSelectedAppointment(null);
@@ -157,69 +174,90 @@ export default function AgendaPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p className="text-sm text-slate-500">Dashboard / Agenda</p>
-          <h1 className="mt-1 text-3xl font-semibold text-slate-900">
-            Agenda semanal
-          </h1>
-          <p className="mt-2 text-slate-600">
-            Revisa tus reservas por semana y haz clic en una cita para ver sus
-            detalles.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Agenda"
+        title="Agenda semanal"
+        description="Revisa tus reservas por semana y haz clic en una cita para ver sus detalles."
+        actions={
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={goPrevWeek}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              ← Semana anterior
+            </button>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={goPrevWeek}
-            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            ← Semana anterior
-          </button>
+            <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700">
+              {formatRangeTitle(weekStart, weekEnd)}
+            </div>
 
-          <div className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
-            {formatRangeTitle(weekStart, weekEnd)}
+            <button
+              type="button"
+              onClick={goNextWeek}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Semana siguiente →
+            </button>
+
+            <button
+              type="button"
+              onClick={goToday}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+            >
+              Hoy
+            </button>
+
+            <input
+              type="date"
+              value={formatDateYYYYMMDD(weekBaseDate)}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
+                setSelectedAppointment(null);
+              }}
+              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+            />
           </div>
-
-          <button
-            type="button"
-            onClick={goNextWeek}
-            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Semana siguiente →
-          </button>
-
-          <button
-            type="button"
-            onClick={goToday}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-          >
-            Hoy
-          </button>
-
-          <input
-            type="date"
-            value={formatDateYYYYMMDD(weekBaseDate)}
-            onChange={(e) => {
-              if (!e.target.value) return;
-              setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
-              setSelectedAppointment(null);
-            }}
-            className="rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-          />
-        </div>
-      </div>
+        }
+      />
 
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
           {error}
         </div>
       ) : null}
 
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <StatCard
+          label="Reservas hoy"
+          value={loading ? "..." : String(appointmentsToday.length)}
+          helper="Citas registradas para el día actual."
+        />
+        <StatCard
+          label="Próxima reserva"
+          value={loading ? "..." : nextAppointment ? formatHour(nextAppointment.start_at) : "--"}
+          helper={
+            loading
+              ? "Cargando próxima cita."
+              : nextAppointment
+              ? nextAppointment.customer_name
+              : "No hay próximas reservas."
+          }
+        />
+        <StatCard
+          label="Reservas semana"
+          value={loading ? "..." : String(appointments.length)}
+          helper="Total de reservas visibles en esta semana."
+        />
+      </section>
+
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <Panel
+          title="Calendario semanal"
+          description="Vista semanal de reservas y disponibilidad del negocio."
+        >
           {loading ? (
             <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
           ) : (
@@ -227,6 +265,7 @@ export default function AgendaPage() {
               {weekDays.map((day) => {
                 const dayKey = formatDateYYYYMMDD(day);
                 const dayAppointments = appointmentsByDay[dayKey] || [];
+                const isToday = dayKey === todayKey;
 
                 return (
                   <div
@@ -234,12 +273,21 @@ export default function AgendaPage() {
                     className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
                   >
                     <div className="mb-3 border-b border-slate-200 pb-3">
-                      <div className="text-sm font-semibold capitalize text-slate-800">
-                        {day.toLocaleDateString("es-CL", {
-                          weekday: "long",
-                        })}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-semibold capitalize text-slate-800">
+                          {day.toLocaleDateString("es-CL", {
+                            weekday: "long",
+                          })}
+                        </div>
+
+                        {isToday ? (
+                          <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">
+                            Hoy
+                          </span>
+                        ) : null}
                       </div>
-                      <div className="text-xs text-slate-500">
+
+                      <div className="mt-1 text-xs text-slate-500">
                         {day.toLocaleDateString("es-CL", {
                           day: "2-digit",
                           month: "2-digit",
@@ -258,21 +306,39 @@ export default function AgendaPage() {
                             key={appt.id}
                             type="button"
                             onClick={() => setSelectedAppointment(appt)}
-                            className={`w-full rounded-xl border p-3 text-left transition ${
+                            className={`w-full rounded-2xl border p-3 text-left transition ${
                               selectedAppointment?.id === appt.id
-                                ? "border-sky-500 bg-sky-50"
-                                : "border-slate-200 bg-white hover:border-sky-300 hover:bg-sky-50"
+                                ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
                             }`}
                           >
-                            <div className="text-xs font-semibold text-sky-700">
+                            <div
+                              className={`text-xs font-semibold ${
+                                selectedAppointment?.id === appt.id
+                                  ? "text-slate-200"
+                                  : "text-slate-600"
+                              }`}
+                            >
                               {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
                             </div>
 
-                            <p className="mt-1 text-sm font-medium text-slate-900">
+                            <p
+                              className={`mt-1 text-sm font-semibold ${
+                                selectedAppointment?.id === appt.id
+                                  ? "text-white"
+                                  : "text-slate-900"
+                              }`}
+                            >
                               {appt.customer_name}
                             </p>
 
-                            <p className="mt-1 text-xs text-slate-600">
+                            <p
+                              className={`mt-1 text-xs ${
+                                selectedAppointment?.id === appt.id
+                                  ? "text-slate-300"
+                                  : "text-slate-500"
+                              }`}
+                            >
                               {appt.service_name_snapshot || "Reserva"}
                             </p>
                           </button>
@@ -284,62 +350,71 @@ export default function AgendaPage() {
               })}
             </div>
           )}
-        </section>
+        </Panel>
 
-        <aside className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Detalle de reserva
-          </h2>
-
+        <Panel
+          title="Detalle de reserva"
+          description="Información del cliente y de la cita seleccionada."
+        >
           {!selectedAppointment ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
               Haz clic en una reserva para ver los datos del cliente.
             </div>
           ) : (
-            <div className="mt-5 space-y-4">
-              <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
-                <p className="text-sm font-semibold text-sky-800">
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">
                   {selectedAppointment.service_name_snapshot || "Reserva"}
                 </p>
-                <p className="mt-1 text-sm text-slate-700">
+                <p className="mt-1 text-sm capitalize text-slate-600">
                   {formatLongDate(selectedAppointment.start_at)}
                 </p>
-                <p className="mt-1 text-sm text-slate-700">
+                <p className="mt-1 text-sm text-slate-600">
                   {formatHour(selectedAppointment.start_at)} -{" "}
                   {formatHour(selectedAppointment.end_at)}
                 </p>
               </div>
 
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-slate-500">Cliente</p>
-                  <p className="font-medium text-slate-900">
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Cliente
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
                     {selectedAppointment.customer_name}
                   </p>
                 </div>
 
-                <div>
-                  <p className="text-slate-500">Teléfono</p>
-                  <p className="font-medium text-slate-900">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Teléfono
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
                     {selectedAppointment.customer_phone || "No disponible"}
                   </p>
                 </div>
 
-                <div>
-                  <p className="text-slate-500">Email</p>
-                  <p className="font-medium text-slate-900 break-all">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Email
+                  </p>
+                  <p className="mt-2 break-all text-sm font-semibold text-slate-900">
                     {selectedAppointment.customer_email || "No disponible"}
                   </p>
                 </div>
 
-                <div>
-                  <p className="text-slate-500">Estado</p>
-                  <p className="font-medium text-emerald-700">Reservado</p>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Estado
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-emerald-600">
+                    {selectedAppointment.status || "Reservado"}
+                  </p>
                 </div>
               </div>
             </div>
           )}
-        </aside>
+        </Panel>
       </div>
     </div>
   );
