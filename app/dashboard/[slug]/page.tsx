@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { PageHeader } from "../../../components/dashboard/page-header";
 import { Panel } from "../../../components/dashboard/panel";
@@ -149,118 +148,64 @@ export default function DashboardPage() {
           helper="Tus clientes podrán reservar desde tu enlace."
         />
         <StatCard
-          label="Slug público"
-          value={loading ? "Cargando..." : slug || "-"}
-          helper="Identificador usado en tu URL pública."
+          label="URL pública"
+          value={loading ? "Cargando..." : "Disponible"}
+          helper="Tu enlace público ya está listo para compartir."
         />
       </section>
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Panel
-          title="Estado del negocio"
-          description="Resumen principal de la configuración actual."
-          className="xl:col-span-2"
-        >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Slug público
-              </p>
-              <p className="mt-2 text-base font-semibold text-slate-900">
-                {loading ? "Cargando..." : slug || "-"}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Identificador visible en la URL de reservas.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Estado de integración
-              </p>
-              <p
-                className={`mt-2 text-base font-semibold ${
-                  googleConnected ? "text-emerald-600" : "text-amber-600"
-                }`}
-              >
-                {loading
-                  ? "Cargando..."
-                  : googleConnected
-                  ? "Google Calendar conectado"
-                  : "Google Calendar no conectado"}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                {googleConnected
-                  ? "La agenda está lista para operar con reservas."
-                  : "Conéctalo para sincronizar disponibilidad y reservas."}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                URL pública
-              </p>
-              <p className="mt-2 break-all text-sm font-medium text-slate-900">
-                {publicUrl}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Este es el enlace donde tus clientes podrán reservar.
-              </p>
-            </div>
+      <Panel
+        title="Estado del negocio"
+        description="Resumen principal de la configuración actual."
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Slug público
+            </p>
+            <p className="mt-2 text-base font-semibold text-slate-900">
+              {loading ? "Cargando..." : slug || "-"}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Identificador visible en la URL de reservas.
+            </p>
           </div>
-        </Panel>
 
-        <Panel
-          title="Acciones rápidas"
-          description="Atajos útiles para administrar tu negocio."
-        >
-          <div className="space-y-3">
-            <a
-              href={publicUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Estado de integración
+            </p>
+            <p
+              className={`mt-2 text-base font-semibold ${
+                googleConnected ? "text-emerald-600" : "text-amber-600"
+              }`}
             >
-              Abrir página pública
-            </a>
-
-            <Link
-              href={`/dashboard/${slug}/agenda`}
-              className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Ver agenda
-            </Link>
-
-            <Link
-              href={`/dashboard/${slug}/services`}
-              className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Administrar servicios
-            </Link>
-
-            <Link
-              href={`/dashboard/${slug}/business`}
-              className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Editar negocio
-            </Link>
-
-            {!googleConnected ? (
-              <button
-                onClick={handleConnectGoogle}
-                disabled={loading || !calendarId}
-                className="block w-full rounded-2xl bg-slate-900 px-4 py-3 text-left text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Conectar Google Calendar
-              </button>
-            ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                Google Calendar ya está conectado.
-              </div>
-            )}
+              {loading
+                ? "Cargando..."
+                : googleConnected
+                ? "Google Calendar conectado"
+                : "Google Calendar no conectado"}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              {googleConnected
+                ? "La agenda está lista para operar con reservas."
+                : "Conéctalo para sincronizar disponibilidad y reservas."}
+            </p>
           </div>
-        </Panel>
-      </section>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              URL pública
+            </p>
+            <p className="mt-2 break-all text-sm font-medium text-slate-900">
+              {publicUrl}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Este es el enlace donde tus clientes podrán reservar.
+            </p>
+          </div>
+        </div>
+      </Panel>
     </div>
   );
 }
