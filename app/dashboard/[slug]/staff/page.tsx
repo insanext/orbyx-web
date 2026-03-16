@@ -26,6 +26,7 @@ type StaffItem = {
   color?: string | null;
   is_active: boolean;
   sort_order: number;
+  use_business_hours?: boolean;
   created_at?: string;
   updated_at?: string;
 };
@@ -38,6 +39,7 @@ const emptyForm = {
   color: "#0f172a",
   is_active: true,
   sort_order: 0,
+  use_business_hours: true,
 };
 
 export default function StaffPage() {
@@ -55,18 +57,15 @@ export default function StaffPage() {
   const [staff, setStaff] = useState<StaffItem[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
-    name: "",
-    role: "",
-    email: "",
-    phone: "",
-    color: "#0f172a",
-    is_active: true,
-    sort_order: 0,
-  });
+  const [form, setForm] = useState(emptyForm);
 
   const activeCount = useMemo(
     () => staff.filter((item) => item.is_active).length,
+    [staff]
+  );
+
+  const usingBusinessHoursCount = useMemo(
+    () => staff.filter((item) => item.use_business_hours).length,
     [staff]
   );
 
@@ -139,6 +138,10 @@ export default function StaffPage() {
       color: item.color || "#0f172a",
       is_active: Boolean(item.is_active),
       sort_order: Number(item.sort_order || 0),
+      use_business_hours:
+        item.use_business_hours === undefined
+          ? true
+          : Boolean(item.use_business_hours),
     });
     setSaveError("");
     setSaveOk("");
@@ -154,15 +157,20 @@ export default function StaffPage() {
         throw new Error("tenant_id no disponible");
       }
 
+      if (!form.name.trim()) {
+        throw new Error("Debes ingresar el nombre del staff");
+      }
+
       const payload = {
         tenant_id: tenantId,
-        name: form.name,
-        role: form.role,
-        email: form.email,
-        phone: form.phone,
+        name: form.name.trim(),
+        role: form.role.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
         color: form.color,
         is_active: form.is_active,
         sort_order: Number(form.sort_order || 0),
+        use_business_hours: form.use_business_hours,
       };
 
       const url = editingId
@@ -186,8 +194,12 @@ export default function StaffPage() {
       }
 
       await loadStaff(tenantId);
-      setSaveOk(editingId ? "Staff actualizado correctamente." : "Staff creado correctamente.");
       resetForm();
+      setSaveOk(
+        editingId
+          ? "Staff actualizado correctamente."
+          : "Staff creado correctamente."
+      );
     } catch (error: any) {
       setSaveError(error?.message || "No se pudo guardar el staff");
     } finally {
@@ -211,6 +223,7 @@ export default function StaffPage() {
       }
 
       await loadStaff(tenantId);
+
       if (editingId === id) {
         resetForm();
       }
@@ -233,13 +246,20 @@ export default function StaffPage() {
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatCard label="Total staff" value={loading ? "..." : String(staff.length)} />
-        <StatCard label="Activos" value={loading ? "..." : String(activeCount)} />
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <StatCard
-          label="Módulo"
-          value={loading ? "..." : "Configurado"}
+          label="Total staff"
+          value={loading ? "..." : String(staff.length)}
         />
+        <StatCard
+          label="Activos"
+          value={loading ? "..." : String(activeCount)}
+        />
+        <StatCard
+          label="Usan horario negocio"
+          value={loading ? "..." : String(usingBusinessHoursCount)}
+        />
+        <StatCard label="Módulo" value={loading ? "..." : "Configurado"} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -367,6 +387,83 @@ export default function StaffPage() {
                 </div>
               </div>
 
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Usar horario del negocio
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Si está activo, este profesional heredará los horarios del
+                      negocio.
+                    </p>
+                  </div>
+
+                  <label className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={form.use_business_hours}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          use_business_hours: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    {form.use_business_hours ? "Activo" : "Desactivado"}
+                  </label>
+                </div>
+              </div>
+
+              {form.use_business_hours ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+                  <p className="text-sm font-medium text-emerald-800">
+                    Este staff usará el horario general del negocio.
+                  </p>
+                  <p className="mt-1 text-sm text-emerald-700">
+                    El editor de horarios propios queda oculto para evitar
+                    configuraciones duplicadas.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Horarios del staff
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Aquí irá el editor de <code>staff_hours</code> para este
+                        profesional.
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                      Próximo paso: mostrar y guardar horarios propios del
+                      staff cuando no use el horario del negocio.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="mb-3">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Excepciones del staff
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Aquí irá el bloque de <code>staff_special_dates</code>,
+                    independiente de si usa o no el horario del negocio.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                  Próximo paso: agregar excepciones del staff debajo del bloque
+                  de horarios.
+                </div>
+              </div>
+
               {saveError ? (
                 <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   {saveError}
@@ -450,6 +547,12 @@ export default function StaffPage() {
                         <p>Correo: {item.email || "No definido"}</p>
                         <p>Teléfono: {item.phone || "No definido"}</p>
                         <p>Orden: {item.sort_order ?? 0}</p>
+                        <p>
+                          Horario:{" "}
+                          {item.use_business_hours
+                            ? "Usa horario del negocio"
+                            : "Horario propio"}
+                        </p>
                       </div>
                     </div>
 
