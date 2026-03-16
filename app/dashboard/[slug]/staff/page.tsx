@@ -38,6 +38,17 @@ type StaffHourItem = {
   end_time: string | null;
 };
 
+type StaffSpecialDateItem = {
+  id?: string;
+  tenant_id?: string;
+  staff_id?: string;
+  date: string;
+  label?: string | null;
+  is_closed: boolean;
+  start_time: string | null;
+  end_time: string | null;
+};
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 const days = [
@@ -68,6 +79,14 @@ const emptyForm = {
   use_business_hours: true,
 };
 
+const emptySpecialDateForm: StaffSpecialDateItem = {
+  date: "",
+  label: "",
+  is_closed: true,
+  start_time: "09:00",
+  end_time: "18:00",
+};
+
 export default function StaffPage() {
   const params = useParams();
   const slug =
@@ -85,6 +104,12 @@ export default function StaffPage() {
 
   const [form, setForm] = useState(emptyForm);
   const [staffHours, setStaffHours] = useState<StaffHourItem[]>(defaultHours);
+  const [staffSpecialDates, setStaffSpecialDates] = useState<
+    StaffSpecialDateItem[]
+  >([]);
+  const [specialDateForm, setSpecialDateForm] =
+    useState<StaffSpecialDateItem>(emptySpecialDateForm);
+  const [specialDateSaving, setSpecialDateSaving] = useState(false);
 
   const activeCount = useMemo(
     () => staff.filter((item) => item.is_active).length,
@@ -171,10 +196,28 @@ export default function StaffPage() {
     setStaffHours(merged);
   }
 
+  async function loadStaffSpecialDates(id: string, staffId: string) {
+    const res = await fetch(
+      `${BACKEND_URL}/staff-special-dates?tenant_id=${id}&staff_id=${staffId}`
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudo cargar staff_special_dates");
+    }
+
+    setStaffSpecialDates(
+      Array.isArray(data?.special_dates) ? data.special_dates : []
+    );
+  }
+
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
     setStaffHours(defaultHours);
+    setStaffSpecialDates([]);
+    setSpecialDateForm(emptySpecialDateForm);
     setSaveError("");
     setSaveOk("");
   }
@@ -199,9 +242,14 @@ export default function StaffPage() {
       setSaveError("");
       setSaveOk("");
 
-      await loadStaffHours(item.tenant_id, item.id);
+      await Promise.all([
+        loadStaffHours(item.tenant_id, item.id),
+        loadStaffSpecialDates(item.tenant_id, item.id),
+      ]);
     } catch (error: any) {
-      setSaveError(error?.message || "No se pudo cargar el horario del staff");
+      setSaveError(
+        error?.message || "No se pudo cargar la configuración del staff"
+      );
     } finally {
       setLoading(false);
     }
@@ -257,7 +305,9 @@ export default function StaffPage() {
       if (item.start_time >= item.end_time) {
         const dayLabel =
           days.find((day) => day.value === item.day_of_week)?.label || "Día";
-        throw new Error(`La hora fin debe ser mayor a la hora inicio en ${dayLabel}`);
+        throw new Error(
+          `La hora fin debe ser mayor a la hora inicio en ${dayLabel}`
+        );
       }
     }
   }
@@ -358,6 +408,102 @@ export default function StaffPage() {
       }
     } catch (error: any) {
       alert(error?.message || "No se pudo eliminar el staff");
+    }
+  }
+
+  async function handleAddSpecialDate() {
+    try {
+      if (!tenantId) {
+        throw new Error("tenant_id no disponible");
+      }
+
+      if (!editingId) {
+        throw new Error(
+          "Primero debes guardar el staff antes de agregar excepciones"
+        );
+      }
+
+      if (!specialDateForm.date) {
+        throw new Error("Debes ingresar una fecha");
+      }
+
+      if (!specialDateForm.is_closed) {
+        if (!specialDateForm.start_time || !specialDateForm.end_time) {
+          throw new Error("Debes ingresar hora inicio y fin");
+        }
+
+        if (specialDateForm.start_time >= specialDateForm.end_time) {
+          throw new Error("La hora fin debe ser mayor a la hora inicio");
+        }
+      }
+
+      setSpecialDateSaving(true);
+      setSaveError("");
+      setSaveOk("");
+
+      const payload = {
+        tenant_id: tenantId,
+        staff_id: editingId,
+        date: specialDateForm.date,
+        label: (specialDateForm.label || "").trim() || null,
+        is_closed: specialDateForm.is_closed,
+        start_time: specialDateForm.is_closed
+          ? null
+          : specialDateForm.start_time || null,
+        end_time: specialDateForm.is_closed
+          ? null
+          : specialDateForm.end_time || null,
+      };
+
+      const res = await fetch(`${BACKEND_URL}/staff-special-dates`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo crear la excepción");
+      }
+
+      await loadStaffSpecialDates(tenantId, editingId);
+      setSpecialDateForm(emptySpecialDateForm);
+      setSaveOk("Excepción del staff creada correctamente.");
+    } catch (error: any) {
+      setSaveError(error?.message || "No se pudo crear la excepción");
+    } finally {
+      setSpecialDateSaving(false);
+    }
+  }
+
+  async function handleDeleteSpecialDate(id: string) {
+    const ok = window.confirm("¿Seguro que quieres eliminar esta excepción?");
+    if (!ok) return;
+
+    try {
+      setSaveError("");
+      setSaveOk("");
+
+      const res = await fetch(`${BACKEND_URL}/staff-special-dates/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo eliminar la excepción");
+      }
+
+      if (tenantId && editingId) {
+        await loadStaffSpecialDates(tenantId, editingId);
+      }
+
+      setSaveOk("Excepción eliminada correctamente.");
+    } catch (error: any) {
+      setSaveError(error?.message || "No se pudo eliminar la excepción");
     }
   }
 
@@ -567,11 +713,25 @@ export default function StaffPage() {
                   </div>
 
                   <div className="space-y-3">
+                    <div className="hidden gap-3 px-3 md:grid md:grid-cols-[1.2fr_0.8fr_1fr_1fr]">
+                      <div></div>
+                      <div></div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Inicio
+                      </div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Fin
+                      </div>
+                    </div>
+
                     {days.map((day) => {
                       const hour =
                         staffHours.find(
                           (item) => item.day_of_week === day.value
-                        ) || defaultHours.find((item) => item.day_of_week === day.value)!;
+                        ) ||
+                        defaultHours.find(
+                          (item) => item.day_of_week === day.value
+                        )!;
 
                       return (
                         <div
@@ -636,28 +796,172 @@ export default function StaffPage() {
 
                   {!editingId ? (
                     <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                      Puedes dejar estos horarios listos ahora. Al crear el staff,
-                      se guardarán automáticamente.
+                      Puedes dejar estos horarios listos ahora. Al crear el
+                      staff, se guardarán automáticamente.
                     </div>
                   ) : null}
                 </div>
               )}
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="mb-3">
+                <div className="mb-4">
                   <p className="text-sm font-semibold text-slate-900">
                     Excepciones del staff
                   </p>
                   <p className="mt-1 text-sm text-slate-600">
-                    Aquí irá el bloque de <code>staff_special_dates</code>,
-                    independiente de si usa o no el horario del negocio.
+                    Configura días libres o horarios especiales para este
+                    profesional.
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                  Próximo paso: agregar excepciones del staff debajo del bloque
-                  de horarios.
-                </div>
+                {!editingId ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    Primero crea o guarda el staff para poder administrar sus
+                    excepciones.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid gap-3 md:grid-cols-[1.1fr_1fr_0.9fr_1fr_1fr_auto]">
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Fecha
+                        </label>
+                        <input
+                          type="date"
+                          value={specialDateForm.date}
+                          onChange={(e) =>
+                            setSpecialDateForm((prev) => ({
+                              ...prev,
+                              date: e.target.value,
+                            }))
+                          }
+                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Etiqueta
+                        </label>
+                        <input
+                          type="text"
+                          value={specialDateForm.label || ""}
+                          onChange={(e) =>
+                            setSpecialDateForm((prev) => ({
+                              ...prev,
+                              label: e.target.value,
+                            }))
+                          }
+                          placeholder="Ej: Vacaciones"
+                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                        />
+                      </div>
+
+                      <div className="flex items-end">
+                        <label className="flex h-11 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={specialDateForm.is_closed}
+                            onChange={(e) =>
+                              setSpecialDateForm((prev) => ({
+                                ...prev,
+                                is_closed: e.target.checked,
+                              }))
+                            }
+                            className="h-4 w-4 rounded border-slate-300"
+                          />
+                          Cerrado
+                        </label>
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Inicio
+                        </label>
+                        <input
+                          type="time"
+                          value={specialDateForm.start_time || "09:00"}
+                          disabled={specialDateForm.is_closed}
+                          onChange={(e) =>
+                            setSpecialDateForm((prev) => ({
+                              ...prev,
+                              start_time: e.target.value,
+                            }))
+                          }
+                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Fin
+                        </label>
+                        <input
+                          type="time"
+                          value={specialDateForm.end_time || "18:00"}
+                          disabled={specialDateForm.is_closed}
+                          onChange={(e) =>
+                            setSpecialDateForm((prev) => ({
+                              ...prev,
+                              end_time: e.target.value,
+                            }))
+                          }
+                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </div>
+
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={handleAddSpecialDate}
+                          disabled={specialDateSaving}
+                          className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {specialDateSaving ? "Agregando..." : "Agregar"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {staffSpecialDates.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                        Este staff aún no tiene excepciones configuradas.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {staffSpecialDates.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-slate-900">
+                                {item.date}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-600">
+                                {item.label || "Sin etiqueta"} ·{" "}
+                                {item.is_closed
+                                  ? "Cerrado todo el día"
+                                  : `${item.start_time || "--:--"} a ${
+                                      item.end_time || "--:--"
+                                    }`}
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                item.id && handleDeleteSpecialDate(item.id)
+                              }
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {saveError ? (
