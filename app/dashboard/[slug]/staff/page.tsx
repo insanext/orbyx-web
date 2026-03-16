@@ -31,6 +31,32 @@ type StaffItem = {
   updated_at?: string;
 };
 
+type StaffHourItem = {
+  day_of_week: number;
+  enabled: boolean;
+  start_time: string | null;
+  end_time: string | null;
+};
+
+const BACKEND_URL = "https://orbyx-backend.onrender.com";
+
+const days = [
+  { value: 0, label: "Domingo" },
+  { value: 1, label: "Lunes" },
+  { value: 2, label: "Martes" },
+  { value: 3, label: "Miércoles" },
+  { value: 4, label: "Jueves" },
+  { value: 5, label: "Viernes" },
+  { value: 6, label: "Sábado" },
+];
+
+const defaultHours: StaffHourItem[] = days.map((day) => ({
+  day_of_week: day.value,
+  enabled: false,
+  start_time: "09:00",
+  end_time: "18:00",
+}));
+
 const emptyForm = {
   name: "",
   role: "",
@@ -58,6 +84,7 @@ export default function StaffPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [form, setForm] = useState(emptyForm);
+  const [staffHours, setStaffHours] = useState<StaffHourItem[]>(defaultHours);
 
   const activeCount = useMemo(
     () => staff.filter((item) => item.is_active).length,
@@ -75,10 +102,7 @@ export default function StaffPage() {
         setLoading(true);
         setLoadError("");
 
-        const res = await fetch(
-          `https://orbyx-backend.onrender.com/public/business/${slug}`
-        );
-
+        const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
         const data: BusinessResponse | { error?: string } = await res.json();
 
         if (!res.ok) {
@@ -108,10 +132,7 @@ export default function StaffPage() {
   }, [slug]);
 
   async function loadStaff(id: string) {
-    const res = await fetch(
-      `https://orbyx-backend.onrender.com/staff?tenant_id=${id}`
-    );
-
+    const res = await fetch(`${BACKEND_URL}/staff?tenant_id=${id}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -121,30 +142,124 @@ export default function StaffPage() {
     setStaff(data.staff || []);
   }
 
+  async function loadStaffHours(id: string, staffId: string) {
+    const res = await fetch(
+      `${BACKEND_URL}/staff-hours?tenant_id=${id}&staff_id=${staffId}`
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudo cargar staff_hours");
+    }
+
+    const rows = Array.isArray(data?.hours) ? data.hours : [];
+
+    const merged = days.map((day) => {
+      const found = rows.find(
+        (row: any) => Number(row.day_of_week) === Number(day.value)
+      );
+
+      return {
+        day_of_week: day.value,
+        enabled: found ? Boolean(found.enabled) : false,
+        start_time: found?.start_time || "09:00",
+        end_time: found?.end_time || "18:00",
+      };
+    });
+
+    setStaffHours(merged);
+  }
+
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
+    setStaffHours(defaultHours);
     setSaveError("");
     setSaveOk("");
   }
 
-  function startEdit(item: StaffItem) {
-    setEditingId(item.id);
-    setForm({
-      name: item.name || "",
-      role: item.role || "",
-      email: item.email || "",
-      phone: item.phone || "",
-      color: item.color || "#0f172a",
-      is_active: Boolean(item.is_active),
-      sort_order: Number(item.sort_order || 0),
-      use_business_hours:
-        item.use_business_hours === undefined
-          ? true
-          : Boolean(item.use_business_hours),
+  async function startEdit(item: StaffItem) {
+    try {
+      setLoading(true);
+      setEditingId(item.id);
+      setForm({
+        name: item.name || "",
+        role: item.role || "",
+        email: item.email || "",
+        phone: item.phone || "",
+        color: item.color || "#0f172a",
+        is_active: Boolean(item.is_active),
+        sort_order: Number(item.sort_order || 0),
+        use_business_hours:
+          item.use_business_hours === undefined
+            ? true
+            : Boolean(item.use_business_hours),
+      });
+      setSaveError("");
+      setSaveOk("");
+
+      await loadStaffHours(item.tenant_id, item.id);
+    } catch (error: any) {
+      setSaveError(error?.message || "No se pudo cargar el horario del staff");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function updateHour(
+    dayOfWeek: number,
+    field: "enabled" | "start_time" | "end_time",
+    value: boolean | string
+  ) {
+    setStaffHours((prev) =>
+      prev.map((item) =>
+        item.day_of_week === dayOfWeek ? { ...item, [field]: value } : item
+      )
+    );
+  }
+
+  async function saveStaffHours(staffId: string) {
+    const payload = {
+      tenant_id: tenantId,
+      staff_id: staffId,
+      hours: staffHours.map((item) => ({
+        day_of_week: item.day_of_week,
+        enabled: item.enabled,
+        start_time: item.enabled ? item.start_time || null : null,
+        end_time: item.enabled ? item.end_time || null : null,
+      })),
+    };
+
+    const res = await fetch(`${BACKEND_URL}/staff-hours`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
-    setSaveError("");
-    setSaveOk("");
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudo guardar staff_hours");
+    }
+  }
+
+  function validateStaffHours() {
+    for (const item of staffHours) {
+      if (!item.enabled) continue;
+
+      if (!item.start_time || !item.end_time) {
+        throw new Error("Cada día activo debe tener hora de inicio y fin");
+      }
+
+      if (item.start_time >= item.end_time) {
+        const dayLabel =
+          days.find((day) => day.value === item.day_of_week)?.label || "Día";
+        throw new Error(`La hora fin debe ser mayor a la hora inicio en ${dayLabel}`);
+      }
+    }
   }
 
   async function handleSave() {
@@ -161,6 +276,10 @@ export default function StaffPage() {
         throw new Error("Debes ingresar el nombre del staff");
       }
 
+      if (!form.use_business_hours) {
+        validateStaffHours();
+      }
+
       const payload = {
         tenant_id: tenantId,
         name: form.name.trim(),
@@ -174,8 +293,8 @@ export default function StaffPage() {
       };
 
       const url = editingId
-        ? `https://orbyx-backend.onrender.com/staff/${editingId}`
-        : `https://orbyx-backend.onrender.com/staff`;
+        ? `${BACKEND_URL}/staff/${editingId}`
+        : `${BACKEND_URL}/staff`;
 
       const method = editingId ? "PUT" : "POST";
 
@@ -191,6 +310,16 @@ export default function StaffPage() {
 
       if (!res.ok) {
         throw new Error(data?.error || "No se pudo guardar");
+      }
+
+      const savedStaffId = data?.staff?.id || editingId;
+
+      if (!savedStaffId) {
+        throw new Error("No se pudo obtener el id del staff guardado");
+      }
+
+      if (!form.use_business_hours) {
+        await saveStaffHours(savedStaffId);
       }
 
       await loadStaff(tenantId);
@@ -212,7 +341,7 @@ export default function StaffPage() {
     if (!ok) return;
 
     try {
-      const res = await fetch(`https://orbyx-backend.onrender.com/staff/${id}`, {
+      const res = await fetch(`${BACKEND_URL}/staff/${id}`, {
         method: "DELETE",
       });
 
@@ -427,23 +556,90 @@ export default function StaffPage() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="mb-3">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Horarios del staff
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        Aquí irá el editor de <code>staff_hours</code> para este
-                        profesional.
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                      Próximo paso: mostrar y guardar horarios propios del
-                      staff cuando no use el horario del negocio.
-                    </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="mb-4">
+                    <p className="text-sm font-semibold text-slate-900">
+                      Horarios del staff
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Configura el horario semanal propio de este profesional.
+                    </p>
                   </div>
+
+                  <div className="space-y-3">
+                    {days.map((day) => {
+                      const hour =
+                        staffHours.find(
+                          (item) => item.day_of_week === day.value
+                        ) || defaultHours.find((item) => item.day_of_week === day.value)!;
+
+                      return (
+                        <div
+                          key={day.value}
+                          className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                        >
+                          <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr_1fr_1fr] md:items-center">
+                            <div>
+                              <p className="text-sm font-medium text-slate-900">
+                                {day.label}
+                              </p>
+                            </div>
+
+                            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={hour.enabled}
+                                onChange={(e) =>
+                                  updateHour(
+                                    day.value,
+                                    "enabled",
+                                    e.target.checked
+                                  )
+                                }
+                                className="h-4 w-4 rounded border-slate-300"
+                              />
+                              Activo
+                            </label>
+
+                            <div>
+                              <input
+                                type="time"
+                                value={hour.start_time || "09:00"}
+                                disabled={!hour.enabled}
+                                onChange={(e) =>
+                                  updateHour(
+                                    day.value,
+                                    "start_time",
+                                    e.target.value
+                                  )
+                                }
+                                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                              />
+                            </div>
+
+                            <div>
+                              <input
+                                type="time"
+                                value={hour.end_time || "18:00"}
+                                disabled={!hour.enabled}
+                                onChange={(e) =>
+                                  updateHour(day.value, "end_time", e.target.value)
+                                }
+                                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {!editingId ? (
+                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      Puedes dejar estos horarios listos ahora. Al crear el staff,
+                      se guardarán automáticamente.
+                    </div>
+                  ) : null}
                 </div>
               )}
 
