@@ -305,7 +305,9 @@ export default function Page() {
   }, [slug, selectedService?.id]);
 
   useEffect(() => {
-    if (!slug || !selectedService?.id || weekDates.length === 0) return;
+    const serviceId = selectedService?.id;
+
+    if (!slug || !serviceId || weekDates.length === 0) return;
 
     let cancelled = false;
 
@@ -322,7 +324,7 @@ export default function Page() {
           }
 
           const res = await fetch(
-            `/api/public-slots/${slug}/${selectedService.id}?${query.toString()}`
+            `/api/public-slots/${slug}/${serviceId}?${query.toString()}`
           );
 
           const data = await res.json();
