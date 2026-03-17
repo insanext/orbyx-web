@@ -1,15 +1,37 @@
+import { NextResponse } from "next/server";
+
+const BACKEND_URL = "https://orbyx-backend.onrender.com";
+
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await params;
+  try {
+    const { slug } = await params;
 
-  const res = await fetch(
-    `https://orbyx-backend.onrender.com/public/services/${slug}`,
-    { cache: "no-store" }
-  );
+    if (!slug) {
+      return NextResponse.json(
+        { error: "slug es obligatorio" },
+        { status: 400 }
+      );
+    }
 
-  const data = await res.json();
+    const res = await fetch(
+      `${BACKEND_URL}/public/services/${encodeURIComponent(slug)}`,
+      {
+        cache: "no-store",
+      }
+    );
 
-  return Response.json(data, { status: res.status });
+    const data = await res.json().catch(() => ({
+      error: "Respuesta inválida del backend",
+    }));
+
+    return NextResponse.json(data, { status: res.status });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error?.message || "Error obteniendo servicios públicos" },
+      { status: 500 }
+    );
+  }
 }
