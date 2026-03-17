@@ -80,12 +80,15 @@ export default function Page() {
     return `${y}-${m}-${d}`;
   }
 
-  function formatHour(dateString: string) {
-    const d = new Date(dateString);
-    const h = String(d.getHours()).padStart(2, "0");
-    const m = String(d.getMinutes()).padStart(2, "0");
-    return `${h}:${m}`;
-  }
+function formatHour(dateString: string) {
+  const d = new Date(dateString);
+
+  return d.toLocaleTimeString("es-CL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
 
   function addMinutes(dateString: string, minutes: number) {
     const d = new Date(dateString);
