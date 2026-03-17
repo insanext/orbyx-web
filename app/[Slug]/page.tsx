@@ -81,9 +81,8 @@ export default function Page() {
   }
 
 function formatHour(dateString: string) {
-  const d = new Date(dateString);
-
-  return d.toLocaleTimeString("es-CL", {
+  return new Date(dateString).toLocaleTimeString("es-CL", {
+    timeZone: "America/Santiago",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
