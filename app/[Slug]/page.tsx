@@ -13,23 +13,51 @@ type StaffItem = {
   is_active?: boolean;
 };
 
+type ServiceItem = {
+  id: string;
+  name: string;
+  description?: string | null;
+  duration_minutes?: number | null;
+  price?: number | null;
+  active?: boolean;
+};
+
+type BusinessItem = {
+  id?: string;
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  instagram_url?: string | null;
+  brand_color?: string | null;
+  logo_url?: string | null;
+  calendar_id?: string | null;
+};
+
+type SlotItem = {
+  slot_start: string;
+};
+
 export default function Page() {
   const params = useParams();
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
-  const [business, setBusiness] = useState<any>(null);
+  const [business, setBusiness] = useState<BusinessItem | null>(null);
   const [calendarId, setCalendarId] = useState("");
-  const [services, setServices] = useState<any[]>([]);
-  const [selectedService, setSelectedService] = useState<any>(null);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [selectedService, setSelectedService] = useState<ServiceItem | null>(
+    null
+  );
 
   const [staffOptions, setStaffOptions] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [weekDates, setWeekDates] = useState<Date[]>([]);
-  const [weekSlots, setWeekSlots] = useState<any>({});
-  const [selectedSlot, setSelectedSlot] = useState<any>(null);
+  const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
+  const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
 
   const [showForm, setShowForm] = useState(false);
 
@@ -41,6 +69,7 @@ export default function Page() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState("");
   const [loadingStaff, setLoadingStaff] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const formRef = useRef<HTMLDivElement | null>(null);
 
@@ -58,6 +87,20 @@ export default function Page() {
     return `${h}:${m}`;
   }
 
+  function addMinutes(dateString: string, minutes: number) {
+    const d = new Date(dateString);
+    d.setMinutes(d.getMinutes() + minutes);
+    return d.toISOString();
+  }
+
+  function formatSlotRange(slotStart: string) {
+    const duration = Number(selectedService?.duration_minutes || 0);
+    if (!duration) return formatHour(slotStart);
+
+    const end = addMinutes(slotStart, duration);
+    return `${formatHour(slotStart)} - ${formatHour(end)}`;
+  }
+
   function formatSelectedDate(dateString: string) {
     const d = new Date(dateString);
     return d.toLocaleDateString("es-CL", {
@@ -68,7 +111,7 @@ export default function Page() {
     });
   }
 
-  function formatPrice(price: number) {
+  function formatPrice(price?: number | null) {
     return new Intl.NumberFormat("es-CL", {
       style: "currency",
       currency: "CLP",
@@ -104,15 +147,21 @@ export default function Page() {
     const day = baseDate.getDay();
     const diff = baseDate.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(baseDate);
+    monday.setHours(0, 0, 0, 0);
     monday.setDate(diff);
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
+      d.setHours(0, 0, 0, 0);
       dates.push(d);
     }
 
     return dates;
+  }
+
+  function getSelectedStaff() {
+    return staffOptions.find((item) => item.id === selectedStaffId) || null;
   }
 
   async function loadServiceStaff(serviceId: string) {
@@ -155,8 +204,28 @@ export default function Page() {
 
     setBookingError("");
 
-    if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
+    const cleanName = customerName.trim();
+    const cleanPhone = customerPhone.trim();
+    const cleanEmail = customerEmail.trim();
+
+    if (!cleanName || !cleanPhone || !cleanEmail) {
       setBookingError("Completa nombre, teléfono y email.");
+      return;
+    }
+
+    if (cleanName.length < 3) {
+      setBookingError("Ingresa un nombre válido.");
+      return;
+    }
+
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail);
+    if (!emailOk) {
+      setBookingError("Ingresa un correo válido.");
+      return;
+    }
+
+    if (cleanPhone.replace(/\D/g, "").length < 8) {
+      setBookingError("Ingresa un teléfono válido.");
       return;
     }
 
@@ -177,9 +246,9 @@ export default function Page() {
           staff_id: selectedStaffId || null,
           date: formatDate(new Date(selectedSlot.slot_start)),
           slot_start: selectedSlot.slot_start,
-          customer_name: customerName,
-          customer_phone: customerPhone,
-          customer_email: customerEmail,
+          customer_name: cleanName,
+          customer_phone: cleanPhone,
+          customer_email: cleanEmail,
           source: "public_page",
         }),
       });
@@ -194,6 +263,7 @@ export default function Page() {
       setBookingSuccess(true);
       setShowForm(false);
       setSelectedSlot(null);
+      setWeekSlots({});
     } catch {
       setBookingError("Ocurrió un error al crear la reserva.");
     } finally {
@@ -209,7 +279,7 @@ export default function Page() {
       .then((data) => {
         setBusiness(data.business || null);
         setCalendarId(data.calendar_id || data.business?.calendar_id || "");
-        setServices(data.services || []);
+        setServices(Array.isArray(data.services) ? data.services : []);
       });
   }, [slug]);
 
@@ -225,46 +295,71 @@ export default function Page() {
       return;
     }
 
+    setWeekSlots({});
+    setSelectedSlot(null);
+    setShowForm(false);
+    setBookingSuccess(false);
+    setBookingError("");
+
     loadServiceStaff(selectedService.id);
   }, [slug, selectedService?.id]);
 
   useEffect(() => {
     if (!slug || !selectedService?.id || weekDates.length === 0) return;
 
+    let cancelled = false;
+
     async function loadWeek() {
-      const requests = weekDates.map(async (day) => {
-        const dateStr = formatDate(day);
+      try {
+        setLoadingSlots(true);
 
-        const query = new URLSearchParams({ date: dateStr });
+        const requests = weekDates.map(async (day) => {
+          const dateStr = formatDate(day);
+          const query = new URLSearchParams({ date: dateStr });
 
-        if (selectedStaffId) {
-          query.set("staff_id", selectedStaffId);
+          if (selectedStaffId) {
+            query.set("staff_id", selectedStaffId);
+          }
+
+          const res = await fetch(
+            `/api/public-slots/${slug}/${selectedService.id}?${query.toString()}`
+          );
+
+          const data = await res.json();
+
+          return {
+            date: dateStr,
+            slots: Array.isArray(data.slots) ? data.slots : [],
+          };
+        });
+
+        const responses = await Promise.all(requests);
+
+        if (cancelled) return;
+
+        const result: Record<string, SlotItem[]> = {};
+        responses.forEach((r) => {
+          result[r.date] = r.slots;
+        });
+
+        setWeekSlots(result);
+      } catch {
+        if (!cancelled) {
+          setWeekSlots({});
         }
-
-        const res = await fetch(
-          `/api/public-slots/${slug}/${selectedService.id}?${query.toString()}`
-        );
-
-        const data = await res.json();
-
-        return {
-          date: dateStr,
-          slots: data.slots || [],
-        };
-      });
-
-      const responses = await Promise.all(requests);
-
-      const result: any = {};
-      responses.forEach((r) => {
-        result[r.date] = r.slots;
-      });
-
-      setWeekSlots(result);
+      } finally {
+        if (!cancelled) {
+          setLoadingSlots(false);
+        }
+      }
     }
 
     loadWeek();
-  }, [slug, selectedService, selectedStaffId, weekDates]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, selectedService?.id, selectedStaffId, weekDates]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -280,7 +375,7 @@ export default function Page() {
               {business?.logo_url ? (
                 <img
                   src={business.logo_url}
-                  alt={business?.name}
+                  alt={business?.name || "Logo negocio"}
                   className="h-16 w-16 rounded-2xl bg-white object-contain p-2 shadow-sm"
                 />
               ) : (
@@ -386,7 +481,8 @@ export default function Page() {
 
                 {services.map((service) => (
                   <option key={service.id} value={service.id}>
-                    {service.name} · {service.duration_minutes} min · {formatPrice(service.price)}
+                    {service.name} · {service.duration_minutes || 0} min ·{" "}
+                    {formatPrice(service.price)}
                   </option>
                 ))}
               </select>
@@ -407,7 +503,7 @@ export default function Page() {
                     <p>
                       Duración:{" "}
                       <span className="font-medium">
-                        {selectedService.duration_minutes} min
+                        {selectedService.duration_minutes || 0} min
                       </span>
                     </p>
                     <p>
@@ -426,7 +522,8 @@ export default function Page() {
                 <div className="mb-4">
                   <h2 className="text-lg font-semibold">Elige profesional</h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Puedes reservar con un profesional específico o dejarlo automático.
+                    Puedes reservar con un profesional específico o dejarlo
+                    automático.
                   </p>
                 </div>
 
@@ -436,7 +533,8 @@ export default function Page() {
                   </div>
                 ) : staffOptions.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                    Este servicio aún no tiene staff asignado. Se mostrará disponibilidad general.
+                    Este servicio aún no tiene staff asignado. Se mostrará
+                    disponibilidad general.
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -447,6 +545,7 @@ export default function Page() {
                         checked={selectedStaffId === ""}
                         onChange={() => {
                           setSelectedStaffId("");
+                          setWeekSlots({});
                           setSelectedSlot(null);
                           setShowForm(false);
                           setBookingSuccess(false);
@@ -468,6 +567,7 @@ export default function Page() {
                           checked={selectedStaffId === item.id}
                           onChange={() => {
                             setSelectedStaffId(item.id);
+                            setWeekSlots({});
                             setSelectedSlot(null);
                             setShowForm(false);
                             setBookingSuccess(false);
@@ -502,11 +602,13 @@ export default function Page() {
 
               <div className="calendar-wrap">
                 <Calendar
+                  minDate={new Date()}
                   onChange={(value: any) => {
                     const picked = Array.isArray(value) ? value[0] : value;
                     if (!picked) return;
 
                     setSelectedDate(new Date(picked));
+                    setWeekSlots({});
                     setSelectedSlot(null);
                     setShowForm(false);
                     setBookingSuccess(false);
@@ -540,7 +642,8 @@ export default function Page() {
 
                 {selectedService ? (
                   <div className="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-700">
-                    Servicio: <span className="font-medium">{selectedService.name}</span>
+                    Servicio:{" "}
+                    <span className="font-medium">{selectedService.name}</span>
                   </div>
                 ) : null}
               </div>
@@ -548,6 +651,10 @@ export default function Page() {
               {!selectedService ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
                   Selecciona un servicio para ver las horas disponibles.
+                </div>
+              ) : loadingSlots ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
+                  Cargando horarios...
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-7">
@@ -581,7 +688,7 @@ export default function Page() {
                               Sin horarios
                             </div>
                           ) : (
-                            slots.map((slot: any, i: number) => (
+                            slots.map((slot: SlotItem, i: number) => (
                               <button
                                 key={i}
                                 onClick={() => {
@@ -597,13 +704,13 @@ export default function Page() {
                                     });
                                   }, 100);
                                 }}
-                                className={`w-full rounded-lg border px-2 py-1 text-xs font-medium transition ${
+                                className={`w-full rounded-lg border px-2 py-2 text-xs font-medium transition ${
                                   selectedSlot?.slot_start === slot.slot_start
                                     ? "border-green-500 bg-green-500 text-white shadow-sm"
                                     : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
                                 }`}
                               >
-                                {formatHour(slot.slot_start)}
+                                {formatSlotRange(slot.slot_start)}
                               </button>
                             ))
                           )}
@@ -625,10 +732,14 @@ export default function Page() {
                     Hora seleccionada
                   </p>
 
-                  <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
+                  <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
                     <p>
                       <span className="font-medium">Servicio:</span>{" "}
                       {selectedService?.name}
+                    </p>
+                    <p>
+                      <span className="font-medium">Profesional:</span>{" "}
+                      {getSelectedStaff()?.name || "Cualquiera disponible"}
                     </p>
                     <p>
                       <span className="font-medium">Fecha:</span>{" "}
@@ -636,7 +747,7 @@ export default function Page() {
                     </p>
                     <p>
                       <span className="font-medium">Hora:</span>{" "}
-                      {formatHour(selectedSlot.slot_start)}
+                      {formatSlotRange(selectedSlot.slot_start)}
                     </p>
                   </div>
                 </div>
@@ -684,7 +795,8 @@ export default function Page() {
                         </p>
 
                         <p className="mt-1">
-                          Si deseas cambiar el horario, primero debes cancelar tu reserva actual.
+                          Si deseas cambiar el horario, primero debes cancelar tu
+                          reserva actual.
                         </p>
                       </div>
                     ) : (
