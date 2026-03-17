@@ -119,6 +119,9 @@ export default function StaffPage() {
   const [specialDateForm, setSpecialDateForm] =
     useState<StaffSpecialDateItem>(emptySpecialDateForm);
   const [specialDateSaving, setSpecialDateSaving] = useState(false);
+  const [editingSpecialDateId, setEditingSpecialDateId] = useState<
+    string | null
+  >(null);
 
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
@@ -229,7 +232,9 @@ export default function StaffPage() {
   }
 
   async function loadServices(id: string) {
-    const res = await fetch(`${BACKEND_URL}/services?tenant_id=${id}&active=true`);
+    const res = await fetch(
+      `${BACKEND_URL}/services?tenant_id=${id}&active=true`
+    );
     const data = await res.json();
 
     if (!res.ok) {
@@ -289,13 +294,18 @@ export default function StaffPage() {
     );
   }
 
+  function resetSpecialDateForm() {
+    setSpecialDateForm(emptySpecialDateForm);
+    setEditingSpecialDateId(null);
+  }
+
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
     setStaffHours(defaultHours);
     setStaffSpecialDates([]);
     setSelectedServiceIds([]);
-    setSpecialDateForm(emptySpecialDateForm);
+    resetSpecialDateForm();
     setSaveError("");
     setSaveOk("");
   }
@@ -319,6 +329,7 @@ export default function StaffPage() {
       });
       setSaveError("");
       setSaveOk("");
+      resetSpecialDateForm();
 
       await Promise.all([
         loadStaffHours(item.tenant_id, item.id),
@@ -388,6 +399,36 @@ export default function StaffPage() {
           `La hora fin debe ser mayor a la hora inicio en ${dayLabel}`
         );
       }
+    }
+  }
+
+  function validateSpecialDate() {
+    if (!specialDateForm.date) {
+      throw new Error("Debes ingresar una fecha");
+    }
+
+    if (!specialDateForm.is_closed) {
+      if (!specialDateForm.start_time || !specialDateForm.end_time) {
+        throw new Error("Debes ingresar hora inicio y fin");
+      }
+
+      if (specialDateForm.start_time >= specialDateForm.end_time) {
+        throw new Error("La hora fin debe ser mayor a la hora inicio");
+      }
+    }
+
+    const duplicated = staffSpecialDates.find((item) => {
+      if (!item.date || item.date !== specialDateForm.date) return false;
+
+      if (editingSpecialDateId) {
+        return item.id !== editingSpecialDateId;
+      }
+
+      return true;
+    });
+
+    if (duplicated) {
+      throw new Error("Ya existe una excepción para esa fecha en este staff");
     }
   }
 
@@ -495,7 +536,23 @@ export default function StaffPage() {
     }
   }
 
-  async function handleAddSpecialDate() {
+  function handleEditSpecialDate(item: StaffSpecialDateItem) {
+    setEditingSpecialDateId(item.id || null);
+    setSpecialDateForm({
+      id: item.id,
+      tenant_id: item.tenant_id,
+      staff_id: item.staff_id,
+      date: item.date || "",
+      label: item.label || "",
+      is_closed: Boolean(item.is_closed),
+      start_time: item.start_time || "09:00",
+      end_time: item.end_time || "18:00",
+    });
+    setSaveError("");
+    setSaveOk("");
+  }
+
+  async function handleSaveSpecialDate() {
     try {
       if (!tenantId) {
         throw new Error("tenant_id no disponible");
@@ -503,23 +560,11 @@ export default function StaffPage() {
 
       if (!editingId) {
         throw new Error(
-          "Primero debes guardar el staff antes de agregar excepciones"
+          "Primero debes guardar el staff antes de administrar excepciones"
         );
       }
 
-      if (!specialDateForm.date) {
-        throw new Error("Debes ingresar una fecha");
-      }
-
-      if (!specialDateForm.is_closed) {
-        if (!specialDateForm.start_time || !specialDateForm.end_time) {
-          throw new Error("Debes ingresar hora inicio y fin");
-        }
-
-        if (specialDateForm.start_time >= specialDateForm.end_time) {
-          throw new Error("La hora fin debe ser mayor a la hora inicio");
-        }
-      }
+      validateSpecialDate();
 
       setSpecialDateSaving(true);
       setSaveError("");
@@ -539,8 +584,16 @@ export default function StaffPage() {
           : specialDateForm.end_time || null,
       };
 
-      const res = await fetch(`${BACKEND_URL}/staff-special-dates`, {
-        method: "POST",
+      const isEditing = Boolean(editingSpecialDateId);
+
+      const url = isEditing
+        ? `${BACKEND_URL}/staff-special-dates/${editingSpecialDateId}`
+        : `${BACKEND_URL}/staff-special-dates`;
+
+      const method = isEditing ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -550,14 +603,23 @@ export default function StaffPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.error || "No se pudo crear la excepción");
+        throw new Error(
+          data?.error ||
+            (isEditing
+              ? "No se pudo actualizar la excepción"
+              : "No se pudo crear la excepción")
+        );
       }
 
       await loadStaffSpecialDates(tenantId, editingId);
-      setSpecialDateForm(emptySpecialDateForm);
-      setSaveOk("Excepción del staff creada correctamente.");
+      resetSpecialDateForm();
+      setSaveOk(
+        isEditing
+          ? "Excepción del staff actualizada correctamente."
+          : "Excepción del staff creada correctamente."
+      );
     } catch (error: any) {
-      setSaveError(error?.message || "No se pudo crear la excepción");
+      setSaveError(error?.message || "No se pudo guardar la excepción");
     } finally {
       setSpecialDateSaving(false);
     }
@@ -583,6 +645,10 @@ export default function StaffPage() {
 
       if (tenantId && editingId) {
         await loadStaffSpecialDates(tenantId, editingId);
+      }
+
+      if (editingSpecialDateId === id) {
+        resetSpecialDateForm();
       }
 
       setSaveOk("Excepción eliminada correctamente.");
@@ -933,7 +999,9 @@ export default function StaffPage() {
                             <p className="mt-1 text-xs text-slate-500">
                               Duración: {service.duration_minutes ?? 0} min
                               {service.price != null
-                                ? ` · $${Number(service.price).toLocaleString("es-CL")}`
+                                ? ` · $${Number(service.price).toLocaleString(
+                                    "es-CL"
+                                  )}`
                                 : ""}
                             </p>
                           </div>
@@ -962,7 +1030,7 @@ export default function StaffPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid gap-3 md:grid-cols-[1.1fr_1fr_0.9fr_1fr_1fr_auto]">
+                    <div className="grid gap-3 md:grid-cols-[1.1fr_1fr_0.9fr_1fr_1fr_auto_auto]">
                       <div>
                         <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Fecha
@@ -1054,14 +1122,38 @@ export default function StaffPage() {
                       <div className="flex items-end">
                         <button
                           type="button"
-                          onClick={handleAddSpecialDate}
+                          onClick={handleSaveSpecialDate}
                           disabled={specialDateSaving}
                           className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {specialDateSaving ? "Agregando..." : "Agregar"}
+                          {specialDateSaving
+                            ? editingSpecialDateId
+                              ? "Guardando..."
+                              : "Agregando..."
+                            : editingSpecialDateId
+                            ? "Guardar"
+                            : "Agregar"}
+                        </button>
+                      </div>
+
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={resetSpecialDateForm}
+                          disabled={specialDateSaving}
+                          className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Cancelar
                         </button>
                       </div>
                     </div>
+
+                    {editingSpecialDateId ? (
+                      <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+                        Estás editando una excepción existente. Guarda los
+                        cambios o presiona cancelar.
+                      </div>
+                    ) : null}
 
                     {staffSpecialDates.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
@@ -1088,15 +1180,25 @@ export default function StaffPage() {
                               </p>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                item.id && handleDeleteSpecialDate(item.id)
-                              }
-                              className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
-                            >
-                              Eliminar
-                            </button>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleEditSpecialDate(item)}
+                                className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                              >
+                                Editar
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  item.id && handleDeleteSpecialDate(item.id)
+                                }
+                                className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
