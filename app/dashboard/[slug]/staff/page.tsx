@@ -49,6 +49,15 @@ type StaffSpecialDateItem = {
   end_time: string | null;
 };
 
+type ServiceItem = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  duration_minutes?: number | null;
+  price?: number | null;
+  active?: boolean;
+};
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 const days = [
@@ -111,6 +120,9 @@ export default function StaffPage() {
     useState<StaffSpecialDateItem>(emptySpecialDateForm);
   const [specialDateSaving, setSpecialDateSaving] = useState(false);
 
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+
   const activeCount = useMemo(
     () => staff.filter((item) => item.is_active).length,
     [staff]
@@ -143,7 +155,11 @@ export default function StaffPage() {
         }
 
         setTenantId(data.business.id);
-        await loadStaff(data.business.id);
+
+        await Promise.all([
+          loadStaff(data.business.id),
+          loadServices(data.business.id),
+        ]);
       } catch (error: any) {
         setLoadError(error?.message || "No se pudo cargar el módulo staff");
       } finally {
@@ -212,11 +228,73 @@ export default function StaffPage() {
     );
   }
 
+  async function loadServices(id: string) {
+    const res = await fetch(`${BACKEND_URL}/services?tenant_id=${id}&active=true`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudo cargar los servicios");
+    }
+
+    setServices(Array.isArray(data?.services) ? data.services : []);
+  }
+
+  async function loadStaffServices(id: string, staffId: string) {
+    const res = await fetch(
+      `${BACKEND_URL}/staff-services?tenant_id=${id}&staff_id=${staffId}`
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudo cargar staff_services");
+    }
+
+    const rows = Array.isArray(data?.staff_services) ? data.staff_services : [];
+
+    setSelectedServiceIds(
+      rows
+        .map((item: any) => item.service_id)
+        .filter((value: any) => typeof value === "string")
+    );
+  }
+
+  async function saveStaffServices(staffId: string) {
+    const payload = {
+      tenant_id: tenantId,
+      staff_id: staffId,
+      service_ids: selectedServiceIds,
+    };
+
+    const res = await fetch(`${BACKEND_URL}/staff-services`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudo guardar staff_services");
+    }
+  }
+
+  function toggleService(serviceId: string) {
+    setSelectedServiceIds((prev) =>
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  }
+
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
     setStaffHours(defaultHours);
     setStaffSpecialDates([]);
+    setSelectedServiceIds([]);
     setSpecialDateForm(emptySpecialDateForm);
     setSaveError("");
     setSaveOk("");
@@ -245,6 +323,7 @@ export default function StaffPage() {
       await Promise.all([
         loadStaffHours(item.tenant_id, item.id),
         loadStaffSpecialDates(item.tenant_id, item.id),
+        loadStaffServices(item.tenant_id, item.id),
       ]);
     } catch (error: any) {
       setSaveError(
@@ -326,6 +405,10 @@ export default function StaffPage() {
         throw new Error("Debes ingresar el nombre del staff");
       }
 
+      if (selectedServiceIds.length === 0) {
+        throw new Error("Debes asignar al menos un servicio al staff");
+      }
+
       if (!form.use_business_hours) {
         validateStaffHours();
       }
@@ -372,6 +455,7 @@ export default function StaffPage() {
         await saveStaffHours(savedStaffId);
       }
 
+      await saveStaffServices(savedStaffId);
       await loadStaff(tenantId);
       resetForm();
       setSaveOk(
@@ -783,7 +867,11 @@ export default function StaffPage() {
                                 value={hour.end_time || "18:00"}
                                 disabled={!hour.enabled}
                                 onChange={(e) =>
-                                  updateHour(day.value, "end_time", e.target.value)
+                                  updateHour(
+                                    day.value,
+                                    "end_time",
+                                    e.target.value
+                                  )
                                 }
                                 className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                               />
@@ -802,6 +890,59 @@ export default function StaffPage() {
                   ) : null}
                 </div>
               )}
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="mb-4">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Servicios que atiende
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Selecciona qué servicios puede realizar este profesional.
+                  </p>
+                </div>
+
+                {services.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                    No hay servicios activos disponibles para asignar.
+                  </div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {services.map((service) => {
+                      const checked = selectedServiceIds.includes(service.id);
+
+                      return (
+                        <label
+                          key={service.id}
+                          className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
+                            checked
+                              ? "border-slate-900 bg-slate-50"
+                              : "border-slate-200 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleService(service.id)}
+                            className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-slate-900">
+                              {service.name}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Duración: {service.duration_minutes ?? 0} min
+                              {service.price != null
+                                ? ` · $${Number(service.price).toLocaleString("es-CL")}`
+                                : ""}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="mb-4">
