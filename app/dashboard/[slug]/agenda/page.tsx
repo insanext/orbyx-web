@@ -306,12 +306,17 @@ export default function AgendaPage() {
                             key={appt.id}
                             type="button"
                             onClick={() => setSelectedAppointment(appt)}
-                            className={`w-full rounded-2xl border p-3 text-left transition ${
-                              selectedAppointment?.id === appt.id
-                                ? "border-slate-900 bg-slate-900 text-white shadow-sm"
-                                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                            }`}
-                          >
+className={`w-full rounded-2xl border p-3 text-left transition ${
+  selectedAppointment?.id === appt.id
+    ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+    : appt.status === "completed"
+    ? "border-emerald-300 bg-emerald-50"
+    : appt.status === "no_show"
+    ? "border-amber-300 bg-amber-50"
+    : appt.status === "canceled"
+    ? "border-slate-200 bg-slate-100 opacity-60"
+    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+}`}
                             <div
                               className={`text-xs font-semibold ${
                                 selectedAppointment?.id === appt.id
