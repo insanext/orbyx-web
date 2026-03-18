@@ -152,6 +152,25 @@ export default function AgendaPage() {
     }
   }
 
+  function getCalendarBadgeLabel(appt: Appointment) {
+    const visualStatus = getVisualStatus(appt);
+
+    switch (visualStatus) {
+      case "booked":
+        return "Agendada";
+      case "completed":
+        return "Atendida";
+      case "no_show":
+        return "No asistió";
+      case "pending_close":
+        return "Pendiente";
+      case "canceled":
+        return "Cancelada";
+      default:
+        return "Estado";
+    }
+  }
+
   function getStatusBadgeClass(appt: Appointment) {
     const visualStatus = getVisualStatus(appt);
 
@@ -195,7 +214,7 @@ export default function AgendaPage() {
     }
 
     if (visualStatus === "canceled") {
-      return "border-slate-300 bg-slate-200 text-slate-600 opacity-70";
+      return "border-slate-300 bg-slate-200 text-slate-600 opacity-80";
     }
 
     return "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-900";
@@ -225,7 +244,7 @@ export default function AgendaPage() {
   );
   const weekEnd = weekDays[6];
 
-  async function loadAppointments() {
+  async function loadAppointments(options?: { preserveSelected?: boolean }) {
     try {
       setLoading(true);
       setError("");
@@ -246,7 +265,12 @@ export default function AgendaPage() {
       const rows = data.appointments || [];
       setAppointments(rows);
 
-      if (selectedAppointment) {
+      if (options?.preserveSelected && selectedAppointment) {
+        const updatedSelected = rows.find(
+          (appt: Appointment) => appt.id === selectedAppointment.id
+        );
+        setSelectedAppointment(updatedSelected || null);
+      } else if (selectedAppointment) {
         const updatedSelected = rows.find(
           (appt: Appointment) => appt.id === selectedAppointment.id
         );
@@ -283,14 +307,11 @@ export default function AgendaPage() {
         throw new Error(data?.error || "No se pudo actualizar el estado");
       }
 
-      const updatedAppointment = data?.appointment;
-
       setAppointments((prev) =>
         prev.map((appt) =>
           appt.id === appointmentId
             ? {
                 ...appt,
-                ...(updatedAppointment || {}),
                 status: newStatus,
               }
             : appt
@@ -301,11 +322,12 @@ export default function AgendaPage() {
         prev && prev.id === appointmentId
           ? {
               ...prev,
-              ...(updatedAppointment || {}),
               status: newStatus,
             }
           : prev
       );
+
+      await loadAppointments({ preserveSelected: true });
     } catch (err: any) {
       setError(err?.message || "Error actualizando estado");
     } finally {
@@ -596,7 +618,10 @@ export default function AgendaPage() {
                                   : "bg-white text-slate-400"
                               }`}
                             >
-                              {formatHour(slot)} Libre
+                              <span className="block font-medium">
+                                {formatHour(slot)}
+                              </span>
+                              <span className="block">Libre</span>
                             </div>
                           );
                         }
@@ -615,7 +640,7 @@ export default function AgendaPage() {
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div
-                                className={`text-xs font-semibold ${
+                                className={`min-w-0 text-xs font-semibold ${
                                   isSelected ? "text-slate-200" : "text-slate-600"
                                 }`}
                               >
@@ -624,18 +649,18 @@ export default function AgendaPage() {
                               </div>
 
                               <span
-                                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
                                   isSelected
                                     ? "border-white/20 bg-white/10 text-white"
                                     : getStatusBadgeClass(appt)
                                 }`}
                               >
-                                {getStatusLabel(appt)}
+                                {getCalendarBadgeLabel(appt)}
                               </span>
                             </div>
 
                             <p
-                              className={`mt-1 text-sm font-semibold ${
+                              className={`mt-1 line-clamp-1 text-sm font-semibold ${
                                 isSelected ? "text-white" : "text-slate-900"
                               }`}
                             >
@@ -643,7 +668,7 @@ export default function AgendaPage() {
                             </p>
 
                             <p
-                              className={`mt-1 text-xs ${
+                              className={`mt-1 line-clamp-1 text-xs ${
                                 isSelected ? "text-slate-300" : "text-slate-500"
                               }`}
                             >
@@ -652,7 +677,7 @@ export default function AgendaPage() {
 
                             {isPastPendingClosure(appt) ? (
                               <div
-                                className={`mt-2 rounded-xl px-2 py-1 text-[11px] font-semibold ${
+                                className={`mt-2 rounded-xl px-2 py-1 text-[10px] font-semibold ${
                                   isSelected
                                     ? "bg-white/10 text-white"
                                     : "bg-rose-100 text-rose-700"
