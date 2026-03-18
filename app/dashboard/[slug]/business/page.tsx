@@ -19,6 +19,7 @@ type BusinessResponse = {
     facebook_url?: string | null;
     description?: string | null;
     min_booking_notice_minutes?: number | null;
+    max_booking_days_ahead?: number | null;
   };
   calendar_id: string;
   google_connected?: boolean;
@@ -81,6 +82,7 @@ export default function BusinessPage() {
     facebook_url: "",
     description: "",
     min_booking_notice_minutes: 0,
+    max_booking_days_ahead: 60,
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
@@ -134,8 +136,12 @@ export default function BusinessPage() {
           instagram_url: data.business.instagram_url || "",
           facebook_url: data.business.facebook_url || "",
           description: data.business.description || "",
-          min_booking_notice_minutes:
-            Number(data.business.min_booking_notice_minutes || 0),
+          min_booking_notice_minutes: Number(
+            data.business.min_booking_notice_minutes || 0
+          ),
+          max_booking_days_ahead: Number(
+            data.business.max_booking_days_ahead || 60
+          ),
         });
 
         await loadBusinessHours(data.business.id);
@@ -314,7 +320,9 @@ export default function BusinessPage() {
               date: item.date,
               label: item.label,
               is_closed: item.is_closed,
-              start_time: item.is_closed ? item.start_time || null : item.start_time,
+              start_time: item.is_closed
+                ? item.start_time || null
+                : item.start_time,
               end_time: item.is_closed ? item.end_time || null : item.end_time,
             }),
           }
@@ -340,7 +348,9 @@ export default function BusinessPage() {
               date: item.date,
               label: item.label,
               is_closed: item.is_closed,
-              start_time: item.is_closed ? item.start_time || null : item.start_time,
+              start_time: item.is_closed
+                ? item.start_time || null
+                : item.start_time,
               end_time: item.is_closed ? item.end_time || null : item.end_time,
             }),
           }
@@ -672,6 +682,34 @@ export default function BusinessPage() {
                 </p>
               </div>
 
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Máximo días hacia adelante
+                </label>
+
+                <select
+                  value={form.max_booking_days_ahead}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      max_booking_days_ahead: Number(e.target.value),
+                    }))
+                  }
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                >
+                  <option value={7}>7 días</option>
+                  <option value={14}>14 días</option>
+                  <option value={30}>30 días</option>
+                  <option value={60}>60 días</option>
+                  <option value={90}>90 días</option>
+                </select>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  Limita cuántos días hacia el futuro pueden agendar los
+                  clientes.
+                </p>
+              </div>
+
               <div className="flex flex-wrap gap-3 pt-2">
                 <button
                   type="button"
@@ -927,7 +965,11 @@ export default function BusinessPage() {
                           type="checkbox"
                           checked={item.is_closed}
                           onChange={(e) =>
-                            updateSpecialDate(index, "is_closed", e.target.checked)
+                            updateSpecialDate(
+                              index,
+                              "is_closed",
+                              e.target.checked
+                            )
                           }
                           className="h-4 w-4 rounded border-slate-300"
                         />
@@ -956,7 +998,11 @@ export default function BusinessPage() {
                           type="time"
                           value={item.start_time}
                           onChange={(e) =>
-                            updateSpecialDate(index, "start_time", e.target.value)
+                            updateSpecialDate(
+                              index,
+                              "start_time",
+                              e.target.value
+                            )
                           }
                           className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
                         />
