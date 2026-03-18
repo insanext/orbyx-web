@@ -177,28 +177,33 @@ export default function AgendaPage() {
                             key={slot}
                             className="text-xs text-slate-400 text-center border border-dashed p-2 rounded-xl"
                           >
-                            Libre
+                            {formatHour(slot)} Libre
                           </div>
                         );
                       }
 
                       return (
                         <button
-                          key={appt.id}
-                          onClick={() => setSelectedAppointment(appt)}
-                          className={`w-full p-3 rounded-xl border text-left ${getCardClass(
-                            appt,
-                            selectedAppointment?.id === appt.id
-                          )}`}
-                        >
-                          <div className="text-xs">
-                            {formatHour(appt.start_at)}
-                          </div>
+  key={appt.id}
+  onClick={() => setSelectedAppointment(appt)}
+  className={`w-full rounded-xl border p-3 text-left transition ${
+    selectedAppointment?.id === appt.id
+      ? "border-slate-900 bg-slate-900 text-white"
+      : getCardClass(appt, false)
+  }`}
+>
+  <div className="text-xs font-semibold">
+    {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
+  </div>
 
-                          <div className="text-sm font-semibold">
-                            {appt.customer_name}
-                          </div>
-                        </button>
+  <div className="text-sm font-semibold">
+    {appt.customer_name}
+  </div>
+
+  <div className="text-xs opacity-70">
+    {appt.service_name_snapshot}
+  </div>
+</button>
                       );
                     })}
                   </div>
