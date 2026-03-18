@@ -310,11 +310,11 @@ className={`w-full rounded-2xl border p-3 text-left transition ${
   selectedAppointment?.id === appt.id
     ? "border-slate-900 bg-slate-900 text-white shadow-sm"
     : appt.status === "completed"
-    ? "border-emerald-300 bg-emerald-50"
+    ? "border-emerald-400 bg-emerald-100"
     : appt.status === "no_show"
-    ? "border-amber-300 bg-amber-50"
+    ? "border-amber-400 bg-amber-100"
     : appt.status === "canceled"
-    ? "border-slate-200 bg-slate-100 opacity-60"
+    ? "border-slate-300 bg-slate-200 opacity-70"
     : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
 }`} 
 >
