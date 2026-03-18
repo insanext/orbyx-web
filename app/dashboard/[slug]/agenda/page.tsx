@@ -19,6 +19,7 @@ type AppointmentItem = {
   tenant_id?: string;
   service_id?: string | null;
   service_name?: string | null;
+  service_name_snapshot?: string | null;
   staff_id?: string | null;
   staff_name?: string | null;
   customer_name?: string | null;
@@ -29,11 +30,13 @@ type AppointmentItem = {
   end?: string | null;
   starts_at?: string | null;
   ends_at?: string | null;
+  start_at?: string | null;
+  end_at?: string | null;
   slot_start?: string | null;
   slot_end?: string | null;
   notes?: string | null;
   source?: string | null;
-  status: "booked" | "completed" | "no_show" | string;
+  status: "booked" | "completed" | "no_show" | "canceled" | string;
   created_at?: string;
   updated_at?: string;
 };
@@ -52,6 +55,7 @@ const DAY_END_HOUR = 21;
 const SLOT_HEIGHT = 44;
 
 const weekDaysShort = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
 const filterLabels: Record<FilterValue, string> = {
   all: "Todas",
   pending_close: "Pendientes",
@@ -102,7 +106,12 @@ function formatDayHeader(date: Date) {
   });
 }
 
+function getServiceName(appt: AppointmentItem) {
+  return appt.service_name_snapshot || appt.service_name || "Servicio";
+}
+
 function normalizeAppointmentStart(appt: AppointmentItem) {
+  if (appt.start_at) return appt.start_at;
   if (appt.starts_at) return appt.starts_at;
 
   if (appt.date && appt.slot_start) {
@@ -115,6 +124,7 @@ function normalizeAppointmentStart(appt: AppointmentItem) {
 }
 
 function normalizeAppointmentEnd(appt: AppointmentItem) {
+  if (appt.end_at) return appt.end_at;
   if (appt.ends_at) return appt.ends_at;
 
   if (appt.date && appt.slot_end) {
@@ -170,6 +180,8 @@ function getStatusLabel(appt: AppointmentItem) {
       return "No asistió";
     case "pending_close":
       return "Pendiente de cierre";
+    case "canceled":
+      return "Cancelada";
     default:
       return appt.status || "Sin estado";
   }
@@ -187,6 +199,8 @@ function getStatusBadgeClasses(appt: AppointmentItem) {
       return "bg-rose-50 text-rose-700 ring-rose-200";
     case "pending_close":
       return "bg-amber-100 text-amber-900 ring-amber-300";
+    case "canceled":
+      return "bg-slate-100 text-slate-700 ring-slate-200";
     default:
       return "bg-slate-100 text-slate-700 ring-slate-200";
   }
@@ -204,18 +218,24 @@ function getAppointmentCardClasses(appt: AppointmentItem, isSelected: boolean) {
   if (visualStatus === "completed") {
     return isSelected
       ? "border-2 border-emerald-400 bg-emerald-50 text-emerald-950 shadow-md"
-      : "border border-emerald-200 bg-emerald-50/80 text-emerald-950 shadow-sm hover:border-emerald-300";
+      : "border border-emerald-200 bg-emerald-50/90 text-emerald-950 shadow-sm hover:border-emerald-300";
   }
 
   if (visualStatus === "no_show") {
     return isSelected
       ? "border-2 border-rose-400 bg-rose-50 text-rose-950 shadow-md"
-      : "border border-rose-200 bg-rose-50/80 text-rose-950 shadow-sm hover:border-rose-300";
+      : "border border-rose-200 bg-rose-50/90 text-rose-950 shadow-sm hover:border-rose-300";
+  }
+
+  if (visualStatus === "canceled") {
+    return isSelected
+      ? "border-2 border-slate-400 bg-slate-100 text-slate-900 shadow-md"
+      : "border border-slate-300 bg-slate-100 text-slate-900 shadow-sm hover:border-slate-400";
   }
 
   return isSelected
     ? "border-2 border-blue-400 bg-blue-50 text-slate-950 shadow-md"
-    : "border border-blue-200 bg-blue-50/80 text-slate-950 shadow-sm hover:border-blue-300";
+    : "border border-blue-200 bg-blue-50/90 text-slate-950 shadow-sm hover:border-blue-300";
 }
 
 function compareAppointments(a: AppointmentItem, b: AppointmentItem) {
@@ -234,7 +254,8 @@ function compareAppointments(a: AppointmentItem, b: AppointmentItem) {
 function matchesFilter(appt: AppointmentItem, filter: FilterValue) {
   if (filter === "all") return true;
   if (filter === "pending_close") return isPastPendingClosure(appt);
-  if (filter === "booked") return appt.status === "booked" && !isPastPendingClosure(appt);
+  if (filter === "booked")
+    return appt.status === "booked" && !isPastPendingClosure(appt);
   if (filter === "completed") return appt.status === "completed";
   if (filter === "no_show") return appt.status === "no_show";
   return true;
@@ -261,11 +282,6 @@ function buildTimeSlots() {
   return slots;
 }
 
-function timeStringToMinutes(value: string) {
-  const [h, m] = value.split(":").map(Number);
-  return h * 60 + m;
-}
-
 function getMinutesSinceStartOfDay(date: Date) {
   return date.getHours() * 60 + date.getMinutes();
 }
@@ -285,7 +301,8 @@ function getAppointmentLayout(appt: AppointmentItem) {
 
   const startMinutes = getMinutesSinceStartOfDay(startDate);
   const endMinutesRaw = getMinutesSinceStartOfDay(endDate);
-  const endMinutes = endMinutesRaw <= startMinutes ? startMinutes + 30 : endMinutesRaw;
+  const endMinutes =
+    endMinutesRaw <= startMinutes ? startMinutes + 30 : endMinutesRaw;
 
   const visibleStart = clamp(startMinutes, dayStartMinutes, dayEndMinutes);
   const visibleEnd = clamp(endMinutes, dayStartMinutes, dayEndMinutes);
@@ -301,34 +318,19 @@ function getAppointmentLayout(appt: AppointmentItem) {
   return { top, height };
 }
 
-async function fetchAppointmentsWithFallbacks(calendarId: string, from: string, to: string) {
-  const urls = [
-    `${BACKEND_URL}/appointments?calendar_id=${encodeURIComponent(calendarId)}&from=${from}&to=${to}`,
-    `${BACKEND_URL}/appointments?calendar_id=${encodeURIComponent(calendarId)}&date_from=${from}&date_to=${to}`,
-    `${BACKEND_URL}/appointments/calendar?calendar_id=${encodeURIComponent(calendarId)}&from=${from}&to=${to}`,
-    `${BACKEND_URL}/appointments/calendar?calendar_id=${encodeURIComponent(calendarId)}&date_from=${from}&date_to=${to}`,
-  ];
+async function fetchAppointments(calendarId: string, from: string, to: string) {
+  const url = `${BACKEND_URL}/appointments?calendar_id=${encodeURIComponent(
+    calendarId
+  )}&from=${from}T00:00:00&to=${to}T23:59:59`;
 
-  let lastError = "No se pudo cargar la agenda";
+  const res = await fetch(url);
+  const data = await res.json();
 
-  for (const url of urls) {
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (!res.ok) {
-        lastError = data?.error || `Error ${res.status}`;
-        continue;
-      }
-
-      const rows = Array.isArray(data) ? data : data.appointments || data.data || [];
-      return rows as AppointmentItem[];
-    } catch (err: any) {
-      lastError = err?.message || "Failed to fetch";
-    }
+  if (!res.ok) {
+    throw new Error(data?.error || "No se pudo cargar la agenda");
   }
 
-  throw new Error(lastError);
+  return Array.isArray(data) ? data : data.appointments || [];
 }
 
 export default function Page() {
@@ -336,11 +338,15 @@ export default function Page() {
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
-  const [business, setBusiness] = useState<BusinessResponse["business"] | null>(null);
+  const [business, setBusiness] =
+    useState<BusinessResponse["business"] | null>(null);
   const [calendarId, setCalendarId] = useState("");
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
-  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentItem | null>(null);
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(startOfWeek(new Date()));
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<AppointmentItem | null>(null);
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
+    startOfWeek(new Date())
+  );
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [loading, setLoading] = useState(true);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
@@ -358,8 +364,9 @@ export default function Page() {
 
     try {
       setLoading(true);
+      setError("");
 
-      const res = await fetch(`${BACKEND_URL}/business/public/${slug}`);
+      const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -385,7 +392,7 @@ export default function Page() {
       const from = toYmd(weekDates[0]);
       const to = toYmd(weekDates[6]);
 
-      const rows = await fetchAppointmentsWithFallbacks(calendarId, from, to);
+      const rows = await fetchAppointments(calendarId, from, to);
       setAppointments(rows);
     } catch (err: any) {
       setError(err?.message || "Error cargando agenda");
@@ -403,15 +410,18 @@ export default function Page() {
       setStatusSaving(true);
       setError("");
 
-      const res = await fetch(`${BACKEND_URL}/appointments/${appointmentId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: newStatus,
-        }),
-      });
+      const res = await fetch(
+        `${BACKEND_URL}/appointments/${appointmentId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: newStatus,
+          }),
+        }
+      );
 
       const data = await res.json();
 
@@ -419,11 +429,14 @@ export default function Page() {
         throw new Error(data?.error || "No se pudo actualizar el estado");
       }
 
+      const updatedAppointment = data?.appointment;
+
       setAppointments((prev) =>
         prev.map((appt) =>
           appt.id === appointmentId
             ? {
                 ...appt,
+                ...(updatedAppointment || {}),
                 status: newStatus,
                 updated_at: new Date().toISOString(),
               }
@@ -435,6 +448,7 @@ export default function Page() {
         prev && prev.id === appointmentId
           ? {
               ...prev,
+              ...(updatedAppointment || {}),
               status: newStatus,
               updated_at: new Date().toISOString(),
             }
@@ -570,7 +584,8 @@ export default function Page() {
             <div>
               <p className="text-sm font-semibold text-slate-900">Filtros</p>
               <p className="mt-1 text-sm text-slate-500">
-                Mostrando {visibleCount} cita{visibleCount === 1 ? "" : "s"} en la vista actual
+                Mostrando {visibleCount} cita{visibleCount === 1 ? "" : "s"} en la
+                vista actual
               </p>
             </div>
 
@@ -608,7 +623,8 @@ export default function Page() {
                   Tienes citas pendientes de cierre
                 </p>
                 <p className="mt-1 text-sm text-amber-800">
-                  Estas citas ya pasaron y siguen como agendadas. Debes marcarlas como atendidas o como no asistió.
+                  Estas citas ya pasaron y siguen como agendadas. Debes marcarlas
+                  como atendidas o como no asistió.
                 </p>
               </div>
 
@@ -637,7 +653,7 @@ export default function Page() {
                           {appt.customer_name || "Sin nombre"}
                         </p>
                         <p className="text-xs text-slate-500">
-                          {appt.service_name || "Servicio"}
+                          {getServiceName(appt)}
                         </p>
                       </div>
 
@@ -684,7 +700,7 @@ export default function Page() {
                 <div
                   className="grid"
                   style={{
-                    gridTemplateColumns: "80px repeat(7, minmax(140px, 1fr))",
+                    gridTemplateColumns: "84px repeat(7, minmax(140px, 1fr))",
                   }}
                 >
                   <div className="sticky left-0 z-20 border-b border-slate-200 bg-white" />
@@ -692,13 +708,15 @@ export default function Page() {
                   {weekDates.map((day) => {
                     const key = toYmd(day);
                     const dayAppointments = appointmentsByDay[key] || [];
-                    const dayPendingCount = dayAppointments.filter(isPastPendingClosure).length;
+                    const dayPendingCount = dayAppointments.filter(
+                      isPastPendingClosure
+                    ).length;
 
                     return (
                       <div
                         key={key}
                         className={`border-b border-l border-slate-200 px-3 py-3 ${
-                          dayPendingCount > 0 ? "bg-amber-50/70" : "bg-slate-50/70"
+                          dayPendingCount > 0 ? "bg-amber-50/80" : "bg-slate-50"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -722,38 +740,55 @@ export default function Page() {
                   })}
 
                   <div className="relative border-r border-slate-200 bg-white">
-                    {timeSlots.map((slot) => (
-                      <div
-                        key={slot}
-                        className="flex items-start justify-end border-b border-slate-200 px-2 pt-1 text-xs font-medium text-slate-500"
-                        style={{ height: SLOT_HEIGHT }}
-                      >
-                        {slot}
-                      </div>
-                    ))}
+                    {timeSlots.map((slot, index) => {
+                      const isHourStart = index % 2 === 0;
+                      const isEvenHourBand = Math.floor(index / 2) % 2 === 0;
+
+                      return (
+                        <div
+                          key={slot}
+                          className={`flex items-start justify-end px-2 pt-1 text-xs font-medium ${
+                            isHourStart
+                              ? "border-b border-slate-300 text-slate-700"
+                              : "border-b border-slate-200 text-slate-500"
+                          } ${isEvenHourBand ? "bg-slate-50/80" : "bg-white"}`}
+                          style={{ height: SLOT_HEIGHT }}
+                        >
+                          {slot}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {weekDates.map((day) => {
                     const key = toYmd(day);
                     const dayAppointments = appointmentsByDay[key] || [];
+                    const hasPending = dayAppointments.some(isPastPendingClosure);
 
                     return (
                       <div
                         key={key}
                         className={`relative border-l border-slate-200 ${
-                          dayAppointments.some(isPastPendingClosure)
-                            ? "bg-amber-50/30"
-                            : "bg-white"
+                          hasPending ? "bg-amber-50/20" : "bg-white"
                         }`}
                         style={{ height: gridHeight }}
                       >
-                        {timeSlots.map((slot) => (
-                          <div
-                            key={`${key}-${slot}`}
-                            className="border-b border-slate-200"
-                            style={{ height: SLOT_HEIGHT }}
-                          />
-                        ))}
+                        {timeSlots.map((slot, index) => {
+                          const isHourStart = index % 2 === 0;
+                          const isEvenHourBand = Math.floor(index / 2) % 2 === 0;
+
+                          return (
+                            <div
+                              key={`${key}-${slot}`}
+                              className={`${
+                                isHourStart
+                                  ? "border-b border-slate-300"
+                                  : "border-b border-slate-200"
+                              } ${isEvenHourBand ? "bg-slate-50/60" : "bg-white"}`}
+                              style={{ height: SLOT_HEIGHT }}
+                            />
+                          );
+                        })}
 
                         {dayAppointments.map((appt) => {
                           const layout = getAppointmentLayout(appt);
@@ -765,7 +800,7 @@ export default function Page() {
                             <button
                               key={appt.id}
                               onClick={() => setSelectedAppointment(appt)}
-                              className={`absolute left-1 right-1 overflow-hidden rounded-xl p-2 text-left transition ${getAppointmentCardClasses(
+                              className={`absolute left-1.5 right-1.5 overflow-hidden rounded-xl p-2 text-left transition ${getAppointmentCardClasses(
                                 appt,
                                 !!isSelected
                               )}`}
@@ -781,7 +816,7 @@ export default function Page() {
                                     {appt.customer_name || "Sin nombre"}
                                   </p>
                                   <p className="truncate text-[11px] opacity-80">
-                                    {appt.service_name || "Servicio"}
+                                    {getServiceName(appt)}
                                   </p>
                                 </div>
 
@@ -804,7 +839,7 @@ export default function Page() {
                               </div>
 
                               {isPastPendingClosure(appt) ? (
-                                <div className="mt-1 rounded-lg border border-amber-300 bg-white/80 px-2 py-1 text-[10px] font-semibold text-amber-900">
+                                <div className="mt-1 rounded-lg border border-amber-300 bg-white/90 px-2 py-1 text-[10px] font-semibold text-amber-900">
                                   Requiere cierre
                                 </div>
                               ) : null}
@@ -882,7 +917,7 @@ export default function Page() {
                       Servicio
                     </p>
                     <p className="mt-1 font-medium text-slate-900">
-                      {selectedAppointment.service_name || "Sin servicio"}
+                      {getServiceName(selectedAppointment)}
                     </p>
                   </div>
 
