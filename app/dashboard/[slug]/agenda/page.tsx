@@ -38,6 +38,13 @@ type AppointmentItem = {
   updated_at?: string;
 };
 
+type FilterValue =
+  | "all"
+  | "pending_close"
+  | "booked"
+  | "completed"
+  | "no_show";
+
 const BACKEND_URL = "https://orbyx-api.onrender.com";
 const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
@@ -187,6 +194,21 @@ function compareAppointments(a: AppointmentItem, b: AppointmentItem) {
   return aStart - bStart;
 }
 
+function matchesFilter(appt: AppointmentItem, filter: FilterValue) {
+  if (filter === "all") return true;
+  if (filter === "pending_close") return isPastPendingClosure(appt);
+  if (filter === "booked") return appt.status === "booked" && !isPastPendingClosure(appt);
+  if (filter === "completed") return appt.status === "completed";
+  if (filter === "no_show") return appt.status === "no_show";
+  return true;
+}
+
+function getFilterButtonClasses(active: boolean) {
+  return active
+    ? "rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm"
+    : "rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100";
+}
+
 export default function Page() {
   const params = useParams();
   const slug =
@@ -202,6 +224,7 @@ export default function Page() {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
     startOfWeek(new Date())
   );
+  const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [loading, setLoading] = useState(true);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
@@ -328,6 +351,10 @@ export default function Page() {
     loadAppointments();
   }, [calendarId, currentWeekStart]);
 
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter((appt) => matchesFilter(appt, activeFilter));
+  }, [appointments, activeFilter]);
+
   const appointmentsByDay = useMemo(() => {
     const map: Record<string, AppointmentItem[]> = {};
 
@@ -335,7 +362,7 @@ export default function Page() {
       map[toYmd(day)] = [];
     }
 
-    for (const appt of appointments) {
+    for (const appt of filteredAppointments) {
       const start = normalizeAppointmentStart(appt);
       if (!start) continue;
 
@@ -352,15 +379,26 @@ export default function Page() {
     }
 
     return map;
-  }, [appointments, weekDates]);
+  }, [filteredAppointments, weekDates]);
 
   const pendingCloseAppointments = useMemo(() => {
-    return appointments
-      .filter(isPastPendingClosure)
-      .sort(compareAppointments);
+    return appointments.filter(isPastPendingClosure).sort(compareAppointments);
   }, [appointments]);
 
-  const pendingCloseCount = pendingCloseAppointments.length;
+  const counts = useMemo(() => {
+    return {
+      all: appointments.length,
+      pending_close: appointments.filter(isPastPendingClosure).length,
+      booked: appointments.filter(
+        (appt) => appt.status === "booked" && !isPastPendingClosure(appt)
+      ).length,
+      completed: appointments.filter((appt) => appt.status === "completed").length,
+      no_show: appointments.filter((appt) => appt.status === "no_show").length,
+    };
+  }, [appointments]);
+
+  const visibleCount = filteredAppointments.length;
+  const pendingCloseCount = counts.pending_close;
 
   if (loading) {
     return (
@@ -427,7 +465,56 @@ export default function Page() {
           </div>
         ) : null}
 
-        {pendingCloseCount > 0 ? (
+        <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Filtros</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Mostrando {visibleCount} cita{visibleCount === 1 ? "" : "s"} en la
+                vista actual
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setActiveFilter("all")}
+                className={getFilterButtonClasses(activeFilter === "all")}
+              >
+                Todas ({counts.all})
+              </button>
+
+              <button
+                onClick={() => setActiveFilter("pending_close")}
+                className={getFilterButtonClasses(activeFilter === "pending_close")}
+              >
+                Pendientes ({counts.pending_close})
+              </button>
+
+              <button
+                onClick={() => setActiveFilter("booked")}
+                className={getFilterButtonClasses(activeFilter === "booked")}
+              >
+                Agendadas ({counts.booked})
+              </button>
+
+              <button
+                onClick={() => setActiveFilter("completed")}
+                className={getFilterButtonClasses(activeFilter === "completed")}
+              >
+                Atendidas ({counts.completed})
+              </button>
+
+              <button
+                onClick={() => setActiveFilter("no_show")}
+                className={getFilterButtonClasses(activeFilter === "no_show")}
+              >
+                No asistió ({counts.no_show})
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {pendingCloseCount > 0 && activeFilter !== "completed" && activeFilter !== "no_show" ? (
           <div className="mb-6 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -453,7 +540,10 @@ export default function Page() {
                 return (
                   <button
                     key={appt.id}
-                    onClick={() => setSelectedAppointment(appt)}
+                    onClick={() => {
+                      setActiveFilter("pending_close");
+                      setSelectedAppointment(appt);
+                    }}
                     className="rounded-2xl border border-amber-200 bg-white p-3 text-left shadow-sm transition hover:border-amber-300 hover:shadow"
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -486,10 +576,22 @@ export default function Page() {
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.6fr_0.9fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">
-                Semana {toYmd(weekDates[0])} al {toYmd(weekDates[6])}
-              </h2>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Semana {toYmd(weekDates[0])} al {toYmd(weekDates[6])}
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Filtro activo:{" "}
+                  <span className="font-medium text-slate-700">
+                    {activeFilter === "all" && "Todas"}
+                    {activeFilter === "pending_close" && "Pendientes"}
+                    {activeFilter === "booked" && "Agendadas"}
+                    {activeFilter === "completed" && "Atendidas"}
+                    {activeFilter === "no_show" && "No asistió"}
+                  </span>
+                </p>
+              </div>
 
               {loadingAppointments ? (
                 <span className="text-sm text-slate-500">Actualizando...</span>
@@ -534,7 +636,7 @@ export default function Page() {
                     <div className="space-y-3">
                       {dayAppointments.length === 0 ? (
                         <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-sm text-slate-400">
-                          Sin citas
+                          Sin citas con este filtro
                         </div>
                       ) : (
                         dayAppointments.map((appt) => {
