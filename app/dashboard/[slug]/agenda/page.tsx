@@ -316,7 +316,8 @@ className={`w-full rounded-2xl border p-3 text-left transition ${
     : appt.status === "canceled"
     ? "border-slate-200 bg-slate-100 opacity-60"
     : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-}`}
+}`} 
+>
                             <div
                               className={`text-xs font-semibold ${
                                 selectedAppointment?.id === appt.id
