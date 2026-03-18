@@ -638,9 +638,9 @@ export default function AgendaPage() {
                               isSelected
                             )}`}
                           >
-                            <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-2">
                               <div
-                                className={`min-w-0 text-xs font-semibold ${
+                                className={`text-xs font-semibold ${
                                   isSelected ? "text-slate-200" : "text-slate-600"
                                 }`}
                               >
@@ -648,44 +648,46 @@ export default function AgendaPage() {
                                 {formatHour(appt.end_at)}
                               </div>
 
-                              <span
-                                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                                  isSelected
-                                    ? "border-white/20 bg-white/10 text-white"
-                                    : getStatusBadgeClass(appt)
-                                }`}
-                              >
-                                {getCalendarBadgeLabel(appt)}
-                              </span>
-                            </div>
-
-                            <p
-                              className={`mt-1 line-clamp-1 text-sm font-semibold ${
-                                isSelected ? "text-white" : "text-slate-900"
-                              }`}
-                            >
-                              {appt.customer_name}
-                            </p>
-
-                            <p
-                              className={`mt-1 line-clamp-1 text-xs ${
-                                isSelected ? "text-slate-300" : "text-slate-500"
-                              }`}
-                            >
-                              {appt.service_name_snapshot || "Reserva"}
-                            </p>
-
-                            {isPastPendingClosure(appt) ? (
-                              <div
-                                className={`mt-2 rounded-xl px-2 py-1 text-[10px] font-semibold ${
-                                  isSelected
-                                    ? "bg-white/10 text-white"
-                                    : "bg-rose-100 text-rose-700"
-                                }`}
-                              >
-                                Requiere cierre
+                              <div>
+                                <span
+                                  className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                    isSelected
+                                      ? "border-white/20 bg-white/10 text-white"
+                                      : getStatusBadgeClass(appt)
+                                  }`}
+                                >
+                                  {getCalendarBadgeLabel(appt)}
+                                </span>
                               </div>
-                            ) : null}
+
+                              <p
+                                className={`truncate text-sm font-semibold ${
+                                  isSelected ? "text-white" : "text-slate-900"
+                                }`}
+                              >
+                                {appt.customer_name}
+                              </p>
+
+                              <p
+                                className={`truncate text-xs ${
+                                  isSelected ? "text-slate-300" : "text-slate-500"
+                                }`}
+                              >
+                                {appt.service_name_snapshot || "Reserva"}
+                              </p>
+
+                              {isPastPendingClosure(appt) ? (
+                                <div
+                                  className={`rounded-xl px-2 py-1 text-[10px] font-semibold ${
+                                    isSelected
+                                      ? "bg-white/10 text-white"
+                                      : "bg-rose-100 text-rose-700"
+                                  }`}
+                                >
+                                  Requiere cierre
+                                </div>
+                              ) : null}
+                            </div>
                           </button>
                         );
                       })}
