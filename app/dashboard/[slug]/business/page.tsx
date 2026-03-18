@@ -18,6 +18,7 @@ type BusinessResponse = {
     instagram_url?: string | null;
     facebook_url?: string | null;
     description?: string | null;
+    min_booking_notice_minutes?: number | null;
   };
   calendar_id: string;
   google_connected?: boolean;
@@ -65,10 +66,10 @@ export default function BusinessPage() {
   const [saveError, setSaveError] = useState("");
   const [saveOk, setSaveOk] = useState("");
 
-const [googleConnected, setGoogleConnected] = useState(false);
-const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
-const [specialDates, setSpecialDates] = useState<SpecialDate[]>([]);
-const [savingSpecialDates, setSavingSpecialDates] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
+  const [specialDates, setSpecialDates] = useState<SpecialDate[]>([]);
+  const [savingSpecialDates, setSavingSpecialDates] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -79,6 +80,7 @@ const [savingSpecialDates, setSavingSpecialDates] = useState(false);
     instagram_url: "",
     facebook_url: "",
     description: "",
+    min_booking_notice_minutes: 0,
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
@@ -132,10 +134,12 @@ const [savingSpecialDates, setSavingSpecialDates] = useState(false);
           instagram_url: data.business.instagram_url || "",
           facebook_url: data.business.facebook_url || "",
           description: data.business.description || "",
+          min_booking_notice_minutes:
+            Number(data.business.min_booking_notice_minutes || 0),
         });
 
         await loadBusinessHours(data.business.id);
-await loadSpecialDates(data.business.id);
+        await loadSpecialDates(data.business.id);
       } catch (error: any) {
         setLoadError(error?.message || "No se pudo cargar el negocio");
       } finally {
@@ -234,126 +238,129 @@ await loadSpecialDates(data.business.id);
     }
   }
 
+  async function loadSpecialDates(id: string) {
+    try {
+      const res = await fetch(
+        `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}`
+      );
 
-async function loadSpecialDates(id: string) {
-  try {
-    const res = await fetch(
-      `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}`
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error cargando fechas especiales");
+      }
+
+      const normalized = Array.isArray(data.special_dates)
+        ? data.special_dates.map((item: any) => ({
+            id: item.id,
+            date: item.date || "",
+            label: item.label || "",
+            is_closed: Boolean(item.is_closed),
+            start_time: String(item.start_time || "").slice(0, 5),
+            end_time: String(item.end_time || "").slice(0, 5),
+          }))
+        : [];
+
+      setSpecialDates(normalized);
+    } catch (err) {
+      console.error("Error cargando fechas especiales", err);
+      setSpecialDates([]);
+    }
+  }
+
+  function addSpecialDate() {
+    setSpecialDates((prev) => [
+      ...prev,
+      {
+        date: "",
+        label: "",
+        is_closed: true,
+        start_time: "",
+        end_time: "",
+      },
+    ]);
+  }
+
+  function updateSpecialDate(
+    index: number,
+    field: keyof SpecialDate,
+    value: any
+  ) {
+    setSpecialDates((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Error cargando fechas especiales");
-    }
-
-    const normalized = Array.isArray(data.special_dates)
-      ? data.special_dates.map((item: any) => ({
-          id: item.id,
-          date: item.date || "",
-          label: item.label || "",
-          is_closed: Boolean(item.is_closed),
-          start_time: String(item.start_time || "").slice(0, 5),
-          end_time: String(item.end_time || "").slice(0, 5),
-        }))
-      : [];
-
-    setSpecialDates(normalized);
-  } catch (err) {
-    console.error("Error cargando fechas especiales", err);
-    setSpecialDates([]);
   }
-}
 
-function addSpecialDate() {
-  setSpecialDates((prev) => [
-    ...prev,
-    {
-      date: "",
-      label: "",
-      is_closed: true,
-      start_time: "",
-      end_time: "",
-    },
-  ]);
-}
-
-function updateSpecialDate(index: number, field: keyof SpecialDate, value: any) {
-  setSpecialDates((prev) =>
-    prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-  );
-}
-
-function removeSpecialDate(index: number) {
-  setSpecialDates((prev) => prev.filter((_, i) => i !== index));
-}
-
-async function saveSpecialDates() {
-  try {
-    setSavingSpecialDates(true);
-
-    const existingItems = specialDates.filter((item) => item.id);
-    const newItems = specialDates.filter((item) => !item.id);
-
-    for (const item of existingItems) {
-      const res = await fetch(
-        `https://orbyx-backend.onrender.com/business-special-dates/${item.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            date: item.date,
-            label: item.label,
-            is_closed: item.is_closed,
-            start_time: item.is_closed ? (item.start_time || null) : item.start_time,
-            end_time: item.is_closed ? (item.end_time || null) : item.end_time,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Error actualizando fecha especial");
-      }
-    }
-
-    for (const item of newItems) {
-      const res = await fetch(
-        "https://orbyx-backend.onrender.com/business-special-dates",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tenant_id: tenantId,
-            date: item.date,
-            label: item.label,
-            is_closed: item.is_closed,
-            start_time: item.is_closed ? (item.start_time || null) : item.start_time,
-            end_time: item.is_closed ? (item.end_time || null) : item.end_time,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Error creando fecha especial");
-      }
-    }
-
-    await loadSpecialDates(tenantId);
-    alert("Fechas especiales guardadas correctamente");
-  } catch (err: any) {
-    alert(err.message || "No se pudieron guardar las fechas especiales");
-  } finally {
-    setSavingSpecialDates(false);
+  function removeSpecialDate(index: number) {
+    setSpecialDates((prev) => prev.filter((_, i) => i !== index));
   }
-}
+
+  async function saveSpecialDates() {
+    try {
+      setSavingSpecialDates(true);
+
+      const existingItems = specialDates.filter((item) => item.id);
+      const newItems = specialDates.filter((item) => !item.id);
+
+      for (const item of existingItems) {
+        const res = await fetch(
+          `https://orbyx-backend.onrender.com/business-special-dates/${item.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              date: item.date,
+              label: item.label,
+              is_closed: item.is_closed,
+              start_time: item.is_closed ? item.start_time || null : item.start_time,
+              end_time: item.is_closed ? item.end_time || null : item.end_time,
+            }),
+          }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Error actualizando fecha especial");
+        }
+      }
+
+      for (const item of newItems) {
+        const res = await fetch(
+          "https://orbyx-backend.onrender.com/business-special-dates",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              tenant_id: tenantId,
+              date: item.date,
+              label: item.label,
+              is_closed: item.is_closed,
+              start_time: item.is_closed ? item.start_time || null : item.start_time,
+              end_time: item.is_closed ? item.end_time || null : item.end_time,
+            }),
+          }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Error creando fecha especial");
+        }
+      }
+
+      await loadSpecialDates(tenantId);
+      alert("Fechas especiales guardadas correctamente");
+    } catch (err: any) {
+      alert(err.message || "No se pudieron guardar las fechas especiales");
+    } finally {
+      setSavingSpecialDates(false);
+    }
+  }
 
   async function saveBusinessHours() {
     try {
@@ -637,6 +644,34 @@ async function saveSpecialDates() {
                 </div>
               ) : null}
 
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Tiempo mínimo antes de reservar
+                </label>
+
+                <select
+                  value={form.min_booking_notice_minutes}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      min_booking_notice_minutes: Number(e.target.value),
+                    }))
+                  }
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                >
+                  <option value={0}>Sin restricción</option>
+                  <option value={15}>15 minutos</option>
+                  <option value={30}>30 minutos</option>
+                  <option value={60}>1 hora</option>
+                  <option value={120}>2 horas</option>
+                </select>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes
+                  solo podrán reservar con al menos 60 minutos de anticipación.
+                </p>
+              </div>
+
               <div className="flex flex-wrap gap-3 pt-2">
                 <button
                   type="button"
@@ -710,7 +745,7 @@ async function saveSpecialDates() {
         </Panel>
       </section>
 
-            <Panel
+      <Panel
         title="Horarios de atención"
         description="Define cuándo tu negocio está disponible para recibir reservas."
       >
