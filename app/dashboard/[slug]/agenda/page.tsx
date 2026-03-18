@@ -46,7 +46,19 @@ type FilterValue =
   | "no_show";
 
 const BACKEND_URL = "https://orbyx-api.onrender.com";
-const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const SLOT_MINUTES = 30;
+const DAY_START_HOUR = 8;
+const DAY_END_HOUR = 21;
+const SLOT_HEIGHT = 44;
+
+const weekDaysShort = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const filterLabels: Record<FilterValue, string> = {
+  all: "Todas",
+  pending_close: "Pendientes",
+  booked: "Agendadas",
+  completed: "Atendidas",
+  no_show: "No asistió",
+};
 
 function toYmd(date: Date) {
   const y = date.getFullYear();
@@ -69,14 +81,6 @@ function addDays(date: Date, days: number) {
   return d;
 }
 
-function formatDateLong(date: Date) {
-  return date.toLocaleDateString("es-CL", {
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-  });
-}
-
 function formatHour(dateString?: string | null) {
   if (!dateString) return "--:--";
 
@@ -87,6 +91,14 @@ function formatHour(dateString?: string | null) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+  });
+}
+
+function formatDayHeader(date: Date) {
+  return date.toLocaleDateString("es-CL", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
   });
 }
 
@@ -114,12 +126,29 @@ function normalizeAppointmentEnd(appt: AppointmentItem) {
   return null;
 }
 
-function isPastPendingClosure(appt: AppointmentItem) {
+function getAppointmentStartDate(appt: AppointmentItem) {
   const start = normalizeAppointmentStart(appt);
-  if (!start) return false;
+  if (!start) return null;
 
-  const startDate = new Date(start);
-  if (Number.isNaN(startDate.getTime())) return false;
+  const d = new Date(start);
+  if (Number.isNaN(d.getTime())) return null;
+
+  return d;
+}
+
+function getAppointmentEndDate(appt: AppointmentItem) {
+  const end = normalizeAppointmentEnd(appt);
+  if (!end) return null;
+
+  const d = new Date(end);
+  if (Number.isNaN(d.getTime())) return null;
+
+  return d;
+}
+
+function isPastPendingClosure(appt: AppointmentItem) {
+  const startDate = getAppointmentStartDate(appt);
+  if (!startDate) return false;
 
   return appt.status === "booked" && startDate.getTime() < Date.now();
 }
@@ -146,39 +175,47 @@ function getStatusLabel(appt: AppointmentItem) {
   }
 }
 
-function getStatusClasses(appt: AppointmentItem) {
+function getStatusBadgeClasses(appt: AppointmentItem) {
   const visualStatus = getVisualStatus(appt);
 
   switch (visualStatus) {
     case "booked":
-      return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
+      return "bg-blue-50 text-blue-700 ring-blue-200";
     case "completed":
-      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+      return "bg-emerald-50 text-emerald-700 ring-emerald-200";
     case "no_show":
-      return "bg-rose-50 text-rose-700 ring-1 ring-rose-200";
+      return "bg-rose-50 text-rose-700 ring-rose-200";
     case "pending_close":
-      return "bg-amber-100 text-amber-900 ring-1 ring-amber-300";
+      return "bg-amber-100 text-amber-900 ring-amber-300";
     default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+      return "bg-slate-100 text-slate-700 ring-slate-200";
   }
 }
 
 function getAppointmentCardClasses(appt: AppointmentItem, isSelected: boolean) {
-  const pending = isPastPendingClosure(appt);
+  const visualStatus = getVisualStatus(appt);
 
-  if (pending && isSelected) {
-    return "w-full rounded-2xl border-2 border-amber-400 bg-amber-50 p-3 text-left shadow-md transition";
+  if (visualStatus === "pending_close") {
+    return isSelected
+      ? "border-2 border-amber-400 bg-amber-50 text-amber-950 shadow-md"
+      : "border-2 border-amber-300 bg-amber-50 text-amber-950 shadow-sm hover:border-amber-400";
   }
 
-  if (pending) {
-    return "w-full rounded-2xl border-2 border-amber-300 bg-amber-50 p-3 text-left shadow-sm transition hover:border-amber-400 hover:shadow";
+  if (visualStatus === "completed") {
+    return isSelected
+      ? "border-2 border-emerald-400 bg-emerald-50 text-emerald-950 shadow-md"
+      : "border border-emerald-200 bg-emerald-50/80 text-emerald-950 shadow-sm hover:border-emerald-300";
   }
 
-  if (isSelected) {
-    return "w-full rounded-2xl border-2 border-slate-400 bg-white p-3 text-left shadow-md transition";
+  if (visualStatus === "no_show") {
+    return isSelected
+      ? "border-2 border-rose-400 bg-rose-50 text-rose-950 shadow-md"
+      : "border border-rose-200 bg-rose-50/80 text-rose-950 shadow-sm hover:border-rose-300";
   }
 
-  return "w-full rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-slate-300 hover:shadow";
+  return isSelected
+    ? "border-2 border-blue-400 bg-blue-50 text-slate-950 shadow-md"
+    : "border border-blue-200 bg-blue-50/80 text-slate-950 shadow-sm hover:border-blue-300";
 }
 
 function compareAppointments(a: AppointmentItem, b: AppointmentItem) {
@@ -188,8 +225,8 @@ function compareAppointments(a: AppointmentItem, b: AppointmentItem) {
   if (aPending && !bPending) return -1;
   if (!aPending && bPending) return 1;
 
-  const aStart = new Date(normalizeAppointmentStart(a) || "").getTime();
-  const bStart = new Date(normalizeAppointmentStart(b) || "").getTime();
+  const aStart = getAppointmentStartDate(a)?.getTime() ?? 0;
+  const bStart = getAppointmentStartDate(b)?.getTime() ?? 0;
 
   return aStart - bStart;
 }
@@ -209,21 +246,101 @@ function getFilterButtonClasses(active: boolean) {
     : "rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100";
 }
 
+function pad2(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function buildTimeSlots() {
+  const slots: string[] = [];
+
+  for (let hour = DAY_START_HOUR; hour < DAY_END_HOUR; hour++) {
+    slots.push(`${pad2(hour)}:00`);
+    slots.push(`${pad2(hour)}:30`);
+  }
+
+  return slots;
+}
+
+function timeStringToMinutes(value: string) {
+  const [h, m] = value.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function getMinutesSinceStartOfDay(date: Date) {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getAppointmentLayout(appt: AppointmentItem) {
+  const startDate = getAppointmentStartDate(appt);
+  const endDate = getAppointmentEndDate(appt);
+
+  if (!startDate || !endDate) return null;
+
+  const dayStartMinutes = DAY_START_HOUR * 60;
+  const dayEndMinutes = DAY_END_HOUR * 60;
+
+  const startMinutes = getMinutesSinceStartOfDay(startDate);
+  const endMinutesRaw = getMinutesSinceStartOfDay(endDate);
+  const endMinutes = endMinutesRaw <= startMinutes ? startMinutes + 30 : endMinutesRaw;
+
+  const visibleStart = clamp(startMinutes, dayStartMinutes, dayEndMinutes);
+  const visibleEnd = clamp(endMinutes, dayStartMinutes, dayEndMinutes);
+
+  if (visibleEnd <= visibleStart) return null;
+
+  const top = ((visibleStart - dayStartMinutes) / SLOT_MINUTES) * SLOT_HEIGHT;
+  const height = Math.max(
+    ((visibleEnd - visibleStart) / SLOT_MINUTES) * SLOT_HEIGHT - 4,
+    SLOT_HEIGHT - 6
+  );
+
+  return { top, height };
+}
+
+async function fetchAppointmentsWithFallbacks(calendarId: string, from: string, to: string) {
+  const urls = [
+    `${BACKEND_URL}/appointments?calendar_id=${encodeURIComponent(calendarId)}&from=${from}&to=${to}`,
+    `${BACKEND_URL}/appointments?calendar_id=${encodeURIComponent(calendarId)}&date_from=${from}&date_to=${to}`,
+    `${BACKEND_URL}/appointments/calendar?calendar_id=${encodeURIComponent(calendarId)}&from=${from}&to=${to}`,
+    `${BACKEND_URL}/appointments/calendar?calendar_id=${encodeURIComponent(calendarId)}&date_from=${from}&date_to=${to}`,
+  ];
+
+  let lastError = "No se pudo cargar la agenda";
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) {
+        lastError = data?.error || `Error ${res.status}`;
+        continue;
+      }
+
+      const rows = Array.isArray(data) ? data : data.appointments || data.data || [];
+      return rows as AppointmentItem[];
+    } catch (err: any) {
+      lastError = err?.message || "Failed to fetch";
+    }
+  }
+
+  throw new Error(lastError);
+}
+
 export default function Page() {
   const params = useParams();
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
-  const [business, setBusiness] = useState<BusinessResponse["business"] | null>(
-    null
-  );
+  const [business, setBusiness] = useState<BusinessResponse["business"] | null>(null);
   const [calendarId, setCalendarId] = useState("");
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
-  const [selectedAppointment, setSelectedAppointment] =
-    useState<AppointmentItem | null>(null);
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
-    startOfWeek(new Date())
-  );
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentItem | null>(null);
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(startOfWeek(new Date()));
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [loading, setLoading] = useState(true);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
@@ -234,12 +351,13 @@ export default function Page() {
     return Array.from({ length: 7 }).map((_, i) => addDays(currentWeekStart, i));
   }, [currentWeekStart]);
 
+  const timeSlots = useMemo(() => buildTimeSlots(), []);
+
   async function loadBusiness() {
     if (!slug) return;
 
     try {
       setLoading(true);
-      setError("");
 
       const res = await fetch(`${BACKEND_URL}/business/public/${slug}`);
       const data = await res.json();
@@ -267,18 +385,7 @@ export default function Page() {
       const from = toYmd(weekDates[0]);
       const to = toYmd(weekDates[6]);
 
-      const url = `${BACKEND_URL}/appointments?calendar_id=${encodeURIComponent(
-        calendarId
-      )}&from=${from}&to=${to}`;
-
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "No se pudo cargar la agenda");
-      }
-
-      const rows = Array.isArray(data) ? data : data.appointments || [];
+      const rows = await fetchAppointmentsWithFallbacks(calendarId, from, to);
       setAppointments(rows);
     } catch (err: any) {
       setError(err?.message || "Error cargando agenda");
@@ -296,18 +403,15 @@ export default function Page() {
       setStatusSaving(true);
       setError("");
 
-      const res = await fetch(
-        `${BACKEND_URL}/appointments/${appointmentId}/status`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            status: newStatus,
-          }),
-        }
-      );
+      const res = await fetch(`${BACKEND_URL}/appointments/${appointmentId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
 
       const data = await res.json();
 
@@ -363,13 +467,10 @@ export default function Page() {
     }
 
     for (const appt of filteredAppointments) {
-      const start = normalizeAppointmentStart(appt);
-      if (!start) continue;
+      const startDate = getAppointmentStartDate(appt);
+      if (!startDate) continue;
 
-      const d = new Date(start);
-      if (Number.isNaN(d.getTime())) continue;
-
-      const key = toYmd(d);
+      const key = toYmd(startDate);
       if (!map[key]) map[key] = [];
       map[key].push(appt);
     }
@@ -399,6 +500,7 @@ export default function Page() {
 
   const visibleCount = filteredAppointments.length;
   const pendingCloseCount = counts.pending_close;
+  const gridHeight = timeSlots.length * SLOT_HEIGHT;
 
   if (loading) {
     return (
@@ -412,19 +514,17 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="mx-auto max-w-[1600px]">
+        <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <p className="text-sm font-medium text-slate-500">Agenda</p>
             <h1 className="text-3xl font-semibold text-slate-900">
               {business?.name || "Negocio"}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Vista semanal de citas
-            </p>
+            <p className="mt-1 text-sm text-slate-500">Vista semanal de citas</p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
               <p className="text-xs uppercase tracking-wide text-amber-700">
                 Pendientes de cierre
@@ -466,64 +566,49 @@ export default function Page() {
         ) : null}
 
         <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-900">Filtros</p>
               <p className="mt-1 text-sm text-slate-500">
-                Mostrando {visibleCount} cita{visibleCount === 1 ? "" : "s"} en la
-                vista actual
+                Mostrando {visibleCount} cita{visibleCount === 1 ? "" : "s"} en la vista actual
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setActiveFilter("all")}
-                className={getFilterButtonClasses(activeFilter === "all")}
-              >
-                Todas ({counts.all})
-              </button>
-
-              <button
-                onClick={() => setActiveFilter("pending_close")}
-                className={getFilterButtonClasses(activeFilter === "pending_close")}
-              >
-                Pendientes ({counts.pending_close})
-              </button>
-
-              <button
-                onClick={() => setActiveFilter("booked")}
-                className={getFilterButtonClasses(activeFilter === "booked")}
-              >
-                Agendadas ({counts.booked})
-              </button>
-
-              <button
-                onClick={() => setActiveFilter("completed")}
-                className={getFilterButtonClasses(activeFilter === "completed")}
-              >
-                Atendidas ({counts.completed})
-              </button>
-
-              <button
-                onClick={() => setActiveFilter("no_show")}
-                className={getFilterButtonClasses(activeFilter === "no_show")}
-              >
-                No asistió ({counts.no_show})
-              </button>
+              {(Object.keys(filterLabels) as FilterValue[]).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setActiveFilter(filter)}
+                  className={getFilterButtonClasses(activeFilter === filter)}
+                >
+                  {filterLabels[filter]} (
+                  {filter === "all"
+                    ? counts.all
+                    : filter === "pending_close"
+                    ? counts.pending_close
+                    : filter === "booked"
+                    ? counts.booked
+                    : filter === "completed"
+                    ? counts.completed
+                    : counts.no_show}
+                  )
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {pendingCloseCount > 0 && activeFilter !== "completed" && activeFilter !== "no_show" ? (
+        {pendingCloseCount > 0 &&
+        activeFilter !== "completed" &&
+        activeFilter !== "no_show" ? (
           <div className="mb-6 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <p className="text-sm font-semibold text-amber-900">
                   Tienes citas pendientes de cierre
                 </p>
                 <p className="mt-1 text-sm text-amber-800">
-                  Estas citas ya pasaron y siguen como agendadas. Debes marcarlas
-                  como atendidas o como no asistió.
+                  Estas citas ya pasaron y siguen como agendadas. Debes marcarlas como atendidas o como no asistió.
                 </p>
               </div>
 
@@ -574,9 +659,9 @@ export default function Page() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.6fr_0.9fr]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.8fr_0.8fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">
                   Semana {toYmd(weekDates[0])} al {toYmd(weekDates[6])}
@@ -584,11 +669,7 @@ export default function Page() {
                 <p className="text-sm text-slate-500">
                   Filtro activo:{" "}
                   <span className="font-medium text-slate-700">
-                    {activeFilter === "all" && "Todas"}
-                    {activeFilter === "pending_close" && "Pendientes"}
-                    {activeFilter === "booked" && "Agendadas"}
-                    {activeFilter === "completed" && "Atendidas"}
-                    {activeFilter === "no_show" && "No asistió"}
+                    {filterLabels[activeFilter]}
                   </span>
                 </p>
               </div>
@@ -598,73 +679,114 @@ export default function Page() {
               ) : null}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {weekDates.map((day) => {
-                const key = toYmd(day);
-                const dayAppointments = appointmentsByDay[key] || [];
-                const dayPendingCount = dayAppointments.filter(
-                  isPastPendingClosure
-                ).length;
+            <div className="overflow-x-auto">
+              <div className="min-w-[1100px]">
+                <div
+                  className="grid"
+                  style={{
+                    gridTemplateColumns: "80px repeat(7, minmax(140px, 1fr))",
+                  }}
+                >
+                  <div className="sticky left-0 z-20 border-b border-slate-200 bg-white" />
 
-                return (
-                  <div
-                    key={key}
-                    className={`rounded-2xl border p-4 ${
-                      dayPendingCount > 0
-                        ? "border-amber-200 bg-amber-50/40"
-                        : "border-slate-200 bg-slate-50"
-                    }`}
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold capitalize text-slate-900">
-                          {formatDateLong(day)}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {weekDays[day.getDay()]}
-                        </p>
-                      </div>
+                  {weekDates.map((day) => {
+                    const key = toYmd(day);
+                    const dayAppointments = appointmentsByDay[key] || [];
+                    const dayPendingCount = dayAppointments.filter(isPastPendingClosure).length;
 
-                      {dayPendingCount > 0 ? (
-                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-900 ring-1 ring-amber-300">
-                          {dayPendingCount} pendiente
-                          {dayPendingCount === 1 ? "" : "s"}
-                        </span>
-                      ) : null}
-                    </div>
+                    return (
+                      <div
+                        key={key}
+                        className={`border-b border-l border-slate-200 px-3 py-3 ${
+                          dayPendingCount > 0 ? "bg-amber-50/70" : "bg-slate-50/70"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold capitalize text-slate-900">
+                              {formatDayHeader(day)}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {weekDaysShort[day.getDay()]}
+                            </p>
+                          </div>
 
-                    <div className="space-y-3">
-                      {dayAppointments.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-sm text-slate-400">
-                          Sin citas con este filtro
+                          {dayPendingCount > 0 ? (
+                            <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-300">
+                              {dayPendingCount}
+                            </span>
+                          ) : null}
                         </div>
-                      ) : (
-                        dayAppointments.map((appt) => {
-                          const start = normalizeAppointmentStart(appt);
-                          const end = normalizeAppointmentEnd(appt);
+                      </div>
+                    );
+                  })}
+
+                  <div className="relative border-r border-slate-200 bg-white">
+                    {timeSlots.map((slot) => (
+                      <div
+                        key={slot}
+                        className="flex items-start justify-end border-b border-slate-200 px-2 pt-1 text-xs font-medium text-slate-500"
+                        style={{ height: SLOT_HEIGHT }}
+                      >
+                        {slot}
+                      </div>
+                    ))}
+                  </div>
+
+                  {weekDates.map((day) => {
+                    const key = toYmd(day);
+                    const dayAppointments = appointmentsByDay[key] || [];
+
+                    return (
+                      <div
+                        key={key}
+                        className={`relative border-l border-slate-200 ${
+                          dayAppointments.some(isPastPendingClosure)
+                            ? "bg-amber-50/30"
+                            : "bg-white"
+                        }`}
+                        style={{ height: gridHeight }}
+                      >
+                        {timeSlots.map((slot) => (
+                          <div
+                            key={`${key}-${slot}`}
+                            className="border-b border-slate-200"
+                            style={{ height: SLOT_HEIGHT }}
+                          />
+                        ))}
+
+                        {dayAppointments.map((appt) => {
+                          const layout = getAppointmentLayout(appt);
+                          if (!layout) return null;
+
                           const isSelected = selectedAppointment?.id === appt.id;
 
                           return (
                             <button
                               key={appt.id}
                               onClick={() => setSelectedAppointment(appt)}
-                              className={getAppointmentCardClasses(
+                              className={`absolute left-1 right-1 overflow-hidden rounded-xl p-2 text-left transition ${getAppointmentCardClasses(
                                 appt,
                                 !!isSelected
-                              )}
+                              )}`}
+                              style={{
+                                top: layout.top + 2,
+                                height: layout.height,
+                                zIndex: isSelected ? 20 : 10,
+                              }}
                             >
-                              <div className="mb-2 flex items-start justify-between gap-2">
-                                <div>
-                                  <p className="text-sm font-semibold text-slate-900">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="truncate text-xs font-semibold">
                                     {appt.customer_name || "Sin nombre"}
                                   </p>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="truncate text-[11px] opacity-80">
                                     {appt.service_name || "Servicio"}
                                   </p>
                                 </div>
 
                                 <span
-                                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusClasses(
+                                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${getStatusBadgeClasses(
                                     appt
                                   )}`}
                                 >
@@ -672,43 +794,40 @@ export default function Page() {
                                 </span>
                               </div>
 
-                              <div className="space-y-1 text-xs text-slate-600">
+                              <div className="mt-1 space-y-0.5 text-[11px] opacity-90">
                                 <p>
-                                  {formatHour(start)} - {formatHour(end)}
+                                  {formatHour(normalizeAppointmentStart(appt))} -{" "}
+                                  {formatHour(normalizeAppointmentEnd(appt))}
                                 </p>
-                                {appt.staff_name ? <p>Staff: {appt.staff_name}</p> : null}
-                                {appt.customer_phone ? (
-                                  <p>Tel: {appt.customer_phone}</p>
-                                ) : null}
+                                {appt.staff_name ? <p>{appt.staff_name}</p> : null}
+                                {appt.customer_phone ? <p>{appt.customer_phone}</p> : null}
                               </div>
 
                               {isPastPendingClosure(appt) ? (
-                                <div className="mt-3 rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11px] font-semibold text-amber-900">
-                                  ⚠️ Requiere cierre de estado
+                                <div className="mt-1 rounded-lg border border-amber-300 bg-white/80 px-2 py-1 text-[10px] font-semibold text-amber-900">
+                                  Requiere cierre
                                 </div>
                               ) : null}
                             </button>
                           );
-                        })
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             {!selectedAppointment ? (
-              <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+              <div className="flex h-full min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
                 Selecciona una cita para ver su detalle.
               </div>
             ) : (
               <div className="space-y-5">
                 <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Detalle de cita
-                  </p>
+                  <p className="text-sm font-medium text-slate-500">Detalle de cita</p>
                   <h2 className="mt-1 text-xl font-semibold text-slate-900">
                     {selectedAppointment.customer_name || "Sin nombre"}
                   </h2>
@@ -716,7 +835,7 @@ export default function Page() {
 
                 <div className="flex flex-wrap gap-2">
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getStatusBadgeClasses(
                       selectedAppointment
                     )}`}
                   >
