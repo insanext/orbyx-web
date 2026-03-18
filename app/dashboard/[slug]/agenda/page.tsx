@@ -39,7 +39,6 @@ type AppointmentItem = {
 };
 
 const BACKEND_URL = "https://orbyx-api.onrender.com";
-
 const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 function toYmd(date: Date) {
@@ -73,6 +72,7 @@ function formatDateLong(date: Date) {
 
 function formatHour(dateString?: string | null) {
   if (!dateString) return "--:--";
+
   const d = new Date(dateString);
   if (Number.isNaN(d.getTime())) return "--:--";
 
@@ -150,10 +150,41 @@ function getStatusClasses(appt: AppointmentItem) {
     case "no_show":
       return "bg-rose-50 text-rose-700 ring-1 ring-rose-200";
     case "pending_close":
-      return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+      return "bg-amber-100 text-amber-900 ring-1 ring-amber-300";
     default:
       return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
   }
+}
+
+function getAppointmentCardClasses(appt: AppointmentItem, isSelected: boolean) {
+  const pending = isPastPendingClosure(appt);
+
+  if (pending && isSelected) {
+    return "w-full rounded-2xl border-2 border-amber-400 bg-amber-50 p-3 text-left shadow-md transition";
+  }
+
+  if (pending) {
+    return "w-full rounded-2xl border-2 border-amber-300 bg-amber-50 p-3 text-left shadow-sm transition hover:border-amber-400 hover:shadow";
+  }
+
+  if (isSelected) {
+    return "w-full rounded-2xl border-2 border-slate-400 bg-white p-3 text-left shadow-md transition";
+  }
+
+  return "w-full rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-slate-300 hover:shadow";
+}
+
+function compareAppointments(a: AppointmentItem, b: AppointmentItem) {
+  const aPending = isPastPendingClosure(a);
+  const bPending = isPastPendingClosure(b);
+
+  if (aPending && !bPending) return -1;
+  if (!aPending && bPending) return 1;
+
+  const aStart = new Date(normalizeAppointmentStart(a) || "").getTime();
+  const bStart = new Date(normalizeAppointmentStart(b) || "").getTime();
+
+  return aStart - bStart;
 }
 
 export default function Page() {
@@ -317,19 +348,19 @@ export default function Page() {
     }
 
     for (const key of Object.keys(map)) {
-      map[key].sort((a, b) => {
-        const aStart = new Date(normalizeAppointmentStart(a) || "").getTime();
-        const bStart = new Date(normalizeAppointmentStart(b) || "").getTime();
-        return aStart - bStart;
-      });
+      map[key].sort(compareAppointments);
     }
 
     return map;
   }, [appointments, weekDates]);
 
-  const pendingCloseCount = useMemo(() => {
-    return appointments.filter(isPastPendingClosure).length;
+  const pendingCloseAppointments = useMemo(() => {
+    return appointments
+      .filter(isPastPendingClosure)
+      .sort(compareAppointments);
   }, [appointments]);
+
+  const pendingCloseCount = pendingCloseAppointments.length;
 
   if (loading) {
     return (
@@ -356,20 +387,18 @@ export default function Page() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-slate-500">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-amber-700">
                 Pendientes de cierre
               </p>
-              <p className="mt-1 text-2xl font-semibold text-amber-700">
+              <p className="mt-1 text-2xl font-semibold text-amber-900">
                 {pendingCloseCount}
               </p>
             </div>
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() =>
-                  setCurrentWeekStart((prev) => addDays(prev, -7))
-                }
+                onClick={() => setCurrentWeekStart((prev) => addDays(prev, -7))}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
               >
                 ← Semana anterior
@@ -383,9 +412,7 @@ export default function Page() {
               </button>
 
               <button
-                onClick={() =>
-                  setCurrentWeekStart((prev) => addDays(prev, 7))
-                }
+                onClick={() => setCurrentWeekStart((prev) => addDays(prev, 7))}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
               >
                 Semana siguiente →
@@ -397,6 +424,63 @@ export default function Page() {
         {error ? (
           <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
+          </div>
+        ) : null}
+
+        {pendingCloseCount > 0 ? (
+          <div className="mb-6 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-900">
+                  Tienes citas pendientes de cierre
+                </p>
+                <p className="mt-1 text-sm text-amber-800">
+                  Estas citas ya pasaron y siguen como agendadas. Debes marcarlas
+                  como atendidas o como no asistió.
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-amber-900 shadow-sm ring-1 ring-amber-200">
+                {pendingCloseCount} pendiente{pendingCloseCount === 1 ? "" : "s"}
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
+              {pendingCloseAppointments.slice(0, 4).map((appt) => {
+                const start = normalizeAppointmentStart(appt);
+                const end = normalizeAppointmentEnd(appt);
+
+                return (
+                  <button
+                    key={appt.id}
+                    onClick={() => setSelectedAppointment(appt)}
+                    className="rounded-2xl border border-amber-200 bg-white p-3 text-left shadow-sm transition hover:border-amber-300 hover:shadow"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {appt.customer_name || "Sin nombre"}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {appt.service_name || "Servicio"}
+                        </p>
+                      </div>
+
+                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-900 ring-1 ring-amber-300">
+                        Pendiente de cierre
+                      </span>
+                    </div>
+
+                    <div className="mt-2 space-y-1 text-xs text-slate-600">
+                      <p>
+                        {formatHour(start)} - {formatHour(end)}
+                      </p>
+                      {appt.staff_name ? <p>Staff: {appt.staff_name}</p> : null}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : null}
 
@@ -416,17 +500,35 @@ export default function Page() {
               {weekDates.map((day) => {
                 const key = toYmd(day);
                 const dayAppointments = appointmentsByDay[key] || [];
+                const dayPendingCount = dayAppointments.filter(
+                  isPastPendingClosure
+                ).length;
 
                 return (
                   <div
                     key={key}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    className={`rounded-2xl border p-4 ${
+                      dayPendingCount > 0
+                        ? "border-amber-200 bg-amber-50/40"
+                        : "border-slate-200 bg-slate-50"
+                    }`}
                   >
-                    <div className="mb-3">
-                      <p className="text-sm font-semibold capitalize text-slate-900">
-                        {formatDateLong(day)}
-                      </p>
-                      <p className="text-xs text-slate-500">{weekDays[day.getDay()]}</p>
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold capitalize text-slate-900">
+                          {formatDateLong(day)}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {weekDays[day.getDay()]}
+                        </p>
+                      </div>
+
+                      {dayPendingCount > 0 ? (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-900 ring-1 ring-amber-300">
+                          {dayPendingCount} pendiente
+                          {dayPendingCount === 1 ? "" : "s"}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className="space-y-3">
@@ -438,12 +540,16 @@ export default function Page() {
                         dayAppointments.map((appt) => {
                           const start = normalizeAppointmentStart(appt);
                           const end = normalizeAppointmentEnd(appt);
+                          const isSelected = selectedAppointment?.id === appt.id;
 
                           return (
                             <button
                               key={appt.id}
                               onClick={() => setSelectedAppointment(appt)}
-                              className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-slate-300 hover:shadow"
+                              className={getAppointmentCardClasses(
+                                appt,
+                                !!isSelected
+                              )}
                             >
                               <div className="mb-2 flex items-start justify-between gap-2">
                                 <div>
@@ -475,8 +581,8 @@ export default function Page() {
                               </div>
 
                               {isPastPendingClosure(appt) ? (
-                                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-[11px] font-medium text-amber-800">
-                                  Esta cita ya terminó y requiere cierre.
+                                <div className="mt-3 rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11px] font-semibold text-amber-900">
+                                  ⚠️ Requiere cierre de estado
                                 </div>
                               ) : null}
                             </button>
@@ -563,7 +669,7 @@ export default function Page() {
                     <p className="text-xs uppercase tracking-wide text-slate-500">
                       Fecha y hora
                     </p>
-                    <p className="mt-1 font-medium text-slate-900">
+                    <p className="mt-1 font-medium capitalize text-slate-900">
                       {normalizeAppointmentStart(selectedAppointment)
                         ? new Date(
                             normalizeAppointmentStart(selectedAppointment) as string
