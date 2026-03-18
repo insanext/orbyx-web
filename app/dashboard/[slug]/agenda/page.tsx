@@ -55,7 +55,32 @@ export default function AgendaPage() {
     return new Date(dateString).toLocaleTimeString("es-CL", {
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
     });
+  }
+
+  function formatLongDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
+
+  function formatRangeTitle(start: Date, end: Date) {
+    const startText = start.toLocaleDateString("es-CL", {
+      day: "numeric",
+      month: "long",
+    });
+
+    const endText = end.toLocaleDateString("es-CL", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    return `${startText} – ${endText}`;
   }
 
   function generateDaySlots(day: Date) {
@@ -75,6 +100,26 @@ export default function AgendaPage() {
     }
 
     return slots;
+  }
+
+  function getCardClass(appt: Appointment, selected: boolean) {
+    if (selected) {
+      return "border-slate-900 bg-slate-900 text-white shadow-sm";
+    }
+
+    if (appt.status === "completed") {
+      return "border-emerald-400 bg-emerald-100 text-slate-900";
+    }
+
+    if (appt.status === "no_show") {
+      return "border-amber-400 bg-amber-100 text-slate-900";
+    }
+
+    if (appt.status === "canceled") {
+      return "border-slate-300 bg-slate-200 text-slate-600 opacity-70";
+    }
+
+    return "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-900";
   }
 
   const weekStart = useMemo(() => startOfWeek(weekBaseDate), [weekBaseDate]);
@@ -98,16 +143,29 @@ export default function AgendaPage() {
 
       const data = await res.json();
 
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cargar la agenda");
+      }
+
       setAppointments(data.appointments || []);
+
+      if (selectedAppointment) {
+        const updatedSelected = (data.appointments || []).find(
+          (appt: Appointment) => appt.id === selectedAppointment.id
+        );
+        setSelectedAppointment(updatedSelected || null);
+      }
     } catch (err: any) {
-      setError("Error cargando agenda");
+      setError(err?.message || "Error cargando agenda");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    if (slug) loadAppointments();
+    if (slug) {
+      loadAppointments();
+    }
   }, [slug, weekStart.getTime()]);
 
   const appointmentsByDay = useMemo(() => {
@@ -123,96 +181,303 @@ export default function AgendaPage() {
       result[key].push(appt);
     }
 
+    for (const key of Object.keys(result)) {
+      result[key].sort(
+        (a, b) =>
+          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+      );
+    }
+
     return result;
   }, [appointments, weekDays]);
 
-  function getCardClass(appt: Appointment, selected: boolean) {
-    if (selected) return "border-slate-900 bg-slate-900 text-white";
+  const todayKey = formatDateYYYYMMDD(new Date());
+  const appointmentsToday = appointmentsByDay[todayKey] || [];
 
-    if (appt.status === "completed")
-      return "border-emerald-400 bg-emerald-100";
+  const nextAppointment = useMemo(() => {
+    const now = Date.now();
 
-    if (appt.status === "no_show")
-      return "border-amber-400 bg-amber-100";
+    return appointments
+      .filter((appt) => new Date(appt.start_at).getTime() >= now)
+      .sort(
+        (a, b) =>
+          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+      )[0];
+  }, [appointments]);
 
-    if (appt.status === "canceled")
-      return "border-slate-300 bg-slate-200 opacity-70";
+  function goPrevWeek() {
+    setWeekBaseDate((prev) => addDays(prev, -7));
+    setSelectedAppointment(null);
+  }
 
-    return "border-slate-200 bg-white";
+  function goNextWeek() {
+    setWeekBaseDate((prev) => addDays(prev, 7));
+    setSelectedAppointment(null);
+  }
+
+  function goToday() {
+    setWeekBaseDate(new Date());
+    setSelectedAppointment(null);
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Agenda semanal" />
+      <PageHeader
+        eyebrow="Agenda"
+        title="Agenda semanal"
+        description="Revisa tus reservas por semana y haz clic en una cita para ver sus detalles."
+        actions={
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={goPrevWeek}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              ← Semana anterior
+            </button>
 
-      <Panel>
-        {loading ? (
-          <p>Cargando...</p>
-        ) : (
-          <div className="grid grid-cols-7 gap-3">
-            {weekDays.map((day) => {
-              const key = formatDateYYYYMMDD(day);
-              const dayAppointments = appointmentsByDay[key] || [];
-              const slots = generateDaySlots(day);
+            <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700">
+              {formatRangeTitle(weekStart, weekEnd)}
+            </div>
 
-              return (
-                <div key={key} className="bg-slate-50 p-3 rounded-2xl">
-                  <div className="mb-3 text-sm font-semibold">
-                    {day.toLocaleDateString("es-CL", {
-                      weekday: "short",
-                    })}
-                  </div>
+            <button
+              type="button"
+              onClick={goNextWeek}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Semana siguiente →
+            </button>
 
-                  <div className="space-y-2">
-                    {slots.map((slot) => {
-                      const appt = dayAppointments.find(
-                        (a) =>
-                          new Date(a.start_at).getTime() ===
-                          new Date(slot).getTime()
-                      );
+            <button
+              type="button"
+              onClick={goToday}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+            >
+              Hoy
+            </button>
 
-                      if (!appt) {
-                        return (
-                          <div
-                            key={slot}
-                            className="text-xs text-slate-400 text-center border border-dashed p-2 rounded-xl"
-                          >
-                            {formatHour(slot)} Libre
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <button
-  key={appt.id}
-  onClick={() => setSelectedAppointment(appt)}
-  className={`w-full rounded-xl border p-3 text-left transition ${
-    selectedAppointment?.id === appt.id
-      ? "border-slate-900 bg-slate-900 text-white"
-      : getCardClass(appt, false)
-  }`}
->
-  <div className="text-xs font-semibold">
-    {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
-  </div>
-
-  <div className="text-sm font-semibold">
-    {appt.customer_name}
-  </div>
-
-  <div className="text-xs opacity-70">
-    {appt.service_name_snapshot}
-  </div>
-</button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+            <input
+              type="date"
+              value={formatDateYYYYMMDD(weekBaseDate)}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
+                setSelectedAppointment(null);
+              }}
+              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+            />
           </div>
-        )}
-      </Panel>
+        }
+      />
+
+      {error ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
+          {error}
+        </div>
+      ) : null}
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <StatCard
+          label="Reservas hoy"
+          value={loading ? "..." : String(appointmentsToday.length)}
+          helper="Citas registradas para el día actual."
+        />
+        <StatCard
+          label="Próxima reserva"
+          value={
+            loading
+              ? "..."
+              : nextAppointment
+              ? formatHour(nextAppointment.start_at)
+              : "--"
+          }
+          helper={
+            loading
+              ? "Cargando próxima cita."
+              : nextAppointment
+              ? nextAppointment.customer_name
+              : "No hay próximas reservas."
+          }
+        />
+        <StatCard
+          label="Reservas semana"
+          value={loading ? "..." : String(appointments.length)}
+          helper="Total de reservas visibles en esta semana."
+        />
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+        <Panel
+          title="Calendario semanal"
+          description="Vista semanal de reservas y disponibilidad del negocio."
+        >
+          {loading ? (
+            <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+              {weekDays.map((day) => {
+                const dayKey = formatDateYYYYMMDD(day);
+                const dayAppointments = appointmentsByDay[dayKey] || [];
+                const isToday = dayKey === todayKey;
+                const daySlots = generateDaySlots(day);
+
+                return (
+                  <div
+                    key={dayKey}
+                    className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                  >
+                    <div className="mb-3 border-b border-slate-200 pb-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-semibold capitalize text-slate-800">
+                          {day.toLocaleDateString("es-CL", {
+                            weekday: "long",
+                          })}
+                        </div>
+
+                        {isToday ? (
+                          <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">
+                            Hoy
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-1 text-xs text-slate-500">
+                        {day.toLocaleDateString("es-CL", {
+                          day: "2-digit",
+                          month: "2-digit",
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {daySlots.map((slot) => {
+                        const appt = dayAppointments.find(
+                          (a) =>
+                            new Date(a.start_at).getTime() ===
+                            new Date(slot).getTime()
+                        );
+
+                        if (!appt) {
+                          return (
+                            <div
+                              key={slot}
+                              className="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-3 text-center text-xs text-slate-400"
+                            >
+                              {formatHour(slot)} Libre
+                            </div>
+                          );
+                        }
+
+                        const isSelected = selectedAppointment?.id === appt.id;
+
+                        return (
+                          <button
+                            key={appt.id}
+                            type="button"
+                            onClick={() => setSelectedAppointment(appt)}
+                            className={`w-full rounded-2xl border p-3 text-left transition ${getCardClass(
+                              appt,
+                              isSelected
+                            )}`}
+                          >
+                            <div
+                              className={`text-xs font-semibold ${
+                                isSelected ? "text-slate-200" : "text-slate-600"
+                              }`}
+                            >
+                              {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
+                            </div>
+
+                            <p
+                              className={`mt-1 text-sm font-semibold ${
+                                isSelected ? "text-white" : "text-slate-900"
+                              }`}
+                            >
+                              {appt.customer_name}
+                            </p>
+
+                            <p
+                              className={`mt-1 text-xs ${
+                                isSelected ? "text-slate-300" : "text-slate-500"
+                              }`}
+                            >
+                              {appt.service_name_snapshot || "Reserva"}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Panel>
+
+        <Panel
+          title="Detalle de reserva"
+          description="Información del cliente y de la cita seleccionada."
+        >
+          {!selectedAppointment ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+              Haz clic en una reserva para ver los datos del cliente.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  {selectedAppointment.service_name_snapshot || "Reserva"}
+                </p>
+                <p className="mt-1 text-sm capitalize text-slate-600">
+                  {formatLongDate(selectedAppointment.start_at)}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {formatHour(selectedAppointment.start_at)} -{" "}
+                  {formatHour(selectedAppointment.end_at)}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Cliente
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {selectedAppointment.customer_name}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Teléfono
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {selectedAppointment.customer_phone || "No disponible"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Email
+                  </p>
+                  <p className="mt-2 break-all text-sm font-semibold text-slate-900">
+                    {selectedAppointment.customer_email || "No disponible"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Estado
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {selectedAppointment.status || "booked"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </Panel>
+      </div>
     </div>
   );
 }
