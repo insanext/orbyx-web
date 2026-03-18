@@ -2,481 +2,642 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "../../../../components/dashboard/page-header";
-import { Panel } from "../../../../components/dashboard/panel";
-import { StatCard } from "../../../../components/dashboard/stat-card";
 
-type Appointment = {
-  id: string;
-  start_at: string;
-  end_at: string;
-  customer_name: string;
-  customer_phone: string | null;
-  customer_email: string | null;
-  service_name_snapshot: string | null;
-  status: string;
+type BusinessResponse = {
+  business: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  calendar_id: string;
+  google_connected?: boolean;
 };
 
-export default function AgendaPage() {
+type AppointmentItem = {
+  id: string;
+  calendar_id?: string;
+  tenant_id?: string;
+  service_id?: string | null;
+  service_name?: string | null;
+  staff_id?: string | null;
+  staff_name?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  date?: string | null;
+  start?: string | null;
+  end?: string | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  slot_start?: string | null;
+  slot_end?: string | null;
+  notes?: string | null;
+  source?: string | null;
+  status: "booked" | "completed" | "no_show" | string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+const BACKEND_URL = "https://orbyx-api.onrender.com";
+
+const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+function toYmd(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function startOfWeek(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - day);
+  return d;
+}
+
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function formatDateLong(date: Date) {
+  return date.toLocaleDateString("es-CL", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+function formatHour(dateString?: string | null) {
+  if (!dateString) return "--:--";
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return "--:--";
+
+  return d.toLocaleTimeString("es-CL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function normalizeAppointmentStart(appt: AppointmentItem) {
+  if (appt.starts_at) return appt.starts_at;
+
+  if (appt.date && appt.slot_start) {
+    return `${appt.date}T${appt.slot_start}:00-03:00`;
+  }
+
+  if (appt.start) return appt.start;
+
+  return null;
+}
+
+function normalizeAppointmentEnd(appt: AppointmentItem) {
+  if (appt.ends_at) return appt.ends_at;
+
+  if (appt.date && appt.slot_end) {
+    return `${appt.date}T${appt.slot_end}:00-03:00`;
+  }
+
+  if (appt.end) return appt.end;
+
+  return null;
+}
+
+function isPastPendingClosure(appt: AppointmentItem) {
+  const start = normalizeAppointmentStart(appt);
+  if (!start) return false;
+
+  const startDate = new Date(start);
+  if (Number.isNaN(startDate.getTime())) return false;
+
+  return appt.status === "booked" && startDate.getTime() < Date.now();
+}
+
+function getVisualStatus(appt: AppointmentItem) {
+  if (isPastPendingClosure(appt)) return "pending_close";
+  return appt.status;
+}
+
+function getStatusLabel(appt: AppointmentItem) {
+  const visualStatus = getVisualStatus(appt);
+
+  switch (visualStatus) {
+    case "booked":
+      return "Agendada";
+    case "completed":
+      return "Atendida";
+    case "no_show":
+      return "No asistió";
+    case "pending_close":
+      return "Pendiente de cierre";
+    default:
+      return appt.status || "Sin estado";
+  }
+}
+
+function getStatusClasses(appt: AppointmentItem) {
+  const visualStatus = getVisualStatus(appt);
+
+  switch (visualStatus) {
+    case "booked":
+      return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
+    case "completed":
+      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+    case "no_show":
+      return "bg-rose-50 text-rose-700 ring-1 ring-rose-200";
+    case "pending_close":
+      return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+    default:
+      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+  }
+}
+
+export default function Page() {
   const params = useParams();
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
-  const [weekBaseDate, setWeekBaseDate] = useState(new Date());
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [selectedAppointment, setSelectedAppointment] =
-    useState<Appointment | null>(null);
-
-  function startOfWeek(date: Date) {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    d.setDate(diff);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
-
-  function addDays(date: Date, days: number) {
-    const d = new Date(date);
-    d.setDate(d.getDate() + days);
-    return d;
-  }
-
-  function formatDateYYYYMMDD(date: Date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
-
-  function formatHour(dateString: string) {
-    return new Date(dateString).toLocaleTimeString("es-CL", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  }
-
-  function formatLongDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString("es-CL", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  }
-
-  function formatRangeTitle(start: Date, end: Date) {
-    const startText = start.toLocaleDateString("es-CL", {
-      day: "numeric",
-      month: "long",
-    });
-
-    const endText = end.toLocaleDateString("es-CL", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-    return `${startText} – ${endText}`;
-  }
-
-  function generateDaySlots(day: Date) {
-    const slots: string[] = [];
-
-    const start = new Date(day);
-    start.setHours(9, 0, 0, 0);
-
-    const end = new Date(day);
-    end.setHours(18, 0, 0, 0);
-
-    const cursor = new Date(start);
-
-    while (cursor < end) {
-      slots.push(cursor.toISOString());
-      cursor.setMinutes(cursor.getMinutes() + 30);
-    }
-
-    return slots;
-  }
-
-  function getCardClass(appt: Appointment, selected: boolean) {
-    if (selected) {
-      return "border-slate-900 bg-slate-900 text-white shadow-sm";
-    }
-
-    if (appt.status === "completed") {
-      return "border-emerald-400 bg-emerald-100 text-slate-900";
-    }
-
-    if (appt.status === "no_show") {
-      return "border-amber-400 bg-amber-100 text-slate-900";
-    }
-
-    if (appt.status === "canceled") {
-      return "border-slate-300 bg-slate-200 text-slate-600 opacity-70";
-    }
-
-    return "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-900";
-  }
-
-  const weekStart = useMemo(() => startOfWeek(weekBaseDate), [weekBaseDate]);
-  const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart]
+  const [business, setBusiness] = useState<BusinessResponse["business"] | null>(
+    null
   );
-  const weekEnd = weekDays[6];
+  const [calendarId, setCalendarId] = useState("");
+  const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<AppointmentItem | null>(null);
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
+    startOfWeek(new Date())
+  );
+  const [loading, setLoading] = useState(true);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  async function loadAppointments() {
+  const weekDates = useMemo(() => {
+    return Array.from({ length: 7 }).map((_, i) => addDays(currentWeekStart, i));
+  }, [currentWeekStart]);
+
+  async function loadBusiness() {
+    if (!slug) return;
+
     try {
       setLoading(true);
       setError("");
 
-      const from = formatDateYYYYMMDD(weekStart);
-      const to = formatDateYYYYMMDD(weekEnd);
+      const res = await fetch(`${BACKEND_URL}/business/public/${slug}`);
+      const data = await res.json();
 
-      const res = await fetch(
-        `https://orbyx-backend.onrender.com/appointments/by-range/${slug}?from=${from}&to=${to}`
-      );
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cargar el negocio");
+      }
 
+      setBusiness(data.business);
+      setCalendarId(data.calendar_id || "");
+    } catch (err: any) {
+      setError(err?.message || "Error cargando negocio");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadAppointments() {
+    if (!calendarId) return;
+
+    try {
+      setLoadingAppointments(true);
+      setError("");
+
+      const from = toYmd(weekDates[0]);
+      const to = toYmd(weekDates[6]);
+
+      const url = `${BACKEND_URL}/appointments?calendar_id=${encodeURIComponent(
+        calendarId
+      )}&from=${from}&to=${to}`;
+
+      const res = await fetch(url);
       const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data?.error || "No se pudo cargar la agenda");
       }
 
-      setAppointments(data.appointments || []);
-
-      if (selectedAppointment) {
-        const updatedSelected = (data.appointments || []).find(
-          (appt: Appointment) => appt.id === selectedAppointment.id
-        );
-        setSelectedAppointment(updatedSelected || null);
-      }
+      const rows = Array.isArray(data) ? data : data.appointments || [];
+      setAppointments(rows);
     } catch (err: any) {
       setError(err?.message || "Error cargando agenda");
+      setAppointments([]);
     } finally {
-      setLoading(false);
+      setLoadingAppointments(false);
+    }
+  }
+
+  async function handleUpdateStatus(
+    appointmentId: string,
+    newStatus: "completed" | "no_show"
+  ) {
+    try {
+      setStatusSaving(true);
+      setError("");
+
+      const res = await fetch(
+        `${BACKEND_URL}/appointments/${appointmentId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: newStatus,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo actualizar el estado");
+      }
+
+      setAppointments((prev) =>
+        prev.map((appt) =>
+          appt.id === appointmentId
+            ? {
+                ...appt,
+                status: newStatus,
+                updated_at: new Date().toISOString(),
+              }
+            : appt
+        )
+      );
+
+      setSelectedAppointment((prev) =>
+        prev && prev.id === appointmentId
+          ? {
+              ...prev,
+              status: newStatus,
+              updated_at: new Date().toISOString(),
+            }
+          : prev
+      );
+    } catch (err: any) {
+      setError(err?.message || "Error actualizando estado");
+    } finally {
+      setStatusSaving(false);
     }
   }
 
   useEffect(() => {
-    if (slug) {
-      loadAppointments();
-    }
-  }, [slug, weekStart.getTime()]);
+    loadBusiness();
+  }, [slug]);
+
+  useEffect(() => {
+    loadAppointments();
+  }, [calendarId, currentWeekStart]);
 
   const appointmentsByDay = useMemo(() => {
-    const result: Record<string, Appointment[]> = {};
+    const map: Record<string, AppointmentItem[]> = {};
 
-    for (const day of weekDays) {
-      result[formatDateYYYYMMDD(day)] = [];
+    for (const day of weekDates) {
+      map[toYmd(day)] = [];
     }
 
     for (const appt of appointments) {
-      const key = formatDateYYYYMMDD(new Date(appt.start_at));
-      if (!result[key]) result[key] = [];
-      result[key].push(appt);
+      const start = normalizeAppointmentStart(appt);
+      if (!start) continue;
+
+      const d = new Date(start);
+      if (Number.isNaN(d.getTime())) continue;
+
+      const key = toYmd(d);
+      if (!map[key]) map[key] = [];
+      map[key].push(appt);
     }
 
-    for (const key of Object.keys(result)) {
-      result[key].sort(
-        (a, b) =>
-          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
-      );
+    for (const key of Object.keys(map)) {
+      map[key].sort((a, b) => {
+        const aStart = new Date(normalizeAppointmentStart(a) || "").getTime();
+        const bStart = new Date(normalizeAppointmentStart(b) || "").getTime();
+        return aStart - bStart;
+      });
     }
 
-    return result;
-  }, [appointments, weekDays]);
+    return map;
+  }, [appointments, weekDates]);
 
-  const todayKey = formatDateYYYYMMDD(new Date());
-  const appointmentsToday = appointmentsByDay[todayKey] || [];
-
-  const nextAppointment = useMemo(() => {
-    const now = Date.now();
-
-    return appointments
-      .filter((appt) => new Date(appt.start_at).getTime() >= now)
-      .sort(
-        (a, b) =>
-          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
-      )[0];
+  const pendingCloseCount = useMemo(() => {
+    return appointments.filter(isPastPendingClosure).length;
   }, [appointments]);
 
-  function goPrevWeek() {
-    setWeekBaseDate((prev) => addDays(prev, -7));
-    setSelectedAppointment(null);
-  }
-
-  function goNextWeek() {
-    setWeekBaseDate((prev) => addDays(prev, 7));
-    setSelectedAppointment(null);
-  }
-
-  function goToday() {
-    setWeekBaseDate(new Date());
-    setSelectedAppointment(null);
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-600">
+          Cargando agenda...
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Agenda"
-        title="Agenda semanal"
-        description="Revisa tus reservas por semana y haz clic en una cita para ver sus detalles."
-        actions={
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={goPrevWeek}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              ← Semana anterior
-            </button>
+    <div className="min-h-screen bg-slate-50 p-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm font-medium text-slate-500">Agenda</p>
+            <h1 className="text-3xl font-semibold text-slate-900">
+              {business?.name || "Negocio"}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Vista semanal de citas
+            </p>
+          </div>
 
-            <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700">
-              {formatRangeTitle(weekStart, weekEnd)}
+          <div className="flex flex-wrap gap-3">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-slate-500">
+                Pendientes de cierre
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-amber-700">
+                {pendingCloseCount}
+              </p>
             </div>
 
-            <button
-              type="button"
-              onClick={goNextWeek}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Semana siguiente →
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() =>
+                  setCurrentWeekStart((prev) => addDays(prev, -7))
+                }
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+              >
+                ← Semana anterior
+              </button>
 
-            <button
-              type="button"
-              onClick={goToday}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
-              Hoy
-            </button>
+              <button
+                onClick={() => setCurrentWeekStart(startOfWeek(new Date()))}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+              >
+                Hoy
+              </button>
 
-            <input
-              type="date"
-              value={formatDateYYYYMMDD(weekBaseDate)}
-              onChange={(e) => {
-                if (!e.target.value) return;
-                setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
-                setSelectedAppointment(null);
-              }}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-            />
+              <button
+                onClick={() =>
+                  setCurrentWeekStart((prev) => addDays(prev, 7))
+                }
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+              >
+                Semana siguiente →
+              </button>
+            </div>
           </div>
-        }
-      />
-
-      {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
-          {error}
         </div>
-      ) : null}
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatCard
-          label="Reservas hoy"
-          value={loading ? "..." : String(appointmentsToday.length)}
-          helper="Citas registradas para el día actual."
-        />
-        <StatCard
-          label="Próxima reserva"
-          value={
-            loading
-              ? "..."
-              : nextAppointment
-              ? formatHour(nextAppointment.start_at)
-              : "--"
-          }
-          helper={
-            loading
-              ? "Cargando próxima cita."
-              : nextAppointment
-              ? nextAppointment.customer_name
-              : "No hay próximas reservas."
-          }
-        />
-        <StatCard
-          label="Reservas semana"
-          value={loading ? "..." : String(appointments.length)}
-          helper="Total de reservas visibles en esta semana."
-        />
-      </section>
+        {error ? (
+          <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-        <Panel
-          title="Calendario semanal"
-          description="Vista semanal de reservas y disponibilidad del negocio."
-        >
-          {loading ? (
-            <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-              {weekDays.map((day) => {
-                const dayKey = formatDateYYYYMMDD(day);
-                const dayAppointments = appointmentsByDay[dayKey] || [];
-                const isToday = dayKey === todayKey;
-                const daySlots = generateDaySlots(day);
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.6fr_0.9fr]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Semana {toYmd(weekDates[0])} al {toYmd(weekDates[6])}
+              </h2>
+
+              {loadingAppointments ? (
+                <span className="text-sm text-slate-500">Actualizando...</span>
+              ) : null}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              {weekDates.map((day) => {
+                const key = toYmd(day);
+                const dayAppointments = appointmentsByDay[key] || [];
 
                 return (
                   <div
-                    key={dayKey}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                    key={key}
+                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                   >
-                    <div className="mb-3 border-b border-slate-200 pb-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-sm font-semibold capitalize text-slate-800">
-                          {day.toLocaleDateString("es-CL", {
-                            weekday: "long",
-                          })}
-                        </div>
-
-                        {isToday ? (
-                          <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">
-                            Hoy
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className="mt-1 text-xs text-slate-500">
-                        {day.toLocaleDateString("es-CL", {
-                          day: "2-digit",
-                          month: "2-digit",
-                        })}
-                      </div>
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold capitalize text-slate-900">
+                        {formatDateLong(day)}
+                      </p>
+                      <p className="text-xs text-slate-500">{weekDays[day.getDay()]}</p>
                     </div>
 
-                    <div className="space-y-2">
-                      {daySlots.map((slot) => {
-                        const appt = dayAppointments.find(
-                          (a) =>
-                            new Date(a.start_at).getTime() ===
-                            new Date(slot).getTime()
-                        );
+                    <div className="space-y-3">
+                      {dayAppointments.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-sm text-slate-400">
+                          Sin citas
+                        </div>
+                      ) : (
+                        dayAppointments.map((appt) => {
+                          const start = normalizeAppointmentStart(appt);
+                          const end = normalizeAppointmentEnd(appt);
 
-                        if (!appt) {
                           return (
-                            <div
-                              key={slot}
-                              className="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-3 text-center text-xs text-slate-400"
+                            <button
+                              key={appt.id}
+                              onClick={() => setSelectedAppointment(appt)}
+                              className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-slate-300 hover:shadow"
                             >
-                              {formatHour(slot)} Libre
-                            </div>
+                              <div className="mb-2 flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    {appt.customer_name || "Sin nombre"}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    {appt.service_name || "Servicio"}
+                                  </p>
+                                </div>
+
+                                <span
+                                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusClasses(
+                                    appt
+                                  )}`}
+                                >
+                                  {getStatusLabel(appt)}
+                                </span>
+                              </div>
+
+                              <div className="space-y-1 text-xs text-slate-600">
+                                <p>
+                                  {formatHour(start)} - {formatHour(end)}
+                                </p>
+                                {appt.staff_name ? <p>Staff: {appt.staff_name}</p> : null}
+                                {appt.customer_phone ? (
+                                  <p>Tel: {appt.customer_phone}</p>
+                                ) : null}
+                              </div>
+
+                              {isPastPendingClosure(appt) ? (
+                                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-[11px] font-medium text-amber-800">
+                                  Esta cita ya terminó y requiere cierre.
+                                </div>
+                              ) : null}
+                            </button>
                           );
-                        }
-
-                        const isSelected = selectedAppointment?.id === appt.id;
-
-                        return (
-                          <button
-                            key={appt.id}
-                            type="button"
-                            onClick={() => setSelectedAppointment(appt)}
-                            className={`w-full rounded-2xl border p-3 text-left transition ${getCardClass(
-                              appt,
-                              isSelected
-                            )}`}
-                          >
-                            <div
-                              className={`text-xs font-semibold ${
-                                isSelected ? "text-slate-200" : "text-slate-600"
-                              }`}
-                            >
-                              {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
-                            </div>
-
-                            <p
-                              className={`mt-1 text-sm font-semibold ${
-                                isSelected ? "text-white" : "text-slate-900"
-                              }`}
-                            >
-                              {appt.customer_name}
-                            </p>
-
-                            <p
-                              className={`mt-1 text-xs ${
-                                isSelected ? "text-slate-300" : "text-slate-500"
-                              }`}
-                            >
-                              {appt.service_name_snapshot || "Reserva"}
-                            </p>
-                          </button>
-                        );
-                      })}
+                        })
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
-          )}
-        </Panel>
+          </div>
 
-        <Panel
-          title="Detalle de reserva"
-          description="Información del cliente y de la cita seleccionada."
-        >
-          {!selectedAppointment ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-              Haz clic en una reserva para ver los datos del cliente.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-semibold text-slate-900">
-                  {selectedAppointment.service_name_snapshot || "Reserva"}
-                </p>
-                <p className="mt-1 text-sm capitalize text-slate-600">
-                  {formatLongDate(selectedAppointment.start_at)}
-                </p>
-                <p className="mt-1 text-sm text-slate-600">
-                  {formatHour(selectedAppointment.start_at)} -{" "}
-                  {formatHour(selectedAppointment.end_at)}
-                </p>
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            {!selectedAppointment ? (
+              <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                Selecciona una cita para ver su detalle.
               </div>
-
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Cliente
+            ) : (
+              <div className="space-y-5">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Detalle de cita
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {selectedAppointment.customer_name}
-                  </p>
+                  <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                    {selectedAppointment.customer_name || "Sin nombre"}
+                  </h2>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Teléfono
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {selectedAppointment.customer_phone || "No disponible"}
-                  </p>
+                <div className="flex flex-wrap gap-2">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(
+                      selectedAppointment
+                    )}`}
+                  >
+                    {getStatusLabel(selectedAppointment)}
+                  </span>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Email
-                  </p>
-                  <p className="mt-2 break-all text-sm font-semibold text-slate-900">
-                    {selectedAppointment.customer_email || "No disponible"}
-                  </p>
+                {isPastPendingClosure(selectedAppointment) ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm font-semibold text-amber-900">
+                      Esta cita ya terminó
+                    </p>
+                    <p className="mt-1 text-sm text-amber-800">
+                      Debes cerrar su estado para mantener la agenda al día.
+                    </p>
+
+                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <button
+                        onClick={() =>
+                          handleUpdateStatus(selectedAppointment.id, "completed")
+                        }
+                        disabled={statusSaving}
+                        className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {statusSaving ? "Guardando..." : "Marcar como atendida"}
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          handleUpdateStatus(selectedAppointment.id, "no_show")
+                        }
+                        disabled={statusSaving}
+                        className="rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {statusSaving ? "Guardando..." : "Marcar como no asistió"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Servicio
+                    </p>
+                    <p className="mt-1 font-medium text-slate-900">
+                      {selectedAppointment.service_name || "Sin servicio"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Fecha y hora
+                    </p>
+                    <p className="mt-1 font-medium text-slate-900">
+                      {normalizeAppointmentStart(selectedAppointment)
+                        ? new Date(
+                            normalizeAppointmentStart(selectedAppointment) as string
+                          ).toLocaleDateString("es-CL", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                          })
+                        : "--"}
+                    </p>
+                    <p className="text-slate-700">
+                      {formatHour(normalizeAppointmentStart(selectedAppointment))} -{" "}
+                      {formatHour(normalizeAppointmentEnd(selectedAppointment))}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Staff
+                    </p>
+                    <p className="mt-1 font-medium text-slate-900">
+                      {selectedAppointment.staff_name || "No asignado"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Cliente
+                    </p>
+                    <p className="mt-1 font-medium text-slate-900">
+                      {selectedAppointment.customer_name || "Sin nombre"}
+                    </p>
+                    {selectedAppointment.customer_phone ? (
+                      <p>{selectedAppointment.customer_phone}</p>
+                    ) : null}
+                    {selectedAppointment.customer_email ? (
+                      <p>{selectedAppointment.customer_email}</p>
+                    ) : null}
+                  </div>
+
+                  {selectedAppointment.source ? (
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500">
+                        Origen
+                      </p>
+                      <p className="mt-1 font-medium text-slate-900">
+                        {selectedAppointment.source}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {selectedAppointment.notes ? (
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500">
+                        Notas
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-slate-700">
+                        {selectedAppointment.notes}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Estado
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {selectedAppointment.status || "booked"}
-                  </p>
-                </div>
+                <button
+                  onClick={() => setSelectedAppointment(null)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                >
+                  Cerrar detalle
+                </button>
               </div>
-            </div>
-          )}
-        </Panel>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
