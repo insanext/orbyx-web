@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -47,6 +47,8 @@ export default function AgendaPage() {
     useState<Appointment | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [statusSaving, setStatusSaving] = useState(false);
+
+  const didAutoFocusPendingRef = useRef(false);
 
   function startOfWeek(date: Date) {
     const d = new Date(date);
@@ -231,10 +233,33 @@ export default function AgendaPage() {
     return true;
   }
 
-  function getFilterButtonClasses(active: boolean) {
-    return active
-      ? "inline-flex h-10 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
-      : "inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
+  function getFilterButtonClasses(
+    filter: FilterValue,
+    active: boolean,
+    count: number,
+    hasPending: boolean
+  ) {
+    if (filter === "pending_close") {
+      if (active) {
+        return "inline-flex h-11 items-center justify-center rounded-2xl border border-rose-600 bg-rose-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700";
+      }
+
+      if (count > 0) {
+        return "inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300 bg-rose-50 px-4 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-100";
+      }
+
+      return "inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
+    }
+
+    if (active) {
+      return "inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800";
+    }
+
+    if (hasPending && filter === "all") {
+      return "inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
+    }
+
+    return "inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
   }
 
   const weekStart = useMemo(() => startOfWeek(weekBaseDate), [weekBaseDate]);
@@ -385,9 +410,17 @@ export default function AgendaPage() {
       )[0];
   }, [appointments]);
 
-  const pendingCloseCount = useMemo(() => {
-    return appointments.filter(isPastPendingClosure).length;
+  const pendingCloseAppointments = useMemo(() => {
+    return appointments
+      .filter(isPastPendingClosure)
+      .sort(
+        (a, b) =>
+          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+      );
   }, [appointments]);
+
+  const pendingCloseCount = pendingCloseAppointments.length;
+  const hasPendingClose = pendingCloseCount > 0;
 
   const counts = useMemo(() => {
     return {
@@ -401,19 +434,53 @@ export default function AgendaPage() {
     };
   }, [appointments]);
 
+  const orderedWeekDays = useMemo(() => {
+    return [...weekDays].sort((a, b) => {
+      const aKey = formatDateYYYYMMDD(a);
+      const bKey = formatDateYYYYMMDD(b);
+
+      const aPending = (appointmentsByDay[aKey] || []).filter(
+        isPastPendingClosure
+      ).length;
+      const bPending = (appointmentsByDay[bKey] || []).filter(
+        isPastPendingClosure
+      ).length;
+
+      if (aPending > 0 && bPending === 0) return -1;
+      if (aPending === 0 && bPending > 0) return 1;
+
+      return a.getTime() - b.getTime();
+    });
+  }, [weekDays, appointmentsByDay]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!appointments.length) return;
+    if (didAutoFocusPendingRef.current) return;
+
+    if (pendingCloseAppointments.length > 0) {
+      setActiveFilter("pending_close");
+      setSelectedAppointment((current) => current || pendingCloseAppointments[0]);
+      didAutoFocusPendingRef.current = true;
+    }
+  }, [loading, appointments, pendingCloseAppointments]);
+
   function goPrevWeek() {
     setWeekBaseDate((prev) => addDays(prev, -7));
     setSelectedAppointment(null);
+    didAutoFocusPendingRef.current = false;
   }
 
   function goNextWeek() {
     setWeekBaseDate((prev) => addDays(prev, 7));
     setSelectedAppointment(null);
+    didAutoFocusPendingRef.current = false;
   }
 
   function goToday() {
     setWeekBaseDate(new Date());
     setSelectedAppointment(null);
+    didAutoFocusPendingRef.current = false;
   }
 
   return (
@@ -424,6 +491,25 @@ export default function AgendaPage() {
         description="Revisa tus reservas por semana y haz clic en una cita para ver sus detalles."
         actions={
           <div className="flex flex-wrap gap-3">
+            {hasPendingClose ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFilter("pending_close");
+                  if (pendingCloseAppointments[0]) {
+                    setSelectedAppointment(pendingCloseAppointments[0]);
+                  }
+                }}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-600 bg-rose-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
+              >
+                Pendientes de cierre: {pendingCloseCount}
+              </button>
+            ) : (
+              <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700">
+                Sin pendientes de cierre
+              </div>
+            )}
+
             <button
               type="button"
               onClick={goPrevWeek}
@@ -459,12 +545,23 @@ export default function AgendaPage() {
                 if (!e.target.value) return;
                 setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
                 setSelectedAppointment(null);
+                didAutoFocusPendingRef.current = false;
               }}
               className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
             />
           </div>
         }
       />
+
+      {hasPendingClose ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
+          Tienes <span className="font-semibold">{pendingCloseCount}</span>{" "}
+          cita{pendingCloseCount === 1 ? "" : "s"} pendiente
+          {pendingCloseCount === 1 ? "" : "s"} de cierre. La vista se enfocó
+          automáticamente en ese filtro para ayudarte a cerrar la agenda más
+          rápido.
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
@@ -512,15 +609,9 @@ export default function AgendaPage() {
         description="Filtra la semana por estado sin perder la vista de bloques."
       >
         <div className="flex flex-wrap gap-3">
-          {(Object.keys(filterLabels) as FilterValue[]).map((filter) => (
-            <button
-              key={filter}
-              type="button"
-              onClick={() => setActiveFilter(filter)}
-              className={getFilterButtonClasses(activeFilter === filter)}
-            >
-              {filterLabels[filter]} (
-              {filter === "all"
+          {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
+            const count =
+              filter === "all"
                 ? counts.all
                 : filter === "pending_close"
                 ? counts.pending_close
@@ -528,23 +619,51 @@ export default function AgendaPage() {
                 ? counts.booked
                 : filter === "completed"
                 ? counts.completed
-                : counts.no_show}
-              )
+                : counts.no_show;
+
+            return (
+              <button
+                key={filter}
+                type="button"
+                onClick={() => setActiveFilter(filter)}
+                className={getFilterButtonClasses(
+                  filter,
+                  activeFilter === filter,
+                  count,
+                  hasPendingClose
+                )}
+              >
+                {filterLabels[filter]} ({count})
+              </button>
+            );
+          })}
+
+          {hasPendingClose && activeFilter !== "all" ? (
+            <button
+              type="button"
+              onClick={() => setActiveFilter("all")}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Ver todas
             </button>
-          ))}
+          ) : null}
         </div>
       </Panel>
 
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <Panel
           title="Calendario semanal"
-          description="Vista semanal de reservas y disponibilidad del negocio."
+          description={
+            hasPendingClose
+              ? "Los días con pendientes aparecen primero para facilitar el cierre."
+              : "Vista semanal de reservas y disponibilidad del negocio."
+          }
         >
           {loading ? (
             <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
           ) : (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-              {weekDays.map((day) => {
+              {orderedWeekDays.map((day) => {
                 const dayKey = formatDateYYYYMMDD(day);
                 const dayAppointments = appointmentsByDay[dayKey] || [];
                 const isToday = dayKey === todayKey;
@@ -558,11 +677,17 @@ export default function AgendaPage() {
                     key={dayKey}
                     className={`rounded-2xl border p-3 ${
                       dayPendingCount > 0
-                        ? "border-rose-200 bg-rose-50/50"
+                        ? "border-rose-300 bg-rose-50 shadow-sm"
                         : "border-slate-200 bg-slate-50"
                     }`}
                   >
-                    <div className="mb-3 border-b border-slate-200 pb-3">
+                    <div
+                      className={`mb-3 pb-3 ${
+                        dayPendingCount > 0
+                          ? "border-b border-rose-200"
+                          : "border-b border-slate-200"
+                      }`}
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-sm font-semibold capitalize text-slate-800">
                           {day.toLocaleDateString("es-CL", {
@@ -572,8 +697,9 @@ export default function AgendaPage() {
 
                         <div className="flex items-center gap-2">
                           {dayPendingCount > 0 ? (
-                            <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
-                              {dayPendingCount}
+                            <span className="rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+                              {dayPendingCount} pendiente
+                              {dayPendingCount === 1 ? "" : "s"}
                             </span>
                           ) : null}
 
