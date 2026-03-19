@@ -49,6 +49,7 @@ export default function AgendaPage() {
   const [statusSaving, setStatusSaving] = useState(false);
 
   const didAutoFocusPendingRef = useRef(false);
+  const detailRef = useRef<HTMLDivElement | null>(null);
 
   function startOfWeek(date: Date) {
     const d = new Date(date);
@@ -106,7 +107,6 @@ export default function AgendaPage() {
 
   function generateDaySlots(day: Date) {
     const slots: string[] = [];
-
     const start = new Date(day);
     start.setHours(9, 0, 0, 0);
 
@@ -178,7 +178,7 @@ export default function AgendaPage() {
 
     switch (visualStatus) {
       case "booked":
-        return "border-blue-200 bg-blue-50 text-blue-700";
+        return "border-sky-200 bg-sky-50 text-sky-700";
       case "completed":
         return "border-emerald-200 bg-emerald-50 text-emerald-700";
       case "no_show":
@@ -197,29 +197,37 @@ export default function AgendaPage() {
 
     if (selected) {
       if (visualStatus === "pending_close") {
-        return "border-rose-500 bg-rose-600 text-white shadow-sm";
+        return "border-rose-500 bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg";
       }
 
-      return "border-slate-900 bg-slate-900 text-white shadow-sm";
+      if (visualStatus === "completed") {
+        return "border-emerald-500 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg";
+      }
+
+      if (visualStatus === "no_show") {
+        return "border-amber-500 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg";
+      }
+
+      return "border-slate-900 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-lg";
     }
 
     if (visualStatus === "pending_close") {
-      return "border-rose-300 bg-rose-50 text-slate-900 hover:border-rose-400 hover:bg-rose-100";
+      return "border-rose-200 bg-rose-50 text-slate-900 hover:border-rose-300 hover:bg-rose-100";
     }
 
     if (visualStatus === "completed") {
-      return "border-emerald-400 bg-emerald-100 text-slate-900";
+      return "border-emerald-200 bg-emerald-50 text-slate-900 hover:border-emerald-300";
     }
 
     if (visualStatus === "no_show") {
-      return "border-amber-400 bg-amber-100 text-slate-900";
+      return "border-amber-200 bg-amber-50 text-slate-900 hover:border-amber-300";
     }
 
     if (visualStatus === "canceled") {
-      return "border-slate-300 bg-slate-200 text-slate-600 opacity-80";
+      return "border-slate-200 bg-slate-100 text-slate-600 opacity-80";
     }
 
-    return "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-900";
+    return "border-slate-200 bg-white text-slate-900 hover:border-sky-300 hover:bg-sky-50";
   }
 
   function matchesFilter(appt: Appointment, filter: FilterValue) {
@@ -236,8 +244,7 @@ export default function AgendaPage() {
   function getFilterButtonClasses(
     filter: FilterValue,
     active: boolean,
-    count: number,
-    hasPending: boolean
+    count: number
   ) {
     if (filter === "pending_close") {
       if (active) {
@@ -255,11 +262,18 @@ export default function AgendaPage() {
       return "inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800";
     }
 
-    if (hasPending && filter === "all") {
-      return "inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
-    }
-
     return "inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
+  }
+
+  function handleSelectAppointment(appt: Appointment) {
+    setSelectedAppointment(appt);
+
+    setTimeout(() => {
+      detailRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
   }
 
   const weekStart = useMemo(() => startOfWeek(weekBaseDate), [weekBaseDate]);
@@ -484,87 +498,93 @@ export default function AgendaPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Agenda"
-        title="Agenda semanal"
-        description="Revisa tus reservas por semana y haz clic en una cita para ver sus detalles."
-        actions={
-          <div className="flex flex-wrap gap-3">
-            {hasPendingClose ? (
+    <div className="space-y-6 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 p-1">
+      <div className="rounded-[28px] border border-slate-200 bg-white/80 p-1 shadow-sm backdrop-blur">
+        <PageHeader
+          eyebrow="Agenda"
+          title="Agenda semanal"
+          description="Semana, estados y cierre rápido."
+          actions={
+            <div className="flex flex-wrap gap-3">
+              {hasPendingClose ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveFilter("pending_close");
+                    if (pendingCloseAppointments[0]) {
+                      setSelectedAppointment(pendingCloseAppointments[0]);
+                      setTimeout(() => {
+                        detailRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }, 80);
+                    }
+                  }}
+                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-600 bg-rose-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
+                >
+                  Pendientes: {pendingCloseCount}
+                </button>
+              ) : (
+                <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700">
+                  Sin pendientes
+                </div>
+              )}
+
               <button
                 type="button"
-                onClick={() => {
-                  setActiveFilter("pending_close");
-                  if (pendingCloseAppointments[0]) {
-                    setSelectedAppointment(pendingCloseAppointments[0]);
-                  }
-                }}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-600 bg-rose-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
+                onClick={goPrevWeek}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                Pendientes de cierre: {pendingCloseCount}
+                ← Anterior
               </button>
-            ) : (
-              <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700">
-                Sin pendientes de cierre
+
+              <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-sky-100 bg-sky-50 px-4 text-sm font-semibold text-sky-800">
+                {formatRangeTitle(weekStart, weekEnd)}
               </div>
-            )}
 
-            <button
-              type="button"
-              onClick={goPrevWeek}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              ← Semana anterior
-            </button>
+              <button
+                type="button"
+                onClick={goNextWeek}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Siguiente →
+              </button>
 
-            <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700">
-              {formatRangeTitle(weekStart, weekEnd)}
+              <button
+                type="button"
+                onClick={goToday}
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+              >
+                Hoy
+              </button>
+
+              <input
+                type="date"
+                value={formatDateYYYYMMDD(weekBaseDate)}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
+                  setSelectedAppointment(null);
+                  didAutoFocusPendingRef.current = false;
+                }}
+                className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              />
             </div>
-
-            <button
-              type="button"
-              onClick={goNextWeek}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Semana siguiente →
-            </button>
-
-            <button
-              type="button"
-              onClick={goToday}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
-              Hoy
-            </button>
-
-            <input
-              type="date"
-              value={formatDateYYYYMMDD(weekBaseDate)}
-              onChange={(e) => {
-                if (!e.target.value) return;
-                setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
-                setSelectedAppointment(null);
-                didAutoFocusPendingRef.current = false;
-              }}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-            />
-          </div>
-        }
-      />
+          }
+        />
+      </div>
 
       {hasPendingClose ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
+        <div className="rounded-3xl border border-rose-200 bg-gradient-to-r from-rose-50 to-amber-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
           Tienes <span className="font-semibold">{pendingCloseCount}</span>{" "}
           cita{pendingCloseCount === 1 ? "" : "s"} pendiente
-          {pendingCloseCount === 1 ? "" : "s"} de cierre. La vista se enfocó
-          automáticamente en ese filtro para ayudarte a cerrar la agenda más
-          rápido.
+          {pendingCloseCount === 1 ? "" : "s"} de cierre.
         </div>
       ) : null}
 
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
+        <div className="rounded-3xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
           {error}
         </div>
       ) : null}
@@ -573,7 +593,7 @@ export default function AgendaPage() {
         <StatCard
           label="Reservas hoy"
           value={loading ? "..." : String(appointmentsToday.length)}
-          helper="Citas visibles para el día actual."
+          helper="Citas visibles para hoy."
         />
         <StatCard
           label="Próxima reserva"
@@ -586,354 +606,364 @@ export default function AgendaPage() {
           }
           helper={
             loading
-              ? "Cargando próxima cita."
+              ? "Cargando..."
               : nextAppointment
               ? nextAppointment.customer_name
               : "No hay próximas reservas."
           }
         />
         <StatCard
-          label="Pendientes de cierre"
+          label="Pendientes"
           value={loading ? "..." : String(pendingCloseCount)}
-          helper="Citas pasadas que siguen agendadas."
+          helper="Citas pasadas por cerrar."
         />
         <StatCard
-          label="Reservas semana"
+          label="Semana"
           value={loading ? "..." : String(appointments.length)}
-          helper="Total de reservas de esta semana."
+          helper="Total de reservas."
         />
       </section>
 
-      <Panel
-        title="Filtros de agenda"
-        description="Filtra la semana por estado sin perder la vista de bloques."
-      >
-        <div className="flex flex-wrap gap-3">
-          {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
-            const count =
-              filter === "all"
-                ? counts.all
-                : filter === "pending_close"
-                ? counts.pending_close
-                : filter === "booked"
-                ? counts.booked
-                : filter === "completed"
-                ? counts.completed
-                : counts.no_show;
+      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <Panel
+          title="Filtros"
+          description="Cambia la vista por estado."
+        >
+          <div className="flex flex-wrap gap-3">
+            {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
+              const count =
+                filter === "all"
+                  ? counts.all
+                  : filter === "pending_close"
+                  ? counts.pending_close
+                  : filter === "booked"
+                  ? counts.booked
+                  : filter === "completed"
+                  ? counts.completed
+                  : counts.no_show;
 
-            return (
+              return (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setActiveFilter(filter)}
+                  className={getFilterButtonClasses(
+                    filter,
+                    activeFilter === filter,
+                    count
+                  )}
+                >
+                  {filterLabels[filter]} ({count})
+                </button>
+              );
+            })}
+
+            {hasPendingClose && activeFilter !== "all" ? (
               <button
-                key={filter}
                 type="button"
-                onClick={() => setActiveFilter(filter)}
-                className={getFilterButtonClasses(
-                  filter,
-                  activeFilter === filter,
-                  count,
-                  hasPendingClose
-                )}
+                onClick={() => setActiveFilter("all")}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                {filterLabels[filter]} ({count})
+                Ver todas
               </button>
-            );
-          })}
-
-          {hasPendingClose && activeFilter !== "all" ? (
-            <button
-              type="button"
-              onClick={() => setActiveFilter("all")}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Ver todas
-            </button>
-          ) : null}
-        </div>
-      </Panel>
+            ) : null}
+          </div>
+        </Panel>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-        <Panel
-          title="Calendario semanal"
-          description={
-            hasPendingClose
-              ? "Los días con pendientes aparecen primero para facilitar el cierre."
-              : "Vista semanal de reservas y disponibilidad del negocio."
-          }
-        >
-          {loading ? (
-            <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-              {orderedWeekDays.map((day) => {
-                const dayKey = formatDateYYYYMMDD(day);
-                const dayAppointments = appointmentsByDay[dayKey] || [];
-                const isToday = dayKey === todayKey;
-                const daySlots = generateDaySlots(day);
-                const dayPendingCount = dayAppointments.filter(
-                  isPastPendingClosure
-                ).length;
+        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <Panel
+            title="Calendario semanal"
+            description={
+              hasPendingClose
+                ? "Los días con pendientes aparecen primero."
+                : "Vista semanal de reservas."
+            }
+          >
+            {loading ? (
+              <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+                {orderedWeekDays.map((day) => {
+                  const dayKey = formatDateYYYYMMDD(day);
+                  const dayAppointments = appointmentsByDay[dayKey] || [];
+                  const isToday = dayKey === todayKey;
+                  const daySlots = generateDaySlots(day);
+                  const dayPendingCount = dayAppointments.filter(
+                    isPastPendingClosure
+                  ).length;
 
-                return (
-                  <div
-                    key={dayKey}
-                    className={`rounded-2xl border p-3 ${
-                      dayPendingCount > 0
-                        ? "border-rose-300 bg-rose-50 shadow-sm"
-                        : "border-slate-200 bg-slate-50"
-                    }`}
-                  >
+                  return (
                     <div
-                      className={`mb-3 pb-3 ${
+                      key={dayKey}
+                      className={`rounded-2xl border p-3 ${
                         dayPendingCount > 0
-                          ? "border-b border-rose-200"
-                          : "border-b border-slate-200"
+                          ? "border-rose-200 bg-gradient-to-b from-rose-50 to-white"
+                          : isToday
+                          ? "border-sky-200 bg-gradient-to-b from-sky-50 to-white"
+                          : "border-slate-200 bg-slate-50/70"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-sm font-semibold capitalize text-slate-800">
-                          {day.toLocaleDateString("es-CL", {
-                            weekday: "long",
-                          })}
+                      <div
+                        className={`mb-3 pb-3 ${
+                          dayPendingCount > 0
+                            ? "border-b border-rose-200"
+                            : isToday
+                            ? "border-b border-sky-200"
+                            : "border-b border-slate-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm font-semibold capitalize text-slate-800">
+                            {day.toLocaleDateString("es-CL", {
+                              weekday: "long",
+                            })}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {dayPendingCount > 0 ? (
+                              <span className="rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+                                {dayPendingCount}
+                              </span>
+                            ) : null}
+
+                            {isToday ? (
+                              <span className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+                                Hoy
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          {dayPendingCount > 0 ? (
-                            <span className="rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-semibold text-white">
-                              {dayPendingCount} pendiente
-                              {dayPendingCount === 1 ? "" : "s"}
-                            </span>
-                          ) : null}
-
-                          {isToday ? (
-                            <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">
-                              Hoy
-                            </span>
-                          ) : null}
+                        <div className="mt-1 text-xs text-slate-500">
+                          {day.toLocaleDateString("es-CL", {
+                            day: "2-digit",
+                            month: "2-digit",
+                          })}
                         </div>
                       </div>
 
-                      <div className="mt-1 text-xs text-slate-500">
-                        {day.toLocaleDateString("es-CL", {
-                          day: "2-digit",
-                          month: "2-digit",
+                      <div className="space-y-2">
+                        {daySlots.map((slot, index) => {
+                          const appt = dayAppointments.find(
+                            (a) =>
+                              new Date(a.start_at).getTime() ===
+                              new Date(slot).getTime()
+                          );
+
+                          const isHourStart = index % 2 === 0;
+                          const isEvenBand = Math.floor(index / 2) % 2 === 0;
+
+                          if (!appt) {
+                            return (
+                              <div
+                                key={slot}
+                                className={`rounded-xl border px-3 py-3 text-center text-xs ${
+                                  isHourStart
+                                    ? "border-slate-300"
+                                    : "border-slate-200"
+                                } ${
+                                  isEvenBand
+                                    ? "bg-slate-100 text-slate-500"
+                                    : "bg-white text-slate-400"
+                                }`}
+                              >
+                                <span className="block font-medium">
+                                  {formatHour(slot)}
+                                </span>
+                                <span className="block">Libre</span>
+                              </div>
+                            );
+                          }
+
+                          const isSelected = selectedAppointment?.id === appt.id;
+
+                          return (
+                            <button
+                              key={appt.id}
+                              type="button"
+                              onClick={() => handleSelectAppointment(appt)}
+                              className={`w-full rounded-2xl border p-3 text-left transition ${getCardClass(
+                                appt,
+                                isSelected
+                              )}`}
+                            >
+                              <div className="space-y-2">
+                                <div
+                                  className={`text-xs font-semibold ${
+                                    isSelected ? "text-slate-200" : "text-slate-600"
+                                  }`}
+                                >
+                                  {formatHour(appt.start_at)} -{" "}
+                                  {formatHour(appt.end_at)}
+                                </div>
+
+                                <div>
+                                  <span
+                                    className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                      isSelected
+                                        ? "border-white/20 bg-white/10 text-white"
+                                        : getStatusBadgeClass(appt)
+                                    }`}
+                                  >
+                                    {getCalendarBadgeLabel(appt)}
+                                  </span>
+                                </div>
+
+                                <p
+                                  className={`truncate text-sm font-semibold ${
+                                    isSelected ? "text-white" : "text-slate-900"
+                                  }`}
+                                >
+                                  {appt.customer_name}
+                                </p>
+
+                                <p
+                                  className={`truncate text-xs ${
+                                    isSelected ? "text-slate-200" : "text-slate-500"
+                                  }`}
+                                >
+                                  {appt.service_name_snapshot || "Reserva"}
+                                </p>
+
+                                {isPastPendingClosure(appt) ? (
+                                  <div
+                                    className={`rounded-xl px-2 py-1 text-[10px] font-semibold ${
+                                      isSelected
+                                        ? "bg-white/10 text-white"
+                                        : "bg-rose-100 text-rose-700"
+                                    }`}
+                                  >
+                                    Requiere cierre
+                                  </div>
+                                ) : null}
+                              </div>
+                            </button>
+                          );
                         })}
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
+        </div>
 
-                    <div className="space-y-2">
-                      {daySlots.map((slot, index) => {
-                        const appt = dayAppointments.find(
-                          (a) =>
-                            new Date(a.start_at).getTime() ===
-                            new Date(slot).getTime()
-                        );
+        <div ref={detailRef} className="xl:sticky xl:top-6 self-start">
+          <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <Panel
+              title="Detalle de reserva"
+              description="Cliente, horario y estado."
+            >
+              {!selectedAppointment ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                  Haz clic en una reserva para ver el detalle.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {selectedAppointment.service_name_snapshot || "Reserva"}
+                      </p>
 
-                        const isHourStart = index % 2 === 0;
-                        const isEvenBand = Math.floor(index / 2) % 2 === 0;
+                      <span
+                        className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(
+                          selectedAppointment
+                        )}`}
+                      >
+                        {getStatusLabel(selectedAppointment)}
+                      </span>
+                    </div>
 
-                        if (!appt) {
-                          return (
-                            <div
-                              key={slot}
-                              className={`rounded-xl border px-3 py-3 text-center text-xs ${
-                                isHourStart
-                                  ? "border-slate-300"
-                                  : "border-slate-200"
-                              } ${
-                                isEvenBand
-                                  ? "bg-slate-100 text-slate-500"
-                                  : "bg-white text-slate-400"
-                              }`}
-                            >
-                              <span className="block font-medium">
-                                {formatHour(slot)}
-                              </span>
-                              <span className="block">Libre</span>
-                            </div>
-                          );
-                        }
+                    <p className="mt-2 text-sm capitalize text-slate-600">
+                      {formatLongDate(selectedAppointment.start_at)}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {formatHour(selectedAppointment.start_at)} -{" "}
+                      {formatHour(selectedAppointment.end_at)}
+                    </p>
+                  </div>
 
-                        const isSelected = selectedAppointment?.id === appt.id;
+                  {isPastPendingClosure(selectedAppointment) ? (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                      <p className="text-sm font-semibold text-rose-800">
+                        Esta cita ya terminó
+                      </p>
+                      <p className="mt-1 text-sm text-rose-700">
+                        Debes cerrar su estado para mantener la agenda al día.
+                      </p>
 
-                        return (
-                          <button
-                            key={appt.id}
-                            type="button"
-                            onClick={() => setSelectedAppointment(appt)}
-                            className={`w-full rounded-2xl border p-3 text-left transition ${getCardClass(
-                              appt,
-                              isSelected
-                            )}`}
-                          >
-                            <div className="space-y-2">
-                              <div
-                                className={`text-xs font-semibold ${
-                                  isSelected ? "text-slate-200" : "text-slate-600"
-                                }`}
-                              >
-                                {formatHour(appt.start_at)} -{" "}
-                                {formatHour(appt.end_at)}
-                              </div>
+                      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateStatus(selectedAppointment.id, "completed")
+                          }
+                          disabled={statusSaving}
+                          className="inline-flex h-11 items-center justify-center rounded-2xl bg-emerald-600 px-4 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {statusSaving ? "Guardando..." : "Marcar atendida"}
+                        </button>
 
-                              <div>
-                                <span
-                                  className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                                    isSelected
-                                      ? "border-white/20 bg-white/10 text-white"
-                                      : getStatusBadgeClass(appt)
-                                  }`}
-                                >
-                                  {getCalendarBadgeLabel(appt)}
-                                </span>
-                              </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateStatus(selectedAppointment.id, "no_show")
+                          }
+                          disabled={statusSaving}
+                          className="inline-flex h-11 items-center justify-center rounded-2xl bg-amber-500 px-4 text-sm font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {statusSaving ? "Guardando..." : "Marcar no asistió"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
 
-                              <p
-                                className={`truncate text-sm font-semibold ${
-                                  isSelected ? "text-white" : "text-slate-900"
-                                }`}
-                              >
-                                {appt.customer_name}
-                              </p>
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Cliente
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">
+                        {selectedAppointment.customer_name}
+                      </p>
+                    </div>
 
-                              <p
-                                className={`truncate text-xs ${
-                                  isSelected ? "text-slate-300" : "text-slate-500"
-                                }`}
-                              >
-                                {appt.service_name_snapshot || "Reserva"}
-                              </p>
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Teléfono
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">
+                        {selectedAppointment.customer_phone || "No disponible"}
+                      </p>
+                    </div>
 
-                              {isPastPendingClosure(appt) ? (
-                                <div
-                                  className={`rounded-xl px-2 py-1 text-[10px] font-semibold ${
-                                    isSelected
-                                      ? "bg-white/10 text-white"
-                                      : "bg-rose-100 text-rose-700"
-                                  }`}
-                                >
-                                  Requiere cierre
-                                </div>
-                              ) : null}
-                            </div>
-                          </button>
-                        );
-                      })}
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Email
+                      </p>
+                      <p className="mt-2 break-all text-sm font-semibold text-slate-900">
+                        {selectedAppointment.customer_email || "No disponible"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Estado
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">
+                        {getStatusLabel(selectedAppointment)}
+                      </p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </Panel>
-
-        <Panel
-          title="Detalle de reserva"
-          description="Información del cliente y de la cita seleccionada."
-        >
-          {!selectedAppointment ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-              Haz clic en una reserva para ver los datos del cliente.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {selectedAppointment.service_name_snapshot || "Reserva"}
-                  </p>
-
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(
-                      selectedAppointment
-                    )}`}
-                  >
-                    {getStatusLabel(selectedAppointment)}
-                  </span>
                 </div>
-
-                <p className="mt-2 text-sm capitalize text-slate-600">
-                  {formatLongDate(selectedAppointment.start_at)}
-                </p>
-                <p className="mt-1 text-sm text-slate-600">
-                  {formatHour(selectedAppointment.start_at)} -{" "}
-                  {formatHour(selectedAppointment.end_at)}
-                </p>
-              </div>
-
-              {isPastPendingClosure(selectedAppointment) ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                  <p className="text-sm font-semibold text-rose-800">
-                    Esta cita ya terminó
-                  </p>
-                  <p className="mt-1 text-sm text-rose-700">
-                    Debes cerrar su estado para mantener la agenda al día.
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleUpdateStatus(selectedAppointment.id, "completed")
-                      }
-                      disabled={statusSaving}
-                      className="inline-flex h-11 items-center justify-center rounded-2xl bg-emerald-600 px-4 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {statusSaving ? "Guardando..." : "Marcar como atendida"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleUpdateStatus(selectedAppointment.id, "no_show")
-                      }
-                      disabled={statusSaving}
-                      className="inline-flex h-11 items-center justify-center rounded-2xl bg-amber-500 px-4 text-sm font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {statusSaving ? "Guardando..." : "Marcar como no asistió"}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Cliente
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {selectedAppointment.customer_name}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Teléfono
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {selectedAppointment.customer_phone || "No disponible"}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Email
-                  </p>
-                  <p className="mt-2 break-all text-sm font-semibold text-slate-900">
-                    {selectedAppointment.customer_email || "No disponible"}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Estado
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {getStatusLabel(selectedAppointment)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </Panel>
+              )}
+            </Panel>
+          </div>
+        </div>
       </div>
     </div>
   );
