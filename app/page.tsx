@@ -38,7 +38,7 @@ export default function OrbyxLandingPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(135deg,#f8f4f7_0%,#f3eef4_36%,#eee8f1_70%,#ebe6ef_100%)]" />
 
-        <div className="pointer-events-none absolute right-0 top-0 h-full w-[45%] hidden lg:block">
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-[46%] hidden lg:block">
           <div
             className="h-full w-full bg-contain bg-no-repeat"
             style={{
@@ -46,11 +46,11 @@ export default function OrbyxLandingPage() {
               backgroundPosition: "right center",
             }}
           />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,#f4eff5_0%,rgba(244,239,245,0.60)_35%,rgba(244,239,245,0.20)_60%,transparent_85%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,#f4eff5_0%,rgba(244,239,245,0.58)_34%,rgba(244,239,245,0.20)_60%,transparent_86%)]" />
         </div>
 
         <div className="relative mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-16">
-          <div className="grid items-center gap-16 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid items-center gap-16 lg:grid-cols-[1.08fr_0.92fr]">
             <div className="relative z-10">
               <div className="inline-flex items-center gap-3">
                 <div className="rounded-2xl bg-white px-3 py-2 shadow">
@@ -126,7 +126,7 @@ export default function OrbyxLandingPage() {
             </div>
 
             <div className="relative z-10 flex justify-end">
-              <div className="w-full max-w-[440px] rounded-[28px] bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.10)] sm:p-7">
+              <div className="w-full max-w-[438px] rounded-[28px] bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.10)] sm:p-7">
                 <h2 className="text-3xl font-semibold text-slate-900">
                   Empieza gratis
                 </h2>
@@ -178,7 +178,7 @@ export default function OrbyxLandingPage() {
 
                   <Link
                     href="/planes"
-                    className="flex h-12 w-full items-center justify-center rounded-xl border border-fuchsia-200 bg-[linear-gradient(135deg,#ffffff_0%,#fdf2f8_100%)] text-sm font-semibold text-fuchsia-700 shadow-[0_0_0_1px_rgba(244,114,182,0.08),0_10px_24px_rgba(236,72,153,0.10)] transition hover:-translate-y-0.5 hover:border-fuchsia-300 hover:shadow-[0_0_0_1px_rgba(244,114,182,0.14),0_14px_30px_rgba(236,72,153,0.14)]"
+                    className="flex h-12 w-full items-center justify-center rounded-xl border border-fuchsia-200 bg-white text-sm font-semibold text-fuchsia-700 shadow-[0_0_0_1px_rgba(244,114,182,0.08),0_8px_22px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:border-fuchsia-300 hover:shadow-[0_0_0_1px_rgba(244,114,182,0.14),0_12px_28px_rgba(236,72,153,0.12)]"
                   >
                     Ver planes
                   </Link>
