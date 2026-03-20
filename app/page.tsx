@@ -39,10 +39,22 @@ export default function OrbyxLandingPage() {
   const teamSizes = ["1", "2-3", "4-10", "10+"];
 
   const benefits = [
-    "Confirmaciones automáticas",
-    "Recordatorios por WhatsApp",
-    "Recuperación de clientes",
-    "Agenda clara y ordenada",
+    {
+      title: "Confirmaciones automáticas",
+      desc: "Tus clientes reciben confirmación inmediata sin que tengas que responder manualmente.",
+    },
+    {
+      title: "Recordatorios por WhatsApp",
+      desc: "Reduce ausencias con recordatorios automáticos antes de cada cita.",
+    },
+    {
+      title: "Recuperación de clientes",
+      desc: "Orbyx detecta clientes inactivos y los vuelve a activar automáticamente.",
+    },
+    {
+      title: "Agenda clara y ordenada",
+      desc: "Visualiza todo tu negocio en un solo lugar, sin desorden ni confusión.",
+    },
   ];
 
   return (
@@ -66,7 +78,7 @@ export default function OrbyxLandingPage() {
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
+                transition={{ duration: 0.6 }}
                 className="mt-8 text-5xl font-semibold leading-tight"
               >
                 Automatiza tus reservas con IA
@@ -82,11 +94,6 @@ export default function OrbyxLandingPage() {
                 <br />
                 Además, mantiene tu agenda activa con recordatorios y recuperación de clientes.
               </p>
-
-              {/* BADGE */}
-              <div className="mt-6 inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-full text-sm">
-                +24 reservas generadas esta semana
-              </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 {chips.map((c) => (
@@ -107,7 +114,7 @@ export default function OrbyxLandingPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.08 }}
                       whileHover={{ y: -4, scale: 1.02 }}
-                      className="rounded-xl bg-white/5 p-4 text-center border border-white/10 transition"
+                      className="rounded-xl bg-white/5 p-4 text-center border border-white/10"
                     >
                       <Icon className="mx-auto mb-2 h-5 w-5 text-blue-400" />
                       <p className="text-sm">{f.title}</p>
@@ -120,7 +127,7 @@ export default function OrbyxLandingPage() {
               <div className="mt-8 flex items-center gap-6">
                 <Link
                   href="/planes"
-                  className="relative px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg transition hover:scale-105"
+                  className="relative px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg hover:scale-105 transition"
                 >
                   <span className="relative z-10">Ver planes</span>
                   <div className="absolute inset-0 rounded-xl blur-xl opacity-40 bg-gradient-to-r from-blue-500 to-purple-500" />
@@ -195,18 +202,22 @@ export default function OrbyxLandingPage() {
             Más que agenda, crecimiento real
           </h2>
 
-          <p className="mt-4 text-slate-400">
-            Orbyx no solo agenda, también activa tu negocio automáticamente.
+          <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
+            Orbyx no solo agenda citas. Automatiza la comunicación con tus clientes,
+            optimiza tu tiempo y te ayuda a mantener tu agenda siempre activa sin esfuerzo.
           </p>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <div className="mt-10 grid gap-6 sm:grid-cols-2">
             {benefits.map((b) => (
               <div
-                key={b}
-                className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-4"
+                key={b.title}
+                className="text-left bg-white/5 border border-white/10 rounded-xl p-5"
               >
-                <CheckCircle2 className="text-emerald-400" />
-                <span>{b}</span>
+                <div className="flex items-center gap-3 mb-2">
+                  <CheckCircle2 className="text-emerald-400" />
+                  <h3 className="font-semibold">{b.title}</h3>
+                </div>
+                <p className="text-sm text-slate-400">{b.desc}</p>
               </div>
             ))}
           </div>
