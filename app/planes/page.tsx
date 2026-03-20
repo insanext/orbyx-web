@@ -13,6 +13,7 @@ import {
   Crown,
   Gem,
   ArrowUp,
+  Info,
 } from "lucide-react";
 
 type PlanKey = "starter" | "pro" | "premium" | "vip" | "platinum";
@@ -36,6 +37,7 @@ type Plan = {
 
 type FeatureRow = {
   label: string;
+  help: string;
   values: Record<PlanKey, boolean | string>;
   highlight?: boolean;
 };
@@ -53,8 +55,8 @@ const plans: Plan[] = [
     cta: "Elegir Starter",
     icon: "starter",
     headerGradient: "from-cyan-500 via-sky-500 to-blue-600",
-    selectedBg: "bg-cyan-50/92",
-    selectedBorder: "border-cyan-300/80",
+    selectedBg: "bg-cyan-50/90",
+    selectedBorder: "border-cyan-300/70",
     buttonClass: "bg-cyan-600 hover:bg-cyan-700",
   },
   {
@@ -63,14 +65,14 @@ const plans: Plan[] = [
     price: "$19.990",
     iva: "+ IVA / mes",
     description:
-      "Para negocios con más movimiento que necesitan recordatorios, orden y control.",
+      "Para negocios con más movimiento que necesitan recordatorios, orden y control diario.",
     badge: "Más elegido",
     href: "/checkout?plan=pro",
     cta: "Elegir Pro",
     icon: "pro",
     headerGradient: "from-blue-500 via-indigo-500 to-violet-600",
-    selectedBg: "bg-blue-50/90",
-    selectedBorder: "border-blue-300/80",
+    selectedBg: "bg-blue-50/88",
+    selectedBorder: "border-blue-300/70",
     buttonClass: "bg-blue-600 hover:bg-blue-700",
   },
   {
@@ -79,14 +81,14 @@ const plans: Plan[] = [
     price: "$34.990",
     iva: "+ IVA / mes",
     description:
-      "Para negocios que quieren más automatización, estadísticas e IA para optimizar la agenda.",
+      "Para negocios que quieren automatizar la atención y permitir que la IA también agende.",
     badge: "Más automatización",
     href: "/checkout?plan=premium",
     cta: "Elegir Premium",
     icon: "premium",
     headerGradient: "from-fuchsia-500 via-purple-500 to-indigo-600",
-    selectedBg: "bg-fuchsia-50/88",
-    selectedBorder: "border-fuchsia-300/80",
+    selectedBg: "bg-fuchsia-50/86",
+    selectedBorder: "border-fuchsia-300/70",
     buttonClass: "bg-fuchsia-600 hover:bg-fuchsia-700",
   },
   {
@@ -95,14 +97,14 @@ const plans: Plan[] = [
     price: "$54.990",
     iva: "+ IVA / mes",
     description:
-      "Para negocios que quieren automatización avanzada, IA por WhatsApp y más crecimiento.",
+      "Para negocios que quieren usar IA para llenar horas vacías, recuperar clientes y crecer.",
     badge: "Más crecimiento",
     href: "/checkout?plan=vip",
     cta: "Elegir VIP",
     icon: "vip",
     headerGradient: "from-amber-400 via-orange-500 to-rose-500",
-    selectedBg: "bg-orange-50/88",
-    selectedBorder: "border-orange-300/80",
+    selectedBg: "bg-orange-50/86",
+    selectedBorder: "border-orange-300/70",
     buttonClass: "bg-orange-600 hover:bg-orange-700",
   },
   {
@@ -118,8 +120,8 @@ const plans: Plan[] = [
     comingSoon: true,
     icon: "platinum",
     headerGradient: "from-slate-500 via-zinc-600 to-slate-800",
-    selectedBg: "bg-slate-100/90",
-    selectedBorder: "border-slate-300/80",
+    selectedBg: "bg-slate-100/88",
+    selectedBorder: "border-slate-300/70",
     buttonClass: "bg-slate-600 hover:bg-slate-700",
   },
 ];
@@ -127,6 +129,7 @@ const plans: Plan[] = [
 const featureRows: FeatureRow[] = [
   {
     label: "Precio mensual",
+    help: "Valor mensual del plan antes de aplicar IVA.",
     highlight: true,
     values: {
       starter: "$9.990",
@@ -138,6 +141,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Profesionales activos",
+    help: "Cantidad de miembros de tu equipo que pueden atender y gestionar reservas dentro del sistema al mismo tiempo.",
     values: {
       starter: "1",
       pro: "3",
@@ -148,6 +152,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Servicios",
+    help: "Cantidad de servicios que puedes ofrecer en tu página de reservas, como corte, masaje, evaluación o consulta.",
     values: {
       starter: "3",
       pro: "10",
@@ -158,6 +163,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Página pública de reservas",
+    help: "Página donde tus clientes pueden entrar y reservar horarios disponibles de tu negocio de forma online y manual.",
     values: {
       starter: true,
       pro: true,
@@ -168,6 +174,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Confirmación automática por correo",
+    help: "El cliente recibe un correo automático con el detalle de su reserva y puede confirmar, revisar o cancelar según el flujo configurado.",
     values: {
       starter: true,
       pro: true,
@@ -178,6 +185,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Cancelación de reservas",
+    help: "Permite que el cliente cancele su cita desde un enlace o flujo definido, evitando mensajes manuales y desorden.",
     values: {
       starter: true,
       pro: true,
@@ -188,6 +196,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Conexión con Google Calendar",
+    help: "Sincroniza la disponibilidad y eventos del negocio con Google Calendar para evitar cruces y mejorar el control.",
     values: {
       starter: true,
       pro: true,
@@ -198,6 +207,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Botón “Reservar ahora” para redes",
+    help: "Botón o enlace que puedes usar en Instagram, WhatsApp, Facebook u otras redes para que el cliente llegue directo a reservar.",
     values: {
       starter: true,
       pro: true,
@@ -208,6 +218,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Recordatorios automáticos por correo",
+    help: "Envío automático de recordatorios al cliente antes de su cita para reducir ausencias y olvidos.",
     values: {
       starter: false,
       pro: true,
@@ -218,6 +229,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Recordatorios automáticos por WhatsApp",
+    help: "Mensajes automáticos por WhatsApp para recordar citas y mejorar la asistencia del cliente.",
     values: {
       starter: false,
       pro: true,
@@ -228,6 +240,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Panel de gestión de reservas",
+    help: "Vista interna donde administras agenda, reservas, estados, horarios y operación diaria del negocio.",
     values: {
       starter: "Básico",
       pro: "Completo",
@@ -238,6 +251,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Estadísticas del negocio",
+    help: "Métricas para entender reservas, no show, servicios más usados y comportamiento general de la agenda.",
     values: {
       starter: false,
       pro: "Básicas",
@@ -248,6 +262,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Gestión de clientes (historial y visitas)",
+    help: "Ficha del cliente con historial de reservas, visitas anteriores y seguimiento para entender mejor su relación con el negocio.",
     values: {
       starter: false,
       pro: false,
@@ -257,7 +272,8 @@ const featureRows: FeatureRow[] = [
     },
   },
   {
-    label: "IA para optimizar agenda y llenar horas vacías",
+    label: "IA que responde y agenda automáticamente",
+    help: "La IA puede conversar con el cliente y registrar reservas automáticamente, sin intervención manual del negocio.",
     values: {
       starter: false,
       pro: false,
@@ -267,7 +283,8 @@ const featureRows: FeatureRow[] = [
     },
   },
   {
-    label: "IA por WhatsApp que responde y agenda automáticamente",
+    label: "IA para llenar horas vacías y aumentar reservas",
+    help: "Funciones inteligentes para detectar espacios sin uso y ayudarte a convertirlos en reservas, recuperando clientes o empujando promociones.",
     values: {
       starter: false,
       pro: false,
@@ -278,6 +295,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Personalización visual de la página de reservas",
+    help: "Permite adaptar colores, imagen y estilo de la página de reservas para que se vea más alineada con tu marca.",
     values: {
       starter: false,
       pro: false,
@@ -288,6 +306,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Soporte prioritario",
+    help: "Atención más rápida para resolver dudas, incidencias o configuraciones importantes del negocio.",
     values: {
       starter: false,
       pro: false,
@@ -298,6 +317,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Lista de espera inteligente",
+    help: "Si se libera una hora, puedes avisar automáticamente a clientes interesados para llenar ese espacio más rápido.",
     values: {
       starter: false,
       pro: false,
@@ -308,6 +328,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Avisos automáticos cuando un cliente suele volver",
+    help: "Detecta patrones de retorno y ayuda a contactar al cliente justo cuando probablemente necesite una nueva cita.",
     values: {
       starter: false,
       pro: false,
@@ -318,6 +339,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Campañas automáticas para recuperar clientes inactivos",
+    help: "Permite enviar mensajes o campañas a clientes que hace tiempo no reservan, para intentar traerlos de vuelta.",
     values: {
       starter: false,
       pro: false,
@@ -328,6 +350,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "IA que sugiere promociones para aumentar reservas",
+    help: "La IA puede recomendar ofertas o acciones según horarios vacíos, servicios menos vendidos o momentos de baja demanda.",
     values: {
       starter: false,
       pro: false,
@@ -338,6 +361,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Dominio propio para la página de reservas",
+    help: "Posibilidad de usar una dirección más personalizada para tu página de reservas, reforzando imagen y marca.",
     values: {
       starter: false,
       pro: false,
@@ -348,6 +372,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Onboarding personalizado",
+    help: "Acompañamiento inicial para ayudarte a dejar tu cuenta, servicios y agenda mejor configurados desde el comienzo.",
     values: {
       starter: false,
       pro: false,
@@ -358,6 +383,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Enfoque estratégico en marketing",
+    help: "Trabajo más consultivo para pensar cómo atraer más clientes, mejorar campañas y aumentar reservas de forma más estratégica.",
     values: {
       starter: false,
       pro: false,
@@ -368,6 +394,7 @@ const featureRows: FeatureRow[] = [
   },
   {
     label: "Automatizaciones y personalización avanzada",
+    help: "Nivel más alto de personalización, configuración y acompañamiento para necesidades más complejas o negocios que quieren algo más a medida.",
     values: {
       starter: false,
       pro: false,
@@ -414,6 +441,33 @@ function CellValue({
   );
 }
 
+function FeatureLabel({
+  label,
+  help,
+}: {
+  label: string;
+  help: string;
+}) {
+  return (
+    <div className="group relative inline-flex items-center gap-2">
+      <span>{label}</span>
+      <span className="relative inline-flex">
+        <button
+          type="button"
+          className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/15 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+          aria-label={`Más información sobre ${label}`}
+        >
+          <Info className="h-3.5 w-3.5" />
+        </button>
+
+        <span className="pointer-events-none absolute left-7 top-1/2 z-30 hidden w-80 -translate-y-1/2 rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs font-normal leading-5 text-slate-200 shadow-2xl group-hover:block">
+          {help}
+        </span>
+      </span>
+    </div>
+  );
+}
+
 export default function PlanesPage() {
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>("pro");
 
@@ -454,16 +508,16 @@ export default function PlanesPage() {
       <section id="planes" className="mx-auto max-w-7xl px-4 pb-12 lg:px-8">
         <div className="mb-5 flex justify-center">
           <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">
-            Selecciona una columna para destacarla y comparar mejor
+            Haz click en cualquier parte de una columna para destacarla y comparar mejor
           </div>
         </div>
 
         <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-sm">
           <div className="overflow-x-auto">
-            <table className="min-w-[1120px] w-full border-collapse text-left">
+            <table className="min-w-[1140px] w-full border-collapse text-left">
               <thead>
                 <tr className="bg-white/8">
-                  <th className="sticky left-0 z-20 min-w-[280px] border-b border-white/10 bg-slate-950/95 px-5 py-5 text-base font-semibold text-white backdrop-blur">
+                  <th className="sticky left-0 z-20 min-w-[320px] border-b border-white/10 bg-slate-950/95 px-5 py-5 text-base font-semibold text-white backdrop-blur">
                     Características
                   </th>
 
@@ -473,17 +527,14 @@ export default function PlanesPage() {
                     return (
                       <th
                         key={plan.key}
-                        className={`border-b border-l border-white/10 align-top transition-all duration-200 ${
+                        onClick={() => setSelectedPlan(plan.key)}
+                        className={`cursor-pointer border-b border-l border-white/10 align-top transition-all duration-200 ${
                           isSelected
-                            ? `min-w-[205px] ${plan.selectedBg} ${plan.selectedBorder} border-x shadow-[inset_0_0_0_1px_rgba(15,23,42,0.06)]`
-                            : "min-w-[180px] bg-transparent hover:bg-white/[0.04]"
+                            ? `min-w-[215px] ${plan.selectedBg} ${plan.selectedBorder} border-x shadow-[inset_0_0_0_1px_rgba(15,23,42,0.05)]`
+                            : "min-w-[185px] bg-transparent hover:bg-white/[0.04]"
                         }`}
                       >
-                        <button
-                          type="button"
-                          onClick={() => setSelectedPlan(plan.key)}
-                          className="block w-full p-4 text-left transition-transform duration-200 hover:-translate-y-1"
-                        >
+                        <div className="block w-full p-4 text-left transition-transform duration-200 hover:-translate-y-1">
                           <div className={`h-2 rounded-full bg-gradient-to-r ${plan.headerGradient}`} />
                           <div className="mt-4">
                             {plan.badge ? (
@@ -523,9 +574,9 @@ export default function PlanesPage() {
                             </div>
 
                             <div
-                              className={`mt-4 text-3xl font-bold ${
+                              className={`mt-4 text-3xl font-bold leading-tight ${
                                 isSelected ? "text-slate-900" : "text-white"
-                              }`}
+                              } ${plan.comingSoon ? "text-[2rem]" : ""}`}
                             >
                               {plan.price}
                             </div>
@@ -538,14 +589,14 @@ export default function PlanesPage() {
                             </div>
 
                             <p
-                              className={`mt-4 min-h-[96px] text-sm leading-6 ${
+                              className={`mt-4 min-h-[112px] text-sm leading-6 ${
                                 isSelected ? "text-slate-700" : "text-slate-300"
                               }`}
                             >
                               {plan.description}
                             </p>
                           </div>
-                        </button>
+                        </div>
                       </th>
                     );
                   })}
@@ -559,7 +610,7 @@ export default function PlanesPage() {
                     className={idx % 2 === 0 ? "bg-white/[0.03]" : "bg-white/[0.06]"}
                   >
                     <td className="sticky left-0 z-10 border-b border-white/10 bg-slate-950/95 px-5 py-4 text-sm font-medium text-white backdrop-blur">
-                      {row.label}
+                      <FeatureLabel label={row.label} help={row.help} />
                     </td>
 
                     {plans.map((plan) => {
@@ -568,8 +619,9 @@ export default function PlanesPage() {
                       return (
                         <td
                           key={`${row.label}-${plan.key}`}
-                          className={`border-b border-l border-white/10 px-4 py-4 text-center transition-all duration-200 ${
-                            isSelected ? `${plan.selectedBg} ${plan.selectedBorder}` : ""
+                          onClick={() => setSelectedPlan(plan.key)}
+                          className={`cursor-pointer border-b border-l border-white/10 px-4 py-4 text-center transition-all duration-200 ${
+                            isSelected ? `${plan.selectedBg} ${plan.selectedBorder}` : "hover:bg-white/[0.03]"
                           }`}
                         >
                           <CellValue value={row.values[plan.key]} selected={isSelected} />
@@ -590,8 +642,9 @@ export default function PlanesPage() {
                     return (
                       <td
                         key={`cta-${plan.key}`}
-                        className={`border-t border-l border-white/10 px-4 py-5 text-center transition-all duration-200 ${
-                          isSelected ? `${plan.selectedBg} ${plan.selectedBorder}` : ""
+                        onClick={() => setSelectedPlan(plan.key)}
+                        className={`cursor-pointer border-t border-l border-white/10 px-4 py-5 text-center transition-all duration-200 ${
+                          isSelected ? `${plan.selectedBg} ${plan.selectedBorder}` : "hover:bg-white/[0.03]"
                         }`}
                       >
                         {plan.comingSoon ? (
@@ -620,7 +673,58 @@ export default function PlanesPage() {
         </div>
       </section>
 
-      <section className="pb-14">
+      <section className="mx-auto max-w-7xl px-6 py-2 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-[30px] border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-sky-500/10 p-8 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
+              En qué se diferencia Orbyx
+            </p>
+            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+              No solo agendas: te ayudamos a gestionar y crecer
+            </h3>
+
+            <div className="mt-6 space-y-3">
+              {[
+                "Tus clientes pueden reservar sin tanto ida y vuelta.",
+                "Tu negocio se ve más profesional desde el primer contacto.",
+                "La automatización reduce olvidos, ausencias y desorden.",
+                "En planes más altos, la IA ayuda a agendar y luego a llenar horas vacías.",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="flex items-start gap-3 rounded-2xl border border-cyan-400/15 bg-white/5 px-4 py-3"
+                >
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  <span className="text-sm text-slate-200">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[30px] border border-fuchsia-400/20 bg-gradient-to-br from-fuchsia-500/10 to-orange-500/10 p-8 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-fuchsia-300">
+              Próximo nivel
+            </p>
+            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+              Cada upgrade desbloquea una etapa distinta del negocio
+            </h3>
+            <p className="mt-4 leading-7 text-slate-300">
+              Starter te ayuda a ordenar. Pro te ayuda a operar mejor. Premium automatiza atención con IA. VIP usa IA para llenar agenda y aumentar reservas. Platinum apunta a una capa más consultiva y estratégica.
+            </p>
+
+            <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
+              <p className="text-sm font-semibold text-white">
+                ¿Subes o bajas de plan después?
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                No se pierden tus datos. Solo se ajustan límites y funciones disponibles según el plan activo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="pb-14 pt-10">
         <div className="mx-auto flex max-w-7xl justify-center px-6 lg:px-8">
           <a
             href="#planes"
