@@ -21,7 +21,7 @@ export default function OrbyxLandingPage() {
     },
     {
       title: "La IA propone horarios",
-      text: "Orbyx pregunta si prefiere mañana o tarde, revisa disponibilidad y ofrece opciones reales.",
+      text: "Orbyx pregunta si prefiere en la mañana o en la tarde, revisa disponibilidad y ofrece opciones reales.",
     },
     {
       title: "La reserva queda confirmada",
@@ -108,23 +108,18 @@ export default function OrbyxLandingPage() {
               transition={{ duration: 0.55, delay: 0.12 }}
               className="lg:ml-auto"
             >
-              
-<motion.div
-  initial={{ opacity: 0, scale: 0.98, y: 14 }}
-  animate={{ opacity: 1, scale: 1, y: 0 }}
-  transition={{ duration: 0.55, delay: 0.12 }}
-  className="lg:ml-auto"
->
-  <div className="relative">
-    <img
-      src="/hero-whatsapp-chat.png"
-      alt="Reserva automática por WhatsApp con Orbyx"
-      className="w-full max-w-[420px] mx-auto drop-shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
-    />
-
-    <div className="absolute inset-0 -z-10 blur-2xl opacity-40 bg-gradient-to-tr from-sky-400 via-fuchsia-400 to-orange-400 rounded-full" />
-  </div>
-</motion.div>
+              <div className="relative">
+                <img
+                  src="/hero-whatsapp-chat.png"
+                  alt="Reserva automática por WhatsApp con Orbyx"
+                  className="mx-auto w-full max-w-[420px] drop-shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
+                />
+                <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-tr from-sky-400 via-fuchsia-400 to-orange-400 opacity-40 blur-2xl" />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
       <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-2">
