@@ -3,30 +3,31 @@
 import { motion } from "framer-motion";
 
 export default function OrbyxLandingPage() {
-  const pillars = [
-    {
-      title: "Agendamiento con IA",
-      text: "Orbyx responde WhatsApp, propone horarios y agenda automáticamente por tu negocio.",
-    },
-    {
-      title: "Agenda más activa",
-      text: "Seguimiento inteligente, recordatorios y recuperación de clientes para mantener más movimiento en tu agenda.",
-    },
+  const businessTypes = [
+    "Barbería",
+    "Peluquería",
+    "Centro de estética",
+    "Clínica",
+    "Consulta médica",
+    "Kinesiología / Fisioterapia",
+    "Spa",
+    "Salón de belleza",
+    "Entrenamiento / Fitness",
+    "Otro",
   ];
 
-  const steps = [
-    {
-      title: "Tu cliente escribe por WhatsApp",
-      text: "La conversación comienza como cualquier mensaje normal.",
-    },
-    {
-      title: "La IA propone horarios",
-      text: "Orbyx pregunta si prefiere en la mañana o en la tarde, revisa disponibilidad y ofrece opciones reales.",
-    },
-    {
-      title: "La reserva queda confirmada",
-      text: "El cliente recibe confirmación y tu agenda se actualiza sin coordinación manual.",
-    },
+  const teamSizes = ["1", "2 a 3", "4 a 10", "11 a 20", "20+"];
+
+  const benefits = [
+    "IA que agenda por WhatsApp",
+    "Menos coordinación manual",
+    "Más movimiento en tu agenda",
+  ];
+
+  const featureCards = [
+    { title: "Reserva confirmada", text: "11:00 AM" },
+    { title: "+24", text: "reservas esta semana" },
+    { title: "Seguimiento inteligente", text: "clientes reactivados" },
   ];
 
   return (
@@ -35,8 +36,8 @@ export default function OrbyxLandingPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_28%),radial-gradient(circle_at_top_right,rgba(217,70,239,0.14),transparent_24%),radial-gradient(circle_at_bottom,rgba(249,115,22,0.12),transparent_22%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(15,23,42,0.74),rgba(2,6,23,0.97))]" />
 
-        <div className="relative mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-20">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
+        <div className="relative mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
             <div>
               <div className="inline-flex rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm backdrop-blur">
                 <img
@@ -74,31 +75,27 @@ export default function OrbyxLandingPage() {
                 recordatorios y recuperación de clientes.
               </motion.p>
 
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <a
-                  href="/demo"
-                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-sky-500 px-7 text-base font-semibold text-white shadow-[0_12px_30px_rgba(14,165,233,0.28)] transition hover:-translate-y-0.5 hover:bg-sky-400"
-                >
-                  Ver en acción
-                </a>
-                <a
-                  href="/planes"
-                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-7 text-base font-semibold text-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-white/15"
-                >
-                  Ver planes
-                </a>
+              <div className="mt-8 flex flex-wrap gap-3">
+                {benefits.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200"
+                  >
+                    {item}
+                  </span>
+                ))}
               </div>
 
-              <div className="mt-7 flex flex-wrap gap-3 text-sm text-slate-300">
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-                  IA que agenda por WhatsApp
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-                  Menos coordinación manual
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-                  Más movimiento en tu agenda
-                </span>
+              <div className="mt-10 hidden max-w-2xl gap-4 md:grid md:grid-cols-3">
+                {featureCards.map((card) => (
+                  <div
+                    key={card.title}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur"
+                  >
+                    <p className="text-sm text-slate-300">{card.title}</p>
+                    <p className="mt-2 text-lg font-semibold text-white">{card.text}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -106,142 +103,136 @@ export default function OrbyxLandingPage() {
               initial={{ opacity: 0, scale: 0.98, y: 14 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.55, delay: 0.12 }}
-              className="lg:ml-auto"
+              className="relative"
             >
-              <div className="relative">
-                <img
-                  src="/hero-whatsapp-chat.png"
-                  alt="Reserva automática por WhatsApp con Orbyx"
-                  className="mx-auto w-full max-w-[420px] drop-shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
-                />
-                <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-tr from-sky-400 via-fuchsia-400 to-orange-400 opacity-40 blur-2xl" />
+              <div className="absolute -left-10 top-10 hidden xl:block">
+                <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
+                  <p className="text-sm font-medium text-white">Reserva confirmada</p>
+                  <p className="mt-1 text-slate-300">11:00 AM</p>
+                </div>
               </div>
+
+              <div className="absolute -left-2 bottom-24 hidden xl:block">
+                <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
+                  <p className="text-2xl font-semibold text-white">+24</p>
+                  <p className="text-sm text-slate-300">reservas esta semana</p>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur">
+                <img
+                  src="/hero-orbyx-pro.png"
+                  alt="Orbyx hero visual"
+                  className="h-auto w-full object-cover"
+                />
+              </div>
+
+              <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-tr from-sky-400 via-fuchsia-400 to-orange-400 opacity-30 blur-3xl" />
             </motion.div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-2">
-          {pillars.map((item, index) => (
-            <motion.div
-              key={item.title}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.06 }}
-              className="rounded-[28px] border border-white/10 bg-white/5 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.18)]"
-            >
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-                Pilar {index + 1}
-              </p>
-              <h2 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">
-                {item.title}
+      <section className="relative z-10 -mt-4 px-6 pb-10 lg:-mt-8 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+            <div />
+
+            <div className="rounded-[32px] border border-white/10 bg-white/95 p-6 text-slate-900 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur sm:p-8">
+              <h2 className="text-3xl font-semibold tracking-tight text-indigo-700">
+                Empieza gratis por 7 días
               </h2>
-              <p className="mt-4 text-base leading-7 text-slate-300">
-                {item.text}
+              <p className="mt-3 text-lg text-slate-600">
+                Sin tarjeta. Configura tu agenda en minutos.
               </p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
 
-      <section className="border-y border-white/10 bg-white/5">
-        <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-              Cómo funciona
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              WhatsApp deja de ser carga y se transforma en una reserva
-            </h2>
-            <p className="mt-4 text-lg leading-8 text-slate-300">
-              Orbyx toma la conversación, propone opciones reales y confirma la hora sin hacerte perder tiempo coordinando mensajes.
-            </p>
-          </div>
-
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {steps.map((card, index) => (
-              <motion.div
-                key={card.title}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.06 }}
-                className="rounded-3xl border border-white/10 bg-slate-900/70 p-6"
-              >
-                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-400/15 text-sm font-semibold text-sky-300">
-                  0{index + 1}
+              <form className="mt-6 space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    ¿Qué tipo de negocio tienes?
+                  </label>
+                  <select className="h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-sky-500">
+                    <option value="">Selecciona una opción</option>
+                    {businessTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <h3 className="text-xl font-semibold text-white">{card.title}</h3>
-                <p className="mt-3 leading-7 text-slate-300">{card.text}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-        <div className="grid items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[30px] border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-sky-500/10 p-8 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
-              Impacto real
-            </p>
-            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-              Menos tiempo respondiendo. Más tiempo atendiendo.
-            </h3>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    ¿Cuántos profesionales atienden en tu negocio?
+                  </label>
+                  <select className="h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-sky-500">
+                    <option value="">Selecciona una opción</option>
+                    {teamSizes.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="mt-6 space-y-3">
-              {[
-                "Responde reservas sin depender de coordinación manual por WhatsApp.",
-                "Reduce ida y vuelta innecesaria al ofrecer horarios automáticamente.",
-                "Mantén la agenda más activa con seguimiento inteligente de clientes.",
-                "Recupera clientes con recordatorios y automatizaciones.",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-2xl border border-cyan-400/15 bg-white/5 px-4 py-3 text-sm text-slate-200"
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Nombre completo
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ingresa tu nombre"
+                    className="h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-sky-500"
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      Correo electrónico
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="tucorreo@ejemplo.com"
+                      className="h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="+56 9..."
+                      className="h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="inline-flex min-h-[58px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 px-6 text-lg font-semibold text-white shadow-[0_14px_36px_rgba(59,130,246,0.28)] transition hover:-translate-y-0.5 hover:from-sky-500 hover:to-indigo-500"
                 >
-                  {item}
-                </div>
-              ))}
+                  Crear mi agenda →
+                </button>
+              </form>
+
+              <p className="mt-4 text-center text-sm leading-6 text-slate-500">
+                Empieza gratis. Después del período de prueba puedes pasar a un plan de pago.
+              </p>
+
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-medium text-slate-800">
+                  Consejo
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Orbyx sigue siendo un producto general. El tipo de negocio nos ayuda a
+                  sugerir servicios y personalizar textos iniciales, sin obligarte a usar
+                  una versión distinta del sistema.
+                </p>
+              </div>
             </div>
-          </div>
-
-          <div className="rounded-[30px] border border-white/10 bg-white/5 p-8 text-center shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
-            <img
-              src="/orbyx-logo-dark.png"
-              alt="Orbyx"
-              className="mx-auto h-24 w-auto object-contain sm:h-28"
-            />
-            <h3 className="mt-6 text-2xl font-semibold text-white">
-              IA para agendar y apoyar el crecimiento de tu negocio
-            </h3>
-            <p className="mt-4 leading-7 text-slate-300">
-              Orbyx no solo automatiza reservas. También te ayuda a mantener más movimiento en tu agenda con seguimiento inteligente y recuperación de clientes.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 pb-14 lg:px-8">
-        <div className="mx-auto max-w-6xl rounded-[32px] border border-white/10 bg-slate-900 p-8 text-center text-white shadow-[0_20px_60px_rgba(0,0,0,0.2)] sm:p-12">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-            Comenzar
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
-            Automatiza reservas con IA y mantén tu agenda con más movimiento
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-300">
-            Descubre cómo Orbyx puede responder por tu negocio, agendar automáticamente y ayudarte a recuperar clientes.
-          </p>
-          <div className="mt-8 flex justify-center">
-            <a
-              href="/planes"
-              className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-sky-500 px-7 text-base font-semibold text-white shadow-[0_12px_30px_rgba(14,165,233,0.28)] transition hover:-translate-y-0.5 hover:bg-sky-400"
-            >
-              Ver planes
-            </a>
           </div>
         </div>
       </section>
