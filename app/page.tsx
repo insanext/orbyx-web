@@ -9,6 +9,7 @@ import {
   BellRing,
   Star,
   Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 
 export default function OrbyxLandingPage() {
@@ -26,6 +27,24 @@ export default function OrbyxLandingPage() {
     "Más reservas",
   ];
 
+  const businessTypes = [
+    "Barbería",
+    "Peluquería",
+    "Centro de estética",
+    "Clínica",
+    "Spa",
+    "Otro",
+  ];
+
+  const teamSizes = ["1", "2-3", "4-10", "10+"];
+
+  const benefits = [
+    "Confirmaciones automáticas",
+    "Recordatorios por WhatsApp",
+    "Recuperación de clientes",
+    "Agenda clara y ordenada",
+  ];
+
   return (
     <main className="min-h-screen bg-[#0b0f1a] text-white">
       {/* HERO */}
@@ -37,12 +56,11 @@ export default function OrbyxLandingPage() {
             
             {/* IZQUIERDA */}
             <div>
-              <div className="inline-flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 <img src="/orbyx-logo-dark.png" className="h-10" />
-
-                <div className="rounded-full bg-white/10 px-4 py-2 text-sm text-sky-400">
+                <span className="bg-white/10 px-4 py-2 rounded-full text-sm text-sky-400">
                   IA + automatización inteligente
-                </div>
+                </span>
               </div>
 
               <motion.h1
@@ -50,22 +68,23 @@ export default function OrbyxLandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-8 text-5xl font-semibold leading-tight"
               >
-                Automatiza tus reservas
+                Automatiza tus reservas con IA
                 <br />
-                <span className="text-blue-400">y llena tu agenda</span>
+                <span className="text-blue-400">
+                  y mantén tu agenda más activa
+                </span>
               </motion.h1>
 
               <p className="mt-6 text-lg text-slate-300 max-w-xl">
-                Orbyx responde por WhatsApp, agenda automáticamente y reactiva
-                clientes sin que tengas que hacer seguimiento manual.
+                Deja de coordinar reservas por WhatsApp manualmente. Orbyx
+                responde, propone horarios y agenda automáticamente.
+                <br />
+                Además, mantiene tu agenda activa con recordatorios y recuperación de clientes.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 {chips.map((c) => (
-                  <span
-                    key={c}
-                    className="rounded-full bg-white/10 px-4 py-2 text-sm"
-                  >
+                  <span key={c} className="bg-white/10 px-4 py-2 rounded-full text-sm">
                     {c}
                   </span>
                 ))}
@@ -86,27 +105,33 @@ export default function OrbyxLandingPage() {
                 })}
               </div>
 
-              <div className="mt-8 flex items-center gap-4">
+              {/* CTA + SOCIAL PROOF */}
+              <div className="mt-8 flex items-center gap-6">
                 <Link
                   href="/planes"
-                  className="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 font-semibold text-white shadow-lg hover:scale-105 transition"
+                  className="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 font-semibold shadow-lg hover:scale-105 transition"
                 >
                   Ver planes
                 </Link>
 
-                <div className="flex items-center gap-1 text-yellow-400">
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
+                <div>
+                  <div className="flex text-yellow-400">
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    +8.000 negocios nos prefieren
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* DERECHA FORM */}
+            {/* FORMULARIO */}
             <div className="rounded-2xl bg-[#111827] p-8 border border-white/10 shadow-xl">
-              <div className="inline-block rounded-full bg-blue-500/20 px-3 py-1 text-sm text-blue-400">
+              <div className="bg-blue-500/20 px-3 py-1 rounded-full text-sm text-blue-400 inline-block">
                 Prueba gratis 7 días
               </div>
 
@@ -115,20 +140,23 @@ export default function OrbyxLandingPage() {
               </h2>
 
               <form className="mt-6 space-y-3">
-                <input
-                  placeholder="Nombre"
-                  className="w-full h-12 rounded-lg bg-white/5 border border-white/10 px-3"
-                />
+                <select className="w-full h-12 rounded-lg bg-white/5 border border-white/10 px-3">
+                  <option>Tipo de negocio</option>
+                  {businessTypes.map((b) => (
+                    <option key={b}>{b}</option>
+                  ))}
+                </select>
 
-                <input
-                  placeholder="Email"
-                  className="w-full h-12 rounded-lg bg-white/5 border border-white/10 px-3"
-                />
+                <select className="w-full h-12 rounded-lg bg-white/5 border border-white/10 px-3">
+                  <option>Profesionales</option>
+                  {teamSizes.map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
 
-                <input
-                  placeholder="Teléfono"
-                  className="w-full h-12 rounded-lg bg-white/5 border border-white/10 px-3"
-                />
+                <input placeholder="Nombre" className="w-full h-12 rounded-lg bg-white/5 border border-white/10 px-3" />
+                <input placeholder="Email" className="w-full h-12 rounded-lg bg-white/5 border border-white/10 px-3" />
+                <input placeholder="Teléfono" className="w-full h-12 rounded-lg bg-white/5 border border-white/10 px-3" />
 
                 <button className="w-full h-12 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 font-semibold hover:scale-[1.02] transition">
                   Crear mi agenda
@@ -140,6 +168,31 @@ export default function OrbyxLandingPage() {
               </p>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* SEGUNDA SECCIÓN */}
+      <section className="py-16">
+        <div className="max-w-5xl mx-auto px-5 text-center">
+          <h2 className="text-3xl font-semibold">
+            Más que agenda, crecimiento real
+          </h2>
+
+          <p className="mt-4 text-slate-400">
+            Orbyx no solo agenda, también activa tu negocio automáticamente.
+          </p>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            {benefits.map((b) => (
+              <div
+                key={b}
+                className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-4"
+              >
+                <CheckCircle2 className="text-emerald-400" />
+                <span>{b}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
