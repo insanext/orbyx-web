@@ -64,8 +64,9 @@ export default function OrbyxLandingPage() {
               </div>
 
               <motion.h1
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
                 className="mt-8 text-5xl font-semibold leading-tight"
               >
                 Automatiza tus reservas con IA
@@ -76,11 +77,16 @@ export default function OrbyxLandingPage() {
               </motion.h1>
 
               <p className="mt-6 text-lg text-slate-300 max-w-xl">
-                Deja de coordinar reservas por WhatsApp manualmente. Orbyx
-                responde, propone horarios y agenda automáticamente.
+                Deja de coordinar reservas por WhatsApp manualmente. Orbyx responde,
+                propone horarios y agenda automáticamente.
                 <br />
                 Además, mantiene tu agenda activa con recordatorios y recuperación de clientes.
               </p>
+
+              {/* BADGE */}
+              <div className="mt-6 inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-full text-sm">
+                +24 reservas generadas esta semana
+              </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 {chips.map((c) => (
@@ -90,28 +96,34 @@ export default function OrbyxLandingPage() {
                 ))}
               </div>
 
+              {/* FEATURES */}
               <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3">
-                {features.map((f) => {
+                {features.map((f, i) => {
                   const Icon = f.icon;
                   return (
-                    <div
+                    <motion.div
                       key={f.title}
-                      className="rounded-xl bg-white/5 p-4 text-center border border-white/10"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.08 }}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                      className="rounded-xl bg-white/5 p-4 text-center border border-white/10 transition"
                     >
                       <Icon className="mx-auto mb-2 h-5 w-5 text-blue-400" />
                       <p className="text-sm">{f.title}</p>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
 
-              {/* CTA + SOCIAL PROOF */}
+              {/* CTA */}
               <div className="mt-8 flex items-center gap-6">
                 <Link
                   href="/planes"
-                  className="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 font-semibold shadow-lg hover:scale-105 transition"
+                  className="relative px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg transition hover:scale-105"
                 >
-                  Ver planes
+                  <span className="relative z-10">Ver planes</span>
+                  <div className="absolute inset-0 rounded-xl blur-xl opacity-40 bg-gradient-to-r from-blue-500 to-purple-500" />
                 </Link>
 
                 <div>
@@ -127,9 +139,13 @@ export default function OrbyxLandingPage() {
                   </p>
                 </div>
               </div>
+
+              <p className="text-sm text-slate-400 mt-3">
+                Empieza hoy y automatiza tus reservas en minutos
+              </p>
             </div>
 
-            {/* FORMULARIO */}
+            {/* FORM */}
             <div className="rounded-2xl bg-[#111827] p-8 border border-white/10 shadow-xl">
               <div className="bg-blue-500/20 px-3 py-1 rounded-full text-sm text-blue-400 inline-block">
                 Prueba gratis 7 días
@@ -164,7 +180,7 @@ export default function OrbyxLandingPage() {
               </form>
 
               <p className="mt-4 text-xs text-slate-400 text-center">
-                Sin tarjeta de crédito
+                Empieza en 30 segundos • Sin tarjeta de crédito
               </p>
             </div>
 
