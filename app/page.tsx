@@ -52,24 +52,16 @@ export default function OrbyxLandingPage() {
 
   return (
     <main className="min-h-screen bg-[#f4eff5] text-slate-900">
+      {/* HERO */}
       <section className="relative overflow-hidden bg-[#f4eff5]">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,#f8f4f7_0%,#f3eef4_38%,#efe9f2_68%,#ebe6ef_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,#f8f4f7_0%,#f3eef4_40%,#efe9f2_72%,#ebe6ef_100%)]" />
 
-        <div className="absolute right-[-8%] top-[6%] hidden h-[760px] w-[760px] rounded-full bg-[radial-gradient(circle,rgba(200,160,255,0.20)_0%,rgba(200,160,255,0.10)_28%,rgba(255,255,255,0)_72%)] blur-2xl lg:block" />
+        <div className="absolute right-[-10%] top-[4%] hidden h-[780px] w-[780px] rounded-full bg-[radial-gradient(circle,rgba(190,160,255,0.18)_0%,rgba(190,160,255,0.08)_34%,rgba(255,255,255,0)_72%)] blur-3xl lg:block" />
 
-        <div className="absolute inset-y-0 right-0 hidden w-[56%] lg:block">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_42%,rgba(255,255,255,0.62)_0%,rgba(255,255,255,0.18)_30%,rgba(255,255,255,0)_62%)]" />
-          <img
-            src="/hero-orbyx-composed.png"
-            alt="Vista principal Orbyx"
-            className="absolute right-[-2%] top-1/2 w-[980px] max-w-none -translate-y-1/2 object-contain"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(244,239,245,0.97)_0%,rgba(244,239,245,0.84)_18%,rgba(244,239,245,0.22)_44%,rgba(244,239,245,0)_67%)]" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl px-5 pb-12 pt-8 lg:px-8 lg:pb-16 lg:pt-10">
-          <div className="grid items-center gap-10 lg:grid-cols-[0.92fr_1.08fr]">
-            <div className="relative z-10 max-w-[660px]">
+        <div className="relative mx-auto max-w-7xl px-5 pb-10 pt-8 lg:px-8 lg:pb-6 lg:pt-10">
+          <div className="grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+            {/* TEXTO */}
+            <div className="relative z-10 max-w-[640px]">
               <div className="inline-flex items-center gap-3">
                 <div className="rounded-2xl bg-white px-3 py-2 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
                   <img
@@ -87,8 +79,8 @@ export default function OrbyxLandingPage() {
               <motion.h1
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="mt-8 text-[48px] font-semibold leading-[1.02] tracking-[-0.03em] text-slate-900 sm:text-[58px] lg:text-[66px]"
+                transition={{ duration: 0.45 }}
+                className="mt-8 text-[46px] font-semibold leading-[1.02] tracking-[-0.03em] text-slate-900 sm:text-[56px] lg:text-[66px]"
               >
                 Automatiza tus
                 <br />
@@ -148,52 +140,28 @@ export default function OrbyxLandingPage() {
               </div>
             </div>
 
-            <div className="relative z-10 lg:min-h-[760px]">
-              <div className="flex justify-center pt-6 lg:hidden">
-                <img
-                  src="/hero-orbyx-composed.png"
-                  alt="Vista principal Orbyx"
-                  className="w-full max-w-[720px] object-contain"
-                />
+            {/* IMAGEN */}
+            <div className="relative flex items-center justify-center lg:min-h-[720px] lg:justify-end">
+              <div className="absolute inset-0 hidden lg:block">
+                <div className="absolute left-[6%] top-1/2 h-[620px] w-[620px] -translate-y-1/2 rounded-full border border-white/35" />
+                <div className="absolute left-[10%] top-1/2 h-[540px] w-[540px] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.10)_40%,rgba(255,255,255,0)_72%)]" />
               </div>
 
-              <div className="absolute left-[5%] top-[18%] hidden rounded-full bg-white/75 px-6 py-4 text-slate-700 shadow-[0_16px_40px_rgba(255,255,255,0.35)] backdrop-blur md:flex lg:left-[2%]">
-                <div className="flex items-center gap-3 text-[18px] font-medium">
-                  <span className="text-3xl text-emerald-500">✓</span>
-                  IA agendó nueva reserva
-                </div>
-              </div>
-
-              <div className="absolute left-[3%] top-[31%] hidden rounded-[999px] bg-white/82 px-8 py-5 text-slate-800 shadow-[0_16px_40px_rgba(255,255,255,0.32)] backdrop-blur md:block lg:left-[0%]">
-                <div className="flex items-start gap-3">
-                  <span className="text-[52px] leading-none text-emerald-500">
-                    +
-                  </span>
-                  <div className="leading-tight">
-                    <div className="text-[42px] font-semibold">24 reservas</div>
-                    <div className="text-[18px] text-slate-600">
-                      esta semana
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absolute bottom-[4%] right-[8%] hidden lg:block">
-                <Link
-                  href="/planes"
-                  className="flex h-16 min-w-[360px] items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,#172554_0%,#312e81_38%,#7c3aed_72%,#ec4899_100%)] px-12 text-[18px] font-semibold text-white shadow-[0_18px_40px_rgba(76,29,149,0.35)] transition hover:scale-[1.02]"
-                >
-                  Ver planes
-                </Link>
-              </div>
+              <img
+                src="/hero-orbyx-composed.png"
+                alt="Vista principal Orbyx"
+                className="relative z-10 w-full max-w-[880px] object-contain lg:translate-x-8"
+              />
             </div>
           </div>
         </div>
       </section>
 
+      {/* BLOQUE INFERIOR */}
       <section className="relative pb-16 pt-2">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
+            {/* FORMULARIO */}
             <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,#18284f_0%,#223a76_36%,#1c2254_100%)] p-6 text-white shadow-[0_30px_80px_rgba(15,23,42,0.22)] sm:p-7">
               <div className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-sky-100">
                 Empieza gratis por 7 días
@@ -248,7 +216,10 @@ export default function OrbyxLandingPage() {
                   className="h-12 w-full rounded-xl border border-white/10 bg-white/10 px-3 text-sm text-white outline-none placeholder:text-slate-300 transition focus:border-sky-300 focus:ring-4 focus:ring-sky-400/20"
                 />
 
-                <button className="mt-2 h-12 w-full rounded-xl bg-[linear-gradient(135deg,#2563eb_0%,#3b82f6_100%)] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(37,99,235,0.35)] transition hover:brightness-110">
+                <button
+                  type="button"
+                  className="mt-2 h-12 w-full rounded-xl bg-[linear-gradient(135deg,#2563eb_0%,#3b82f6_100%)] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(37,99,235,0.35)] transition hover:brightness-110"
+                >
                   Crear mi agenda
                 </button>
               </form>
@@ -259,6 +230,7 @@ export default function OrbyxLandingPage() {
               </p>
             </div>
 
+            {/* BENEFICIOS */}
             <div className="rounded-[30px] bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
               <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700">
                 <MessageSquareText className="h-4 w-4" />
