@@ -1,37 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
-  BarChart3,
   Check,
-  Clock3,
-  Crown,
-  MessageCircle,
+  X,
   Sparkles,
-  Wand2,
+  Clock3,
+  MessageCircle,
+  BarChart3,
+  Crown,
+  Gem,
+  ArrowUp,
 } from "lucide-react";
 
+type PlanKey = "starter" | "pro" | "premium" | "vip" | "platinum";
+
 type Plan = {
-  key: string;
+  key: PlanKey;
   name: string;
   price: string;
-  period: string;
+  iva: string;
   description: string;
   badge?: string;
-  cta: string;
   href: string;
+  cta: string;
   comingSoon?: boolean;
-  icon: "starter" | "pro" | "premium" | "vip" | "vipplus";
-  gradient: string;
-  softBg: string;
-  ring: string;
-  button: string;
-  badgeClass: string;
-  iconWrap: string;
-  items: string[];
+  icon: "starter" | "pro" | "premium" | "vip" | "platinum";
+  headerGradient: string;
+  selectedBg: string;
+  selectedRing: string;
+  buttonClass: string;
+};
+
+type FeatureRow = {
+  label: string;
+  values: Record<PlanKey, boolean | string>;
+  highlight?: boolean;
 };
 
 const plans: Plan[] = [
@@ -39,186 +45,346 @@ const plans: Plan[] = [
     key: "starter",
     name: "Starter",
     price: "$9.990",
-    period: "/mes",
+    iva: "+ IVA / mes",
     description:
-      "Para independientes o negocios pequeños que quieren comenzar a ordenar su agenda.",
+      "Para comenzar a ordenar tu agenda y dar una mejor imagen a tu negocio.",
     badge: "Para comenzar",
-    cta: "Comenzar con Starter",
     href: "/signup?plan=starter",
+    cta: "Elegir Starter",
     icon: "starter",
-    gradient: "from-cyan-500 via-sky-500 to-blue-600",
-    softBg: "bg-cyan-50/80",
-    ring: "ring-cyan-300",
-    button: "bg-cyan-600 hover:bg-cyan-700",
-    badgeClass: "bg-cyan-100 text-cyan-800 border border-cyan-200",
-    iconWrap: "bg-cyan-500 text-white shadow-cyan-200",
-    items: [
-      "1 profesional activo",
-      "Hasta 3 servicios",
-      "Página de reservas online",
-      "Confirmación automática por correo",
-      "Cancelación de citas",
-      "Botón de reserva para redes",
-      "Conexión con Google Calendar",
-      "Panel básico de agenda",
-    ],
+    headerGradient: "from-cyan-500 via-sky-500 to-blue-600",
+    selectedBg: "bg-cyan-50",
+    selectedRing: "ring-cyan-300",
+    buttonClass: "bg-cyan-600 hover:bg-cyan-700",
   },
   {
     key: "pro",
     name: "Pro",
     price: "$19.990",
-    period: "/mes",
+    iva: "+ IVA / mes",
     description:
-      "Para negocios que ya tienen flujo constante y necesitan más orden, recordatorios y control.",
+      "Para negocios con más movimiento que necesitan recordatorios, orden y control.",
     badge: "Más elegido",
-    cta: "Elegir Pro",
     href: "/signup?plan=pro",
+    cta: "Elegir Pro",
     icon: "pro",
-    gradient: "from-blue-500 via-indigo-500 to-violet-600",
-    softBg: "bg-blue-50/80",
-    ring: "ring-blue-300",
-    button: "bg-blue-600 hover:bg-blue-700",
-    badgeClass: "bg-blue-600 text-white border border-blue-600",
-    iconWrap: "bg-blue-600 text-white shadow-blue-200",
-    items: [
-      "Hasta 3 profesionales activos",
-      "Hasta 10 servicios",
-      "Todo lo de Starter",
-      "Panel completo de gestión",
-      "Recordatorios automáticos por correo",
-      "Recordatorios por WhatsApp",
-      "Estadísticas básicas",
-      "Mejor experiencia para el negocio y sus clientes",
-    ],
+    headerGradient: "from-blue-500 via-indigo-500 to-violet-600",
+    selectedBg: "bg-blue-50",
+    selectedRing: "ring-blue-300",
+    buttonClass: "bg-blue-600 hover:bg-blue-700",
   },
   {
     key: "premium",
     name: "Premium",
-    price: "$39.990",
-    period: "/mes",
+    price: "$34.990",
+    iva: "+ IVA / mes",
     description:
-      "Para negocios que quieren automatizar más, mejorar la experiencia y empezar a apoyarse en IA.",
+      "Para negocios que quieren más automatización, estadísticas e IA para optimizar la agenda.",
     badge: "Más automatización",
-    cta: "Elegir Premium",
     href: "/signup?plan=premium",
+    cta: "Elegir Premium",
     icon: "premium",
-    gradient: "from-fuchsia-500 via-purple-500 to-indigo-600",
-    softBg: "bg-fuchsia-50/80",
-    ring: "ring-fuchsia-300",
-    button: "bg-fuchsia-600 hover:bg-fuchsia-700",
-    badgeClass: "bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200",
-    iconWrap: "bg-fuchsia-600 text-white shadow-fuchsia-200",
-    items: [
-      "Hasta 10 profesionales activos",
-      "Hasta 25 servicios",
-      "Todo lo de Pro",
-      "Historial y gestión de clientes",
-      "Personalización de la página de reservas",
-      "Estadísticas avanzadas",
-      "Soporte prioritario",
-      "IA que detecta horarios vacíos y sugiere cómo llenarlos",
-    ],
+    headerGradient: "from-fuchsia-500 via-purple-500 to-indigo-600",
+    selectedBg: "bg-fuchsia-50",
+    selectedRing: "ring-fuchsia-300",
+    buttonClass: "bg-fuchsia-600 hover:bg-fuchsia-700",
   },
   {
     key: "vip",
     name: "VIP",
-    price: "$59.990",
-    period: "/mes",
+    price: "$54.990",
+    iva: "+ IVA / mes",
     description:
-      "Para negocios que quieren usar automatización avanzada para vender más y depender menos de coordinación manual.",
+      "Para negocios que quieren automatización avanzada, IA por WhatsApp y más crecimiento.",
     badge: "Más crecimiento",
-    cta: "Elegir VIP",
     href: "/signup?plan=vip",
+    cta: "Elegir VIP",
     icon: "vip",
-    gradient: "from-amber-400 via-orange-500 to-rose-500",
-    softBg: "bg-orange-50/80",
-    ring: "ring-orange-300",
-    button: "bg-orange-600 hover:bg-orange-700",
-    badgeClass: "bg-orange-100 text-orange-800 border border-orange-200",
-    iconWrap: "bg-orange-500 text-white shadow-orange-200",
-    items: [
-      "Hasta 20 profesionales activos",
-      "Servicios ampliados",
-      "Todo lo de Premium",
-      "IA por WhatsApp para responder y agendar",
-      "Lista de espera inteligente",
-      "Avisos inteligentes para reactivar clientes",
-      "Sugerencias de promociones para llenar horas vacías",
-      "Onboarding personalizado",
-    ],
+    headerGradient: "from-amber-400 via-orange-500 to-rose-500",
+    selectedBg: "bg-orange-50",
+    selectedRing: "ring-orange-300",
+    buttonClass: "bg-orange-600 hover:bg-orange-700",
   },
   {
-    key: "vipplus",
-    name: "VIP+",
+    key: "platinum",
+    name: "Platinum",
     price: "Próximamente",
-    period: "",
+    iva: "Plan personalizado",
     description:
-      "Un plan más personalizado para negocios que quieren acompañamiento más cercano, campañas y automatización avanzada.",
+      "Para negocios que quieren acompañamiento estratégico, marketing y personalización avanzada.",
     badge: "Próximamente",
-    cta: "Muy pronto",
-    href: "#",
+    href: "#planes",
+    cta: "Próximamente",
     comingSoon: true,
-    icon: "vipplus",
-    gradient: "from-slate-500 via-zinc-600 to-slate-800",
-    softBg: "bg-slate-100/90",
-    ring: "ring-slate-300",
-    button: "bg-slate-600 hover:bg-slate-700",
-    badgeClass: "bg-slate-200 text-slate-700 border border-slate-300",
-    iconWrap: "bg-slate-700 text-white shadow-slate-200",
-    items: [
-      "Todo lo de VIP",
-      "Configuración más personalizada",
-      "Automatizaciones más avanzadas",
-      "Mayor acompañamiento",
-      "Enfoque más consultivo y estratégico",
-    ],
+    icon: "platinum",
+    headerGradient: "from-slate-500 via-zinc-600 to-slate-800",
+    selectedBg: "bg-slate-100",
+    selectedRing: "ring-slate-300",
+    buttonClass: "bg-slate-600 hover:bg-slate-700",
   },
 ];
 
-const comparisonRows = [
+const featureRows: FeatureRow[] = [
+  {
+    label: "Precio mensual",
+    highlight: true,
+    values: {
+      starter: "$9.990",
+      pro: "$19.990",
+      premium: "$34.990",
+      vip: "$54.990",
+      platinum: "Próximamente",
+    },
+  },
+  {
+    label: "IVA",
+    values: {
+      starter: "+ IVA",
+      pro: "+ IVA",
+      premium: "+ IVA",
+      vip: "+ IVA",
+      platinum: "Personalizado",
+    },
+  },
   {
     label: "Profesionales activos",
-    values: ["1", "3", "10", "20", "Próximamente"],
+    values: {
+      starter: "1",
+      pro: "3",
+      premium: "10",
+      vip: "20",
+      platinum: "Personalizado",
+    },
   },
   {
     label: "Servicios",
-    values: ["3", "10", "25", "Ampliados", "Próximamente"],
+    values: {
+      starter: "3",
+      pro: "10",
+      premium: "25",
+      vip: "Ampliados",
+      platinum: "Personalizado",
+    },
   },
   {
-    label: "Página de reservas online",
-    values: ["Sí", "Sí", "Sí", "Sí", "Sí"],
+    label: "Página pública de reservas",
+    values: {
+      starter: true,
+      pro: true,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
   },
   {
-    label: "Google Calendar",
-    values: ["Sí", "Sí", "Sí", "Sí", "Sí"],
+    label: "Confirmación automática por correo",
+    values: {
+      starter: true,
+      pro: true,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
   },
   {
-    label: "Recordatorios por correo",
-    values: ["Sí", "Sí", "Sí", "Sí", "Sí"],
+    label: "Cancelación de reservas",
+    values: {
+      starter: true,
+      pro: true,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
   },
   {
-    label: "Recordatorios por WhatsApp",
-    values: ["No", "Sí", "Sí", "Sí", "Sí"],
+    label: "Conexión con Google Calendar",
+    values: {
+      starter: true,
+      pro: true,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
   },
   {
-    label: "Estadísticas",
-    values: ["Básicas", "Básicas", "Avanzadas", "Avanzadas", "Avanzadas"],
+    label: "Botón “Reservar ahora” para redes",
+    values: {
+      starter: true,
+      pro: true,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
   },
   {
-    label: "IA para mejorar la agenda",
-    values: ["No", "No", "Sí", "Sí", "Sí"],
+    label: "Recordatorios automáticos por correo",
+    values: {
+      starter: false,
+      pro: true,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
   },
   {
-    label: "IA por WhatsApp para agendar",
-    values: ["No", "No", "No", "Sí", "Sí"],
+    label: "Recordatorios automáticos por WhatsApp",
+    values: {
+      starter: false,
+      pro: true,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "Panel de gestión de reservas",
+    values: {
+      starter: "Básico",
+      pro: "Completo",
+      premium: "Completo",
+      vip: "Completo",
+      platinum: "Completo",
+    },
+  },
+  {
+    label: "Estadísticas del negocio",
+    values: {
+      starter: false,
+      pro: "Básicas",
+      premium: "Avanzadas",
+      vip: "Avanzadas",
+      platinum: "Avanzadas",
+    },
+  },
+  {
+    label: "Gestión de clientes (historial y visitas)",
+    values: {
+      starter: false,
+      pro: false,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "IA para optimizar agenda y llenar horas vacías",
+    values: {
+      starter: false,
+      pro: false,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "IA por WhatsApp que responde y agenda automáticamente",
+    values: {
+      starter: false,
+      pro: false,
+      premium: false,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "Personalización visual de la página de reservas",
+    values: {
+      starter: false,
+      pro: false,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "Soporte prioritario",
+    values: {
+      starter: false,
+      pro: false,
+      premium: true,
+      vip: true,
+      platinum: true,
+    },
   },
   {
     label: "Lista de espera inteligente",
-    values: ["No", "No", "No", "Sí", "Sí"],
+    values: {
+      starter: false,
+      pro: false,
+      premium: false,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "Avisos automáticos cuando un cliente suele volver",
+    values: {
+      starter: false,
+      pro: false,
+      premium: false,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "Campañas automáticas para recuperar clientes inactivos",
+    values: {
+      starter: false,
+      pro: false,
+      premium: false,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "IA que sugiere promociones para aumentar reservas",
+    values: {
+      starter: false,
+      pro: false,
+      premium: false,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "Dominio propio para la página de reservas",
+    values: {
+      starter: false,
+      pro: false,
+      premium: false,
+      vip: true,
+      platinum: true,
+    },
   },
   {
     label: "Onboarding personalizado",
-    values: ["No", "No", "No", "Sí", "Sí"],
+    values: {
+      starter: false,
+      pro: false,
+      premium: false,
+      vip: true,
+      platinum: true,
+    },
+  },
+  {
+    label: "Enfoque estratégico en marketing",
+    values: {
+      starter: false,
+      pro: false,
+      premium: false,
+      vip: false,
+      platinum: true,
+    },
+  },
+  {
+    label: "Automatizaciones y personalización avanzada",
+    values: {
+      starter: false,
+      pro: false,
+      premium: false,
+      vip: false,
+      platinum: true,
+    },
   },
 ];
 
@@ -227,22 +393,45 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
   if (type === "pro") return <MessageCircle className="h-5 w-5" />;
   if (type === "premium") return <BarChart3 className="h-5 w-5" />;
   if (type === "vip") return <Crown className="h-5 w-5" />;
-  return <Wand2 className="h-5 w-5" />;
+  return <Gem className="h-5 w-5" />;
+}
+
+function CellValue({
+  value,
+  selected,
+}: {
+  value: boolean | string;
+  selected: boolean;
+}) {
+  if (typeof value === "boolean") {
+    return value ? (
+      <div className="flex justify-center">
+        <Check
+          className={`h-5 w-5 ${selected ? "text-emerald-600" : "text-emerald-400"}`}
+        />
+      </div>
+    ) : (
+      <div className="flex justify-center">
+        <X className={`h-5 w-5 ${selected ? "text-slate-400" : "text-slate-600"}`} />
+      </div>
+    );
+  }
+
+  return (
+    <span className={`text-sm font-medium ${selected ? "text-slate-900" : "text-slate-200"}`}>
+      {value}
+    </span>
+  );
 }
 
 export default function PlanesPage() {
-  const [selectedPlan, setSelectedPlan] = useState<string>("pro");
-
-  const currentPlan = useMemo(
-    () => plans.find((p) => p.key === selectedPlan) ?? plans[1],
-    [selectedPlan]
-  );
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("pro");
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen bg-slate-950 text-white">
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_28%),radial-gradient(circle_at_top_right,rgba(217,70,239,0.18),transparent_25%),radial-gradient(circle_at_bottom,rgba(249,115,22,0.16),transparent_25%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(15,23,42,0.6),rgba(2,6,23,0.95))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(15,23,42,0.65),rgba(2,6,23,0.96))]" />
 
         <div className="relative mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-4xl text-center">
@@ -257,7 +446,7 @@ export default function PlanesPage() {
               transition={{ duration: 0.4 }}
               className="mt-6 text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl"
             >
-              Elige el plan ideal para ordenar, automatizar y hacer crecer tu agenda.
+              Compara planes y elige el que mejor se adapte a tu negocio.
             </motion.h1>
 
             <motion.p
@@ -266,317 +455,166 @@ export default function PlanesPage() {
               transition={{ duration: 0.4, delay: 0.06 }}
               className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-slate-300"
             >
-              Orbyx no solo te ayuda a gestionar reservas. También te ayuda a responder
-              más rápido, reducir horas vacías y dar una imagen más profesional a tu negocio.
+              Un mismo producto, distintos niveles de capacidad, automatización e inteligencia para ayudarte a gestionar y hacer crecer tu agenda.
             </motion.p>
-
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="#planes"
-                className="inline-flex h-12 items-center justify-center rounded-2xl bg-white px-6 text-sm font-medium text-slate-900 transition hover:bg-slate-100"
-              >
-                Ver planes
-              </Link>
-
-              <Link
-                href="/"
-                className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-6 text-sm font-medium text-white transition hover:bg-white/15"
-              >
-                Volver al inicio
-              </Link>
-            </div>
-
-            <div className="mt-8 inline-flex rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm text-amber-100">
-              Puedes mostrar tus precios con IVA incluido o como + IVA, pero te conviene ser consistente en toda la web.
-            </div>
           </div>
         </div>
       </section>
 
-      <section id="planes" className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-            Una oferta clara
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Un solo producto, distintos niveles de crecimiento
-          </h2>
-          <p className="mt-4 text-lg leading-8 text-slate-300">
-            Todos los planes usan el mismo panel. A medida que creces, desbloqueas
-            más capacidad y más automatización.
-          </p>
-        </div>
+      <section id="planes" className="mx-auto max-w-7xl px-4 pb-12 lg:px-8">
+        <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-[1100px] w-full border-collapse text-left">
+              <thead>
+                <tr className="bg-white/8">
+                  <th className="sticky left-0 z-20 min-w-[280px] border-b border-white/10 bg-slate-950/95 px-5 py-5 text-base font-semibold text-white backdrop-blur">
+                    Características
+                  </th>
 
-        <div className="mt-10 grid gap-6 xl:grid-cols-5">
-          {plans.map((plan, index) => {
-            const isSelected = selectedPlan === plan.key;
+                  {plans.map((plan) => {
+                    const isSelected = selectedPlan === plan.key;
 
-            return (
-              <motion.div
-                key={plan.key}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.35, delay: index * 0.05 }}
-                className={`group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-sm transition-all ${
-                  isSelected
-                    ? `scale-[1.02] ring-2 ${plan.ring}`
-                    : "hover:-translate-y-1 hover:border-white/20"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlan(plan.key)}
-                  className="absolute inset-0 z-10"
-                  aria-label={`Seleccionar plan ${plan.name}`}
-                />
-
-                <div className={`h-2 w-full bg-gradient-to-r ${plan.gradient}`} />
-
-                <div className={`relative z-20 p-7 ${isSelected ? plan.softBg : ""}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      {plan.badge ? (
-                        <div
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${plan.badgeClass}`}
-                        >
-                          {plan.badge}
-                        </div>
-                      ) : null}
-
-                      <div className="mt-4 flex items-center gap-3">
-                        <div
-                          className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg ${plan.iconWrap}`}
-                        >
-                          <PlanIcon type={plan.icon} />
-                        </div>
-
-                        <div>
-                          <h3 className="text-2xl font-semibold text-slate-900">
-                            {isSelected ? (
-                              <span className="text-slate-900">{plan.name}</span>
-                            ) : (
-                              <span className="text-white">{plan.name}</span>
-                            )}
-                          </h3>
-                          {isSelected ? (
-                            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-600">
-                              Seleccionado
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p
-                    className={`mt-4 min-h-[88px] text-sm leading-6 ${
-                      isSelected ? "text-slate-700" : "text-slate-300"
-                    }`}
-                  >
-                    {plan.description}
-                  </p>
-
-                  <div className="mt-6 flex items-end gap-1">
-                    <span
-                      className={`text-4xl font-semibold tracking-tight ${
-                        isSelected ? "text-slate-900" : "text-white"
-                      }`}
-                    >
-                      {plan.price}
-                    </span>
-                    {plan.period ? (
-                      <span className={`pb-1 text-sm ${isSelected ? "text-slate-600" : "text-slate-400"}`}>
-                        {plan.period}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-6 space-y-3">
-                    {plan.items.map((item) => (
-                      <div
-                        key={item}
-                        className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${
-                          isSelected
-                            ? "border-slate-200 bg-white text-slate-800"
-                            : "border-white/10 bg-white/5 text-slate-200"
+                    return (
+                      <th
+                        key={plan.key}
+                        className={`min-w-[180px] border-b border-l border-white/10 align-top transition ${
+                          isSelected ? `${plan.selectedBg} ${plan.selectedRing} ring-2` : "bg-transparent"
                         }`}
                       >
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                        <span className="text-sm">{item}</span>
-                      </div>
-                    ))}
-                  </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPlan(plan.key)}
+                          className="w-full p-4 text-left"
+                        >
+                          <div className={`h-2 rounded-full bg-gradient-to-r ${plan.headerGradient}`} />
+                          <div className="mt-4">
+                            {plan.badge ? (
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                  isSelected
+                                    ? "bg-white text-slate-900"
+                                    : "bg-white/12 text-white"
+                                }`}
+                              >
+                                {plan.badge}
+                              </span>
+                            ) : null}
 
-                  {plan.comingSoon ? (
-                    <button
-                      type="button"
-                      disabled
-                      className="mt-7 inline-flex h-12 w-full cursor-not-allowed items-center justify-center rounded-2xl border border-white/10 bg-white/10 px-5 text-sm font-medium text-slate-300"
-                    >
-                      Próximamente
-                    </button>
-                  ) : (
-                    <Link
-                      href={plan.href}
-                      className={`relative z-20 mt-7 inline-flex h-12 w-full items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition ${plan.button}`}
-                    >
-                      {plan.cta}
-                    </Link>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
+                            <div className="mt-4 flex items-center gap-3">
+                              <div
+                                className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${
+                                  isSelected ? "bg-white text-slate-900" : "bg-white/10 text-white"
+                                }`}
+                              >
+                                <PlanIcon type={plan.icon} />
+                              </div>
+                              <div>
+                                <div className={`text-2xl font-semibold ${isSelected ? "text-slate-900" : "text-white"}`}>
+                                  {plan.name}
+                                </div>
+                                {isSelected ? (
+                                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                                    Seleccionado
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-4 lg:px-8">
-        <div className="rounded-[30px] border border-white/10 bg-gradient-to-r from-sky-500/15 via-fuchsia-500/10 to-orange-500/15 p-6 backdrop-blur-sm">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-            Plan destacado ahora
-          </p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">
-            {currentPlan.name}
-          </h3>
-          <p className="mt-2 max-w-3xl text-slate-300">
-            {currentPlan.description}
-          </p>
-        </div>
-      </section>
+                            <div className={`mt-4 text-3xl font-bold ${isSelected ? "text-slate-900" : "text-white"}`}>
+                              {plan.price}
+                            </div>
+                            <div className={`mt-1 text-xs font-medium ${isSelected ? "text-slate-600" : "text-slate-300"}`}>
+                              {plan.iva}
+                            </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-        <div className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-sm">
-          <div className="border-b border-white/10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-              Comparativa rápida
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Qué cambia a medida que subes de plan
-            </h2>
-            <p className="mt-3 text-slate-300">
-              Más capacidad, más automatización y más herramientas para crecer.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-white/10">
-                <tr>
-                  <th className="px-5 py-4 font-semibold text-white">Característica</th>
-                  <th className="px-5 py-4 font-semibold text-cyan-200">Starter</th>
-                  <th className="px-5 py-4 font-semibold text-blue-200">Pro</th>
-                  <th className="px-5 py-4 font-semibold text-fuchsia-200">Premium</th>
-                  <th className="px-5 py-4 font-semibold text-orange-200">VIP</th>
-                  <th className="px-5 py-4 font-semibold text-slate-200">VIP+</th>
+                            <p className={`mt-4 text-sm leading-6 ${isSelected ? "text-slate-700" : "text-slate-300"}`}>
+                              {plan.description}
+                            </p>
+                          </div>
+                        </button>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
+
               <tbody>
-                {comparisonRows.map((row, index) => (
+                {featureRows.map((row, idx) => (
                   <tr
                     key={row.label}
-                    className={index % 2 === 0 ? "bg-white/[0.03]" : "bg-white/[0.06]"}
+                    className={idx % 2 === 0 ? "bg-white/[0.03]" : "bg-white/[0.06]"}
                   >
-                    <td className="px-5 py-4 font-medium text-white">{row.label}</td>
-                    {row.values.map((value, valueIndex) => (
-                      <td key={`${row.label}-${valueIndex}`} className="px-5 py-4 text-slate-300">
-                        {value}
-                      </td>
-                    ))}
+                    <td className="sticky left-0 z-10 border-b border-white/10 bg-slate-950/95 px-5 py-4 text-sm font-medium text-white backdrop-blur">
+                      {row.label}
+                    </td>
+
+                    {plans.map((plan) => {
+                      const isSelected = selectedPlan === plan.key;
+
+                      return (
+                        <td
+                          key={`${row.label}-${plan.key}`}
+                          className={`border-b border-l border-white/10 px-4 py-4 text-center transition ${
+                            isSelected ? `${plan.selectedBg}` : ""
+                          }`}
+                        >
+                          <CellValue value={row.values[plan.key]} selected={isSelected} />
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
+
+                <tr className="bg-white/[0.04]">
+                  <td className="sticky left-0 z-10 border-t border-white/10 bg-slate-950/95 px-5 py-5 text-sm font-semibold text-white backdrop-blur">
+                    Elegir plan
+                  </td>
+
+                  {plans.map((plan) => {
+                    const isSelected = selectedPlan === plan.key;
+
+                    return (
+                      <td
+                        key={`cta-${plan.key}`}
+                        className={`border-t border-l border-white/10 px-4 py-5 text-center ${
+                          isSelected ? `${plan.selectedBg}` : ""
+                        }`}
+                      >
+                        {plan.comingSoon ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-slate-300 bg-slate-200 px-4 text-sm font-semibold text-slate-500"
+                          >
+                            Próximamente
+                          </button>
+                        ) : (
+                          <Link
+                            href={plan.href}
+                            className={`inline-flex h-11 w-full items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white transition ${plan.buttonClass}`}
+                          >
+                            {plan.cta}
+                          </Link>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-2 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-[30px] border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-sky-500/10 p-8 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
-              En qué se diferencia Orbyx
-            </p>
-            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-              No solo agendas: te ayudamos a llenar tu agenda
-            </h3>
-
-            <div className="mt-6 space-y-3">
-              {[
-                "Tus clientes pueden reservar sin tanto ida y vuelta.",
-                "Tu negocio se ve más profesional desde el primer contacto.",
-                "La automatización reduce olvidos, ausencias y desorden.",
-                "En planes más altos, la IA ayuda a detectar oportunidades y llenar horas vacías.",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="flex items-start gap-3 rounded-2xl border border-cyan-400/15 bg-white/5 px-4 py-3"
-                >
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                  <span className="text-sm text-slate-200">{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[30px] border border-fuchsia-400/20 bg-gradient-to-br from-fuchsia-500/10 to-orange-500/10 p-8 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-fuchsia-300">
-              Próximo nivel
-            </p>
-            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-              El objetivo es que cada upgrade tenga sentido
-            </h3>
-            <p className="mt-4 leading-7 text-slate-300">
-              Todos los negocios empiezan con lo esencial. A medida que crecen,
-              necesitan más profesionales, más servicios, más control y más
-              automatización. Por eso Orbyx mantiene el mismo panel y desbloquea
-              más capacidades según el plan.
-            </p>
-
-            <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
-              <p className="text-sm font-semibold text-white">
-                ¿Subes o bajas de plan después?
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                No se pierden tus datos. Solo se ajustan límites y funciones
-                disponibles según el plan activo.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 pb-16 pt-12 lg:px-8">
-        <div className="mx-auto max-w-6xl overflow-hidden rounded-[34px] border border-white/10 bg-gradient-to-r from-cyan-600 via-blue-600 to-fuchsia-600 p-[1px] shadow-[0_25px_60px_rgba(0,0,0,0.3)]">
-          <div className="rounded-[33px] bg-slate-950 px-8 py-10 text-center text-white sm:p-12">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">
-              Comenzar
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
-              Empieza con el plan que te haga sentido hoy
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-              Y cuando necesites más capacidad o más automatización, subes de plan
-              dentro del mismo producto.
-            </p>
-
-            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href={`/signup?plan=${selectedPlan === "vipplus" ? "pro" : selectedPlan}`}
-                className="inline-flex h-12 items-center justify-center rounded-2xl bg-white px-6 text-sm font-medium text-slate-900 transition hover:bg-slate-100"
-              >
-                Empezar con {selectedPlan === "vipplus" ? "Pro" : currentPlan.name}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-
-              <Link
-                href="/"
-                className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-6 text-sm font-medium text-white transition hover:bg-white/15"
-              >
-                Ver inicio
-              </Link>
-            </div>
-          </div>
+      <section className="pb-14">
+        <div className="mx-auto flex max-w-7xl justify-center px-6 lg:px-8">
+          <a
+            href="#planes"
+            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+          >
+            <ArrowUp className="h-4 w-4" />
+            Volver a los planes
+          </a>
         </div>
       </section>
     </main>
