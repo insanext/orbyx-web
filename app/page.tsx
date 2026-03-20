@@ -21,7 +21,7 @@ export default function OrbyxLandingPage() {
     },
     {
       title: "La IA propone horarios",
-      text: "Orbyx pregunta preferencias, revisa disponibilidad y ofrece opciones reales.",
+      text: "Orbyx pregunta si prefiere mañana o tarde, revisa disponibilidad y ofrece opciones reales.",
     },
     {
       title: "La reserva queda confirmada",
@@ -32,8 +32,8 @@ export default function OrbyxLandingPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_28%),radial-gradient(circle_at_top_right,rgba(217,70,239,0.16),transparent_24%),radial-gradient(circle_at_bottom,rgba(249,115,22,0.14),transparent_24%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(15,23,42,0.72),rgba(2,6,23,0.96))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_28%),radial-gradient(circle_at_top_right,rgba(217,70,239,0.14),transparent_24%),radial-gradient(circle_at_bottom,rgba(249,115,22,0.12),transparent_22%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(15,23,42,0.74),rgba(2,6,23,0.97))]" />
 
         <div className="relative mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-20">
           <div className="grid items-center gap-12 lg:grid-cols-2">
@@ -74,16 +74,16 @@ export default function OrbyxLandingPage() {
                 recordatorios y recuperación de clientes.
               </motion.p>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
                 <a
                   href="/demo"
-                  className="inline-flex items-center justify-center rounded-2xl bg-sky-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-sky-400"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-sky-500 px-7 text-base font-semibold text-white shadow-[0_12px_30px_rgba(14,165,233,0.28)] transition hover:-translate-y-0.5 hover:bg-sky-400"
                 >
                   Ver en acción
                 </a>
                 <a
                   href="/planes"
-                  className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/15"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-7 text-base font-semibold text-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-white/15"
                 >
                   Ver planes
                 </a>
@@ -108,12 +108,48 @@ export default function OrbyxLandingPage() {
               transition={{ duration: 0.55, delay: 0.12 }}
               className="lg:ml-auto"
             >
-              <div className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur">
-                <img
-                  src="/hero-whatsapp-ai.png"
-                  alt="Orbyx automatiza reservas por WhatsApp con IA"
-                  className="h-auto w-full object-cover"
-                />
+              <div className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur">
+                <div className="rounded-[26px] border border-white/10 bg-slate-900/80 p-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                        Conversación con IA
+                      </p>
+                      <h3 className="mt-1 text-lg font-semibold text-white">
+                        Reserva por WhatsApp
+                      </h3>
+                    </div>
+                    <div className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-medium text-emerald-300">
+                      Activo
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-emerald-500 px-4 py-3 text-sm text-white shadow-sm">
+                      Hola, quiero una hora
+                    </div>
+
+                    <div className="max-w-[88%] rounded-2xl rounded-bl-md bg-slate-800 px-4 py-3 text-sm text-slate-100 shadow-sm">
+                      Claro. ¿Prefieres horarios en la mañana o en la tarde?
+                    </div>
+
+                    <div className="ml-auto max-w-[70%] rounded-2xl rounded-br-md bg-emerald-500 px-4 py-3 text-sm text-white shadow-sm">
+                      En la mañana
+                    </div>
+
+                    <div className="max-w-[88%] rounded-2xl rounded-bl-md bg-slate-800 px-4 py-3 text-sm text-slate-100 shadow-sm">
+                      Muy bien. Tengo disponible a las 8:30 y a las 10:00 hrs.
+                    </div>
+
+                    <div className="ml-auto max-w-[70%] rounded-2xl rounded-br-md bg-emerald-500 px-4 py-3 text-sm text-white shadow-sm">
+                      Quiero a las 10:00 hrs
+                    </div>
+
+                    <div className="max-w-[88%] rounded-2xl rounded-bl-md bg-sky-500 px-4 py-3 text-sm font-medium text-white shadow-sm">
+                      Agendado. Te llegará un correo de confirmación con los detalles.
+                    </div>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -219,14 +255,6 @@ export default function OrbyxLandingPage() {
             <p className="mt-4 leading-7 text-slate-300">
               Orbyx no solo automatiza reservas. También te ayuda a mantener más movimiento en tu agenda con seguimiento inteligente y recuperación de clientes.
             </p>
-            <div className="mt-6">
-              <a
-                href="/planes"
-                className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-100"
-              >
-                Ver planes
-              </a>
-            </div>
           </div>
         </div>
       </section>
@@ -242,16 +270,10 @@ export default function OrbyxLandingPage() {
           <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-300">
             Descubre cómo Orbyx puede responder por tu negocio, agendar automáticamente y ayudarte a recuperar clientes.
           </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a
-              href="/demo"
-              className="inline-flex items-center justify-center rounded-2xl bg-sky-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-sky-400"
-            >
-              Ver en acción
-            </a>
+          <div className="mt-8 flex justify-center">
             <a
               href="/planes"
-              className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/15"
+              className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-sky-500 px-7 text-base font-semibold text-white shadow-[0_12px_30px_rgba(14,165,233,0.28)] transition hover:-translate-y-0.5 hover:bg-sky-400"
             >
               Ver planes
             </a>
