@@ -108,53 +108,23 @@ export default function OrbyxLandingPage() {
               transition={{ duration: 0.55, delay: 0.12 }}
               className="lg:ml-auto"
             >
-              <div className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur">
-                <div className="rounded-[26px] border border-white/10 bg-slate-900/80 p-4">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                        Conversación con IA
-                      </p>
-                      <h3 className="mt-1 text-lg font-semibold text-white">
-                        Reserva por WhatsApp
-                      </h3>
-                    </div>
-                    <div className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-medium text-emerald-300">
-                      Activo
-                    </div>
-                  </div>
+              
+<motion.div
+  initial={{ opacity: 0, scale: 0.98, y: 14 }}
+  animate={{ opacity: 1, scale: 1, y: 0 }}
+  transition={{ duration: 0.55, delay: 0.12 }}
+  className="lg:ml-auto"
+>
+  <div className="relative">
+    <img
+      src="/hero-whatsapp-chat.png"
+      alt="Reserva automática por WhatsApp con Orbyx"
+      className="w-full max-w-[420px] mx-auto drop-shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
+    />
 
-                  <div className="space-y-3">
-                    <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-emerald-500 px-4 py-3 text-sm text-white shadow-sm">
-                      Hola, quiero una hora
-                    </div>
-
-                    <div className="max-w-[88%] rounded-2xl rounded-bl-md bg-slate-800 px-4 py-3 text-sm text-slate-100 shadow-sm">
-                      Claro. ¿Prefieres horarios en la mañana o en la tarde?
-                    </div>
-
-                    <div className="ml-auto max-w-[70%] rounded-2xl rounded-br-md bg-emerald-500 px-4 py-3 text-sm text-white shadow-sm">
-                      En la mañana
-                    </div>
-
-                    <div className="max-w-[88%] rounded-2xl rounded-bl-md bg-slate-800 px-4 py-3 text-sm text-slate-100 shadow-sm">
-                      Muy bien. Tengo disponible a las 8:30 y a las 10:00 hrs.
-                    </div>
-
-                    <div className="ml-auto max-w-[70%] rounded-2xl rounded-br-md bg-emerald-500 px-4 py-3 text-sm text-white shadow-sm">
-                      Quiero a las 10:00 hrs
-                    </div>
-
-                    <div className="max-w-[88%] rounded-2xl rounded-bl-md bg-sky-500 px-4 py-3 text-sm font-medium text-white shadow-sm">
-                      Agendado. Te llegará un correo de confirmación con los detalles.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+    <div className="absolute inset-0 -z-10 blur-2xl opacity-40 bg-gradient-to-tr from-sky-400 via-fuchsia-400 to-orange-400 rounded-full" />
+  </div>
+</motion.div>
 
       <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-2">
