@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarDays, Rocket, Users, BellRing, Star } from "lucide-react";
+import {
+  CalendarDays,
+  Rocket,
+  Users,
+  BellRing,
+  Star,
+  CheckCircle2,
+  Sparkles,
+  MessageSquareText,
+} from "lucide-react";
 
 export default function OrbyxLandingPage() {
   const quickFeatures = [
@@ -10,6 +19,7 @@ export default function OrbyxLandingPage() {
     { icon: Rocket, title: "Reservas y seguimiento" },
     { icon: Users, title: "Clientes e historial" },
     { icon: BellRing, title: "Recordatorios automáticos" },
+    { icon: Sparkles, title: "Clientes inactivos" },
   ];
 
   const chips = [
@@ -33,24 +43,27 @@ export default function OrbyxLandingPage() {
 
   const teamSizes = ["1", "2 a 3", "4 a 10", "11 a 20", "20+"];
 
+  const setupSteps = [
+    "Configura tu negocio y horarios",
+    "Carga tus servicios y profesionales",
+    "Empieza a recibir reservas con IA",
+  ];
+
+  const sideBenefits = [
+    "Confirmaciones automáticas",
+    "Recordatorios por WhatsApp",
+    "Reactivación de clientes inactivos",
+    "Vista clara de agenda y seguimiento",
+  ];
+
   return (
     <main className="min-h-screen bg-[#f4eff5] text-slate-900">
+      {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(135deg,#f8f4f7_0%,#f3eef4_36%,#eee8f1_70%,#ebe6ef_100%)]" />
 
-        <div className="pointer-events-none absolute right-0 top-0 h-full w-[46%] hidden lg:block">
-          <div
-            className="h-full w-full bg-contain bg-no-repeat"
-            style={{
-              backgroundImage: "url('/hero-orbyx-composed.png')",
-              backgroundPosition: "right center",
-            }}
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,#f4eff5_0%,rgba(244,239,245,0.58)_34%,rgba(244,239,245,0.20)_60%,transparent_86%)]" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-16">
-          <div className="grid items-center gap-16 lg:grid-cols-[1.08fr_0.92fr]">
+        <div className="relative mx-auto max-w-7xl px-5 py-8 lg:px-8 lg:py-12">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr]">
             <div className="relative z-10">
               <div className="inline-flex items-center gap-3">
                 <div className="rounded-2xl bg-white px-3 py-2 shadow">
@@ -82,7 +95,10 @@ export default function OrbyxLandingPage() {
 
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700">
                 Deja de coordinar reservas por WhatsApp manualmente. Orbyx
-                responde, propone horarios y agenda automáticamente.
+                responde, propone horarios y agenda automáticamente por tu
+                negocio. Además, te ayuda a mantener tu agenda activa con
+                seguimiento inteligente, recordatorios y recuperación de
+                clientes.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -96,7 +112,7 @@ export default function OrbyxLandingPage() {
                 ))}
               </div>
 
-              <div className="mt-10 grid max-w-2xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-10 grid max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 {quickFeatures.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -105,7 +121,9 @@ export default function OrbyxLandingPage() {
                       className="rounded-2xl bg-white p-4 text-center shadow"
                     >
                       <Icon className="mx-auto mb-2 h-6 w-6" />
-                      <p className="text-sm font-medium">{item.title}</p>
+                      <p className="text-sm font-medium leading-5">
+                        {item.title}
+                      </p>
                     </div>
                   );
                 })}
@@ -125,81 +143,144 @@ export default function OrbyxLandingPage() {
               </div>
             </div>
 
-            <div className="relative z-10 flex justify-end">
-              <div className="w-full max-w-[438px] rounded-[28px] bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.10)] sm:p-7">
-                <h2 className="text-3xl font-semibold text-slate-900">
-                  Empieza gratis
-                </h2>
+            <div className="relative z-10 flex items-center justify-center lg:justify-end">
+              <img
+                src="/hero-orbyx-composed.png"
+                alt="Vista principal Orbyx"
+                className="w-full max-w-[720px] rounded-[28px] object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Configura tu agenda en minutos y comienza con una experiencia
-                  más clara y profesional.
-                </p>
+      {/* SECCIÓN INFERIOR */}
+      <section className="relative pb-16 pt-6">
+        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+          <div className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
+            {/* FORMULARIO */}
+            <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,#18284f_0%,#223a76_36%,#1c2254_100%)] p-6 text-white shadow-[0_30px_80px_rgba(15,23,42,0.22)] sm:p-7">
+              <div className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-sky-100">
+                Empieza gratis
+              </div>
 
-                <form className="mt-6 space-y-3">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <select className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100">
-                      <option value="">Tipo de negocio</option>
-                      {businessTypes.map((item) => (
-                        <option key={item} value={item}>
-                          {item}
-                        </option>
-                      ))}
-                    </select>
+              <h2 className="mt-4 text-3xl font-semibold text-white">
+                Configura tu agenda
+              </h2>
 
-                    <select className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100">
-                      <option value="">Profesionales</option>
-                      {teamSizes.map((item) => (
-                        <option key={item} value={item}>
-                          {item}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+              <p className="mt-2 text-sm leading-6 text-slate-200">
+                Crea tu espacio en Orbyx y comienza con una experiencia más
+                clara, profesional y simple de configurar.
+              </p>
 
-                  <input
-                    placeholder="Nombre y apellido"
-                    className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                  />
+              <form className="mt-6 space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <select className="h-12 w-full rounded-xl border border-white/10 bg-white/10 px-3 text-sm text-white outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-400/20">
+                    <option className="text-slate-900" value="">
+                      Tipo de negocio
+                    </option>
+                    {businessTypes.map((item) => (
+                      <option className="text-slate-900" key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
 
-                  <input
-                    placeholder="Email"
-                    className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                  />
-
-                  <input
-                    placeholder="Teléfono"
-                    className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                  />
-
-                  <button className="mt-2 h-12 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700">
-                    Crear mi agenda
-                  </button>
-
-                  <Link
-                    href="/planes"
-                    className="flex h-12 w-full items-center justify-center rounded-xl border border-fuchsia-200 bg-white text-sm font-semibold text-fuchsia-700 shadow-[0_0_0_1px_rgba(244,114,182,0.08),0_8px_22px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:border-fuchsia-300 hover:shadow-[0_0_0_1px_rgba(244,114,182,0.14),0_12px_28px_rgba(236,72,153,0.12)]"
-                  >
-                    Ver planes
-                  </Link>
-                </form>
-
-                <p className="mt-4 text-center text-xs leading-6 text-slate-500">
-                  Empieza gratis. Luego puedes elegir el plan ideal para tu
-                  negocio.
-                </p>
-
-                <div className="mt-5 flex items-center justify-center gap-1 text-amber-400">
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
+                  <select className="h-12 w-full rounded-xl border border-white/10 bg-white/10 px-3 text-sm text-white outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-400/20">
+                    <option className="text-slate-900" value="">
+                      Profesionales
+                    </option>
+                    {teamSizes.map((item) => (
+                      <option className="text-slate-900" key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <p className="mt-2 text-center text-sm font-medium text-slate-600">
-                  +8.000 negocios felices nos recomiendan
-                </p>
+                <input
+                  placeholder="Nombre y apellido"
+                  className="h-12 w-full rounded-xl border border-white/10 bg-white/10 px-3 text-sm text-white outline-none placeholder:text-slate-300 transition focus:border-sky-300 focus:ring-4 focus:ring-sky-400/20"
+                />
+
+                <input
+                  placeholder="Email"
+                  className="h-12 w-full rounded-xl border border-white/10 bg-white/10 px-3 text-sm text-white outline-none placeholder:text-slate-300 transition focus:border-sky-300 focus:ring-4 focus:ring-sky-400/20"
+                />
+
+                <input
+                  placeholder="Teléfono"
+                  className="h-12 w-full rounded-xl border border-white/10 bg-white/10 px-3 text-sm text-white outline-none placeholder:text-slate-300 transition focus:border-sky-300 focus:ring-4 focus:ring-sky-400/20"
+                />
+
+                <button className="mt-2 h-12 w-full rounded-xl bg-[linear-gradient(135deg,#2563eb_0%,#3b82f6_100%)] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(37,99,235,0.35)] transition hover:brightness-110">
+                  Crear mi agenda
+                </button>
+              </form>
+
+              <p className="mt-4 text-center text-xs leading-6 text-slate-300">
+                Empieza gratis. Luego puedes elegir el plan ideal para tu
+                negocio.
+              </p>
+            </div>
+
+            {/* CONTENIDO LATERAL */}
+            <div className="grid gap-6">
+              <div className="rounded-[30px] bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+                <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700">
+                  <MessageSquareText className="h-4 w-4" />
+                  Qué ganas con Orbyx
+                </div>
+
+                <h3 className="mt-4 text-2xl font-semibold text-slate-900">
+                  Más que agenda, movimiento real en tu negocio
+                </h3>
+
+                <div className="mt-5 space-y-3">
+                  {sideBenefits.map((item) => (
+                    <div key={item} className="flex items-start gap-3">
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-500" />
+                      <p className="text-slate-700">{item}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/planes"
+                  className="mt-6 flex h-12 w-full items-center justify-center rounded-xl border border-fuchsia-200 bg-[linear-gradient(135deg,#ffffff_0%,#fdf2f8_100%)] text-sm font-semibold text-fuchsia-700 shadow-[0_0_0_1px_rgba(244,114,182,0.08),0_10px_24px_rgba(236,72,153,0.10)] transition hover:-translate-y-0.5 hover:border-fuchsia-300 hover:shadow-[0_0_0_1px_rgba(244,114,182,0.14),0_14px_30px_rgba(236,72,153,0.14)]"
+                >
+                  Ver planes
+                </Link>
+              </div>
+
+              <div className="rounded-[30px] bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+                <h3 className="text-xl font-semibold text-slate-900">
+                  Configuración en 3 pasos
+                </h3>
+
+                <div className="mt-5 space-y-4">
+                  {setupSteps.map((item, index) => (
+                    <div key={item} className="flex items-start gap-4">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+                        {index + 1}
+                      </div>
+                      <p className="pt-1 text-slate-700">{item}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-3">
+                  <div className="inline-flex items-center gap-1 text-amber-400">
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">
+                    +8.000 negocios felices nos recomiendan
+                  </p>
+                </div>
               </div>
             </div>
           </div>
