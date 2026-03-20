@@ -39,7 +39,6 @@ type FeatureRow = {
   label: string;
   help: string;
   values: Record<PlanKey, boolean | string>;
-  highlight?: boolean;
 };
 
 const plans: Plan[] = [
@@ -130,7 +129,6 @@ const featureRows: FeatureRow[] = [
   {
     label: "Precio mensual",
     help: "Valor mensual del plan antes de aplicar IVA.",
-    highlight: true,
     values: {
       starter: "$9.990",
       pro: "$19.990",
@@ -514,10 +512,10 @@ export default function PlanesPage() {
 
         <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-sm">
           <div className="overflow-x-auto">
-            <table className="min-w-[1140px] w-full border-collapse text-left">
+            <table className="min-w-[1220px] w-full border-collapse text-left">
               <thead>
                 <tr className="bg-white/8">
-                  <th className="sticky left-0 z-20 min-w-[320px] border-b border-white/10 bg-slate-950/95 px-5 py-5 text-base font-semibold text-white backdrop-blur">
+                  <th className="sticky left-0 z-20 min-w-[250px] max-w-[250px] border-b border-white/10 bg-slate-950/95 px-4 py-5 text-base font-semibold text-white backdrop-blur">
                     Características
                   </th>
 
@@ -530,11 +528,11 @@ export default function PlanesPage() {
                         onClick={() => setSelectedPlan(plan.key)}
                         className={`cursor-pointer border-b border-l border-white/10 align-top transition-all duration-200 ${
                           isSelected
-                            ? `min-w-[215px] ${plan.selectedBg} ${plan.selectedBorder} border-x shadow-[inset_0_0_0_1px_rgba(15,23,42,0.05)]`
-                            : "min-w-[185px] bg-transparent hover:bg-white/[0.04]"
+                            ? `min-w-[194px] ${plan.selectedBg} ${plan.selectedBorder} border-x shadow-[inset_0_0_0_1px_rgba(15,23,42,0.05)]`
+                            : "min-w-[194px] bg-transparent hover:bg-white/[0.04]"
                         }`}
                       >
-                        <div className="block w-full p-4 text-left transition-transform duration-200 hover:-translate-y-1">
+                        <div className="block w-full px-4 pb-5 pt-4 text-left transition-transform duration-200 hover:-translate-y-1">
                           <div className={`h-2 rounded-full bg-gradient-to-r ${plan.headerGradient}`} />
                           <div className="mt-4">
                             {plan.badge ? (
@@ -574,12 +572,19 @@ export default function PlanesPage() {
                             </div>
 
                             <div
-                              className={`mt-4 text-3xl font-bold leading-tight ${
-                                isSelected ? "text-slate-900" : "text-white"
-                              } ${plan.comingSoon ? "text-[2rem]" : ""}`}
+                              className={`mt-4 font-bold leading-tight ${
+                                plan.comingSoon
+                                  ? isSelected
+                                    ? "text-2xl text-slate-900"
+                                    : "text-2xl text-white"
+                                  : isSelected
+                                  ? "text-3xl text-slate-900"
+                                  : "text-3xl text-white"
+                              }`}
                             >
                               {plan.price}
                             </div>
+
                             <div
                               className={`mt-1 text-xs font-medium ${
                                 isSelected ? "text-slate-600" : "text-slate-300"
@@ -589,7 +594,7 @@ export default function PlanesPage() {
                             </div>
 
                             <p
-                              className={`mt-4 min-h-[112px] text-sm leading-6 ${
+                              className={`mt-4 min-h-[122px] text-sm leading-6 ${
                                 isSelected ? "text-slate-700" : "text-slate-300"
                               }`}
                             >
@@ -609,7 +614,7 @@ export default function PlanesPage() {
                     key={row.label}
                     className={idx % 2 === 0 ? "bg-white/[0.03]" : "bg-white/[0.06]"}
                   >
-                    <td className="sticky left-0 z-10 border-b border-white/10 bg-slate-950/95 px-5 py-4 text-sm font-medium text-white backdrop-blur">
+                    <td className="sticky left-0 z-10 max-w-[250px] border-b border-white/10 bg-slate-950/95 px-4 py-4 text-sm font-medium text-white backdrop-blur">
                       <FeatureLabel label={row.label} help={row.help} />
                     </td>
 
@@ -632,7 +637,7 @@ export default function PlanesPage() {
                 ))}
 
                 <tr className="bg-white/[0.04]">
-                  <td className="sticky left-0 z-10 border-t border-white/10 bg-slate-950/95 px-5 py-5 text-sm font-semibold text-white backdrop-blur">
+                  <td className="sticky left-0 z-10 border-t border-white/10 bg-slate-950/95 px-4 py-5 text-sm font-semibold text-white backdrop-blur">
                     Elegir plan
                   </td>
 
