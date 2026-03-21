@@ -11,6 +11,7 @@ type BusinessResponse = {
     id: string;
     name: string;
     slug: string;
+    plan_slug?: string;
   };
   calendar_id: string;
   google_connected?: boolean;
@@ -136,6 +137,17 @@ export default function StaffPage() {
     [staff]
   );
 
+const [plan, setPlan] = useState("starter");
+
+const caps = {
+  starter: { max_staff: 1 },
+  pro: { max_staff: 3 },
+  premium: { max_staff: 10 },
+  vip: { max_staff: 999 },
+}[plan];
+
+const reachedLimit = staff.length >= caps.max_staff;
+
   useEffect(() => {
     async function loadPage() {
       try {
@@ -143,26 +155,28 @@ export default function StaffPage() {
         setLoadError("");
 
         const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
-        const data: BusinessResponse | { error?: string } = await res.json();
+const data: BusinessResponse | { error?: string } = await res.json();
 
-        if (!res.ok) {
-          throw new Error(
-            "error" in data && data.error
-              ? data.error
-              : "No se pudo cargar el negocio"
-          );
-        }
+if (!res.ok) {
+  throw new Error(
+    "error" in data && data.error
+      ? data.error
+      : "No se pudo cargar el negocio"
+  );
+}
 
-        if (!("business" in data)) {
-          throw new Error("Respuesta inválida del backend");
-        }
+if (!("business" in data)) {
+  throw new Error("Respuesta inválida del backend");
+}
 
-        setTenantId(data.business.id);
+setTenantId(data.business.id);
+setPlan((data.business as any).plan_slug || "starter");
 
-        await Promise.all([
-          loadStaff(data.business.id),
-          loadServices(data.business.id),
-        ]);
+await Promise.all([
+  loadStaff(data.business.id),
+  loadServices(data.business.id),
+]);
+
       } catch (error: any) {
         setLoadError(error?.message || "No se pudo cargar el módulo staff");
       } finally {
@@ -1219,28 +1233,39 @@ export default function StaffPage() {
                 </div>
               ) : null}
 
-              <div className="flex flex-wrap gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving
-                    ? "Guardando..."
-                    : editingId
-                    ? "Guardar cambios"
-                    : "Crear staff"}
-                </button>
+              
 
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  Limpiar
-                </button>
-              </div>
+<div className="space-y-3 pt-2">
+  {!editingId && reachedLimit ? (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      Has alcanzado el límite de staff de tu plan.
+    </div>
+  ) : null}
+
+  <div className="flex flex-wrap gap-3">
+    <button
+      type="button"
+      onClick={handleSave}
+      disabled={saving || (!editingId && reachedLimit)}
+      className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {saving
+        ? "Guardando..."
+        : editingId
+        ? "Guardar cambios"
+        : "Crear staff"}
+    </button>
+
+    <button
+      type="button"
+      onClick={resetForm}
+      className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+    >
+      Limpiar
+    </button>
+  </div>
+</div>
+
             </div>
           )}
         </Panel>
