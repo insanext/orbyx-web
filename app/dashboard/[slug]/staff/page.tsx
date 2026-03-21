@@ -139,13 +139,14 @@ export default function StaffPage() {
 
 const [plan, setPlan] = useState("starter");
 
-const caps = {
+const planCaps: Record<string, { max_staff: number }> = {
   starter: { max_staff: 1 },
   pro: { max_staff: 3 },
   premium: { max_staff: 10 },
   vip: { max_staff: 999 },
-}[plan];
+};
 
+const caps = planCaps[plan] || planCaps.starter;
 const reachedLimit = staff.length >= caps.max_staff;
 
   useEffect(() => {
