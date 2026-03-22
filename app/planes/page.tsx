@@ -18,6 +18,12 @@ import {
 type PlanKey = "pro" | "premium" | "vip" | "platinum";
 type ExtraKey = "staff" | "reminders" | "campaigns" | "ai";
 
+type FeatureItem = {
+  title: string;
+  description?: string;
+  highlight?: boolean;
+};
+
 type Plan = {
   key: PlanKey;
   name: string;
@@ -33,7 +39,7 @@ type Plan = {
   extras: ExtraKey[];
   summaryTitle: string;
   summaryIntro: string;
-  features: string[];
+  features: FeatureItem[];
   icon: "mail" | "sparkles" | "crown" | "gem";
   accentClass: string;
   softBgClass: string;
@@ -56,14 +62,23 @@ const plans: Plan[] = [
     summaryTitle: "Plan Pro",
     summaryIntro: "La base ideal para comenzar a profesionalizar tu agenda.",
     features: [
-      "Agenda online de citas",
-      "Página pública de reservas",
-      "Gestión de servicios y profesionales",
-      "Configuración de horarios y disponibilidad",
-      "Gestión completa de citas",
-      "Gestión de clientes (CRM básico)",
-      "Estadísticas básicas del negocio",
-      "Confirmación de citas por email",
+      {
+        title: "Todo lo esencial para comenzar",
+        description:
+          "Agenda online, página pública de reservas, gestión de citas, servicios, profesionales y clientes.",
+      },
+      {
+        title: "Emails automatizados básicos",
+        description: "Confirmación de citas por email para mantener informado al cliente.",
+      },
+      {
+        title: "Control operativo inicial",
+        description: "Configuración de horarios y disponibilidad para ordenar mejor tu agenda.",
+      },
+      {
+        title: "Visibilidad del negocio",
+        description: "Estadísticas básicas para entender tu operación desde el inicio.",
+      },
     ],
     icon: "mail",
     accentClass: "text-sky-700",
@@ -85,10 +100,24 @@ const plans: Plan[] = [
     summaryTitle: "Plan Premium",
     summaryIntro: "Para negocios que necesitan mejor seguimiento y comunicación.",
     features: [
-      "Todo lo del plan Pro",
-      "Recordatorios a clientes por email",
-      "Notificaciones de cambios o cancelaciones por email",
-      "Campañas y envíos masivos por email",
+      {
+        title: "Todo lo del plan Pro",
+        description: "Mantienes toda la base operativa de agenda y clientes del plan inicial.",
+      },
+      {
+        title: "Recordatorios por email",
+        description: "Envía recordatorios automáticos para reducir ausencias y mejorar asistencia.",
+      },
+      {
+        title: "Notificaciones automáticas",
+        description:
+          "Informa cambios o cancelaciones de forma más profesional y automática.",
+      },
+      {
+        title: "Campañas por email",
+        description:
+          "Comunícate masivamente con tus clientes a través de promociones y mensajes directos.",
+      },
     ],
     icon: "sparkles",
     accentClass: "text-violet-700",
@@ -112,12 +141,25 @@ const plans: Plan[] = [
     summaryIntro:
       "Incorpora WhatsApp a tu operación sin entrar todavía en automatización con IA.",
     features: [
-      "Todo lo del plan Premium",
-      "Estadísticas avanzadas del negocio",
-      "Personalización del negocio (logo, marca, página)",
-      "Recordatorios automáticos por WhatsApp",
-      "Segmentación de clientes",
-      "Hasta 200 conversaciones de recordatorio por WhatsApp al mes",
+      {
+        title: "Todo lo del plan Premium",
+        description: "Mantienes la base de agenda, clientes y comunicación por email.",
+      },
+      {
+        title: "Más control del negocio",
+        description:
+          "Accede a estadísticas avanzadas y una personalización más sólida de tu marca.",
+      },
+      {
+        title: "Recordatorios por WhatsApp",
+        description:
+          "Incluye recordatorios automáticos para reducir no-show y mejorar ocupación.",
+      },
+      {
+        title: "Segmentación de clientes",
+        description:
+          "Comienza a diferenciar mejor tus clientes para futuras acciones comerciales.",
+      },
     ],
     icon: "crown",
     accentClass: "text-amber-700",
@@ -141,15 +183,27 @@ const plans: Plan[] = [
     summaryIntro:
       "Una operación premium con WhatsApp e inteligencia artificial trabajando para generar más reservas.",
     features: [
-      "Todo lo del plan VIP",
-      "Atención automática por WhatsApp con IA",
-      "La IA responde consultas y ayuda a cerrar reservas",
-      "Reactivación de clientes inactivos por WhatsApp",
-      "Campañas y mensajes masivos por WhatsApp",
-      "Métricas de conversaciones y conversión",
-      "Hasta 400 conversaciones de recordatorio por WhatsApp al mes",
-      "Hasta 50 conversaciones de campañas por WhatsApp al mes",
-      "Hasta 200 conversaciones asistidas por IA al mes",
+      {
+        title: "Todo lo del plan VIP",
+        description:
+          "Mantienes toda la capacidad operativa, el control y la comunicación del plan superior.",
+      },
+      {
+        title: "Atención automática por WhatsApp con IA",
+        description:
+          "La IA responde consultas, resuelve dudas y ayuda a cerrar reservas automáticamente.",
+        highlight: true,
+      },
+      {
+        title: "Reactivación de clientes inactivos",
+        description:
+          "Activa campañas orientadas a volver a traer clientes que dejaron de reservar.",
+      },
+      {
+        title: "Métricas de conversaciones y conversión",
+        description:
+          "Mide cuántas conversaciones llegan, cuántas reservan y qué tan bien convierte tu automatización.",
+      },
     ],
     icon: "gem",
     accentClass: "text-emerald-700",
@@ -467,7 +521,7 @@ export default function PlanesPage() {
                       </p>
 
                       <div className="mt-5">
-                        <p className="text-[2rem] font-semibold leading-none tracking-tight text-slate-900 lg:text-[2.25rem]">
+                        <p className="text-[2rem] font-semibold leading-none tracking-tight text-slate-900 lg:text-[2.35rem]">
                           {plan.priceLabel}
                         </p>
                         <p className="mt-2 text-sm text-slate-500">{plan.ivaLabel}</p>
@@ -482,9 +536,9 @@ export default function PlanesPage() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
-                className={`mt-8 rounded-[28px] border p-6 lg:p-7 ${selectedPlan.borderClass} ${selectedPlan.softBgClass}`}
+                className={`mt-8 rounded-[28px] border p-5 lg:p-6 ${selectedPlan.borderClass} ${selectedPlan.softBgClass}`}
               >
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
                   <div>
                     <div className="flex items-center gap-3">
                       <span
@@ -507,22 +561,43 @@ export default function PlanesPage() {
                       </div>
                     </div>
 
-                    <p className="mt-5 text-lg font-medium text-slate-800">
+                    <p className="mt-4 text-lg font-medium text-slate-800">
                       {selectedPlan.subtitle}
                     </p>
 
-                    <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                    <div className="mt-5 space-y-3">
                       {selectedPlan.features.map((feature) => (
                         <div
-                          key={feature}
-                          className="flex items-start gap-3 rounded-2xl border border-white/80 bg-white/85 px-4 py-3"
+                          key={feature.title}
+                          className={`rounded-2xl border px-4 py-3 ${
+                            feature.highlight
+                              ? "border-violet-300 bg-gradient-to-r from-violet-50 to-indigo-50 shadow-sm"
+                              : "border-white/80 bg-white/85"
+                          }`}
                         >
-                          <Check
-                            className={`mt-0.5 h-4 w-4 shrink-0 ${selectedPlan.accentClass}`}
-                          />
-                          <span className="text-sm leading-6 text-slate-700">
-                            {feature}
-                          </span>
+                          <div className="flex items-start gap-3">
+                            <Check
+                              className={`mt-1 h-4 w-4 shrink-0 ${
+                                feature.highlight
+                                  ? "text-violet-700"
+                                  : selectedPlan.accentClass
+                              }`}
+                            />
+                            <div>
+                              <p
+                                className={`text-sm font-semibold ${
+                                  feature.highlight ? "text-violet-900" : "text-slate-900"
+                                }`}
+                              >
+                                {feature.title}
+                              </p>
+                              {feature.description ? (
+                                <p className="mt-1 text-sm leading-6 text-slate-600">
+                                  {feature.description}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -533,7 +608,7 @@ export default function PlanesPage() {
                       Resumen del plan
                     </p>
 
-                    <div className="mt-4 space-y-4">
+                    <div className="mt-4 space-y-3">
                       <div className="rounded-2xl bg-slate-50 px-4 py-3">
                         <p className="text-xs uppercase tracking-wide text-slate-500">
                           Profesionales incluidos
@@ -549,7 +624,7 @@ export default function PlanesPage() {
                         </p>
                         <p className="mt-1 text-xl font-semibold text-slate-900">
                           {selectedPlan.includedReminderConversations > 0
-                            ? `${selectedPlan.includedReminderConversations} conv.`
+                            ? `${selectedPlan.includedReminderConversations} conversaciones`
                             : "No incluido"}
                         </p>
                       </div>
@@ -560,7 +635,7 @@ export default function PlanesPage() {
                         </p>
                         <p className="mt-1 text-xl font-semibold text-slate-900">
                           {selectedPlan.includedCampaignConversations > 0
-                            ? `${selectedPlan.includedCampaignConversations} conv.`
+                            ? `${selectedPlan.includedCampaignConversations} conversaciones`
                             : "No incluido"}
                         </p>
                       </div>
@@ -571,7 +646,7 @@ export default function PlanesPage() {
                         </p>
                         <p className="mt-1 text-xl font-semibold text-slate-900">
                           {selectedPlan.includedAiConversations > 0
-                            ? `${selectedPlan.includedAiConversations} conv.`
+                            ? `${selectedPlan.includedAiConversations} conversaciones`
                             : "No incluida"}
                         </p>
                       </div>
@@ -579,57 +654,6 @@ export default function PlanesPage() {
                   </div>
                 </div>
               </motion.div>
-
-              <div className="mt-10 overflow-hidden rounded-[28px] border border-slate-200 bg-white">
-                <div className="border-b border-slate-200 px-6 py-5">
-                  <p className="text-xl font-semibold text-slate-900">
-                    Comparación de planes
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Visualiza rápido qué cambia a medida que subes de plan.
-                  </p>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="min-w-[940px] w-full border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50">
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                          Característica
-                        </th>
-                        {plans.map((plan) => (
-                          <th
-                            key={plan.key}
-                            className="px-4 py-3 text-center text-sm font-semibold text-slate-700"
-                          >
-                            {plan.name}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comparisonRows.map((row, index) => (
-                        <tr
-                          key={row.label}
-                          className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
-                        >
-                          <td className="border-t border-slate-200 px-4 py-3 text-sm font-medium text-slate-800">
-                            {row.label}
-                          </td>
-                          {plans.map((plan) => (
-                            <td
-                              key={`${row.label}-${plan.key}`}
-                              className="border-t border-slate-200 px-4 py-3 text-center text-sm text-slate-700"
-                            >
-                              {row.values[plan.key]}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
 
               <div className="mt-10">
                 <p className="text-xl font-semibold text-slate-900">
@@ -791,8 +815,8 @@ export default function PlanesPage() {
                   ) : null}
 
                   {supportsAiExtra ? (
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+                    <div className="rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-5 shadow-sm">
+                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-violet-700 shadow-sm">
                         <Bot className="h-5 w-5" />
                       </div>
 
@@ -803,7 +827,7 @@ export default function PlanesPage() {
                         {extraConfig.ai.description}
                       </p>
 
-                      <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
+                      <div className="mt-4 rounded-2xl bg-white px-4 py-3 shadow-sm">
                         <p className="text-xs uppercase tracking-wide text-slate-500">
                           Valor
                         </p>
@@ -816,7 +840,7 @@ export default function PlanesPage() {
                         <button
                           type="button"
                           onClick={() => decreaseExtra("ai")}
-                          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-2xl text-slate-500 transition hover:bg-slate-50"
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-violet-200 bg-white text-2xl text-slate-500 transition hover:bg-violet-50"
                         >
                           −
                         </button>
@@ -828,17 +852,68 @@ export default function PlanesPage() {
                         <button
                           type="button"
                           onClick={() => increaseExtra("ai")}
-                          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-2xl text-violet-700 transition hover:bg-slate-50"
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-violet-200 bg-white text-2xl text-violet-700 transition hover:bg-violet-50"
                         >
                           +
                         </button>
                       </div>
 
-                      <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+                      <div className="mt-4 rounded-2xl border border-violet-200 bg-white px-4 py-3 text-sm text-violet-700">
                         Tu plan ahora cuenta con {currentAiTotal} conversaciones asistidas por IA.
                       </div>
                     </div>
                   ) : null}
+                </div>
+              </div>
+
+              <div className="mt-10 overflow-hidden rounded-[28px] border border-slate-200 bg-white">
+                <div className="border-b border-slate-200 px-6 py-5">
+                  <p className="text-xl font-semibold text-slate-900">
+                    Comparación de planes
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Visualiza rápido qué cambia a medida que subes de plan.
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-[940px] w-full border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50">
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                          Característica
+                        </th>
+                        {plans.map((plan) => (
+                          <th
+                            key={plan.key}
+                            className="px-4 py-3 text-center text-sm font-semibold text-slate-700"
+                          >
+                            {plan.name}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {comparisonRows.map((row, index) => (
+                        <tr
+                          key={row.label}
+                          className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                        >
+                          <td className="border-t border-slate-200 px-4 py-3 text-sm font-medium text-slate-800">
+                            {row.label}
+                          </td>
+                          {plans.map((plan) => (
+                            <td
+                              key={`${row.label}-${plan.key}`}
+                              className="border-t border-slate-200 px-4 py-3 text-center text-sm text-slate-700"
+                            >
+                              {row.values[plan.key]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
