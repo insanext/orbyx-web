@@ -270,38 +270,110 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
   return <Gem className="h-5 w-5" />;
 }
 
-function ExtraCounter({
+function getExtraAccent(extraKey: ExtraKey) {
+  if (extraKey === "staff") {
+    return {
+      button: "border-indigo-200 text-indigo-700 hover:bg-indigo-50",
+      badge: "border-sky-200 bg-sky-50 text-sky-700",
+      icon: "bg-indigo-50 text-indigo-700",
+      card: "border-slate-200 bg-white",
+    };
+  }
+
+  if (extraKey === "reminders") {
+    return {
+      button: "border-emerald-200 text-emerald-700 hover:bg-emerald-50",
+      badge: "border-sky-200 bg-sky-50 text-sky-700",
+      icon: "bg-emerald-50 text-emerald-700",
+      card: "border-slate-200 bg-white",
+    };
+  }
+
+  if (extraKey === "campaigns") {
+    return {
+      button: "border-amber-200 text-amber-700 hover:bg-amber-50",
+      badge: "border-sky-200 bg-sky-50 text-sky-700",
+      icon: "bg-amber-50 text-amber-700",
+      card: "border-slate-200 bg-white",
+    };
+  }
+
+  return {
+    button: "border-violet-200 text-violet-700 hover:bg-violet-50",
+    badge: "border-violet-200 bg-violet-50 text-violet-700",
+    icon: "bg-violet-50 text-violet-700",
+    card: "border-violet-200 bg-[linear-gradient(180deg,#ffffff_0%,#faf7ff_100%)]",
+  };
+}
+
+function ExtraCard({
+  title,
+  description,
+  unitLabel,
+  unitSizeLabel,
+  infoText,
   value,
   onDecrease,
   onIncrease,
-  accentButtonClass,
+  icon,
+  extraKey,
 }: {
+  title: string;
+  description: string;
+  unitLabel: string;
+  unitSizeLabel: string;
+  infoText: string;
   value: number;
   onDecrease: () => void;
   onIncrease: () => void;
-  accentButtonClass: string;
+  icon: React.ReactNode;
+  extraKey: ExtraKey;
 }) {
+  const accent = getExtraAccent(extraKey);
+
   return (
-    <div className="mt-4 flex items-center gap-3">
-      <button
-        type="button"
-        onClick={onDecrease}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-xl text-slate-500 transition hover:bg-slate-50"
-      >
-        −
-      </button>
+    <div className={`flex h-full flex-col rounded-3xl border p-5 shadow-sm ${accent.card}`}>
+      <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${accent.icon}`}>
+        {icon}
+      </div>
 
-      <span className="min-w-[52px] text-center text-lg font-semibold text-slate-900">
-        {value}
-      </span>
+      <p className="mt-4 text-base font-semibold leading-6 text-slate-900">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
 
-      <button
-        type="button"
-        onClick={onIncrease}
-        className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border text-xl transition ${accentButtonClass}`}
-      >
-        +
-      </button>
+      <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+          Valor
+        </p>
+        <p className="mt-1 text-base font-semibold text-slate-900">
+          {unitLabel} · {unitSizeLabel}
+        </p>
+      </div>
+
+      <div className="mt-4 flex items-center justify-center gap-5">
+        <button
+          type="button"
+          onClick={onDecrease}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white text-2xl text-slate-500 transition hover:bg-slate-50"
+        >
+          −
+        </button>
+
+        <span className="min-w-[28px] text-center text-xl font-semibold text-slate-900">
+          {value}
+        </span>
+
+        <button
+          type="button"
+          onClick={onIncrease}
+          className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white text-2xl transition ${accent.button}`}
+        >
+          +
+        </button>
+      </div>
+
+      <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm leading-6 ${accent.badge}`}>
+        {infoText}
+      </div>
     </div>
   );
 }
@@ -521,7 +593,7 @@ export default function PlanesPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8fafc_52%,#eef2ff_100%)] text-slate-900">
       <section className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_430px]">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_410px]">
           <div>
             <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.06)] backdrop-blur lg:p-8">
               <div className="max-w-3xl">
@@ -546,7 +618,7 @@ export default function PlanesPage() {
                       key={plan.key}
                       type="button"
                       onClick={() => handleSelectPlan(plan.key)}
-                      className={`relative flex min-h-[260px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
+                      className={`relative flex min-h-[258px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
                         isSelected
                           ? `${plan.borderClass} ${plan.softBgClass} shadow-[0_14px_35px_rgba(15,23,42,0.08)]`
                           : "border-slate-200 bg-white hover:border-slate-300"
@@ -582,6 +654,105 @@ export default function PlanesPage() {
                 })}
               </div>
 
+              <div className="mt-8 rounded-[28px] border border-slate-200 bg-slate-50/70 p-5 lg:p-6">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white ${selectedPlan.accentClass}`}
+                  >
+                    <PlanIcon type={selectedPlan.icon} />
+                  </span>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-semibold text-slate-900">
+                        {selectedPlan.name}
+                      </h2>
+                      {selectedPlan.badge ? (
+                        <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                          {selectedPlan.badge}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-sm text-slate-500">{selectedPlan.ivaLabel}</p>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-lg font-medium leading-8 text-slate-800">
+                  {selectedPlan.subtitle}
+                </p>
+
+                <div className="mt-5 space-y-3">
+                  {selectedPlan.features.map((feature) => (
+                    <div
+                      key={`${selectedPlan.key}-${feature.title}`}
+                      className="flex items-start gap-3"
+                    >
+                      <Check
+                        className={`mt-1 h-4 w-4 shrink-0 ${
+                          feature.highlight ? "text-violet-700" : selectedPlan.accentClass
+                        }`}
+                      />
+                      <div>
+                        <p
+                          className={`text-sm font-semibold ${
+                            feature.highlight ? "text-violet-900" : "text-slate-900"
+                          }`}
+                        >
+                          {feature.title}
+                        </p>
+                        {feature.description ? (
+                          <p className="mt-1 text-sm leading-6 text-slate-600">
+                            {feature.description}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-2xl bg-white px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                      Profesionales incluidos
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-slate-900">
+                      {currentStaffTotal}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                      Servicios incluidos
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-slate-900">
+                      {currentServicesTotal}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                      WhatsApp recordatorios
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-slate-900">
+                      {currentReminderTotal > 0
+                        ? `${currentReminderTotal} conversaciones`
+                        : "No incluido"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                      IA asistida
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-slate-900">
+                      {currentAiTotal > 0
+                        ? `${currentAiTotal} conversaciones`
+                        : "No incluida"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="mt-8">
                 <p className="text-xl font-semibold text-slate-900">
                   Adicionales disponibles
@@ -592,143 +763,63 @@ export default function PlanesPage() {
 
                 <div className="mt-5 grid gap-4 lg:grid-cols-2 2xl:grid-cols-4">
                   {supportsStaffExtra ? (
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
-                        <Users className="h-5 w-5" />
-                      </div>
-
-                      <p className="mt-4 text-base font-semibold text-slate-900">
-                        {extraConfig.staff.title}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        {extraConfig.staff.description}
-                      </p>
-
-                      <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                          Valor
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-slate-900">
-                          {extraConfig.staff.unitLabel} · {extraConfig.staff.unitSizeLabel}
-                        </p>
-                      </div>
-
-                      <ExtraCounter
-                        value={staffExtras}
-                        onDecrease={() => decreaseExtra("staff")}
-                        onIncrease={() => increaseExtra("staff")}
-                        accentButtonClass="border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50"
-                      />
-
-                      <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                        Tu plan ahora cuenta con {currentStaffTotal} profesionales y {currentServicesTotal} servicios.
-                      </div>
-                    </div>
+                    <ExtraCard
+                      title={extraConfig.staff.title}
+                      description={extraConfig.staff.description}
+                      unitLabel={extraConfig.staff.unitLabel}
+                      unitSizeLabel={extraConfig.staff.unitSizeLabel}
+                      infoText={`Tu plan ahora cuenta con ${currentStaffTotal} profesionales y ${currentServicesTotal} servicios.`}
+                      value={staffExtras}
+                      onDecrease={() => decreaseExtra("staff")}
+                      onIncrease={() => increaseExtra("staff")}
+                      extraKey="staff"
+                      icon={<Users className="h-5 w-5" />}
+                    />
                   ) : null}
 
                   {supportsReminderExtra ? (
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                        <MessageCircle className="h-5 w-5" />
-                      </div>
-
-                      <p className="mt-4 text-base font-semibold text-slate-900">
-                        {extraConfig.reminders.title}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        {extraConfig.reminders.description}
-                      </p>
-
-                      <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                          Valor
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-slate-900">
-                          {extraConfig.reminders.unitLabel} · {extraConfig.reminders.unitSizeLabel}
-                        </p>
-                      </div>
-
-                      <ExtraCounter
-                        value={reminderExtras}
-                        onDecrease={() => decreaseExtra("reminders")}
-                        onIncrease={() => increaseExtra("reminders")}
-                        accentButtonClass="border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
-                      />
-
-                      <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                        Tu plan ahora cuenta con {currentReminderTotal} conversaciones de recordatorio.
-                      </div>
-                    </div>
+                    <ExtraCard
+                      title={extraConfig.reminders.title}
+                      description={extraConfig.reminders.description}
+                      unitLabel={extraConfig.reminders.unitLabel}
+                      unitSizeLabel={extraConfig.reminders.unitSizeLabel}
+                      infoText={`Tu plan ahora cuenta con ${currentReminderTotal} conversaciones de recordatorio.`}
+                      value={reminderExtras}
+                      onDecrease={() => decreaseExtra("reminders")}
+                      onIncrease={() => increaseExtra("reminders")}
+                      extraKey="reminders"
+                      icon={<MessageCircle className="h-5 w-5" />}
+                    />
                   ) : null}
 
                   {supportsCampaignExtra ? (
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-                        <Megaphone className="h-5 w-5" />
-                      </div>
-
-                      <p className="mt-4 text-base font-semibold text-slate-900">
-                        {extraConfig.campaigns.title}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        {extraConfig.campaigns.description}
-                      </p>
-
-                      <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                          Valor
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-slate-900">
-                          {extraConfig.campaigns.unitLabel} · {extraConfig.campaigns.unitSizeLabel}
-                        </p>
-                      </div>
-
-                      <ExtraCounter
-                        value={campaignExtras}
-                        onDecrease={() => decreaseExtra("campaigns")}
-                        onIncrease={() => increaseExtra("campaigns")}
-                        accentButtonClass="border-amber-200 bg-white text-amber-700 hover:bg-amber-50"
-                      />
-
-                      <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                        Tu plan ahora cuenta con {currentCampaignTotal} conversaciones de campañas.
-                      </div>
-                    </div>
+                    <ExtraCard
+                      title={extraConfig.campaigns.title}
+                      description={extraConfig.campaigns.description}
+                      unitLabel={extraConfig.campaigns.unitLabel}
+                      unitSizeLabel={extraConfig.campaigns.unitSizeLabel}
+                      infoText={`Tu plan ahora cuenta con ${currentCampaignTotal} conversaciones de campañas.`}
+                      value={campaignExtras}
+                      onDecrease={() => decreaseExtra("campaigns")}
+                      onIncrease={() => increaseExtra("campaigns")}
+                      extraKey="campaigns"
+                      icon={<Megaphone className="h-5 w-5" />}
+                    />
                   ) : null}
 
                   {supportsAiExtra ? (
-                    <div className="rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-5 shadow-sm">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-violet-700 shadow-sm">
-                        <Bot className="h-5 w-5" />
-                      </div>
-
-                      <p className="mt-4 text-base font-semibold text-slate-900">
-                        {extraConfig.ai.title}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        {extraConfig.ai.description}
-                      </p>
-
-                      <div className="mt-4 rounded-2xl bg-white px-4 py-3 shadow-sm">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                          Valor
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-slate-900">
-                          {extraConfig.ai.unitLabel} · {extraConfig.ai.unitSizeLabel}
-                        </p>
-                      </div>
-
-                      <ExtraCounter
-                        value={aiExtras}
-                        onDecrease={() => decreaseExtra("ai")}
-                        onIncrease={() => increaseExtra("ai")}
-                        accentButtonClass="border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                      />
-
-                      <div className="mt-4 rounded-2xl border border-violet-200 bg-white px-4 py-3 text-sm text-violet-700">
-                        Tu plan ahora cuenta con {currentAiTotal} conversaciones asistidas por IA.
-                      </div>
-                    </div>
+                    <ExtraCard
+                      title={extraConfig.ai.title}
+                      description={extraConfig.ai.description}
+                      unitLabel={extraConfig.ai.unitLabel}
+                      unitSizeLabel={extraConfig.ai.unitSizeLabel}
+                      infoText={`Tu plan ahora cuenta con ${currentAiTotal} conversaciones asistidas por IA.`}
+                      value={aiExtras}
+                      onDecrease={() => decreaseExtra("ai")}
+                      onIncrease={() => increaseExtra("ai")}
+                      extraKey="ai"
+                      icon={<Bot className="h-5 w-5" />}
+                    />
                   ) : null}
                 </div>
               </div>
@@ -804,93 +895,8 @@ export default function PlanesPage() {
                 </div>
               </div>
 
-              <div className="flex min-h-[760px] flex-col p-6">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Lo que incluye este plan
-                  </p>
-
-                  <div className="mt-4 space-y-3">
-                    {selectedPlan.features.map((feature) => (
-                      <div
-                        key={`${selectedPlan.key}-${feature.title}`}
-                        className={`rounded-2xl px-4 py-3 ${
-                          feature.highlight
-                            ? "border border-violet-200 bg-gradient-to-r from-violet-50 to-indigo-50"
-                            : "bg-white"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <Check
-                            className={`mt-0.5 h-4 w-4 shrink-0 ${
-                              feature.highlight
-                                ? "text-violet-700"
-                                : selectedPlan.accentClass
-                            }`}
-                          />
-                          <div>
-                            <p
-                              className={`text-sm font-semibold ${
-                                feature.highlight ? "text-violet-900" : "text-slate-900"
-                              }`}
-                            >
-                              {feature.title}
-                            </p>
-                            {feature.description ? (
-                              <p className="mt-1 text-sm leading-6 text-slate-600">
-                                {feature.description}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      Profesionales incluidos
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-slate-900">
-                      {currentStaffTotal}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      Servicios incluidos
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-slate-900">
-                      {currentServicesTotal}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      WhatsApp recordatorios
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-slate-900">
-                      {currentReminderTotal > 0
-                        ? `${currentReminderTotal} conversaciones`
-                        : "No incluido"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      IA asistida
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-slate-900">
-                      {currentAiTotal > 0
-                        ? `${currentAiTotal} conversaciones`
-                        : "No incluida"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-5 space-y-3">
+              <div className="p-6">
+                <div className="space-y-3">
                   {extraItems.length === 0 ? (
                     <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
                       Aún no has agregado adicionales.
@@ -910,7 +916,7 @@ export default function PlanesPage() {
                   )}
                 </div>
 
-                <div className="mt-5 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mt-6 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600">Plan base</span>
                     <span className="text-sm font-semibold text-slate-900">
@@ -937,7 +943,7 @@ export default function PlanesPage() {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-6">
+                <div className="mt-6 space-y-3">
                   <Link
                     href={`/checkout?plan=${selectedPlan.key}`}
                     className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)]"
@@ -945,7 +951,7 @@ export default function PlanesPage() {
                     Continuar con {selectedPlan.name}
                   </Link>
 
-                  <p className="mt-3 text-center text-xs leading-5 text-slate-500">
+                  <p className="text-center text-xs leading-5 text-slate-500">
                     Puedes empezar con tu plan base y ampliar capacidad en cualquier momento.
                   </p>
                 </div>
