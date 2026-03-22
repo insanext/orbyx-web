@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import {
   Bot,
   Check,
@@ -33,6 +32,7 @@ type Plan = {
   subtitle: string;
   badge?: string;
   includedStaff: number;
+  includedServices: number;
   includedReminderConversations: number;
   includedCampaignConversations: number;
   includedAiConversations: number;
@@ -46,6 +46,8 @@ type Plan = {
   borderClass: string;
 };
 
+const SERVICES_PER_STAFF_EXTRA = 5;
+
 const plans: Plan[] = [
   {
     key: "pro",
@@ -55,6 +57,7 @@ const plans: Plan[] = [
     ivaLabel: "mes + iva",
     subtitle: "Empieza a ordenar tu negocio",
     includedStaff: 2,
+    includedServices: 10,
     includedReminderConversations: 0,
     includedCampaignConversations: 0,
     includedAiConversations: 0,
@@ -69,15 +72,18 @@ const plans: Plan[] = [
       },
       {
         title: "Emails automatizados básicos",
-        description: "Confirmación de citas por email para mantener informado al cliente.",
+        description:
+          "Confirmación de citas por email para mantener informado al cliente.",
       },
       {
         title: "Control operativo inicial",
-        description: "Configuración de horarios y disponibilidad para ordenar mejor tu agenda.",
+        description:
+          "Configuración de horarios y disponibilidad para ordenar mejor tu agenda.",
       },
       {
         title: "Visibilidad del negocio",
-        description: "Estadísticas básicas para entender tu operación desde el inicio.",
+        description:
+          "Estadísticas básicas para entender tu operación desde el inicio.",
       },
     ],
     icon: "mail",
@@ -93,6 +99,7 @@ const plans: Plan[] = [
     ivaLabel: "mes + iva",
     subtitle: "Más control y mejor comunicación con tus clientes",
     includedStaff: 5,
+    includedServices: 25,
     includedReminderConversations: 0,
     includedCampaignConversations: 0,
     includedAiConversations: 0,
@@ -102,11 +109,13 @@ const plans: Plan[] = [
     features: [
       {
         title: "Todo lo del plan Pro",
-        description: "Mantienes toda la base operativa de agenda y clientes del plan inicial.",
+        description:
+          "Mantienes toda la base operativa de agenda y clientes del plan inicial.",
       },
       {
         title: "Recordatorios por email",
-        description: "Envía recordatorios automáticos para reducir ausencias y mejorar asistencia.",
+        description:
+          "Envía recordatorios automáticos para reducir ausencias y mejorar asistencia.",
       },
       {
         title: "Notificaciones automáticas",
@@ -133,6 +142,7 @@ const plans: Plan[] = [
     subtitle: "Reduce ausencias y mantén un mejor contacto con tus clientes",
     badge: "Más elegido",
     includedStaff: 10,
+    includedServices: 50,
     includedReminderConversations: 200,
     includedCampaignConversations: 0,
     includedAiConversations: 0,
@@ -143,7 +153,8 @@ const plans: Plan[] = [
     features: [
       {
         title: "Todo lo del plan Premium",
-        description: "Mantienes la base de agenda, clientes y comunicación por email.",
+        description:
+          "Mantienes la base de agenda, clientes y comunicación por email.",
       },
       {
         title: "Más control del negocio",
@@ -156,9 +167,9 @@ const plans: Plan[] = [
           "Incluye recordatorios automáticos para reducir no-show y mejorar ocupación.",
       },
       {
-        title: "Segmentación de clientes",
+        title: "Encuestas automáticas por email",
         description:
-          "Comienza a diferenciar mejor tus clientes para futuras acciones comerciales.",
+          "Envía encuestas de satisfacción después de cada atención para mejorar la experiencia de tus clientes.",
       },
     ],
     icon: "crown",
@@ -175,6 +186,7 @@ const plans: Plan[] = [
     subtitle: "La IA trabaja por tu negocio incluso cuando no estás disponible",
     badge: "IA incluida",
     includedStaff: 20,
+    includedServices: 100,
     includedReminderConversations: 400,
     includedCampaignConversations: 50,
     includedAiConversations: 200,
@@ -191,13 +203,13 @@ const plans: Plan[] = [
       {
         title: "Atención automática por WhatsApp con IA",
         description:
-          "La IA responde consultas, resuelve dudas y ayuda a cerrar reservas automáticamente.",
+          "La IA responde consultas y ayuda a cerrar reservas automáticamente.",
         highlight: true,
       },
       {
-        title: "Reactivación de clientes inactivos",
+        title: "Encuestas + análisis inteligente",
         description:
-          "Activa campañas orientadas a volver a traer clientes que dejaron de reservar.",
+          "Envía encuestas automáticas por email y prepárate para análisis inteligente del feedback en una siguiente etapa.",
       },
       {
         title: "Métricas de conversaciones y conversión",
@@ -216,10 +228,10 @@ const extraConfig = {
   staff: {
     title: "Profesionales extra",
     description:
-      "Suma más capacidad a tu operación agregando profesionales adicionales a tu plan.",
+      "Suma más capacidad a tu operación agregando profesionales adicionales. Cada profesional extra incluye 5 servicios adicionales.",
     unitPrice: 6000,
     unitLabel: "$6.000",
-    unitSizeLabel: "1 profesional",
+    unitSizeLabel: "1 profesional + 5 servicios",
   },
   reminders: {
     title: "Recordatorios por WhatsApp",
@@ -232,7 +244,7 @@ const extraConfig = {
   campaigns: {
     title: "Campañas por WhatsApp",
     description:
-      "Agrega bloques de 50 conversaciones para reactivación de clientes inactivos y campañas con ofertas.",
+      "Agrega bloques de 50 conversaciones para campañas y reactivación de clientes inactivos.",
     unitPrice: 8000,
     unitLabel: "$8.000",
     unitSizeLabel: "50 conversaciones",
@@ -318,21 +330,10 @@ export default function PlanesPage() {
   const subtotal = useMemo(() => {
     let total = selectedPlan.price;
 
-    if (supportsStaffExtra) {
-      total += staffExtras * extraConfig.staff.unitPrice;
-    }
-
-    if (supportsReminderExtra) {
-      total += reminderExtras * extraConfig.reminders.unitPrice;
-    }
-
-    if (supportsCampaignExtra) {
-      total += campaignExtras * extraConfig.campaigns.unitPrice;
-    }
-
-    if (supportsAiExtra) {
-      total += aiExtras * extraConfig.ai.unitPrice;
-    }
+    if (supportsStaffExtra) total += staffExtras * extraConfig.staff.unitPrice;
+    if (supportsReminderExtra) total += reminderExtras * extraConfig.reminders.unitPrice;
+    if (supportsCampaignExtra) total += campaignExtras * extraConfig.campaigns.unitPrice;
+    if (supportsAiExtra) total += aiExtras * extraConfig.ai.unitPrice;
 
     return total;
   }, [
@@ -351,6 +352,8 @@ export default function PlanesPage() {
   const total = subtotal + iva;
 
   const currentStaffTotal = selectedPlan.includedStaff + staffExtras;
+  const currentServicesTotal =
+    selectedPlan.includedServices + staffExtras * SERVICES_PER_STAFF_EXTRA;
   const currentReminderTotal =
     selectedPlan.includedReminderConversations + reminderExtras * 50;
   const currentCampaignTotal =
@@ -369,15 +372,12 @@ export default function PlanesPage() {
     if (extraKey === "staff" && supportsStaffExtra) {
       setStaffExtras((prev) => prev + 1);
     }
-
     if (extraKey === "reminders" && supportsReminderExtra) {
       setReminderExtras((prev) => prev + 1);
     }
-
     if (extraKey === "campaigns" && supportsCampaignExtra) {
       setCampaignExtras((prev) => prev + 1);
     }
-
     if (extraKey === "ai" && supportsAiExtra) {
       setAiExtras((prev) => prev + 1);
     }
@@ -387,15 +387,12 @@ export default function PlanesPage() {
     if (extraKey === "staff" && supportsStaffExtra) {
       setStaffExtras((prev) => Math.max(0, prev - 1));
     }
-
     if (extraKey === "reminders" && supportsReminderExtra) {
       setReminderExtras((prev) => Math.max(0, prev - 1));
     }
-
     if (extraKey === "campaigns" && supportsCampaignExtra) {
       setCampaignExtras((prev) => Math.max(0, prev - 1));
     }
-
     if (extraKey === "ai" && supportsAiExtra) {
       setAiExtras((prev) => Math.max(0, prev - 1));
     }
@@ -403,7 +400,7 @@ export default function PlanesPage() {
 
   const comparisonRows = [
     {
-      label: "Profesionales máximos",
+      label: "Profesionales incluidos",
       values: {
         pro: "2",
         premium: "5",
@@ -412,12 +409,21 @@ export default function PlanesPage() {
       },
     },
     {
-      label: "Servicios máximos",
+      label: "Servicios incluidos",
       values: {
-        pro: "6",
-        premium: "15",
-        vip: "30",
-        platinum: "60",
+        pro: "10",
+        premium: "25",
+        vip: "50",
+        platinum: "100",
+      },
+    },
+    {
+      label: "Beneficio por profesional extra",
+      values: {
+        pro: "+5 servicios",
+        premium: "+5 servicios",
+        vip: "+5 servicios",
+        platinum: "+5 servicios",
       },
     },
     {
@@ -436,6 +442,15 @@ export default function PlanesPage() {
         premium: "Sí",
         vip: "Sí",
         platinum: "Sí",
+      },
+    },
+    {
+      label: "Encuestas por email",
+      values: {
+        pro: "—",
+        premium: "—",
+        vip: "Sí",
+        platinum: "Sí + análisis futuro",
       },
     },
     {
@@ -486,7 +501,7 @@ export default function PlanesPage() {
                 </p>
               </div>
 
-              <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-8 grid gap-4 xl:grid-cols-4">
                 {plans.map((plan) => {
                   const isSelected = selectedPlan.key === plan.key;
 
@@ -495,9 +510,9 @@ export default function PlanesPage() {
                       key={plan.key}
                       type="button"
                       onClick={() => handleSelectPlan(plan.key)}
-                      className={`relative rounded-3xl border px-4 py-5 text-left transition ${
+                      className={`relative flex min-h-[360px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
                         isSelected
-                          ? `${plan.borderClass} ${plan.softBgClass} shadow-sm`
+                          ? `${plan.borderClass} ${plan.softBgClass} shadow-[0_14px_35px_rgba(15,23,42,0.08)]`
                           : "border-slate-200 bg-white hover:border-slate-300"
                       }`}
                     >
@@ -526,136 +541,167 @@ export default function PlanesPage() {
                         </p>
                         <p className="mt-2 text-sm text-slate-500">{plan.ivaLabel}</p>
                       </div>
+
+                      <div className="mt-5 space-y-3">
+                        {plan.features.map((feature) => (
+                          <div
+                            key={`${plan.key}-${feature.title}`}
+                            className={`rounded-2xl border px-3 py-3 ${
+                              feature.highlight
+                                ? "border-violet-300 bg-gradient-to-r from-violet-50 to-indigo-50 shadow-sm"
+                                : isSelected
+                                ? "border-white/80 bg-white/85"
+                                : "border-slate-200 bg-slate-50/70"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <Check
+                                className={`mt-0.5 h-4 w-4 shrink-0 ${
+                                  feature.highlight ? "text-violet-700" : plan.accentClass
+                                }`}
+                              />
+                              <div>
+                                <p
+                                  className={`text-sm font-semibold ${
+                                    feature.highlight ? "text-violet-900" : "text-slate-900"
+                                  }`}
+                                >
+                                  {feature.title}
+                                </p>
+                                {feature.description ? (
+                                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                                    {feature.description}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-5 space-y-2 rounded-2xl bg-white/80 px-3 py-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">Profesionales</span>
+                          <span className="font-semibold text-slate-900">
+                            {plan.includedStaff}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">Servicios</span>
+                          <span className="font-semibold text-slate-900">
+                            {plan.includedServices}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">Recordatorios WA</span>
+                          <span className="font-semibold text-slate-900">
+                            {plan.includedReminderConversations > 0
+                              ? `${plan.includedReminderConversations}`
+                              : "No"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">IA</span>
+                          <span className="font-semibold text-slate-900">
+                            {plan.includedAiConversations > 0
+                              ? `${plan.includedAiConversations}`
+                              : "No"}
+                          </span>
+                        </div>
+                      </div>
                     </button>
                   );
                 })}
               </div>
 
-              <motion.div
-                key={selectedPlan.key}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className={`mt-8 rounded-[28px] border p-5 lg:p-6 ${selectedPlan.borderClass} ${selectedPlan.softBgClass}`}
-              >
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white ${selectedPlan.accentClass}`}
-                      >
-                        <PlanIcon type={selectedPlan.icon} />
-                      </span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-2xl font-semibold text-slate-900">
-                            {selectedPlan.name}
-                          </h2>
-                          {selectedPlan.badge ? (
-                            <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
-                              {selectedPlan.badge}
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className="text-sm text-slate-500">{selectedPlan.ivaLabel}</p>
-                      </div>
-                    </div>
-
-                    <p className="mt-4 text-lg font-medium text-slate-800">
-                      {selectedPlan.subtitle}
-                    </p>
-
-                    <div className="mt-5 space-y-3">
-                      {selectedPlan.features.map((feature) => (
-                        <div
-                          key={feature.title}
-                          className={`rounded-2xl border px-4 py-3 ${
-                            feature.highlight
-                              ? "border-violet-300 bg-gradient-to-r from-violet-50 to-indigo-50 shadow-sm"
-                              : "border-white/80 bg-white/85"
-                          }`}
+              <div className="mt-8">
+                <div
+                  className={`rounded-[28px] border p-5 lg:p-6 ${selectedPlan.borderClass} ${selectedPlan.softBgClass}`}
+                >
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="max-w-2xl">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white ${selectedPlan.accentClass}`}
                         >
-                          <div className="flex items-start gap-3">
-                            <Check
-                              className={`mt-1 h-4 w-4 shrink-0 ${
-                                feature.highlight
-                                  ? "text-violet-700"
-                                  : selectedPlan.accentClass
-                              }`}
-                            />
-                            <div>
-                              <p
-                                className={`text-sm font-semibold ${
-                                  feature.highlight ? "text-violet-900" : "text-slate-900"
-                                }`}
-                              >
-                                {feature.title}
-                              </p>
-                              {feature.description ? (
-                                <p className="mt-1 text-sm leading-6 text-slate-600">
-                                  {feature.description}
-                                </p>
-                              ) : null}
-                            </div>
+                          <PlanIcon type={selectedPlan.icon} />
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-2xl font-semibold text-slate-900">
+                              {selectedPlan.summaryTitle}
+                            </h2>
+                            {selectedPlan.badge ? (
+                              <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                                {selectedPlan.badge}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-sm text-slate-600">{selectedPlan.summaryIntro}</p>
+                        </div>
+                      </div>
+
+                      {selectedPlan.key === "platinum" ? (
+                        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-violet-200 bg-white px-4 py-4">
+                          <Bot className="mt-0.5 h-5 w-5 shrink-0 text-violet-700" />
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">
+                              Atención automática por WhatsApp con IA
+                            </p>
+                            <p className="mt-1 text-sm leading-6 text-slate-600">
+                              La IA responde consultas y ayuda a cerrar reservas automáticamente.
+                            </p>
                           </div>
                         </div>
-                      ))}
+                      ) : null}
                     </div>
-                  </div>
 
-                  <div className="rounded-3xl border border-white/80 bg-white p-5">
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Resumen del plan
-                    </p>
-
-                    <div className="mt-4 space-y-3">
-                      <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-[360px]">
+                      <div className="rounded-2xl bg-white px-4 py-3">
                         <p className="text-xs uppercase tracking-wide text-slate-500">
-                          Profesionales incluidos
+                          Profesionales actuales
                         </p>
                         <p className="mt-1 text-xl font-semibold text-slate-900">
-                          {selectedPlan.includedStaff}
+                          {currentStaffTotal}
                         </p>
                       </div>
 
-                      <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                      <div className="rounded-2xl bg-white px-4 py-3">
                         <p className="text-xs uppercase tracking-wide text-slate-500">
-                          WhatsApp recordatorios
+                          Servicios actuales
                         </p>
                         <p className="mt-1 text-xl font-semibold text-slate-900">
-                          {selectedPlan.includedReminderConversations > 0
-                            ? `${selectedPlan.includedReminderConversations} conversaciones`
+                          {currentServicesTotal}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl bg-white px-4 py-3">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">
+                          Recordatorios WhatsApp
+                        </p>
+                        <p className="mt-1 text-xl font-semibold text-slate-900">
+                          {currentReminderTotal > 0
+                            ? `${currentReminderTotal} conversaciones`
                             : "No incluido"}
                         </p>
                       </div>
 
-                      <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                          WhatsApp campañas
-                        </p>
-                        <p className="mt-1 text-xl font-semibold text-slate-900">
-                          {selectedPlan.includedCampaignConversations > 0
-                            ? `${selectedPlan.includedCampaignConversations} conversaciones`
-                            : "No incluido"}
-                        </p>
-                      </div>
-
-                      <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                      <div className="rounded-2xl bg-white px-4 py-3">
                         <p className="text-xs uppercase tracking-wide text-slate-500">
                           IA asistida
                         </p>
                         <p className="mt-1 text-xl font-semibold text-slate-900">
-                          {selectedPlan.includedAiConversations > 0
-                            ? `${selectedPlan.includedAiConversations} conversaciones`
+                          {currentAiTotal > 0
+                            ? `${currentAiTotal} conversaciones`
                             : "No incluida"}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
-              <div className="mt-10">
+              <div className="mt-8">
                 <p className="text-xl font-semibold text-slate-900">
                   Adicionales disponibles
                 </p>
@@ -709,7 +755,7 @@ export default function PlanesPage() {
                       </div>
 
                       <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                        Tu plan ahora cuenta con {currentStaffTotal} profesionales.
+                        Tu plan ahora cuenta con {currentStaffTotal} profesionales y {currentServicesTotal} servicios.
                       </div>
                     </div>
                   ) : null}
