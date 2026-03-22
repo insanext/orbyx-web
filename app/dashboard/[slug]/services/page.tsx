@@ -15,6 +15,7 @@ type BusinessResponse = {
   };
   calendar_id: string;
   google_connected?: boolean;
+  plan_slug?: string | null;
 };
 
 type Service = {
@@ -52,6 +53,7 @@ export default function ServicesPage() {
 
   const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [plan, setPlan] = useState("starter");
   const [services, setServices] = useState<Service[]>([]);
   const [staff, setStaff] = useState<StaffItem[]>([]);
   const [staffServices, setStaffServices] = useState<StaffServiceRow[]>([]);
@@ -80,6 +82,18 @@ export default function ServicesPage() {
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
+
+  const planCaps: Record<string, { max_services: number }> = {
+    starter: { max_services: 3 },
+    pro: { max_services: 10 },
+    premium: { max_services: 30 },
+    vip: { max_services: 999 },
+  };
+
+  const caps = planCaps[plan] || planCaps.starter;
+  const maxServices = caps.max_services;
+  const servicesLimitReached = services.length >= maxServices;
+  const servicesRemainingCount = Math.max(0, maxServices - services.length);
 
   const activeServicesCount = services.filter((service) => service.active).length;
   const servicesWithDescriptionCount = services.filter(
@@ -166,6 +180,7 @@ export default function ServicesPage() {
 
       setTenantId(currentTenantId);
       setBusinessName(businessData.business.name || slug);
+      setPlan((businessData.plan_slug || "starter").toLowerCase());
 
       const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
         fetch(
@@ -271,6 +286,10 @@ export default function ServicesPage() {
 
       if (!tenantId) {
         throw new Error("No se encontró el negocio");
+      }
+
+      if (servicesLimitReached) {
+        throw new Error("Límite de servicios alcanzado");
       }
 
       if (!form.name.trim()) {
@@ -478,7 +497,8 @@ export default function ServicesPage() {
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <StatCard
           label="Total servicios"
           value={loading ? "..." : String(services.length)}
@@ -493,6 +513,17 @@ export default function ServicesPage() {
           label="Con descripción"
           value={loading ? "..." : String(servicesWithDescriptionCount)}
           helper="Servicios con detalle útil para clientes e IA."
+        />
+        <StatCard
+          label="Límite del plan"
+          value={loading ? "..." : `${services.length}/${maxServices}`}
+          helper={
+            loading
+              ? "Cargando plan..."
+              : servicesLimitReached
+              ? "Llegaste al límite de servicios de tu plan."
+              : `Te quedan ${servicesRemainingCount} servicios disponibles.`
+          }
         />
       </section>
 
@@ -794,6 +825,21 @@ export default function ServicesPage() {
           description="Agrega un nuevo servicio para ofrecer más opciones de reserva."
         >
           <div className="space-y-5">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-700">
+                Plan actual: <span className="capitalize">{plan}</span>
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Has creado {services.length} de {maxServices} servicios disponibles en tu plan.
+              </p>
+            </div>
+
+            {servicesLimitReached ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+                Límite de servicios alcanzado
+              </div>
+            ) : null}
+
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
                 Nombre del servicio
@@ -805,7 +851,8 @@ export default function ServicesPage() {
                   setForm((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder="Ej: Corte premium"
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                disabled={servicesLimitReached}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               />
             </div>
 
@@ -819,7 +866,8 @@ export default function ServicesPage() {
                   setForm((prev) => ({ ...prev, description: e.target.value }))
                 }
                 placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
-                className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                disabled={servicesLimitReached}
+                className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               />
             </div>
 
@@ -837,7 +885,8 @@ export default function ServicesPage() {
                     duration_minutes: e.target.value,
                   }))
                 }
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                disabled={servicesLimitReached}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               />
             </div>
 
@@ -853,7 +902,8 @@ export default function ServicesPage() {
                   setForm((prev) => ({ ...prev, price: e.target.value }))
                 }
                 placeholder="Ej: 10000"
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                disabled={servicesLimitReached}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               />
             </div>
 
@@ -882,6 +932,7 @@ export default function ServicesPage() {
                         type="checkbox"
                         checked={form.staff_ids.includes(staffItem.id)}
                         onChange={() => toggleCreateStaff(staffItem.id)}
+                        disabled={servicesLimitReached}
                         className="h-4 w-4 rounded border-slate-300"
                       />
                       <span className="flex items-center gap-2">
@@ -913,7 +964,7 @@ export default function ServicesPage() {
             <button
               type="button"
               onClick={handleCreateService}
-              disabled={saving || loading}
+              disabled={saving || loading || servicesLimitReached}
               className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "Guardando..." : "Crear servicio"}
