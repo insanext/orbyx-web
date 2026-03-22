@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  Bot,
   Check,
   ChevronDown,
   ChevronUp,
@@ -25,15 +26,17 @@ type Plan = {
   priceLabel: string;
   ivaLabel: string;
   subtitle: string;
+  badge?: string;
   includedStaff: number;
-  includedWhatsApp: number;
+  includedWhatsAppConversations: number;
   extras: ExtraKey[];
   summaryTitle: string;
   summaryIntro: string;
   features: string[];
   icon: "mail" | "sparkles" | "crown" | "gem";
   accentClass: string;
-  radioClass: string;
+  softBgClass: string;
+  borderClass: string;
 };
 
 const plans: Plan[] = [
@@ -45,10 +48,10 @@ const plans: Plan[] = [
     ivaLabel: "mes + iva",
     subtitle: "Empieza a ordenar tu negocio",
     includedStaff: 2,
-    includedWhatsApp: 0,
+    includedWhatsAppConversations: 0,
     extras: ["staff"],
-    summaryTitle: "Pro",
-    summaryIntro: "Incluye:",
+    summaryTitle: "Plan Pro",
+    summaryIntro: "Ideal para comenzar con una operación más ordenada.",
     features: [
       "Agenda online de citas",
       "Página pública de reservas",
@@ -60,8 +63,9 @@ const plans: Plan[] = [
       "Confirmación de citas por email",
     ],
     icon: "mail",
-    accentClass: "text-cyan-300",
-    radioClass: "border-cyan-500 text-cyan-500",
+    accentClass: "text-cyan-600",
+    softBgClass: "bg-cyan-50",
+    borderClass: "border-cyan-200",
   },
   {
     key: "premium",
@@ -69,12 +73,12 @@ const plans: Plan[] = [
     price: 44990,
     priceLabel: "$44.990",
     ivaLabel: "mes + iva",
-    subtitle: "Más control, mejor comunicación con tus clientes",
+    subtitle: "Más control y mejor comunicación con tus clientes",
     includedStaff: 5,
-    includedWhatsApp: 0,
+    includedWhatsAppConversations: 0,
     extras: ["staff"],
-    summaryTitle: "Premium",
-    summaryIntro: "Además incluye:",
+    summaryTitle: "Plan Premium",
+    summaryIntro: "Pensado para negocios que ya necesitan más comunicación y seguimiento.",
     features: [
       "Todo lo del plan Pro",
       "Recordatorios a clientes por email",
@@ -82,54 +86,62 @@ const plans: Plan[] = [
       "Campañas y envíos masivos por email",
     ],
     icon: "sparkles",
-    accentClass: "text-fuchsia-300",
-    radioClass: "border-fuchsia-500 text-fuchsia-500",
+    accentClass: "text-fuchsia-600",
+    softBgClass: "bg-fuchsia-50",
+    borderClass: "border-fuchsia-200",
   },
   {
     key: "vip",
     name: "VIP",
-    price: 69990,
-    priceLabel: "$69.990",
+    price: 79990,
+    priceLabel: "$79.990",
     ivaLabel: "mes + iva",
-    subtitle: "Reduce ausencias y mejora tu ocupación",
+    subtitle: "Reduce ausencias y mantén el contacto con tus clientes",
+    badge: "Más elegido",
     includedStaff: 10,
-    includedWhatsApp: 100,
+    includedWhatsAppConversations: 200,
     extras: ["staff", "whatsapp"],
-    summaryTitle: "VIP",
-    summaryIntro: "Además incluye:",
+    summaryTitle: "Plan VIP",
+    summaryIntro: "Diseñado para negocios que ya necesitan comunicación activa por WhatsApp.",
     features: [
       "Todo lo del plan Premium",
       "Estadísticas avanzadas del negocio",
       "Personalización del negocio (logo, marca, página)",
       "Recordatorios automáticos por WhatsApp",
       "Segmentación de clientes",
+      "Hasta 200 conversaciones de WhatsApp al mes",
     ],
     icon: "crown",
-    accentClass: "text-amber-300",
-    radioClass: "border-amber-500 text-amber-500",
+    accentClass: "text-amber-600",
+    softBgClass: "bg-amber-50",
+    borderClass: "border-amber-200",
   },
   {
     key: "platinum",
     name: "Platinum",
-    price: 119990,
-    priceLabel: "$119.990",
+    price: 159990,
+    priceLabel: "$159.990",
     ivaLabel: "mes + iva",
-    subtitle: "Tu negocio funciona en automático",
+    subtitle: "La IA trabaja por tu negocio incluso cuando no estás disponible",
+    badge: "Automatización IA",
     includedStaff: 20,
-    includedWhatsApp: 100,
+    includedWhatsAppConversations: 400,
     extras: ["staff", "whatsapp"],
-    summaryTitle: "Platinum",
-    summaryIntro: "Además incluye:",
+    summaryTitle: "Plan Platinum",
+    summaryIntro: "Tu operación escala con WhatsApp e inteligencia artificial trabajando por ti.",
     features: [
       "Todo lo del plan VIP",
-      "Automatización de reservas por chat (IA)",
+      "Automatización de reservas por WhatsApp con IA",
+      "Respuestas automáticas a clientes",
       "Reactivación de clientes inactivos por WhatsApp",
       "Campañas y mensajes masivos por WhatsApp",
       "Métricas de conversaciones y conversión",
+      "Hasta 400 conversaciones de WhatsApp al mes",
     ],
     icon: "gem",
-    accentClass: "text-emerald-300",
-    radioClass: "border-emerald-500 text-emerald-500",
+    accentClass: "text-emerald-600",
+    softBgClass: "bg-emerald-50",
+    borderClass: "border-emerald-200",
   },
 ];
 
@@ -137,14 +149,14 @@ const extraConfig = {
   staff: {
     title: "Profesionales extra",
     description:
-      "Amplía la capacidad de tu equipo agregando profesionales adicionales al plan.",
-    unitPrice: 7000,
-    unitLabel: "$7.000",
+      "Amplía tu equipo agregando profesionales adicionales a tu plan actual.",
+    unitPrice: 5000,
+    unitLabel: "$5.000",
   },
   whatsapp: {
-    title: "Recordatorios de WhatsApp",
+    title: "Conversaciones extra de WhatsApp",
     description:
-      "Agrega bloques de 50 recordatorios automáticos por WhatsApp para tus citas.",
+      "Agrega bloques de 50 conversaciones adicionales de WhatsApp para seguir automatizando recordatorios y contacto con clientes.",
     unitPrice: 5000,
     unitLabel: "$5.000",
   },
@@ -162,12 +174,12 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
 }
 
 export default function PlanesPage() {
-  const [selectedPlanKey, setSelectedPlanKey] = useState<PlanKey>("premium");
+  const [selectedPlanKey, setSelectedPlanKey] = useState<PlanKey>("vip");
   const [staffExtras, setStaffExtras] = useState(0);
   const [whatsAppExtras, setWhatsAppExtras] = useState(0);
   const [showCompare, setShowCompare] = useState(false);
 
-  const selectedPlan = plans.find((plan) => plan.key === selectedPlanKey) || plans[1];
+  const selectedPlan = plans.find((plan) => plan.key === selectedPlanKey) || plans[2];
 
   const supportsStaffExtra = selectedPlan.extras.includes("staff");
   const supportsWhatsAppExtra = selectedPlan.extras.includes("whatsapp");
@@ -209,6 +221,10 @@ export default function PlanesPage() {
   const iva = Math.round(subtotal * 0.19);
   const total = subtotal + iva;
 
+  const currentStaffTotal = selectedPlan.includedStaff + staffExtras;
+  const currentWhatsAppTotal =
+    selectedPlan.includedWhatsAppConversations + whatsAppExtras * 50;
+
   function handleSelectPlan(planKey: PlanKey) {
     setSelectedPlanKey(planKey);
     setStaffExtras(0);
@@ -235,23 +251,26 @@ export default function PlanesPage() {
     }
   }
 
-  const currentStaffTotal = selectedPlan.includedStaff + staffExtras;
-  const currentWhatsAppTotal = selectedPlan.includedWhatsApp + whatsAppExtras * 50;
-
   return (
-    <main className="min-h-screen bg-[#f3f4f6] text-slate-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-        <div className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm lg:p-8">
-          <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div>
-              <p className="text-3xl font-semibold tracking-tight text-slate-900">
-                Elige tu plan Orbyx
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Comienza con la base que necesita tu negocio y amplía tu plan con extras según tu operación.
-              </p>
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div>
+            <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+              <div className="max-w-3xl">
+                <span className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-violet-700">
+                  Planes Orbyx
+                </span>
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 lg:text-5xl">
+                  Escoge el plan que mejor se adapta a tu negocio
+                </h1>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+                  Comienza con la agenda que necesitas hoy y suma extras a medida que
+                  tu operación crece.
+                </p>
+              </div>
 
-              <div className="mt-8 space-y-3">
+              <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {plans.map((plan) => {
                   const isSelected = selectedPlan.key === plan.key;
 
@@ -260,48 +279,123 @@ export default function PlanesPage() {
                       key={plan.key}
                       type="button"
                       onClick={() => handleSelectPlan(plan.key)}
-                      className={`w-full rounded-2xl border px-5 py-4 text-left transition ${
+                      className={`relative rounded-2xl border p-4 text-left transition ${
                         isSelected
-                          ? "border-slate-900 bg-slate-50 shadow-sm"
+                          ? `${plan.borderClass} ${plan.softBgClass} shadow-sm`
                           : "border-slate-200 bg-white hover:border-slate-300"
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                          <span
-                            className={`mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full border ${
-                              isSelected ? plan.radioClass : "border-slate-300 text-transparent"
-                            }`}
-                          >
-                            <span
-                              className={`h-2.5 w-2.5 rounded-full ${
-                                isSelected ? "bg-current" : "bg-transparent"
-                              }`}
-                            />
-                          </span>
+                      {plan.badge ? (
+                        <span className="absolute right-4 top-4 rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                          {plan.badge}
+                        </span>
+                      ) : null}
 
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-semibold text-slate-900">
-                                {plan.name}
-                              </span>
-                            </div>
+                      <div
+                        className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${
+                          isSelected ? "bg-white" : "bg-slate-100"
+                        } ${plan.accentClass}`}
+                      >
+                        <PlanIcon type={plan.icon} />
+                      </div>
 
-                            <p className="mt-1 text-base text-slate-600">{plan.subtitle}</p>
-                          </div>
-                        </div>
+                      <div className="mt-4">
+                        <p className="text-lg font-semibold text-slate-900">{plan.name}</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">{plan.subtitle}</p>
+                      </div>
 
-                        <div className="shrink-0 text-right">
-                          <div className="text-2xl font-semibold text-slate-900">
-                            {plan.priceLabel}
-                          </div>
-                          <div className="text-sm text-slate-500">{plan.ivaLabel}</div>
-                        </div>
+                      <div className="mt-5">
+                        <p className="text-2xl font-semibold text-slate-900">{plan.priceLabel}</p>
+                        <p className="text-sm text-slate-500">{plan.ivaLabel}</p>
                       </div>
                     </button>
                   );
                 })}
               </div>
+
+              <motion.div
+                key={selectedPlan.key}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className={`mt-8 rounded-[28px] border p-6 lg:p-7 ${selectedPlan.borderClass} ${selectedPlan.softBgClass}`}
+              >
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="max-w-2xl">
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white ${selectedPlan.accentClass}`}>
+                        <PlanIcon type={selectedPlan.icon} />
+                      </span>
+                      <div>
+                        <h2 className="text-2xl font-semibold text-slate-900">
+                          {selectedPlan.name}
+                        </h2>
+                        <p className="text-sm text-slate-500">{selectedPlan.ivaLabel}</p>
+                      </div>
+                    </div>
+
+                    <p className="mt-5 text-lg font-medium text-slate-800">
+                      {selectedPlan.subtitle}
+                    </p>
+
+                    <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                      {selectedPlan.features.map((feature) => (
+                        <div
+                          key={feature}
+                          className="flex items-start gap-3 rounded-2xl border border-white/70 bg-white/80 px-4 py-3"
+                        >
+                          <Check className={`mt-0.5 h-4 w-4 shrink-0 ${selectedPlan.accentClass}`} />
+                          <span className="text-sm leading-6 text-slate-700">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="w-full rounded-2xl border border-white/70 bg-white p-5 lg:max-w-xs">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Incluye
+                    </p>
+
+                    <div className="mt-4 space-y-4">
+                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                        <span className="text-sm font-medium text-slate-600">Profesionales</span>
+                        <span className="text-base font-semibold text-slate-900">
+                          {selectedPlan.includedStaff}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                        <span className="text-sm font-medium text-slate-600">Servicios</span>
+                        <span className="text-base font-semibold text-slate-900">
+                          {selectedPlan.key === "pro"
+                            ? "6"
+                            : selectedPlan.key === "premium"
+                            ? "15"
+                            : selectedPlan.key === "vip"
+                            ? "30"
+                            : "60"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                        <span className="text-sm font-medium text-slate-600">WhatsApp</span>
+                        <span className="text-base font-semibold text-slate-900">
+                          {selectedPlan.includedWhatsAppConversations > 0
+                            ? `${selectedPlan.includedWhatsAppConversations} conv.`
+                            : "No incluido"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                        <span className="text-sm font-medium text-slate-600">IA</span>
+                        <span className="text-base font-semibold text-slate-900">
+                          {selectedPlan.key === "platinum" ? "Incluida" : "No incluida"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
 
               <div className="mt-8">
                 <button
@@ -309,8 +403,12 @@ export default function PlanesPage() {
                   onClick={() => setShowCompare((prev) => !prev)}
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  {showCompare ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  {showCompare ? "Ocultar comparación de planes" : "Ver comparación de planes"}
+                  {showCompare ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                  {showCompare ? "Ocultar comparación" : "Ver comparación completa"}
                 </button>
 
                 {showCompare ? (
@@ -318,10 +416,10 @@ export default function PlanesPage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
+                    className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white"
                   >
                     <div className="overflow-x-auto">
-                      <table className="min-w-[900px] w-full border-collapse">
+                      <table className="min-w-[920px] w-full border-collapse">
                         <thead>
                           <tr className="bg-slate-100">
                             <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
@@ -376,16 +474,25 @@ export default function PlanesPage() {
                               },
                             },
                             {
-                              label: "WhatsApp",
+                              label: "Conversaciones de WhatsApp",
                               values: {
                                 pro: "—",
                                 premium: "—",
-                                vip: "100 / mes",
-                                platinum: "100 / mes",
+                                vip: "200 / mes",
+                                platinum: "400 / mes",
                               },
                             },
                             {
                               label: "Automatización con IA",
+                              values: {
+                                pro: "—",
+                                premium: "—",
+                                vip: "—",
+                                platinum: "Sí",
+                              },
+                            },
+                            {
+                              label: "Reactivación automática",
                               values: {
                                 pro: "—",
                                 premium: "—",
@@ -419,27 +526,38 @@ export default function PlanesPage() {
               </div>
 
               <div className="mt-10">
-                <p className="text-lg font-semibold text-slate-900">
-                  Puedes ampliar tu plan con estos adicionales
+                <p className="text-xl font-semibold text-slate-900">
+                  Personaliza tu plan con adicionales
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Ajusta tu plan según la capacidad real de tu negocio, sin cambiar de
+                  plan antes de tiempo.
                 </p>
 
-                <div className="mt-4 space-y-4">
+                <div className="mt-5 grid gap-4 lg:grid-cols-2">
                   {supportsStaffExtra ? (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                      <div className="flex gap-4">
-                        <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
                           <Users className="h-5 w-5" />
                         </div>
 
                         <div className="min-w-0 flex-1">
                           <p className="text-base font-semibold text-slate-900">
-                            Tu plan incluye {selectedPlan.includedStaff} profesionales
+                            {extraConfig.staff.title}
                           </p>
                           <p className="mt-1 text-sm leading-6 text-slate-600">
-                            Agrega profesionales extra por {extraConfig.staff.unitLabel}.
+                            {extraConfig.staff.description}
                           </p>
 
-                          <div className="mt-5 flex items-center gap-5">
+                          <div className="mt-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                            <span className="text-sm text-slate-600">Valor por unidad</span>
+                            <span className="text-sm font-semibold text-slate-900">
+                              {extraConfig.staff.unitLabel}
+                            </span>
+                          </div>
+
+                          <div className="mt-4 flex items-center gap-4">
                             <button
                               type="button"
                               onClick={() => decreaseExtra("staff")}
@@ -448,8 +566,8 @@ export default function PlanesPage() {
                               −
                             </button>
 
-                            <span className="min-w-[76px] text-center text-lg font-semibold text-slate-900">
-                              {staffExtras} extras
+                            <span className="min-w-[80px] text-center text-lg font-semibold text-slate-900">
+                              {staffExtras}
                             </span>
 
                             <button
@@ -461,8 +579,8 @@ export default function PlanesPage() {
                             </button>
                           </div>
 
-                          <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                            👉 Tu plan ahora cuenta con {currentStaffTotal} profesionales
+                          <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+                            Tu plan ahora cuenta con {currentStaffTotal} profesionales.
                           </div>
                         </div>
                       </div>
@@ -470,22 +588,28 @@ export default function PlanesPage() {
                   ) : null}
 
                   {supportsWhatsAppExtra ? (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                      <div className="flex gap-4">
-                        <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
                           <MessageCircle className="h-5 w-5" />
                         </div>
 
                         <div className="min-w-0 flex-1">
                           <p className="text-base font-semibold text-slate-900">
-                            Recordatorios de WhatsApp
+                            {extraConfig.whatsapp.title}
                           </p>
                           <p className="mt-1 text-sm leading-6 text-slate-600">
-                            Envía recordatorios automáticos de tus citas por medio de WhatsApp.
-                            Agrega bloques de 50 mensajes por {extraConfig.whatsapp.unitLabel}.
+                            {extraConfig.whatsapp.description}
                           </p>
 
-                          <div className="mt-5 flex items-center gap-5">
+                          <div className="mt-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                            <span className="text-sm text-slate-600">Bloque adicional</span>
+                            <span className="text-sm font-semibold text-slate-900">
+                              50 conversaciones · {extraConfig.whatsapp.unitLabel}
+                            </span>
+                          </div>
+
+                          <div className="mt-4 flex items-center gap-4">
                             <button
                               type="button"
                               onClick={() => decreaseExtra("whatsapp")}
@@ -494,8 +618,8 @@ export default function PlanesPage() {
                               −
                             </button>
 
-                            <span className="min-w-[76px] text-center text-lg font-semibold text-slate-900">
-                              {whatsAppExtras} extras
+                            <span className="min-w-[80px] text-center text-lg font-semibold text-slate-900">
+                              {whatsAppExtras}
                             </span>
 
                             <button
@@ -507,8 +631,8 @@ export default function PlanesPage() {
                             </button>
                           </div>
 
-                          <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                            👉 Tu plan ahora cuenta con {currentWhatsAppTotal} WhatsApp
+                          <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+                            Tu plan ahora cuenta con {currentWhatsAppTotal} conversaciones de WhatsApp.
                           </div>
                         </div>
                       </div>
@@ -517,89 +641,95 @@ export default function PlanesPage() {
                 </div>
               </div>
             </div>
-
-            <div className="xl:sticky xl:top-6 xl:self-start">
-              <div className="rounded-[26px] bg-slate-900 p-6 text-white shadow-[0_24px_60px_rgba(15,23,42,0.28)]">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <span className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 ${selectedPlan.accentClass}`}>
-                        <PlanIcon type={selectedPlan.icon} />
-                      </span>
-                      <div>
-                        <p className="text-2xl font-semibold">{selectedPlan.summaryTitle}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`text-xl font-semibold ${selectedPlan.accentClass}`}>
-                    {selectedPlan.priceLabel}
-                  </div>
-                </div>
-
-                <p className="mt-5 text-sm text-slate-300">{selectedPlan.summaryIntro}</p>
-
-                <div className="mt-4 space-y-3">
-                  {selectedPlan.features.map((feature) => (
-                    <div key={feature} className="flex items-start gap-3">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-white" />
-                      <span className="text-sm leading-6 text-white">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-8">
-                  <p className="text-sm font-semibold text-white">Extras añadidos al plan</p>
-
-                  <div className="mt-4 space-y-3">
-                    {extraItems.length === 0 ? (
-                      <div className="rounded-xl bg-white/5 px-4 py-3 text-sm text-slate-300">
-                        Aún no has añadido extras.
-                      </div>
-                    ) : (
-                      extraItems.map((item) => (
-                        <div
-                          key={item.label}
-                          className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3"
-                        >
-                          <span className="text-sm text-white">{item.label}</span>
-                          <span className="text-sm font-semibold text-white">
-                            {formatCLP(item.amount)}
-                          </span>
-                        </div>
-                      ))
-                    )}
-
-                    <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
-                      <span className="text-sm text-white">Impuestos</span>
-                      <span className="text-sm font-semibold text-white">{formatCLP(iva)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-5">
-                  <span className={`text-2xl font-semibold ${selectedPlan.accentClass}`}>Total</span>
-                  <span className={`text-2xl font-semibold ${selectedPlan.accentClass}`}>
-                    {formatCLP(total)}
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="fixed inset-x-0 bottom-0 z-40 px-4 pb-4">
-            <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-4 rounded-2xl bg-slate-900 px-5 py-4 shadow-[0_20px_60px_rgba(15,23,42,0.35)]">
-              <div>
-                <p className="text-sm font-medium text-white">Estás a un paso de activar tu cuenta</p>
-                <p className="text-xs text-slate-400">{selectedPlan.name} seleccionado</p>
+          <div className="xl:sticky xl:top-6 xl:self-start">
+            <div className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm">
+              <div className={`border-b p-6 ${selectedPlan.borderClass} ${selectedPlan.softBgClass}`}>
+                <div className="flex items-center gap-3">
+                  <span className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white ${selectedPlan.accentClass}`}>
+                    <PlanIcon type={selectedPlan.icon} />
+                  </span>
+                  <div>
+                    <p className="text-xl font-semibold text-slate-900">{selectedPlan.summaryTitle}</p>
+                    <p className="text-sm text-slate-600">{selectedPlan.summaryIntro}</p>
+                  </div>
+                </div>
+
+                {selectedPlan.key === "platinum" ? (
+                  <div className="mt-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-white px-4 py-4">
+                    <Bot className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        IA trabajando para tu negocio
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                        La IA responde, agenda y recupera clientes automáticamente por ti.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
-              <Link
-                href={`/checkout?plan=${selectedPlan.key}`}
-                className="inline-flex h-12 items-center justify-center rounded-xl bg-violet-600 px-5 text-sm font-semibold text-white transition hover:bg-violet-700"
-              >
-                Pagar {formatCLP(total)}
-              </Link>
+              <div className="p-6">
+                <div className="space-y-3">
+                  {extraItems.length === 0 ? (
+                    <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                      Aún no has agregado extras.
+                    </div>
+                  ) : (
+                    extraItems.map((item) => (
+                      <div
+                        key={item.label}
+                        className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"
+                      >
+                        <span className="text-sm text-slate-700">{item.label}</span>
+                        <span className="text-sm font-semibold text-slate-900">
+                          {formatCLP(item.amount)}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="mt-6 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Plan base</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {selectedPlan.priceLabel}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">IVA</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {formatCLP(iva)}
+                    </span>
+                  </div>
+
+                  <div className="border-t border-slate-200 pt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-semibold text-slate-900">Total mensual</span>
+                      <span className={`text-2xl font-semibold ${selectedPlan.accentClass}`}>
+                        {formatCLP(total)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-3">
+                  <Link
+                    href={`/checkout?plan=${selectedPlan.key}`}
+                    className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Continuar con {selectedPlan.name}
+                  </Link>
+
+                  <p className="text-center text-xs leading-5 text-slate-500">
+                    Puedes partir con tu plan base y ajustar extras en cualquier momento.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
