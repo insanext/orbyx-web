@@ -332,47 +332,51 @@ function ExtraCard({
   const accent = getExtraAccent(extraKey);
 
   return (
-    <div className={`flex h-full flex-col rounded-3xl border p-5 shadow-sm ${accent.card}`}>
-      <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${accent.icon}`}>
-        {icon}
+    <div className={`flex h-full min-h-[560px] flex-col rounded-3xl border p-5 shadow-sm ${accent.card}`}>
+      <div>
+        <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${accent.icon}`}>
+          {icon}
+        </div>
+
+        <p className="mt-4 text-base font-semibold leading-6 text-slate-900">{title}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+
+        <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Valor
+          </p>
+          <p className="mt-1 text-base font-semibold text-slate-900">
+            {unitLabel} · {unitSizeLabel}
+          </p>
+        </div>
       </div>
 
-      <p className="mt-4 text-base font-semibold leading-6 text-slate-900">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+      <div className="mt-auto pt-5">
+        <div className="flex items-center justify-center gap-5">
+          <button
+            type="button"
+            onClick={onDecrease}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white text-2xl text-slate-500 transition hover:bg-slate-50"
+          >
+            −
+          </button>
 
-      <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-          Valor
-        </p>
-        <p className="mt-1 text-base font-semibold text-slate-900">
-          {unitLabel} · {unitSizeLabel}
-        </p>
-      </div>
+          <span className="min-w-[28px] text-center text-xl font-semibold text-slate-900">
+            {value}
+          </span>
 
-      <div className="mt-4 flex items-center justify-center gap-5">
-        <button
-          type="button"
-          onClick={onDecrease}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white text-2xl text-slate-500 transition hover:bg-slate-50"
-        >
-          −
-        </button>
+          <button
+            type="button"
+            onClick={onIncrease}
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white text-2xl transition ${accent.button}`}
+          >
+            +
+          </button>
+        </div>
 
-        <span className="min-w-[28px] text-center text-xl font-semibold text-slate-900">
-          {value}
-        </span>
-
-        <button
-          type="button"
-          onClick={onIncrease}
-          className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white text-2xl transition ${accent.button}`}
-        >
-          +
-        </button>
-      </div>
-
-      <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm leading-6 ${accent.badge}`}>
-        {infoText}
+        <div className={`mt-4 min-h-[116px] rounded-2xl border px-4 py-3 text-sm leading-6 ${accent.badge}`}>
+          {infoText}
+        </div>
       </div>
     </div>
   );
