@@ -39,6 +39,15 @@ type StaffItem = {
   sort_order: number;
 };
 
+type StaffServiceItem = {
+  id?: string;
+  tenant_id?: string;
+  staff_id: string;
+  service_id: string;
+  branch_id?: string | null;
+  created_at?: string;
+};
+
 type StaffServiceRow = {
   id: string;
   tenant_id: string;
