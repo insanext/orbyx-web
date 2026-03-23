@@ -308,7 +308,7 @@ useEffect(() => {
           : []
       );
     } catch (error: any) {
-      setError(error?.message || "No se pudieron cargar los datos de la sucursal");
+      setLoadError(error?.message || "No se pudieron cargar los datos de la sucursal");
       setServices([]);
       setStaff([]);
       setStaffServices([]);
@@ -484,126 +484,159 @@ setSaveOk("Servicio creado correctamente.");
     setEditingId(null);
   }
 
-  async function handleSaveEdit(serviceId: string) {
-    try {
-      setSaving(true);
-      setSaveError("");
-      setSaveOk("");
+async function handleSaveEdit(serviceId: string) {
+  try {
+    setSaving(true);
+    setSaveError("");
+    setSaveOk("");
 
-      if (!editForm.name.trim()) {
-        throw new Error("Debes ingresar el nombre del servicio");
+    if (!tenantId) {
+      throw new Error("No se encontró el negocio");
+    }
+
+    if (!selectedBranchId) {
+      throw new Error("Debes seleccionar una sucursal");
+    }
+
+    if (!editForm.name.trim()) {
+      throw new Error("Debes ingresar el nombre del servicio");
+    }
+
+    if (!editForm.duration_minutes.trim()) {
+      throw new Error("Debes ingresar la duración");
+    }
+
+    const response = await fetch(
+      `https://orbyx-backend.onrender.com/services/${serviceId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          branch_id: selectedBranchId,
+          name: editForm.name.trim(),
+          description: editForm.description.trim(),
+          duration_minutes: Number(editForm.duration_minutes || 30),
+          price: Number(editForm.price || 0),
+          buffer_before_minutes: 0,
+          buffer_after_minutes: 0,
+          active: editForm.active,
+        }),
       }
+    );
 
-      if (!editForm.duration_minutes.trim()) {
-        throw new Error("Debes ingresar la duración");
-      }
+    const data = await response.json();
 
-      const response = await fetch(
-        `https://orbyx-backend.onrender.com/services/${serviceId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: editForm.name.trim(),
-            description: editForm.description.trim(),
-            duration_minutes: Number(editForm.duration_minutes || 30),
-            price: Number(editForm.price || 0),
-            buffer_before_minutes: 0,
-            buffer_after_minutes: 0,
-            active: editForm.active,
-          }),
-        }
+    if (!response.ok) {
+      throw new Error(data?.error || "No se pudo actualizar el servicio");
+    }
+
+    await saveServiceStaffRelations(serviceId, editForm.staff_ids);
+
+    if (tenantId && selectedBranchId) {
+      const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
+        fetch(
+          `https://orbyx-backend.onrender.com/services?tenant_id=${tenantId}&branch_id=${selectedBranchId}`
+        ),
+        fetch(
+          `https://orbyx-backend.onrender.com/staff?tenant_id=${tenantId}&branch_id=${selectedBranchId}&active=true`
+        ),
+        fetch(
+          `https://orbyx-backend.onrender.com/staff-services?tenant_id=${tenantId}`
+        ),
+      ]);
+
+      const servicesData = await servicesRes.json();
+      const staffData = await staffRes.json();
+      const staffServicesData = await staffServicesRes.json();
+
+      setServices(
+        Array.isArray(servicesData?.services) ? servicesData.services : []
       );
+      setStaff(Array.isArray(staffData?.staff) ? staffData.staff : []);
+      setStaffServices(
+        Array.isArray(staffServicesData?.staff_services)
+          ? staffServicesData.staff_services
+          : []
+      );
+    }
 
-      const data = await response.json();
+    setSaveOk("Servicio actualizado correctamente.");
+    setEditingId(null);
+  } catch (error: any) {
+    setSaveError(error?.message || "No se pudo actualizar el servicio");
+  } finally {
+    setSaving(false);
+  }
+}
 
-      if (!response.ok) {
-        throw new Error(data?.error || "No se pudo actualizar el servicio");
+async function handleDeleteService(serviceId: string) {
+  try {
+    setSaveError("");
+    setSaveOk("");
+
+    const confirmed = window.confirm(
+      "¿Seguro que deseas eliminar este servicio?"
+    );
+
+    if (!confirmed) return;
+
+    setSaving(true);
+
+    const response = await fetch(
+      `https://orbyx-backend.onrender.com/services/${serviceId}`,
+      {
+        method: "DELETE",
       }
+    );
 
-      await saveServiceStaffRelations(serviceId, editForm.staff_ids);
+    const data = await response.json();
 
-      await loadAll();
-      setSaveOk("Servicio actualizado correctamente.");
+    if (!response.ok) {
+      throw new Error(data?.error || "No se pudo eliminar el servicio");
+    }
+
+    setSaveOk("Servicio eliminado correctamente.");
+
+    if (editingId === serviceId) {
       setEditingId(null);
-    } catch (error: any) {
-      setSaveError(error?.message || "No se pudo actualizar el servicio");
-    } finally {
-      setSaving(false);
     }
-  }
 
-  async function handleDeleteService(serviceId: string) {
-    try {
-      setSaveError("");
-      setSaveOk("");
+    if (tenantId && selectedBranchId) {
+      const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
+        fetch(
+          `https://orbyx-backend.onrender.com/services?tenant_id=${tenantId}&branch_id=${selectedBranchId}`
+        ),
+        fetch(
+          `https://orbyx-backend.onrender.com/staff?tenant_id=${tenantId}&branch_id=${selectedBranchId}&active=true`
+        ),
+        fetch(
+          `https://orbyx-backend.onrender.com/staff-services?tenant_id=${tenantId}`
+        ),
+      ]);
 
-      const confirmed = window.confirm(
-        "¿Seguro que deseas eliminar este servicio?"
+      const servicesData = await servicesRes.json();
+      const staffData = await staffRes.json();
+      const staffServicesData = await staffServicesRes.json();
+
+      setServices(
+        Array.isArray(servicesData?.services) ? servicesData.services : []
       );
-
-      if (!confirmed) return;
-
-      setSaving(true);
-
-      const response = await fetch(
-        `https://orbyx-backend.onrender.com/services/${serviceId}`,
-        {
-          method: "DELETE",
-        }
+      setStaff(Array.isArray(staffData?.staff) ? staffData.staff : []);
+      setStaffServices(
+        Array.isArray(staffServicesData?.staff_services)
+          ? staffServicesData.staff_services
+          : []
       );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "No se pudo eliminar el servicio");
-      }
-
-      setSaveOk("Servicio eliminado correctamente.");
-
-      if (editingId === serviceId) {
-        setEditingId(null);
-      }
-
-if (tenantId && selectedBranchId) {
-  const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
-    fetch(
-      `https://orbyx-backend.onrender.com/services?tenant_id=${tenantId}&branch_id=${selectedBranchId}`
-    ),
-    fetch(
-      `https://orbyx-backend.onrender.com/staff?tenant_id=${tenantId}&branch_id=${selectedBranchId}&active=true`
-    ),
-    fetch(
-      `https://orbyx-backend.onrender.com/staff-services?tenant_id=${tenantId}`
-    ),
-  ]);
-
-  const servicesData = await servicesRes.json();
-  const staffData = await staffRes.json();
-  const staffServicesData = await staffServicesRes.json();
-
-  setServices(Array.isArray(servicesData?.services) ? servicesData.services : []);
-  setStaff(Array.isArray(staffData?.staff) ? staffData.staff : []);
-  setStaffServices(
-    Array.isArray(staffServicesData?.staff_services)
-      ? staffServicesData.staff_services
-      : []
-  );
-}
-
-} catch (error: any) {
-  setSaveError(error?.message || "No se pudo eliminar el servicio");
-} finally {
-  setSaving(false);
-}
-    } catch (error: any) {
-      setSaveError(error?.message || "No se pudo eliminar el servicio");
-    } finally {
-      setSaving(false);
     }
+  } catch (error: any) {
+    setSaveError(error?.message || "No se pudo eliminar el servicio");
+  } finally {
+    setSaving(false);
   }
+}
 
   return (
     <div className="space-y-6">
@@ -639,17 +672,16 @@ if (tenantId && selectedBranchId) {
       value={selectedBranchId}
       onChange={(e) => {
         setSelectedBranchId(e.target.value);
-        setEditingServiceId(null);
+        setEditingId(null);
         setForm({
           name: "",
           description: "",
-          duration_minutes: 60,
+          duration_minutes: "30",
           price: "",
-          active: true,
           staff_ids: [],
         });
-        setError("");
-        setSuccess("");
+        setSaveError("");
+        setSaveOk("");
       }}
       className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm"
     >
@@ -663,7 +695,6 @@ if (tenantId && selectedBranchId) {
     </select>
   )}
 </Panel>
-
       {loadError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
           {loadError}
