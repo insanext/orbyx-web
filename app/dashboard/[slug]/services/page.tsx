@@ -217,6 +217,18 @@ await loadBranches(currentTenantId);
 
 return;
 
+const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
+  fetch(
+    `https://orbyx-backend.onrender.com/services?tenant_id=${tenantId}&branch_id=${selectedBranchId}`
+  ),
+  fetch(
+    `https://orbyx-backend.onrender.com/staff?tenant_id=${tenantId}&branch_id=${selectedBranchId}&active=true`
+  ),
+  fetch(
+    `https://orbyx-backend.onrender.com/staff-services?tenant_id=${tenantId}`
+  ),
+]);
+
       const servicesData: { services?: Service[]; error?: string } =
         await servicesRes.json();
       const staffData: { staff?: StaffItem[]; error?: string } =
