@@ -258,6 +258,7 @@ return;
     }
   }, [slug]);
 
+
 useEffect(() => {
   async function loadBranchData() {
     try {
@@ -269,6 +270,7 @@ useEffect(() => {
       }
 
       setLoading(true);
+      setLoadError("");
 
       const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
         fetch(
@@ -282,12 +284,19 @@ useEffect(() => {
         ),
       ]);
 
-      const servicesData = await servicesRes.json();
-      const staffData = await staffRes.json();
-      const staffServicesData = await staffServicesRes.json();
+      const servicesData: { services?: Service[]; error?: string } =
+        await servicesRes.json();
+      const staffData: { staff?: StaffItem[]; error?: string } =
+        await staffRes.json();
+      const staffServicesData: {
+        staff_services?: StaffServiceItem[];
+        error?: string;
+      } = await staffServicesRes.json();
 
       if (!servicesRes.ok) {
-        throw new Error(servicesData?.error || "No se pudieron cargar los servicios");
+        throw new Error(
+          servicesData?.error || "No se pudieron cargar los servicios"
+        );
       }
 
       if (!staffRes.ok) {
@@ -296,11 +305,14 @@ useEffect(() => {
 
       if (!staffServicesRes.ok) {
         throw new Error(
-          staffServicesData?.error || "No se pudo cargar la asignación staff-servicios"
+          staffServicesData?.error ||
+            "No se pudo cargar la asignación staff-servicios"
         );
       }
 
-      setServices(Array.isArray(servicesData?.services) ? servicesData.services : []);
+      setServices(
+        Array.isArray(servicesData?.services) ? servicesData.services : []
+      );
       setStaff(Array.isArray(staffData?.staff) ? staffData.staff : []);
       setStaffServices(
         Array.isArray(staffServicesData?.staff_services)
@@ -308,7 +320,9 @@ useEffect(() => {
           : []
       );
     } catch (error: any) {
-      setLoadError(error?.message || "No se pudieron cargar los datos de la sucursal");
+      setLoadError(
+        error?.message || "No se pudieron cargar los datos de la sucursal"
+      );
       setServices([]);
       setStaff([]);
       setStaffServices([]);
