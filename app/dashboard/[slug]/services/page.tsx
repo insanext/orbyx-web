@@ -52,6 +52,9 @@ export default function ServicesPage() {
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
   const [tenantId, setTenantId] = useState("");
+const [branches, setBranches] = useState<any[]>([]);
+const [selectedBranchId, setSelectedBranchId] = useState("");
+const [loadingBranches, setLoadingBranches] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [plan, setPlan] = useState("starter");
   const [services, setServices] = useState<Service[]>([]);
@@ -153,6 +156,34 @@ export default function ServicesPage() {
     });
   }
 
+async function loadBranches(currentTenantId: string) {
+  try {
+    setLoadingBranches(true);
+
+    const response = await fetch(
+      `https://orbyx-backend.onrender.com/branches?tenant_id=${currentTenantId}`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.error || "No se pudieron cargar las sucursales");
+    }
+
+    const rows = Array.isArray(data?.branches) ? data.branches : [];
+    setBranches(rows);
+
+    if (rows.length === 1) {
+      setSelectedBranchId(rows[0].id);
+    }
+  } catch (error) {
+    console.error("Error cargando sucursales", error);
+    setBranches([]);
+  } finally {
+    setLoadingBranches(false);
+  }
+}
+
   async function loadAll() {
     try {
       setLoading(true);
@@ -178,21 +209,13 @@ export default function ServicesPage() {
 
       const currentTenantId = businessData.business.id;
 
-      setTenantId(currentTenantId);
-      setBusinessName(businessData.business.name || slug);
-      setPlan((businessData.plan_slug || "starter").toLowerCase());
+setTenantId(currentTenantId);
+setBusinessName(businessData.business.name || slug);
+setPlan((businessData.plan_slug || "starter").toLowerCase());
 
-      const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
-        fetch(
-          `https://orbyx-backend.onrender.com/services?tenant_id=${currentTenantId}`
-        ),
-        fetch(
-          `https://orbyx-backend.onrender.com/staff?tenant_id=${currentTenantId}&active=true`
-        ),
-        fetch(
-          `https://orbyx-backend.onrender.com/staff-services?tenant_id=${currentTenantId}`
-        ),
-      ]);
+await loadBranches(currentTenantId);
+
+return;
 
       const servicesData: { services?: Service[]; error?: string } =
         await servicesRes.json();
@@ -234,6 +257,68 @@ export default function ServicesPage() {
       loadAll();
     }
   }, [slug]);
+
+useEffect(() => {
+  async function loadBranchData() {
+    try {
+      if (!tenantId || !selectedBranchId) {
+        setServices([]);
+        setStaff([]);
+        setStaffServices([]);
+        return;
+      }
+
+      setLoading(true);
+
+      const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
+        fetch(
+          `https://orbyx-backend.onrender.com/services?tenant_id=${tenantId}&branch_id=${selectedBranchId}`
+        ),
+        fetch(
+          `https://orbyx-backend.onrender.com/staff?tenant_id=${tenantId}&branch_id=${selectedBranchId}&active=true`
+        ),
+        fetch(
+          `https://orbyx-backend.onrender.com/staff-services?tenant_id=${tenantId}`
+        ),
+      ]);
+
+      const servicesData = await servicesRes.json();
+      const staffData = await staffRes.json();
+      const staffServicesData = await staffServicesRes.json();
+
+      if (!servicesRes.ok) {
+        throw new Error(servicesData?.error || "No se pudieron cargar los servicios");
+      }
+
+      if (!staffRes.ok) {
+        throw new Error(staffData?.error || "No se pudo cargar el staff");
+      }
+
+      if (!staffServicesRes.ok) {
+        throw new Error(
+          staffServicesData?.error || "No se pudo cargar la asignación staff-servicios"
+        );
+      }
+
+      setServices(Array.isArray(servicesData?.services) ? servicesData.services : []);
+      setStaff(Array.isArray(staffData?.staff) ? staffData.staff : []);
+      setStaffServices(
+        Array.isArray(staffServicesData?.staff_services)
+          ? staffServicesData.staff_services
+          : []
+      );
+    } catch (error: any) {
+      setError(error?.message || "No se pudieron cargar los datos de la sucursal");
+      setServices([]);
+      setStaff([]);
+      setStaffServices([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadBranchData();
+}, [tenantId, selectedBranchId]);
 
   async function saveServiceStaffRelations(serviceId: string, selectedStaffIds: string[]) {
     if (!tenantId) return;
@@ -284,21 +369,25 @@ export default function ServicesPage() {
       setSaveError("");
       setSaveOk("");
 
-      if (!tenantId) {
-        throw new Error("No se encontró el negocio");
-      }
+if (!tenantId) {
+  throw new Error("No se encontró el negocio");
+}
 
-      if (servicesLimitReached) {
-        throw new Error("Límite de servicios alcanzado");
-      }
+if (!selectedBranchId) {
+  throw new Error("Debes seleccionar una sucursal");
+}
 
-      if (!form.name.trim()) {
-        throw new Error("Debes ingresar el nombre del servicio");
-      }
+if (servicesLimitReached) {
+  throw new Error("Límite de servicios alcanzado");
+}
 
-      if (!form.duration_minutes.trim()) {
-        throw new Error("Debes ingresar la duración");
-      }
+if (!form.name.trim()) {
+  throw new Error("Debes ingresar el nombre del servicio");
+}
+
+if (!form.duration_minutes.trim()) {
+  throw new Error("Debes ingresar la duración");
+}
 
       const response = await fetch(
         "https://orbyx-backend.onrender.com/services",
@@ -307,16 +396,17 @@ export default function ServicesPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            tenant_id: tenantId,
-            name: form.name.trim(),
-            description: form.description.trim(),
-            duration_minutes: Number(form.duration_minutes || 30),
-            buffer_before_minutes: 0,
-            buffer_after_minutes: 0,
-            price: Number(form.price || 0),
-            active: true,
-          }),
+         body: JSON.stringify({
+  tenant_id: tenantId,
+  branch_id: selectedBranchId,
+  name: form.name.trim(),
+  description: form.description.trim(),
+  duration_minutes: Number(form.duration_minutes || 30),
+  buffer_before_minutes: 0,
+  buffer_after_minutes: 0,
+  price: Number(form.price || 0),
+  active: true,
+}),
         }
       );
 
@@ -342,8 +432,33 @@ export default function ServicesPage() {
         staff_ids: [],
       });
 
-      await loadAll();
-      setSaveOk("Servicio creado correctamente.");
+if (tenantId && selectedBranchId) {
+  const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
+    fetch(
+      `https://orbyx-backend.onrender.com/services?tenant_id=${tenantId}&branch_id=${selectedBranchId}`
+    ),
+    fetch(
+      `https://orbyx-backend.onrender.com/staff?tenant_id=${tenantId}&branch_id=${selectedBranchId}&active=true`
+    ),
+    fetch(
+      `https://orbyx-backend.onrender.com/staff-services?tenant_id=${tenantId}`
+    ),
+  ]);
+
+  const servicesData = await servicesRes.json();
+  const staffData = await staffRes.json();
+  const staffServicesData = await staffServicesRes.json();
+
+  setServices(Array.isArray(servicesData?.services) ? servicesData.services : []);
+  setStaff(Array.isArray(staffData?.staff) ? staffData.staff : []);
+  setStaffServices(
+    Array.isArray(staffServicesData?.staff_services)
+      ? staffServicesData.staff_services
+      : []
+  );
+}
+
+setSaveOk("Servicio creado correctamente.");
     } catch (error: any) {
       setSaveError(error?.message || "No se pudo crear el servicio");
     } finally {
@@ -452,7 +567,37 @@ export default function ServicesPage() {
         setEditingId(null);
       }
 
-      await loadAll();
+if (tenantId && selectedBranchId) {
+  const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
+    fetch(
+      `https://orbyx-backend.onrender.com/services?tenant_id=${tenantId}&branch_id=${selectedBranchId}`
+    ),
+    fetch(
+      `https://orbyx-backend.onrender.com/staff?tenant_id=${tenantId}&branch_id=${selectedBranchId}&active=true`
+    ),
+    fetch(
+      `https://orbyx-backend.onrender.com/staff-services?tenant_id=${tenantId}`
+    ),
+  ]);
+
+  const servicesData = await servicesRes.json();
+  const staffData = await staffRes.json();
+  const staffServicesData = await staffServicesRes.json();
+
+  setServices(Array.isArray(servicesData?.services) ? servicesData.services : []);
+  setStaff(Array.isArray(staffData?.staff) ? staffData.staff : []);
+  setStaffServices(
+    Array.isArray(staffServicesData?.staff_services)
+      ? staffServicesData.staff_services
+      : []
+  );
+}
+
+} catch (error: any) {
+  setSaveError(error?.message || "No se pudo eliminar el servicio");
+} finally {
+  setSaving(false);
+}
     } catch (error: any) {
       setSaveError(error?.message || "No se pudo eliminar el servicio");
     } finally {
@@ -478,6 +623,46 @@ export default function ServicesPage() {
           </div>
         }
       />
+
+<Panel
+  title="Sucursal"
+  description="Selecciona la sucursal que estás gestionando."
+>
+  {loadingBranches ? (
+    <div className="text-sm text-slate-500">Cargando sucursales...</div>
+  ) : branches.length === 0 ? (
+    <div className="text-sm text-slate-500">
+      No hay sucursales creadas.
+    </div>
+  ) : (
+    <select
+      value={selectedBranchId}
+      onChange={(e) => {
+        setSelectedBranchId(e.target.value);
+        setEditingServiceId(null);
+        setForm({
+          name: "",
+          description: "",
+          duration_minutes: 60,
+          price: "",
+          active: true,
+          staff_ids: [],
+        });
+        setError("");
+        setSuccess("");
+      }}
+      className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm"
+    >
+      <option value="">Selecciona una sucursal</option>
+
+      {branches.map((b) => (
+        <option key={b.id} value={b.id}>
+          {b.name}
+        </option>
+      ))}
+    </select>
+  )}
+</Panel>
 
       {loadError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">

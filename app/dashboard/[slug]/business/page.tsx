@@ -59,6 +59,10 @@ export default function BusinessPage() {
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
   const [tenantId, setTenantId] = useState("");
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [loadingBranches, setLoadingBranches] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingHours, setSavingHours] = useState(false);
@@ -125,6 +129,7 @@ export default function BusinessPage() {
         }
 
         setTenantId(data.business.id);
+        await loadBranches(data.business.id);
         setGoogleConnected(Boolean(data.google_connected));
 
         setForm({
@@ -271,6 +276,34 @@ export default function BusinessPage() {
     } catch (err) {
       console.error("Error cargando fechas especiales", err);
       setSpecialDates([]);
+    }
+  }
+
+  async function loadBranches(tenantId: string) {
+    try {
+      setLoadingBranches(true);
+
+      const res = await fetch(
+        `https://orbyx-backend.onrender.com/branches?tenant_id=${tenantId}`
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error cargando sucursales");
+      }
+
+      const rows = Array.isArray(data.branches) ? data.branches : [];
+      setBranches(rows);
+
+      if (rows.length === 1) {
+        setSelectedBranchId(rows[0].id);
+      }
+    } catch (err) {
+      console.error("Error cargando branches", err);
+      setBranches([]);
+    } finally {
+      setLoadingBranches(false);
     }
   }
 
@@ -476,6 +509,41 @@ export default function BusinessPage() {
         title="Datos del negocio"
         description="Actualiza la información principal, redes y canales de contacto de tu negocio."
       />
+
+      <Panel
+        title="Sucursales"
+        description="Gestiona y selecciona la sucursal con la que estás trabajando."
+      >
+        {loadingBranches ? (
+          <div className="text-sm text-slate-500">Cargando sucursales...</div>
+        ) : branches.length === 0 ? (
+          <div className="text-sm text-slate-500">
+            No hay sucursales creadas aún.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <select
+              value={selectedBranchId}
+              onChange={(e) => setSelectedBranchId(e.target.value)}
+              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm"
+            >
+              <option value="">Selecciona una sucursal</option>
+
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+
+            {selectedBranchId && (
+              <div className="text-xs text-slate-500">
+                Trabajando sobre esta sucursal.
+              </div>
+            )}
+          </div>
+        )}
+      </Panel>
 
       {loadError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">

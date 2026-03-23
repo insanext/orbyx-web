@@ -46,7 +46,10 @@ export default function Page() {
 
   const [business, setBusiness] = useState<BusinessItem | null>(null);
   const [calendarId, setCalendarId] = useState("");
-  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+const [selectedBranchId, setSelectedBranchId] = useState("");
+
+const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(
     null
   );
@@ -166,40 +169,47 @@ function formatHour(dateString: string) {
     return staffOptions.find((item) => item.id === selectedStaffId) || null;
   }
 
-  async function loadServiceStaff(serviceId: string) {
-    if (!slug || !serviceId) {
+  
+async function loadServiceStaff(serviceId: string) {
+  if (!slug || !serviceId || !selectedBranchId) {
+    setStaffOptions([]);
+    setSelectedStaffId("");
+    return;
+  }
+
+  try {
+    setLoadingStaff(true);
+
+    const query = new URLSearchParams({
+      branch_id: selectedBranchId,
+    });
+
+    const res = await fetch(
+      `/api/public-staff/${slug}/${serviceId}?${query.toString()}`
+    );
+    const data = await res.json();
+
+    if (!res.ok) {
       setStaffOptions([]);
       setSelectedStaffId("");
       return;
     }
 
-    try {
-      setLoadingStaff(true);
+    const rows = Array.isArray(data.staff) ? data.staff : [];
+    setStaffOptions(rows);
 
-      const res = await fetch(`/api/public-staff/${slug}/${serviceId}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStaffOptions([]);
-        setSelectedStaffId("");
-        return;
-      }
-
-      const rows = Array.isArray(data.staff) ? data.staff : [];
-      setStaffOptions(rows);
-
-      if (rows.length === 1) {
-        setSelectedStaffId(rows[0].id);
-      } else {
-        setSelectedStaffId("");
-      }
-    } catch {
-      setStaffOptions([]);
+    if (rows.length === 1) {
+      setSelectedStaffId(rows[0].id);
+    } else {
       setSelectedStaffId("");
-    } finally {
-      setLoadingStaff(false);
     }
+  } catch {
+    setStaffOptions([]);
+    setSelectedStaffId("");
+  } finally {
+    setLoadingStaff(false);
   }
+}
 
   async function handleBooking() {
     if (!selectedSlot || !selectedService || !business) return;
@@ -242,10 +252,11 @@ function formatHour(dateString: string) {
       const res = await fetch("/api/appointments/slot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          calendar_id: calendarId,
-          service_id: selectedService.id,
-          staff_id: selectedStaffId || null,
+body: JSON.stringify({
+  calendar_id: calendarId,
+  branch_id: selectedBranchId,
+  service_id: selectedService.id,
+  staff_id: selectedStaffId || null,
           date: formatDate(new Date(selectedSlot.slot_start)),
           slot_start: selectedSlot.slot_start,
           customer_name: cleanName,
@@ -274,16 +285,38 @@ function formatHour(dateString: string) {
   }
 
   useEffect(() => {
-    if (!slug) return;
+  if (!slug) return;
 
-    fetch(`/api/public-services/${slug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setBusiness(data.business || null);
-        setCalendarId(data.calendar_id || data.business?.calendar_id || "");
-        setServices(Array.isArray(data.services) ? data.services : []);
-      });
-  }, [slug]);
+  fetch(`/api/public-services/${slug}`)
+    .then((res) => res.json())
+    .then((data) => {
+      setBusiness(data.business || null);
+      setCalendarId(data.calendar_id || data.business?.calendar_id || "");
+
+      const branchesData = Array.isArray(data.branches) ? data.branches : [];
+      setBranches(branchesData);
+
+      // auto seleccionar si hay solo una
+      if (branchesData.length === 1) {
+        setSelectedBranchId(branchesData[0].id);
+      }
+
+      setServices([]);
+    });
+}, [slug]);
+
+useEffect(() => {
+  if (!slug || !selectedBranchId) {
+    setServices([]);
+    return;
+  }
+
+  fetch(`/api/public-services/${slug}?branch_id=${selectedBranchId}`)
+    .then((res) => res.json())
+    .then((data) => {
+      setServices(Array.isArray(data.services) ? data.services : []);
+    });
+}, [slug, selectedBranchId]);
 
   useEffect(() => {
     const week = getWeekDates(selectedDate);
@@ -304,12 +337,12 @@ function formatHour(dateString: string) {
     setBookingError("");
 
     loadServiceStaff(selectedService.id);
-  }, [slug, selectedService?.id]);
+  }, [slug, selectedService?.id, selectedBranchId]);
 
   useEffect(() => {
     const serviceId = selectedService?.id;
 
-    if (!slug || !serviceId || weekDates.length === 0) return;
+if (!slug || !serviceId || !selectedBranchId || weekDates.length === 0) return;
 
     let cancelled = false;
 
@@ -319,11 +352,14 @@ function formatHour(dateString: string) {
 
         const requests = weekDates.map(async (day) => {
           const dateStr = formatDate(day);
-          const query = new URLSearchParams({ date: dateStr });
+const query = new URLSearchParams({
+  date: dateStr,
+  branch_id: selectedBranchId,
+});
 
-          if (selectedStaffId) {
-            query.set("staff_id", selectedStaffId);
-          }
+if (selectedStaffId) {
+  query.set("staff_id", selectedStaffId);
+}          
 
           const res = await fetch(
             `/api/public-slots/${slug}/${serviceId}?${query.toString()}`
@@ -363,7 +399,7 @@ function formatHour(dateString: string) {
     return () => {
       cancelled = true;
     };
-  }, [slug, selectedService?.id, selectedStaffId, weekDates]);
+  }, [slug, selectedService?.id, selectedBranchId, selectedStaffId, weekDates]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -455,17 +491,53 @@ function formatHour(dateString: string) {
 
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_1fr]">
-          <aside className="space-y-5">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold">Elige tu servicio</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Escoge el servicio que quieres reservar.
-                </p>
-              </div>
+    <aside className="space-y-5">
+  <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="mb-4">
+      <h2 className="text-lg font-semibold">Elige sucursal</h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Selecciona la sucursal donde quieres agendar.
+      </p>
+    </div>
 
-              <select
-                value={selectedService?.id || ""}
+    <select
+      value={selectedBranchId}
+      onChange={(e) => {
+        setSelectedBranchId(e.target.value);
+
+        setSelectedService(null);
+        setSelectedStaffId("");
+        setStaffOptions([]);
+        setSelectedSlot(null);
+        setShowForm(false);
+        setWeekSlots({});
+        setBookingSuccess(false);
+        setBookingError("");
+      }}
+      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+    >
+      <option value="">Selecciona una sucursal</option>
+
+      {branches.map((b) => (
+        <option key={b.id} value={b.id}>
+          {b.name}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="mb-4">
+      <h2 className="text-lg font-semibold">Elige tu servicio</h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Escoge el servicio que quieres reservar.
+      </p>
+    </div>
+
+    <select
+      disabled={!selectedBranchId}
+      value={selectedService?.id || ""}      
+
                 onChange={(e) => {
                   const service =
                     services.find((s) => s.id === e.target.value) || null;

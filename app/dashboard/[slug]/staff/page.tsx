@@ -103,6 +103,9 @@ export default function StaffPage() {
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
   const [tenantId, setTenantId] = useState("");
+const [branches, setBranches] = useState<any[]>([]);
+const [selectedBranchId, setSelectedBranchId] = useState("");
+const [loadingBranches, setLoadingBranches] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -147,7 +150,7 @@ const planCaps: Record<string, { max_staff: number }> = {
 };
 
 const caps = planCaps[plan] || planCaps.starter;
-const reachedLimit = staff.length >= caps.max_staff;
+const reachedLimit = activeCount >= caps.max_staff;
 
   useEffect(() => {
     async function loadPage() {
@@ -173,10 +176,7 @@ if (!("business" in data)) {
 setTenantId(data.business.id);
 setPlan((data.business as any).plan_slug || "starter");
 
-await Promise.all([
-  loadStaff(data.business.id),
-  loadServices(data.business.id),
-]);
+await loadBranches(data.business.id);
 
       } catch (error: any) {
         setLoadError(error?.message || "No se pudo cargar el módulo staff");
@@ -190,16 +190,30 @@ await Promise.all([
     }
   }, [slug]);
 
-  async function loadStaff(id: string) {
-    const res = await fetch(`${BACKEND_URL}/staff?tenant_id=${id}`);
-    const data = await res.json();
+useEffect(() => {
+  if (!tenantId || !selectedBranchId) return;
 
-    if (!res.ok) {
-      throw new Error(data?.error || "No se pudo cargar el staff");
-    }
+  loadStaff(tenantId);
+  loadServices(tenantId);
+}, [tenantId, selectedBranchId]);
 
-    setStaff(data.staff || []);
+async function loadStaff(id: string) {
+  if (!selectedBranchId) {
+    setStaff([]);
+    return;
   }
+
+  const res = await fetch(
+    `${BACKEND_URL}/staff?tenant_id=${id}&branch_id=${selectedBranchId}`
+  );
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "No se pudo cargar el staff");
+  }
+
+  setStaff(data.staff || []);
+}
 
   async function loadStaffHours(id: string, staffId: string) {
     const res = await fetch(
@@ -246,18 +260,51 @@ await Promise.all([
     );
   }
 
-  async function loadServices(id: string) {
+async function loadServices(id: string) {
+  if (!selectedBranchId) {
+    setServices([]);
+    return;
+  }
+
+  const res = await fetch(
+    `${BACKEND_URL}/services?tenant_id=${id}&branch_id=${selectedBranchId}&active=true`
+  );
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "No se pudo cargar los servicios");
+  }
+
+  setServices(Array.isArray(data?.services) ? data.services : []);
+}
+
+async function loadBranches(tenantId: string) {
+  try {
+    setLoadingBranches(true);
+
     const res = await fetch(
-      `${BACKEND_URL}/services?tenant_id=${id}&active=true`
+      `${BACKEND_URL}/branches?tenant_id=${tenantId}`
     );
+
     const data = await res.json();
 
     if (!res.ok) {
-      throw new Error(data?.error || "No se pudo cargar los servicios");
+      throw new Error(data?.error || "Error cargando sucursales");
     }
 
-    setServices(Array.isArray(data?.services) ? data.services : []);
+    const rows = Array.isArray(data.branches) ? data.branches : [];
+    setBranches(rows);
+
+    if (rows.length === 1) {
+      setSelectedBranchId(rows[0].id);
+    }
+  } catch (err) {
+    console.error("Error cargando branches", err);
+    setBranches([]);
+  } finally {
+    setLoadingBranches(false);
   }
+}
 
   async function loadStaffServices(id: string, staffId: string) {
     const res = await fetch(
@@ -454,8 +501,12 @@ await Promise.all([
       setSaveOk("");
 
       if (!tenantId) {
-        throw new Error("tenant_id no disponible");
-      }
+  throw new Error("tenant_id no disponible");
+}
+
+if (!selectedBranchId) {
+  throw new Error("Debes seleccionar una sucursal");
+}
 
       if (!form.name.trim()) {
         throw new Error("Debes ingresar el nombre del staff");
@@ -470,17 +521,17 @@ await Promise.all([
       }
 
       const payload = {
-        tenant_id: tenantId,
-        name: form.name.trim(),
-        role: form.role.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        color: form.color,
-        is_active: form.is_active,
-        sort_order: Number(form.sort_order || 0),
-        use_business_hours: form.use_business_hours,
-      };
-
+  tenant_id: tenantId,
+  branch_id: selectedBranchId,
+  name: form.name.trim(),
+  role: form.role.trim(),
+  email: form.email.trim(),
+  phone: form.phone.trim(),
+  color: form.color,
+  is_active: form.is_active,
+  sort_order: Number(form.sort_order || 0),
+  use_business_hours: form.use_business_hours,
+};
       const url = editingId
         ? `${BACKEND_URL}/staff/${editingId}`
         : `${BACKEND_URL}/staff`;
@@ -679,6 +730,36 @@ await Promise.all([
         title="Staff"
         description="Administra las personas que atienden en tu negocio."
       />
+
+<Panel
+  title="Sucursal"
+  description="Selecciona la sucursal que estás gestionando."
+>
+  {loadingBranches ? (
+    <div className="text-sm text-slate-500">Cargando sucursales...</div>
+  ) : branches.length === 0 ? (
+    <div className="text-sm text-slate-500">
+      No hay sucursales creadas.
+    </div>
+  ) : (
+    <select
+      value={selectedBranchId}
+      onChange={(e) => {
+        setSelectedBranchId(e.target.value);
+        resetForm();
+      }}
+      className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm"
+    >
+      <option value="">Selecciona una sucursal</option>
+
+      {branches.map((b) => (
+        <option key={b.id} value={b.id}>
+          {b.name}
+        </option>
+      ))}
+    </select>
+  )}
+</Panel>
 
       {loadError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
