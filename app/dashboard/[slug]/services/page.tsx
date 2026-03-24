@@ -622,43 +622,6 @@ export default function ServicesPage() {
         }
       />
 
-      <Panel
-        title="Sucursal"
-        description="Selecciona la sucursal que estás gestionando."
-      >
-        {loadingBranches ? (
-          <div className="text-sm text-slate-500">Cargando sucursales...</div>
-        ) : branches.length === 0 ? (
-          <div className="text-sm text-slate-500">No hay sucursales creadas.</div>
-        ) : (
-          <select
-            value={selectedBranchId}
-            onChange={(e) => {
-              setSelectedBranchId(e.target.value);
-              setEditingId(null);
-              setForm({
-                name: "",
-                description: "",
-                duration_minutes: "30",
-                price: "",
-                staff_ids: [],
-              });
-              setSaveError("");
-              setSaveOk("");
-            }}
-            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm"
-          >
-            <option value="">Selecciona una sucursal</option>
-
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </Panel>
-
       {loadError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
           {loadError}
