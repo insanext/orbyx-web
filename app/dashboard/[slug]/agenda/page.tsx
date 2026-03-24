@@ -17,6 +17,23 @@ type Appointment = {
   status: string;
 };
 
+type BusinessResponse = {
+  business: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  calendar_id?: string;
+  google_connected?: boolean;
+  plan_slug?: string | null;
+};
+
+type BranchItem = {
+  id: string;
+  tenant_id?: string;
+  name: string;
+};
+
 type FilterValue =
   | "all"
   | "pending_close"
@@ -37,7 +54,13 @@ const filterLabels: Record<FilterValue, string> = {
 export default function AgendaPage() {
   const params = useParams();
   const slug =
-    ((params as any)?.slug as string) || ((params as any)?.Slug as string);
+    ((params as { slug?: string })?.slug as string) ||
+    ((params as { Slug?: string })?.Slug as string);
+
+  const [tenantId, setTenantId] = useState("");
+  const [branches, setBranches] = useState<BranchItem[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [loadingBranches, setLoadingBranches] = useState(false);
 
   const [weekBaseDate, setWeekBaseDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -276,6 +299,36 @@ export default function AgendaPage() {
     }, 80);
   }
 
+  async function loadBranches(currentTenantId: string) {
+    try {
+      setLoadingBranches(true);
+
+      const response = await fetch(
+        `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudieron cargar las sucursales");
+      }
+
+      const rows: BranchItem[] = Array.isArray(data?.branches) ? data.branches : [];
+      setBranches(rows);
+
+      if (rows.length === 1) {
+        setSelectedBranchId(rows[0].id);
+      } else {
+        setSelectedBranchId("");
+      }
+    } catch (err) {
+      console.error("Error cargando sucursales", err);
+      setBranches([]);
+      setSelectedBranchId("");
+    } finally {
+      setLoadingBranches(false);
+    }
+  }
+
   const weekStart = useMemo(() => startOfWeek(weekBaseDate), [weekBaseDate]);
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -291,8 +344,17 @@ export default function AgendaPage() {
       const from = formatDateYYYYMMDD(weekStart);
       const to = formatDateYYYYMMDD(weekEnd);
 
+      const query = new URLSearchParams({
+        from,
+        to,
+      });
+
+      if (selectedBranchId) {
+        query.set("branch_id", selectedBranchId);
+      }
+
       const res = await fetch(
-        `${BACKEND_URL}/appointments/by-range/${slug}?from=${from}&to=${to}`
+        `${BACKEND_URL}/appointments/by-range/${slug}?${query.toString()}`
       );
 
       const data = await res.json();
@@ -301,22 +363,24 @@ export default function AgendaPage() {
         throw new Error(data?.error || "No se pudo cargar la agenda");
       }
 
-      const rows = data.appointments || [];
+      const rows: Appointment[] = Array.isArray(data.appointments)
+        ? data.appointments
+        : [];
+
       setAppointments(rows);
 
-      if (options?.preserveSelected && selectedAppointment) {
+      if (selectedAppointment) {
         const updatedSelected = rows.find(
-          (appt: Appointment) => appt.id === selectedAppointment.id
-        );
-        setSelectedAppointment(updatedSelected || null);
-      } else if (selectedAppointment) {
-        const updatedSelected = rows.find(
-          (appt: Appointment) => appt.id === selectedAppointment.id
+          (appt) => appt.id === selectedAppointment.id
         );
         setSelectedAppointment(updatedSelected || null);
       }
-    } catch (err: any) {
-      setError(err?.message || "Error cargando agenda");
+
+      if (!options?.preserveSelected && rows.length === 0) {
+        setSelectedAppointment(null);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error cargando agenda");
     } finally {
       setLoading(false);
     }
@@ -330,15 +394,18 @@ export default function AgendaPage() {
       setStatusSaving(true);
       setError("");
 
-      const res = await fetch(`${BACKEND_URL}/appointments/${appointmentId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: newStatus,
-        }),
-      });
+      const res = await fetch(
+        `${BACKEND_URL}/appointments/${appointmentId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: newStatus,
+          }),
+        }
+      );
 
       const data = await res.json();
 
@@ -367,18 +434,58 @@ export default function AgendaPage() {
       );
 
       await loadAppointments({ preserveSelected: true });
-    } catch (err: any) {
-      setError(err?.message || "Error actualizando estado");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Error actualizando estado"
+      );
     } finally {
       setStatusSaving(false);
     }
   }
 
   useEffect(() => {
-    if (slug) {
-      loadAppointments();
+    if (!slug) return;
+
+    async function loadInitial() {
+      try {
+        const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+        const businessData: BusinessResponse | { error?: string } =
+          await businessRes.json();
+
+        if (!businessRes.ok) {
+          throw new Error(
+            "error" in businessData && businessData.error
+              ? businessData.error
+              : "No se pudo cargar el negocio"
+          );
+        }
+
+        if (!("business" in businessData)) {
+          throw new Error("Respuesta inválida del backend");
+        }
+
+        const currentTenantId = businessData.business.id;
+        setTenantId(currentTenantId);
+        await loadBranches(currentTenantId);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "No se pudo cargar agenda");
+      }
     }
-  }, [slug, weekStart.getTime()]);
+
+    loadInitial();
+  }, [slug]);
+
+  useEffect(() => {
+    if (!slug) return;
+    if (branches.length > 1 && !selectedBranchId) {
+      setAppointments([]);
+      setSelectedAppointment(null);
+      setLoading(false);
+      return;
+    }
+
+    loadAppointments();
+  }, [slug, weekStart.getTime(), selectedBranchId, branches.length]);
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appt) => matchesFilter(appt, activeFilter));
@@ -443,7 +550,8 @@ export default function AgendaPage() {
       booked: appointments.filter(
         (appt) => appt.status === "booked" && !isPastPendingClosure(appt)
       ).length,
-      completed: appointments.filter((appt) => appt.status === "completed").length,
+      completed: appointments.filter((appt) => appt.status === "completed")
+        .length,
       no_show: appointments.filter((appt) => appt.status === "no_show").length,
     };
   }, [appointments]);
@@ -496,6 +604,8 @@ export default function AgendaPage() {
     setSelectedAppointment(null);
     didAutoFocusPendingRef.current = false;
   }
+
+  const showBranchSelector = branches.length > 1;
 
   return (
     <div className="space-y-6 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 p-1">
@@ -575,6 +685,36 @@ export default function AgendaPage() {
         />
       </div>
 
+      {showBranchSelector ? (
+        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <Panel
+            title="Sucursal"
+            description="Selecciona la sucursal que quieres ver en agenda."
+          >
+            {loadingBranches ? (
+              <div className="text-sm text-slate-500">Cargando sucursales...</div>
+            ) : (
+              <select
+                value={selectedBranchId}
+                onChange={(e) => {
+                  setSelectedBranchId(e.target.value);
+                  setSelectedAppointment(null);
+                  didAutoFocusPendingRef.current = false;
+                }}
+                className="h-11 w-full max-w-sm rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              >
+                <option value="">Selecciona una sucursal</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Panel>
+        </div>
+      ) : null}
+
       {hasPendingClose ? (
         <div className="rounded-3xl border border-rose-200 bg-gradient-to-r from-rose-50 to-amber-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
           Tienes <span className="font-semibold">{pendingCloseCount}</span>{" "}
@@ -625,10 +765,7 @@ export default function AgendaPage() {
       </section>
 
       <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <Panel
-          title="Filtros"
-          description="Cambia la vista por estado."
-        >
+        <Panel title="Filtros" description="Cambia la vista por estado.">
           <div className="flex flex-wrap gap-3">
             {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
               const count =
@@ -681,7 +818,11 @@ export default function AgendaPage() {
                 : "Vista semanal de reservas."
             }
           >
-            {loading ? (
+            {showBranchSelector && !selectedBranchId ? (
+              <p className="px-2 py-4 text-sm text-slate-500">
+                Selecciona una sucursal para ver la agenda.
+              </p>
+            ) : loading ? (
               <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
@@ -851,7 +992,7 @@ export default function AgendaPage() {
           </Panel>
         </div>
 
-        <div ref={detailRef} className="xl:sticky xl:top-6 self-start">
+        <div ref={detailRef} className="self-start xl:sticky xl:top-6">
           <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
             <Panel
               title="Detalle de reserva"
