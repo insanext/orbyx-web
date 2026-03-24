@@ -360,7 +360,7 @@ export default function StaffPage() {
         throw new Error(data?.error || "Error cargando sucursales");
       }
 
-      const rows = Array.isArray(data.branches) ? data.branches : [];
+      const rows: BranchItem[] = Array.isArray(data.branches) ? data.branches : [];
       setBranches(rows);
 
       if (rows.length === 0) {
@@ -369,7 +369,9 @@ export default function StaffPage() {
       }
 
       const storedBranchId = readStoredBranchId();
-      const storedExists = rows.some((branch) => branch.id === storedBranchId);
+      const storedExists = rows.some(
+  (branch: BranchItem) => branch.id === storedBranchId
+);
 
       if (storedExists) {
         setSelectedBranchId(storedBranchId);
