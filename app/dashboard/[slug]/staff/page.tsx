@@ -17,6 +17,12 @@ type BusinessResponse = {
   google_connected?: boolean;
 };
 
+type BranchItem = {
+  id: string;
+  tenant_id?: string;
+  name: string;
+};
+
 type StaffItem = {
   id: string;
   tenant_id: string;
@@ -103,9 +109,10 @@ export default function StaffPage() {
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
   const [tenantId, setTenantId] = useState("");
-const [branches, setBranches] = useState<any[]>([]);
-const [selectedBranchId, setSelectedBranchId] = useState("");
-const [loadingBranches, setLoadingBranches] = useState(false);
+  const [branches, setBranches] = useState<BranchItem[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [loadingBranches, setLoadingBranches] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -130,6 +137,12 @@ const [loadingBranches, setLoadingBranches] = useState(false);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
+  const [plan, setPlan] = useState("starter");
+
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
+
   const activeCount = useMemo(
     () => staff.filter((item) => item.is_active).length,
     [staff]
@@ -140,17 +153,23 @@ const [loadingBranches, setLoadingBranches] = useState(false);
     [staff]
   );
 
-const [plan, setPlan] = useState("starter");
+  const selectedBranchName =
+    branches.find((branch) => branch.id === selectedBranchId)?.name || "";
 
-const planCaps: Record<string, { max_staff: number }> = {
-  starter: { max_staff: 1 },
-  pro: { max_staff: 3 },
-  premium: { max_staff: 10 },
-  vip: { max_staff: 999 },
-};
+  const planCaps: Record<string, { max_staff: number }> = {
+    starter: { max_staff: 1 },
+    pro: { max_staff: 3 },
+    premium: { max_staff: 10 },
+    vip: { max_staff: 999 },
+  };
 
-const caps = planCaps[plan] || planCaps.starter;
-const reachedLimit = activeCount >= caps.max_staff;
+  const caps = planCaps[plan] || planCaps.starter;
+  const reachedLimit = activeCount >= caps.max_staff;
+
+  function readStoredBranchId() {
+    if (typeof window === "undefined" || !branchStorageKey) return "";
+    return localStorage.getItem(branchStorageKey) || "";
+  }
 
   useEffect(() => {
     async function loadPage() {
@@ -159,25 +178,24 @@ const reachedLimit = activeCount >= caps.max_staff;
         setLoadError("");
 
         const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
-const data: BusinessResponse | { error?: string } = await res.json();
+        const data: BusinessResponse | { error?: string } = await res.json();
 
-if (!res.ok) {
-  throw new Error(
-    "error" in data && data.error
-      ? data.error
-      : "No se pudo cargar el negocio"
-  );
-}
+        if (!res.ok) {
+          throw new Error(
+            "error" in data && data.error
+              ? data.error
+              : "No se pudo cargar el negocio"
+          );
+        }
 
-if (!("business" in data)) {
-  throw new Error("Respuesta inválida del backend");
-}
+        if (!("business" in data)) {
+          throw new Error("Respuesta inválida del backend");
+        }
 
-setTenantId(data.business.id);
-setPlan((data.business as any).plan_slug || "starter");
+        setTenantId(data.business.id);
+        setPlan((data.business as any).plan_slug || "starter");
 
-await loadBranches(data.business.id);
-
+        await loadBranches(data.business.id);
       } catch (error: any) {
         setLoadError(error?.message || "No se pudo cargar el módulo staff");
       } finally {
@@ -190,30 +208,80 @@ await loadBranches(data.business.id);
     }
   }, [slug]);
 
-useEffect(() => {
-  if (!tenantId || !selectedBranchId) return;
+  useEffect(() => {
+    if (!tenantId) return;
 
-  loadStaff(tenantId);
-  loadServices(tenantId);
-}, [tenantId, selectedBranchId]);
+    if (!selectedBranchId) {
+      setStaff([]);
+      setServices([]);
+      resetForm();
+      return;
+    }
 
-async function loadStaff(id: string) {
-  if (!selectedBranchId) {
-    setStaff([]);
-    return;
+    async function loadData() {
+      try {
+        setLoadError("");
+        await Promise.all([loadStaff(tenantId), loadServices(tenantId)]);
+      } catch (error: any) {
+        setLoadError(error?.message || "No se pudo cargar staff o servicios");
+      }
+    }
+
+    loadData();
+  }, [tenantId, selectedBranchId]);
+
+  useEffect(() => {
+    function handleBranchChanged(event: Event) {
+      const customEvent = event as CustomEvent<{ slug?: string; branchId?: string }>;
+      const eventSlug = customEvent.detail?.slug;
+      const branchId = customEvent.detail?.branchId || "";
+
+      if (eventSlug !== slug) return;
+
+      setSelectedBranchId(branchId);
+      resetForm();
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== branchStorageKey) return;
+
+      const nextBranchId = event.newValue || "";
+      setSelectedBranchId(nextBranchId);
+      resetForm();
+    }
+
+    window.addEventListener(
+      "orbyx-branch-changed",
+      handleBranchChanged as EventListener
+    );
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        "orbyx-branch-changed",
+        handleBranchChanged as EventListener
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [slug, branchStorageKey]);
+
+  async function loadStaff(id: string) {
+    if (!selectedBranchId) {
+      setStaff([]);
+      return;
+    }
+
+    const res = await fetch(
+      `${BACKEND_URL}/staff?tenant_id=${id}&branch_id=${selectedBranchId}`
+    );
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudo cargar el staff");
+    }
+
+    setStaff(data.staff || []);
   }
-
-  const res = await fetch(
-    `${BACKEND_URL}/staff?tenant_id=${id}&branch_id=${selectedBranchId}`
-  );
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data?.error || "No se pudo cargar el staff");
-  }
-
-  setStaff(data.staff || []);
-}
 
   async function loadStaffHours(id: string, staffId: string) {
     const res = await fetch(
@@ -260,51 +328,68 @@ async function loadStaff(id: string) {
     );
   }
 
-async function loadServices(id: string) {
-  if (!selectedBranchId) {
-    setServices([]);
-    return;
-  }
-
-  const res = await fetch(
-    `${BACKEND_URL}/services?tenant_id=${id}&branch_id=${selectedBranchId}&active=true`
-  );
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data?.error || "No se pudo cargar los servicios");
-  }
-
-  setServices(Array.isArray(data?.services) ? data.services : []);
-}
-
-async function loadBranches(tenantId: string) {
-  try {
-    setLoadingBranches(true);
+  async function loadServices(id: string) {
+    if (!selectedBranchId) {
+      setServices([]);
+      return;
+    }
 
     const res = await fetch(
-      `${BACKEND_URL}/branches?tenant_id=${tenantId}`
+      `${BACKEND_URL}/services?tenant_id=${id}&branch_id=${selectedBranchId}&active=true`
     );
-
     const data = await res.json();
 
     if (!res.ok) {
-      throw new Error(data?.error || "Error cargando sucursales");
+      throw new Error(data?.error || "No se pudo cargar los servicios");
     }
 
-    const rows = Array.isArray(data.branches) ? data.branches : [];
-    setBranches(rows);
-
-    if (rows.length === 1) {
-      setSelectedBranchId(rows[0].id);
-    }
-  } catch (err) {
-    console.error("Error cargando branches", err);
-    setBranches([]);
-  } finally {
-    setLoadingBranches(false);
+    setServices(Array.isArray(data?.services) ? data.services : []);
   }
-}
+
+  async function loadBranches(currentTenantId: string) {
+    try {
+      setLoadingBranches(true);
+
+      const res = await fetch(
+        `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error cargando sucursales");
+      }
+
+      const rows = Array.isArray(data.branches) ? data.branches : [];
+      setBranches(rows);
+
+      if (rows.length === 0) {
+        setSelectedBranchId("");
+        return;
+      }
+
+      const storedBranchId = readStoredBranchId();
+      const storedExists = rows.some((branch) => branch.id === storedBranchId);
+
+      if (storedExists) {
+        setSelectedBranchId(storedBranchId);
+        return;
+      }
+
+      const fallbackBranchId = rows[0].id;
+      setSelectedBranchId(fallbackBranchId);
+
+      if (typeof window !== "undefined" && branchStorageKey) {
+        localStorage.setItem(branchStorageKey, fallbackBranchId);
+      }
+    } catch (err) {
+      console.error("Error cargando branches", err);
+      setBranches([]);
+      setSelectedBranchId("");
+    } finally {
+      setLoadingBranches(false);
+    }
+  }
 
   async function loadStaffServices(id: string, staffId: string) {
     const res = await fetch(
@@ -501,12 +586,12 @@ async function loadBranches(tenantId: string) {
       setSaveOk("");
 
       if (!tenantId) {
-  throw new Error("tenant_id no disponible");
-}
+        throw new Error("tenant_id no disponible");
+      }
 
-if (!selectedBranchId) {
-  throw new Error("Debes seleccionar una sucursal");
-}
+      if (!selectedBranchId) {
+        throw new Error("Debes seleccionar una sucursal activa");
+      }
 
       if (!form.name.trim()) {
         throw new Error("Debes ingresar el nombre del staff");
@@ -521,17 +606,18 @@ if (!selectedBranchId) {
       }
 
       const payload = {
-  tenant_id: tenantId,
-  branch_id: selectedBranchId,
-  name: form.name.trim(),
-  role: form.role.trim(),
-  email: form.email.trim(),
-  phone: form.phone.trim(),
-  color: form.color,
-  is_active: form.is_active,
-  sort_order: Number(form.sort_order || 0),
-  use_business_hours: form.use_business_hours,
-};
+        tenant_id: tenantId,
+        branch_id: selectedBranchId,
+        name: form.name.trim(),
+        role: form.role.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        color: form.color,
+        is_active: form.is_active,
+        sort_order: Number(form.sort_order || 0),
+        use_business_hours: form.use_business_hours,
+      };
+
       const url = editingId
         ? `${BACKEND_URL}/staff/${editingId}`
         : `${BACKEND_URL}/staff`;
@@ -728,38 +814,29 @@ if (!selectedBranchId) {
       <PageHeader
         eyebrow="Equipo"
         title="Staff"
-        description="Administra las personas que atienden en tu negocio."
+        description={
+          selectedBranchName
+            ? `Administra el staff de la sucursal: ${selectedBranchName}.`
+            : "Administra las personas que atienden en tu negocio."
+        }
       />
 
-<Panel
-  title="Sucursal"
-  description="Selecciona la sucursal que estás gestionando."
->
-  {loadingBranches ? (
-    <div className="text-sm text-slate-500">Cargando sucursales...</div>
-  ) : branches.length === 0 ? (
-    <div className="text-sm text-slate-500">
-      No hay sucursales creadas.
-    </div>
-  ) : (
-    <select
-      value={selectedBranchId}
-      onChange={(e) => {
-        setSelectedBranchId(e.target.value);
-        resetForm();
-      }}
-      className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm"
-    >
-      <option value="">Selecciona una sucursal</option>
-
-      {branches.map((b) => (
-        <option key={b.id} value={b.id}>
-          {b.name}
-        </option>
-      ))}
-    </select>
-  )}
-</Panel>
+      {loadingBranches ? (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 shadow-sm">
+          Cargando sucursal activa...
+        </div>
+      ) : !selectedBranchId ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+          Debes seleccionar una sucursal activa en el sidebar para administrar el staff.
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+          Sucursal activa:{" "}
+          <span className="font-semibold text-slate-900">
+            {selectedBranchName || selectedBranchId}
+          </span>
+        </div>
+      )}
 
       {loadError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
@@ -788,7 +865,11 @@ if (!selectedBranchId) {
           title={editingId ? "Editar staff" : "Nuevo staff"}
           description="Agrega personas del equipo y deja su información base lista."
         >
-          {loading ? (
+          {!selectedBranchId ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+              Selecciona una sucursal activa en el sidebar para gestionar staff.
+            </div>
+          ) : loading ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
               Cargando...
             </div>
@@ -1315,39 +1396,36 @@ if (!selectedBranchId) {
                 </div>
               ) : null}
 
-              
+              <div className="space-y-3 pt-2">
+                {!editingId && reachedLimit ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    Has alcanzado el límite de staff de tu plan.
+                  </div>
+                ) : null}
 
-<div className="space-y-3 pt-2">
-  {!editingId && reachedLimit ? (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-      Has alcanzado el límite de staff de tu plan.
-    </div>
-  ) : null}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving || (!editingId && reachedLimit)}
+                    className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {saving
+                      ? "Guardando..."
+                      : editingId
+                      ? "Guardar cambios"
+                      : "Crear staff"}
+                  </button>
 
-  <div className="flex flex-wrap gap-3">
-    <button
-      type="button"
-      onClick={handleSave}
-      disabled={saving || (!editingId && reachedLimit)}
-      className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {saving
-        ? "Guardando..."
-        : editingId
-        ? "Guardar cambios"
-        : "Crear staff"}
-    </button>
-
-    <button
-      type="button"
-      onClick={resetForm}
-      className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-    >
-      Limpiar
-    </button>
-  </div>
-</div>
-
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </Panel>
@@ -1356,7 +1434,11 @@ if (!selectedBranchId) {
           title="Equipo actual"
           description="Visualiza, edita o elimina integrantes del staff."
         >
-          {loading ? (
+          {!selectedBranchId ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+              Selecciona una sucursal activa en el sidebar para ver el staff.
+            </div>
+          ) : loading ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
               Cargando staff...
             </div>
