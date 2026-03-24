@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Sparkles,
   Users,
+  Building2,
 } from "lucide-react";
 
 type PlanKey = "pro" | "premium" | "vip" | "platinum";
@@ -31,6 +32,7 @@ type Plan = {
   ivaLabel: string;
   subtitle: string;
   badge?: string;
+  includedBranches: number;
   includedStaff: number;
   includedServices: number;
   includedReminderConversations: number;
@@ -58,6 +60,7 @@ const plans: Plan[] = [
     priceLabel: "$24.990",
     ivaLabel: "mes + iva",
     subtitle: "Empieza a ordenar tu negocio",
+    includedBranches: 1,
     includedStaff: 2,
     includedServices: 10,
     includedReminderConversations: 0,
@@ -93,8 +96,7 @@ const plans: Plan[] = [
     softBgClass: "bg-sky-500/10",
     borderClass: "border-sky-400/25",
     ringClass: "ring-sky-400/30",
-    gradientClass:
-      "from-sky-500/18 via-slate-900/0 to-slate-900/0",
+    gradientClass: "from-sky-500/18 via-slate-900/0 to-slate-900/0",
   },
   {
     key: "premium",
@@ -103,6 +105,7 @@ const plans: Plan[] = [
     priceLabel: "$44.990",
     ivaLabel: "mes + iva",
     subtitle: "Más control y mejor comunicación con tus clientes",
+    includedBranches: 2,
     includedStaff: 5,
     includedServices: 25,
     includedReminderConversations: 0,
@@ -138,8 +141,7 @@ const plans: Plan[] = [
     softBgClass: "bg-violet-500/10",
     borderClass: "border-violet-400/25",
     ringClass: "ring-violet-400/30",
-    gradientClass:
-      "from-violet-500/18 via-slate-900/0 to-slate-900/0",
+    gradientClass: "from-violet-500/18 via-slate-900/0 to-slate-900/0",
   },
   {
     key: "vip",
@@ -149,6 +151,7 @@ const plans: Plan[] = [
     ivaLabel: "mes + iva",
     subtitle: "Reduce ausencias y mantén un mejor contacto con tus clientes",
     badge: "Más elegido",
+    includedBranches: 3,
     includedStaff: 10,
     includedServices: 50,
     includedReminderConversations: 200,
@@ -185,8 +188,7 @@ const plans: Plan[] = [
     softBgClass: "bg-amber-500/10",
     borderClass: "border-amber-400/25",
     ringClass: "ring-amber-400/30",
-    gradientClass:
-      "from-amber-500/18 via-slate-900/0 to-slate-900/0",
+    gradientClass: "from-amber-500/18 via-slate-900/0 to-slate-900/0",
   },
   {
     key: "platinum",
@@ -196,6 +198,7 @@ const plans: Plan[] = [
     ivaLabel: "mes + iva",
     subtitle: "La IA trabaja por tu negocio incluso cuando no estás disponible",
     badge: "IA incluida",
+    includedBranches: 10,
     includedStaff: 20,
     includedServices: 100,
     includedReminderConversations: 400,
@@ -233,8 +236,7 @@ const plans: Plan[] = [
     softBgClass: "bg-emerald-500/10",
     borderClass: "border-emerald-400/25",
     ringClass: "ring-emerald-400/30",
-    gradientClass:
-      "from-emerald-500/18 via-slate-900/0 to-slate-900/0",
+    gradientClass: "from-emerald-500/18 via-slate-900/0 to-slate-900/0",
   },
 ];
 
@@ -284,43 +286,7 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
   return <Gem className="h-5 w-5" />;
 }
 
-function getExtraAccent(extraKey: ExtraKey) {
-  if (extraKey === "staff") {
-    return {
-      icon: "bg-indigo-500/15 text-indigo-200",
-      control:
-        "border-indigo-400/25 text-indigo-100 hover:bg-indigo-500/15",
-      info: "border-indigo-400/20 bg-indigo-500/10 text-indigo-100",
-    };
-  }
-
-  if (extraKey === "reminders") {
-    return {
-      icon: "bg-emerald-500/15 text-emerald-200",
-      control:
-        "border-emerald-400/25 text-emerald-100 hover:bg-emerald-500/15",
-      info: "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
-    };
-  }
-
-  if (extraKey === "campaigns") {
-    return {
-      icon: "bg-amber-500/15 text-amber-200",
-      control:
-        "border-amber-400/25 text-amber-100 hover:bg-amber-500/15",
-      info: "border-amber-400/20 bg-amber-500/10 text-amber-100",
-    };
-  }
-
-  return {
-    icon: "bg-violet-500/15 text-violet-200",
-    control:
-      "border-violet-400/25 text-violet-100 hover:bg-violet-500/15",
-    info: "border-violet-400/20 bg-violet-500/10 text-violet-100",
-  };
-}
-
-function ExtraCard({
+function ExtraBadge({
   title,
   description,
   unitLabel,
@@ -330,7 +296,7 @@ function ExtraCard({
   onDecrease,
   onIncrease,
   icon,
-  extraKey,
+  accent,
 }: {
   title: string;
   description: string;
@@ -341,27 +307,27 @@ function ExtraCard({
   onDecrease: () => void;
   onIncrease: () => void;
   icon: ReactNode;
-  extraKey: ExtraKey;
+  accent: {
+    icon: string;
+    control: string;
+    info: string;
+  };
 }) {
-  const accent = getExtraAccent(extraKey);
-
   return (
-    <div className="rounded-[28px] border border-white/10 bg-white/6 p-5 shadow-[0_16px_50px_rgba(15,23,42,0.22)] backdrop-blur-xl">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div
-            className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${accent.icon}`}
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${accent.icon}`}
           >
             {icon}
           </div>
 
-          <p className="mt-4 text-lg font-semibold text-white">{title}</p>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-            {description}
-          </p>
+          <p className="mt-3 text-base font-semibold text-white">{title}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-300">{description}</p>
         </div>
 
-        <div className="w-full lg:w-[290px]">
+        <div className="w-full xl:w-[310px]">
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
               Valor
@@ -402,6 +368,39 @@ function ExtraCard({
       </div>
     </div>
   );
+}
+
+function getExtraAccent(extraKey: ExtraKey) {
+  if (extraKey === "staff") {
+    return {
+      icon: "bg-indigo-500/15 text-indigo-200",
+      control: "border-indigo-400/25 text-indigo-100 hover:bg-indigo-500/15",
+      info: "border-indigo-400/20 bg-indigo-500/10 text-indigo-100",
+    };
+  }
+
+  if (extraKey === "reminders") {
+    return {
+      icon: "bg-emerald-500/15 text-emerald-200",
+      control:
+        "border-emerald-400/25 text-emerald-100 hover:bg-emerald-500/15",
+      info: "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
+    };
+  }
+
+  if (extraKey === "campaigns") {
+    return {
+      icon: "bg-amber-500/15 text-amber-200",
+      control: "border-amber-400/25 text-amber-100 hover:bg-amber-500/15",
+      info: "border-amber-400/20 bg-amber-500/10 text-amber-100",
+    };
+  }
+
+  return {
+    icon: "bg-violet-500/15 text-violet-200",
+    control: "border-violet-400/25 text-violet-100 hover:bg-violet-500/15",
+    info: "border-violet-400/20 bg-violet-500/10 text-violet-100",
+  };
 }
 
 export default function PlanesPage() {
@@ -538,6 +537,15 @@ export default function PlanesPage() {
   }
 
   const comparisonRows = [
+    {
+      label: "Sucursales incluidas",
+      values: {
+        pro: "1",
+        premium: "2",
+        vip: "3",
+        platinum: "10",
+      },
+    },
     {
       label: "Profesionales incluidos",
       values: {
@@ -692,18 +700,32 @@ export default function PlanesPage() {
                 })}
               </div>
 
-              <div className="mt-10">
-                <p className="text-xl font-semibold text-white">
-                  Adicionales disponibles
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Amplía tu plan sin cambiarlo completo. Los adicionales ahora
-                  van en formato vertical para que todo se vea más limpio.
-                </p>
+              <div className="mt-10 rounded-[28px] border border-white/10 bg-white/6 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl lg:p-6">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <p className="text-xl font-semibold text-white">
+                      Adicionales disponibles
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      Los adicionales se van desbloqueando según el plan que
+                      selecciones. Todo queda en una sola tarjeta para ocupar
+                      menos espacio y verse más limpio.
+                    </p>
+                  </div>
 
-                <div className="mt-5 space-y-4">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Plan actual
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      {selectedPlan.name}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-4">
                   {supportsStaffExtra ? (
-                    <ExtraCard
+                    <ExtraBadge
                       title={extraConfig.staff.title}
                       description={extraConfig.staff.description}
                       unitLabel={extraConfig.staff.unitLabel}
@@ -712,13 +734,13 @@ export default function PlanesPage() {
                       value={staffExtras}
                       onDecrease={() => decreaseExtra("staff")}
                       onIncrease={() => increaseExtra("staff")}
-                      extraKey="staff"
+                      accent={getExtraAccent("staff")}
                       icon={<Users className="h-5 w-5" />}
                     />
                   ) : null}
 
                   {supportsReminderExtra ? (
-                    <ExtraCard
+                    <ExtraBadge
                       title={extraConfig.reminders.title}
                       description={extraConfig.reminders.description}
                       unitLabel={extraConfig.reminders.unitLabel}
@@ -727,13 +749,13 @@ export default function PlanesPage() {
                       value={reminderExtras}
                       onDecrease={() => decreaseExtra("reminders")}
                       onIncrease={() => increaseExtra("reminders")}
-                      extraKey="reminders"
+                      accent={getExtraAccent("reminders")}
                       icon={<MessageCircle className="h-5 w-5" />}
                     />
                   ) : null}
 
                   {supportsCampaignExtra ? (
-                    <ExtraCard
+                    <ExtraBadge
                       title={extraConfig.campaigns.title}
                       description={extraConfig.campaigns.description}
                       unitLabel={extraConfig.campaigns.unitLabel}
@@ -742,13 +764,13 @@ export default function PlanesPage() {
                       value={campaignExtras}
                       onDecrease={() => decreaseExtra("campaigns")}
                       onIncrease={() => increaseExtra("campaigns")}
-                      extraKey="campaigns"
+                      accent={getExtraAccent("campaigns")}
                       icon={<Megaphone className="h-5 w-5" />}
                     />
                   ) : null}
 
                   {supportsAiExtra ? (
-                    <ExtraCard
+                    <ExtraBadge
                       title={extraConfig.ai.title}
                       description={extraConfig.ai.description}
                       unitLabel={extraConfig.ai.unitLabel}
@@ -757,7 +779,7 @@ export default function PlanesPage() {
                       value={aiExtras}
                       onDecrease={() => decreaseExtra("ai")}
                       onIncrease={() => increaseExtra("ai")}
-                      extraKey="ai"
+                      accent={getExtraAccent("ai")}
                       icon={<Bot className="h-5 w-5" />}
                     />
                   ) : null}
@@ -795,7 +817,9 @@ export default function PlanesPage() {
                       {comparisonRows.map((row, index) => (
                         <tr
                           key={row.label}
-                          className={index % 2 === 0 ? "bg-white/0" : "bg-white/[0.03]"}
+                          className={
+                            index % 2 === 0 ? "bg-white/0" : "bg-white/[0.03]"
+                          }
                         >
                           <td className="border-t border-white/10 px-4 py-3 text-sm font-medium text-slate-100">
                             {row.label}
@@ -947,6 +971,15 @@ export default function PlanesPage() {
                 <div className="mt-6 grid gap-3">
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                     <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                      Sucursales incluidas
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-white">
+                      {selectedPlan.includedBranches}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
                       Profesionales incluidos
                     </p>
                     <p className="mt-1 text-xl font-semibold text-white">
@@ -994,6 +1027,23 @@ export default function PlanesPage() {
                         ? `${currentAiTotal} conversaciones`
                         : "No incluida"}
                     </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-slate-200">
+                      <Building2 className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        Multi-sucursal incluida
+                      </p>
+                      <p className="text-sm text-slate-300">
+                        Este plan permite operar hasta {selectedPlan.includedBranches}{" "}
+                        sucursal{selectedPlan.includedBranches === 1 ? "" : "es"}.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
