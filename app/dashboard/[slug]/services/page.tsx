@@ -61,6 +61,8 @@ type BranchItem = {
   name: string;
 };
 
+const BACKEND_URL = "https://orbyx-backend.onrender.com";
+
 export default function ServicesPage() {
   const params = useParams();
   const slug =
@@ -102,6 +104,9 @@ export default function ServicesPage() {
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
 
   const planCaps: Record<string, { max_services: number }> = {
     starter: { max_services: 3 },
@@ -119,6 +124,14 @@ export default function ServicesPage() {
   const servicesWithDescriptionCount = services.filter(
     (service) => String(service.description || "").trim() !== ""
   ).length;
+
+  const selectedBranchName =
+    branches.find((branch) => branch.id === selectedBranchId)?.name || "";
+
+  function readStoredBranchId() {
+    if (typeof window === "undefined" || !branchStorageKey) return "";
+    return localStorage.getItem(branchStorageKey) || "";
+  }
 
   function normalizeStaffServices(items: StaffServiceItem[]): StaffServiceRow[] {
     return items
@@ -141,14 +154,12 @@ export default function ServicesPage() {
   async function fetchBranchData(currentTenantId: string, currentBranchId: string) {
     const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
       fetch(
-        `https://orbyx-backend.onrender.com/services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+        `${BACKEND_URL}/services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
       ),
       fetch(
-        `https://orbyx-backend.onrender.com/staff?tenant_id=${currentTenantId}&branch_id=${currentBranchId}&active=true`
+        `${BACKEND_URL}/staff?tenant_id=${currentTenantId}&branch_id=${currentBranchId}&active=true`
       ),
-      fetch(
-        `https://orbyx-backend.onrender.com/staff-services?tenant_id=${currentTenantId}`
-      ),
+      fetch(`${BACKEND_URL}/staff-services?tenant_id=${currentTenantId}`),
     ]);
 
     const servicesData: { services?: Service[]; error?: string } =
@@ -248,7 +259,7 @@ export default function ServicesPage() {
       setLoadingBranches(true);
 
       const response = await fetch(
-        `https://orbyx-backend.onrender.com/branches?tenant_id=${currentTenantId}`
+        `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
       );
 
       const data = await response.json();
@@ -260,12 +271,31 @@ export default function ServicesPage() {
       const rows: BranchItem[] = Array.isArray(data?.branches) ? data.branches : [];
       setBranches(rows);
 
-      if (rows.length === 1) {
-        setSelectedBranchId(rows[0].id);
+      if (rows.length === 0) {
+        setSelectedBranchId("");
+        return;
+      }
+
+      const storedBranchId = readStoredBranchId();
+      const storedExists = rows.some(
+        (branch: BranchItem) => branch.id === storedBranchId
+      );
+
+      if (storedExists) {
+        setSelectedBranchId(storedBranchId);
+        return;
+      }
+
+      const fallbackBranchId = rows[0].id;
+      setSelectedBranchId(fallbackBranchId);
+
+      if (typeof window !== "undefined" && branchStorageKey) {
+        localStorage.setItem(branchStorageKey, fallbackBranchId);
       }
     } catch (error) {
       console.error("Error cargando sucursales", error);
       setBranches([]);
+      setSelectedBranchId("");
     } finally {
       setLoadingBranches(false);
     }
@@ -276,9 +306,7 @@ export default function ServicesPage() {
       setLoading(true);
       setLoadError("");
 
-      const businessRes = await fetch(
-        `https://orbyx-backend.onrender.com/public/business/${slug}`
-      );
+      const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
       const businessData: BusinessResponse | { error?: string } =
         await businessRes.json();
 
@@ -314,6 +342,59 @@ export default function ServicesPage() {
       loadAll();
     }
   }, [slug]);
+
+  useEffect(() => {
+    function handleBranchChanged(event: Event) {
+      const customEvent = event as CustomEvent<{ slug?: string; branchId?: string }>;
+      const eventSlug = customEvent.detail?.slug;
+      const branchId = customEvent.detail?.branchId || "";
+
+      if (eventSlug !== slug) return;
+
+      setSelectedBranchId(branchId);
+      setEditingId(null);
+      setForm({
+        name: "",
+        description: "",
+        duration_minutes: "30",
+        price: "",
+        staff_ids: [],
+      });
+      setSaveError("");
+      setSaveOk("");
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== branchStorageKey) return;
+
+      const nextBranchId = event.newValue || "";
+      setSelectedBranchId(nextBranchId);
+      setEditingId(null);
+      setForm({
+        name: "",
+        description: "",
+        duration_minutes: "30",
+        price: "",
+        staff_ids: [],
+      });
+      setSaveError("");
+      setSaveOk("");
+    }
+
+    window.addEventListener(
+      "orbyx-branch-changed",
+      handleBranchChanged as EventListener
+    );
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        "orbyx-branch-changed",
+        handleBranchChanged as EventListener
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [slug, branchStorageKey]);
 
   useEffect(() => {
     async function loadBranchData() {
@@ -369,20 +450,17 @@ export default function ServicesPage() {
 
       const uniqueServiceIds = [...new Set(serviceIdsForStaff)];
 
-      const response = await fetch(
-        "https://orbyx-backend.onrender.com/staff-services",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tenant_id: tenantId,
-            staff_id: staffId,
-            service_ids: uniqueServiceIds,
-          }),
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}/staff-services`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          staff_id: staffId,
+          service_ids: uniqueServiceIds,
+        }),
+      });
 
       const data = await response.json();
 
@@ -405,7 +483,7 @@ export default function ServicesPage() {
       }
 
       if (!selectedBranchId) {
-        throw new Error("Debes seleccionar una sucursal");
+        throw new Error("Debes seleccionar una sucursal activa");
       }
 
       if (servicesLimitReached) {
@@ -420,26 +498,23 @@ export default function ServicesPage() {
         throw new Error("Debes ingresar la duración");
       }
 
-      const response = await fetch(
-        "https://orbyx-backend.onrender.com/services",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tenant_id: tenantId,
-            branch_id: selectedBranchId,
-            name: form.name.trim(),
-            description: form.description.trim(),
-            duration_minutes: Number(form.duration_minutes || 30),
-            buffer_before_minutes: 0,
-            buffer_after_minutes: 0,
-            price: Number(form.price || 0),
-            active: true,
-          }),
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}/services`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          branch_id: selectedBranchId,
+          name: form.name.trim(),
+          description: form.description.trim(),
+          duration_minutes: Number(form.duration_minutes || 30),
+          buffer_before_minutes: 0,
+          buffer_after_minutes: 0,
+          price: Number(form.price || 0),
+          active: true,
+        }),
+      });
 
       const data = await response.json();
 
@@ -503,7 +578,7 @@ export default function ServicesPage() {
       }
 
       if (!selectedBranchId) {
-        throw new Error("Debes seleccionar una sucursal");
+        throw new Error("Debes seleccionar una sucursal activa");
       }
 
       if (!editForm.name.trim()) {
@@ -514,26 +589,23 @@ export default function ServicesPage() {
         throw new Error("Debes ingresar la duración");
       }
 
-      const response = await fetch(
-        `https://orbyx-backend.onrender.com/services/${serviceId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tenant_id: tenantId,
-            branch_id: selectedBranchId,
-            name: editForm.name.trim(),
-            description: editForm.description.trim(),
-            duration_minutes: Number(editForm.duration_minutes || 30),
-            price: Number(editForm.price || 0),
-            buffer_before_minutes: 0,
-            buffer_after_minutes: 0,
-            active: editForm.active,
-          }),
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}/services/${serviceId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          branch_id: selectedBranchId,
+          name: editForm.name.trim(),
+          description: editForm.description.trim(),
+          duration_minutes: Number(editForm.duration_minutes || 30),
+          price: Number(editForm.price || 0),
+          buffer_before_minutes: 0,
+          buffer_after_minutes: 0,
+          active: editForm.active,
+        }),
+      });
 
       const data = await response.json();
 
@@ -570,12 +642,9 @@ export default function ServicesPage() {
 
       setSaving(true);
 
-      const response = await fetch(
-        `https://orbyx-backend.onrender.com/services/${serviceId}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}/services/${serviceId}`, {
+        method: "DELETE",
+      });
 
       const data = await response.json();
 
@@ -606,9 +675,13 @@ export default function ServicesPage() {
       <PageHeader
         eyebrow="Servicios"
         title={loading ? "Cargando servicios..." : "Servicios del negocio"}
-        description={`Gestiona los servicios que tus clientes podrán reservar en ${
-          loading ? "tu negocio" : businessName
-        }.`}
+        description={
+          selectedBranchName
+            ? `Gestiona los servicios de la sucursal ${selectedBranchName}.`
+            : `Gestiona los servicios que tus clientes podrán reservar en ${
+                loading ? "tu negocio" : businessName
+              }.`
+        }
         actions={
           <div className="flex flex-wrap gap-3">
             <Link
@@ -621,6 +694,23 @@ export default function ServicesPage() {
           </div>
         }
       />
+
+      {loadingBranches ? (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 shadow-sm">
+          Cargando sucursal activa...
+        </div>
+      ) : !selectedBranchId ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+          Debes seleccionar una sucursal activa en el sidebar para gestionar servicios.
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+          Sucursal activa:{" "}
+          <span className="font-semibold text-slate-900">
+            {selectedBranchName || selectedBranchId}
+          </span>
+        </div>
+      )}
 
       {loadError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
@@ -644,7 +734,7 @@ export default function ServicesPage() {
         <StatCard
           label="Total servicios"
           value={loading ? "..." : String(services.length)}
-          helper="Cantidad total registrada en el negocio."
+          helper="Cantidad total registrada en la sucursal."
         />
         <StatCard
           label="Activos"
@@ -674,7 +764,11 @@ export default function ServicesPage() {
           title="Servicios actuales"
           description="Edita, activa o elimina los servicios de tu negocio."
         >
-          {loading ? (
+          {!selectedBranchId ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+              Selecciona una sucursal activa en el sidebar para ver los servicios.
+            </div>
+          ) : loading ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
               Cargando servicios...
             </div>
@@ -974,159 +1068,165 @@ export default function ServicesPage() {
           title="Crear nuevo servicio"
           description="Agrega un nuevo servicio para ofrecer más opciones de reserva."
         >
-          <div className="space-y-5">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-700">
-                Plan actual: <span className="capitalize">{plan}</span>
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Has creado {services.length} de {maxServices} servicios
-                disponibles en tu plan.
-              </p>
+          {!selectedBranchId ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+              Selecciona una sucursal activa en el sidebar para crear servicios.
             </div>
-
-            {servicesLimitReached ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
-                Límite de servicios alcanzado
-              </div>
-            ) : null}
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Nombre del servicio
-              </label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="Ej: Corte premium"
-                disabled={servicesLimitReached}
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Descripción del servicio
-              </label>
-              <textarea
-                value={form.description}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-                placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
-                disabled={servicesLimitReached}
-                className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Duración (minutos)
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={form.duration_minutes}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    duration_minutes: e.target.value,
-                  }))
-                }
-                disabled={servicesLimitReached}
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Precio <span className="text-slate-400">(opcional)</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={form.price}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, price: e.target.value }))
-                }
-                placeholder="Ej: 10000"
-                disabled={servicesLimitReached}
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div>
+          ) : (
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-sm font-medium text-slate-700">
-                  Staff que puede realizar este servicio
+                  Plan actual: <span className="capitalize">{plan}</span>
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  Selecciona las personas del equipo que podrán atender este
-                  servicio.
+                  Has creado {services.length} de {maxServices} servicios
+                  disponibles en tu plan.
                 </p>
               </div>
 
-              {staff.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-                  Aún no tienes staff activo. Primero crea staff en el módulo
-                  Staff.
+              {servicesLimitReached ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+                  Límite de servicios alcanzado
                 </div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {staff.map((staffItem) => (
-                    <label
-                      key={staffItem.id}
-                      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={form.staff_ids.includes(staffItem.id)}
-                        onChange={() => toggleCreateStaff(staffItem.id)}
-                        disabled={servicesLimitReached}
-                        className="h-4 w-4 rounded border-slate-300"
-                      />
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="h-3 w-3 rounded-full"
-                          style={{
-                            backgroundColor: staffItem.color || "#0f172a",
-                          }}
+              ) : null}
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Nombre del servicio
+                </label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="Ej: Corte premium"
+                  disabled={servicesLimitReached}
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Descripción del servicio
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
+                  disabled={servicesLimitReached}
+                  className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Duración (minutos)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.duration_minutes}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      duration_minutes: e.target.value,
+                    }))
+                  }
+                  disabled={servicesLimitReached}
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Precio <span className="text-slate-400">(opcional)</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.price}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, price: e.target.value }))
+                  }
+                  placeholder="Ej: 10000"
+                  disabled={servicesLimitReached}
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">
+                    Staff que puede realizar este servicio
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Selecciona las personas del equipo que podrán atender este
+                    servicio.
+                  </p>
+                </div>
+
+                {staff.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                    Aún no tienes staff activo. Primero crea staff en el módulo
+                    Staff.
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {staff.map((staffItem) => (
+                      <label
+                        key={staffItem.id}
+                        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.staff_ids.includes(staffItem.id)}
+                          onChange={() => toggleCreateStaff(staffItem.id)}
+                          disabled={servicesLimitReached}
+                          className="h-4 w-4 rounded border-slate-300"
                         />
-                        <span>
-                          {staffItem.name}
-                          {staffItem.role ? ` · ${staffItem.role}` : ""}
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="h-3 w-3 rounded-full"
+                            style={{
+                              backgroundColor: staffItem.color || "#0f172a",
+                            }}
+                          />
+                          <span>
+                            {staffItem.name}
+                            {staffItem.role ? ` · ${staffItem.role}` : ""}
+                          </span>
                         </span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-700">Consejo</p>
-              <p className="mt-1 text-sm text-slate-500">
-                Describe qué incluye el servicio para que tus clientes entiendan
-                mejor lo que están reservando y para que la IA pueda responder
-                dudas.
-              </p>
-            </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-medium text-slate-700">Consejo</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Describe qué incluye el servicio para que tus clientes entiendan
+                  mejor lo que están reservando y para que la IA pueda responder
+                  dudas.
+                </p>
+              </div>
 
-            <button
-              type="button"
-              onClick={handleCreateService}
-              disabled={saving || loading || servicesLimitReached}
-              className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? "Guardando..." : "Crear servicio"}
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={handleCreateService}
+                disabled={saving || loading || servicesLimitReached}
+                className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? "Guardando..." : "Crear servicio"}
+              </button>
+            </div>
+          )}
         </Panel>
       </section>
     </div>
