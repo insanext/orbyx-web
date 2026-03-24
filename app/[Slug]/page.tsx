@@ -38,8 +38,7 @@ export default function Page() {
   const [selectedBranchId, setSelectedBranchId] = useState("");
 
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const [selectedService, setSelectedService] =
-    useState<ServiceItem | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
 
   const [staffOptions, setStaffOptions] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
@@ -48,12 +47,17 @@ export default function Page() {
   const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
 
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [loadingStaff, setLoadingStaff] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   const formRef = useRef<HTMLDivElement | null>(null);
 
   function formatDate(date: Date) {
-    return date.toISOString().split("T")[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   function formatHour(dateString: string) {
@@ -64,7 +68,16 @@ export default function Page() {
     });
   }
 
-  function resetFlow() {
+  function formatPrice(price?: number | null) {
+    return new Intl.NumberFormat("es-CL", {
+      style: "currency",
+      currency: "CLP",
+      maximumFractionDigits: 0,
+    }).format(price || 0);
+  }
+
+  function resetAfterBranchChange() {
+    setServices([]);
     setSelectedService(null);
     setSelectedStaffId("");
     setStaffOptions([]);
@@ -72,157 +85,331 @@ export default function Page() {
     setWeekSlots({});
   }
 
-  // 🔹 Load branches
+  function resetAfterServiceChange() {
+    setSelectedStaffId("");
+    setStaffOptions([]);
+    setSelectedSlot(null);
+    setWeekSlots({});
+  }
+
+  function buildQuery(paramsObj: Record<string, string | undefined>) {
+    const query = new URLSearchParams();
+
+    Object.entries(paramsObj).forEach(([key, value]) => {
+      if (value && value.trim() !== "") {
+        query.set(key, value);
+      }
+    });
+
+    const queryString = query.toString();
+    return queryString ? `?${queryString}` : "";
+  }
+
+  const hasBranches = branches.length > 0;
+  const showBranchSelector = branches.length > 1;
+  const canUseBranchlessMode = branches.length === 0;
+  const canLoadContent = canUseBranchlessMode || !!selectedBranchId;
+
+  // Cargar sucursales
   useEffect(() => {
     if (!slug) return;
 
-    fetch(`/api/public-services/${slug}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const b = Array.isArray(data.branches) ? data.branches : [];
-        setBranches(b);
+    async function loadInitialData() {
+      try {
+        const response = await fetch(`/api/public-services/${slug}`);
+        const data = await response.json();
 
-        if (b.length === 1) {
-          setSelectedBranchId(b[0].id);
+        const branchRows: BranchItem[] = Array.isArray(data.branches) ? data.branches : [];
+        setBranches(branchRows);
+
+        if (branchRows.length === 1) {
+          setSelectedBranchId(branchRows[0].id);
+        } else {
+          setSelectedBranchId("");
         }
-      });
+      } catch {
+        setBranches([]);
+        setSelectedBranchId("");
+      }
+    }
+
+    loadInitialData();
   }, [slug]);
 
-  // 🔹 Load services by branch
+  // Cargar servicios
   useEffect(() => {
-    if (!slug || !selectedBranchId) return;
+    if (!slug) return;
+    if (hasBranches && !selectedBranchId) return;
 
-    fetch(`/api/public-services/${slug}?branch_id=${selectedBranchId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const rows: ServiceItem[] = Array.isArray(data.services)
-          ? data.services
-          : [];
+    async function loadServices() {
+      try {
+        setLoadingServices(true);
 
+        const query = buildQuery({
+          branch_id: selectedBranchId || undefined,
+        });
+
+        const response = await fetch(`/api/public-services/${slug}${query}`);
+        const data = await response.json();
+
+        const rows: ServiceItem[] = Array.isArray(data.services) ? data.services : [];
         setServices(rows);
 
         setSelectedService((prev) => {
           if (!prev) return null;
-          return (
-            rows.find((service: ServiceItem) => service.id === prev.id) || null
-          );
+          return rows.find((service: ServiceItem) => service.id === prev.id) || null;
         });
-      });
-  }, [slug, selectedBranchId]);
+      } catch {
+        setServices([]);
+        setSelectedService(null);
+      } finally {
+        setLoadingServices(false);
+      }
+    }
 
-  // 🔹 Load staff
+    loadServices();
+  }, [slug, selectedBranchId, hasBranches]);
+
+  // Cargar staff por servicio
   useEffect(() => {
-    if (!slug || !selectedService || !selectedBranchId) return;
+    if (!slug || !selectedService) return;
+    if (hasBranches && !selectedBranchId) return;
 
-    fetch(
-      `/api/public-staff/${slug}/${selectedService.id}?branch_id=${selectedBranchId}`
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        const rows = Array.isArray(data.staff) ? data.staff : [];
+    async function loadStaff() {
+      try {
+        setLoadingStaff(true);
+
+        const query = buildQuery({
+          branch_id: selectedBranchId || undefined,
+        });
+
+        const response = await fetch(
+          `/api/public-staff/${slug}/${selectedService.id}${query}`
+        );
+        const data = await response.json();
+
+        const rows: StaffItem[] = Array.isArray(data.staff) ? data.staff : [];
         setStaffOptions(rows);
-      });
-  }, [slug, selectedService, selectedBranchId]);
+      } catch {
+        setStaffOptions([]);
+      } finally {
+        setLoadingStaff(false);
+      }
+    }
 
-  // 🔹 Load slots
+    loadStaff();
+  }, [slug, selectedService, selectedBranchId, hasBranches]);
+
+  // Cargar slots
   useEffect(() => {
-    if (!slug || !selectedService || !selectedBranchId) return;
+    if (!slug || !selectedService) return;
+    if (hasBranches && !selectedBranchId) return;
 
-    setLoadingSlots(true);
+    async function loadSlots() {
+      try {
+        setLoadingSlots(true);
 
-    const date = formatDate(selectedDate);
+        const date = formatDate(selectedDate);
 
-    fetch(
-      `/api/public-slots/${slug}/${selectedService.id}?date=${date}&branch_id=${selectedBranchId}`
-    )
-      .then((r) => r.json())
-      .then((data) => {
+        const query = buildQuery({
+          date,
+          branch_id: selectedBranchId || undefined,
+          staff_id: selectedStaffId || undefined,
+        });
+
+        const response = await fetch(
+          `/api/public-slots/${slug}/${selectedService.id}${query}`
+        );
+        const data = await response.json();
+
         setWeekSlots({
           [date]: Array.isArray(data.slots) ? data.slots : [],
         });
-      })
-      .finally(() => setLoadingSlots(false));
-  }, [slug, selectedService, selectedDate, selectedBranchId]);
+      } catch {
+        setWeekSlots({});
+      } finally {
+        setLoadingSlots(false);
+      }
+    }
 
-  const showBranchSelector = branches.length > 1;
+    loadSlots();
+  }, [slug, selectedService, selectedDate, selectedBranchId, selectedStaffId, hasBranches]);
 
   return (
     <div className="p-6 space-y-6">
-      {/* 🔹 Sucursal */}
       {showBranchSelector && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-slate-700">
+            Selecciona sucursal
+          </label>
+          <select
+            value={selectedBranchId}
+            onChange={(e) => {
+              setSelectedBranchId(e.target.value);
+              resetAfterBranchChange();
+            }}
+            className="w-full max-w-sm rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none"
+          >
+            <option value="">Selecciona sucursal</option>
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {branch.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-slate-700">
+          Servicio
+        </label>
         <select
-          value={selectedBranchId}
+          disabled={!canLoadContent || loadingServices}
+          value={selectedService?.id || ""}
           onChange={(e) => {
-            setSelectedBranchId(e.target.value);
-            resetFlow();
+            const service =
+              services.find((item: ServiceItem) => item.id === e.target.value) || null;
+            setSelectedService(service);
+            resetAfterServiceChange();
           }}
+          className="w-full max-w-sm rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-100"
         >
-          <option value="">Selecciona sucursal</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
+          <option value="">
+            {!canLoadContent
+              ? "Selecciona sucursal"
+              : loadingServices
+              ? "Cargando servicios..."
+              : "Selecciona servicio"}
+          </option>
+
+          {services.map((service) => (
+            <option key={service.id} value={service.id}>
+              {service.name}
+              {service.duration_minutes ? ` · ${service.duration_minutes} min` : ""}
+              {typeof service.price === "number" ? ` · ${formatPrice(service.price)}` : ""}
             </option>
           ))}
         </select>
+      </div>
+
+      {selectedService && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-sm font-semibold text-slate-900">{selectedService.name}</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Duración: {selectedService.duration_minutes || 0} min
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            Precio: {formatPrice(selectedService.price)}
+          </p>
+        </div>
       )}
 
-      {/* 🔹 Servicios */}
-      <select
-        disabled={!selectedBranchId}
-        value={selectedService?.id || ""}
-        onChange={(e) => {
-          const service =
-            services.find((s) => s.id === e.target.value) || null;
-          setSelectedService(service);
-          resetFlow();
-        }}
-      >
-        <option value="">
-          {!selectedBranchId
-            ? "Selecciona sucursal"
-            : "Selecciona servicio"}
-        </option>
-        {services.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.name}
-          </option>
-        ))}
-      </select>
+      {selectedService && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-slate-700">
+            Profesional
+          </label>
 
-      {/* 🔹 Calendar */}
-      <Calendar
-        minDate={new Date()}
-        onChange={(value: CalendarValue) => {
-          const picked = Array.isArray(value) ? value[0] : value;
-          if (!picked) return;
+          {loadingStaff ? (
+            <div className="text-sm text-slate-500">Cargando staff...</div>
+          ) : (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="staff"
+                  checked={selectedStaffId === ""}
+                  onChange={() => {
+                    setSelectedStaffId("");
+                    setSelectedSlot(null);
+                    setWeekSlots({});
+                  }}
+                />
+                Cualquiera disponible
+              </label>
 
-          setSelectedDate(new Date(picked));
-          setSelectedSlot(null);
-        }}
-        value={selectedDate}
-      />
-
-      {/* 🔹 Slots */}
-      {loadingSlots ? (
-        <p>Cargando horarios...</p>
-      ) : (
-        (weekSlots[formatDate(selectedDate)] || []).map((slot, i) => (
-          <button
-            key={i}
-            onClick={() => {
-              setSelectedSlot(slot);
-              formRef.current?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            {formatHour(slot.slot_start)}
-          </button>
-        ))
+              {staffOptions.map((staff) => (
+                <label key={staff.id} className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="radio"
+                    name="staff"
+                    checked={selectedStaffId === staff.id}
+                    onChange={() => {
+                      setSelectedStaffId(staff.id);
+                      setSelectedSlot(null);
+                      setWeekSlots({});
+                    }}
+                  />
+                  {staff.name}
+                  {staff.role ? ` · ${staff.role}` : ""}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
-      {/* 🔹 Confirmación */}
+      <div className="max-w-sm">
+        <Calendar
+          minDate={new Date()}
+          onChange={(value: CalendarValue) => {
+            const picked = Array.isArray(value) ? value[0] : value;
+            if (!picked) return;
+
+            setSelectedDate(new Date(picked));
+            setSelectedSlot(null);
+          }}
+          value={selectedDate}
+        />
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-base font-semibold text-slate-900">Horarios disponibles</h3>
+
+        {!canLoadContent ? (
+          <p className="text-sm text-slate-500">Selecciona una sucursal.</p>
+        ) : !selectedService ? (
+          <p className="text-sm text-slate-500">Selecciona un servicio.</p>
+        ) : loadingSlots ? (
+          <p className="text-sm text-slate-500">Cargando horarios...</p>
+        ) : (weekSlots[formatDate(selectedDate)] || []).length === 0 ? (
+          <p className="text-sm text-slate-500">No hay horarios disponibles.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {(weekSlots[formatDate(selectedDate)] || []).map((slot, index) => (
+              <button
+                key={`${slot.slot_start}-${index}`}
+                onClick={() => {
+                  setSelectedSlot(slot);
+                  setTimeout(() => {
+                    formRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }, 100);
+                }}
+                className={`rounded-xl border px-4 py-2 text-sm font-medium ${
+                  selectedSlot?.slot_start === slot.slot_start
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-300 bg-white text-slate-700"
+                }`}
+              >
+                {formatHour(slot.slot_start)}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {selectedSlot && (
-        <div ref={formRef}>
-          <p>Hora seleccionada: {formatHour(selectedSlot.slot_start)}</p>
+        <div
+          ref={formRef}
+          className="rounded-2xl border border-green-200 bg-green-50 p-4"
+        >
+          <p className="text-sm font-semibold text-green-800">
+            Hora seleccionada: {formatHour(selectedSlot.slot_start)}
+          </p>
         </div>
       )}
     </div>
