@@ -74,6 +74,10 @@ export default function AgendaPage() {
   const didAutoFocusPendingRef = useRef(false);
   const detailRef = useRef<HTMLDivElement | null>(null);
 
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
+
   function startOfWeek(date: Date) {
     const d = new Date(date);
     const day = d.getDay();
@@ -299,6 +303,11 @@ export default function AgendaPage() {
     }, 80);
   }
 
+  function readStoredBranchId() {
+    if (typeof window === "undefined" || !branchStorageKey) return "";
+    return localStorage.getItem(branchStorageKey) || "";
+  }
+
   async function loadBranches(currentTenantId: string) {
     try {
       setLoadingBranches(true);
@@ -312,13 +321,30 @@ export default function AgendaPage() {
         throw new Error(data?.error || "No se pudieron cargar las sucursales");
       }
 
-      const rows: BranchItem[] = Array.isArray(data?.branches) ? data.branches : [];
+      const rows: BranchItem[] = Array.isArray(data?.branches)
+        ? data.branches
+        : [];
+
       setBranches(rows);
 
-      if (rows.length === 1) {
-        setSelectedBranchId(rows[0].id);
-      } else {
+      if (rows.length === 0) {
         setSelectedBranchId("");
+        return;
+      }
+
+      const storedBranchId = readStoredBranchId();
+      const storedExists = rows.some((branch) => branch.id === storedBranchId);
+
+      if (storedExists) {
+        setSelectedBranchId(storedBranchId);
+        return;
+      }
+
+      const fallbackBranchId = rows[0].id;
+      setSelectedBranchId(fallbackBranchId);
+
+      if (typeof window !== "undefined" && branchStorageKey) {
+        localStorage.setItem(branchStorageKey, fallbackBranchId);
       }
     } catch (err) {
       console.error("Error cargando sucursales", err);
@@ -341,17 +367,20 @@ export default function AgendaPage() {
       setLoading(true);
       setError("");
 
+      if (!selectedBranchId) {
+        setAppointments([]);
+        setSelectedAppointment(null);
+        return;
+      }
+
       const from = formatDateYYYYMMDD(weekStart);
       const to = formatDateYYYYMMDD(weekEnd);
 
       const query = new URLSearchParams({
         from,
         to,
+        branch_id: selectedBranchId,
       });
-
-      if (selectedBranchId) {
-        query.set("branch_id", selectedBranchId);
-      }
 
       const res = await fetch(
         `${BACKEND_URL}/appointments/by-range/${slug}?${query.toString()}`
@@ -477,7 +506,7 @@ export default function AgendaPage() {
 
   useEffect(() => {
     if (!slug) return;
-    if (branches.length > 1 && !selectedBranchId) {
+    if (!selectedBranchId) {
       setAppointments([]);
       setSelectedAppointment(null);
       setLoading(false);
@@ -485,7 +514,41 @@ export default function AgendaPage() {
     }
 
     loadAppointments();
-  }, [slug, weekStart.getTime(), selectedBranchId, branches.length]);
+  }, [slug, weekStart.getTime(), selectedBranchId]);
+
+  useEffect(() => {
+    function handleBranchChanged(event: Event) {
+      const customEvent = event as CustomEvent<{ slug?: string; branchId?: string }>;
+      const eventSlug = customEvent.detail?.slug;
+      const branchId = customEvent.detail?.branchId || "";
+
+      if (eventSlug !== slug) return;
+
+      setSelectedBranchId(branchId);
+      setSelectedAppointment(null);
+      didAutoFocusPendingRef.current = false;
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== branchStorageKey) return;
+
+      const nextBranchId = event.newValue || "";
+      setSelectedBranchId(nextBranchId);
+      setSelectedAppointment(null);
+      didAutoFocusPendingRef.current = false;
+    }
+
+    window.addEventListener("orbyx-branch-changed", handleBranchChanged as EventListener);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        "orbyx-branch-changed",
+        handleBranchChanged as EventListener
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [slug, branchStorageKey]);
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appt) => matchesFilter(appt, activeFilter));
@@ -605,7 +668,8 @@ export default function AgendaPage() {
     didAutoFocusPendingRef.current = false;
   }
 
-  const showBranchSelector = branches.length > 1;
+  const selectedBranchName =
+    branches.find((branch) => branch.id === selectedBranchId)?.name || "";
 
   return (
     <div className="space-y-6 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 p-1">
@@ -613,7 +677,11 @@ export default function AgendaPage() {
         <PageHeader
           eyebrow="Agenda"
           title="Agenda semanal"
-          description="Semana, estados y cierre rápido."
+          description={
+            selectedBranchName
+              ? `Vista filtrada por sucursal: ${selectedBranchName}`
+              : "Semana, estados y cierre rápido."
+          }
           actions={
             <div className="flex flex-wrap gap-3">
               {hasPendingClose ? (
@@ -685,35 +753,22 @@ export default function AgendaPage() {
         />
       </div>
 
-      {showBranchSelector ? (
-        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <Panel
-            title="Sucursal"
-            description="Selecciona la sucursal que quieres ver en agenda."
-          >
-            {loadingBranches ? (
-              <div className="text-sm text-slate-500">Cargando sucursales...</div>
-            ) : (
-              <select
-                value={selectedBranchId}
-                onChange={(e) => {
-                  setSelectedBranchId(e.target.value);
-                  setSelectedAppointment(null);
-                  didAutoFocusPendingRef.current = false;
-                }}
-                className="h-11 w-full max-w-sm rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-              >
-                <option value="">Selecciona una sucursal</option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Panel>
+      {loadingBranches ? (
+        <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
+          Cargando sucursal activa...
         </div>
-      ) : null}
+      ) : !selectedBranchId ? (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+          Debes seleccionar una sucursal activa en el sidebar para ver la agenda.
+        </div>
+      ) : (
+        <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+          Sucursal activa:{" "}
+          <span className="font-semibold text-slate-900">
+            {selectedBranchName || selectedBranchId}
+          </span>
+        </div>
+      )}
 
       {hasPendingClose ? (
         <div className="rounded-3xl border border-rose-200 bg-gradient-to-r from-rose-50 to-amber-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
@@ -818,9 +873,9 @@ export default function AgendaPage() {
                 : "Vista semanal de reservas."
             }
           >
-            {showBranchSelector && !selectedBranchId ? (
+            {!selectedBranchId ? (
               <p className="px-2 py-4 text-sm text-slate-500">
-                Selecciona una sucursal para ver la agenda.
+                Selecciona una sucursal en el sidebar para ver la agenda.
               </p>
             ) : loading ? (
               <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
