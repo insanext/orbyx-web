@@ -358,13 +358,16 @@ export default function Page() {
         );
         const data = await res.json();
 
-        const rows = Array.isArray(data.services) ? data.services : [];
-        setServices(rows);
 
-        setSelectedService((prev) => {
-          if (!prev) return null;
-          return rows.find((service) => service.id === prev.id) || null;
-        });
+const rows: ServiceItem[] = Array.isArray(data.services) ? data.services : [];
+
+setServices(rows);
+
+setSelectedService((prev) => {
+  if (!prev) return null;
+  return rows.find((service: ServiceItem) => service.id === prev.id) || null;
+});
+
       } catch {
         setServices([]);
         setSelectedService(null);
