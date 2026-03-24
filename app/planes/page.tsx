@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Bot,
   Check,
   Crown,
   Gem,
   Mail,
-  MessageCircle,
   Megaphone,
+  MessageCircle,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -44,6 +44,8 @@ type Plan = {
   accentClass: string;
   softBgClass: string;
   borderClass: string;
+  ringClass: string;
+  gradientClass: string;
 };
 
 const SERVICES_PER_STAFF_EXTRA = 5;
@@ -87,9 +89,12 @@ const plans: Plan[] = [
       },
     ],
     icon: "mail",
-    accentClass: "text-sky-700",
-    softBgClass: "bg-sky-50",
-    borderClass: "border-sky-200",
+    accentClass: "text-sky-300",
+    softBgClass: "bg-sky-500/10",
+    borderClass: "border-sky-400/25",
+    ringClass: "ring-sky-400/30",
+    gradientClass:
+      "from-sky-500/18 via-slate-900/0 to-slate-900/0",
   },
   {
     key: "premium",
@@ -129,9 +134,12 @@ const plans: Plan[] = [
       },
     ],
     icon: "sparkles",
-    accentClass: "text-violet-700",
-    softBgClass: "bg-violet-50",
-    borderClass: "border-violet-200",
+    accentClass: "text-violet-300",
+    softBgClass: "bg-violet-500/10",
+    borderClass: "border-violet-400/25",
+    ringClass: "ring-violet-400/30",
+    gradientClass:
+      "from-violet-500/18 via-slate-900/0 to-slate-900/0",
   },
   {
     key: "vip",
@@ -173,9 +181,12 @@ const plans: Plan[] = [
       },
     ],
     icon: "crown",
-    accentClass: "text-amber-700",
-    softBgClass: "bg-amber-50",
-    borderClass: "border-amber-200",
+    accentClass: "text-amber-300",
+    softBgClass: "bg-amber-500/10",
+    borderClass: "border-amber-400/25",
+    ringClass: "ring-amber-400/30",
+    gradientClass:
+      "from-amber-500/18 via-slate-900/0 to-slate-900/0",
   },
   {
     key: "platinum",
@@ -218,9 +229,12 @@ const plans: Plan[] = [
       },
     ],
     icon: "gem",
-    accentClass: "text-emerald-700",
-    softBgClass: "bg-emerald-50",
-    borderClass: "border-emerald-200",
+    accentClass: "text-emerald-300",
+    softBgClass: "bg-emerald-500/10",
+    borderClass: "border-emerald-400/25",
+    ringClass: "ring-emerald-400/30",
+    gradientClass:
+      "from-emerald-500/18 via-slate-900/0 to-slate-900/0",
   },
 ];
 
@@ -273,36 +287,36 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
 function getExtraAccent(extraKey: ExtraKey) {
   if (extraKey === "staff") {
     return {
-      button: "border-indigo-200 text-indigo-700 hover:bg-indigo-50",
-      badge: "border-sky-200 bg-sky-50 text-sky-700",
-      icon: "bg-indigo-50 text-indigo-700",
-      card: "border-slate-200 bg-white",
+      icon: "bg-indigo-500/15 text-indigo-200",
+      control:
+        "border-indigo-400/25 text-indigo-100 hover:bg-indigo-500/15",
+      info: "border-indigo-400/20 bg-indigo-500/10 text-indigo-100",
     };
   }
 
   if (extraKey === "reminders") {
     return {
-      button: "border-emerald-200 text-emerald-700 hover:bg-emerald-50",
-      badge: "border-sky-200 bg-sky-50 text-sky-700",
-      icon: "bg-emerald-50 text-emerald-700",
-      card: "border-slate-200 bg-white",
+      icon: "bg-emerald-500/15 text-emerald-200",
+      control:
+        "border-emerald-400/25 text-emerald-100 hover:bg-emerald-500/15",
+      info: "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
     };
   }
 
   if (extraKey === "campaigns") {
     return {
-      button: "border-amber-200 text-amber-700 hover:bg-amber-50",
-      badge: "border-sky-200 bg-sky-50 text-sky-700",
-      icon: "bg-amber-50 text-amber-700",
-      card: "border-slate-200 bg-white",
+      icon: "bg-amber-500/15 text-amber-200",
+      control:
+        "border-amber-400/25 text-amber-100 hover:bg-amber-500/15",
+      info: "border-amber-400/20 bg-amber-500/10 text-amber-100",
     };
   }
 
   return {
-    button: "border-violet-200 text-violet-700 hover:bg-violet-50",
-    badge: "border-violet-200 bg-violet-50 text-violet-700",
-    icon: "bg-violet-50 text-violet-700",
-    card: "border-violet-200 bg-[linear-gradient(180deg,#ffffff_0%,#faf7ff_100%)]",
+    icon: "bg-violet-500/15 text-violet-200",
+    control:
+      "border-violet-400/25 text-violet-100 hover:bg-violet-500/15",
+    info: "border-violet-400/20 bg-violet-500/10 text-violet-100",
   };
 }
 
@@ -326,56 +340,64 @@ function ExtraCard({
   value: number;
   onDecrease: () => void;
   onIncrease: () => void;
-  icon: React.ReactNode;
+  icon: ReactNode;
   extraKey: ExtraKey;
 }) {
   const accent = getExtraAccent(extraKey);
 
   return (
-    <div className={`flex h-full min-h-[560px] flex-col rounded-3xl border p-5 shadow-sm ${accent.card}`}>
-      <div>
-        <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${accent.icon}`}>
-          {icon}
-        </div>
+    <div className="rounded-[28px] border border-white/10 bg-white/6 p-5 shadow-[0_16px_50px_rgba(15,23,42,0.22)] backdrop-blur-xl">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <div
+            className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${accent.icon}`}
+          >
+            {icon}
+          </div>
 
-        <p className="mt-4 text-base font-semibold leading-6 text-slate-900">{title}</p>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
-
-        <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Valor
-          </p>
-          <p className="mt-1 text-base font-semibold text-slate-900">
-            {unitLabel} · {unitSizeLabel}
+          <p className="mt-4 text-lg font-semibold text-white">{title}</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+            {description}
           </p>
         </div>
-      </div>
 
-      <div className="mt-auto pt-5">
-        <div className="flex items-center justify-center gap-5">
-          <button
-            type="button"
-            onClick={onDecrease}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white text-2xl text-slate-500 transition hover:bg-slate-50"
+        <div className="w-full lg:w-[290px]">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Valor
+            </p>
+            <p className="mt-1 text-base font-semibold text-white">
+              {unitLabel} · {unitSizeLabel}
+            </p>
+          </div>
+
+          <div className="mt-4 flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={onDecrease}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-2xl text-slate-200 transition hover:bg-white/10"
+            >
+              −
+            </button>
+
+            <span className="min-w-[28px] text-center text-xl font-semibold text-white">
+              {value}
+            </span>
+
+            <button
+              type="button"
+              onClick={onIncrease}
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white/5 text-2xl transition ${accent.control}`}
+            >
+              +
+            </button>
+          </div>
+
+          <div
+            className={`mt-4 rounded-2xl border px-4 py-3 text-sm leading-6 ${accent.info}`}
           >
-            −
-          </button>
-
-          <span className="min-w-[28px] text-center text-xl font-semibold text-slate-900">
-            {value}
-          </span>
-
-          <button
-            type="button"
-            onClick={onIncrease}
-            className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white text-2xl transition ${accent.button}`}
-          >
-            +
-          </button>
-        </div>
-
-        <div className={`mt-4 min-h-[116px] rounded-2xl border px-4 py-3 text-sm leading-6 ${accent.badge}`}>
-          {infoText}
+            {infoText}
+          </div>
         </div>
       </div>
     </div>
@@ -389,7 +411,8 @@ export default function PlanesPage() {
   const [campaignExtras, setCampaignExtras] = useState(0);
   const [aiExtras, setAiExtras] = useState(0);
 
-  const selectedPlan = plans.find((plan) => plan.key === selectedPlanKey) || plans[2];
+  const selectedPlan =
+    plans.find((plan) => plan.key === selectedPlanKey) || plans[2];
 
   const supportsStaffExtra = selectedPlan.extras.includes("staff");
   const supportsReminderExtra = selectedPlan.extras.includes("reminders");
@@ -400,8 +423,12 @@ export default function PlanesPage() {
     let total = selectedPlan.price;
 
     if (supportsStaffExtra) total += staffExtras * extraConfig.staff.unitPrice;
-    if (supportsReminderExtra) total += reminderExtras * extraConfig.reminders.unitPrice;
-    if (supportsCampaignExtra) total += campaignExtras * extraConfig.campaigns.unitPrice;
+    if (supportsReminderExtra) {
+      total += reminderExtras * extraConfig.reminders.unitPrice;
+    }
+    if (supportsCampaignExtra) {
+      total += campaignExtras * extraConfig.campaigns.unitPrice;
+    }
     if (supportsAiExtra) total += aiExtras * extraConfig.ai.unitPrice;
 
     return total;
@@ -595,21 +622,23 @@ export default function PlanesPage() {
   ] as const;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8fafc_52%,#eef2ff_100%)] text-slate-900">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
       <section className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_410px]">
           <div>
-            <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.06)] backdrop-blur lg:p-8">
+            <div className="rounded-[34px] border border-white/10 bg-white/6 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl lg:p-8">
               <div className="max-w-3xl">
-                <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">
+                <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
                   Precios Orbyx
                 </span>
-                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 lg:text-5xl">
+
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl">
                   Escala tu agenda con un plan hecho para crecer contigo
                 </h1>
-                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                  Comienza con la base de agenda que necesita tu negocio y añade más
-                  capacidad, campañas o automatización cuando tu operación lo pida.
+
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+                  Comienza con la base que necesita tu negocio y suma capacidad,
+                  campañas o automatización cuando tu operación lo pida.
                 </p>
               </div>
 
@@ -622,150 +651,57 @@ export default function PlanesPage() {
                       key={plan.key}
                       type="button"
                       onClick={() => handleSelectPlan(plan.key)}
-                      className={`relative flex min-h-[258px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
+                      className={`relative flex min-h-[264px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
                         isSelected
-                          ? `${plan.borderClass} ${plan.softBgClass} shadow-[0_14px_35px_rgba(15,23,42,0.08)]`
-                          : "border-slate-200 bg-white hover:border-slate-300"
+                          ? `bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] ${plan.borderClass} ring-1 ${plan.ringClass} shadow-[0_18px_50px_rgba(15,23,42,0.28)]`
+                          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
                       }`}
                     >
                       {plan.badge ? (
-                        <span className="absolute right-4 top-4 rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                        <span className="absolute right-4 top-4 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-900">
                           {plan.badge}
                         </span>
                       ) : null}
 
                       <span
                         className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${
-                          isSelected ? "bg-white" : "bg-slate-100"
+                          isSelected ? "bg-white/12" : "bg-white/8"
                         } ${plan.accentClass}`}
                       >
                         <PlanIcon type={plan.icon} />
                       </span>
 
-                      <p className="mt-4 text-lg font-semibold text-slate-900">{plan.name}</p>
-                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                      <p className="mt-4 text-lg font-semibold text-white">
+                        {plan.name}
+                      </p>
+
+                      <p className="mt-1 text-sm leading-6 text-slate-300">
                         {plan.subtitle}
                       </p>
 
                       <div className="mt-auto pt-6">
-                        <p className="text-[2rem] font-semibold leading-none tracking-tight text-slate-900 lg:text-[2.35rem]">
+                        <p className="text-[2rem] font-semibold leading-none tracking-tight text-white lg:text-[2.35rem]">
                           {plan.priceLabel}
                         </p>
-                        <p className="mt-2 text-sm text-slate-500">{plan.ivaLabel}</p>
+                        <p className="mt-2 text-sm text-slate-400">
+                          {plan.ivaLabel}
+                        </p>
                       </div>
                     </button>
                   );
                 })}
               </div>
 
-              <div className="mt-8 rounded-[28px] border border-slate-200 bg-slate-50/70 p-5 lg:p-6">
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white ${selectedPlan.accentClass}`}
-                  >
-                    <PlanIcon type={selectedPlan.icon} />
-                  </span>
-
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-2xl font-semibold text-slate-900">
-                        {selectedPlan.name}
-                      </h2>
-                      {selectedPlan.badge ? (
-                        <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
-                          {selectedPlan.badge}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-sm text-slate-500">{selectedPlan.ivaLabel}</p>
-                  </div>
-                </div>
-
-                <p className="mt-4 text-lg font-medium leading-8 text-slate-800">
-                  {selectedPlan.subtitle}
-                </p>
-
-                <div className="mt-5 space-y-3">
-                  {selectedPlan.features.map((feature) => (
-                    <div
-                      key={`${selectedPlan.key}-${feature.title}`}
-                      className="flex items-start gap-3"
-                    >
-                      <Check
-                        className={`mt-1 h-4 w-4 shrink-0 ${
-                          feature.highlight ? "text-violet-700" : selectedPlan.accentClass
-                        }`}
-                      />
-                      <div>
-                        <p
-                          className={`text-sm font-semibold ${
-                            feature.highlight ? "text-violet-900" : "text-slate-900"
-                          }`}
-                        >
-                          {feature.title}
-                        </p>
-                        {feature.description ? (
-                          <p className="mt-1 text-sm leading-6 text-slate-600">
-                            {feature.description}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                      Profesionales incluidos
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-slate-900">
-                      {currentStaffTotal}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                      Servicios incluidos
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-slate-900">
-                      {currentServicesTotal}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                      WhatsApp recordatorios
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-slate-900">
-                      {currentReminderTotal > 0
-                        ? `${currentReminderTotal} conversaciones`
-                        : "No incluido"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-white px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                      IA asistida
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-slate-900">
-                      {currentAiTotal > 0
-                        ? `${currentAiTotal} conversaciones`
-                        : "No incluida"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <p className="text-xl font-semibold text-slate-900">
+              <div className="mt-10">
+                <p className="text-xl font-semibold text-white">
                   Adicionales disponibles
                 </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Amplía tu plan sin cambiarlo completo. Suma capacidad cuando tu negocio lo necesite.
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  Amplía tu plan sin cambiarlo completo. Los adicionales ahora
+                  van en formato vertical para que todo se vea más limpio.
                 </p>
 
-                <div className="mt-5 grid gap-4 lg:grid-cols-2 2xl:grid-cols-4">
+                <div className="mt-5 space-y-4">
                   {supportsStaffExtra ? (
                     <ExtraCard
                       title={extraConfig.staff.title}
@@ -828,12 +764,12 @@ export default function PlanesPage() {
                 </div>
               </div>
 
-              <div className="mt-10 overflow-hidden rounded-[28px] border border-slate-200 bg-white">
-                <div className="border-b border-slate-200 px-6 py-5">
-                  <p className="text-xl font-semibold text-slate-900">
+              <div className="mt-10 overflow-hidden rounded-[28px] border border-white/10 bg-white/6 shadow-[0_20px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl">
+                <div className="border-b border-white/10 px-6 py-5">
+                  <p className="text-xl font-semibold text-white">
                     Comparación de planes
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 text-sm text-slate-300">
                     Visualiza rápido qué cambia a medida que subes de plan.
                   </p>
                 </div>
@@ -841,14 +777,14 @@ export default function PlanesPage() {
                 <div className="overflow-x-auto">
                   <table className="min-w-[940px] w-full border-collapse">
                     <thead>
-                      <tr className="bg-slate-50">
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                      <tr className="bg-white/5">
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-200">
                           Característica
                         </th>
                         {plans.map((plan) => (
                           <th
                             key={plan.key}
-                            className="px-4 py-3 text-center text-sm font-semibold text-slate-700"
+                            className="px-4 py-3 text-center text-sm font-semibold text-slate-200"
                           >
                             {plan.name}
                           </th>
@@ -859,15 +795,15 @@ export default function PlanesPage() {
                       {comparisonRows.map((row, index) => (
                         <tr
                           key={row.label}
-                          className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                          className={index % 2 === 0 ? "bg-white/0" : "bg-white/[0.03]"}
                         >
-                          <td className="border-t border-slate-200 px-4 py-3 text-sm font-medium text-slate-800">
+                          <td className="border-t border-white/10 px-4 py-3 text-sm font-medium text-slate-100">
                             {row.label}
                           </td>
                           {plans.map((plan) => (
                             <td
                               key={`${row.label}-${plan.key}`}
-                              className="border-t border-slate-200 px-4 py-3 text-center text-sm text-slate-700"
+                              className="border-t border-white/10 px-4 py-3 text-center text-sm text-slate-300"
                             >
                               {row.values[plan.key]}
                             </td>
@@ -882,19 +818,23 @@ export default function PlanesPage() {
           </div>
 
           <div className="xl:sticky xl:top-6 xl:self-start">
-            <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.1)]">
-              <div className={`border-b p-6 ${selectedPlan.borderClass} ${selectedPlan.softBgClass}`}>
+            <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/8 shadow-[0_28px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl">
+              <div
+                className={`border-b p-6 ${selectedPlan.borderClass} ${selectedPlan.softBgClass} bg-gradient-to-br ${selectedPlan.gradientClass}`}
+              >
                 <div className="flex items-center gap-3">
                   <span
-                    className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white ${selectedPlan.accentClass}`}
+                    className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ${selectedPlan.accentClass}`}
                   >
                     <PlanIcon type={selectedPlan.icon} />
                   </span>
                   <div>
-                    <p className="text-xl font-semibold text-slate-900">
+                    <p className="text-xl font-semibold text-white">
                       {selectedPlan.summaryTitle}
                     </p>
-                    <p className="text-sm text-slate-600">{selectedPlan.summaryIntro}</p>
+                    <p className="text-sm text-slate-300">
+                      {selectedPlan.summaryIntro}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -902,17 +842,19 @@ export default function PlanesPage() {
               <div className="p-6">
                 <div className="space-y-3">
                   {extraItems.length === 0 ? (
-                    <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                    <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-300">
                       Aún no has agregado adicionales.
                     </div>
                   ) : (
                     extraItems.map((item) => (
                       <div
                         key={item.label}
-                        className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"
+                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
                       >
-                        <span className="text-sm text-slate-700">{item.label}</span>
-                        <span className="text-sm font-semibold text-slate-900">
+                        <span className="text-sm text-slate-200">
+                          {item.label}
+                        </span>
+                        <span className="text-sm font-semibold text-white">
                           {formatCLP(item.amount)}
                         </span>
                       </div>
@@ -920,27 +862,29 @@ export default function PlanesPage() {
                   )}
                 </div>
 
-                <div className="mt-6 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">Plan base</span>
-                    <span className="text-sm font-semibold text-slate-900">
+                    <span className="text-sm text-slate-300">Plan base</span>
+                    <span className="text-sm font-semibold text-white">
                       {selectedPlan.priceLabel}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">IVA</span>
-                    <span className="text-sm font-semibold text-slate-900">
+                    <span className="text-sm text-slate-300">IVA</span>
+                    <span className="text-sm font-semibold text-white">
                       {formatCLP(iva)}
                     </span>
                   </div>
 
-                  <div className="border-t border-slate-200 pt-3">
+                  <div className="border-t border-white/10 pt-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-base font-semibold text-slate-900">
+                      <span className="text-base font-semibold text-white">
                         Total mensual
                       </span>
-                      <span className={`text-[2rem] font-semibold leading-none ${selectedPlan.accentClass}`}>
+                      <span
+                        className={`text-[2rem] font-semibold leading-none ${selectedPlan.accentClass}`}
+                      >
                         {formatCLP(total)}
                       </span>
                     </div>
@@ -955,9 +899,102 @@ export default function PlanesPage() {
                     Continuar con {selectedPlan.name}
                   </Link>
 
-                  <p className="text-center text-xs leading-5 text-slate-500">
-                    Puedes empezar con tu plan base y ampliar capacidad en cualquier momento.
+                  <p className="text-center text-xs leading-5 text-slate-400">
+                    Puedes empezar con tu plan base y ampliar capacidad en
+                    cualquier momento.
                   </p>
+                </div>
+
+                <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-4">
+                  <p className="text-sm font-semibold text-white">
+                    Qué incluye este plan
+                  </p>
+
+                  <div className="mt-4 space-y-3">
+                    {selectedPlan.features.map((feature) => (
+                      <div
+                        key={`${selectedPlan.key}-${feature.title}`}
+                        className="flex items-start gap-3"
+                      >
+                        <Check
+                          className={`mt-1 h-4 w-4 shrink-0 ${
+                            feature.highlight
+                              ? "text-violet-300"
+                              : selectedPlan.accentClass
+                          }`}
+                        />
+                        <div>
+                          <p
+                            className={`text-sm font-semibold ${
+                              feature.highlight
+                                ? "text-violet-200"
+                                : "text-white"
+                            }`}
+                          >
+                            {feature.title}
+                          </p>
+                          {feature.description ? (
+                            <p className="mt-1 text-sm leading-6 text-slate-300">
+                              {feature.description}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                      Profesionales incluidos
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-white">
+                      {currentStaffTotal}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                      Servicios incluidos
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-white">
+                      {currentServicesTotal}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                      WhatsApp recordatorios
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-white">
+                      {currentReminderTotal > 0
+                        ? `${currentReminderTotal} conversaciones`
+                        : "No incluido"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                      Campañas por WhatsApp
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-white">
+                      {currentCampaignTotal > 0
+                        ? `${currentCampaignTotal} conversaciones`
+                        : "No incluido"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                      IA asistida
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-white">
+                      {currentAiTotal > 0
+                        ? `${currentAiTotal} conversaciones`
+                        : "No incluida"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
