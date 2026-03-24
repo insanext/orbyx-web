@@ -89,12 +89,16 @@ export default function BranchesPage() {
       );
     }
 
-    const rows: BranchItem[] = Array.isArray(data?.branches) ? data.branches : [];
+    const rows: BranchItem[] =
+  "branches" in data && Array.isArray(data.branches) ? data.branches : [];
     setBranches(rows);
-    setPlan((data?.plan || "starter").toLowerCase());
-    setMaxBranches(
-      typeof data?.max_branches === "number" ? data.max_branches : null
-    );
+    setPlan("plan" in data ? (data.plan || "starter").toLowerCase() : "starter");
+
+setMaxBranches(
+  "max_branches" in data && typeof data.max_branches === "number"
+    ? data.max_branches
+    : null
+);
   }
 
   async function loadAll() {
