@@ -14,10 +14,8 @@ type BusinessResponse = {
     id: string;
     name: string;
     slug: string;
+    plan_slug?: string | null;
   };
-  calendar_id?: string;
-  google_connected?: boolean;
-  plan_slug?: string | null;
 };
 
 type BranchItem = {
@@ -30,6 +28,29 @@ type BranchItem = {
   created_at?: string;
 };
 
+type BranchesResponse = {
+  total?: number;
+  branches?: BranchItem[];
+  plan?: string;
+  max_branches?: number;
+};
+
+const PLAN_LABELS: Record<string, string> = {
+  starter: "Starter",
+  pro: "Pro",
+  premium: "Premium",
+  vip: "VIP",
+  platinum: "Platinum",
+};
+
+const NEXT_PLAN_BY_CURRENT: Record<string, string | null> = {
+  starter: "pro",
+  pro: "premium",
+  premium: "vip",
+  vip: "platinum",
+  platinum: null,
+};
+
 export default function BranchesPage() {
   const params = useParams();
   const slug =
@@ -39,6 +60,9 @@ export default function BranchesPage() {
 
   const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [plan, setPlan] = useState("starter");
+  const [maxBranches, setMaxBranches] = useState<number | null>(null);
+
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,14 +79,22 @@ export default function BranchesPage() {
     const response = await fetch(
       `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
     );
-    const data = await response.json();
+    const data: BranchesResponse | { error?: string } = await response.json();
 
     if (!response.ok) {
-      throw new Error(data?.error || "No se pudieron cargar las sucursales");
+      throw new Error(
+        "error" in data && data.error
+          ? data.error
+          : "No se pudieron cargar las sucursales"
+      );
     }
 
     const rows: BranchItem[] = Array.isArray(data?.branches) ? data.branches : [];
     setBranches(rows);
+    setPlan((data?.plan || "starter").toLowerCase());
+    setMaxBranches(
+      typeof data?.max_branches === "number" ? data.max_branches : null
+    );
   }
 
   async function loadAll() {
@@ -120,6 +152,10 @@ export default function BranchesPage() {
         throw new Error("Debes ingresar el nombre de la sucursal");
       }
 
+      if (reachedLimit) {
+        throw new Error("Ya alcanzaste el límite de sucursales de tu plan");
+      }
+
       const response = await fetch(`${BACKEND_URL}/branches`, {
         method: "POST",
         headers: {
@@ -167,8 +203,15 @@ export default function BranchesPage() {
     return branches.filter((branch) => branch.is_active === false).length;
   }, [branches]);
 
+  const reachedLimit =
+    maxBranches !== null && activeBranchesCount >= maxBranches;
+
+  const planLabel = PLAN_LABELS[plan] || "Starter";
+  const nextPlan = NEXT_PLAN_BY_CURRENT[plan] || null;
+  const nextPlanLabel = nextPlan ? PLAN_LABELS[nextPlan] || nextPlan : null;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rounded-[28px] bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.12),_transparent_30%),linear-gradient(180deg,_#0f172a_0%,_#111827_42%,_#0b1120_100%)] p-4 sm:p-6">
       <PageHeader
         eyebrow="Sucursales"
         title={loading ? "Cargando sucursales..." : "Sucursales del negocio"}
@@ -179,7 +222,7 @@ export default function BranchesPage() {
           <div className="flex flex-wrap gap-3">
             <Link
               href={`/dashboard/${slug}/agenda`}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-5 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/15"
             >
               Ver agenda
             </Link>
@@ -196,7 +239,7 @@ export default function BranchesPage() {
                   );
                 });
               }}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-white px-5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
             >
               Recargar
             </button>
@@ -205,184 +248,303 @@ export default function BranchesPage() {
       />
 
       {loadError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
+        <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100 shadow-sm backdrop-blur-sm">
           {loadError}
         </div>
       ) : null}
 
       {saveError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
+        <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100 shadow-sm backdrop-blur-sm">
           {saveError}
         </div>
       ) : null}
 
       {saveOk ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 shadow-sm">
+        <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100 shadow-sm backdrop-blur-sm">
           {saveOk}
         </div>
       ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatCard
-          label="Total sucursales"
-          value={loading ? "..." : String(branches.length)}
-          helper="Cantidad de sucursales registradas."
-        />
-        <StatCard
-          label="Activas"
-          value={loading ? "..." : String(activeBranchesCount)}
-          helper="Sucursales disponibles actualmente."
-        />
-        <StatCard
-          label="Inactivas"
-          value={loading ? "..." : String(inactiveBranchesCount)}
-          helper="Sucursales deshabilitadas."
-        />
+        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-xl [&>div]:backdrop-blur-md [&_p]:text-slate-300 [&_span]:text-slate-300">
+          <StatCard
+            label="Total sucursales"
+            value={loading ? "..." : String(branches.length)}
+            helper="Cantidad de sucursales registradas."
+          />
+        </div>
+
+        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-xl [&>div]:backdrop-blur-md [&_p]:text-slate-300 [&_span]:text-slate-300">
+          <StatCard
+            label="Activas"
+            value={loading ? "..." : String(activeBranchesCount)}
+            helper="Sucursales disponibles actualmente."
+          />
+        </div>
+
+        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-xl [&>div]:backdrop-blur-md [&_p]:text-slate-300 [&_span]:text-slate-300">
+          <StatCard
+            label="Plan actual"
+            value={loading ? "..." : planLabel}
+            helper={
+              loading
+                ? "Cargando..."
+                : `Uso: ${activeBranchesCount}/${maxBranches ?? "-"} sucursales`
+            }
+          />
+        </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <Panel
-          title="Sucursales actuales"
-          description="Estas son las sucursales registradas en el negocio."
-        >
-          {loading ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
-              Cargando sucursales...
-            </div>
-          ) : branches.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
-              Aún no tienes sucursales creadas. Puedes seguir operando normal,
-              pero si quieres probar multi-sucursal, crea la primera aquí.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {branches.map((branch) => (
-                <div
-                  key={branch.id}
-                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-                          {branch.name}
-                        </h3>
+      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-[0_20px_60px_rgba(15,23,42,0.35)] [&>div]:backdrop-blur-xl">
+          <Panel
+            title="Sucursales actuales"
+            description="Estas son las sucursales registradas en el negocio."
+          >
+            {loading ? (
+              <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-8 text-sm text-slate-300">
+                Cargando sucursales...
+              </div>
+            ) : branches.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-8 text-sm text-slate-300">
+                Aún no tienes sucursales creadas. Puedes seguir operando normal,
+                pero si quieres probar multi-sucursal, crea la primera aquí.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {branches.map((branch) => (
+                  <div
+                    key={branch.id}
+                    className="rounded-3xl border border-white/10 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.12)]"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+                            {branch.name}
+                          </h3>
 
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            branch.is_active === false
-                              ? "bg-slate-100 text-slate-600"
-                              : "bg-emerald-50 text-emerald-700"
-                          }`}
-                        >
-                          {branch.is_active === false ? "Inactiva" : "Activa"}
-                        </span>
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                              branch.is_active === false
+                                ? "bg-slate-100 text-slate-600"
+                                : "bg-emerald-50 text-emerald-700"
+                            }`}
+                          >
+                            {branch.is_active === false ? "Inactiva" : "Activa"}
+                          </span>
+                        </div>
+
+                        <p className="mt-2 text-sm text-slate-500">
+                          Usa esta sucursal en servicios, agenda y reservas
+                          públicas cuando tengas multi-sucursal activo.
+                        </p>
                       </div>
 
-                      <p className="mt-2 text-sm text-slate-500">
-                        Usa esta sucursal en servicios, agenda y reservas
-                        públicas cuando tengas multi-sucursal activo.
-                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Link
+                          href={`/dashboard/${slug}/services`}
+                          className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Ver servicios
+                        </Link>
+
+                        <Link
+                          href={`/dashboard/${slug}/agenda`}
+                          className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Ver agenda
+                        </Link>
+                      </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <Link
-                        href={`/dashboard/${slug}/services`}
-                        className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                      >
-                        Ver servicios
-                      </Link>
+                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          ID
+                        </p>
+                        <p className="mt-2 break-all text-sm font-semibold text-slate-900">
+                          {branch.id}
+                        </p>
+                      </div>
 
-                      <Link
-                        href={`/dashboard/${slug}/agenda`}
-                        className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                      >
-                        Ver agenda
-                      </Link>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          Creación
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-slate-900">
+                          {branch.created_at
+                            ? new Date(branch.created_at).toLocaleDateString(
+                                "es-CL"
+                              )
+                            : "No disponible"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          Acciones
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopyId(branch.id)}
+                          className="mt-2 inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          {copiedId === branch.id ? "ID copiado" : "Copiar ID"}
+                        </button>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+        </div>
 
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        ID
-                      </p>
-                      <p className="mt-2 break-all text-sm font-semibold text-slate-900">
-                        {branch.id}
-                      </p>
+        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-[0_20px_60px_rgba(15,23,42,0.35)] [&>div]:backdrop-blur-xl">
+          <Panel
+            title="Crear nueva sucursal"
+            description="Agrega una sucursal para operar varias ubicaciones desde la misma cuenta."
+          >
+            <div className="space-y-5">
+              <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-4 shadow-[0_10px_35px_rgba(15,23,42,0.22)]">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200/80">
+                      Plan actual
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold text-white">
+                      {planLabel}
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-300">
+                      Estás usando {activeBranchesCount} de {maxBranches ?? "-"}{" "}
+                      sucursales disponibles.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-right backdrop-blur-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                      Estado
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      {reachedLimit ? "Límite alcanzado" : "Disponible"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {reachedLimit ? (
+                <div className="relative overflow-hidden rounded-[26px] border border-fuchsia-400/20 bg-[linear-gradient(135deg,rgba(124,58,237,0.22),rgba(59,130,246,0.18))] p-5 shadow-[0_20px_60px_rgba(76,29,149,0.24)]">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_35%)]" />
+
+                  <div className="relative">
+                    <div className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-100 backdrop-blur-sm">
+                      Upgrade recomendado
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        Creación
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-slate-900">
-                        {branch.created_at
-                          ? new Date(branch.created_at).toLocaleDateString(
-                              "es-CL"
-                            )
-                          : "No disponible"}
-                      </p>
+                    <h3 className="mt-4 text-xl font-semibold text-white">
+                      Desbloquea más sucursales para seguir creciendo
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-200">
+                      Ya llegaste al límite de tu plan actual. Sube a{" "}
+                      <span className="font-semibold text-white">
+                        {nextPlanLabel || "un plan superior"}
+                      </span>{" "}
+                      para agregar más sucursales y seguir separando tu operación
+                      por ubicación.
+                    </p>
+
+                    <div className="mt-4 space-y-2 text-sm text-slate-100">
+                      <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                        ✔ Más sucursales por cuenta
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                        ✔ Mejor control por ubicación
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                        ✔ Escala tu operación sin mezclar agendas
+                      </div>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        Acciones
-                      </p>
-
-                      <button
-                        type="button"
-                        onClick={() => handleCopyId(branch.id)}
-                        className="mt-2 inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    <div className="mt-5">
+                      <Link
+                        href={`/dashboard/${slug}/plans`}
+                        className="group inline-flex h-11 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-sky-500 px-5 text-sm font-semibold text-white shadow-[0_12px_35px_rgba(99,102,241,0.35)] transition duration-200 hover:scale-[1.01] hover:shadow-[0_18px_45px_rgba(99,102,241,0.42)]"
                       >
-                        {copiedId === branch.id ? "ID copiado" : "Copiar ID"}
-                      </button>
+                        <span className="transition group-hover:translate-x-[1px]">
+                          Subir a {nextPlanLabel || "un plan superior"}
+                        </span>
+                      </Link>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </Panel>
+              ) : (
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 backdrop-blur-sm">
+                  <p className="text-sm font-medium text-emerald-100">
+                    Todavía puedes crear más sucursales en tu plan actual.
+                  </p>
+                  <p className="mt-1 text-sm text-emerald-50/80">
+                    Agrega una nueva ubicación y separa agenda, servicios y
+                    reservas públicas.
+                  </p>
+                </div>
+              )}
 
-        <Panel
-          title="Crear nueva sucursal"
-          description="Agrega una sucursal para operar varias ubicaciones desde la misma cuenta."
-        >
-          <div className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Nombre de la sucursal
-              </label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="Ej: Sucursal Centro"
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-              />
-            </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-200">
+                  Nombre de la sucursal
+                </label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="Ej: Sucursal Centro"
+                  disabled={saving || loading || reachedLimit}
+                  className="h-11 w-full rounded-2xl border border-white/10 bg-white/10 px-4 text-sm text-white outline-none transition placeholder:text-slate-400 focus:border-sky-400/40 focus:ring-4 focus:ring-sky-400/10 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-700">Qué desbloquea</p>
-              <p className="mt-1 text-sm text-slate-500">
-                Luego podrás separar servicios, agenda y reservas públicas por
-                sucursal.
-              </p>
-            </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                <p className="text-sm font-medium text-white">Qué desbloquea</p>
+                <div className="mt-3 space-y-2 text-sm text-slate-300">
+                  <div className="rounded-xl border border-white/8 bg-white/5 px-3 py-2">
+                    ✔ Agenda separada por sucursal
+                  </div>
+                  <div className="rounded-xl border border-white/8 bg-white/5 px-3 py-2">
+                    ✔ Servicios independientes por ubicación
+                  </div>
+                  <div className="rounded-xl border border-white/8 bg-white/5 px-3 py-2">
+                    ✔ Staff organizado según la sucursal
+                  </div>
+                  <div className="rounded-xl border border-white/8 bg-white/5 px-3 py-2">
+                    ✔ Reservas públicas diferenciadas
+                  </div>
+                </div>
+              </div>
 
-            <button
-              type="button"
-              onClick={handleCreateBranch}
-              disabled={saving || loading}
-              className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? "Creando..." : "Crear sucursal"}
-            </button>
-          </div>
-        </Panel>
+              <button
+                type="button"
+                onClick={handleCreateBranch}
+                disabled={saving || loading || reachedLimit}
+                className={`inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white transition ${
+                  reachedLimit
+                    ? "cursor-not-allowed bg-slate-600/70 opacity-70"
+                    : "bg-gradient-to-r from-violet-500 via-fuchsia-500 to-sky-500 shadow-[0_12px_35px_rgba(99,102,241,0.28)] hover:scale-[1.01] hover:shadow-[0_18px_45px_rgba(99,102,241,0.34)]"
+                }`}
+              >
+                {reachedLimit
+                  ? "Límite de sucursales alcanzado"
+                  : saving
+                  ? "Creando..."
+                  : "Crear sucursal"}
+              </button>
+            </div>
+          </Panel>
+        </div>
       </section>
     </div>
   );
