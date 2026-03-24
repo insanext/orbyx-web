@@ -738,21 +738,24 @@ setSelectedService((prev) => {
               </div>
 
               <div className="calendar-wrap">
-                <Calendar
-                  minDate={new Date()}
-                  onChange={(value: Date | Date[] | null) => {
-                    const picked = Array.isArray(value) ? value[0] : value;
-                    if (!picked) return;
+               
 
-                    setSelectedDate(new Date(picked));
-                    setWeekSlots({});
-                    setSelectedSlot(null);
-                    setShowForm(false);
-                    setBookingSuccess(false);
-                    setBookingError("");
-                  }}
-                  value={selectedDate}
-                />
+
+<Calendar
+  minDate={new Date()}
+  onChange={(value: CalendarValue) => {
+    const picked = Array.isArray(value) ? value[0] : value;
+    if (!picked) return;
+
+    setSelectedDate(new Date(picked));
+    setWeekSlots({});
+    setSelectedSlot(null);
+    setShowForm(false);
+    setBookingSuccess(false);
+    setBookingError("");
+  }}
+  value={selectedDate}
+/>
               </div>
             </div>
 
