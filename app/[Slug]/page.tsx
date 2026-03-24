@@ -38,7 +38,9 @@ export default function Page() {
   const [selectedBranchId, setSelectedBranchId] = useState("");
 
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceItem | null>(
+    null
+  );
 
   const [staffOptions, setStaffOptions] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
@@ -76,7 +78,20 @@ export default function Page() {
     }).format(price || 0);
   }
 
-  function resetAfterBranchChange() {
+  function buildQuery(paramsObj: Record<string, string | undefined>) {
+    const query = new URLSearchParams();
+
+    Object.entries(paramsObj).forEach(([key, value]) => {
+      if (value && value.trim() !== "") {
+        query.set(key, value);
+      }
+    });
+
+    const queryString = query.toString();
+    return queryString ? `?${queryString}` : "";
+  }
+
+  function resetAllFlow() {
     setServices([]);
     setSelectedService(null);
     setSelectedStaffId("");
@@ -92,34 +107,23 @@ export default function Page() {
     setWeekSlots({});
   }
 
-  function buildQuery(paramsObj: Record<string, string | undefined>) {
-    const query = new URLSearchParams();
-
-    Object.entries(paramsObj).forEach(([key, value]) => {
-      if (value && value.trim() !== "") {
-        query.set(key, value);
-      }
-    });
-
-    const queryString = query.toString();
-    return queryString ? `?${queryString}` : "";
-  }
-
   const hasBranches = branches.length > 0;
   const showBranchSelector = branches.length > 1;
-  const canUseBranchlessMode = branches.length === 0;
-  const canLoadContent = canUseBranchlessMode || !!selectedBranchId;
+  const canLoadWithoutBranch = branches.length === 0;
+  const canLoadContent = canLoadWithoutBranch || !!selectedBranchId;
 
-  // Cargar sucursales
   useEffect(() => {
     if (!slug) return;
 
-    async function loadInitialData() {
+    async function loadBranches() {
       try {
         const response = await fetch(`/api/public-services/${slug}`);
         const data = await response.json();
 
-        const branchRows: BranchItem[] = Array.isArray(data.branches) ? data.branches : [];
+        const branchRows: BranchItem[] = Array.isArray(data.branches)
+          ? data.branches
+          : [];
+
         setBranches(branchRows);
 
         if (branchRows.length === 1) {
@@ -133,10 +137,9 @@ export default function Page() {
       }
     }
 
-    loadInitialData();
+    loadBranches();
   }, [slug]);
 
-  // Cargar servicios
   useEffect(() => {
     if (!slug) return;
     if (hasBranches && !selectedBranchId) return;
@@ -152,12 +155,15 @@ export default function Page() {
         const response = await fetch(`/api/public-services/${slug}${query}`);
         const data = await response.json();
 
-        const rows: ServiceItem[] = Array.isArray(data.services) ? data.services : [];
+        const rows: ServiceItem[] = Array.isArray(data.services)
+          ? data.services
+          : [];
+
         setServices(rows);
 
         setSelectedService((prev) => {
           if (!prev) return null;
-          return rows.find((service: ServiceItem) => service.id === prev.id) || null;
+          return rows.find((service) => service.id === prev.id) || null;
         });
       } catch {
         setServices([]);
@@ -170,9 +176,10 @@ export default function Page() {
     loadServices();
   }, [slug, selectedBranchId, hasBranches]);
 
-  // Cargar staff por servicio
   useEffect(() => {
-    if (!slug || !selectedService) return;
+    const serviceId = selectedService?.id;
+
+    if (!slug || !serviceId) return;
     if (hasBranches && !selectedBranchId) return;
 
     async function loadStaff() {
@@ -184,7 +191,7 @@ export default function Page() {
         });
 
         const response = await fetch(
-          `/api/public-staff/${slug}/${selectedService.id}${query}`
+          `/api/public-staff/${slug}/${serviceId}${query}`
         );
         const data = await response.json();
 
@@ -200,9 +207,10 @@ export default function Page() {
     loadStaff();
   }, [slug, selectedService, selectedBranchId, hasBranches]);
 
-  // Cargar slots
   useEffect(() => {
-    if (!slug || !selectedService) return;
+    const serviceId = selectedService?.id;
+
+    if (!slug || !serviceId) return;
     if (hasBranches && !selectedBranchId) return;
 
     async function loadSlots() {
@@ -218,7 +226,7 @@ export default function Page() {
         });
 
         const response = await fetch(
-          `/api/public-slots/${slug}/${selectedService.id}${query}`
+          `/api/public-slots/${slug}/${serviceId}${query}`
         );
         const data = await response.json();
 
@@ -242,15 +250,17 @@ export default function Page() {
           <label className="block text-sm font-medium text-slate-700">
             Selecciona sucursal
           </label>
+
           <select
             value={selectedBranchId}
             onChange={(e) => {
               setSelectedBranchId(e.target.value);
-              resetAfterBranchChange();
+              resetAllFlow();
             }}
             className="w-full max-w-sm rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none"
           >
             <option value="">Selecciona sucursal</option>
+
             {branches.map((branch) => (
               <option key={branch.id} value={branch.id}>
                 {branch.name}
@@ -264,12 +274,14 @@ export default function Page() {
         <label className="block text-sm font-medium text-slate-700">
           Servicio
         </label>
+
         <select
           disabled={!canLoadContent || loadingServices}
           value={selectedService?.id || ""}
           onChange={(e) => {
             const service =
-              services.find((item: ServiceItem) => item.id === e.target.value) || null;
+              services.find((item) => item.id === e.target.value) || null;
+
             setSelectedService(service);
             resetAfterServiceChange();
           }}
@@ -286,8 +298,12 @@ export default function Page() {
           {services.map((service) => (
             <option key={service.id} value={service.id}>
               {service.name}
-              {service.duration_minutes ? ` · ${service.duration_minutes} min` : ""}
-              {typeof service.price === "number" ? ` · ${formatPrice(service.price)}` : ""}
+              {service.duration_minutes
+                ? ` · ${service.duration_minutes} min`
+                : ""}
+              {typeof service.price === "number"
+                ? ` · ${formatPrice(service.price)}`
+                : ""}
             </option>
           ))}
         </select>
@@ -295,7 +311,9 @@ export default function Page() {
 
       {selectedService && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-sm font-semibold text-slate-900">{selectedService.name}</p>
+          <p className="text-sm font-semibold text-slate-900">
+            {selectedService.name}
+          </p>
           <p className="mt-1 text-sm text-slate-600">
             Duración: {selectedService.duration_minutes || 0} min
           </p>
@@ -330,7 +348,10 @@ export default function Page() {
               </label>
 
               {staffOptions.map((staff) => (
-                <label key={staff.id} className="flex items-center gap-2 text-sm text-slate-700">
+                <label
+                  key={staff.id}
+                  className="flex items-center gap-2 text-sm text-slate-700"
+                >
                   <input
                     type="radio"
                     name="staff"
@@ -365,7 +386,9 @@ export default function Page() {
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-base font-semibold text-slate-900">Horarios disponibles</h3>
+        <h3 className="text-base font-semibold text-slate-900">
+          Horarios disponibles
+        </h3>
 
         {!canLoadContent ? (
           <p className="text-sm text-slate-500">Selecciona una sucursal.</p>
