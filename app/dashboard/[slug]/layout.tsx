@@ -74,7 +74,6 @@ export default function DashboardLayout({
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
-  const [tenantId, setTenantId] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -140,7 +139,6 @@ export default function DashboardLayout({
         }
 
         const currentTenantId = businessData.business.id;
-        setTenantId(currentTenantId);
 
         const branchesRes = await fetch(
           `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
@@ -201,12 +199,18 @@ export default function DashboardLayout({
     loadBranchesForSidebar();
   }, [slug, branchStorageKey]);
 
+  const selectedBranchName =
+    branches.find((branch) => branch.id === selectedBranchId)?.name || "";
+
+  const showBranchSelector = branches.length > 1;
+  const hasSingleBranch = branches.length === 1;
+
   return (
     <div className="min-h-screen bg-slate-100/70">
       <div className="flex min-h-screen">
         {/* Sidebar */}
-        <aside className="hidden w-72 border-r border-slate-200 bg-white xl:block">
-          <div className="flex h-full flex-col">
+        <aside className="hidden w-72 shrink-0 border-r border-slate-200 bg-white xl:block">
+          <div className="sticky top-0 flex h-screen flex-col overflow-y-auto">
             <div className="border-b border-slate-200 px-6 py-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 text-sm font-semibold text-white shadow-sm">
@@ -222,43 +226,51 @@ export default function DashboardLayout({
             </div>
 
             <div className="px-4 pt-5">
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <GitBranch size={16} className="text-slate-500" />
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Sucursal activa
+              {loadingBranches ? (
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                  Cargando sucursales...
+                </div>
+              ) : branchesError ? (
+                <div className="rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                  {branchesError}
+                </div>
+              ) : branches.length === 0 ? (
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                  No hay sucursales creadas.
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <GitBranch size={16} className="text-slate-500" />
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Sucursal activa
+                    </p>
+                  </div>
+
+                  {showBranchSelector ? (
+                    <select
+                      value={selectedBranchId}
+                      onChange={(e) => persistSelectedBranch(e.target.value)}
+                      className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                    >
+                      {branches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : hasSingleBranch ? (
+                    <div className="flex h-11 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900">
+                      {selectedBranchName || branches[0]?.name || "Sucursal"}
+                    </div>
+                  ) : null}
+
+                  <p className="mt-3 text-xs text-slate-500">
+                    Lo que veas en agenda, staff y servicios dependerá de esta
+                    sucursal.
                   </p>
                 </div>
-
-                {loadingBranches ? (
-                  <div className="text-sm text-slate-500">
-                    Cargando sucursales...
-                  </div>
-                ) : branchesError ? (
-                  <div className="text-sm text-rose-600">{branchesError}</div>
-                ) : branches.length === 0 ? (
-                  <div className="text-sm text-slate-500">
-                    No hay sucursales creadas.
-                  </div>
-                ) : (
-                  <select
-                    value={selectedBranchId}
-                    onChange={(e) => persistSelectedBranch(e.target.value)}
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                  >
-                    {branches.map((branch) => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                <p className="mt-3 text-xs text-slate-500">
-                  Lo que veas en agenda, staff y servicios dependerá de esta
-                  sucursal.
-                </p>
-              </div>
+              )}
             </div>
 
             <div className="px-4 py-5">
@@ -324,11 +336,6 @@ export default function DashboardLayout({
                   Administra tu agenda, sucursales, staff, servicios y datos del
                   negocio.
                 </p>
-                {tenantId ? (
-                  <p className="mt-2 text-xs text-slate-400">
-                    Tenant cargado correctamente
-                  </p>
-                ) : null}
               </div>
             </div>
           </div>
