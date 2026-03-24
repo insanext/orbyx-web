@@ -244,7 +244,7 @@ const extraConfig = {
   staff: {
     title: "Profesionales extra",
     description:
-      "Suma más capacidad a tu operación agregando profesionales adicionales. Cada profesional extra incluye 5 servicios adicionales.",
+      "Suma profesionales adicionales. Cada profesional extra incluye 5 servicios adicionales.",
     unitPrice: 6000,
     unitLabel: "$6.000",
     unitSizeLabel: "1 profesional + 5 servicios",
@@ -252,7 +252,7 @@ const extraConfig = {
   reminders: {
     title: "Recordatorios por WhatsApp",
     description:
-      "Agrega bloques de 50 conversaciones para recordatorios automáticos de citas.",
+      "Agrega bloques de 50 conversaciones para recordatorios automáticos.",
     unitPrice: 5000,
     unitLabel: "$5.000",
     unitSizeLabel: "50 conversaciones",
@@ -260,7 +260,7 @@ const extraConfig = {
   campaigns: {
     title: "Campañas por WhatsApp",
     description:
-      "Agrega bloques de 50 conversaciones para campañas y reactivación de clientes inactivos.",
+      "Agrega bloques de 50 conversaciones para campañas y reactivación.",
     unitPrice: 8000,
     unitLabel: "$8.000",
     unitSizeLabel: "50 conversaciones",
@@ -268,7 +268,7 @@ const extraConfig = {
   ai: {
     title: "Conversaciones asistidas por IA",
     description:
-      "Agrega bloques de 50 conversaciones para atención automática, respuesta de consultas y cierre de reservas por WhatsApp.",
+      "Agrega bloques de 50 conversaciones para atención automática y cierre de reservas.",
     unitPrice: 30000,
     unitLabel: "$30.000",
     unitSizeLabel: "50 conversaciones",
@@ -284,90 +284,6 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
   if (type === "sparkles") return <Sparkles className="h-5 w-5" />;
   if (type === "crown") return <Crown className="h-5 w-5" />;
   return <Gem className="h-5 w-5" />;
-}
-
-function ExtraBadge({
-  title,
-  description,
-  unitLabel,
-  unitSizeLabel,
-  infoText,
-  value,
-  onDecrease,
-  onIncrease,
-  icon,
-  accent,
-}: {
-  title: string;
-  description: string;
-  unitLabel: string;
-  unitSizeLabel: string;
-  infoText: string;
-  value: number;
-  onDecrease: () => void;
-  onIncrease: () => void;
-  icon: ReactNode;
-  accent: {
-    icon: string;
-    control: string;
-    info: string;
-  };
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div className="min-w-0 flex-1">
-          <div
-            className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${accent.icon}`}
-          >
-            {icon}
-          </div>
-
-          <p className="mt-3 text-base font-semibold text-white">{title}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-300">{description}</p>
-        </div>
-
-        <div className="w-full xl:w-[310px]">
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Valor
-            </p>
-            <p className="mt-1 text-base font-semibold text-white">
-              {unitLabel} · {unitSizeLabel}
-            </p>
-          </div>
-
-          <div className="mt-4 flex items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={onDecrease}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-2xl text-slate-200 transition hover:bg-white/10"
-            >
-              −
-            </button>
-
-            <span className="min-w-[28px] text-center text-xl font-semibold text-white">
-              {value}
-            </span>
-
-            <button
-              type="button"
-              onClick={onIncrease}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white/5 text-2xl transition ${accent.control}`}
-            >
-              +
-            </button>
-          </div>
-
-          <div
-            className={`mt-4 rounded-2xl border px-4 py-3 text-sm leading-6 ${accent.info}`}
-          >
-            {infoText}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function getExtraAccent(extraKey: ExtraKey) {
@@ -401,6 +317,111 @@ function getExtraAccent(extraKey: ExtraKey) {
     control: "border-violet-400/25 text-violet-100 hover:bg-violet-500/15",
     info: "border-violet-400/20 bg-violet-500/10 text-violet-100",
   };
+}
+
+function CompactExtraRow({
+  title,
+  description,
+  unitLabel,
+  unitSizeLabel,
+  infoText,
+  value,
+  onDecrease,
+  onIncrease,
+  icon,
+  accent,
+}: {
+  title: string;
+  description: string;
+  unitLabel: string;
+  unitSizeLabel: string;
+  infoText: string;
+  value: number;
+  onDecrease: () => void;
+  onIncrease: () => void;
+  icon: ReactNode;
+  accent: {
+    icon: string;
+    control: string;
+    info: string;
+  };
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_170px] lg:items-center">
+        <div className="min-w-0">
+          <div className="flex items-start gap-3">
+            <div
+              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${accent.icon}`}
+            >
+              {icon}
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white">{title}</p>
+              <p className="mt-1 text-sm leading-6 text-slate-300">
+                {description}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Valor
+          </p>
+          <p className="mt-1 text-sm font-semibold text-white">
+            {unitLabel} · {unitSizeLabel}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-center gap-3 lg:justify-end">
+          <button
+            type="button"
+            onClick={onDecrease}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl text-slate-200 transition hover:bg-white/10"
+          >
+            −
+          </button>
+
+          <span className="min-w-[24px] text-center text-lg font-semibold text-white">
+            {value}
+          </span>
+
+          <button
+            type="button"
+            onClick={onIncrease}
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border bg-white/5 text-xl transition ${accent.control}`}
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <div
+        className={`mt-3 rounded-xl border px-3 py-2 text-sm leading-6 ${accent.info}`}
+      >
+        {infoText}
+      </div>
+    </div>
+  );
+}
+
+function IncludeMiniCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+      <p className="text-[10px] uppercase tracking-[0.14em] text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
+    </div>
+  );
 }
 
 export default function PlanesPage() {
@@ -659,7 +680,7 @@ export default function PlanesPage() {
                       key={plan.key}
                       type="button"
                       onClick={() => handleSelectPlan(plan.key)}
-                      className={`relative flex min-h-[264px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
+                      className={`relative flex min-h-[248px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
                         isSelected
                           ? `bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] ${plan.borderClass} ring-1 ${plan.ringClass} shadow-[0_18px_50px_rgba(15,23,42,0.28)]`
                           : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
@@ -688,7 +709,7 @@ export default function PlanesPage() {
                       </p>
 
                       <div className="mt-auto pt-6">
-                        <p className="text-[2rem] font-semibold leading-none tracking-tight text-white lg:text-[2.35rem]">
+                        <p className="text-[1.9rem] font-semibold leading-none tracking-tight text-white lg:text-[2.15rem]">
                           {plan.priceLabel}
                         </p>
                         <p className="mt-2 text-sm text-slate-400">
@@ -700,21 +721,19 @@ export default function PlanesPage() {
                 })}
               </div>
 
-              <div className="mt-10 rounded-[28px] border border-white/10 bg-white/6 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl lg:p-6">
+              <div className="mt-8 rounded-[26px] border border-white/10 bg-white/6 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                   <div>
-                    <p className="text-xl font-semibold text-white">
+                    <p className="text-lg font-semibold text-white">
                       Adicionales disponibles
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-300">
-                      Los adicionales se van desbloqueando según el plan que
-                      selecciones. Todo queda en una sola tarjeta para ocupar
-                      menos espacio y verse más limpio.
+                    <p className="mt-1 text-sm leading-6 text-slate-300">
+                      Se desbloquean según el plan seleccionado.
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                       Plan actual
                     </p>
                     <p className="mt-1 text-sm font-semibold text-white">
@@ -723,9 +742,9 @@ export default function PlanesPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 space-y-4">
+                <div className="mt-5 space-y-3">
                   {supportsStaffExtra ? (
-                    <ExtraBadge
+                    <CompactExtraRow
                       title={extraConfig.staff.title}
                       description={extraConfig.staff.description}
                       unitLabel={extraConfig.staff.unitLabel}
@@ -740,7 +759,7 @@ export default function PlanesPage() {
                   ) : null}
 
                   {supportsReminderExtra ? (
-                    <ExtraBadge
+                    <CompactExtraRow
                       title={extraConfig.reminders.title}
                       description={extraConfig.reminders.description}
                       unitLabel={extraConfig.reminders.unitLabel}
@@ -755,7 +774,7 @@ export default function PlanesPage() {
                   ) : null}
 
                   {supportsCampaignExtra ? (
-                    <ExtraBadge
+                    <CompactExtraRow
                       title={extraConfig.campaigns.title}
                       description={extraConfig.campaigns.description}
                       unitLabel={extraConfig.campaigns.unitLabel}
@@ -770,7 +789,7 @@ export default function PlanesPage() {
                   ) : null}
 
                   {supportsAiExtra ? (
-                    <ExtraBadge
+                    <CompactExtraRow
                       title={extraConfig.ai.title}
                       description={extraConfig.ai.description}
                       unitLabel={extraConfig.ai.unitLabel}
@@ -786,7 +805,7 @@ export default function PlanesPage() {
                 </div>
               </div>
 
-              <div className="mt-10 overflow-hidden rounded-[28px] border border-white/10 bg-white/6 shadow-[0_20px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl">
+              <div className="mt-8 overflow-hidden rounded-[28px] border border-white/10 bg-white/6 shadow-[0_20px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl">
                 <div className="border-b border-white/10 px-6 py-5">
                   <p className="text-xl font-semibold text-white">
                     Comparación de planes
@@ -886,7 +905,7 @@ export default function PlanesPage() {
                   )}
                 </div>
 
-                <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-300">Plan base</span>
                     <span className="text-sm font-semibold text-white">
@@ -907,7 +926,7 @@ export default function PlanesPage() {
                         Total mensual
                       </span>
                       <span
-                        className={`text-[2rem] font-semibold leading-none ${selectedPlan.accentClass}`}
+                        className={`text-[1.85rem] font-semibold leading-none ${selectedPlan.accentClass}`}
                       >
                         {formatCLP(total)}
                       </span>
@@ -915,7 +934,7 @@ export default function PlanesPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 space-y-3">
+                <div className="mt-5 space-y-3">
                   <Link
                     href={`/checkout?plan=${selectedPlan.key}`}
                     className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)]"
@@ -929,7 +948,7 @@ export default function PlanesPage() {
                   </p>
                 </div>
 
-                <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-4">
+                <div className="mt-5 rounded-[22px] border border-white/10 bg-white/5 p-4">
                   <p className="text-sm font-semibold text-white">
                     Qué incluye este plan
                   </p>
@@ -968,69 +987,44 @@ export default function PlanesPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 grid gap-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                      Sucursales incluidas
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-white">
-                      {selectedPlan.includedBranches}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                      Profesionales incluidos
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-white">
-                      {currentStaffTotal}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                      Servicios incluidos
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-white">
-                      {currentServicesTotal}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                      WhatsApp recordatorios
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-white">
-                      {currentReminderTotal > 0
-                        ? `${currentReminderTotal} conversaciones`
-                        : "No incluido"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                      Campañas por WhatsApp
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-white">
-                      {currentCampaignTotal > 0
-                        ? `${currentCampaignTotal} conversaciones`
-                        : "No incluido"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                      IA asistida
-                    </p>
-                    <p className="mt-1 text-xl font-semibold text-white">
-                      {currentAiTotal > 0
-                        ? `${currentAiTotal} conversaciones`
-                        : "No incluida"}
-                    </p>
-                  </div>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  <IncludeMiniCard
+                    label="Sucursales incluidas"
+                    value={selectedPlan.includedBranches}
+                  />
+                  <IncludeMiniCard
+                    label="Profesionales incluidos"
+                    value={currentStaffTotal}
+                  />
+                  <IncludeMiniCard
+                    label="Servicios incluidos"
+                    value={currentServicesTotal}
+                  />
+                  <IncludeMiniCard
+                    label="WhatsApp recordatorios"
+                    value={
+                      currentReminderTotal > 0
+                        ? `${currentReminderTotal}`
+                        : "No incluido"
+                    }
+                  />
+                  <IncludeMiniCard
+                    label="Campañas por WhatsApp"
+                    value={
+                      currentCampaignTotal > 0
+                        ? `${currentCampaignTotal}`
+                        : "No incluido"
+                    }
+                  />
+                  <IncludeMiniCard
+                    label="IA asistida"
+                    value={
+                      currentAiTotal > 0 ? `${currentAiTotal}` : "No incluida"
+                    }
+                  />
                 </div>
 
-                <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-4">
+                <div className="mt-5 rounded-[22px] border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center gap-3">
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-slate-200">
                       <Building2 className="h-5 w-5" />
@@ -1040,8 +1034,8 @@ export default function PlanesPage() {
                         Multi-sucursal incluida
                       </p>
                       <p className="text-sm text-slate-300">
-                        Este plan permite operar hasta {selectedPlan.includedBranches}{" "}
-                        sucursal{selectedPlan.includedBranches === 1 ? "" : "es"}.
+                        Hasta {selectedPlan.includedBranches} sucursal
+                        {selectedPlan.includedBranches === 1 ? "" : "es"}.
                       </p>
                     </div>
                   </div>
