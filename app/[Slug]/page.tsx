@@ -115,7 +115,13 @@ function getWeekdayLabel(date: Date) {
 
 export default function Page() {
   const params = useParams();
-  const slug = (params?.slug as string) || "";
+
+  const slugParam = params?.slug;
+  const slug = Array.isArray(slugParam)
+    ? slugParam[0] || ""
+    : typeof slugParam === "string"
+    ? slugParam
+    : "";
 
   const [business, setBusiness] = useState<BusinessItem | null>(null);
   const [calendarId, setCalendarId] = useState("");
@@ -196,7 +202,10 @@ export default function Page() {
   }
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug) {
+      setLoadingPage(false);
+      return;
+    }
 
     async function loadInitial() {
       try {
@@ -215,21 +224,20 @@ export default function Page() {
           ? data.branches.filter((branch) => branch?.is_active !== false)
           : [];
 
-        const fallbackBranch =
+        const fallbackBranch: BranchItem[] =
           data.branch && data.branch.is_active !== false ? [data.branch] : [];
 
         const normalizedBranches =
           branchRowsFromArray.length > 0 ? branchRowsFromArray : fallbackBranch;
 
-        setBranches(normalizedBranches);
-
         const initialBranchId = normalizedBranches[0]?.id || "";
-        setSelectedBranchId(initialBranchId);
 
         const initialServices: ServiceItem[] = Array.isArray(data.services)
           ? data.services
           : [];
 
+        setBranches(normalizedBranches);
+        setSelectedBranchId(initialBranchId);
         setServices(initialServices);
 
         const config = Array.isArray(data.business?.booking_fields_config)
@@ -237,6 +245,14 @@ export default function Page() {
           : [];
 
         setBookingFields(config);
+
+        console.log("PUBLIC DATA", data);
+        console.log("INITIAL STATE", {
+          slug,
+          normalizedBranches,
+          initialBranchId,
+          initialServices,
+        });
       } catch (error) {
         console.error("Error cargando página pública:", error);
         setBusiness(null);
@@ -253,15 +269,13 @@ export default function Page() {
   }, [slug]);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug || !selectedBranchId) return;
 
     async function loadServices() {
       try {
         setLoadingServices(true);
 
-        const query = selectedBranchId
-          ? `?branch_id=${encodeURIComponent(selectedBranchId)}`
-          : "";
+        const query = `?branch_id=${encodeURIComponent(selectedBranchId)}`;
 
         const res = await fetch(`/api/public-services/${slug}${query}`, {
           cache: "no-store",
@@ -269,12 +283,21 @@ export default function Page() {
 
         const data: PublicServicesResponse = await res.json();
 
-        const rows: ServiceItem[] = Array.isArray(data.services) ? data.services : [];
+        const rows: ServiceItem[] = Array.isArray(data.services)
+          ? data.services
+          : [];
+
         setServices(rows);
 
         setSelectedService((prev) => {
           if (!prev) return null;
           return rows.find((service) => service.id === prev.id) || null;
+        });
+
+        console.log("BRANCH SERVICES", {
+          slug,
+          selectedBranchId,
+          rows,
         });
       } catch (error) {
         console.error("Error cargando servicios:", error);
@@ -500,8 +523,27 @@ export default function Page() {
     }
   }
 
+  console.log("RENDER", {
+    slug,
+    business,
+    branches,
+    selectedBranchId,
+    services,
+    selectedService,
+    loadingPage,
+  });
+
   return (
     <div className="mx-auto w-full max-w-[1700px] px-4 py-8 md:px-8 xl:px-12">
+      <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+        <div><strong>slug:</strong> {slug || "(vacío)"}</div>
+        <div><strong>business:</strong> {business?.name || "(vacío)"}</div>
+        <div><strong>branches:</strong> {branches.length}</div>
+        <div><strong>selectedBranchId:</strong> {selectedBranchId || "(vacío)"}</div>
+        <div><strong>services:</strong> {services.length}</div>
+        <div><strong>loadingPage:</strong> {String(loadingPage)}</div>
+      </div>
+
       <div className="grid gap-8 xl:grid-cols-[430px_1fr]">
         <div className="space-y-6">
           <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
@@ -510,7 +552,7 @@ export default function Page() {
             </p>
 
             <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950">
-              {business?.name || slug}
+              {business?.name || slug || "Reserva"}
             </h1>
 
             {business?.description ? (
@@ -802,10 +844,6 @@ export default function Page() {
           </div>
         </div>
       </div>
-
-      {loadingPage ? (
-        <div className="mt-6 text-sm text-slate-500">Cargando...</div>
-      ) : null}
     </div>
   );
 }
