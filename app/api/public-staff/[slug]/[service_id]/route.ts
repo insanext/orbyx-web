@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ slug: string; service_id: string }> }
 ) {
   try {
@@ -16,12 +16,23 @@ export async function GET(
       );
     }
 
-    const res = await fetch(
-      `${BACKEND_URL}/public/staff/${encodeURIComponent(slug)}/${encodeURIComponent(service_id)}`,
-      {
-        cache: "no-store",
-      }
-    );
+    const { searchParams } = new URL(req.url);
+    const branchId = searchParams.get("branch_id");
+
+    const backendQuery = new URLSearchParams();
+
+    if (branchId) {
+      backendQuery.set("branch_id", branchId);
+    }
+
+    const queryString = backendQuery.toString();
+    const backendUrl =
+      `${BACKEND_URL}/public/staff/${encodeURIComponent(slug)}/${encodeURIComponent(service_id)}` +
+      (queryString ? `?${queryString}` : "");
+
+    const res = await fetch(backendUrl, {
+      cache: "no-store",
+    });
 
     const data = await res.json().catch(() => ({
       error: "Respuesta inválida del backend",

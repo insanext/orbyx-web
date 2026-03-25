@@ -12,6 +12,7 @@ export async function GET(
 
     const date = searchParams.get("date");
     const staffId = searchParams.get("staff_id");
+    const branchId = searchParams.get("branch_id");
 
     if (!slug || !serviceId) {
       return NextResponse.json(
@@ -32,6 +33,10 @@ export async function GET(
 
     if (staffId) {
       backendQuery.set("staff_id", staffId);
+    }
+
+    if (branchId) {
+      backendQuery.set("branch_id", branchId);
     }
 
     const res = await fetch(
