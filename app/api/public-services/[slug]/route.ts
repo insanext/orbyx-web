@@ -3,13 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 export async function GET(
-  request: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await params;
-    const { searchParams } = new URL(request.url);
-    const branchId = searchParams.get("branch_id");
 
     if (!slug) {
       return NextResponse.json(
@@ -18,14 +16,17 @@ export async function GET(
       );
     }
 
-    const backendQuery = new URLSearchParams();
+    const { searchParams } = new URL(req.url);
+    const branchId = searchParams.get("branch_id");
+
+    const servicesQuery = new URLSearchParams();
     if (branchId) {
-      backendQuery.set("branch_id", branchId);
+      servicesQuery.set("branch_id", branchId);
     }
 
-    const servicesUrl = `${BACKEND_URL}/public/services/${encodeURIComponent(slug)}${
-      backendQuery.toString() ? `?${backendQuery.toString()}` : ""
-    }`;
+    const servicesUrl =
+      `${BACKEND_URL}/public/services/${encodeURIComponent(slug)}` +
+      (servicesQuery.toString() ? `?${servicesQuery.toString()}` : "");
 
     const servicesRes = await fetch(servicesUrl, {
       cache: "no-store",
@@ -39,13 +40,13 @@ export async function GET(
       return NextResponse.json(servicesData, { status: servicesRes.status });
     }
 
-    let branches: Array<{ id: string; name: string }> = [];
-
     const tenantId = servicesData?.business?.id;
+
+    let branches: any[] = [];
 
     if (tenantId) {
       const branchesRes = await fetch(
-        `${BACKEND_URL}/branches?tenant_id=${encodeURIComponent(String(tenantId))}`,
+        `${BACKEND_URL}/branches?tenant_id=${encodeURIComponent(tenantId)}`,
         {
           cache: "no-store",
         }
@@ -56,10 +57,9 @@ export async function GET(
       }));
 
       if (branchesRes.ok && Array.isArray(branchesData?.branches)) {
-        branches = branchesData.branches.map((item: any) => ({
-          id: String(item.id),
-          name: String(item.name || "Sucursal"),
-        }));
+        branches = branchesData.branches.filter(
+          (branch: any) => branch?.is_active !== false
+        );
       }
     }
 
