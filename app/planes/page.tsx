@@ -71,24 +71,19 @@ const plans: Plan[] = [
     summaryIntro: "La base ideal para comenzar a profesionalizar tu agenda.",
     features: [
       {
-        title: "Todo lo esencial para comenzar",
+        title: "Agenda online y reservas públicas",
         description:
-          "Agenda online, página pública de reservas, gestión de citas, servicios, profesionales y clientes.",
+          "Incluye la base para ordenar tu negocio y permitir reservas online.",
       },
       {
-        title: "Emails automatizados básicos",
+        title: "Emails automáticos básicos",
         description:
           "Confirmación de citas por email para mantener informado al cliente.",
       },
       {
-        title: "Control operativo inicial",
+        title: "Operación inicial del negocio",
         description:
-          "Configuración de horarios y disponibilidad para ordenar mejor tu agenda.",
-      },
-      {
-        title: "Visibilidad del negocio",
-        description:
-          "Estadísticas básicas para entender tu operación desde el inicio.",
+          "Gestión de horarios, disponibilidad, servicios y clientes.",
       },
     ],
     icon: "mail",
@@ -116,24 +111,19 @@ const plans: Plan[] = [
     summaryIntro: "Para negocios que necesitan mejor seguimiento y comunicación.",
     features: [
       {
-        title: "Todo lo del plan Pro",
-        description:
-          "Mantienes toda la base operativa de agenda y clientes del plan inicial.",
-      },
-      {
         title: "Recordatorios por email",
         description:
-          "Envía recordatorios automáticos para reducir ausencias y mejorar asistencia.",
+          "Reduce ausencias con recordatorios automáticos antes de cada cita.",
       },
       {
         title: "Notificaciones automáticas",
         description:
-          "Informa cambios o cancelaciones de forma más profesional y automática.",
+          "Comunica cambios y movimientos de agenda de forma más profesional.",
       },
       {
         title: "Campañas por email",
         description:
-          "Comunícate masivamente con tus clientes a través de promociones y mensajes directos.",
+          "Envía promociones y mensajes a tus clientes de forma masiva.",
       },
     ],
     icon: "sparkles",
@@ -163,24 +153,19 @@ const plans: Plan[] = [
       "Incorpora WhatsApp a tu operación sin entrar todavía en automatización con IA.",
     features: [
       {
-        title: "Todo lo del plan Premium",
+        title: "Recordatorios por WhatsApp",
         description:
-          "Mantienes la base de agenda, clientes y comunicación por email.",
+          "Incluye conversaciones para recordatorios automáticos por WhatsApp.",
       },
       {
         title: "Más control del negocio",
         description:
-          "Accede a estadísticas avanzadas y una personalización más sólida de tu marca.",
-      },
-      {
-        title: "Recordatorios por WhatsApp",
-        description:
-          "Incluye recordatorios automáticos para reducir no-show y mejorar ocupación.",
+          "Accede a una operación más sólida con mejor seguimiento del negocio.",
       },
       {
         title: "Encuestas automáticas por email",
         description:
-          "Envía encuestas de satisfacción después de cada atención para mejorar la experiencia de tus clientes.",
+          "Solicita feedback después de la atención para mejorar la experiencia.",
       },
     ],
     icon: "crown",
@@ -210,11 +195,6 @@ const plans: Plan[] = [
       "Una operación premium con WhatsApp e inteligencia artificial trabajando para generar más reservas.",
     features: [
       {
-        title: "Todo lo del plan VIP",
-        description:
-          "Mantienes toda la capacidad operativa, el control y la comunicación del plan superior.",
-      },
-      {
         title: "Atención automática por WhatsApp con IA",
         description:
           "La IA responde consultas y ayuda a cerrar reservas automáticamente.",
@@ -223,12 +203,12 @@ const plans: Plan[] = [
       {
         title: "Encuestas + análisis inteligente",
         description:
-          "Envía encuestas automáticas por email y prepárate para análisis inteligente del feedback en una siguiente etapa.",
+          "Prepárate para una operación más avanzada basada en feedback.",
       },
       {
         title: "Métricas de conversaciones y conversión",
         description:
-          "Mide cuántas conversaciones llegan, cuántas reservan y qué tan bien convierte tu automatización.",
+          "Visualiza mejor cómo convierten tus automatizaciones.",
       },
     ],
     icon: "gem",
@@ -243,35 +223,27 @@ const plans: Plan[] = [
 const extraConfig = {
   staff: {
     title: "Profesionales extra",
-    description:
-      "Suma profesionales adicionales. Cada profesional extra incluye 5 servicios adicionales.",
+    short: "$6.000 · 1 profesional + 5 servicios",
+    description: "Suma profesionales adicionales a tu operación.",
     unitPrice: 6000,
-    unitLabel: "$6.000",
-    unitSizeLabel: "1 profesional + 5 servicios",
   },
   reminders: {
     title: "Recordatorios por WhatsApp",
-    description:
-      "Agrega bloques de 50 conversaciones para recordatorios automáticos.",
+    short: "$5.000 · 50 conversaciones",
+    description: "Agrega más conversaciones para recordatorios automáticos.",
     unitPrice: 5000,
-    unitLabel: "$5.000",
-    unitSizeLabel: "50 conversaciones",
   },
   campaigns: {
     title: "Campañas por WhatsApp",
-    description:
-      "Agrega bloques de 50 conversaciones para campañas y reactivación.",
+    short: "$8.000 · 50 conversaciones",
+    description: "Agrega campañas y reactivación de clientes por WhatsApp.",
     unitPrice: 8000,
-    unitLabel: "$8.000",
-    unitSizeLabel: "50 conversaciones",
   },
   ai: {
     title: "Conversaciones asistidas por IA",
-    description:
-      "Agrega bloques de 50 conversaciones para atención automática y cierre de reservas.",
+    short: "$30.000 · 50 conversaciones",
+    description: "Agrega más capacidad de atención automática con IA.",
     unitPrice: 30000,
-    unitLabel: "$30.000",
-    unitSizeLabel: "50 conversaciones",
   },
 } as const;
 
@@ -321,9 +293,7 @@ function getExtraAccent(extraKey: ExtraKey) {
 
 function CompactExtraRow({
   title,
-  description,
-  unitLabel,
-  unitSizeLabel,
+  shortText,
   infoText,
   value,
   onDecrease,
@@ -332,9 +302,7 @@ function CompactExtraRow({
   accent,
 }: {
   title: string;
-  description: string;
-  unitLabel: string;
-  unitSizeLabel: string;
+  shortText: string;
   infoText: string;
   value: number;
   onDecrease: () => void;
@@ -348,7 +316,7 @@ function CompactExtraRow({
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_170px] lg:items-center">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_150px] lg:items-center">
         <div className="min-w-0">
           <div className="flex items-start gap-3">
             <div
@@ -359,20 +327,9 @@ function CompactExtraRow({
 
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white">{title}</p>
-              <p className="mt-1 text-sm leading-6 text-slate-300">
-                {description}
-              </p>
+              <p className="mt-1 text-sm text-slate-300">{shortText}</p>
             </div>
           </div>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Valor
-          </p>
-          <p className="mt-1 text-sm font-semibold text-white">
-            {unitLabel} · {unitSizeLabel}
-          </p>
         </div>
 
         <div className="flex items-center justify-center gap-3 lg:justify-end">
@@ -407,7 +364,7 @@ function CompactExtraRow({
   );
 }
 
-function IncludeMiniCard({
+function IncludeRow({
   label,
   value,
 }: {
@@ -415,11 +372,9 @@ function IncludeMiniCard({
   value: string | number;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
-      <p className="text-[10px] uppercase tracking-[0.14em] text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
+    <div className="flex items-center justify-between border-b border-white/8 py-2 last:border-b-0">
+      <span className="text-sm text-slate-300">{label}</span>
+      <span className="text-sm font-semibold text-white">{value}</span>
     </div>
   );
 }
@@ -557,99 +512,6 @@ export default function PlanesPage() {
     }
   }
 
-  const comparisonRows = [
-    {
-      label: "Sucursales incluidas",
-      values: {
-        pro: "1",
-        premium: "2",
-        vip: "3",
-        platinum: "10",
-      },
-    },
-    {
-      label: "Profesionales incluidos",
-      values: {
-        pro: "2",
-        premium: "5",
-        vip: "10",
-        platinum: "20",
-      },
-    },
-    {
-      label: "Servicios incluidos",
-      values: {
-        pro: "10",
-        premium: "25",
-        vip: "50",
-        platinum: "100",
-      },
-    },
-    {
-      label: "Beneficio por profesional extra",
-      values: {
-        pro: "+5 servicios",
-        premium: "+5 servicios",
-        vip: "+5 servicios",
-        platinum: "+5 servicios",
-      },
-    },
-    {
-      label: "Emails automatizados",
-      values: {
-        pro: "Confirmación",
-        premium: "Completo",
-        vip: "Completo",
-        platinum: "Completo",
-      },
-    },
-    {
-      label: "Campañas por email",
-      values: {
-        pro: "—",
-        premium: "Sí",
-        vip: "Sí",
-        platinum: "Sí",
-      },
-    },
-    {
-      label: "Encuestas por email",
-      values: {
-        pro: "—",
-        premium: "—",
-        vip: "Sí",
-        platinum: "Sí + análisis futuro",
-      },
-    },
-    {
-      label: "WhatsApp recordatorios",
-      values: {
-        pro: "—",
-        premium: "—",
-        vip: "200 / mes",
-        platinum: "400 / mes",
-      },
-    },
-    {
-      label: "WhatsApp campañas",
-      values: {
-        pro: "—",
-        premium: "—",
-        vip: "Extra",
-        platinum: "50 / mes",
-      },
-    },
-    {
-      label: "Conversaciones asistidas por IA",
-      values: {
-        pro: "—",
-        premium: "—",
-        vip: "—",
-        platinum: "200 / mes",
-      },
-    },
-  ] as const;
-
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
       <section className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
@@ -680,7 +542,7 @@ export default function PlanesPage() {
                       key={plan.key}
                       type="button"
                       onClick={() => handleSelectPlan(plan.key)}
-                      className={`relative flex min-h-[248px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
+                      className={`relative flex min-h-[236px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
                         isSelected
                           ? `bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] ${plan.borderClass} ring-1 ${plan.ringClass} shadow-[0_18px_50px_rgba(15,23,42,0.28)]`
                           : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
@@ -709,7 +571,7 @@ export default function PlanesPage() {
                       </p>
 
                       <div className="mt-auto pt-6">
-                        <p className="text-[1.9rem] font-semibold leading-none tracking-tight text-white lg:text-[2.15rem]">
+                        <p className="text-[1.85rem] font-semibold leading-none tracking-tight text-white lg:text-[2.05rem]">
                           {plan.priceLabel}
                         </p>
                         <p className="mt-2 text-sm text-slate-400">
@@ -746,9 +608,7 @@ export default function PlanesPage() {
                   {supportsStaffExtra ? (
                     <CompactExtraRow
                       title={extraConfig.staff.title}
-                      description={extraConfig.staff.description}
-                      unitLabel={extraConfig.staff.unitLabel}
-                      unitSizeLabel={extraConfig.staff.unitSizeLabel}
+                      shortText={extraConfig.staff.short}
                       infoText={`Tu plan ahora cuenta con ${currentStaffTotal} profesionales y ${currentServicesTotal} servicios.`}
                       value={staffExtras}
                       onDecrease={() => decreaseExtra("staff")}
@@ -761,9 +621,7 @@ export default function PlanesPage() {
                   {supportsReminderExtra ? (
                     <CompactExtraRow
                       title={extraConfig.reminders.title}
-                      description={extraConfig.reminders.description}
-                      unitLabel={extraConfig.reminders.unitLabel}
-                      unitSizeLabel={extraConfig.reminders.unitSizeLabel}
+                      shortText={extraConfig.reminders.short}
                       infoText={`Tu plan ahora cuenta con ${currentReminderTotal} conversaciones de recordatorio.`}
                       value={reminderExtras}
                       onDecrease={() => decreaseExtra("reminders")}
@@ -776,9 +634,7 @@ export default function PlanesPage() {
                   {supportsCampaignExtra ? (
                     <CompactExtraRow
                       title={extraConfig.campaigns.title}
-                      description={extraConfig.campaigns.description}
-                      unitLabel={extraConfig.campaigns.unitLabel}
-                      unitSizeLabel={extraConfig.campaigns.unitSizeLabel}
+                      shortText={extraConfig.campaigns.short}
                       infoText={`Tu plan ahora cuenta con ${currentCampaignTotal} conversaciones de campañas.`}
                       value={campaignExtras}
                       onDecrease={() => decreaseExtra("campaigns")}
@@ -791,9 +647,7 @@ export default function PlanesPage() {
                   {supportsAiExtra ? (
                     <CompactExtraRow
                       title={extraConfig.ai.title}
-                      description={extraConfig.ai.description}
-                      unitLabel={extraConfig.ai.unitLabel}
-                      unitSizeLabel={extraConfig.ai.unitSizeLabel}
+                      shortText={extraConfig.ai.short}
                       infoText={`Tu plan ahora cuenta con ${currentAiTotal} conversaciones asistidas por IA.`}
                       value={aiExtras}
                       onDecrease={() => decreaseExtra("ai")}
@@ -802,59 +656,6 @@ export default function PlanesPage() {
                       icon={<Bot className="h-5 w-5" />}
                     />
                   ) : null}
-                </div>
-              </div>
-
-              <div className="mt-8 overflow-hidden rounded-[28px] border border-white/10 bg-white/6 shadow-[0_20px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl">
-                <div className="border-b border-white/10 px-6 py-5">
-                  <p className="text-xl font-semibold text-white">
-                    Comparación de planes
-                  </p>
-                  <p className="mt-1 text-sm text-slate-300">
-                    Visualiza rápido qué cambia a medida que subes de plan.
-                  </p>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="min-w-[940px] w-full border-collapse">
-                    <thead>
-                      <tr className="bg-white/5">
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-200">
-                          Característica
-                        </th>
-                        {plans.map((plan) => (
-                          <th
-                            key={plan.key}
-                            className="px-4 py-3 text-center text-sm font-semibold text-slate-200"
-                          >
-                            {plan.name}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comparisonRows.map((row, index) => (
-                        <tr
-                          key={row.label}
-                          className={
-                            index % 2 === 0 ? "bg-white/0" : "bg-white/[0.03]"
-                          }
-                        >
-                          <td className="border-t border-white/10 px-4 py-3 text-sm font-medium text-slate-100">
-                            {row.label}
-                          </td>
-                          {plans.map((plan) => (
-                            <td
-                              key={`${row.label}-${plan.key}`}
-                              className="border-t border-white/10 px-4 py-3 text-center text-sm text-slate-300"
-                            >
-                              {row.values[plan.key]}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               </div>
             </div>
@@ -985,43 +786,43 @@ export default function PlanesPage() {
                       </div>
                     ))}
                   </div>
-                </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-2">
-                  <IncludeMiniCard
-                    label="Sucursales incluidas"
-                    value={selectedPlan.includedBranches}
-                  />
-                  <IncludeMiniCard
-                    label="Profesionales incluidos"
-                    value={currentStaffTotal}
-                  />
-                  <IncludeMiniCard
-                    label="Servicios incluidos"
-                    value={currentServicesTotal}
-                  />
-                  <IncludeMiniCard
-                    label="WhatsApp recordatorios"
-                    value={
-                      currentReminderTotal > 0
-                        ? `${currentReminderTotal}`
-                        : "No incluido"
-                    }
-                  />
-                  <IncludeMiniCard
-                    label="Campañas por WhatsApp"
-                    value={
-                      currentCampaignTotal > 0
-                        ? `${currentCampaignTotal}`
-                        : "No incluido"
-                    }
-                  />
-                  <IncludeMiniCard
-                    label="IA asistida"
-                    value={
-                      currentAiTotal > 0 ? `${currentAiTotal}` : "No incluida"
-                    }
-                  />
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <IncludeRow
+                      label="Sucursales incluidas"
+                      value={selectedPlan.includedBranches}
+                    />
+                    <IncludeRow
+                      label="Profesionales incluidos"
+                      value={currentStaffTotal}
+                    />
+                    <IncludeRow
+                      label="Servicios incluidos"
+                      value={currentServicesTotal}
+                    />
+                    <IncludeRow
+                      label="WhatsApp recordatorios"
+                      value={
+                        currentReminderTotal > 0
+                          ? `${currentReminderTotal}`
+                          : "No incluido"
+                      }
+                    />
+                    <IncludeRow
+                      label="Campañas por WhatsApp"
+                      value={
+                        currentCampaignTotal > 0
+                          ? `${currentCampaignTotal}`
+                          : "No incluido"
+                      }
+                    />
+                    <IncludeRow
+                      label="IA asistida"
+                      value={
+                        currentAiTotal > 0 ? `${currentAiTotal}` : "No incluida"
+                      }
+                    />
+                  </div>
                 </div>
 
                 <div className="mt-5 rounded-[22px] border border-white/10 bg-white/5 p-4">
