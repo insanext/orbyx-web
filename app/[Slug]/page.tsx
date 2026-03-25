@@ -1,5 +1,5 @@
 "use client";
-<h1 className="text-4xl font-bold text-red-600">PRUEBA NUEVA PUBLICA</h1>
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Calendar from "react-calendar";
@@ -124,9 +124,7 @@ export default function Page() {
   const [selectedBranchId, setSelectedBranchId] = useState("");
 
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const [selectedService, setSelectedService] = useState<ServiceItem | null>(
-    null
-  );
+  const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
 
   const [staffOptions, setStaffOptions] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
@@ -155,7 +153,6 @@ export default function Page() {
 
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
   const showBranchSelector = branches.length > 1;
-  const canLoadServices = branches.length <= 1 || !!selectedBranchId;
   const visibleBookingFields = bookingFields.filter((field) => field.enabled);
 
   function updateCustomerField(key: string, value: string) {
@@ -166,7 +163,6 @@ export default function Page() {
   }
 
   function resetAfterBranchChange() {
-    setServices([]);
     setSelectedService(null);
     setStaffOptions([]);
     setSelectedStaffId("");
@@ -227,9 +223,7 @@ export default function Page() {
 
         setBranches(normalizedBranches);
 
-        const initialBranchId =
-          normalizedBranches.length === 1 ? normalizedBranches[0].id : "";
-
+        const initialBranchId = normalizedBranches[0]?.id || "";
         setSelectedBranchId(initialBranchId);
 
         const initialServices: ServiceItem[] = Array.isArray(data.services)
@@ -248,6 +242,7 @@ export default function Page() {
         setBusiness(null);
         setCalendarId("");
         setBranches([]);
+        setSelectedBranchId("");
         setServices([]);
       } finally {
         setLoadingPage(false);
@@ -259,11 +254,6 @@ export default function Page() {
 
   useEffect(() => {
     if (!slug) return;
-    if (!canLoadServices) {
-      setServices([]);
-      setSelectedService(null);
-      return;
-    }
 
     async function loadServices() {
       try {
@@ -279,10 +269,7 @@ export default function Page() {
 
         const data: PublicServicesResponse = await res.json();
 
-        const rows: ServiceItem[] = Array.isArray(data.services)
-          ? data.services
-          : [];
-
+        const rows: ServiceItem[] = Array.isArray(data.services) ? data.services : [];
         setServices(rows);
 
         setSelectedService((prev) => {
@@ -299,7 +286,7 @@ export default function Page() {
     }
 
     loadServices();
-  }, [slug, selectedBranchId, canLoadServices]);
+  }, [slug, selectedBranchId]);
 
   useEffect(() => {
     const serviceId = selectedService?.id;
@@ -318,12 +305,9 @@ export default function Page() {
           ? `?branch_id=${encodeURIComponent(selectedBranchId)}`
           : "";
 
-        const res = await fetch(
-          `/api/public-staff/${slug}/${serviceId}${query}`,
-          {
-            cache: "no-store",
-          }
-        );
+        const res = await fetch(`/api/public-staff/${slug}/${serviceId}${query}`, {
+          cache: "no-store",
+        });
 
         const data = await res.json();
 
@@ -349,7 +333,7 @@ export default function Page() {
   useEffect(() => {
     const serviceId = selectedService?.id;
 
-    if (!slug || !serviceId || !canLoadServices) {
+    if (!slug || !serviceId) {
       setWeekSlots({});
       setSelectedSlot(null);
       return;
@@ -423,7 +407,6 @@ export default function Page() {
     selectedDate,
     selectedBranchId,
     selectedStaffId,
-    canLoadServices,
     weekDates,
     selectedSlot,
   ]);
@@ -494,12 +477,13 @@ export default function Page() {
         "Reserva creada correctamente. Revisa tu correo para la confirmación."
       );
 
-      const clearedExtraFields = visibleBookingFields.reduce<
-        Record<string, string>
-      >((acc, field) => {
-        acc[field.key] = "";
-        return acc;
-      }, {});
+      const clearedExtraFields = visibleBookingFields.reduce<Record<string, string>>(
+        (acc, field) => {
+          acc[field.key] = "";
+          return acc;
+        },
+        {}
+      );
 
       setCustomerData({
         name: "",
@@ -566,7 +550,6 @@ export default function Page() {
                     }}
                     className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-slate-400"
                   >
-                    <option value="">Selecciona sucursal</option>
                     {branches.map((branch) => (
                       <option key={branch.id} value={branch.id}>
                         {branch.name}
@@ -582,7 +565,7 @@ export default function Page() {
                 </label>
                 <select
                   value={selectedService?.id || ""}
-                  disabled={loadingServices || !canLoadServices}
+                  disabled={loadingServices}
                   onChange={(e) => {
                     const service =
                       services.find((item) => item.id === e.target.value) || null;
@@ -594,8 +577,6 @@ export default function Page() {
                   <option value="">
                     {loadingServices
                       ? "Cargando servicios..."
-                      : !canLoadServices
-                      ? "Selecciona sucursal"
                       : services.length === 0
                       ? "Sin servicios disponibles"
                       : "Selecciona servicio"}
@@ -665,32 +646,6 @@ export default function Page() {
                       </option>
                     ))}
                   </select>
-
-                  {!loadingStaff && staffOptions.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {staffOptions.map((staff) => {
-                        const active = selectedStaffId === staff.id;
-
-                        return (
-                          <button
-                            key={staff.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedStaffId(active ? "" : staff.id);
-                              setSelectedSlot(null);
-                            }}
-                            className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
-                              active
-                                ? "border-slate-950 bg-slate-950 text-white"
-                                : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
-                            }`}
-                          >
-                            {staff.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : null}
                 </div>
               ) : null}
 
