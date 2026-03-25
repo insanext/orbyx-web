@@ -275,21 +275,21 @@ export default function AgendaPage() {
   ) {
     if (filter === "pending_close") {
       if (active) {
-        return "inline-flex h-11 items-center justify-center rounded-2xl border border-rose-600 bg-rose-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700";
+        return "inline-flex h-9 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700";
       }
 
       if (count > 0) {
-        return "inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300 bg-rose-50 px-4 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-100";
+        return "inline-flex h-9 items-center justify-center rounded-xl border border-rose-300 bg-rose-50 px-3.5 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-100";
       }
 
-      return "inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
+      return "inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
     }
 
     if (active) {
-      return "inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800";
+      return "inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-3.5 text-sm font-medium text-white transition hover:bg-slate-800";
     }
 
-    return "inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
+    return "inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
   }
 
   function handleSelectAppointment(appt: Appointment) {
@@ -538,7 +538,10 @@ export default function AgendaPage() {
       didAutoFocusPendingRef.current = false;
     }
 
-    window.addEventListener("orbyx-branch-changed", handleBranchChanged as EventListener);
+    window.addEventListener(
+      "orbyx-branch-changed",
+      handleBranchChanged as EventListener
+    );
     window.addEventListener("storage", handleStorage);
 
     return () => {
@@ -672,8 +675,8 @@ export default function AgendaPage() {
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
 
   return (
-    <div className="space-y-6 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 p-1">
-      <div className="rounded-[28px] border border-slate-200 bg-white/80 p-1 shadow-sm backdrop-blur">
+    <div className="space-y-4 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 p-1">
+      <div className="rounded-[24px] border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur">
         <PageHeader
           eyebrow="Agenda"
           title="Agenda semanal"
@@ -683,7 +686,7 @@ export default function AgendaPage() {
               : "Semana, estados y cierre rápido."
           }
           actions={
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {hasPendingClose ? (
                 <button
                   type="button"
@@ -699,12 +702,12 @@ export default function AgendaPage() {
                       }, 80);
                     }
                   }}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-600 bg-rose-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
                 >
                   Pendientes: {pendingCloseCount}
                 </button>
               ) : (
-                <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700">
+                <div className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 text-sm font-semibold text-emerald-700">
                   Sin pendientes
                 </div>
               )}
@@ -712,19 +715,19 @@ export default function AgendaPage() {
               <button
                 type="button"
                 onClick={goPrevWeek}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 ← Anterior
               </button>
 
-              <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-sky-100 bg-sky-50 px-4 text-sm font-semibold text-sky-800">
+              <div className="inline-flex h-10 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 px-3.5 text-sm font-semibold text-sky-800">
                 {formatRangeTitle(weekStart, weekEnd)}
               </div>
 
               <button
                 type="button"
                 onClick={goNextWeek}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 Siguiente →
               </button>
@@ -732,7 +735,7 @@ export default function AgendaPage() {
               <button
                 type="button"
                 onClick={goToday}
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-3.5 text-sm font-medium text-white transition hover:bg-slate-800"
               >
                 Hoy
               </button>
@@ -746,7 +749,7 @@ export default function AgendaPage() {
                   setSelectedAppointment(null);
                   didAutoFocusPendingRef.current = false;
                 }}
-                className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                className="h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
               />
             </div>
           }
@@ -754,15 +757,15 @@ export default function AgendaPage() {
       </div>
 
       {loadingBranches ? (
-        <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
           Cargando sucursal activa...
         </div>
       ) : !selectedBranchId ? (
-        <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
           Debes seleccionar una sucursal activa en el sidebar para ver la agenda.
         </div>
       ) : (
-        <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
           Sucursal activa:{" "}
           <span className="font-semibold text-slate-900">
             {selectedBranchName || selectedBranchId}
@@ -771,7 +774,7 @@ export default function AgendaPage() {
       )}
 
       {hasPendingClose ? (
-        <div className="rounded-3xl border border-rose-200 bg-gradient-to-r from-rose-50 to-amber-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
+        <div className="rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-amber-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
           Tienes <span className="font-semibold">{pendingCloseCount}</span>{" "}
           cita{pendingCloseCount === 1 ? "" : "s"} pendiente
           {pendingCloseCount === 1 ? "" : "s"} de cierre.
@@ -779,12 +782,12 @@ export default function AgendaPage() {
       ) : null}
 
       {error ? (
-        <div className="rounded-3xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
           {error}
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard
           label="Reservas hoy"
           value={loading ? "..." : String(appointmentsToday.length)}
@@ -819,9 +822,9 @@ export default function AgendaPage() {
         />
       </section>
 
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <Panel title="Filtros" description="Cambia la vista por estado.">
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
               const count =
                 filter === "all"
@@ -854,7 +857,7 @@ export default function AgendaPage() {
               <button
                 type="button"
                 onClick={() => setActiveFilter("all")}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 Ver todas
               </button>
@@ -863,8 +866,8 @@ export default function AgendaPage() {
         </Panel>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="grid gap-4 xl:grid-cols-[1.7fr_0.55fr]">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <Panel
             title="Calendario semanal"
             description={
@@ -893,7 +896,7 @@ export default function AgendaPage() {
                   return (
                     <div
                       key={dayKey}
-                      className={`rounded-2xl border p-3 ${
+                      className={`rounded-xl border p-2.5 ${
                         dayPendingCount > 0
                           ? "border-rose-200 bg-gradient-to-b from-rose-50 to-white"
                           : isToday
@@ -902,7 +905,7 @@ export default function AgendaPage() {
                       }`}
                     >
                       <div
-                        className={`mb-3 pb-3 ${
+                        className={`mb-2.5 pb-2.5 ${
                           dayPendingCount > 0
                             ? "border-b border-rose-200"
                             : isToday
@@ -919,20 +922,20 @@ export default function AgendaPage() {
 
                           <div className="flex items-center gap-2">
                             {dayPendingCount > 0 ? (
-                              <span className="rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+                              <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white">
                                 {dayPendingCount}
                               </span>
                             ) : null}
 
                             {isToday ? (
-                              <span className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+                              <span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">
                                 Hoy
                               </span>
                             ) : null}
                           </div>
                         </div>
 
-                        <div className="mt-1 text-xs text-slate-500">
+                        <div className="mt-1 text-[11px] text-slate-500">
                           {day.toLocaleDateString("es-CL", {
                             day: "2-digit",
                             month: "2-digit",
@@ -940,7 +943,7 @@ export default function AgendaPage() {
                         </div>
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {daySlots.map((slot, index) => {
                           const appt = dayAppointments.find(
                             (a) =>
@@ -955,7 +958,7 @@ export default function AgendaPage() {
                             return (
                               <div
                                 key={slot}
-                                className={`rounded-xl border px-3 py-3 text-center text-xs ${
+                                className={`rounded-lg border px-2 py-2 text-center text-[11px] ${
                                   isHourStart
                                     ? "border-slate-300"
                                     : "border-slate-200"
@@ -980,14 +983,14 @@ export default function AgendaPage() {
                               key={appt.id}
                               type="button"
                               onClick={() => handleSelectAppointment(appt)}
-                              className={`w-full rounded-2xl border p-3 text-left transition ${getCardClass(
+                              className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
                                 appt,
                                 isSelected
                               )}`}
                             >
-                              <div className="space-y-2">
+                              <div className="space-y-1.5">
                                 <div
-                                  className={`text-xs font-semibold ${
+                                  className={`text-[11px] font-semibold ${
                                     isSelected ? "text-slate-200" : "text-slate-600"
                                   }`}
                                 >
@@ -1016,7 +1019,7 @@ export default function AgendaPage() {
                                 </p>
 
                                 <p
-                                  className={`truncate text-xs ${
+                                  className={`truncate text-[11px] ${
                                     isSelected ? "text-slate-200" : "text-slate-500"
                                   }`}
                                 >
@@ -1025,7 +1028,7 @@ export default function AgendaPage() {
 
                                 {isPastPendingClosure(appt) ? (
                                   <div
-                                    className={`rounded-xl px-2 py-1 text-[10px] font-semibold ${
+                                    className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${
                                       isSelected
                                         ? "bg-white/10 text-white"
                                         : "bg-rose-100 text-rose-700"
@@ -1048,18 +1051,18 @@ export default function AgendaPage() {
         </div>
 
         <div ref={detailRef} className="self-start xl:sticky xl:top-6">
-          <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <Panel
               title="Detalle de reserva"
               description="Cliente, horario y estado."
             >
               {!selectedAppointment ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
                   Haz clic en una reserva para ver el detalle.
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-slate-900">
                         {selectedAppointment.service_name_snapshot || "Reserva"}
@@ -1074,7 +1077,7 @@ export default function AgendaPage() {
                       </span>
                     </div>
 
-                    <p className="mt-2 text-sm capitalize text-slate-600">
+                    <p className="mt-1.5 text-sm capitalize text-slate-600">
                       {formatLongDate(selectedAppointment.start_at)}
                     </p>
                     <p className="mt-1 text-sm text-slate-600">
@@ -1084,7 +1087,7 @@ export default function AgendaPage() {
                   </div>
 
                   {isPastPendingClosure(selectedAppointment) ? (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
                       <p className="text-sm font-semibold text-rose-800">
                         Esta cita ya terminó
                       </p>
@@ -1092,14 +1095,14 @@ export default function AgendaPage() {
                         Debes cerrar su estado para mantener la agenda al día.
                       </p>
 
-                      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="mt-3 grid grid-cols-1 gap-2">
                         <button
                           type="button"
                           onClick={() =>
                             handleUpdateStatus(selectedAppointment.id, "completed")
                           }
                           disabled={statusSaving}
-                          className="inline-flex h-11 items-center justify-center rounded-2xl bg-emerald-600 px-4 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {statusSaving ? "Guardando..." : "Marcar atendida"}
                         </button>
@@ -1110,7 +1113,7 @@ export default function AgendaPage() {
                             handleUpdateStatus(selectedAppointment.id, "no_show")
                           }
                           disabled={statusSaving}
-                          className="inline-flex h-11 items-center justify-center rounded-2xl bg-amber-500 px-4 text-sm font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-500 px-4 text-sm font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {statusSaving ? "Guardando..." : "Marcar no asistió"}
                         </button>
@@ -1118,39 +1121,39 @@ export default function AgendaPage() {
                     </div>
                   ) : null}
 
-                  <div className="space-y-3">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  <div className="space-y-2">
+                    <div className="rounded-xl border border-slate-200 bg-white p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                         Cliente
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-slate-900">
+                      <p className="mt-1 text-sm font-medium text-slate-900">
                         {selectedAppointment.customer_name}
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    <div className="rounded-xl border border-slate-200 bg-white p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                         Teléfono
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-slate-900">
+                      <p className="mt-1 text-sm font-medium text-slate-900">
                         {selectedAppointment.customer_phone || "No disponible"}
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    <div className="rounded-xl border border-slate-200 bg-white p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                         Email
                       </p>
-                      <p className="mt-2 break-all text-sm font-semibold text-slate-900">
+                      <p className="mt-1 break-all text-sm font-medium text-slate-900">
                         {selectedAppointment.customer_email || "No disponible"}
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    <div className="rounded-xl border border-slate-200 bg-white p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                         Estado
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-slate-900">
+                      <p className="mt-1 text-sm font-medium text-slate-900">
                         {getStatusLabel(selectedAppointment)}
                       </p>
                     </div>
