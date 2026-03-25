@@ -368,14 +368,16 @@ export default function Page() {
         setWeekSlots(mapped);
 
         if (selectedSlot) {
-          const stillExists = results.some((item) =>
-            item.slots.some((slot) => slot.slot_start === selectedSlot.slot_start)
-          );
+  const stillExists = results.some((item) =>
+    item.slots.some(
+      (slot: SlotItem) => slot.slot_start === selectedSlot.slot_start
+    )
+  );
 
-          if (!stillExists) {
-            setSelectedSlot(null);
-          }
-        }
+  if (!stillExists) {
+    setSelectedSlot(null);
+  }
+}
       } catch (error) {
         console.error("Error cargando horarios:", error);
         setWeekSlots({});
