@@ -274,21 +274,21 @@ export default function AgendaPage() {
   ) {
     if (filter === "pending_close") {
       if (active) {
-        return "inline-flex h-9 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700";
+        return "inline-flex h-8 items-center justify-center rounded-lg border border-rose-600 bg-rose-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700";
       }
 
       if (count > 0) {
-        return "inline-flex h-9 items-center justify-center rounded-xl border border-rose-300 bg-rose-50 px-3.5 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-100";
+        return "inline-flex h-8 items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-3 text-xs font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-100";
       }
 
-      return "inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
+      return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
     }
 
     if (active) {
-      return "inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-3.5 text-sm font-medium text-white transition hover:bg-slate-800";
+      return "inline-flex h-8 items-center justify-center rounded-lg bg-slate-900 px-3 text-xs font-medium text-white transition hover:bg-slate-800";
     }
 
-    return "inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
+    return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
   }
 
   function handleSelectAppointment(appt: Appointment) {
@@ -755,23 +755,6 @@ export default function AgendaPage() {
         />
       </div>
 
-      {loadingBranches ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
-          Cargando sucursal activa...
-        </div>
-      ) : !selectedBranchId ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
-          Debes seleccionar una sucursal activa en el sidebar para ver la agenda.
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-          Sucursal activa:{" "}
-          <span className="font-semibold text-slate-900">
-            {selectedBranchName || selectedBranchId}
-          </span>
-        </div>
-      )}
-
       {hasPendingClose ? (
         <div className="rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-amber-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
           Tienes <span className="font-semibold">{pendingCloseCount}</span>{" "}
@@ -786,59 +769,11 @@ export default function AgendaPage() {
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <Panel title="Filtros" description="Cambia la vista por estado.">
-          <div className="flex flex-wrap gap-2">
-            {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
-              const count =
-                filter === "all"
-                  ? counts.all
-                  : filter === "pending_close"
-                  ? counts.pending_close
-                  : filter === "booked"
-                  ? counts.booked
-                  : filter === "completed"
-                  ? counts.completed
-                  : counts.no_show;
-
-              return (
-                <button
-                  key={filter}
-                  type="button"
-                  onClick={() => setActiveFilter(filter)}
-                  className={getFilterButtonClasses(
-                    filter,
-                    activeFilter === filter,
-                    count
-                  )}
-                >
-                  {filterLabels[filter]} ({count})
-                </button>
-              );
-            })}
-
-            {hasPendingClose && activeFilter !== "all" ? (
-              <button
-                type="button"
-                onClick={() => setActiveFilter("all")}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Ver todas
-              </button>
-            ) : null}
-          </div>
-        </Panel>
-      </div>
-
       <div className="grid gap-4 xl:grid-cols-[1.7fr_0.55fr]">
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <Panel
             title="Calendario semanal"
-            description={
-              hasPendingClose
-                ? "Los días con pendientes aparecen primero."
-                : "Vista semanal de reservas."
-            }
+            description="Vista semanal de reservas."
           >
             {!selectedBranchId ? (
               <p className="px-2 py-4 text-sm text-slate-500">
@@ -1016,6 +951,50 @@ export default function AgendaPage() {
 
         <div ref={detailRef} className="self-start xl:sticky xl:top-6">
           <div className="space-y-3">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <Panel title="Filtros" description="Estado actual de la vista.">
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
+                    const count =
+                      filter === "all"
+                        ? counts.all
+                        : filter === "pending_close"
+                        ? counts.pending_close
+                        : filter === "booked"
+                        ? counts.booked
+                        : filter === "completed"
+                        ? counts.completed
+                        : counts.no_show;
+
+                    return (
+                      <button
+                        key={filter}
+                        type="button"
+                        onClick={() => setActiveFilter(filter)}
+                        className={getFilterButtonClasses(
+                          filter,
+                          activeFilter === filter,
+                          count
+                        )}
+                      >
+                        {filterLabels[filter]} ({count})
+                      </button>
+                    );
+                  })}
+
+                  {hasPendingClose && activeFilter !== "all" ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveFilter("all")}
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Ver todas
+                    </button>
+                  ) : null}
+                </div>
+              </Panel>
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
