@@ -1084,11 +1084,24 @@ export default function ServicesPage() {
                 </p>
               </div>
 
-              {servicesLimitReached ? (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
-                  Límite de servicios alcanzado
-                </div>
-              ) : null}
+{servicesLimitReached ? (
+  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 shadow-sm">
+    <p className="font-semibold">Límite de servicios alcanzado</p>
+    <p className="mt-1">
+      Ya usaste {services.length} de {maxServices} servicios disponibles en tu plan.
+    </p>
+    <p className="mt-1">
+      Para agregar más servicios, debes subir de plan.
+    </p>
+
+    <Link
+      href="/pricing"
+      className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+    >
+      Ver planes
+    </Link>
+  </div>
+) : null}
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">

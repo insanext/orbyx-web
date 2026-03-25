@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -859,7 +860,17 @@ export default function StaffPage() {
           label="Usan horario negocio"
           value={loading ? "..." : String(usingBusinessHoursCount)}
         />
-        <StatCard label="Módulo" value={loading ? "..." : "Configurado"} />
+        <StatCard
+  label="Límite del plan"
+  value={loading ? "..." : `${activeCount}/${caps.max_staff}`}
+  helper={
+    loading
+      ? "Cargando plan..."
+      : reachedLimit
+      ? "Llegaste al límite de staff de tu plan."
+      : `Puedes agregar ${Math.max(0, caps.max_staff - activeCount)} más.`
+  }
+/>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -876,11 +887,20 @@ export default function StaffPage() {
               Cargando...
             </div>
           ) : (
-            <div className="space-y-5">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Nombre
-                </label>
+<div className="space-y-5">
+  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <p className="text-sm font-medium text-slate-700">
+      Plan actual: <span className="capitalize">{plan}</span>
+    </p>
+    <p className="mt-1 text-sm text-slate-500">
+      Has creado {activeCount} de {caps.max_staff} staff disponibles en tu plan.
+    </p>
+  </div>
+
+  <div>
+    <label className="mb-2 block text-sm font-medium text-slate-700">
+      Nombre
+    </label>
                 <input
                   type="text"
                   value={form.name}
@@ -1400,10 +1420,23 @@ export default function StaffPage() {
 
               <div className="space-y-3 pt-2">
                 {!editingId && reachedLimit ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    Has alcanzado el límite de staff de tu plan.
-                  </div>
-                ) : null}
+  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+    <p className="font-semibold">Has alcanzado el límite de staff de tu plan</p>
+    <p className="mt-1">
+      Ya usaste {activeCount} de {caps.max_staff} profesionales disponibles.
+    </p>
+    <p className="mt-1">
+      Para agregar más staff, debes subir de plan.
+    </p>
+
+    <Link
+  href="/pricing"
+  className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+>
+  Ver planes
+</Link>
+  </div>
+) : null}
 
                 <div className="flex flex-wrap gap-3">
                   <button
