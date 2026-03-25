@@ -86,72 +86,94 @@ export default function Page() {
     if (!slug) return;
 
     async function loadAll() {
-      try {
-        const res = await fetch(`/api/public-services/${slug}`);
-        const data = await res.json();
+      const res = await fetch(`/api/public-services/${slug}`);
+      const data = await res.json();
 
-        setBranches(data.branches || []);
+      const branchRows = data.branches || [];
+      setBranches(branchRows);
 
-        if (data.branches?.length === 1) {
-          setSelectedBranchId(data.branches[0].id);
-        }
-
-        // booking fields
-        const resFields = await fetch(
-          `https://orbyx-backend.onrender.com/booking-fields/${slug}`
-        );
-        const dataFields = await resFields.json();
-
-        setBookingFields(dataFields.booking_fields_config || []);
-      } catch (err) {
-        console.error(err);
+      if (branchRows.length === 1) {
+        setSelectedBranchId(branchRows[0].id);
       }
+
+      // booking fields
+      const resFields = await fetch(
+        `https://orbyx-backend.onrender.com/booking-fields/${slug}`
+      );
+      const dataFields = await resFields.json();
+      setBookingFields(dataFields.booking_fields_config || []);
     }
 
     loadAll();
   }, [slug]);
 
   /* ===============================
-     LOAD SERVICES
+     SERVICES
   ============================== */
   useEffect(() => {
     if (!slug) return;
-    if (!selectedBranchId) return;
+    if (branches.length > 1 && !selectedBranchId) return;
 
     async function loadServices() {
-      const res = await fetch(
-        `/api/public-services/${slug}?branch_id=${selectedBranchId}`
-      );
+      const query = selectedBranchId
+        ? `?branch_id=${selectedBranchId}`
+        : "";
+
+      const res = await fetch(`/api/public-services/${slug}${query}`);
       const data = await res.json();
 
       setServices(data.services || []);
     }
 
     loadServices();
-  }, [slug, selectedBranchId]);
+  }, [slug, selectedBranchId, branches]);
 
   /* ===============================
-     LOAD SLOTS (FIXED)
+     STAFF
   ============================== */
   useEffect(() => {
     const serviceId = selectedService?.id;
+    if (!slug || !serviceId) return;
 
-    if (!slug || !serviceId || !selectedBranchId) return;
+    async function loadStaff() {
+      const query = selectedBranchId
+        ? `?branch_id=${selectedBranchId}`
+        : "";
+
+      const res = await fetch(
+        `/api/public-staff/${slug}/${serviceId}${query}`
+      );
+
+      const data = await res.json();
+      setStaffOptions(data.staff || []);
+    }
+
+    loadStaff();
+  }, [slug, selectedService, selectedBranchId]);
+
+  /* ===============================
+     SLOTS
+  ============================== */
+  useEffect(() => {
+    const serviceId = selectedService?.id;
+    if (!slug || !serviceId) return;
 
     async function loadSlots() {
-      try {
-        const res = await fetch(
-          `/api/public-slots/${slug}/${serviceId}?date=${formatDate(selectedDate)}&branch_id=${selectedBranchId}&staff_id=${selectedStaffId}`
-        );
+      const query = new URLSearchParams({
+        date: formatDate(selectedDate),
+        branch_id: selectedBranchId || "",
+        staff_id: selectedStaffId || "",
+      });
 
-        const data = await res.json();
+      const res = await fetch(
+        `/api/public-slots/${slug}/${serviceId}?${query}`
+      );
 
-        setWeekSlots({
-          [formatDate(selectedDate)]: data.slots || [],
-        });
-      } catch (err) {
-        console.error(err);
-      }
+      const data = await res.json();
+
+      setWeekSlots({
+        [formatDate(selectedDate)]: data.slots || [],
+      });
     }
 
     loadSlots();
@@ -160,7 +182,7 @@ export default function Page() {
   return (
     <div className="p-6 space-y-6">
 
-      {/* Sucursal */}
+      {/* SUCURSAL */}
       {branches.length > 1 && (
         <select
           value={selectedBranchId}
@@ -180,13 +202,12 @@ export default function Page() {
         </select>
       )}
 
-      {/* Servicio */}
+      {/* SERVICIO */}
       <select
         value={selectedService?.id || ""}
         onChange={(e) => {
           const service =
             services.find((s) => s.id === e.target.value) || null;
-
           setSelectedService(service);
           setSelectedSlot(null);
         }}
@@ -200,12 +221,38 @@ export default function Page() {
         ))}
       </select>
 
-      {/* Calendario */}
+      {/* STAFF */}
+      {staffOptions.length > 1 && (
+        <div className="space-y-2">
+          <label className="text-sm">Profesional</label>
+
+          <select
+            value={selectedStaffId}
+            onChange={(e) => {
+              setSelectedStaffId(e.target.value);
+              setSelectedSlot(null);
+            }}
+            className="w-full max-w-sm rounded-xl border px-4 py-3"
+          >
+            <option value="">Cualquiera disponible</option>
+            {staffOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* CALENDARIO */}
       <div className="max-w-sm">
-        <Calendar value={selectedDate} onChange={(d: any) => setSelectedDate(d)} />
+        <Calendar
+          value={selectedDate}
+          onChange={(d: any) => setSelectedDate(d)}
+        />
       </div>
 
-      {/* Horarios */}
+      {/* HORARIOS */}
       <div className="flex flex-wrap gap-2">
         {(weekSlots[formatDate(selectedDate)] || []).map((slot, i) => (
           <button
@@ -227,9 +274,10 @@ export default function Page() {
         ))}
       </div>
 
-      {/* FORMULARIO DINÁMICO */}
+      {/* FORMULARIO */}
       {selectedSlot && (
         <div ref={formRef} className="border p-4 rounded-xl space-y-3">
+
           <input
             placeholder="Nombre y apellido"
             value={customerData.name}
@@ -270,11 +318,8 @@ export default function Page() {
             onClick={() => {
               console.log("RESERVA:", {
                 slot: selectedSlot,
-                service: selectedService,
                 data: customerData,
               });
-
-              alert("Listo para conectar backend 🔥");
             }}
           >
             Confirmar reserva
