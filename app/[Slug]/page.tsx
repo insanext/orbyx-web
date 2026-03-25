@@ -215,25 +215,40 @@ export default function Page() {
         setBusiness(data.business || null);
         setCalendarId(String(data.calendar_id || ""));
 
-        const branchRows: BranchItem[] = Array.isArray(data.branches)
+        const branchRowsFromArray: BranchItem[] = Array.isArray(data.branches)
           ? data.branches.filter((branch) => branch?.is_active !== false)
           : [];
 
-        setBranches(branchRows);
+        const fallbackBranch =
+          data.branch && data.branch.is_active !== false ? [data.branch] : [];
 
-        if (branchRows.length === 1) {
-          setSelectedBranchId(branchRows[0].id);
-        } else {
-          setSelectedBranchId("");
-        }
+        const normalizedBranches =
+          branchRowsFromArray.length > 0 ? branchRowsFromArray : fallbackBranch;
+
+        setBranches(normalizedBranches);
+
+        const initialBranchId =
+          normalizedBranches.length === 1 ? normalizedBranches[0].id : "";
+
+        setSelectedBranchId(initialBranchId);
+
+        const initialServices: ServiceItem[] = Array.isArray(data.services)
+          ? data.services
+          : [];
+
+        setServices(initialServices);
 
         const config = Array.isArray(data.business?.booking_fields_config)
-          ? data.business?.booking_fields_config
+          ? data.business.booking_fields_config
           : [];
 
         setBookingFields(config);
       } catch (error) {
         console.error("Error cargando página pública:", error);
+        setBusiness(null);
+        setCalendarId("");
+        setBranches([]);
+        setServices([]);
       } finally {
         setLoadingPage(false);
       }
@@ -244,7 +259,11 @@ export default function Page() {
 
   useEffect(() => {
     if (!slug) return;
-    if (!canLoadServices) return;
+    if (!canLoadServices) {
+      setServices([]);
+      setSelectedService(null);
+      return;
+    }
 
     async function loadServices() {
       try {
@@ -284,7 +303,12 @@ export default function Page() {
 
   useEffect(() => {
     const serviceId = selectedService?.id;
-    if (!slug || !serviceId) return;
+
+    if (!slug || !serviceId) {
+      setStaffOptions([]);
+      setSelectedStaffId("");
+      return;
+    }
 
     async function loadStaff() {
       try {
@@ -294,9 +318,12 @@ export default function Page() {
           ? `?branch_id=${encodeURIComponent(selectedBranchId)}`
           : "";
 
-        const res = await fetch(`/api/public-staff/${slug}/${serviceId}${query}`, {
-          cache: "no-store",
-        });
+        const res = await fetch(
+          `/api/public-staff/${slug}/${serviceId}${query}`,
+          {
+            cache: "no-store",
+          }
+        );
 
         const data = await res.json();
 
@@ -317,12 +344,16 @@ export default function Page() {
     }
 
     loadStaff();
-  }, [slug, selectedService, selectedBranchId]);
+  }, [slug, selectedService?.id, selectedBranchId]);
 
   useEffect(() => {
     const serviceId = selectedService?.id;
-    if (!slug || !serviceId) return;
-    if (!canLoadServices) return;
+
+    if (!slug || !serviceId || !canLoadServices) {
+      setWeekSlots({});
+      setSelectedSlot(null);
+      return;
+    }
 
     async function loadWeekSlots() {
       try {
@@ -363,6 +394,7 @@ export default function Page() {
         results.forEach((item) => {
           mapped[item.date] = item.slots;
         });
+
         setWeekSlots(mapped);
 
         if (selectedSlot) {
@@ -387,7 +419,7 @@ export default function Page() {
     loadWeekSlots();
   }, [
     slug,
-    selectedService,
+    selectedService?.id,
     selectedDate,
     selectedBranchId,
     selectedStaffId,
@@ -462,10 +494,18 @@ export default function Page() {
         "Reserva creada correctamente. Revisa tu correo para la confirmación."
       );
 
+      const clearedExtraFields = visibleBookingFields.reduce<
+        Record<string, string>
+      >((acc, field) => {
+        acc[field.key] = "";
+        return acc;
+      }, {});
+
       setCustomerData({
         name: "",
         phone: "",
         email: "",
+        ...clearedExtraFields,
       });
 
       setSelectedSlot(null);
@@ -520,8 +560,9 @@ export default function Page() {
                   <select
                     value={selectedBranchId}
                     onChange={(e) => {
-                      setSelectedBranchId(e.target.value);
+                      const nextBranchId = e.target.value;
                       resetAfterBranchChange();
+                      setSelectedBranchId(nextBranchId);
                     }}
                     className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-slate-400"
                   >
@@ -545,8 +586,8 @@ export default function Page() {
                   onChange={(e) => {
                     const service =
                       services.find((item) => item.id === e.target.value) || null;
-                    setSelectedService(service);
                     resetAfterServiceChange();
+                    setSelectedService(service);
                   }}
                   className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none disabled:bg-slate-100 focus:border-slate-400"
                 >
@@ -555,6 +596,8 @@ export default function Page() {
                       ? "Cargando servicios..."
                       : !canLoadServices
                       ? "Selecciona sucursal"
+                      : services.length === 0
+                      ? "Sin servicios disponibles"
                       : "Selecciona servicio"}
                   </option>
 
@@ -703,7 +746,9 @@ export default function Page() {
                     key={field.key}
                     placeholder={field.label}
                     value={customerData[field.key] || ""}
-                    onChange={(e) => updateCustomerField(field.key, e.target.value)}
+                    onChange={(e) =>
+                      updateCustomerField(field.key, e.target.value)
+                    }
                     className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-slate-400"
                   />
                 ))}
