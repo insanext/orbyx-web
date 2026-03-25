@@ -52,16 +52,19 @@ type BusinessItem = {
   facebook_url?: string | null;
 };
 
-type BusinessResponse = {
+type PublicServicesResponse = {
   business?: BusinessItem;
+  branch?: BranchItem | null;
+  branches?: BranchItem[];
   calendar_id?: string | null;
-  google_connected?: boolean;
+  services?: ServiceItem[];
 };
 
 function formatDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const local = new Date(date);
+  const year = local.getFullYear();
+  const month = String(local.getMonth() + 1).padStart(2, "0");
+  const day = String(local.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -99,15 +102,9 @@ function getWeekDates(date: Date) {
   });
 }
 
-function getDayShort(date: Date) {
-  return date
-    .toLocaleDateString("es-CL", { weekday: "short" })
-    .replace(".", "")
-    .toUpperCase();
-}
-
-function getDayLabel(date: Date) {
-  return `${getDayShort(date)} ${date.getDate()}`;
+function getWeekdayLabel(date: Date) {
+  const text = date.toLocaleDateString("es-CL", { weekday: "long" });
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 export default function Page() {
@@ -141,15 +138,14 @@ export default function Page() {
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [submitError, setSubmitError] = useState("");
   const [submitOk, setSubmitOk] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   const formRef = useRef<HTMLDivElement | null>(null);
 
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
-
   const showBranchSelector = branches.length > 1;
   const canLoadServices = branches.length <= 1 || !!selectedBranchId;
   const visibleBookingFields = bookingFields.filter((field) => field.enabled);
@@ -198,51 +194,40 @@ export default function Page() {
   useEffect(() => {
     if (!slug) return;
 
-    async function loadInitialData() {
+    async function loadInitial() {
       try {
         setLoadingPage(true);
 
-        const [businessRes, fieldsRes] = await Promise.all([
-          fetch(`https://orbyx-backend.onrender.com/public/business/${slug}`, {
-            cache: "no-store",
-          }),
+        const [servicesRes, fieldsRes] = await Promise.all([
+          fetch(`/api/public-services/${slug}`, { cache: "no-store" }),
           fetch(`https://orbyx-backend.onrender.com/booking-fields/${slug}`, {
             cache: "no-store",
           }),
         ]);
 
-        const businessData: BusinessResponse = await businessRes.json();
+        const servicesData: PublicServicesResponse = await servicesRes.json();
         const fieldsData = await fieldsRes.json();
 
-        const businessItem = businessData.business || null;
-        setBusiness(businessItem);
-        setCalendarId(String(businessData.calendar_id || ""));
+        setBusiness(servicesData.business || null);
+        setCalendarId(String(servicesData.calendar_id || ""));
+
+        const branchRows: BranchItem[] = Array.isArray(servicesData.branches)
+          ? servicesData.branches.filter((b) => b?.is_active !== false)
+          : [];
+
+        setBranches(branchRows);
+
+        if (branchRows.length === 1) {
+          setSelectedBranchId(branchRows[0].id);
+        } else {
+          setSelectedBranchId("");
+        }
 
         setBookingFields(
           Array.isArray(fieldsData.booking_fields_config)
             ? fieldsData.booking_fields_config
             : []
         );
-
-        if (businessItem?.id) {
-          const branchesRes = await fetch(
-            `https://orbyx-backend.onrender.com/branches?tenant_id=${businessItem.id}`,
-            { cache: "no-store" }
-          );
-          const branchesData = await branchesRes.json();
-
-          const rows: BranchItem[] = Array.isArray(branchesData.branches)
-            ? branchesData.branches.filter((b: BranchItem) => b.is_active !== false)
-            : [];
-
-          setBranches(rows);
-
-          if (rows.length === 1) {
-            setSelectedBranchId(rows[0].id);
-          } else {
-            setSelectedBranchId("");
-          }
-        }
       } catch (error) {
         console.error("Error cargando página pública:", error);
       } finally {
@@ -250,7 +235,7 @@ export default function Page() {
       }
     }
 
-    loadInitialData();
+    loadInitial();
   }, [slug]);
 
   useEffect(() => {
@@ -268,15 +253,17 @@ export default function Page() {
         const res = await fetch(`/api/public-services/${slug}${query}`, {
           cache: "no-store",
         });
-        const data = await res.json();
+        const data: PublicServicesResponse = await res.json();
 
-        const rows: ServiceItem[] = Array.isArray(data.services) ? data.services : [];
-        setServices(rows);
+        if (data.business) {
+          setBusiness(data.business);
+        }
 
-        setSelectedService((prev) => {
-          if (!prev) return null;
-          return rows.find((service) => service.id === prev.id) || null;
-        });
+        if (data.calendar_id) {
+          setCalendarId(String(data.calendar_id));
+        }
+
+        setServices(Array.isArray(data.services) ? data.services : []);
       } catch (error) {
         console.error("Error cargando servicios:", error);
         setServices([]);
@@ -382,7 +369,7 @@ export default function Page() {
           }
         }
       } catch (error) {
-        console.error("Error cargando slots:", error);
+        console.error("Error cargando horarios:", error);
         setWeekSlots({});
       } finally {
         setLoadingSlots(false);
@@ -482,8 +469,8 @@ export default function Page() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1700px] px-4 py-8 md:px-8 xl:px-12">
-      <div className="grid gap-8 xl:grid-cols-[1.15fr_1.3fr]">
+    <div className="mx-auto w-full max-w-[1750px] px-4 py-8 md:px-8 xl:px-12">
+      <div className="grid gap-8 xl:grid-cols-[1.05fr_1.45fr]">
         <div className="space-y-6">
           <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
@@ -522,7 +509,6 @@ export default function Page() {
                   <label className="block text-sm font-medium text-slate-700">
                     Sucursal
                   </label>
-
                   <select
                     value={selectedBranchId}
                     onChange={(e) => {
@@ -545,7 +531,6 @@ export default function Page() {
                 <label className="block text-sm font-medium text-slate-700">
                   Servicio
                 </label>
-
                 <select
                   value={selectedService?.id || ""}
                   disabled={loadingServices || !canLoadServices}
@@ -604,13 +589,13 @@ export default function Page() {
                         Profesional
                       </p>
                       <p className="text-xs text-slate-500">
-                        Elige un profesional o deja cualquiera disponible.
+                        Selecciona uno o deja cualquiera disponible.
                       </p>
                     </div>
 
                     {selectedStaffId ? (
-                      <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
-                        Seleccionado
+                      <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-medium text-white">
+                        Elegido
                       </span>
                     ) : (
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
@@ -652,9 +637,7 @@ export default function Page() {
                             key={staff.id}
                             type="button"
                             onClick={() => {
-                              setSelectedStaffId(
-                                active ? "" : staff.id
-                              );
+                              setSelectedStaffId(active ? "" : staff.id);
                               setSelectedSlot(null);
                             }}
                             className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
@@ -742,11 +725,7 @@ export default function Page() {
         </div>
 
         <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-950">
-            Selecciona fecha y hora
-          </h2>
-
-          <div className="mt-5 grid gap-6 xl:grid-cols-[340px_1fr]">
+          <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
             <div className="min-w-0">
               <Calendar
                 minDate={new Date()}
@@ -761,95 +740,83 @@ export default function Page() {
             </div>
 
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-                Horarios de la semana
-              </h3>
+              <div className="overflow-x-auto">
+                <div className="grid min-w-[920px] grid-cols-7 gap-3">
+                  {weekDates.map((dateObj) => {
+                    const dateKey = formatDate(dateObj);
+                    const slots = weekSlots[dateKey] || [];
+                    const isSelectedDay = formatDate(selectedDate) === dateKey;
 
-              <div className="mt-4 grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                {weekDates.map((dateObj) => {
-                  const dateKey = formatDate(dateObj);
-                  const slots = weekSlots[dateKey] || [];
-                  const isSelectedDay = formatDate(selectedDate) === dateKey;
+                    return (
+                      <div
+                        key={dateKey}
+                        className={`rounded-2xl border p-3 ${
+                          isSelectedDay
+                            ? "border-sky-300 bg-sky-50"
+                            : "border-slate-200 bg-white"
+                        }`}
+                      >
+                        <div className="mb-3 border-b border-slate-200 pb-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-bold text-slate-900">
+                              {getWeekdayLabel(dateObj)}
+                            </p>
 
-                  return (
-                    <div
-                      key={dateKey}
-                      className={`rounded-2xl border p-4 ${
-                        isSelectedDay
-                          ? "border-slate-950 bg-slate-50"
-                          : "border-slate-200 bg-white"
-                      }`}
-                    >
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                            {getDayShort(dateObj)}
-                          </p>
-                          <p className="mt-1 text-lg font-bold text-slate-900">
-                            {dateObj.getDate()}
+                            {isSelectedDay ? (
+                              <span className="rounded-full bg-sky-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
+                                Hoy
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <p className="mt-1 text-xs text-slate-500">
+                            {dateObj.getDate()}/{dateObj.getMonth() + 1}
                           </p>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedDate(new Date(dateObj));
-                            setSelectedSlot(null);
-                          }}
-                          className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-slate-500"
-                        >
-                          Ver
-                        </button>
+                        {loadingSlots ? (
+                          <p className="text-xs text-slate-500">Cargando...</p>
+                        ) : !selectedService ? (
+                          <p className="text-xs text-slate-500">
+                            Selecciona un servicio.
+                          </p>
+                        ) : slots.length === 0 ? (
+                          <p className="text-xs text-slate-500">Sin horarios.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {slots.map((slot, index) => (
+                              <button
+                                key={`${slot.slot_start}-${index}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDate(new Date(dateObj));
+                                  setSelectedSlot(slot);
+                                  setTimeout(() => {
+                                    formRef.current?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                  }, 100);
+                                }}
+                                className={`flex w-full flex-col items-center justify-center rounded-xl border px-3 py-2 text-center text-sm font-medium transition ${
+                                  selectedSlot?.slot_start === slot.slot_start
+                                    ? "border-slate-950 bg-slate-950 text-white"
+                                    : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
+                                }`}
+                              >
+                                <span>{formatHour(slot.slot_start)}</span>
+                                <span className="text-[10px] opacity-70">
+                                  Libre
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
-
-                      {loadingSlots ? (
-                        <p className="text-sm text-slate-500">Cargando...</p>
-                      ) : !selectedService ? (
-                        <p className="text-sm text-slate-500">
-                          Selecciona un servicio.
-                        </p>
-                      ) : slots.length === 0 ? (
-                        <p className="text-sm text-slate-500">
-                          Sin horarios.
-                        </p>
-                      ) : (
-                        <div className="flex flex-wrap gap-2">
-                          {slots.map((slot, index) => (
-                            <button
-                              key={`${slot.slot_start}-${index}`}
-                              type="button"
-                              onClick={() => {
-                                setSelectedDate(new Date(dateObj));
-                                setSelectedSlot(slot);
-                                setTimeout(() => {
-                                  formRef.current?.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "start",
-                                  });
-                                }, 100);
-                              }}
-                              className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
-                                selectedSlot?.slot_start === slot.slot_start
-                                  ? "border-slate-950 bg-slate-950 text-white"
-                                  : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
-                              }`}
-                            >
-                              {formatHour(slot.slot_start)}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-
-              {!loadingSlots && selectedService ? (
-                <p className="mt-4 text-xs text-slate-500">
-                  Semana visible: {getDayLabel(weekDates[0])} al{" "}
-                  {getDayLabel(weekDates[6])}.
-                </p>
-              ) : null}
             </div>
           </div>
         </div>
