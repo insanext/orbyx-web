@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
@@ -115,13 +115,18 @@ function getWeekdayLabel(date: Date) {
 
 export default function Page() {
   const params = useParams();
+const pathname = usePathname();
 
-  const slugParam = params?.slug;
-  const slug = Array.isArray(slugParam)
-    ? slugParam[0] || ""
-    : typeof slugParam === "string"
-    ? slugParam
-    : "";
+const slugFromParams = Array.isArray(params?.slug)
+  ? params.slug[0] || ""
+  : typeof params?.slug === "string"
+  ? params.slug
+  : "";
+
+const slugFromPathname =
+  pathname?.split("/").filter(Boolean)?.[0] || "";
+
+const slug = slugFromParams || slugFromPathname;
 
   const [business, setBusiness] = useState<BusinessItem | null>(null);
   const [calendarId, setCalendarId] = useState("");
