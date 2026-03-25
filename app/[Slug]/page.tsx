@@ -115,10 +115,26 @@ export default function Page() {
     loadServices();
   }, [slug, selectedBranchId]);
 
-  useEffect(() => {
-    if (!slug || !selectedService) return;
+useEffect(() => {
+  const serviceId = selectedService?.id;
 
-    async function loadSlots() {
+  if (!slug || !serviceId) return;
+
+  async function loadSlots() {
+    const res = await fetch(
+      `/api/public-slots/${slug}/${serviceId}?date=${formatDate(selectedDate)}&branch_id=${selectedBranchId}`
+    );
+
+    const data = await res.json();
+
+    setWeekSlots({
+      [formatDate(selectedDate)]: data.slots || [],
+    });
+  }
+
+  loadSlots();
+}, [slug, selectedService, selectedDate, selectedBranchId]);
+
       const res = await fetch(
         `/api/public-slots/${slug}/${selectedService.id}?date=${formatDate(selectedDate)}&branch_id=${selectedBranchId}`
       );
