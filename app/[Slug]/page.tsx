@@ -9,6 +9,7 @@ type StaffItem = {
   id: string;
   name: string;
   role?: string | null;
+  color?: string | null;
 };
 
 type ServiceItem = {
@@ -23,6 +24,7 @@ type BranchItem = {
   name: string;
   address?: string | null;
   phone?: string | null;
+  is_active?: boolean;
 };
 
 type SlotItem = {
@@ -37,30 +39,29 @@ type BookingField = {
   required: boolean;
 };
 
-type PublicBusinessResponse = {
-  business?: {
-    id: string;
-    name: string;
-    slug: string;
-    description?: string | null;
-    phone?: string | null;
-    address?: string | null;
-    email?: string | null;
-    whatsapp?: string | null;
-    instagram_url?: string | null;
-    facebook_url?: string | null;
-    min_booking_notice_minutes?: number | null;
-    max_booking_days_ahead?: number | null;
-  };
+type BusinessItem = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
+  instagram_url?: string | null;
+  facebook_url?: string | null;
+};
+
+type BusinessResponse = {
+  business?: BusinessItem;
   calendar_id?: string | null;
   google_connected?: boolean;
 };
 
 function formatDate(date: Date) {
-  const local = new Date(date);
-  const year = local.getFullYear();
-  const month = String(local.getMonth() + 1).padStart(2, "0");
-  const day = String(local.getDate()).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -82,8 +83,8 @@ function formatPrice(price?: number | null) {
 
 function getStartOfWeek(date: Date) {
   const d = new Date(date);
-  const day = d.getDay(); // domingo 0
-  const diff = day === 0 ? -6 : 1 - day; // lunes inicio
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -105,15 +106,15 @@ function getDayShort(date: Date) {
     .toUpperCase();
 }
 
-function getDayNumber(date: Date) {
-  return date.getDate();
+function getDayLabel(date: Date) {
+  return `${getDayShort(date)} ${date.getDate()}`;
 }
 
 export default function Page() {
   const params = useParams();
   const slug = (params?.slug as string) || "";
 
-  const [business, setBusiness] = useState<PublicBusinessResponse["business"] | null>(null);
+  const [business, setBusiness] = useState<BusinessItem | null>(null);
   const [calendarId, setCalendarId] = useState("");
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
@@ -136,16 +137,22 @@ export default function Page() {
     email: "",
   });
 
+  const [loadingPage, setLoadingPage] = useState(true);
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+
   const [submitError, setSubmitError] = useState("");
   const [submitOk, setSubmitOk] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const formRef = useRef<HTMLDivElement | null>(null);
 
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
+
+  const showBranchSelector = branches.length > 1;
+  const canLoadServices = branches.length <= 1 || !!selectedBranchId;
+  const visibleBookingFields = bookingFields.filter((field) => field.enabled);
 
   function updateCustomerField(key: string, value: string) {
     setCustomerData((prev) => ({
@@ -174,24 +181,12 @@ export default function Page() {
     setSubmitOk("");
   }
 
-  function getVisibleFields() {
-    return bookingFields.filter((field) => field.enabled);
-  }
-
   function validateForm() {
-    if (!customerData.name?.trim()) {
-      return "Debes ingresar nombre y apellido.";
-    }
+    if (!customerData.name?.trim()) return "Debes ingresar nombre y apellido.";
+    if (!customerData.phone?.trim()) return "Debes ingresar teléfono.";
+    if (!customerData.email?.trim()) return "Debes ingresar email.";
 
-    if (!customerData.phone?.trim()) {
-      return "Debes ingresar teléfono.";
-    }
-
-    if (!customerData.email?.trim()) {
-      return "Debes ingresar email.";
-    }
-
-    for (const field of getVisibleFields()) {
+    for (const field of visibleBookingFields) {
       if (field.required && !String(customerData[field.key] || "").trim()) {
         return `Debes completar ${field.label}.`;
       }
@@ -203,13 +198,12 @@ export default function Page() {
   useEffect(() => {
     if (!slug) return;
 
-    async function loadInitial() {
+    async function loadInitialData() {
       try {
-        const [businessRes, servicesRes, fieldsRes] = await Promise.all([
+        setLoadingPage(true);
+
+        const [businessRes, fieldsRes] = await Promise.all([
           fetch(`https://orbyx-backend.onrender.com/public/business/${slug}`, {
-            cache: "no-store",
-          }),
-          fetch(`/api/public-services/${slug}`, {
             cache: "no-store",
           }),
           fetch(`https://orbyx-backend.onrender.com/booking-fields/${slug}`, {
@@ -217,41 +211,51 @@ export default function Page() {
           }),
         ]);
 
-        const businessData: PublicBusinessResponse = await businessRes.json();
-        const servicesData = await servicesRes.json();
+        const businessData: BusinessResponse = await businessRes.json();
         const fieldsData = await fieldsRes.json();
 
-        setBusiness(businessData.business || null);
+        const businessItem = businessData.business || null;
+        setBusiness(businessItem);
         setCalendarId(String(businessData.calendar_id || ""));
-
-        const branchRows: BranchItem[] = Array.isArray(servicesData.branches)
-          ? servicesData.branches
-          : [];
-
-        setBranches(branchRows);
-
-        if (branchRows.length === 1) {
-          setSelectedBranchId(branchRows[0].id);
-        } else {
-          setSelectedBranchId("");
-        }
 
         setBookingFields(
           Array.isArray(fieldsData.booking_fields_config)
             ? fieldsData.booking_fields_config
             : []
         );
+
+        if (businessItem?.id) {
+          const branchesRes = await fetch(
+            `https://orbyx-backend.onrender.com/branches?tenant_id=${businessItem.id}`,
+            { cache: "no-store" }
+          );
+          const branchesData = await branchesRes.json();
+
+          const rows: BranchItem[] = Array.isArray(branchesData.branches)
+            ? branchesData.branches.filter((b: BranchItem) => b.is_active !== false)
+            : [];
+
+          setBranches(rows);
+
+          if (rows.length === 1) {
+            setSelectedBranchId(rows[0].id);
+          } else {
+            setSelectedBranchId("");
+          }
+        }
       } catch (error) {
         console.error("Error cargando página pública:", error);
+      } finally {
+        setLoadingPage(false);
       }
     }
 
-    loadInitial();
+    loadInitialData();
   }, [slug]);
 
   useEffect(() => {
     if (!slug) return;
-    if (branches.length > 1 && !selectedBranchId) return;
+    if (!canLoadServices) return;
 
     async function loadServices() {
       try {
@@ -283,7 +287,7 @@ export default function Page() {
     }
 
     loadServices();
-  }, [slug, selectedBranchId, branches]);
+  }, [slug, selectedBranchId, canLoadServices]);
 
   useEffect(() => {
     const serviceId = selectedService?.id;
@@ -324,7 +328,7 @@ export default function Page() {
   useEffect(() => {
     const serviceId = selectedService?.id;
     if (!slug || !serviceId) return;
-    if (branches.length > 1 && !selectedBranchId) return;
+    if (!canLoadServices) return;
 
     async function loadWeekSlots() {
       try {
@@ -333,7 +337,6 @@ export default function Page() {
         const results = await Promise.all(
           weekDates.map(async (dateObj) => {
             const date = formatDate(dateObj);
-
             const query = new URLSearchParams();
             query.set("date", date);
 
@@ -353,6 +356,7 @@ export default function Page() {
             );
 
             const data = await res.json();
+
             return {
               date,
               slots: Array.isArray(data.slots) ? data.slots : [],
@@ -364,22 +368,21 @@ export default function Page() {
         results.forEach((item) => {
           mapped[item.date] = item.slots;
         });
-
         setWeekSlots(mapped);
 
         if (selectedSlot) {
-  const stillExists = results.some((item) =>
-    item.slots.some(
-      (slot: SlotItem) => slot.slot_start === selectedSlot.slot_start
-    )
-  );
+          const stillExists = results.some((item) =>
+            item.slots.some(
+              (slot: SlotItem) => slot.slot_start === selectedSlot.slot_start
+            )
+          );
 
-  if (!stillExists) {
-    setSelectedSlot(null);
-  }
-}
+          if (!stillExists) {
+            setSelectedSlot(null);
+          }
+        }
       } catch (error) {
-        console.error("Error cargando horarios:", error);
+        console.error("Error cargando slots:", error);
         setWeekSlots({});
       } finally {
         setLoadingSlots(false);
@@ -393,7 +396,7 @@ export default function Page() {
     selectedDate,
     selectedBranchId,
     selectedStaffId,
-    branches,
+    canLoadServices,
     weekDates,
     selectedSlot,
   ]);
@@ -436,12 +439,10 @@ export default function Page() {
         customer_name: customerData.name.trim(),
         customer_phone: customerData.phone.trim(),
         customer_email: customerData.email.trim(),
-        customer_data: getVisibleFields().reduce<Record<string, string>>(
+        customer_data: visibleBookingFields.reduce<Record<string, string>>(
           (acc, field) => {
             const value = String(customerData[field.key] || "").trim();
-            if (value) {
-              acc[field.key] = value;
-            }
+            if (value) acc[field.key] = value;
             return acc;
           },
           {}
@@ -473,19 +474,6 @@ export default function Page() {
       });
 
       setSelectedSlot(null);
-
-      if (selectedService?.id) {
-        const queryBase = new URLSearchParams();
-        queryBase.set("date", formatDate(selectedDate));
-
-        if (selectedBranchId) {
-          queryBase.set("branch_id", selectedBranchId);
-        }
-
-        if (selectedStaffId) {
-          queryBase.set("staff_id", selectedStaffId);
-        }
-      }
     } catch (error: any) {
       setSubmitError(error?.message || "No se pudo crear la reserva.");
     } finally {
@@ -494,8 +482,8 @@ export default function Page() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 py-8 md:px-6 xl:px-10">
-      <div className="grid gap-8 xl:grid-cols-[1.2fr_1.15fr]">
+    <div className="mx-auto w-full max-w-[1700px] px-4 py-8 md:px-8 xl:px-12">
+      <div className="grid gap-8 xl:grid-cols-[1.15fr_1.3fr]">
         <div className="space-y-6">
           <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
@@ -529,11 +517,12 @@ export default function Page() {
 
           <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="space-y-5">
-              {branches.length > 1 ? (
+              {showBranchSelector ? (
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-slate-700">
                     Sucursal
                   </label>
+
                   <select
                     value={selectedBranchId}
                     onChange={(e) => {
@@ -556,9 +545,10 @@ export default function Page() {
                 <label className="block text-sm font-medium text-slate-700">
                   Servicio
                 </label>
+
                 <select
                   value={selectedService?.id || ""}
-                  disabled={loadingServices || (branches.length > 1 && !selectedBranchId)}
+                  disabled={loadingServices || !canLoadServices}
                   onChange={(e) => {
                     const service =
                       services.find((s) => s.id === e.target.value) || null;
@@ -570,16 +560,20 @@ export default function Page() {
                   <option value="">
                     {loadingServices
                       ? "Cargando servicios..."
-                      : branches.length > 1 && !selectedBranchId
+                      : !canLoadServices
                       ? "Selecciona sucursal"
                       : "Selecciona servicio"}
                   </option>
 
-                  {services.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                      {s.duration_minutes ? ` · ${s.duration_minutes} min` : ""}
-                      {typeof s.price === "number" ? ` · ${formatPrice(s.price)}` : ""}
+                  {services.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                      {service.duration_minutes
+                        ? ` · ${service.duration_minutes} min`
+                        : ""}
+                      {typeof service.price === "number"
+                        ? ` · ${formatPrice(service.price)}`
+                        : ""}
                     </option>
                   ))}
                 </select>
@@ -603,10 +597,27 @@ export default function Page() {
               ) : null}
 
               {selectedService ? (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Profesional
-                  </label>
+                <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        Profesional
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Elige un profesional o deja cualquiera disponible.
+                      </p>
+                    </div>
+
+                    {selectedStaffId ? (
+                      <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
+                        Seleccionado
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                        Automático
+                      </span>
+                    )}
+                  </div>
 
                   <select
                     value={selectedStaffId}
@@ -618,7 +629,9 @@ export default function Page() {
                     className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none disabled:bg-slate-100 focus:border-slate-400"
                   >
                     <option value="">
-                      {loadingStaff ? "Cargando profesionales..." : "Cualquiera disponible"}
+                      {loadingStaff
+                        ? "Cargando profesionales..."
+                        : "Cualquiera disponible"}
                     </option>
 
                     {staffOptions.map((staff) => (
@@ -628,6 +641,34 @@ export default function Page() {
                       </option>
                     ))}
                   </select>
+
+                  {!loadingStaff && staffOptions.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {staffOptions.map((staff) => {
+                        const active = selectedStaffId === staff.id;
+
+                        return (
+                          <button
+                            key={staff.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedStaffId(
+                                active ? "" : staff.id
+                              );
+                              setSelectedSlot(null);
+                            }}
+                            className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                              active
+                                ? "border-slate-950 bg-slate-950 text-white"
+                                : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
+                            }`}
+                          >
+                            {staff.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -665,7 +706,7 @@ export default function Page() {
                   className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-slate-400"
                 />
 
-                {getVisibleFields().map((field) => (
+                {visibleBookingFields.map((field) => (
                   <input
                     key={field.key}
                     placeholder={field.label}
@@ -705,7 +746,7 @@ export default function Page() {
             Selecciona fecha y hora
           </h2>
 
-          <div className="mt-5 grid gap-6 xl:grid-cols-[360px_1fr]">
+          <div className="mt-5 grid gap-6 xl:grid-cols-[340px_1fr]">
             <div className="min-w-0">
               <Calendar
                 minDate={new Date()}
@@ -724,7 +765,7 @@ export default function Page() {
                 Horarios de la semana
               </h3>
 
-              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-4 grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
                 {weekDates.map((dateObj) => {
                   const dateKey = formatDate(dateObj);
                   const slots = weekSlots[dateKey] || [];
@@ -733,19 +774,32 @@ export default function Page() {
                   return (
                     <div
                       key={dateKey}
-                      className={`rounded-2xl border p-3 ${
+                      className={`rounded-2xl border p-4 ${
                         isSelectedDay
-                          ? "border-slate-900 bg-slate-50"
+                          ? "border-slate-950 bg-slate-50"
                           : "border-slate-200 bg-white"
                       }`}
                     >
-                      <div className="mb-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                          {getDayShort(dateObj)}
-                        </p>
-                        <p className="mt-1 text-lg font-bold text-slate-900">
-                          {getDayNumber(dateObj)}
-                        </p>
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                            {getDayShort(dateObj)}
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-900">
+                            {dateObj.getDate()}
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedDate(new Date(dateObj));
+                            setSelectedSlot(null);
+                          }}
+                          className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-slate-500"
+                        >
+                          Ver
+                        </button>
                       </div>
 
                       {loadingSlots ? (
@@ -765,6 +819,7 @@ export default function Page() {
                               key={`${slot.slot_start}-${index}`}
                               type="button"
                               onClick={() => {
+                                setSelectedDate(new Date(dateObj));
                                 setSelectedSlot(slot);
                                 setTimeout(() => {
                                   formRef.current?.scrollIntoView({
@@ -788,10 +843,21 @@ export default function Page() {
                   );
                 })}
               </div>
+
+              {!loadingSlots && selectedService ? (
+                <p className="mt-4 text-xs text-slate-500">
+                  Semana visible: {getDayLabel(weekDates[0])} al{" "}
+                  {getDayLabel(weekDates[6])}.
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
       </div>
+
+      {loadingPage ? (
+        <div className="mt-6 text-sm text-slate-500">Cargando...</div>
+      ) : null}
     </div>
   );
 }
