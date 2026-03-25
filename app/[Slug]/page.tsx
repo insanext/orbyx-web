@@ -113,6 +113,21 @@ function getWeekdayLabel(date: Date) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+function dedupeSlots(slots: SlotItem[]) {
+  const map = new Map<string, SlotItem>();
+
+  for (const slot of slots) {
+    const key = slot.slot_start;
+    if (!map.has(key)) {
+      map.set(key, slot);
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) =>
+    a.slot_start.localeCompare(b.slot_start)
+  );
+}
+
 export default function Page() {
   const params = useParams();
   const pathname = usePathname();
@@ -384,10 +399,12 @@ export default function Page() {
 
             const data = await res.json();
 
-            return {
-              date,
-              slots: Array.isArray(data.slots) ? data.slots : [],
-            };
+const rawSlots: SlotItem[] = Array.isArray(data.slots) ? data.slots : [];
+
+return {
+  date,
+  slots: dedupeSlots(rawSlots),
+};
           })
         );
 
