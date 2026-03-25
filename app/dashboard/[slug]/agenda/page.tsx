@@ -787,40 +787,57 @@ export default function AgendaPage() {
         </div>
       ) : null}
 
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <StatCard
-          label="Reservas hoy"
-          value={loading ? "..." : String(appointmentsToday.length)}
-          helper="Citas visibles para hoy."
-        />
-        <StatCard
-          label="Próxima reserva"
-          value={
-            loading
-              ? "..."
-              : nextAppointment
-              ? formatHour(nextAppointment.start_at)
-              : "--"
-          }
-          helper={
-            loading
-              ? "Cargando..."
-              : nextAppointment
-              ? nextAppointment.customer_name
-              : "No hay próximas reservas."
-          }
-        />
-        <StatCard
-          label="Pendientes"
-          value={loading ? "..." : String(pendingCloseCount)}
-          helper="Citas pasadas por cerrar."
-        />
-        <StatCard
-          label="Semana"
-          value={loading ? "..." : String(appointments.length)}
-          helper="Total de reservas."
-        />
-      </section>
+      <section className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+  <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+      Hoy
+    </p>
+    <p className="mt-1 text-xl font-semibold text-slate-900">
+      {loading ? "..." : String(appointmentsToday.length)}
+    </p>
+    <p className="mt-1 text-xs text-slate-500">Reservas visibles hoy.</p>
+  </div>
+
+  <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+      Próxima
+    </p>
+    <p className="mt-1 text-xl font-semibold text-slate-900">
+      {loading
+        ? "..."
+        : nextAppointment
+        ? formatHour(nextAppointment.start_at)
+        : "--"}
+    </p>
+    <p className="mt-1 truncate text-xs text-slate-500">
+      {loading
+        ? "Cargando..."
+        : nextAppointment
+        ? nextAppointment.customer_name
+        : "Sin próximas reservas."}
+    </p>
+  </div>
+
+  <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+      Pendientes
+    </p>
+    <p className="mt-1 text-xl font-semibold text-slate-900">
+      {loading ? "..." : String(pendingCloseCount)}
+    </p>
+    <p className="mt-1 text-xs text-slate-500">Por cerrar.</p>
+  </div>
+
+  <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+      Semana
+    </p>
+    <p className="mt-1 text-xl font-semibold text-slate-900">
+      {loading ? "..." : String(appointments.length)}
+    </p>
+    <p className="mt-1 text-xs text-slate-500">Total reservas.</p>
+  </div>
+</section>
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <Panel title="Filtros" description="Cambia la vista por estado.">
