@@ -141,7 +141,7 @@ export default function BusinessPage() {
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard label="Página pública" value="Activa" />
-        <StatCard label="Campos activos" value={bookingFields.length} />
+        <StatCard label="Campos activos" value={`${bookingFields.filter(f => f.enabled).length}`} />
         <StatCard label="URL" value={publicUrl} />
       </section>
 
