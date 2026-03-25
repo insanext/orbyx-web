@@ -594,6 +594,22 @@ export default function PlanesPage() {
                     </p>
                   </div>
 
+<div className="mt-8 flex flex-col items-center gap-3 text-center">
+  <Link
+    href="/planes/comparar"
+    className="text-sm font-medium text-slate-200 underline underline-offset-4 transition hover:text-white"
+  >
+    Ver cuadro comparativo de planes
+  </Link>
+
+  <Link
+    href="/"
+    className="text-sm font-medium text-slate-400 transition hover:text-slate-200"
+  >
+    Volver al inicio
+  </Link>
+</div>
+
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                       Plan actual
