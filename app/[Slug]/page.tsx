@@ -115,18 +115,16 @@ function getWeekdayLabel(date: Date) {
 
 export default function Page() {
   const params = useParams();
-const pathname = usePathname();
+  const pathname = usePathname();
 
-const slugFromParams = Array.isArray(params?.slug)
-  ? params.slug[0] || ""
-  : typeof params?.slug === "string"
-  ? params.slug
-  : "";
+  const slugFromParams = Array.isArray(params?.slug)
+    ? params.slug[0] || ""
+    : typeof params?.slug === "string"
+    ? params.slug
+    : "";
 
-const slugFromPathname =
-  pathname?.split("/").filter(Boolean)?.[0] || "";
-
-const slug = slugFromParams || slugFromPathname;
+  const slugFromPathname = pathname?.split("/").filter(Boolean)?.[0] || "";
+  const slug = slugFromParams || slugFromPathname;
 
   const [business, setBusiness] = useState<BusinessItem | null>(null);
   const [calendarId, setCalendarId] = useState("");
@@ -135,7 +133,9 @@ const slug = slugFromParams || slugFromPathname;
   const [selectedBranchId, setSelectedBranchId] = useState("");
 
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceItem | null>(
+    null
+  );
 
   const [staffOptions, setStaffOptions] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
@@ -250,14 +250,6 @@ const slug = slugFromParams || slugFromPathname;
           : [];
 
         setBookingFields(config);
-
-        console.log("PUBLIC DATA", data);
-        console.log("INITIAL STATE", {
-          slug,
-          normalizedBranches,
-          initialBranchId,
-          initialServices,
-        });
       } catch (error) {
         console.error("Error cargando página pública:", error);
         setBusiness(null);
@@ -298,12 +290,6 @@ const slug = slugFromParams || slugFromPathname;
           if (!prev) return null;
           return rows.find((service) => service.id === prev.id) || null;
         });
-
-        console.log("BRANCH SERVICES", {
-          slug,
-          selectedBranchId,
-          rows,
-        });
       } catch (error) {
         console.error("Error cargando servicios:", error);
         setServices([]);
@@ -333,9 +319,12 @@ const slug = slugFromParams || slugFromPathname;
           ? `?branch_id=${encodeURIComponent(selectedBranchId)}`
           : "";
 
-        const res = await fetch(`/api/public-staff/${slug}/${serviceId}${query}`, {
-          cache: "no-store",
-        });
+        const res = await fetch(
+          `/api/public-staff/${slug}/${serviceId}${query}`,
+          {
+            cache: "no-store",
+          }
+        );
 
         const data = await res.json();
 
@@ -505,13 +494,12 @@ const slug = slugFromParams || slugFromPathname;
         "Reserva creada correctamente. Revisa tu correo para la confirmación."
       );
 
-      const clearedExtraFields = visibleBookingFields.reduce<Record<string, string>>(
-        (acc, field) => {
-          acc[field.key] = "";
-          return acc;
-        },
-        {}
-      );
+      const clearedExtraFields = visibleBookingFields.reduce<
+        Record<string, string>
+      >((acc, field) => {
+        acc[field.key] = "";
+        return acc;
+      }, {});
 
       setCustomerData({
         name: "",
@@ -528,326 +516,348 @@ const slug = slugFromParams || slugFromPathname;
     }
   }
 
-  console.log("RENDER", {
-    slug,
-    business,
-    branches,
-    selectedBranchId,
-    services,
-    selectedService,
-    loadingPage,
-  });
-
   return (
-    <div className="mx-auto w-full max-w-[1700px] px-4 py-8 md:px-8 xl:px-12">
-      <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
-        <div><strong>slug:</strong> {slug || "(vacío)"}</div>
-        <div><strong>business:</strong> {business?.name || "(vacío)"}</div>
-        <div><strong>branches:</strong> {branches.length}</div>
-        <div><strong>selectedBranchId:</strong> {selectedBranchId || "(vacío)"}</div>
-        <div><strong>services:</strong> {services.length}</div>
-        <div><strong>loadingPage:</strong> {String(loadingPage)}</div>
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto w-full max-w-[1750px] px-4 py-8 md:px-8 xl:px-12">
+        <div className="grid gap-8 xl:grid-cols-[390px_1fr]">
+          <div className="space-y-6">
+            <div className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+              <div className="h-2 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400" />
+              <div className="p-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  Reserva online
+                </p>
 
-      <div className="grid gap-8 xl:grid-cols-[430px_1fr]">
-        <div className="space-y-6">
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Reserva online
-            </p>
+                <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950">
+                  {business?.name || slug || "Reserva"}
+                </h1>
 
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950">
-              {business?.name || slug || "Reserva"}
-            </h1>
+                {business?.description ? (
+                  <p className="mt-4 text-sm leading-6 text-slate-600">
+                    {business.description}
+                  </p>
+                ) : null}
 
-            {business?.description ? (
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                {business.description}
-              </p>
-            ) : null}
+                <div className="mt-5 flex flex-wrap gap-2 text-sm text-slate-600">
+                  {business?.phone ? (
+                    <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-sky-700">
+                      {business.phone}
+                    </span>
+                  ) : null}
 
-            <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-600">
-              {business?.phone ? (
-                <span className="rounded-full bg-slate-100 px-3 py-1.5">
-                  {business.phone}
-                </span>
-              ) : null}
-
-              {business?.address ? (
-                <span className="rounded-full bg-slate-100 px-3 py-1.5">
-                  {business.address}
-                </span>
-              ) : null}
+                  {business?.address ? (
+                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-slate-700">
+                      {business.address}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="space-y-5">
-              {showBranchSelector ? (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Sucursal
+            <div className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+              <div className="space-y-4">
+                {showBranchSelector ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Sucursal
+                    </label>
+                    <select
+                      value={selectedBranchId}
+                      onChange={(e) => {
+                        const nextBranchId = e.target.value;
+                        resetAfterBranchChange();
+                        setSelectedBranchId(nextBranchId);
+                      }}
+                      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
+                    >
+                      {branches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    Servicio
                   </label>
                   <select
-                    value={selectedBranchId}
+                    value={selectedService?.id || ""}
+                    disabled={loadingServices}
                     onChange={(e) => {
-                      const nextBranchId = e.target.value;
-                      resetAfterBranchChange();
-                      setSelectedBranchId(nextBranchId);
+                      const service =
+                        services.find((item) => item.id === e.target.value) ||
+                        null;
+                      resetAfterServiceChange();
+                      setSelectedService(service);
                     }}
-                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-slate-400"
-                  >
-                    {branches.map((branch) => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">
-                  Servicio
-                </label>
-                <select
-                  value={selectedService?.id || ""}
-                  disabled={loadingServices}
-                  onChange={(e) => {
-                    const service =
-                      services.find((item) => item.id === e.target.value) || null;
-                    resetAfterServiceChange();
-                    setSelectedService(service);
-                  }}
-                  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none disabled:bg-slate-100 focus:border-slate-400"
-                >
-                  <option value="">
-                    {loadingServices
-                      ? "Cargando servicios..."
-                      : services.length === 0
-                      ? "Sin servicios disponibles"
-                      : "Selecciona servicio"}
-                  </option>
-
-                  {services.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.name}
-                      {service.duration_minutes
-                        ? ` · ${service.duration_minutes} min`
-                        : ""}
-                      {typeof service.price === "number"
-                        ? ` · ${formatPrice(service.price)}`
-                        : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedService ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {selectedService.name}
-                  </p>
-
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                    <span className="rounded-full bg-white px-2.5 py-1">
-                      {selectedService.duration_minutes || 0} min
-                    </span>
-                    <span className="rounded-full bg-white px-2.5 py-1">
-                      {formatPrice(selectedService.price)}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-
-              {selectedService ? (
-                <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      Profesional
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      Selecciona uno o deja cualquiera disponible.
-                    </p>
-                  </div>
-
-                  <select
-                    value={selectedStaffId}
-                    disabled={loadingStaff}
-                    onChange={(e) => {
-                      setSelectedStaffId(e.target.value);
-                      setSelectedSlot(null);
-                    }}
-                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none disabled:bg-slate-100 focus:border-slate-400"
+                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-800 outline-none transition disabled:bg-slate-100 focus:border-indigo-400"
                   >
                     <option value="">
-                      {loadingStaff
-                        ? "Cargando profesionales..."
-                        : "Cualquiera disponible"}
+                      {loadingServices
+                        ? "Cargando servicios..."
+                        : services.length === 0
+                        ? "Sin servicios disponibles"
+                        : "Selecciona servicio"}
                     </option>
 
-                    {staffOptions.map((staff) => (
-                      <option key={staff.id} value={staff.id}>
-                        {staff.name}
-                        {staff.role ? ` · ${staff.role}` : ""}
+                    {services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name}
+                        {service.duration_minutes
+                          ? ` · ${service.duration_minutes} min`
+                          : ""}
+                        {typeof service.price === "number"
+                          ? ` · ${formatPrice(service.price)}`
+                          : ""}
                       </option>
                     ))}
                   </select>
                 </div>
-              ) : null}
 
-              <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-                <Calendar
-                  minDate={new Date()}
-                  onChange={(value: any) => {
-                    const picked = Array.isArray(value) ? value[0] : value;
-                    if (!picked) return;
-                    setSelectedDate(new Date(picked));
-                    setSelectedSlot(null);
-                  }}
-                  value={selectedDate}
-                />
-              </div>
-            </div>
-          </div>
+                {selectedService ? (
+                  <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-4">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {selectedService.name}
+                    </p>
 
-          {selectedSlot ? (
-            <div
-              ref={formRef}
-              className="rounded-[28px] border border-emerald-200 bg-emerald-50 p-6 shadow-sm"
-            >
-              <p className="text-sm font-semibold text-emerald-800">
-                Hora seleccionada: {formatHour(selectedSlot.slot_start)}
-              </p>
-
-              <div className="mt-5 space-y-3">
-                <input
-                  placeholder="Nombre y apellido"
-                  value={customerData.name || ""}
-                  onChange={(e) => updateCustomerField("name", e.target.value)}
-                  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-slate-400"
-                />
-
-                <input
-                  placeholder="Teléfono"
-                  value={customerData.phone || ""}
-                  onChange={(e) => updateCustomerField("phone", e.target.value)}
-                  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-slate-400"
-                />
-
-                <input
-                  placeholder="Email"
-                  type="email"
-                  value={customerData.email || ""}
-                  onChange={(e) => updateCustomerField("email", e.target.value)}
-                  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-slate-400"
-                />
-
-                {visibleBookingFields.map((field) => (
-                  <input
-                    key={field.key}
-                    placeholder={field.label}
-                    value={customerData[field.key] || ""}
-                    onChange={(e) =>
-                      updateCustomerField(field.key, e.target.value)
-                    }
-                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-slate-400"
-                  />
-                ))}
-
-                {submitError ? (
-                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    {submitError}
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
+                        {selectedService.duration_minutes || 0} min
+                      </span>
+                      <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
+                        {formatPrice(selectedService.price)}
+                      </span>
+                    </div>
                   </div>
                 ) : null}
 
-                {submitOk ? (
-                  <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-emerald-700">
-                    {submitOk}
-                  </div>
-                ) : null}
-
-                <button
-                  type="button"
-                  onClick={handleSubmitBooking}
-                  disabled={submitting}
-                  className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? "Confirmando..." : "Confirmar reserva"}
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[980px] grid-cols-7 gap-4">
-              {weekDates.map((dateObj) => {
-                const dateKey = formatDate(dateObj);
-                const slots = weekSlots[dateKey] || [];
-                const isSelectedDay = formatDate(selectedDate) === dateKey;
-
-                return (
-                  <div
-                    key={dateKey}
-                    className={`rounded-2xl border p-4 ${
-                      isSelectedDay
-                        ? "border-sky-300 bg-sky-50"
-                        : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    <div className="mb-3 border-b border-slate-200 pb-2">
-                      <p className="text-sm font-bold text-slate-900">
-                        {getWeekdayLabel(dateObj)}
+                {selectedService ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Profesional
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {dateObj.getDate()}/{dateObj.getMonth() + 1}
+                      <p className="text-xs text-slate-500">
+                        Selecciona uno o deja cualquiera disponible.
                       </p>
                     </div>
 
-                    {loadingSlots ? (
-                      <p className="text-xs text-slate-500">Cargando...</p>
-                    ) : !selectedService ? (
-                      <p className="text-xs text-slate-500">
-                        Selecciona un servicio.
-                      </p>
-                    ) : slots.length === 0 ? (
-                      <p className="text-xs text-slate-500">Sin horarios.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {slots.map((slot, index) => (
-                          <button
-                            key={`${slot.slot_start}-${index}`}
-                            type="button"
-                            onClick={() => {
-                              setSelectedDate(new Date(dateObj));
-                              setSelectedSlot(slot);
-                              setTimeout(() => {
-                                formRef.current?.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "start",
-                                });
-                              }, 100);
-                            }}
-                            className={`flex w-full flex-col items-center justify-center rounded-xl border px-3 py-2 text-center text-sm font-medium transition ${
-                              selectedSlot?.slot_start === slot.slot_start
-                                ? "border-slate-950 bg-slate-950 text-white"
-                                : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
-                            }`}
-                          >
-                            <span>{formatHour(slot.slot_start)}</span>
-                            <span className="text-[10px] opacity-70">Libre</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    <select
+                      value={selectedStaffId}
+                      disabled={loadingStaff}
+                      onChange={(e) => {
+                        setSelectedStaffId(e.target.value);
+                        setSelectedSlot(null);
+                      }}
+                      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-800 outline-none transition disabled:bg-slate-100 focus:border-indigo-400"
+                    >
+                      <option value="">
+                        {loadingStaff
+                          ? "Cargando profesionales..."
+                          : "Cualquiera disponible"}
+                      </option>
+
+                      {staffOptions.map((staff) => (
+                        <option key={staff.id} value={staff.id}>
+                          {staff.name}
+                          {staff.role ? ` · ${staff.role}` : ""}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                );
-              })}
+                ) : null}
+
+                <div className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-inner">
+                  <Calendar
+                    minDate={new Date()}
+                    onChange={(value: any) => {
+                      const picked = Array.isArray(value) ? value[0] : value;
+                      if (!picked) return;
+                      setSelectedDate(new Date(picked));
+                      setSelectedSlot(null);
+                    }}
+                    value={selectedDate}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {selectedSlot ? (
+              <div
+                ref={formRef}
+                className="rounded-[30px] border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-[0_20px_60px_-35px_rgba(16,185,129,0.35)]"
+              >
+                <p className="text-sm font-semibold text-emerald-800">
+                  Hora seleccionada: {formatHour(selectedSlot.slot_start)}
+                </p>
+
+                <div className="mt-5 space-y-3">
+                  <input
+                    placeholder="Nombre y apellido"
+                    value={customerData.name || ""}
+                    onChange={(e) => updateCustomerField("name", e.target.value)}
+                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                  />
+
+                  <input
+                    placeholder="Teléfono"
+                    value={customerData.phone || ""}
+                    onChange={(e) =>
+                      updateCustomerField("phone", e.target.value)
+                    }
+                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                  />
+
+                  <input
+                    placeholder="Email"
+                    type="email"
+                    value={customerData.email || ""}
+                    onChange={(e) =>
+                      updateCustomerField("email", e.target.value)
+                    }
+                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                  />
+
+                  {visibleBookingFields.map((field) => (
+                    <input
+                      key={field.key}
+                      placeholder={field.label}
+                      value={customerData[field.key] || ""}
+                      onChange={(e) =>
+                        updateCustomerField(field.key, e.target.value)
+                      }
+                      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                    />
+                  ))}
+
+                  {submitError ? (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                      {submitError}
+                    </div>
+                  ) : null}
+
+                  {submitOk ? (
+                    <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-emerald-700">
+                      {submitOk}
+                    </div>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={handleSubmitBooking}
+                    disabled={submitting}
+                    className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-5 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {submitting ? "Confirmando..." : "Confirmar reserva"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                  Horarios disponibles
+                </p>
+                <h2 className="mt-1 text-xl font-bold text-slate-950">
+                  Agenda semanal
+                </h2>
+              </div>
+
+              {selectedService ? (
+                <div className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700">
+                  {selectedService.name}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="overflow-x-auto">
+              <div className="grid min-w-[980px] grid-cols-7 gap-3">
+                {weekDates.map((dateObj) => {
+                  const dateKey = formatDate(dateObj);
+                  const slots = weekSlots[dateKey] || [];
+                  const isSelectedDay = formatDate(selectedDate) === dateKey;
+
+                  return (
+                    <div
+                      key={dateKey}
+                      className={`rounded-2xl border p-3 transition ${
+                        isSelectedDay
+                          ? "border-sky-300 bg-gradient-to-b from-sky-50 to-white shadow-sm"
+                          : "border-slate-200 bg-slate-50/60"
+                      }`}
+                    >
+                      <div className="mb-3 border-b border-slate-200 pb-2">
+                        <p className="text-sm font-bold text-slate-900">
+                          {getWeekdayLabel(dateObj)}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {dateObj.getDate()}/{dateObj.getMonth() + 1}
+                        </p>
+                      </div>
+
+                      {loadingSlots ? (
+                        <p className="text-xs text-slate-500">Cargando...</p>
+                      ) : !selectedService ? (
+                        <p className="text-xs text-slate-500">
+                          Selecciona un servicio.
+                        </p>
+                      ) : slots.length === 0 ? (
+                        <p className="text-xs text-slate-500">Sin horarios.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {slots.map((slot, index) => (
+                            <button
+                              key={`${slot.slot_start}-${index}`}
+                              type="button"
+                              onClick={() => {
+                                setSelectedDate(new Date(dateObj));
+                                setSelectedSlot(slot);
+                                setTimeout(() => {
+                                  formRef.current?.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                }, 100);
+                              }}
+                              className={`flex min-h-[40px] w-full flex-col items-center justify-center rounded-xl border px-2 py-1 text-center transition ${
+                                selectedSlot?.slot_start === slot.slot_start
+                                  ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
+                                  : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                              }`}
+                            >
+                              <span className="text-[12px] font-semibold leading-none">
+                                {formatHour(slot.slot_start)}
+                              </span>
+                              <span
+                                className={`mt-1 text-[9px] leading-none ${
+                                  selectedSlot?.slot_start === slot.slot_start
+                                    ? "text-indigo-100"
+                                    : "text-slate-400"
+                                }`}
+                              >
+                                Libre
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
+
+        {loadingPage ? (
+          <div className="mt-6 text-sm text-slate-500">Cargando...</div>
+        ) : null}
       </div>
     </div>
   );
