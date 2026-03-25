@@ -1,5 +1,5 @@
 "use client";
-
+<h1 className="text-4xl font-bold text-red-600">PRUEBA NUEVA PUBLICA</h1>
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Calendar from "react-calendar";
