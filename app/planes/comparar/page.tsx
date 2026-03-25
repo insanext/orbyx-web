@@ -8,6 +8,7 @@ import {
   Sparkles,
   ArrowLeft,
   Building2,
+  Info,
 } from "lucide-react";
 
 type PlanKey = "pro" | "premium" | "vip" | "platinum";
@@ -21,6 +22,12 @@ type Plan = {
   accentClass: string;
   borderClass: string;
   softBgClass: string;
+};
+
+type ComparisonRow = {
+  label: string;
+  values: Record<PlanKey, string>;
+  info?: string;
 };
 
 const plans: Plan[] = [
@@ -66,7 +73,7 @@ const plans: Plan[] = [
   },
 ];
 
-const comparisonRows = [
+const comparisonRows: ComparisonRow[] = [
   {
     label: "Sucursales incluidas",
     values: {
@@ -75,6 +82,7 @@ const comparisonRows = [
       vip: "3",
       platinum: "10",
     },
+    info: "Cantidad máxima de sucursales que puedes operar dentro de la misma cuenta.",
   },
   {
     label: "Profesionales incluidos",
@@ -84,6 +92,7 @@ const comparisonRows = [
       vip: "10",
       platinum: "20",
     },
+    info: "Cantidad base de profesionales o staff que puedes registrar en el plan.",
   },
   {
     label: "Servicios incluidos",
@@ -93,6 +102,7 @@ const comparisonRows = [
       vip: "50",
       platinum: "100",
     },
+    info: "Cantidad base de servicios activos que puedes configurar en tu cuenta.",
   },
   {
     label: "Profesional extra",
@@ -102,6 +112,37 @@ const comparisonRows = [
       vip: "+5 servicios",
       platinum: "+5 servicios",
     },
+    info: "Cada profesional extra agrega también capacidad adicional de servicios.",
+  },
+  {
+    label: "Página pública de reservas",
+    values: {
+      pro: "Sí",
+      premium: "Sí",
+      vip: "Sí",
+      platinum: "Sí",
+    },
+    info: "Página donde tus clientes pueden reservar online según horarios y disponibilidad.",
+  },
+  {
+    label: "Agenda online",
+    values: {
+      pro: "Sí",
+      premium: "Sí",
+      vip: "Sí",
+      platinum: "Sí",
+    },
+    info: "Agenda centralizada para gestionar reservas, cambios, estados y disponibilidad.",
+  },
+  {
+    label: "Gestión de clientes",
+    values: {
+      pro: "Sí",
+      premium: "Sí",
+      vip: "Sí",
+      platinum: "Sí",
+    },
+    info: "Registro básico y seguimiento operativo de clientes dentro del sistema.",
   },
   {
     label: "Emails automáticos",
@@ -111,6 +152,17 @@ const comparisonRows = [
       vip: "Avanzados",
       platinum: "Avanzados",
     },
+    info: "Incluye correos automáticos como confirmación de reserva y notificaciones operativas según el plan.",
+  },
+  {
+    label: "Recordatorios por email",
+    values: {
+      pro: "—",
+      premium: "Sí",
+      vip: "Sí",
+      platinum: "Sí",
+    },
+    info: "Correos automáticos enviados antes de la cita para reducir ausencias.",
   },
   {
     label: "Campañas por email",
@@ -120,6 +172,7 @@ const comparisonRows = [
       vip: "Sí",
       platinum: "Sí",
     },
+    info: "Mensajes masivos por correo para promociones, novedades o activación de clientes.",
   },
   {
     label: "Encuestas por email",
@@ -129,6 +182,27 @@ const comparisonRows = [
       vip: "Sí",
       platinum: "Sí",
     },
+    info: "Encuestas automáticas post atención para medir satisfacción y obtener feedback.",
+  },
+  {
+    label: "Estadísticas básicas",
+    values: {
+      pro: "Sí",
+      premium: "Sí",
+      vip: "Sí",
+      platinum: "Sí",
+    },
+    info: "Vista inicial del comportamiento del negocio, reservas y operación general.",
+  },
+  {
+    label: "Estadísticas avanzadas",
+    values: {
+      pro: "—",
+      premium: "—",
+      vip: "Sí",
+      platinum: "Sí",
+    },
+    info: "Mayor visibilidad sobre desempeño del negocio, seguimiento y control operativo.",
   },
   {
     label: "WhatsApp recordatorios",
@@ -138,6 +212,7 @@ const comparisonRows = [
       vip: "200 / mes",
       platinum: "400 / mes",
     },
+    info: "Conversaciones incluidas para recordatorios automáticos por WhatsApp.",
   },
   {
     label: "WhatsApp campañas",
@@ -147,6 +222,7 @@ const comparisonRows = [
       vip: "Extra",
       platinum: "50 / mes",
     },
+    info: "Conversaciones orientadas a campañas, reactivación o mensajes salientes por WhatsApp.",
   },
   {
     label: "IA asistida",
@@ -156,6 +232,37 @@ const comparisonRows = [
       vip: "—",
       platinum: "200 / mes",
     },
+    info: "Conversaciones donde la IA responde, orienta y ayuda a cerrar reservas automáticamente.",
+  },
+  {
+    label: "Atención automática por WhatsApp",
+    values: {
+      pro: "—",
+      premium: "—",
+      vip: "—",
+      platinum: "Sí",
+    },
+    info: "La IA puede responder consultas frecuentes y ayudar al cliente fuera de horario.",
+  },
+  {
+    label: "Encuestas + análisis futuro",
+    values: {
+      pro: "—",
+      premium: "—",
+      vip: "—",
+      platinum: "Sí",
+    },
+    info: "Preparado para evolucionar hacia análisis más inteligente del feedback recibido.",
+  },
+  {
+    label: "Métricas de conversión",
+    values: {
+      pro: "—",
+      premium: "—",
+      vip: "—",
+      platinum: "Sí",
+    },
+    info: "Indicadores para revisar mejor cómo convierten las conversaciones y automatizaciones.",
   },
 ] as const;
 
@@ -164,6 +271,20 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
   if (type === "sparkles") return <Sparkles className="h-5 w-5" />;
   if (type === "crown") return <Crown className="h-5 w-5" />;
   return <Gem className="h-5 w-5" />;
+}
+
+function InfoDot({ text }: { text: string }) {
+  return (
+    <span className="group relative ml-2 inline-flex align-middle">
+      <span className="inline-flex h-5 w-5 cursor-help items-center justify-center rounded-full border border-white/15 bg-white/8 text-slate-300 transition hover:bg-white/12 hover:text-white">
+        <Info className="h-3 w-3" />
+      </span>
+
+      <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-3 hidden w-72 -translate-y-1/2 rounded-2xl border border-white/10 bg-slate-950/95 px-3 py-2 text-xs font-normal leading-5 text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.45)] group-hover:block">
+        {text}
+      </span>
+    </span>
+  );
 }
 
 export default function CompararPlanesPage() {
@@ -176,11 +297,14 @@ export default function CompararPlanesPage() {
               <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
                 Comparador Orbyx
               </span>
+
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl">
                 Cuadro comparativo de planes
               </h1>
+
               <p className="mt-3 max-w-2xl text-base leading-7 text-slate-300">
-                Revisa rápido qué incluye cada plan y cómo escala tu operación.
+                Revisa más en detalle qué incluye cada plan y cómo escala tu
+                operación.
               </p>
             </div>
 
@@ -228,7 +352,7 @@ export default function CompararPlanesPage() {
 
           <div className="mt-8 overflow-hidden rounded-[28px] border border-white/10 bg-white/5">
             <div className="overflow-x-auto">
-              <table className="min-w-[920px] w-full border-collapse">
+              <table className="min-w-[980px] w-full border-collapse">
                 <thead>
                   <tr className="bg-white/5">
                     <th className="px-4 py-4 text-left text-sm font-semibold text-slate-200">
@@ -244,6 +368,7 @@ export default function CompararPlanesPage() {
                     ))}
                   </tr>
                 </thead>
+
                 <tbody>
                   {comparisonRows.map((row, index) => (
                     <tr
@@ -251,8 +376,12 @@ export default function CompararPlanesPage() {
                       className={index % 2 === 0 ? "bg-white/0" : "bg-white/[0.03]"}
                     >
                       <td className="border-t border-white/10 px-4 py-4 text-sm font-medium text-white">
-                        {row.label}
+                        <div className="flex items-center">
+                          <span>{row.label}</span>
+                          {row.info ? <InfoDot text={row.info} /> : null}
+                        </div>
                       </td>
+
                       {plans.map((plan) => (
                         <td
                           key={`${row.label}-${plan.key}`}
