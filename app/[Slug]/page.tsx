@@ -5,13 +5,6 @@ import { useParams } from "next/navigation";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
-type BookingField = {
-  key: string;
-  label: string;
-  enabled: boolean;
-  required: boolean;
-};
-
 type StaffItem = {
   id: string;
   name: string;
@@ -32,6 +25,13 @@ type BranchItem = {
 
 type SlotItem = {
   slot_start: string;
+};
+
+type BookingField = {
+  key: string;
+  label: string;
+  enabled: boolean;
+  required: boolean;
 };
 
 export default function Page() {
@@ -79,29 +79,44 @@ export default function Page() {
     }));
   }
 
+  /* ===============================
+     LOAD INICIAL
+  ============================== */
   useEffect(() => {
     if (!slug) return;
 
     async function loadAll() {
-      const res = await fetch(`/api/public-services/${slug}`);
-      const data = await res.json();
+      try {
+        const res = await fetch(`/api/public-services/${slug}`);
+        const data = await res.json();
 
-      setBranches(data.branches || []);
+        setBranches(data.branches || []);
 
-      // 🔹 booking fields
-      const resFields = await fetch(
-        `https://orbyx-backend.onrender.com/booking-fields/${slug}`
-      );
-      const dataFields = await resFields.json();
+        if (data.branches?.length === 1) {
+          setSelectedBranchId(data.branches[0].id);
+        }
 
-      setBookingFields(dataFields.booking_fields_config || []);
+        // booking fields
+        const resFields = await fetch(
+          `https://orbyx-backend.onrender.com/booking-fields/${slug}`
+        );
+        const dataFields = await resFields.json();
+
+        setBookingFields(dataFields.booking_fields_config || []);
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     loadAll();
   }, [slug]);
 
+  /* ===============================
+     LOAD SERVICES
+  ============================== */
   useEffect(() => {
-    if (!slug || !selectedBranchId) return;
+    if (!slug) return;
+    if (!selectedBranchId) return;
 
     async function loadServices() {
       const res = await fetch(
@@ -115,38 +130,32 @@ export default function Page() {
     loadServices();
   }, [slug, selectedBranchId]);
 
-useEffect(() => {
-  const serviceId = selectedService?.id;
+  /* ===============================
+     LOAD SLOTS (FIXED)
+  ============================== */
+  useEffect(() => {
+    const serviceId = selectedService?.id;
 
-  if (!slug || !serviceId) return;
+    if (!slug || !serviceId || !selectedBranchId) return;
 
-  async function loadSlots() {
-    const res = await fetch(
-      `/api/public-slots/${slug}/${serviceId}?date=${formatDate(selectedDate)}&branch_id=${selectedBranchId}`
-    );
+    async function loadSlots() {
+      try {
+        const res = await fetch(
+          `/api/public-slots/${slug}/${serviceId}?date=${formatDate(selectedDate)}&branch_id=${selectedBranchId}&staff_id=${selectedStaffId}`
+        );
 
-    const data = await res.json();
+        const data = await res.json();
 
-    setWeekSlots({
-      [formatDate(selectedDate)]: data.slots || [],
-    });
-  }
-
-  loadSlots();
-}, [slug, selectedService, selectedDate, selectedBranchId]);
-
-      const res = await fetch(
-        `/api/public-slots/${slug}/${selectedService.id}?date=${formatDate(selectedDate)}&branch_id=${selectedBranchId}`
-      );
-      const data = await res.json();
-
-      setWeekSlots({
-        [formatDate(selectedDate)]: data.slots || [],
-      });
+        setWeekSlots({
+          [formatDate(selectedDate)]: data.slots || [],
+        });
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     loadSlots();
-  }, [slug, selectedService, selectedDate, selectedBranchId]);
+  }, [slug, selectedService, selectedDate, selectedBranchId, selectedStaffId]);
 
   return (
     <div className="p-6 space-y-6">
@@ -155,8 +164,12 @@ useEffect(() => {
       {branches.length > 1 && (
         <select
           value={selectedBranchId}
-          onChange={(e) => setSelectedBranchId(e.target.value)}
-          className="border p-3 rounded-xl"
+          onChange={(e) => {
+            setSelectedBranchId(e.target.value);
+            setSelectedService(null);
+            setSelectedSlot(null);
+          }}
+          className="w-full max-w-sm rounded-xl border px-4 py-3"
         >
           <option value="">Selecciona sucursal</option>
           {branches.map((b) => (
@@ -167,15 +180,17 @@ useEffect(() => {
         </select>
       )}
 
-      {/* Servicios */}
+      {/* Servicio */}
       <select
         value={selectedService?.id || ""}
-        onChange={(e) =>
-          setSelectedService(
-            services.find((s) => s.id === e.target.value) || null
-          )
-        }
-        className="border p-3 rounded-xl"
+        onChange={(e) => {
+          const service =
+            services.find((s) => s.id === e.target.value) || null;
+
+          setSelectedService(service);
+          setSelectedSlot(null);
+        }}
+        className="w-full max-w-sm rounded-xl border px-4 py-3"
       >
         <option value="">Selecciona servicio</option>
         {services.map((s) => (
@@ -186,28 +201,35 @@ useEffect(() => {
       </select>
 
       {/* Calendario */}
-      <Calendar value={selectedDate} onChange={(d: any) => setSelectedDate(d)} />
+      <div className="max-w-sm">
+        <Calendar value={selectedDate} onChange={(d: any) => setSelectedDate(d)} />
+      </div>
 
-      {/* Slots */}
+      {/* Horarios */}
       <div className="flex flex-wrap gap-2">
         {(weekSlots[formatDate(selectedDate)] || []).map((slot, i) => (
           <button
             key={i}
             onClick={() => {
               setSelectedSlot(slot);
-              setTimeout(() => formRef.current?.scrollIntoView(), 100);
+              setTimeout(() => {
+                formRef.current?.scrollIntoView({ behavior: "smooth" });
+              }, 100);
             }}
-            className="border px-4 py-2 rounded-xl"
+            className={`rounded-xl border px-4 py-2 ${
+              selectedSlot?.slot_start === slot.slot_start
+                ? "bg-black text-white"
+                : "bg-white"
+            }`}
           >
             {formatHour(slot.slot_start)}
           </button>
         ))}
       </div>
 
-      {/* FORMULARIO */}
+      {/* FORMULARIO DINÁMICO */}
       {selectedSlot && (
-        <div ref={formRef} className="space-y-3 border p-4 rounded-xl">
-
+        <div ref={formRef} className="border p-4 rounded-xl space-y-3">
           <input
             placeholder="Nombre y apellido"
             value={customerData.name}
@@ -246,8 +268,13 @@ useEffect(() => {
           <button
             className="w-full bg-black text-white py-3 rounded-xl"
             onClick={() => {
-              console.log(customerData);
-              alert("Siguiente paso: conectar backend");
+              console.log("RESERVA:", {
+                slot: selectedSlot,
+                service: selectedService,
+                data: customerData,
+              });
+
+              alert("Listo para conectar backend 🔥");
             }}
           >
             Confirmar reserva
