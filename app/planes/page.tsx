@@ -224,25 +224,21 @@ const extraConfig = {
   staff: {
     title: "Profesionales extra",
     short: "$6.000 · 1 profesional + 5 servicios",
-    description: "Suma profesionales adicionales a tu operación.",
     unitPrice: 6000,
   },
   reminders: {
     title: "Recordatorios por WhatsApp",
     short: "$5.000 · 50 conversaciones",
-    description: "Agrega más conversaciones para recordatorios automáticos.",
     unitPrice: 5000,
   },
   campaigns: {
     title: "Campañas por WhatsApp",
     short: "$8.000 · 50 conversaciones",
-    description: "Agrega campañas y reactivación de clientes por WhatsApp.",
     unitPrice: 8000,
   },
   ai: {
     title: "Conversaciones asistidas por IA",
     short: "$30.000 · 50 conversaciones",
-    description: "Agrega más capacidad de atención automática con IA.",
     unitPrice: 30000,
   },
 } as const;
@@ -519,9 +515,18 @@ export default function PlanesPage() {
           <div>
             <div className="rounded-[34px] border border-white/10 bg-white/6 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl lg:p-8">
               <div className="max-w-3xl">
-                <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
-                  Precios Orbyx
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
+                    Precios Orbyx
+                  </span>
+
+                  <Link
+                    href="/"
+                    className="text-xs font-medium text-slate-400 transition hover:text-white"
+                  >
+                    Volver al inicio
+                  </Link>
+                </div>
 
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl">
                   Escala tu agenda con un plan hecho para crecer contigo
@@ -544,7 +549,7 @@ export default function PlanesPage() {
                       onClick={() => handleSelectPlan(plan.key)}
                       className={`relative flex min-h-[236px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
                         isSelected
-                          ? `bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] ${plan.borderClass} ring-1 ${plan.ringClass} shadow-[0_18px_50px_rgba(15,23,42,0.28)]`
+                          ? `scale-[1.02] bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] ${plan.borderClass} ${plan.softBgClass} ring-1 ring-white/20 shadow-[0_18px_45px_rgba(0,0,0,0.35)]`
                           : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
                       }`}
                     >
@@ -594,29 +599,22 @@ export default function PlanesPage() {
                     </p>
                   </div>
 
-<div className="mt-8 flex flex-col items-center gap-3 text-center">
-  <Link
-    href="/planes/comparar"
-    className="text-sm font-medium text-slate-200 underline underline-offset-4 transition hover:text-white"
-  >
-    Ver cuadro comparativo de planes
-  </Link>
+                  <div className="flex flex-col items-end gap-2">
+                    <Link
+                      href="/planes/comparar"
+                      className="text-sm font-semibold text-indigo-300 underline underline-offset-4 transition hover:text-white hover:drop-shadow-[0_0_6px_rgba(99,102,241,0.6)]"
+                    >
+                      Ver cuadro comparativo de planes
+                    </Link>
 
-  <Link
-    href="/"
-    className="text-sm font-medium text-slate-400 transition hover:text-slate-200"
-  >
-    Volver al inicio
-  </Link>
-</div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                      Plan actual
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-white">
-                      {selectedPlan.name}
-                    </p>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Plan actual
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {selectedPlan.name}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
