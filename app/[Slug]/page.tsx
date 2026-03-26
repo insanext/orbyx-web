@@ -507,9 +507,9 @@ return {
         throw new Error(data?.error || "No se pudo crear la reserva.");
       }
 
-      setSubmitOk(
-        "Reserva creada correctamente. Revisa tu correo para la confirmación."
-      );
+setSubmitOk(
+  "✅ Reserva confirmada. Te enviamos un correo con todos los detalles. Revisa tu bandeja 📩"
+);
 
       const clearedExtraFields = visibleBookingFields.reduce<
         Record<string, string>
@@ -518,14 +518,17 @@ return {
         return acc;
       }, {});
 
-      setCustomerData({
-        name: "",
-        phone: "",
-        email: "",
-        ...clearedExtraFields,
-      });
+setCustomerData({
+  name: "",
+  phone: "",
+  email: "",
+  ...clearedExtraFields,
+});
 
-      setSelectedSlot(null);
+// recargar horarios
+setSelectedDate(new Date(selectedDate));
+
+
     } catch (error: any) {
       setSubmitError(error?.message || "No se pudo crear la reserva.");
     } finally {
