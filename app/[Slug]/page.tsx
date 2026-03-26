@@ -71,6 +71,7 @@ type BookingSuccessData = {
   date: string;
   time: string;
   branchName?: string;
+  branchAddress?: string;
   staffName?: string;
 };
 
@@ -91,12 +92,14 @@ function formatHour(dateString: string) {
 }
 
 function formatFullDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString("es-CL", {
+  const text = new Date(dateString).toLocaleDateString("es-CL", {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
+
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function formatPrice(price?: number | null) {
@@ -203,6 +206,12 @@ export default function Page() {
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
   const showBranchSelector = branches.length > 1;
   const visibleBookingFields = bookingFields.filter((field) => field.enabled);
+
+  const selectedBranch =
+    branches.find((branch) => branch.id === selectedBranchId) || null;
+
+  const visibleAddress = selectedBranch?.address || business?.address || null;
+  const visiblePhone = selectedBranch?.phone || business?.phone || null;
 
   function updateCustomerField(key: string, value: string) {
     setCustomerData((prev) => ({
@@ -530,9 +539,6 @@ export default function Page() {
         throw new Error(data?.error || "No se pudo crear la reserva.");
       }
 
-      const selectedBranch =
-        branches.find((branch) => branch.id === selectedBranchId) || null;
-
       const resolvedStaffId = selectedStaffId || selectedSlot.staff_id || "";
       const selectedStaff =
         staffOptions.find((staff) => staff.id === resolvedStaffId) || null;
@@ -542,6 +548,7 @@ export default function Page() {
         date: formatFullDate(selectedSlot.slot_start),
         time: formatHour(selectedSlot.slot_start),
         branchName: selectedBranch?.name || undefined,
+        branchAddress: selectedBranch?.address || business?.address || undefined,
         staffName: selectedStaff?.name || undefined,
       });
 
@@ -572,7 +579,7 @@ export default function Page() {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-10 md:px-8">
-        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
+        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-4xl items-center justify-center">
           <div className="w-full overflow-hidden rounded-[34px] border border-emerald-200 bg-white shadow-[0_35px_90px_-45px_rgba(16,185,129,0.42)]">
             <div className="h-2 bg-gradient-to-r from-emerald-500 via-sky-500 to-indigo-500" />
 
@@ -642,11 +649,28 @@ export default function Page() {
                 ) : null}
               </div>
 
+              {bookingSuccess.branchAddress ? (
+                <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Dirección de la sucursal
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {bookingSuccess.branchAddress}
+                  </p>
+                </div>
+              ) : null}
+
               <div className="mt-8 rounded-3xl border border-sky-100 bg-sky-50/80 p-5 text-center">
                 <p className="text-sm font-medium text-sky-900">
                   Revisa tu correo para ver la confirmación y el enlace de
                   cancelación si lo necesitas.
                 </p>
+
+                {bookingSuccess.branchAddress ? (
+                  <p className="mt-2 text-sm text-sky-800">
+                    Tu atención será en: {bookingSuccess.branchAddress}
+                  </p>
+                ) : null}
               </div>
 
               <div className="mt-8 grid gap-3 md:grid-cols-2">
@@ -657,7 +681,7 @@ export default function Page() {
                     setSelectedSlot(null);
                     setSubmitError("");
                   }}
-                  className="inline-flex h-13 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-5 text-sm font-semibold text-white transition hover:opacity-95"
+                  className="inline-flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-5 text-sm font-semibold text-white transition hover:opacity-95"
                 >
                   Agendar otra hora
                 </button>
@@ -667,7 +691,7 @@ export default function Page() {
                     href={`https://wa.me/${whatsappNumber}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-13 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     Ir a WhatsApp
                   </a>
@@ -679,7 +703,7 @@ export default function Page() {
                       setSelectedSlot(null);
                       setSubmitError("");
                     }}
-                    className="inline-flex h-13 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     Volver a la agenda
                   </button>
@@ -721,15 +745,15 @@ export default function Page() {
                 ) : null}
 
                 <div className="mt-5 flex flex-wrap gap-2 text-sm text-slate-600">
-                  {business?.phone ? (
+                  {visiblePhone ? (
                     <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-sky-700">
-                      {business.phone}
+                      {visiblePhone}
                     </span>
                   ) : null}
 
-                  {business?.address ? (
+                  {visibleAddress ? (
                     <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-slate-700">
-                      {business.address}
+                      {visibleAddress}
                     </span>
                   ) : null}
                 </div>
