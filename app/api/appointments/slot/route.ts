@@ -47,33 +47,13 @@ export async function POST(req: Request) {
     const data = await res.json();
 
     if (!res.ok) {
-      let message = data?.error || "No se pudo crear la reserva";
-      const normalized = String(message).toLowerCase();
-
-      if (
-        normalized.includes("slot") ||
-        normalized.includes("horario") ||
-        normalized.includes("appointments_unique_slot") ||
-        normalized.includes("duplicate key") ||
-        normalized.includes("unique constraint")
-      ) {
-        message = "Ese horario ya no está disponible.";
-      } else if (normalized.includes("staff")) {
-        message = "El profesional ya no está disponible.";
-      } else if (
-        normalized.includes("email ya tiene una reserva futura activa") ||
-        normalized.includes("reserva futura activa") ||
-        normalized.includes("ya tiene una reserva activa")
-      ) {
-        message = "Ya tienes una reserva activa con este correo.";
-      } else if (
-        normalized.includes("invalid input syntax for type uuid") ||
-        normalized.includes("uuid")
-      ) {
-        message = "Ocurrió un error con los datos de la reserva. Recarga la página e inténtalo nuevamente.";
-      }
-
-      return NextResponse.json({ error: message }, { status: res.status });
+      return NextResponse.json(
+        {
+          error: data?.error || "No se pudo crear la reserva",
+          debug_payload: payload,
+        },
+        { status: res.status }
+      );
     }
 
     return NextResponse.json(data);
