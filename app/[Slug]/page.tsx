@@ -73,6 +73,10 @@ type BookingSuccessData = {
   branchName?: string;
   branchAddress?: string;
   staffName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  startIso: string;
+  endIso: string;
 };
 
 function formatDate(date: Date) {
@@ -151,6 +155,47 @@ function dedupeSlots(slots: SlotItem[]) {
 function normalizeWhatsappNumber(value?: string | null) {
   if (!value) return "";
   return value.replace(/\D/g, "");
+}
+
+function buildMapsUrl(address?: string) {
+  if (!address) return "";
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    address
+  )}`;
+}
+
+function formatGoogleCalendarDate(dateString: string) {
+  return new Date(dateString).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
+function buildGoogleCalendarUrl({
+  title,
+  startIso,
+  endIso,
+  details,
+  location,
+}: {
+  title: string;
+  startIso: string;
+  endIso: string;
+  details?: string;
+  location?: string;
+}) {
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${formatGoogleCalendarDate(startIso)}/${formatGoogleCalendarDate(endIso)}`,
+  });
+
+  if (details) {
+    params.set("details", details);
+  }
+
+  if (location) {
+    params.set("location", location);
+  }
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 export default function Page() {
@@ -543,6 +588,10 @@ export default function Page() {
       const selectedStaff =
         staffOptions.find((staff) => staff.id === resolvedStaffId) || null;
 
+      const startDate = new Date(selectedSlot.slot_start);
+      const durationMinutes = Number(selectedService.duration_minutes || 0);
+      const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+
       setBookingSuccess({
         serviceName: selectedService.name,
         date: formatFullDate(selectedSlot.slot_start),
@@ -550,6 +599,10 @@ export default function Page() {
         branchName: selectedBranch?.name || undefined,
         branchAddress: selectedBranch?.address || business?.address || undefined,
         staffName: selectedStaff?.name || undefined,
+        customerEmail: customerData.email.trim(),
+        customerPhone: customerData.phone.trim(),
+        startIso: startDate.toISOString(),
+        endIso: endDate.toISOString(),
       });
 
       const clearedExtraFields = visibleBookingFields.reduce<
@@ -575,16 +628,34 @@ export default function Page() {
   }
 
   if (bookingSuccess) {
-    const whatsappNumber = normalizeWhatsappNumber(business?.whatsapp);
+    const whatsappNumber = normalizeWhatsappNumber(
+      business?.whatsapp || visiblePhone || bookingSuccess.customerPhone
+    );
+
+    const mapsUrl = buildMapsUrl(bookingSuccess.branchAddress);
+
+    const googleCalendarUrl = buildGoogleCalendarUrl({
+      title: `${bookingSuccess.serviceName} - ${business?.name || "Reserva"}`,
+      startIso: bookingSuccess.startIso,
+      endIso: bookingSuccess.endIso,
+      details: [
+        business?.name ? `Reserva en ${business.name}` : "",
+        bookingSuccess.staffName ? `Profesional: ${bookingSuccess.staffName}` : "",
+        bookingSuccess.branchName ? `Sucursal: ${bookingSuccess.branchName}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      location: bookingSuccess.branchAddress,
+    });
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-10 md:px-8">
-        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-4xl items-center justify-center">
+        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
           <div className="w-full overflow-hidden rounded-[34px] border border-emerald-200 bg-white shadow-[0_35px_90px_-45px_rgba(16,185,129,0.42)]">
             <div className="h-2 bg-gradient-to-r from-emerald-500 via-sky-500 to-indigo-500" />
 
             <div className="p-6 md:p-10">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-4xl shadow-sm">
+              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-sky-100 text-5xl shadow-sm ring-8 ring-emerald-50">
                 ✅
               </div>
 
@@ -598,13 +669,13 @@ export default function Page() {
                 </h1>
 
                 <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
-                  Tu hora quedó registrada correctamente. Además, te enviamos un
-                  correo con todos los detalles para que tengas la confirmación
-                  a mano.
+                  Tu hora quedó registrada correctamente. Te enviamos la
+                  confirmación a tu correo para que tengas todos los detalles a
+                  mano.
                 </p>
               </div>
 
-              <div className="mt-8 grid gap-4 md:grid-cols-2">
+              <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                     Servicio
@@ -649,31 +720,56 @@ export default function Page() {
                 ) : null}
               </div>
 
-              {bookingSuccess.branchAddress ? (
-                <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                     Dirección de la sucursal
                   </p>
                   <p className="mt-2 text-base font-semibold text-slate-900">
-                    {bookingSuccess.branchAddress}
+                    {bookingSuccess.branchAddress || "Dirección no disponible"}
+                  </p>
+
+                  {mapsUrl ? (
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Ver ruta
+                    </a>
+                  ) : null}
+                </div>
+
+                <div className="rounded-3xl border border-sky-100 bg-sky-50/80 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
+                    Confirmación enviada
+                  </p>
+                  <p className="mt-2 text-sm text-slate-700">
+                    Enviamos el detalle de tu reserva a:
+                  </p>
+                  <p className="mt-2 break-all text-base font-semibold text-slate-950">
+                    {bookingSuccess.customerEmail || "Correo no disponible"}
+                  </p>
+                  <p className="mt-3 text-sm text-sky-900">
+                    Revisa tu bandeja de entrada y también spam/promociones si
+                    no lo ves de inmediato.
                   </p>
                 </div>
-              ) : null}
-
-              <div className="mt-8 rounded-3xl border border-sky-100 bg-sky-50/80 p-5 text-center">
-                <p className="text-sm font-medium text-sky-900">
-                  Revisa tu correo para ver la confirmación y el enlace de
-                  cancelación si lo necesitas.
-                </p>
-
-                {bookingSuccess.branchAddress ? (
-                  <p className="mt-2 text-sm text-sky-800">
-                    Tu atención será en: {bookingSuccess.branchAddress}
-                  </p>
-                ) : null}
               </div>
 
-              <div className="mt-8 grid gap-3 md:grid-cols-2">
+              <div className="mt-8 rounded-3xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-sky-50 p-5">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-sm text-slate-700">
+                    Puedes volver a reservar otra hora cuando quieras.
+                  </div>
+                  <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-sm text-slate-700">
+                    También puedes guardar esta reserva en tu calendario.
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -685,6 +781,15 @@ export default function Page() {
                 >
                   Agendar otra hora
                 </button>
+
+                <a
+                  href={googleCalendarUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Agregar a Google Calendar
+                </a>
 
                 {whatsappNumber ? (
                   <a
@@ -706,6 +811,29 @@ export default function Page() {
                     className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     Volver a la agenda
+                  </button>
+                )}
+
+                {mapsUrl ? (
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Abrir ubicación
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingSuccess(null);
+                      setSelectedSlot(null);
+                      setSubmitError("");
+                    }}
+                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Volver
                   </button>
                 )}
               </div>
