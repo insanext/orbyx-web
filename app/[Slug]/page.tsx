@@ -175,6 +175,12 @@ export default function Page() {
   const [submitError, setSubmitError] = useState("");
   const [submitOk, setSubmitOk] = useState("");
 
+const [bookingSuccess, setBookingSuccess] = useState<{
+  serviceName: string;
+  date: string;
+  time: string;
+} | null>(null);
+
   const formRef = useRef<HTMLDivElement | null>(null);
 
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
@@ -507,9 +513,11 @@ return {
         throw new Error(data?.error || "No se pudo crear la reserva.");
       }
 
-setSubmitOk(
-  "✅ Reserva confirmada. Te enviamos un correo con todos los detalles. Revisa tu bandeja 📩"
-);
+setBookingSuccess({
+  serviceName: selectedService.name,
+  date: formatDate(new Date(selectedSlot.slot_start)),
+  time: formatHour(selectedSlot.slot_start),
+});
 
       const clearedExtraFields = visibleBookingFields.reduce<
         Record<string, string>
@@ -535,6 +543,72 @@ setSelectedDate(new Date(selectedDate));
       setSubmitting(false);
     }
   }
+
+if (bookingSuccess) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-6">
+      <div className="w-full max-w-xl rounded-[32px] border border-emerald-200 bg-white p-8 shadow-[0_30px_80px_-40px_rgba(16,185,129,0.4)] text-center">
+
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+          <span className="text-4xl">✅</span>
+        </div>
+
+        <h1 className="text-3xl font-bold text-slate-900">
+          Reserva confirmada
+        </h1>
+
+        <p className="mt-3 text-sm text-slate-600">
+          Te enviamos un correo con todos los detalles 📩
+        </p>
+
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left">
+          <p className="text-sm text-slate-500">Servicio</p>
+          <p className="font-semibold text-slate-900">
+            {bookingSuccess.serviceName}
+          </p>
+
+          <div className="mt-3 flex justify-between text-sm">
+            <div>
+              <p className="text-slate-500">Fecha</p>
+              <p className="font-medium text-slate-900">
+                {bookingSuccess.date}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-slate-500">Hora</p>
+              <p className="font-medium text-slate-900">
+                {bookingSuccess.time}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-3">
+          <button
+            onClick={() => {
+              setBookingSuccess(null);
+              setSelectedSlot(null);
+            }}
+            className="h-12 w-full rounded-2xl bg-slate-900 text-white font-medium hover:opacity-90 transition"
+          >
+            Agendar otra hora
+          </button>
+
+          {business?.whatsapp ? (
+            <a
+              href={`https://wa.me/${business.whatsapp}`}
+              target="_blank"
+              className="block h-12 w-full rounded-2xl border border-slate-300 text-sm font-medium text-slate-700 flex items-center justify-center hover:bg-slate-50"
+            >
+              Ir a WhatsApp
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-slate-50">
