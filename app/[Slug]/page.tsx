@@ -477,7 +477,7 @@ return {
         calendar_id: calendarId,
         branch_id: selectedBranchId || null,
         service_id: selectedService.id,
-        staff_id: selectedStaffId || null,
+        staff_id: selectedStaffId || selectedSlot?.staff_id || null,
         date: formatDate(new Date(selectedSlot.slot_start)),
         slot_start: selectedSlot.slot_start,
         customer_name: customerData.name.trim(),
