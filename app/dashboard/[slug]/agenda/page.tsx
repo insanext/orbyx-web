@@ -34,20 +34,22 @@ type BranchItem = {
 };
 
 type FilterValue =
-  | "all"
+  | "active"
   | "pending_close"
   | "booked"
   | "completed"
-  | "no_show";
+  | "no_show"
+  | "canceled";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 const filterLabels: Record<FilterValue, string> = {
-  all: "Todas",
+  active: "Activas",
   pending_close: "Pendientes",
   booked: "Agendadas",
   completed: "Atendidas",
   no_show: "No asistió",
+  canceled: "Canceladas",
 };
 
 export default function AgendaPage() {
@@ -67,10 +69,9 @@ export default function AgendaPage() {
   const [error, setError] = useState("");
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
-  const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
+  const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
   const [statusSaving, setStatusSaving] = useState(false);
 
-  const didAutoFocusPendingRef = useRef(false);
   const detailRef = useRef<HTMLDivElement | null>(null);
 
   const branchStorageKey = useMemo(() => {
@@ -108,12 +109,14 @@ export default function AgendaPage() {
   }
 
   function formatLongDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString("es-CL", {
+    const text = new Date(dateString).toLocaleDateString("es-CL", {
       weekday: "long",
       day: "numeric",
       month: "long",
       year: "numeric",
     });
+
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   function formatRangeTitle(start: Date, end: Date) {
@@ -154,6 +157,14 @@ export default function AgendaPage() {
       appt.status === "booked" &&
       new Date(appt.start_at).getTime() < Date.now()
     );
+  }
+
+  function isCanceled(appt: Appointment) {
+    return appt.status === "canceled";
+  }
+
+  function isVisibleAsActive(appt: Appointment) {
+    return !isCanceled(appt);
   }
 
   function getVisualStatus(appt: Appointment) {
@@ -234,6 +245,10 @@ export default function AgendaPage() {
         return "border-amber-500 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg";
       }
 
+      if (visualStatus === "canceled") {
+        return "border-slate-500 bg-gradient-to-br from-slate-500 to-slate-600 text-white shadow-lg";
+      }
+
       return "border-slate-900 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-lg";
     }
 
@@ -250,20 +265,21 @@ export default function AgendaPage() {
     }
 
     if (visualStatus === "canceled") {
-      return "border-slate-200 bg-slate-100 text-slate-600 opacity-80";
+      return "border-slate-200 bg-slate-100 text-slate-600 opacity-80 hover:border-slate-300";
     }
 
     return "border-slate-200 bg-white text-slate-900 hover:border-sky-300 hover:bg-sky-50";
   }
 
   function matchesFilter(appt: Appointment, filter: FilterValue) {
-    if (filter === "all") return true;
+    if (filter === "active") return isVisibleAsActive(appt);
     if (filter === "pending_close") return isPastPendingClosure(appt);
     if (filter === "booked") {
       return appt.status === "booked" && !isPastPendingClosure(appt);
     }
     if (filter === "completed") return appt.status === "completed";
     if (filter === "no_show") return appt.status === "no_show";
+    if (filter === "canceled") return appt.status === "canceled";
     return true;
   }
 
@@ -279,6 +295,18 @@ export default function AgendaPage() {
 
       if (count > 0) {
         return "inline-flex h-8 items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-3 text-xs font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-100";
+      }
+
+      return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
+    }
+
+    if (filter === "canceled") {
+      if (active) {
+        return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-700 bg-slate-700 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800";
+      }
+
+      if (count > 0) {
+        return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-200";
       }
 
       return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
@@ -401,7 +429,13 @@ export default function AgendaPage() {
         const updatedSelected = rows.find(
           (appt) => appt.id === selectedAppointment.id
         );
-        setSelectedAppointment(updatedSelected || null);
+
+        if (updatedSelected) {
+          const stillVisible = matchesFilter(updatedSelected, activeFilter);
+          setSelectedAppointment(stillVisible ? updatedSelected : null);
+        } else {
+          setSelectedAppointment(null);
+        }
       }
 
       if (!options?.preserveSelected && rows.length === 0) {
@@ -525,7 +559,6 @@ export default function AgendaPage() {
 
       setSelectedBranchId(branchId);
       setSelectedAppointment(null);
-      didAutoFocusPendingRef.current = false;
     }
 
     function handleStorage(event: StorageEvent) {
@@ -534,7 +567,6 @@ export default function AgendaPage() {
       const nextBranchId = event.newValue || "";
       setSelectedBranchId(nextBranchId);
       setSelectedAppointment(null);
-      didAutoFocusPendingRef.current = false;
     }
 
     window.addEventListener(
@@ -551,6 +583,12 @@ export default function AgendaPage() {
       window.removeEventListener("storage", handleStorage);
     };
   }, [slug, branchStorageKey]);
+
+  useEffect(() => {
+    if (selectedAppointment && !matchesFilter(selectedAppointment, activeFilter)) {
+      setSelectedAppointment(null);
+    }
+  }, [activeFilter, selectedAppointment]);
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appt) => matchesFilter(appt, activeFilter));
@@ -605,12 +643,23 @@ export default function AgendaPage() {
       );
   }, [appointments]);
 
+  const canceledAppointments = useMemo(() => {
+    return appointments
+      .filter((appt) => appt.status === "canceled")
+      .sort(
+        (a, b) =>
+          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+      );
+  }, [appointments]);
+
   const pendingCloseCount = pendingCloseAppointments.length;
+  const canceledCount = canceledAppointments.length;
   const hasPendingClose = pendingCloseCount > 0;
+  const hasCanceled = canceledCount > 0;
 
   const counts = useMemo(() => {
     return {
-      all: appointments.length,
+      active: appointments.filter(isVisibleAsActive).length,
       pending_close: appointments.filter(isPastPendingClosure).length,
       booked: appointments.filter(
         (appt) => appt.status === "booked" && !isPastPendingClosure(appt)
@@ -618,56 +667,23 @@ export default function AgendaPage() {
       completed: appointments.filter((appt) => appt.status === "completed")
         .length,
       no_show: appointments.filter((appt) => appt.status === "no_show").length,
+      canceled: appointments.filter((appt) => appt.status === "canceled").length,
     };
   }, [appointments]);
-
-  const orderedWeekDays = useMemo(() => {
-    return [...weekDays].sort((a, b) => {
-      const aKey = formatDateYYYYMMDD(a);
-      const bKey = formatDateYYYYMMDD(b);
-
-      const aPending = (appointmentsByDay[aKey] || []).filter(
-        isPastPendingClosure
-      ).length;
-      const bPending = (appointmentsByDay[bKey] || []).filter(
-        isPastPendingClosure
-      ).length;
-
-      if (aPending > 0 && bPending === 0) return -1;
-      if (aPending === 0 && bPending > 0) return 1;
-
-      return a.getTime() - b.getTime();
-    });
-  }, [weekDays, appointmentsByDay]);
-
-  useEffect(() => {
-    if (loading) return;
-    if (!appointments.length) return;
-    if (didAutoFocusPendingRef.current) return;
-
-    if (pendingCloseAppointments.length > 0) {
-      setActiveFilter("pending_close");
-      setSelectedAppointment((current) => current || pendingCloseAppointments[0]);
-      didAutoFocusPendingRef.current = true;
-    }
-  }, [loading, appointments, pendingCloseAppointments]);
 
   function goPrevWeek() {
     setWeekBaseDate((prev) => addDays(prev, -7));
     setSelectedAppointment(null);
-    didAutoFocusPendingRef.current = false;
   }
 
   function goNextWeek() {
     setWeekBaseDate((prev) => addDays(prev, 7));
     setSelectedAppointment(null);
-    didAutoFocusPendingRef.current = false;
   }
 
   function goToday() {
     setWeekBaseDate(new Date());
     setSelectedAppointment(null);
-    didAutoFocusPendingRef.current = false;
   }
 
   const selectedBranchName =
@@ -682,10 +698,10 @@ export default function AgendaPage() {
           description={
             selectedBranchName
               ? `Vista filtrada por sucursal: ${selectedBranchName}`
-              : "Semana, estados y cierre rápido."
+              : "Vista enfocada en reservas activas."
           }
           actions={
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               {hasPendingClose ? (
                 <button
                   type="button"
@@ -711,33 +727,49 @@ export default function AgendaPage() {
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={goPrevWeek}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                ← Anterior
-              </button>
+              {hasCanceled ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter("canceled")}
+                  className={`inline-flex h-10 items-center justify-center rounded-xl border px-3.5 text-sm font-semibold shadow-sm transition ${
+                    activeFilter === "canceled"
+                      ? "border-slate-700 bg-slate-700 text-white"
+                      : "border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  Canceladas: {canceledCount}
+                </button>
+              ) : null}
+
+              <div className="flex items-center rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+                <button
+                  type="button"
+                  onClick={goPrevWeek}
+                  className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                >
+                  ← Anterior
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goToday}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-3.5 text-sm font-medium text-white transition hover:bg-slate-800"
+                >
+                  Hoy
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goNextWeek}
+                  className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                >
+                  Siguiente →
+                </button>
+              </div>
 
               <div className="inline-flex h-10 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 px-3.5 text-sm font-semibold text-sky-800">
                 {formatRangeTitle(weekStart, weekEnd)}
               </div>
-
-              <button
-                type="button"
-                onClick={goNextWeek}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Siguiente →
-              </button>
-
-              <button
-                type="button"
-                onClick={goToday}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-3.5 text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                Hoy
-              </button>
 
               <input
                 type="date"
@@ -746,7 +778,6 @@ export default function AgendaPage() {
                   if (!e.target.value) return;
                   setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
                   setSelectedAppointment(null);
-                  didAutoFocusPendingRef.current = false;
                 }}
                 className="h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
               />
@@ -763,6 +794,15 @@ export default function AgendaPage() {
         </div>
       ) : null}
 
+      {hasCanceled ? (
+        <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-100 to-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm">
+          Hay <span className="font-semibold">{canceledCount}</span> reserva
+          {canceledCount === 1 ? "" : "s"} cancelada
+          {canceledCount === 1 ? "" : "s"} esta semana. No se muestran en la
+          vista principal de activas.
+        </div>
+      ) : null}
+
       {error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
           {error}
@@ -773,7 +813,11 @@ export default function AgendaPage() {
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <Panel
             title="Calendario semanal"
-            description="Vista semanal de reservas."
+            description={
+              activeFilter === "canceled"
+                ? "Vista semanal de reservas canceladas."
+                : "Vista semanal enfocada en reservas activas."
+            }
           >
             {!selectedBranchId ? (
               <p className="px-2 py-4 text-sm text-slate-500">
@@ -783,14 +827,17 @@ export default function AgendaPage() {
               <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-                {orderedWeekDays.map((day) => {
+                {weekDays.map((day) => {
                   const dayKey = formatDateYYYYMMDD(day);
                   const dayAppointments = appointmentsByDay[dayKey] || [];
                   const isToday = dayKey === todayKey;
                   const daySlots = generateDaySlots(day);
-                  const dayPendingCount = dayAppointments.filter(
-                    isPastPendingClosure
-                  ).length;
+                  const dayPendingCount = appointments
+                    .filter((appt) => formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey)
+                    .filter(isPastPendingClosure).length;
+                  const dayCanceledCount = appointments
+                    .filter((appt) => formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey)
+                    .filter(isCanceled).length;
 
                   return (
                     <div
@@ -819,7 +866,13 @@ export default function AgendaPage() {
                             })}
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            {dayCanceledCount > 0 ? (
+                              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                {dayCanceledCount} c
+                              </span>
+                            ) : null}
+
                             {dayPendingCount > 0 ? (
                               <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white">
                                 {dayPendingCount}
@@ -843,103 +896,166 @@ export default function AgendaPage() {
                       </div>
 
                       <div className="space-y-1.5">
-                        {daySlots.map((slot, index) => {
-                          const appt = dayAppointments.find(
-                            (a) =>
-                              new Date(a.start_at).getTime() ===
-                              new Date(slot).getTime()
-                          );
+                        {activeFilter === "canceled" ? (
+                          dayAppointments.length === 0 ? (
+                            <div className="rounded-lg border border-dashed border-slate-200 bg-white px-2 py-3 text-center text-[11px] text-slate-400">
+                              Sin canceladas
+                            </div>
+                          ) : (
+                            dayAppointments.map((appt) => {
+                              const isSelected = selectedAppointment?.id === appt.id;
 
-                          const isHourStart = index % 2 === 0;
-                          const isEvenBand = Math.floor(index / 2) % 2 === 0;
-
-                          if (!appt) {
-                            return (
-                              <div
-                                key={slot}
-                                className={`rounded-lg border px-2 py-2 text-center text-[11px] ${
-                                  isHourStart
-                                    ? "border-slate-300"
-                                    : "border-slate-200"
-                                } ${
-                                  isEvenBand
-                                    ? "bg-slate-100 text-slate-500"
-                                    : "bg-white text-slate-400"
-                                }`}
-                              >
-                                <span className="block font-medium">
-                                  {formatHour(slot)}
-                                </span>
-                                <span className="block">Libre</span>
-                              </div>
-                            );
-                          }
-
-                          const isSelected = selectedAppointment?.id === appt.id;
-
-                          return (
-                            <button
-                              key={appt.id}
-                              type="button"
-                              onClick={() => handleSelectAppointment(appt)}
-                              className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
-                                appt,
-                                isSelected
-                              )}`}
-                            >
-                              <div className="space-y-1.5">
-                                <div
-                                  className={`text-[11px] font-semibold ${
-                                    isSelected ? "text-slate-200" : "text-slate-600"
-                                  }`}
+                              return (
+                                <button
+                                  key={appt.id}
+                                  type="button"
+                                  onClick={() => handleSelectAppointment(appt)}
+                                  className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
+                                    appt,
+                                    isSelected
+                                  )}`}
                                 >
-                                  {formatHour(appt.start_at)} -{" "}
-                                  {formatHour(appt.end_at)}
-                                </div>
+                                  <div className="space-y-1.5">
+                                    <div
+                                      className={`text-[11px] font-semibold ${
+                                        isSelected ? "text-slate-200" : "text-slate-600"
+                                      }`}
+                                    >
+                                      {formatHour(appt.start_at)} -{" "}
+                                      {formatHour(appt.end_at)}
+                                    </div>
 
-                                <div>
-                                  <span
-                                    className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                                      isSelected
-                                        ? "border-white/20 bg-white/10 text-white"
-                                        : getStatusBadgeClass(appt)
-                                    }`}
-                                  >
-                                    {getCalendarBadgeLabel(appt)}
-                                  </span>
-                                </div>
+                                    <div>
+                                      <span
+                                        className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                          isSelected
+                                            ? "border-white/20 bg-white/10 text-white"
+                                            : getStatusBadgeClass(appt)
+                                        }`}
+                                      >
+                                        {getCalendarBadgeLabel(appt)}
+                                      </span>
+                                    </div>
 
-                                <p
-                                  className={`truncate text-sm font-semibold ${
-                                    isSelected ? "text-white" : "text-slate-900"
-                                  }`}
-                                >
-                                  {appt.customer_name}
-                                </p>
+                                    <p
+                                      className={`truncate text-sm font-semibold ${
+                                        isSelected ? "text-white" : "text-slate-900"
+                                      }`}
+                                    >
+                                      {appt.customer_name}
+                                    </p>
 
-                                <p
-                                  className={`truncate text-[11px] ${
-                                    isSelected ? "text-slate-200" : "text-slate-500"
-                                  }`}
-                                >
-                                  {appt.service_name_snapshot || "Reserva"}
-                                </p>
-
-                                {isPastPendingClosure(appt) ? (
-                                  <div
-                                    className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${
-                                      isSelected
-                                        ? "bg-white/10 text-white"
-                                        : "bg-rose-100 text-rose-700"
-                                    }`}
-                                  >
-                                    Requiere cierre
+                                    <p
+                                      className={`truncate text-[11px] ${
+                                        isSelected ? "text-slate-200" : "text-slate-500"
+                                      }`}
+                                    >
+                                      {appt.service_name_snapshot || "Reserva"}
+                                    </p>
                                   </div>
-                                ) : null}
-                              </div>
-                            </button>
-                          );
-                        })}
+                                </button>
+                              );
+                            })
+                          )
+                        ) : (
+                          daySlots.map((slot, index) => {
+                            const appt = dayAppointments.find(
+                              (a) =>
+                                new Date(a.start_at).getTime() ===
+                                new Date(slot).getTime()
+                            );
+
+                            const isHourStart = index % 2 === 0;
+                            const isEvenBand = Math.floor(index / 2) % 2 === 0;
+
+                            if (!appt) {
+                              return (
+                                <div
+                                  key={slot}
+                                  className={`rounded-lg border px-2 py-2 text-center text-[11px] ${
+                                    isHourStart
+                                      ? "border-slate-300"
+                                      : "border-slate-200"
+                                  } ${
+                                    isEvenBand
+                                      ? "bg-slate-100 text-slate-500"
+                                      : "bg-white text-slate-400"
+                                  }`}
+                                >
+                                  <span className="block font-medium">
+                                    {formatHour(slot)}
+                                  </span>
+                                  <span className="block">Libre</span>
+                                </div>
+                              );
+                            }
+
+                            const isSelected = selectedAppointment?.id === appt.id;
+
+                            return (
+                              <button
+                                key={appt.id}
+                                type="button"
+                                onClick={() => handleSelectAppointment(appt)}
+                                className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
+                                  appt,
+                                  isSelected
+                                )}`}
+                              >
+                                <div className="space-y-1.5">
+                                  <div
+                                    className={`text-[11px] font-semibold ${
+                                      isSelected ? "text-slate-200" : "text-slate-600"
+                                    }`}
+                                  >
+                                    {formatHour(appt.start_at)} -{" "}
+                                    {formatHour(appt.end_at)}
+                                  </div>
+
+                                  <div>
+                                    <span
+                                      className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                        isSelected
+                                          ? "border-white/20 bg-white/10 text-white"
+                                          : getStatusBadgeClass(appt)
+                                      }`}
+                                    >
+                                      {getCalendarBadgeLabel(appt)}
+                                    </span>
+                                  </div>
+
+                                  <p
+                                    className={`truncate text-sm font-semibold ${
+                                      isSelected ? "text-white" : "text-slate-900"
+                                    }`}
+                                  >
+                                    {appt.customer_name}
+                                  </p>
+
+                                  <p
+                                    className={`truncate text-[11px] ${
+                                      isSelected ? "text-slate-200" : "text-slate-500"
+                                    }`}
+                                  >
+                                    {appt.service_name_snapshot || "Reserva"}
+                                  </p>
+
+                                  {isPastPendingClosure(appt) ? (
+                                    <div
+                                      className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${
+                                        isSelected
+                                          ? "bg-white/10 text-white"
+                                          : "bg-rose-100 text-rose-700"
+                                      }`}
+                                    >
+                                      Requiere cierre
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   );
@@ -956,15 +1072,17 @@ export default function AgendaPage() {
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
                     const count =
-                      filter === "all"
-                        ? counts.all
+                      filter === "active"
+                        ? counts.active
                         : filter === "pending_close"
                         ? counts.pending_close
                         : filter === "booked"
                         ? counts.booked
                         : filter === "completed"
                         ? counts.completed
-                        : counts.no_show;
+                        : filter === "no_show"
+                        ? counts.no_show
+                        : counts.canceled;
 
                     return (
                       <button
@@ -981,16 +1099,6 @@ export default function AgendaPage() {
                       </button>
                     );
                   })}
-
-                  {hasPendingClose && activeFilter !== "all" ? (
-                    <button
-                      type="button"
-                      onClick={() => setActiveFilter("all")}
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Ver todas
-                    </button>
-                  ) : null}
                 </div>
               </Panel>
             </div>
@@ -1003,7 +1111,9 @@ export default function AgendaPage() {
                 <p className="mt-1 text-lg font-semibold text-slate-900">
                   {loading ? "..." : String(appointmentsToday.length)}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">Reservas hoy.</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  En vista actual.
+                </p>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
@@ -1011,9 +1121,23 @@ export default function AgendaPage() {
                   Semana
                 </p>
                 <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {loading ? "..." : String(appointments.length)}
+                  {loading
+                    ? "..."
+                    : String(
+                        activeFilter === "active"
+                          ? counts.active
+                          : activeFilter === "pending_close"
+                          ? counts.pending_close
+                          : activeFilter === "booked"
+                          ? counts.booked
+                          : activeFilter === "completed"
+                          ? counts.completed
+                          : activeFilter === "no_show"
+                          ? counts.no_show
+                          : counts.canceled
+                      )}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">Total semanal.</p>
+                <p className="mt-1 text-xs text-slate-500">Según filtro.</p>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
@@ -1027,6 +1151,16 @@ export default function AgendaPage() {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                  Canceladas
+                </p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">
+                  {loading ? "..." : String(canceledCount)}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">Esta semana.</p>
+              </div>
+
+              <div className="col-span-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                   Próxima
                 </p>
