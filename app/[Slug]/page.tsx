@@ -66,6 +66,14 @@ type PublicServicesResponse = {
   services?: ServiceItem[];
 };
 
+type BookingSuccessData = {
+  serviceName: string;
+  date: string;
+  time: string;
+  branchName?: string;
+  staffName?: string;
+};
+
 function formatDate(date: Date) {
   const local = new Date(date);
   const year = local.getFullYear();
@@ -79,6 +87,15 @@ function formatHour(dateString: string) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+  });
+}
+
+function formatFullDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("es-CL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 }
 
@@ -128,6 +145,11 @@ function dedupeSlots(slots: SlotItem[]) {
   );
 }
 
+function normalizeWhatsappNumber(value?: string | null) {
+  if (!value) return "";
+  return value.replace(/\D/g, "");
+}
+
 export default function Page() {
   const params = useParams();
   const pathname = usePathname();
@@ -173,13 +195,8 @@ export default function Page() {
   const [submitting, setSubmitting] = useState(false);
 
   const [submitError, setSubmitError] = useState("");
-  const [submitOk, setSubmitOk] = useState("");
-
-const [bookingSuccess, setBookingSuccess] = useState<{
-  serviceName: string;
-  date: string;
-  time: string;
-} | null>(null);
+  const [bookingSuccess, setBookingSuccess] =
+    useState<BookingSuccessData | null>(null);
 
   const formRef = useRef<HTMLDivElement | null>(null);
 
@@ -201,7 +218,7 @@ const [bookingSuccess, setBookingSuccess] = useState<{
     setSelectedSlot(null);
     setWeekSlots({});
     setSubmitError("");
-    setSubmitOk("");
+    setBookingSuccess(null);
   }
 
   function resetAfterServiceChange() {
@@ -210,7 +227,7 @@ const [bookingSuccess, setBookingSuccess] = useState<{
     setSelectedSlot(null);
     setWeekSlots({});
     setSubmitError("");
-    setSubmitOk("");
+    setBookingSuccess(null);
   }
 
   function validateForm() {
@@ -404,13 +421,14 @@ const [bookingSuccess, setBookingSuccess] = useState<{
             );
 
             const data = await res.json();
+            const rawSlots: SlotItem[] = Array.isArray(data.slots)
+              ? data.slots
+              : [];
 
-const rawSlots: SlotItem[] = Array.isArray(data.slots) ? data.slots : [];
-
-return {
-  date,
-  slots: dedupeSlots(rawSlots),
-};
+            return {
+              date,
+              slots: dedupeSlots(rawSlots),
+            };
           })
         );
 
@@ -454,7 +472,6 @@ return {
   async function handleSubmitBooking() {
     try {
       setSubmitError("");
-      setSubmitOk("");
 
       if (!selectedService) {
         setSubmitError("Debes seleccionar un servicio.");
@@ -513,11 +530,20 @@ return {
         throw new Error(data?.error || "No se pudo crear la reserva.");
       }
 
-setBookingSuccess({
-  serviceName: selectedService.name,
-  date: formatDate(new Date(selectedSlot.slot_start)),
-  time: formatHour(selectedSlot.slot_start),
-});
+      const selectedBranch =
+        branches.find((branch) => branch.id === selectedBranchId) || null;
+
+      const resolvedStaffId = selectedStaffId || selectedSlot.staff_id || "";
+      const selectedStaff =
+        staffOptions.find((staff) => staff.id === resolvedStaffId) || null;
+
+      setBookingSuccess({
+        serviceName: selectedService.name,
+        date: formatFullDate(selectedSlot.slot_start),
+        time: formatHour(selectedSlot.slot_start),
+        branchName: selectedBranch?.name || undefined,
+        staffName: selectedStaff?.name || undefined,
+      });
 
       const clearedExtraFields = visibleBookingFields.reduce<
         Record<string, string>
@@ -526,17 +552,14 @@ setBookingSuccess({
         return acc;
       }, {});
 
-setCustomerData({
-  name: "",
-  phone: "",
-  email: "",
-  ...clearedExtraFields,
-});
+      setCustomerData({
+        name: "",
+        phone: "",
+        email: "",
+        ...clearedExtraFields,
+      });
 
-// recargar horarios
-setSelectedDate(new Date(selectedDate));
-
-
+      setSelectedDate(new Date(selectedDate));
     } catch (error: any) {
       setSubmitError(error?.message || "No se pudo crear la reserva.");
     } finally {
@@ -544,71 +567,136 @@ setSelectedDate(new Date(selectedDate));
     }
   }
 
-if (bookingSuccess) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-6">
-      <div className="w-full max-w-xl rounded-[32px] border border-emerald-200 bg-white p-8 shadow-[0_30px_80px_-40px_rgba(16,185,129,0.4)] text-center">
+  if (bookingSuccess) {
+    const whatsappNumber = normalizeWhatsappNumber(business?.whatsapp);
 
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
-          <span className="text-4xl">✅</span>
-        </div>
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-10 md:px-8">
+        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
+          <div className="w-full overflow-hidden rounded-[34px] border border-emerald-200 bg-white shadow-[0_35px_90px_-45px_rgba(16,185,129,0.42)]">
+            <div className="h-2 bg-gradient-to-r from-emerald-500 via-sky-500 to-indigo-500" />
 
-        <h1 className="text-3xl font-bold text-slate-900">
-          Reserva confirmada
-        </h1>
+            <div className="p-6 md:p-10">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-4xl shadow-sm">
+                ✅
+              </div>
 
-        <p className="mt-3 text-sm text-slate-600">
-          Te enviamos un correo con todos los detalles 📩
-        </p>
+              <div className="mt-6 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-600">
+                  Reserva online
+                </p>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left">
-          <p className="text-sm text-slate-500">Servicio</p>
-          <p className="font-semibold text-slate-900">
-            {bookingSuccess.serviceName}
-          </p>
+                <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
+                  Reserva confirmada
+                </h1>
 
-          <div className="mt-3 flex justify-between text-sm">
-            <div>
-              <p className="text-slate-500">Fecha</p>
-              <p className="font-medium text-slate-900">
-                {bookingSuccess.date}
-              </p>
-            </div>
+                <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
+                  Tu hora quedó registrada correctamente. Además, te enviamos un
+                  correo con todos los detalles para que tengas la confirmación
+                  a mano.
+                </p>
+              </div>
 
-            <div>
-              <p className="text-slate-500">Hora</p>
-              <p className="font-medium text-slate-900">
-                {bookingSuccess.time}
-              </p>
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Servicio
+                  </p>
+                  <p className="mt-2 text-lg font-bold text-slate-900">
+                    {bookingSuccess.serviceName}
+                  </p>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Fecha y hora
+                  </p>
+                  <p className="mt-2 text-lg font-bold text-slate-900">
+                    {bookingSuccess.time}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {bookingSuccess.date}
+                  </p>
+                </div>
+
+                {bookingSuccess.branchName ? (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Sucursal
+                    </p>
+                    <p className="mt-2 text-lg font-bold text-slate-900">
+                      {bookingSuccess.branchName}
+                    </p>
+                  </div>
+                ) : null}
+
+                {bookingSuccess.staffName ? (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Profesional
+                    </p>
+                    <p className="mt-2 text-lg font-bold text-slate-900">
+                      {bookingSuccess.staffName}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-8 rounded-3xl border border-sky-100 bg-sky-50/80 p-5 text-center">
+                <p className="text-sm font-medium text-sky-900">
+                  Revisa tu correo para ver la confirmación y el enlace de
+                  cancelación si lo necesitas.
+                </p>
+              </div>
+
+              <div className="mt-8 grid gap-3 md:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingSuccess(null);
+                    setSelectedSlot(null);
+                    setSubmitError("");
+                  }}
+                  className="inline-flex h-13 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-5 text-sm font-semibold text-white transition hover:opacity-95"
+                >
+                  Agendar otra hora
+                </button>
+
+                {whatsappNumber ? (
+                  <a
+                    href={`https://wa.me/${whatsappNumber}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-13 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Ir a WhatsApp
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingSuccess(null);
+                      setSelectedSlot(null);
+                      setSubmitError("");
+                    }}
+                    className="inline-flex h-13 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Volver a la agenda
+                  </button>
+                )}
+              </div>
+
+              {business?.name ? (
+                <p className="mt-6 text-center text-sm text-slate-500">
+                  Gracias por reservar en {business.name}.
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
-
-        <div className="mt-8 space-y-3">
-          <button
-            onClick={() => {
-              setBookingSuccess(null);
-              setSelectedSlot(null);
-            }}
-            className="h-12 w-full rounded-2xl bg-slate-900 text-white font-medium hover:opacity-90 transition"
-          >
-            Agendar otra hora
-          </button>
-
-          {business?.whatsapp ? (
-            <a
-              href={`https://wa.me/${business.whatsapp}`}
-              target="_blank"
-              className="block h-12 w-full rounded-2xl border border-slate-300 text-sm font-medium text-slate-700 flex items-center justify-center hover:bg-slate-50"
-            >
-              Ir a WhatsApp
-            </a>
-          ) : null}
-        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -830,12 +918,6 @@ if (bookingSuccess) {
                   {submitError ? (
                     <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                       {submitError}
-                    </div>
-                  ) : null}
-
-                  {submitOk ? (
-                    <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-emerald-700">
-                      {submitOk}
                     </div>
                   ) : null}
 
