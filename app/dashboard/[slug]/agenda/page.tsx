@@ -642,6 +642,30 @@ export default function AgendaPage() {
     };
   }
 
+  function getSelectedStaffClosedLabel(day: Date) {
+    if (!selectedStaffId) return "";
+
+    const dayKey = formatDateYYYYMMDD(day);
+
+    const matchedRow = staffSpecialDates.find((item) => {
+      const sameBranch =
+        !item.branch_id || item.branch_id === selectedBranchId;
+
+      return (
+        sameBranch &&
+        item.staff_id === selectedStaffId &&
+        item.date === dayKey &&
+        item.is_closed
+      );
+    });
+
+    if (!matchedRow) return "";
+
+    return (matchedRow.label || "").trim() || "No disponible";
+  }
+
+  function getSelectedStaffDayWindow(day: Date) {
+
   function getSelectedStaffDayWindow(day: Date) {
     const dayKey = formatDateYYYYMMDD(day);
 
@@ -1509,6 +1533,8 @@ if (!selectedStaffId) {
                     )
                     .filter(isCanceled).length;
 
+                  const closedLabel = getSelectedStaffClosedLabel(day);
+
                   const showClosedBySchedule =
                     !!selectedStaffId &&
                     dayWindow.hasConfiguredHours &&
@@ -1573,8 +1599,13 @@ if (!selectedStaffId) {
 
                       <div className="space-y-1.5">
                         {showClosedBySchedule ? (
-                          <div className="rounded-lg border border-dashed border-slate-200 bg-white px-2 py-3 text-center text-[11px] text-slate-400">
-                            Sin horario para este profesional
+                          <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50 px-2 py-3 text-center">
+                            <span className="block text-[11px] font-semibold text-amber-800">
+                              {closedLabel || "No disponible"}
+                            </span>
+                            <span className="mt-1 block text-[10px] text-amber-700">
+                              Profesional no disponible este día
+                            </span>
                           </div>
                         ) : activeFilter === "canceled" ? (
                           dayAppointments.length === 0 ? (
