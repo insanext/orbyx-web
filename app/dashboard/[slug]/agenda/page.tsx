@@ -72,6 +72,19 @@ export default function AgendaPage() {
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
   const [statusSaving, setStatusSaving] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [searchResults, setSearchResults] = useState<Appointment[]>([]);
+
+  const [isEditingReservation, setIsEditingReservation] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    customer_name: "",
+    customer_phone: "",
+    customer_email: "",
+  });
+
   const detailRef = useRef<HTMLDivElement | null>(null);
 
   const branchStorageKey = useMemo(() => {
@@ -132,6 +145,17 @@ export default function AgendaPage() {
     });
 
     return `${startText} – ${endText}`;
+  }
+
+  function formatCompactDateTime(dateString: string) {
+    return new Date(dateString).toLocaleString("es-CL", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   }
 
   function generateDaySlots(day: Date) {
@@ -319,8 +343,18 @@ export default function AgendaPage() {
     return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
   }
 
+  function syncEditForm(appt: Appointment | null) {
+    setEditForm({
+      customer_name: appt?.customer_name || "",
+      customer_phone: appt?.customer_phone || "",
+      customer_email: appt?.customer_email || "",
+    });
+  }
+
   function handleSelectAppointment(appt: Appointment) {
     setSelectedAppointment(appt);
+    setIsEditingReservation(false);
+    syncEditForm(appt);
 
     setTimeout(() => {
       detailRef.current?.scrollIntoView({
@@ -333,6 +367,24 @@ export default function AgendaPage() {
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
     return localStorage.getItem(branchStorageKey) || "";
+  }
+
+  function applyAppointmentUpdate(updatedAppointment: Appointment) {
+    setAppointments((prev) =>
+      prev.map((appt) =>
+        appt.id === updatedAppointment.id ? updatedAppointment : appt
+      )
+    );
+
+    setSearchResults((prev) =>
+      prev.map((appt) =>
+        appt.id === updatedAppointment.id ? updatedAppointment : appt
+      )
+    );
+
+    setSelectedAppointment((prev) =>
+      prev && prev.id === updatedAppointment.id ? updatedAppointment : prev
+    );
   }
 
   async function loadBranches(currentTenantId: string) {
@@ -431,9 +483,11 @@ export default function AgendaPage() {
         );
 
         if (updatedSelected) {
-          const stillVisible = matchesFilter(updatedSelected, activeFilter);
-          setSelectedAppointment(stillVisible ? updatedSelected : null);
-        } else {
+          setSelectedAppointment(updatedSelected);
+          if (!isEditingReservation) {
+            syncEditForm(updatedSelected);
+          }
+        } else if (!options?.preserveSelected) {
           setSelectedAppointment(null);
         }
       }
@@ -475,25 +529,9 @@ export default function AgendaPage() {
         throw new Error(data?.error || "No se pudo actualizar el estado");
       }
 
-      setAppointments((prev) =>
-        prev.map((appt) =>
-          appt.id === appointmentId
-            ? {
-                ...appt,
-                status: newStatus,
-              }
-            : appt
-        )
-      );
-
-      setSelectedAppointment((prev) =>
-        prev && prev.id === appointmentId
-          ? {
-              ...prev,
-              status: newStatus,
-            }
-          : prev
-      );
+      if (data?.appointment) {
+        applyAppointmentUpdate(data.appointment);
+      }
 
       await loadAppointments({ preserveSelected: true });
     } catch (err: unknown) {
@@ -502,6 +540,88 @@ export default function AgendaPage() {
       );
     } finally {
       setStatusSaving(false);
+    }
+  }
+
+  async function handleSearchAppointments() {
+    try {
+      setSearchLoading(true);
+      setSearchError("");
+
+      const trimmedQuery = searchQuery.trim();
+
+      if (trimmedQuery.length < 2) {
+        setSearchResults([]);
+        setSearchError("Ingresa al menos 2 caracteres para buscar.");
+        return;
+      }
+
+      const res = await fetch(
+        `${BACKEND_URL}/appointments/search/${slug}?q=${encodeURIComponent(
+          trimmedQuery
+        )}`
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo buscar reservas");
+      }
+
+      const rows: Appointment[] = Array.isArray(data.appointments)
+        ? data.appointments
+        : [];
+
+      setSearchResults(rows);
+
+      if (rows.length === 0) {
+        setSearchError("No encontramos reservas con esa búsqueda.");
+      }
+    } catch (err: unknown) {
+      setSearchResults([]);
+      setSearchError(
+        err instanceof Error ? err.message : "Error buscando reservas"
+      );
+    } finally {
+      setSearchLoading(false);
+    }
+  }
+
+  async function handleSaveReservationEdit() {
+    try {
+      if (!selectedAppointment) return;
+
+      setEditSaving(true);
+      setError("");
+
+      const res = await fetch(`${BACKEND_URL}/appointments/${selectedAppointment.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_name: editForm.customer_name.trim(),
+          customer_phone: editForm.customer_phone.trim(),
+          customer_email: editForm.customer_email.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo actualizar la reserva");
+      }
+
+      const updatedAppointment: Appointment = data.appointment;
+      applyAppointmentUpdate(updatedAppointment);
+      syncEditForm(updatedAppointment);
+      setIsEditingReservation(false);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Error actualizando reserva"
+      );
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -559,6 +679,7 @@ export default function AgendaPage() {
 
       setSelectedBranchId(branchId);
       setSelectedAppointment(null);
+      setIsEditingReservation(false);
     }
 
     function handleStorage(event: StorageEvent) {
@@ -567,6 +688,7 @@ export default function AgendaPage() {
       const nextBranchId = event.newValue || "";
       setSelectedBranchId(nextBranchId);
       setSelectedAppointment(null);
+      setIsEditingReservation(false);
     }
 
     window.addEventListener(
@@ -583,12 +705,6 @@ export default function AgendaPage() {
       window.removeEventListener("storage", handleStorage);
     };
   }, [slug, branchStorageKey]);
-
-  useEffect(() => {
-    if (selectedAppointment && !matchesFilter(selectedAppointment, activeFilter)) {
-      setSelectedAppointment(null);
-    }
-  }, [activeFilter, selectedAppointment]);
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appt) => matchesFilter(appt, activeFilter));
@@ -655,7 +771,6 @@ export default function AgendaPage() {
   const pendingCloseCount = pendingCloseAppointments.length;
   const canceledCount = canceledAppointments.length;
   const hasPendingClose = pendingCloseCount > 0;
-  const hasCanceled = canceledCount > 0;
 
   const counts = useMemo(() => {
     return {
@@ -674,16 +789,19 @@ export default function AgendaPage() {
   function goPrevWeek() {
     setWeekBaseDate((prev) => addDays(prev, -7));
     setSelectedAppointment(null);
+    setIsEditingReservation(false);
   }
 
   function goNextWeek() {
     setWeekBaseDate((prev) => addDays(prev, 7));
     setSelectedAppointment(null);
+    setIsEditingReservation(false);
   }
 
   function goToday() {
     setWeekBaseDate(new Date());
     setSelectedAppointment(null);
+    setIsEditingReservation(false);
   }
 
   const selectedBranchName =
@@ -708,13 +826,7 @@ export default function AgendaPage() {
                   onClick={() => {
                     setActiveFilter("pending_close");
                     if (pendingCloseAppointments[0]) {
-                      setSelectedAppointment(pendingCloseAppointments[0]);
-                      setTimeout(() => {
-                        detailRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                      }, 80);
+                      handleSelectAppointment(pendingCloseAppointments[0]);
                     }
                   }}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
@@ -726,20 +838,6 @@ export default function AgendaPage() {
                   Sin pendientes
                 </div>
               )}
-
-              {hasCanceled ? (
-                <button
-                  type="button"
-                  onClick={() => setActiveFilter("canceled")}
-                  className={`inline-flex h-10 items-center justify-center rounded-xl border px-3.5 text-sm font-semibold shadow-sm transition ${
-                    activeFilter === "canceled"
-                      ? "border-slate-700 bg-slate-700 text-white"
-                      : "border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  Canceladas: {canceledCount}
-                </button>
-              ) : null}
 
               <div className="flex items-center rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
                 <button
@@ -778,6 +876,7 @@ export default function AgendaPage() {
                   if (!e.target.value) return;
                   setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
                   setSelectedAppointment(null);
+                  setIsEditingReservation(false);
                 }}
                 className="h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
               />
@@ -791,15 +890,6 @@ export default function AgendaPage() {
           Tienes <span className="font-semibold">{pendingCloseCount}</span>{" "}
           cita{pendingCloseCount === 1 ? "" : "s"} pendiente
           {pendingCloseCount === 1 ? "" : "s"} de cierre.
-        </div>
-      ) : null}
-
-      {hasCanceled ? (
-        <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-100 to-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm">
-          Hay <span className="font-semibold">{canceledCount}</span> reserva
-          {canceledCount === 1 ? "" : "s"} cancelada
-          {canceledCount === 1 ? "" : "s"} esta semana. No se muestran en la
-          vista principal de activas.
         </div>
       ) : null}
 
@@ -833,10 +923,16 @@ export default function AgendaPage() {
                   const isToday = dayKey === todayKey;
                   const daySlots = generateDaySlots(day);
                   const dayPendingCount = appointments
-                    .filter((appt) => formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey)
+                    .filter(
+                      (appt) =>
+                        formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
+                    )
                     .filter(isPastPendingClosure).length;
                   const dayCanceledCount = appointments
-                    .filter((appt) => formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey)
+                    .filter(
+                      (appt) =>
+                        formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
+                    )
                     .filter(isCanceled).length;
 
                   return (
@@ -903,7 +999,8 @@ export default function AgendaPage() {
                             </div>
                           ) : (
                             dayAppointments.map((appt) => {
-                              const isSelected = selectedAppointment?.id === appt.id;
+                              const isSelected =
+                                selectedAppointment?.id === appt.id;
 
                               return (
                                 <button
@@ -918,7 +1015,9 @@ export default function AgendaPage() {
                                   <div className="space-y-1.5">
                                     <div
                                       className={`text-[11px] font-semibold ${
-                                        isSelected ? "text-slate-200" : "text-slate-600"
+                                        isSelected
+                                          ? "text-slate-200"
+                                          : "text-slate-600"
                                       }`}
                                     >
                                       {formatHour(appt.start_at)} -{" "}
@@ -939,7 +1038,9 @@ export default function AgendaPage() {
 
                                     <p
                                       className={`truncate text-sm font-semibold ${
-                                        isSelected ? "text-white" : "text-slate-900"
+                                        isSelected
+                                          ? "text-white"
+                                          : "text-slate-900"
                                       }`}
                                     >
                                       {appt.customer_name}
@@ -947,7 +1048,9 @@ export default function AgendaPage() {
 
                                     <p
                                       className={`truncate text-[11px] ${
-                                        isSelected ? "text-slate-200" : "text-slate-500"
+                                        isSelected
+                                          ? "text-slate-200"
+                                          : "text-slate-500"
                                       }`}
                                     >
                                       {appt.service_name_snapshot || "Reserva"}
@@ -990,7 +1093,8 @@ export default function AgendaPage() {
                               );
                             }
 
-                            const isSelected = selectedAppointment?.id === appt.id;
+                            const isSelected =
+                              selectedAppointment?.id === appt.id;
 
                             return (
                               <button
@@ -1005,7 +1109,9 @@ export default function AgendaPage() {
                                 <div className="space-y-1.5">
                                   <div
                                     className={`text-[11px] font-semibold ${
-                                      isSelected ? "text-slate-200" : "text-slate-600"
+                                      isSelected
+                                        ? "text-slate-200"
+                                        : "text-slate-600"
                                     }`}
                                   >
                                     {formatHour(appt.start_at)} -{" "}
@@ -1026,7 +1132,9 @@ export default function AgendaPage() {
 
                                   <p
                                     className={`truncate text-sm font-semibold ${
-                                      isSelected ? "text-white" : "text-slate-900"
+                                      isSelected
+                                        ? "text-white"
+                                        : "text-slate-900"
                                     }`}
                                   >
                                     {appt.customer_name}
@@ -1034,7 +1142,9 @@ export default function AgendaPage() {
 
                                   <p
                                     className={`truncate text-[11px] ${
-                                      isSelected ? "text-slate-200" : "text-slate-500"
+                                      isSelected
+                                        ? "text-slate-200"
+                                        : "text-slate-500"
                                     }`}
                                   >
                                     {appt.service_name_snapshot || "Reserva"}
@@ -1067,6 +1177,108 @@ export default function AgendaPage() {
 
         <div ref={detailRef} className="self-start xl:sticky xl:top-6">
           <div className="space-y-3">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <Panel
+                title="Buscar cliente o reserva"
+                description="Busca por nombre, email o teléfono."
+              >
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSearchAppointments();
+                        }
+                      }}
+                      placeholder="Ej: Camilo, gmail.com, +569..."
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSearchAppointments}
+                      disabled={searchLoading}
+                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {searchLoading ? "Buscando..." : "Buscar"}
+                    </button>
+                  </div>
+
+                  {searchError ? (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      {searchError}
+                    </div>
+                  ) : null}
+
+                  {searchResults.length > 0 ? (
+                    <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                      {searchResults.map((appt) => {
+                        const isSelected = selectedAppointment?.id === appt.id;
+
+                        return (
+                          <button
+                            key={appt.id}
+                            type="button"
+                            onClick={() => handleSelectAppointment(appt)}
+                            className={`w-full rounded-xl border p-3 text-left transition ${
+                              isSelected
+                                ? "border-slate-900 bg-slate-900 text-white"
+                                : "border-slate-200 bg-slate-50 hover:border-sky-300 hover:bg-sky-50"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p
+                                  className={`truncate text-sm font-semibold ${
+                                    isSelected
+                                      ? "text-white"
+                                      : "text-slate-900"
+                                  }`}
+                                >
+                                  {appt.customer_name}
+                                </p>
+                                <p
+                                  className={`mt-1 truncate text-xs ${
+                                    isSelected
+                                      ? "text-slate-200"
+                                      : "text-slate-500"
+                                  }`}
+                                >
+                                  {appt.service_name_snapshot || "Reserva"}
+                                </p>
+                              </div>
+
+                              <span
+                                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                  isSelected
+                                    ? "border-white/20 bg-white/10 text-white"
+                                    : getStatusBadgeClass(appt)
+                                }`}
+                              >
+                                {getStatusLabel(appt)}
+                              </span>
+                            </div>
+
+                            <p
+                              className={`mt-2 text-xs ${
+                                isSelected
+                                  ? "text-slate-200"
+                                  : "text-slate-600"
+                              }`}
+                            >
+                              {formatCompactDateTime(appt.start_at)}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              </Panel>
+            </div>
+
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
               <Panel title="Filtros" description="Estado actual de la vista.">
                 <div className="flex flex-wrap gap-2">
@@ -1184,7 +1396,7 @@ export default function AgendaPage() {
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
               <Panel
                 title="Detalle de reserva"
-                description="Cliente, horario y estado."
+                description="Cliente, horario, estado y edición."
               >
                 {!selectedAppointment ? (
                   <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
@@ -1257,42 +1469,141 @@ export default function AgendaPage() {
                       </div>
                     ) : null}
 
-                    <div className="space-y-2">
-                      <div className="rounded-xl border border-slate-200 bg-white p-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          Cliente
+                    <div className="rounded-xl border border-slate-200 bg-white p-3">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900">
+                          Datos del cliente
                         </p>
-                        <p className="mt-1 text-sm font-medium text-slate-900">
-                          {selectedAppointment.customer_name}
-                        </p>
+
+                        {!isEditingReservation ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEditingReservation(true);
+                              syncEditForm(selectedAppointment);
+                            }}
+                            className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Editar
+                          </button>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsEditingReservation(false);
+                                syncEditForm(selectedAppointment);
+                              }}
+                              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSaveReservationEdit}
+                              disabled={editSaving}
+                              className="inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {editSaving ? "Guardando..." : "Guardar"}
+                            </button>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="rounded-xl border border-slate-200 bg-white p-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          Teléfono
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-slate-900">
-                          {selectedAppointment.customer_phone || "No disponible"}
-                        </p>
-                      </div>
+                      {!isEditingReservation ? (
+                        <div className="space-y-2">
+                          <div className="rounded-xl border border-slate-200 bg-white p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Cliente
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-900">
+                              {selectedAppointment.customer_name}
+                            </p>
+                          </div>
 
-                      <div className="rounded-xl border border-slate-200 bg-white p-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          Email
-                        </p>
-                        <p className="mt-1 break-all text-sm font-medium text-slate-900">
-                          {selectedAppointment.customer_email || "No disponible"}
-                        </p>
-                      </div>
+                          <div className="rounded-xl border border-slate-200 bg-white p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Teléfono
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-900">
+                              {selectedAppointment.customer_phone ||
+                                "No disponible"}
+                            </p>
+                          </div>
 
-                      <div className="rounded-xl border border-slate-200 bg-white p-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          Estado
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-slate-900">
-                          {getStatusLabel(selectedAppointment)}
-                        </p>
-                      </div>
+                          <div className="rounded-xl border border-slate-200 bg-white p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Email
+                            </p>
+                            <p className="mt-1 break-all text-sm font-medium text-slate-900">
+                              {selectedAppointment.customer_email ||
+                                "No disponible"}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-200 bg-white p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Estado
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-900">
+                              {getStatusLabel(selectedAppointment)}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Cliente
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.customer_name}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  customer_name: e.target.value,
+                                }))
+                              }
+                              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Teléfono
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.customer_phone}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  customer_phone: e.target.value,
+                                }))
+                              }
+                              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              value={editForm.customer_email}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  customer_email: e.target.value,
+                                }))
+                              }
+                              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
