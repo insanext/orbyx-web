@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Bot,
@@ -51,6 +51,22 @@ type Plan = {
   gradientClass: string;
 };
 
+type BillingPreviewResponse = {
+  ok?: boolean;
+  change_type?: "same_plan" | "upgrade" | "downgrade";
+  current_plan?: string;
+  new_plan?: string;
+  amount_today?: number;
+  credit?: number;
+  charge?: number;
+  days_remaining?: number;
+  billing_cycle_end?: string;
+  scheduled_change_at?: string;
+  message?: string;
+  error?: string;
+};
+
+const BACKEND_URL = "https://orbyx-backend.onrender.com";
 const SERVICES_PER_STAFF_EXTRA = 5;
 
 const plans: Plan[] = [
@@ -248,6 +264,38 @@ function formatCLP(value: number) {
   return `$${value.toLocaleString("es-CL")}`;
 }
 
+function formatDate(dateString?: string | null) {
+  if (!dateString) return "—";
+
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function normalizePlanFromUrl(rawValue: string | null): PlanKey {
+  const raw = String(rawValue || "vip").toLowerCase();
+
+  if (raw === "starter") return "pro";
+  if (raw === "pro") return "pro";
+  if (raw === "premium") return "premium";
+  if (raw === "vip") return "vip";
+  if (raw === "platinum") return "platinum";
+
+  return "vip";
+}
+
+function planNameFromKey(planKey?: string | null) {
+  if (!planKey) return "—";
+  const found = plans.find((plan) => plan.key === planKey);
+  return found?.name || String(planKey);
+}
+
 function PlanIcon({ type }: { type: Plan["icon"] }) {
   if (type === "mail") return <Mail className="h-5 w-5" />;
   if (type === "sparkles") return <Sparkles className="h-5 w-5" />;
@@ -380,16 +428,12 @@ function PlanesPageContent() {
   const searchParams = useSearchParams();
 
   const initialPlan = useMemo<PlanKey>(() => {
-    const raw = String(searchParams.get("current_plan") || "vip").toLowerCase();
-
-    if (raw === "starter") return "pro";
-    if (raw === "pro") return "pro";
-    if (raw === "premium") return "premium";
-    if (raw === "vip") return "vip";
-    if (raw === "platinum") return "platinum";
-
-    return "vip";
+    return normalizePlanFromUrl(searchParams.get("current_plan"));
   }, [searchParams]);
+
+  const tenantId = searchParams.get("tenant_id") || "";
+  const slug = searchParams.get("slug") || "";
+  const from = searchParams.get("from") || "";
 
   const [selectedPlanKey, setSelectedPlanKey] = useState<PlanKey>(initialPlan);
   const [staffExtras, setStaffExtras] = useState(0);
@@ -397,8 +441,21 @@ function PlanesPageContent() {
   const [campaignExtras, setCampaignExtras] = useState(0);
   const [aiExtras, setAiExtras] = useState(0);
 
+  const [preview, setPreview] = useState<BillingPreviewResponse | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState("");
+  const [applyOk, setApplyOk] = useState("");
+
+  useEffect(() => {
+    setSelectedPlanKey(initialPlan);
+  }, [initialPlan]);
+
   const selectedPlan =
     plans.find((plan) => plan.key === selectedPlanKey) || plans[2];
+
+  const isCurrentPlan = selectedPlanKey === initialPlan;
 
   const supportsStaffExtra = selectedPlan.extras.includes("staff");
   const supportsReminderExtra = selectedPlan.extras.includes("reminders");
@@ -415,7 +472,9 @@ function PlanesPageContent() {
     if (supportsCampaignExtra) {
       total += campaignExtras * extraConfig.campaigns.unitPrice;
     }
-    if (supportsAiExtra) total += aiExtras * extraConfig.ai.unitPrice;
+    if (supportsAiExtra) {
+      total += aiExtras * extraConfig.ai.unitPrice;
+    }
 
     return total;
   }, [
@@ -432,10 +491,10 @@ function PlanesPageContent() {
   const extrasIva = Math.round(extrasSubtotal * 0.19);
   const extrasTotal = extrasSubtotal + extrasIva;
 
-  const totalConPlan = selectedPlan.price + extrasSubtotal;
-  const totalIva = Math.round(totalConPlan * 0.19);
-  const total = totalConPlan + totalIva;
-
+  const previewAmountToday = Number(preview?.amount_today || 0);
+  const payTodaySubtotal = previewAmountToday + extrasSubtotal;
+  const payTodayIva = Math.round(payTodaySubtotal * 0.19);
+  const payTodayTotal = payTodaySubtotal + payTodayIva;
 
   const currentStaffTotal = selectedPlan.includedStaff + staffExtras;
   const currentServicesTotal =
@@ -489,12 +548,60 @@ function PlanesPageContent() {
     supportsStaffExtra,
   ]);
 
+  useEffect(() => {
+    async function loadPreview() {
+      try {
+        setPreviewLoading(true);
+        setPreviewError("");
+        setPreview(null);
+
+        if (!tenantId) {
+          const fallbackType = isCurrentPlan ? "same_plan" : "upgrade";
+          setPreview({
+            ok: true,
+            change_type: fallbackType,
+            current_plan: initialPlan,
+            new_plan: selectedPlanKey,
+            amount_today: isCurrentPlan ? 0 : selectedPlan.price,
+            message: isCurrentPlan
+              ? "Ya estás en este plan"
+              : "Cambio estimado sin tenant_id",
+          });
+          return;
+        }
+
+        const url = `${BACKEND_URL}/billing/preview-change?tenant_id=${encodeURIComponent(
+          tenantId
+        )}&new_plan=${encodeURIComponent(selectedPlanKey)}`;
+
+        const res = await fetch(url);
+        const data: BillingPreviewResponse = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "No se pudo calcular el cambio de plan");
+        }
+
+        setPreview(data);
+      } catch (error: any) {
+        setPreviewError(
+          error?.message || "No se pudo calcular el cambio de plan"
+        );
+      } finally {
+        setPreviewLoading(false);
+      }
+    }
+
+    loadPreview();
+  }, [tenantId, selectedPlanKey, selectedPlan.price, initialPlan, isCurrentPlan]);
+
   function handleSelectPlan(planKey: PlanKey) {
     setSelectedPlanKey(planKey);
     setStaffExtras(0);
     setReminderExtras(0);
     setCampaignExtras(0);
     setAiExtras(0);
+    setApplyError("");
+    setApplyOk("");
   }
 
   function increaseExtra(extraKey: ExtraKey) {
@@ -527,6 +634,66 @@ function PlanesPageContent() {
     }
   }
 
+  async function handleApplyPlanChange() {
+    try {
+      setApplying(true);
+      setApplyError("");
+      setApplyOk("");
+
+      if (!tenantId) {
+        throw new Error("Falta tenant_id para aplicar el cambio de plan");
+      }
+
+      const res = await fetch(`${BACKEND_URL}/billing/change-plan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          new_plan: selectedPlanKey,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo aplicar el cambio de plan");
+      }
+
+      if (data?.change_type === "upgrade") {
+        setApplyOk(
+          `Upgrade aplicado. Pagar hoy: ${formatCLP(Number(data?.amount_today || 0))}.`
+        );
+      } else if (data?.change_type === "downgrade") {
+        const dateText = formatDate(data?.tenant?.scheduled_change_at);
+        setApplyOk(
+          `Downgrade programado correctamente para el ${dateText}.`
+        );
+      } else {
+        setApplyOk("Cambio aplicado correctamente.");
+      }
+    } catch (error: any) {
+      setApplyError(
+        error?.message || "No se pudo aplicar el cambio de plan"
+      );
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  const previewType = preview?.change_type || (isCurrentPlan ? "same_plan" : "upgrade");
+  const billingEndLabel = formatDate(
+    preview?.scheduled_change_at || preview?.billing_cycle_end
+  );
+
+  const ctaLabel =
+    previewType === "same_plan"
+      ? "Mantener este plan"
+      : previewType === "downgrade"
+      ? "Programar downgrade"
+      : "Cambiar ahora";
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
       <section className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
@@ -539,7 +706,7 @@ function PlanesPageContent() {
                     Precios Orbyx
                   </span>
 
-                                    <Link
+                  <Link
                     href="/"
                     className="text-xs font-medium text-slate-400 transition hover:text-white"
                   >
@@ -555,11 +722,18 @@ function PlanesPageContent() {
                   Comienza con la base que necesita tu negocio y suma capacidad,
                   campañas o automatización cuando tu operación lo pida.
                 </p>
+
+                {from === "staff" ? (
+                  <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                    Llegaste aquí porque alcanzaste el límite de profesionales de tu plan.
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-8 grid gap-4 xl:grid-cols-4">
                 {plans.map((plan) => {
                   const isSelected = selectedPlan.key === plan.key;
+                  const isCurrentCard = initialPlan === plan.key;
 
                   return (
                     <button
@@ -578,10 +752,16 @@ function PlanesPageContent() {
                         </span>
                       ) : null}
 
+                      {isCurrentCard ? (
+                        <span className="absolute left-4 top-4 rounded-full border border-emerald-400/25 bg-emerald-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">
+                          Plan actual
+                        </span>
+                      ) : null}
+
                       <span
                         className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${
                           isSelected ? "bg-white/12" : "bg-white/8"
-                        } ${plan.accentClass}`}
+                        } ${plan.accentClass} ${isCurrentCard ? "mt-6" : ""}`}
                       >
                         <PlanIcon type={plan.icon} />
                       </span>
@@ -628,7 +808,7 @@ function PlanesPageContent() {
 
                     <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        Plan actual
+                        Selección actual
                       </p>
                       <p className="mt-1 text-sm font-semibold text-white">
                         {selectedPlan.name}
@@ -717,6 +897,37 @@ function PlanesPageContent() {
               </div>
 
               <div className="p-6">
+                {previewLoading ? (
+                  <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+                    Calculando cambio de plan...
+                  </div>
+                ) : null}
+
+                {previewError ? (
+                  <div className="mb-4 rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                    {previewError}
+                  </div>
+                ) : null}
+
+                {!previewLoading && !previewError ? (
+                  <div
+                    className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+                      previewType === "same_plan"
+                        ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
+                        : previewType === "downgrade"
+                        ? "border-amber-300/20 bg-amber-500/10 text-amber-100"
+                        : "border-sky-300/20 bg-sky-500/10 text-sky-100"
+                    }`}
+                  >
+                    {preview?.message ||
+                      (previewType === "downgrade"
+                        ? "Este cambio quedará programado para el siguiente ciclo."
+                        : previewType === "same_plan"
+                        ? "Ya estás en este plan."
+                        : "Este cambio se aplicará de inmediato.")}
+                  </div>
+                ) : null}
+
                 <div className="space-y-3">
                   {extraItems.length === 0 ? (
                     <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-300">
@@ -741,11 +952,62 @@ function PlanesPageContent() {
 
                 <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Tu plan actual</span>
+                    <span className="text-sm text-slate-300">Plan actual</span>
                     <span className="text-sm font-semibold text-white">
-                      {selectedPlan.priceLabel}
+                      {planNameFromKey(initialPlan)}
                     </span>
                   </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Plan seleccionado</span>
+                    <span className="text-sm font-semibold text-white">
+                      {selectedPlan.name}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">
+                      {previewType === "same_plan"
+                        ? "Plan base a pagar hoy"
+                        : previewType === "downgrade"
+                        ? "Cambio de plan hoy"
+                        : "Cambio inmediato de plan"}
+                    </span>
+                    <span className="text-sm font-semibold text-white">
+                      {previewType === "downgrade"
+                        ? "$0"
+                        : formatCLP(previewAmountToday)}
+                    </span>
+                  </div>
+
+                  {previewType === "upgrade" ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Crédito por plan actual
+                        </span>
+                        <span className="text-sm font-semibold text-emerald-300">
+                          - {formatCLP(Number(preview?.credit || 0))}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Cargo proporcional nuevo plan
+                        </span>
+                        <span className="text-sm font-semibold text-white">
+                          {formatCLP(Number(preview?.charge || 0))}
+                        </span>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {previewType === "downgrade" ? (
+                    <div className="rounded-2xl border border-amber-300/15 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
+                      El downgrade comenzará el{" "}
+                      <span className="font-semibold">{billingEndLabel}</span>.
+                    </div>
+                  ) : null}
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-300">
@@ -757,49 +1019,66 @@ function PlanesPageContent() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">
-                      IVA adicionales
-                    </span>
+                    <span className="text-sm text-slate-300">IVA</span>
                     <span className="text-sm font-semibold text-white">
-                      {extrasSubtotal > 0 ? formatCLP(extrasIva) : "$0"}
+                      {payTodaySubtotal > 0 ? formatCLP(payTodayIva) : "$0"}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between border-t border-white/10 pt-3">
                     <span className="text-sm font-semibold text-white">
-                      Total adicionales
+                      Pagar hoy
                     </span>
                     <span className="text-sm font-semibold text-emerald-300">
-                      {extrasSubtotal > 0 ? `+ ${formatCLP(extrasTotal)}` : "$0"}
+                      {payTodaySubtotal > 0 ? formatCLP(payTodayTotal) : "$0"}
                     </span>
-                  </div>
-
-                  <div className="border-t border-white/10 pt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-base font-semibold text-white">
-                        Nuevo total estimado
-                      </span>
-                      <span
-                        className={`text-[1.85rem] font-semibold leading-none ${selectedPlan.accentClass}`}
-                      >
-                        {formatCLP(total)}
-                      </span>
-                    </div>
                   </div>
                 </div>
 
+                {applyError ? (
+                  <div className="mt-4 rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                    {applyError}
+                  </div>
+                ) : null}
+
+                {applyOk ? (
+                  <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                    {applyOk}
+                  </div>
+                ) : null}
+
                 <div className="mt-5 space-y-3">
-                  <Link
-                    href={`/checkout?plan=${selectedPlan.key}`}
-                    className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)]"
+                  <button
+                    type="button"
+                    onClick={handleApplyPlanChange}
+                    disabled={applying || previewLoading || !tenantId}
+                    className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Continuar con {selectedPlan.name}
-                  </Link>
+                    {applying ? "Procesando..." : ctaLabel}
+                  </button>
+
+                  {!tenantId ? (
+                    <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                      Falta <span className="font-semibold">tenant_id</span> en la URL para aplicar el cambio real.
+                    </div>
+                  ) : null}
 
                   <p className="text-center text-xs leading-5 text-slate-400">
-                    Puedes empezar con tu plan base y ampliar capacidad en
-                    cualquier momento.
+                    {previewType === "downgrade"
+                      ? "Seguirás con tu plan actual hasta el cierre del período."
+                      : previewType === "same_plan"
+                      ? "Tu plan base no se cobra de nuevo. Solo se suman adicionales."
+                      : "El upgrade se activa de inmediato con prorrateo del período restante."}
                   </p>
+
+                  {slug ? (
+                    <Link
+                      href={`/dashboard/${slug}/staff`}
+                      className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                    >
+                      Volver al panel
+                    </Link>
+                  ) : null}
                 </div>
 
                 <div className="mt-5 rounded-[22px] border border-white/10 bg-white/5 p-4">
@@ -823,9 +1102,7 @@ function PlanesPageContent() {
                         <div>
                           <p
                             className={`text-sm font-semibold ${
-                              feature.highlight
-                                ? "text-violet-200"
-                                : "text-white"
+                              feature.highlight ? "text-violet-200" : "text-white"
                             }`}
                           >
                             {feature.title}
@@ -894,6 +1171,19 @@ function PlanesPageContent() {
                     </div>
                   </div>
                 </div>
+
+                {previewType === "downgrade" ? (
+                  <div className="mt-5 rounded-[22px] border border-amber-300/20 bg-amber-500/10 p-4">
+                    <p className="text-sm font-semibold text-amber-100">
+                      Importante para el downgrade
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-amber-50/90">
+                      Antes de la fecha de cambio, el panel deberá permitirte elegir
+                      qué profesionales, servicios o sucursales quieres mantener
+                      activos dentro del nuevo límite.
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -905,7 +1195,9 @@ function PlanesPageContent() {
 
 export default function PlanesPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-500">Cargando planes...</div>}>
+    <Suspense
+      fallback={<div className="p-6 text-sm text-slate-500">Cargando planes...</div>}
+    >
       <PlanesPageContent />
     </Suspense>
   );
