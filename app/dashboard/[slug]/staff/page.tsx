@@ -167,6 +167,8 @@ export default function StaffPage() {
 
   const caps = planCaps[plan] || planCaps.starter;
   const reachedLimit = activeCount >= caps.max_staff;
+const excessStaff = Math.max(0, activeCount - caps.max_staff);
+const hasExcess = excessStaff > 0;
 
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
@@ -901,15 +903,23 @@ export default function StaffPage() {
             </div>
           ) : (
 <div className="space-y-5">
-  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-    <p className="text-sm font-medium text-slate-700">
-      Plan actual: <span className="capitalize">{plan}</span>
-    </p>
-    <p className="mt-1 text-sm text-slate-500">
-      Has creado {activeCount} de {caps.max_staff} staff disponibles en tu plan.
-    </p>
-  </div>
+<div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+  <p className="text-sm font-medium text-slate-700">
+    Plan actual: <span className="capitalize">{plan}</span>
+  </p>
 
+  <p className="mt-1 text-sm text-slate-500">
+    Has creado {activeCount} de {caps.max_staff} staff disponibles en tu plan.
+  </p>
+
+  {hasExcess && (
+    <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+      Estás sobre el límite del plan. Debes desactivar{" "}
+      <span className="font-semibold">{excessStaff}</span>{" "}
+      profesional{excessStaff === 1 ? "" : "es"} antes del próximo ciclo.
+    </div>
+  )}
+</div>
   <div>
     <label className="mb-2 block text-sm font-medium text-slate-700">
       Nombre
@@ -1456,9 +1466,9 @@ export default function StaffPage() {
 
                 <div className="flex flex-wrap gap-3">
                   <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={saving || (!editingId && reachedLimit)}
+  type="button"
+  onClick={handleSave}
+  disabled={saving || (!editingId && (reachedLimit || hasExcess))}
                     className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {saving
@@ -1531,9 +1541,25 @@ export default function StaffPage() {
                             {item.name}
                           </p>
 
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                              item.is_active
+<span
+  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+    item.is_active
+      ? hasExcess
+        ? "bg-rose-100 text-rose-700"
+        : isSelected
+        ? "bg-emerald-400/15 text-emerald-200"
+        : "bg-emerald-100 text-emerald-700"
+      : isSelected
+      ? "bg-white/10 text-slate-200"
+      : "bg-slate-100 text-slate-600"
+  }`}
+>
+  {item.is_active
+    ? hasExcess
+      ? "Exceso"
+      : "Activo"
+    : "Inactivo"}
+</span>                          
                                 ? isSelected
                                   ? "bg-emerald-400/15 text-emerald-200"
                                   : "bg-emerald-100 text-emerald-700"
