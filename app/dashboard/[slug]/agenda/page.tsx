@@ -664,6 +664,28 @@ export default function AgendaPage() {
     return (matchedRow.label || "").trim() || "No disponible";
   }
 
+  function getSelectedStaffClosedLabel(day: Date) {
+    if (!selectedStaffId) return "";
+
+    const dayKey = formatDateYYYYMMDD(day);
+
+    const matchedRow = staffSpecialDates.find((item) => {
+      const sameBranch =
+        !item.branch_id || item.branch_id === selectedBranchId;
+
+      return (
+        sameBranch &&
+        item.staff_id === selectedStaffId &&
+        item.date === dayKey &&
+        item.is_closed
+      );
+    });
+
+    if (!matchedRow) return "";
+
+    return (matchedRow.label || "").trim() || "No disponible";
+  }
+
   function getSelectedStaffDayWindow(day: Date) {
     const dayKey = formatDateYYYYMMDD(day);
 
