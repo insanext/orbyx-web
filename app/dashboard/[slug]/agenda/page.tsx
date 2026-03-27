@@ -59,13 +59,25 @@ type BusinessHourItem = {
   end_time: string | null;
 };
 
-type StaffHourItem = {
+type BusinessSpecialDateItem = {
+  id?: string;
+  tenant_id?: string;
+  branch_id?: string | null;
+  date: string;
+  label?: string | null;
+  is_closed: boolean;
+  start_time: string | null;
+  end_time: string | null;
+};
+
+type StaffSpecialDateItem = {
   id?: string;
   tenant_id?: string;
   branch_id?: string | null;
   staff_id: string;
-  day_of_week: number;
-  enabled: boolean;
+  date: string;
+  label?: string | null;
+  is_closed: boolean;
   start_time: string | null;
   end_time: string | null;
 };
@@ -112,6 +124,12 @@ export default function AgendaPage() {
 
   const [businessHours, setBusinessHours] = useState<BusinessHourItem[]>([]);
   const [staffHours, setStaffHours] = useState<StaffHourItem[]>([]);
+  const [businessSpecialDates, setBusinessSpecialDates] = useState<
+    BusinessSpecialDateItem[]
+  >([]);
+  const [staffSpecialDates, setStaffSpecialDates] = useState<
+    StaffSpecialDateItem[]
+  >([]);
 
   const [weekBaseDate, setWeekBaseDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -497,12 +515,125 @@ export default function AgendaPage() {
     return staffList.find((staff) => staff.id === staffId)?.name || "Profesional";
   }
 
-  function getWeekdayForAgenda(date: Date) {
+   function getWeekdayForAgenda(date: Date) {
     const jsDay = date.getDay();
     return jsDay === 0 ? 0 : jsDay;
   }
 
+  function applySpecialDateRulesToWindow(
+    baseWindow: {
+      startMinutes: number | null;
+      endMinutes: number | null;
+      hasConfiguredHours: boolean;
+    },
+    specialDates: Array<{
+      is_closed: boolean;
+      start_time: string | null;
+      end_time: string | null;
+    }>
+  ) {
+    if (!specialDates.length) {
+      return baseWindow;
+    }
+
+    const fullDayClosed = specialDates.some(
+      (row) => row.is_closed && !row.start_time && !row.end_time
+    );
+
+    if (fullDayClosed) {
+      return {
+        startMinutes: null,
+        endMinutes: null,
+        hasConfiguredHours: true,
+      };
+    }
+
+    const openWindows = specialDates
+      .filter((row) => !row.is_closed && row.start_time && row.end_time)
+      .map((row) => ({
+        start: timeStringToMinutes(row.start_time),
+        end: timeStringToMinutes(row.end_time),
+      }))
+      .filter(
+        (row) => row.start !== null && row.end !== null && row.end > row.start
+      ) as { start: number; end: number }[];
+
+    let workingWindows: { start: number; end: number }[] = [];
+
+    if (
+      baseWindow.startMinutes !== null &&
+      baseWindow.endMinutes !== null &&
+      baseWindow.endMinutes > baseWindow.startMinutes
+    ) {
+      workingWindows = [
+        {
+          start: baseWindow.startMinutes,
+          end: baseWindow.endMinutes,
+        },
+      ];
+    }
+
+    if (openWindows.length > 0) {
+      workingWindows = openWindows;
+    }
+
+    const partialClosedWindows = specialDates
+      .filter((row) => row.is_closed && row.start_time && row.end_time)
+      .map((row) => ({
+        start: timeStringToMinutes(row.start_time),
+        end: timeStringToMinutes(row.end_time),
+      }))
+      .filter(
+        (row) => row.start !== null && row.end !== null && row.end > row.start
+      ) as { start: number; end: number }[];
+
+    for (const blocked of partialClosedWindows) {
+      const nextWindows: { start: number; end: number }[] = [];
+
+      for (const window of workingWindows) {
+        if (blocked.end <= window.start || blocked.start >= window.end) {
+          nextWindows.push(window);
+          continue;
+        }
+
+        if (blocked.start > window.start) {
+          nextWindows.push({
+            start: window.start,
+            end: blocked.start,
+          });
+        }
+
+        if (blocked.end < window.end) {
+          nextWindows.push({
+            start: blocked.end,
+            end: window.end,
+          });
+        }
+      }
+
+      workingWindows = nextWindows.filter((w) => w.end > w.start);
+    }
+
+    if (!workingWindows.length) {
+      return {
+        startMinutes: null,
+        endMinutes: null,
+        hasConfiguredHours: true,
+      };
+    }
+
+    workingWindows.sort((a, b) => a.start - b.start);
+
+    return {
+      startMinutes: workingWindows[0].start,
+      endMinutes: workingWindows[workingWindows.length - 1].end,
+      hasConfiguredHours: true,
+    };
+  }
+
   function getSelectedStaffDayWindow(day: Date) {
+    const dayKey = formatDateYYYYMMDD(day);
+
     if (!selectedStaffId) {
       return {
         startMinutes: 9 * 60,
@@ -530,19 +661,28 @@ export default function AgendaPage() {
         return sameBranch && Number(item.day_of_week) === weekday;
       });
 
-      if (!row || !row.enabled) {
-        return {
-          startMinutes: null,
-          endMinutes: null,
+      let baseWindow = {
+        startMinutes: null as number | null,
+        endMinutes: null as number | null,
+        hasConfiguredHours: true,
+      };
+
+      if (row?.enabled) {
+        baseWindow = {
+          startMinutes: timeStringToMinutes(row.start_time),
+          endMinutes: timeStringToMinutes(row.end_time),
           hasConfiguredHours: true,
         };
       }
 
-      return {
-        startMinutes: timeStringToMinutes(row.start_time),
-        endMinutes: timeStringToMinutes(row.end_time),
-        hasConfiguredHours: true,
-      };
+      const specialRows = businessSpecialDates.filter((item) => {
+        const sameBranch =
+          !item.branch_id || item.branch_id === selectedBranchId;
+
+        return sameBranch && item.date === dayKey;
+      });
+
+      return applySpecialDateRulesToWindow(baseWindow, specialRows);
     }
 
     const row = staffHours.find((item) => {
@@ -554,19 +694,31 @@ export default function AgendaPage() {
       );
     });
 
-    if (!row || !row.enabled) {
-      return {
-        startMinutes: null,
-        endMinutes: null,
+    let baseWindow = {
+      startMinutes: null as number | null,
+      endMinutes: null as number | null,
+      hasConfiguredHours: true,
+    };
+
+    if (row?.enabled) {
+      baseWindow = {
+        startMinutes: timeStringToMinutes(row.start_time),
+        endMinutes: timeStringToMinutes(row.end_time),
         hasConfiguredHours: true,
       };
     }
 
-    return {
-      startMinutes: timeStringToMinutes(row.start_time),
-      endMinutes: timeStringToMinutes(row.end_time),
-      hasConfiguredHours: true,
-    };
+    const specialRows = staffSpecialDates.filter((item) => {
+      const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
+
+      return (
+        sameBranch &&
+        item.staff_id === selectedStaffId &&
+        item.date === dayKey
+      );
+    });
+
+    return applySpecialDateRulesToWindow(baseWindow, specialRows);
   }
 
   async function loadBranches(currentTenantId: string) {
@@ -685,6 +837,54 @@ export default function AgendaPage() {
     } catch (err) {
       console.error("Error cargando staff hours", err);
       setStaffHours([]);
+    }
+  }
+
+  async function loadBusinessSpecialDates(currentTenantId: string) {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/business-special-dates?tenant_id=${currentTenantId}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "No se pudieron cargar las fechas especiales del negocio"
+        );
+      }
+
+      const rows: BusinessSpecialDateItem[] = Array.isArray(data?.special_dates)
+        ? data.special_dates
+        : [];
+
+      setBusinessSpecialDates(rows);
+    } catch (err) {
+      console.error("Error cargando business special dates", err);
+      setBusinessSpecialDates([]);
+    }
+  }
+
+  async function loadStaffSpecialDates(currentTenantId: string) {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/staff-special-dates?tenant_id=${currentTenantId}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "No se pudieron cargar las fechas especiales del staff"
+        );
+      }
+
+      const rows: StaffSpecialDateItem[] = Array.isArray(data?.special_dates)
+        ? data.special_dates
+        : [];
+
+      setStaffSpecialDates(rows);
+    } catch (err) {
+      console.error("Error cargando staff special dates", err);
+      setStaffSpecialDates([]);
     }
   }
 
@@ -924,6 +1124,8 @@ export default function AgendaPage() {
           loadBranches(currentTenantId),
           loadBusinessHours(currentTenantId),
           loadStaffHours(currentTenantId),
+          loadBusinessSpecialDates(currentTenantId),
+          loadStaffSpecialDates(currentTenantId),
         ]);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "No se pudo cargar agenda");
