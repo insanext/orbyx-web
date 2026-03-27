@@ -474,6 +474,45 @@ function toggleStaffSelection(staffId: string) {
   );
 }
 
+async function applyStaffAdjustment() {
+  try {
+    const toDeactivate = staff.filter(
+      (s) => s.is_active && !selectedStaffToKeep.includes(s.id)
+    );
+
+    if (toDeactivate.length === 0) {
+      alert("No hay profesionales para desactivar");
+      return;
+    }
+
+    const confirmAction = confirm(
+      `Se desactivarán ${toDeactivate.length} profesionales. ¿Continuar?`
+    );
+
+    if (!confirmAction) return;
+
+    for (const staffItem of toDeactivate) {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/staff/${staffItem.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            is_active: false,
+          }),
+        }
+      );
+    }
+
+    alert("Ajuste aplicado correctamente");
+
+    window.location.reload();
+  } catch (error) {
+    console.error(error);
+    alert("Error al aplicar ajuste");
+  }
+}
+
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
@@ -943,6 +982,13 @@ function toggleStaffSelection(staffId: string) {
     <div className="mt-2 text-xs text-slate-600">
       Seleccionados: {selectedStaffToKeep.length} / {caps.max_staff}
     </div>
+
+    <button
+      onClick={applyStaffAdjustment}
+      className="mt-3 w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+    >
+      Aplicar ajuste al plan
+    </button>
   </div>
 )}
 </div>
