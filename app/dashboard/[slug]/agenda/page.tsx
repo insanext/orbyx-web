@@ -526,7 +526,7 @@ export default function AgendaPage() {
     return staffList.find((staff) => staff.id === staffId)?.name || "Profesional";
   }
 
-   function getWeekdayForAgenda(date: Date) {
+  function getWeekdayForAgenda(date: Date) {
     const jsDay = date.getDay();
     return jsDay === 0 ? 0 : jsDay;
   }
@@ -665,40 +665,15 @@ export default function AgendaPage() {
   }
 
   function getSelectedStaffDayWindow(day: Date) {
-
-  function getSelectedStaffDayWindow(day: Date) {
     const dayKey = formatDateYYYYMMDD(day);
 
-if (!selectedStaffId) {
-  // 🔥 aplicar excepciones de TODOS los staff del día
-
-  const dayKey = formatDateYYYYMMDD(day);
-
-  const hasAnyClosed = staffSpecialDates.some((item) => {
-    const sameBranch =
-      !item.branch_id || item.branch_id === selectedBranchId;
-
-    return (
-      sameBranch &&
-      item.date === dayKey &&
-      item.is_closed
-    );
-  });
-
-  if (hasAnyClosed) {
-    return {
-      startMinutes: null,
-      endMinutes: null,
-      hasConfiguredHours: true,
-    };
-  }
-
-  return {
-    startMinutes: 9 * 60,
-    endMinutes: 18 * 60,
-    hasConfiguredHours: false,
-  };
-}
+    if (!selectedStaffId) {
+      return {
+        startMinutes: 9 * 60,
+        endMinutes: 18 * 60,
+        hasConfiguredHours: false,
+      };
+    }
 
     const selectedStaff = staffList.find((staff) => staff.id === selectedStaffId);
 
@@ -758,7 +733,6 @@ if (!selectedStaffId) {
 
       return applySpecialDateRulesToWindow(withBusinessRules, staffRows);
     }
-
 
     const row = staffHours.find((item) => {
       const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
