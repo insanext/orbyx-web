@@ -1559,17 +1559,7 @@ const hasExcess = excessStaff > 0;
       ? "Exceso"
       : "Activo"
     : "Inactivo"}
-</span>                          
-                                ? isSelected
-                                  ? "bg-emerald-400/15 text-emerald-200"
-                                  : "bg-emerald-100 text-emerald-700"
-                                : isSelected
-                                ? "bg-white/10 text-slate-200"
-                                : "bg-slate-100 text-slate-600"
-                            }`}
-                          >
-                            {item.is_active ? "Activo" : "Inactivo"}
-                          </span>
+</span>
 
                           {isSelected ? (
                             <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white">
