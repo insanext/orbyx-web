@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
 import {
   Bot,
   Check,
@@ -376,7 +376,7 @@ function IncludeRow({
   );
 }
 
-export default function PlanesPage() {
+function PlanesPageContent() {
   const searchParams = useSearchParams();
 
   const initialPlan = useMemo<PlanKey>(() => {
@@ -876,5 +876,13 @@ export default function PlanesPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function PlanesPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-500">Cargando planes...</div>}>
+      <PlanesPageContent />
+    </Suspense>
   );
 }
