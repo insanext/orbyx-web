@@ -885,7 +885,7 @@ export default function StaffPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Panel
           title={editingId ? "Editar staff" : "Nuevo staff"}
           description="Agrega personas del equipo y deja su información base lista."
@@ -1241,7 +1241,7 @@ export default function StaffPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid gap-3 md:grid-cols-[1.1fr_1fr_0.9fr_1fr_1fr_auto_auto]">
+                    <div className="grid gap-3 md:grid-cols-[1fr_1.5fr_0.9fr_1fr_1fr_auto_auto]">
                       <div>
                         <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Fecha

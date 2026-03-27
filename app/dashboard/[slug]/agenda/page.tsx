@@ -645,13 +645,36 @@ export default function AgendaPage() {
   function getSelectedStaffDayWindow(day: Date) {
     const dayKey = formatDateYYYYMMDD(day);
 
-    if (!selectedStaffId) {
-      return {
-        startMinutes: 9 * 60,
-        endMinutes: 18 * 60,
-        hasConfiguredHours: false,
-      };
-    }
+if (!selectedStaffId) {
+  // 🔥 aplicar excepciones de TODOS los staff del día
+
+  const dayKey = formatDateYYYYMMDD(day);
+
+  const hasAnyClosed = staffSpecialDates.some((item) => {
+    const sameBranch =
+      !item.branch_id || item.branch_id === selectedBranchId;
+
+    return (
+      sameBranch &&
+      item.date === dayKey &&
+      item.is_closed
+    );
+  });
+
+  if (hasAnyClosed) {
+    return {
+      startMinutes: null,
+      endMinutes: null,
+      hasConfiguredHours: true,
+    };
+  }
+
+  return {
+    startMinutes: 9 * 60,
+    endMinutes: 18 * 60,
+    hasConfiguredHours: false,
+  };
+}
 
     const selectedStaff = staffList.find((staff) => staff.id === selectedStaffId);
 
