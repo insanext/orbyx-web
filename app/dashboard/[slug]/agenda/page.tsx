@@ -41,6 +41,12 @@ type FilterValue =
   | "no_show"
   | "canceled";
 
+type HoverCardState = {
+  appointment: Appointment;
+  x: number;
+  y: number;
+} | null;
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 const filterLabels: Record<FilterValue, string> = {
@@ -84,6 +90,8 @@ export default function AgendaPage() {
     customer_phone: "",
     customer_email: "",
   });
+
+  const [hoverCard, setHoverCard] = useState<HoverCardState>(null);
 
   const detailRef = useRef<HTMLDivElement | null>(null);
 
@@ -364,6 +372,23 @@ export default function AgendaPage() {
     }, 80);
   }
 
+  function handleAppointmentMouseEnter(
+    event: React.MouseEvent<HTMLButtonElement>,
+    appt: Appointment
+  ) {
+    const rect = event.currentTarget.getBoundingClientRect();
+
+    setHoverCard({
+      appointment: appt,
+      x: rect.right + 12,
+      y: rect.top + window.scrollY,
+    });
+  }
+
+  function handleAppointmentMouseLeave() {
+    setHoverCard(null);
+  }
+
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
     return localStorage.getItem(branchStorageKey) || "";
@@ -384,6 +409,12 @@ export default function AgendaPage() {
 
     setSelectedAppointment((prev) =>
       prev && prev.id === updatedAppointment.id ? updatedAppointment : prev
+    );
+
+    setHoverCard((prev) =>
+      prev && prev.appointment.id === updatedAppointment.id
+        ? { ...prev, appointment: updatedAppointment }
+        : prev
     );
   }
 
@@ -594,17 +625,20 @@ export default function AgendaPage() {
       setEditSaving(true);
       setError("");
 
-      const res = await fetch(`${BACKEND_URL}/appointments/${selectedAppointment.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          customer_name: editForm.customer_name.trim(),
-          customer_phone: editForm.customer_phone.trim(),
-          customer_email: editForm.customer_email.trim(),
-        }),
-      });
+      const res = await fetch(
+        `${BACKEND_URL}/appointments/${selectedAppointment.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            customer_name: editForm.customer_name.trim(),
+            customer_phone: editForm.customer_phone.trim(),
+            customer_email: editForm.customer_email.trim(),
+          }),
+        }
+      );
 
       const data = await res.json();
 
@@ -671,7 +705,10 @@ export default function AgendaPage() {
 
   useEffect(() => {
     function handleBranchChanged(event: Event) {
-      const customEvent = event as CustomEvent<{ slug?: string; branchId?: string }>;
+      const customEvent = event as CustomEvent<{
+        slug?: string;
+        branchId?: string;
+      }>;
       const eventSlug = customEvent.detail?.slug;
       const branchId = customEvent.detail?.branchId || "";
 
@@ -680,6 +717,7 @@ export default function AgendaPage() {
       setSelectedBranchId(branchId);
       setSelectedAppointment(null);
       setIsEditingReservation(false);
+      setHoverCard(null);
     }
 
     function handleStorage(event: StorageEvent) {
@@ -689,6 +727,7 @@ export default function AgendaPage() {
       setSelectedBranchId(nextBranchId);
       setSelectedAppointment(null);
       setIsEditingReservation(false);
+      setHoverCard(null);
     }
 
     window.addEventListener(
@@ -790,18 +829,21 @@ export default function AgendaPage() {
     setWeekBaseDate((prev) => addDays(prev, -7));
     setSelectedAppointment(null);
     setIsEditingReservation(false);
+    setHoverCard(null);
   }
 
   function goNextWeek() {
     setWeekBaseDate((prev) => addDays(prev, 7));
     setSelectedAppointment(null);
     setIsEditingReservation(false);
+    setHoverCard(null);
   }
 
   function goToday() {
     setWeekBaseDate(new Date());
     setSelectedAppointment(null);
     setIsEditingReservation(false);
+    setHoverCard(null);
   }
 
   const selectedBranchName =
@@ -877,6 +919,7 @@ export default function AgendaPage() {
                   setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
                   setSelectedAppointment(null);
                   setIsEditingReservation(false);
+                  setHoverCard(null);
                 }}
                 className="h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
               />
@@ -1007,6 +1050,10 @@ export default function AgendaPage() {
                                   key={appt.id}
                                   type="button"
                                   onClick={() => handleSelectAppointment(appt)}
+                                  onMouseEnter={(e) =>
+                                    handleAppointmentMouseEnter(e, appt)
+                                  }
+                                  onMouseLeave={handleAppointmentMouseLeave}
                                   className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
                                     appt,
                                     isSelected
@@ -1101,6 +1148,10 @@ export default function AgendaPage() {
                                 key={appt.id}
                                 type="button"
                                 onClick={() => handleSelectAppointment(appt)}
+                                onMouseEnter={(e) =>
+                                  handleAppointmentMouseEnter(e, appt)
+                                }
+                                onMouseLeave={handleAppointmentMouseLeave}
                                 className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
                                   appt,
                                   isSelected
@@ -1612,6 +1663,70 @@ export default function AgendaPage() {
           </div>
         </div>
       </div>
+
+      {hoverCard ? (
+        <div
+          className="pointer-events-none fixed z-[80] hidden w-[290px] rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35)] backdrop-blur xl:block"
+          style={{
+            left: Math.min(hoverCard.x, window.innerWidth - 320),
+            top: Math.max(16, hoverCard.y - window.scrollY),
+          }}
+        >
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900">
+                  {hoverCard.appointment.customer_name}
+                </p>
+                <p className="mt-1 truncate text-xs text-slate-500">
+                  {hoverCard.appointment.service_name_snapshot || "Reserva"}
+                </p>
+              </div>
+
+              <span
+                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(
+                  hoverCard.appointment
+                )}`}
+              >
+                {getStatusLabel(hoverCard.appointment)}
+              </span>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Horario
+              </p>
+              <p className="mt-1 text-sm font-medium text-slate-900">
+                {formatHour(hoverCard.appointment.start_at)} -{" "}
+                {formatHour(hoverCard.appointment.end_at)}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                {formatLongDate(hoverCard.appointment.start_at)}
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Teléfono
+                </p>
+                <p className="mt-1 text-sm font-medium text-slate-900">
+                  {hoverCard.appointment.customer_phone || "No disponible"}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Email
+                </p>
+                <p className="mt-1 break-all text-sm font-medium text-slate-900">
+                  {hoverCard.appointment.customer_email || "No disponible"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
