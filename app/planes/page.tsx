@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   Bot,
@@ -376,7 +377,21 @@ function IncludeRow({
 }
 
 export default function PlanesPage() {
-  const [selectedPlanKey, setSelectedPlanKey] = useState<PlanKey>("vip");
+  const searchParams = useSearchParams();
+
+  const initialPlan = useMemo<PlanKey>(() => {
+    const raw = String(searchParams.get("current_plan") || "vip").toLowerCase();
+
+    if (raw === "starter") return "pro";
+    if (raw === "pro") return "pro";
+    if (raw === "premium") return "premium";
+    if (raw === "vip") return "vip";
+    if (raw === "platinum") return "platinum";
+
+    return "vip";
+  }, [searchParams]);
+
+  const [selectedPlanKey, setSelectedPlanKey] = useState<PlanKey>(initialPlan);
   const [staffExtras, setStaffExtras] = useState(0);
   const [reminderExtras, setReminderExtras] = useState(0);
   const [campaignExtras, setCampaignExtras] = useState(0);
@@ -520,7 +535,7 @@ export default function PlanesPage() {
                     Precios Orbyx
                   </span>
 
-                  <Link
+                                    <Link
                     href="/"
                     className="text-xs font-medium text-slate-400 transition hover:text-white"
                   >

@@ -158,10 +158,11 @@ export default function StaffPage() {
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
 
   const planCaps: Record<string, { max_staff: number }> = {
-    starter: { max_staff: 1 },
-    pro: { max_staff: 3 },
-    premium: { max_staff: 10 },
-    vip: { max_staff: 999 },
+    pro: { max_staff: 2 },
+    premium: { max_staff: 5 },
+    vip: { max_staff: 10 },
+    platinum: { max_staff: 20 },
+    starter: { max_staff: 2 },
   };
 
   const caps = planCaps[plan] || planCaps.starter;
@@ -848,7 +849,7 @@ export default function StaffPage() {
         </div>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-[24px] border border-slate-200 bg-white p-1 shadow-sm">
           <StatCard
             label="Total staff"
@@ -885,7 +886,7 @@ export default function StaffPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
         <Panel
           title={editingId ? "Editar staff" : "Nuevo staff"}
           description="Agrega personas del equipo y deja su información base lista."
@@ -1433,20 +1434,22 @@ export default function StaffPage() {
               <div className="space-y-3 pt-2">
                 {!editingId && reachedLimit ? (
   <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
-    <p className="font-semibold">Has alcanzado el límite de staff de tu plan</p>
+    <p className="font-semibold">
+      Llegaste al límite de profesionales de tu plan
+    </p>
     <p className="mt-1">
       Ya usaste {activeCount} de {caps.max_staff} profesionales disponibles.
     </p>
     <p className="mt-1">
-      Para agregar más staff, debes subir de plan.
+      Agrega más profesionales o mejora tu plan para seguir creciendo.
     </p>
 
     <Link
-  href="/pricing"
-  className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
->
-  Ver planes
-</Link>
+      href={`/planes?current_plan=${plan}&from=staff&slug=${slug}`}
+      className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+    >
+      Ver planes y mejorar plan
+    </Link>
   </div>
 ) : null}
 

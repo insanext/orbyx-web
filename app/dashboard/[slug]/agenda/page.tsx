@@ -709,15 +709,32 @@ if (!selectedStaffId) {
         };
       }
 
-      const specialRows = businessSpecialDates.filter((item) => {
+      const businessRows = businessSpecialDates.filter((item) => {
         const sameBranch =
           !item.branch_id || item.branch_id === selectedBranchId;
 
         return sameBranch && item.date === dayKey;
       });
 
-      return applySpecialDateRulesToWindow(baseWindow, specialRows);
+      const withBusinessRules = applySpecialDateRulesToWindow(
+        baseWindow,
+        businessRows
+      );
+
+      const staffRows = staffSpecialDates.filter((item) => {
+        const sameBranch =
+          !item.branch_id || item.branch_id === selectedBranchId;
+
+        return (
+          sameBranch &&
+          item.staff_id === selectedStaffId &&
+          item.date === dayKey
+        );
+      });
+
+      return applySpecialDateRulesToWindow(withBusinessRules, staffRows);
     }
+
 
     const row = staffHours.find((item) => {
       const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
