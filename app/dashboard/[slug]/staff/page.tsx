@@ -1448,7 +1448,7 @@ export default function StaffPage() {
       href={`/planes?current_plan=${plan}&from=staff&slug=${slug}`}
       className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
     >
-      Ver planes y mejorar plan
+      Mejora tu plan
     </Link>
   </div>
 ) : null}

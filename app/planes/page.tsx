@@ -737,23 +737,43 @@ function PlanesPageContent() {
 
                 <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Plan base</span>
+                    <span className="text-sm text-slate-300">Tu plan actual</span>
                     <span className="text-sm font-semibold text-white">
                       {selectedPlan.priceLabel}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">IVA</span>
+                    <span className="text-sm text-slate-300">
+                      Adicionales seleccionados
+                    </span>
                     <span className="text-sm font-semibold text-white">
-                      {formatCLP(iva)}
+                      {extrasSubtotal > 0 ? formatCLP(extrasSubtotal) : "$0"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">
+                      IVA adicionales
+                    </span>
+                    <span className="text-sm font-semibold text-white">
+                      {extrasSubtotal > 0 ? formatCLP(extrasIva) : "$0"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                    <span className="text-sm font-semibold text-white">
+                      Total adicionales
+                    </span>
+                    <span className="text-sm font-semibold text-emerald-300">
+                      {extrasSubtotal > 0 ? `+ ${formatCLP(extrasTotal)}` : "$0"}
                     </span>
                   </div>
 
                   <div className="border-t border-white/10 pt-3">
                     <div className="flex items-center justify-between">
                       <span className="text-base font-semibold text-white">
-                        Total mensual
+                        Nuevo total estimado
                       </span>
                       <span
                         className={`text-[1.85rem] font-semibold leading-none ${selectedPlan.accentClass}`}
