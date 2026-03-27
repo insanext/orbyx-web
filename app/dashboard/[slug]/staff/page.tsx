@@ -121,6 +121,7 @@ export default function StaffPage() {
   const [saveOk, setSaveOk] = useState("");
 
   const [staff, setStaff] = useState<StaffItem[]>([]);
+const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [form, setForm] = useState(emptyForm);
@@ -169,6 +170,13 @@ export default function StaffPage() {
   const reachedLimit = activeCount >= caps.max_staff;
 const excessStaff = Math.max(0, activeCount - caps.max_staff);
 const hasExcess = excessStaff > 0;
+useEffect(() => {
+  if (hasExcess) {
+    const activeStaff = staff.filter((s) => s.is_active);
+    const allowed = activeStaff.slice(0, caps.max_staff).map((s) => s.id);
+    setSelectedStaffToKeep(allowed);
+  }
+}, [hasExcess, staff, caps.max_staff]);
 
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
@@ -260,6 +268,13 @@ const hasExcess = excessStaff > 0;
     );
     window.addEventListener("storage", handleStorage);
 
+function toggleStaffSelection(staffId: string) {
+  setSelectedStaffToKeep((prev) =>
+    prev.includes(staffId)
+      ? prev.filter((id) => id !== staffId)
+      : [...prev, staffId]
+  );
+}
     return () => {
       window.removeEventListener(
         "orbyx-branch-changed",
@@ -912,13 +927,17 @@ const hasExcess = excessStaff > 0;
     Has creado {activeCount} de {caps.max_staff} staff disponibles en tu plan.
   </p>
 
-  {hasExcess && (
-    <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-      Estás sobre el límite del plan. Debes desactivar{" "}
-      <span className="font-semibold">{excessStaff}</span>{" "}
-      profesional{excessStaff === 1 ? "" : "es"} antes del próximo ciclo.
+{hasExcess && (
+  <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+    Estás sobre el límite del plan. Debes desactivar{" "}
+    <span className="font-semibold">{excessStaff}</span>{" "}
+    profesional{excessStaff === 1 ? "" : "es"} antes del próximo ciclo.
+
+    <div className="mt-2 text-xs text-slate-600">
+      Seleccionados: {selectedStaffToKeep.length} / {caps.max_staff}
     </div>
-  )}
+  </div>
+)}
 </div>
   <div>
     <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -1524,6 +1543,18 @@ const hasExcess = excessStaff > 0;
                     }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
+{hasExcess && item.is_active && (
+  <div className="mb-2">
+    <label className="flex items-center gap-2 text-xs text-slate-600">
+      <input
+        type="checkbox"
+        checked={selectedStaffToKeep.includes(item.id)}
+        onChange={() => toggleStaffSelection(item.id)}
+      />
+      Mantener activo
+    </label>
+  </div>
+)}
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-3">
                           <span
