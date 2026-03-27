@@ -727,6 +727,7 @@ export default function StaffPage() {
 
       const payload = {
         tenant_id: tenantId,
+        branch_id: selectedBranchId,
         staff_id: editingId,
         date: specialDateForm.date,
         label: (specialDateForm.label || "").trim() || null,
@@ -813,7 +814,7 @@ export default function StaffPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-6">
       <PageHeader
         eyebrow="Equipo"
         title="Staff"
@@ -847,30 +848,41 @@ export default function StaffPage() {
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard
-          label="Total staff"
-          value={loading ? "..." : String(staff.length)}
-        />
-        <StatCard
-          label="Activos"
-          value={loading ? "..." : String(activeCount)}
-        />
-        <StatCard
-          label="Usan horario negocio"
-          value={loading ? "..." : String(usingBusinessHoursCount)}
-        />
-        <StatCard
-  label="Límite del plan"
-  value={loading ? "..." : `${activeCount}/${caps.max_staff}`}
-  helper={
-    loading
-      ? "Cargando plan..."
-      : reachedLimit
-      ? "Llegaste al límite de staff de tu plan."
-      : `Puedes agregar ${Math.max(0, caps.max_staff - activeCount)} más.`
-  }
-/>
+      <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-1 shadow-sm">
+          <StatCard
+            label="Total staff"
+            value={loading ? "..." : String(staff.length)}
+          />
+        </div>
+
+        <div className="rounded-[24px] border border-slate-200 bg-white p-1 shadow-sm">
+          <StatCard
+            label="Activos"
+            value={loading ? "..." : String(activeCount)}
+          />
+        </div>
+
+        <div className="rounded-[24px] border border-slate-200 bg-white p-1 shadow-sm">
+          <StatCard
+            label="Usan horario negocio"
+            value={loading ? "..." : String(usingBusinessHoursCount)}
+          />
+        </div>
+
+        <div className="rounded-[24px] border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-1 shadow-sm">
+          <StatCard
+            label="Límite del plan"
+            value={loading ? "..." : `${activeCount}/${caps.max_staff}`}
+            helper={
+              loading
+                ? "Cargando plan..."
+                : reachedLimit
+                ? "Llegaste al límite de staff de tu plan."
+                : `Puedes agregar ${Math.max(0, caps.max_staff - activeCount)} más.`
+            }
+          />
+        </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -1465,6 +1477,8 @@ export default function StaffPage() {
           )}
         </Panel>
 
+       
+
         <Panel
           title="Equipo actual"
           description="Visualiza, edita o elimina integrantes del staff."
@@ -1482,67 +1496,207 @@ export default function StaffPage() {
               Aún no has creado staff.
             </div>
           ) : (
-            <div className="space-y-4">
-              {staff.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: item.color || "#0f172a" }}
-                        />
-                        <p className="text-base font-semibold text-slate-900">
-                          {item.name}
-                        </p>
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                            item.is_active
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-slate-100 text-slate-600"
+            <div className="space-y-3">
+              {staff.map((item) => {
+                const isSelected = editingId === item.id;
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`rounded-[24px] border p-4 transition ${
+                      isSelected
+                        ? "border-slate-900 bg-slate-900 text-white shadow-lg"
+                        : "border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span
+                            className={`h-3.5 w-3.5 rounded-full ring-4 ${
+                              isSelected ? "ring-white/10" : "ring-slate-100"
+                            }`}
+                            style={{ backgroundColor: item.color || "#0f172a" }}
+                          />
+
+                          <p
+                            className={`text-base font-semibold ${
+                              isSelected ? "text-white" : "text-slate-900"
+                            }`}
+                          >
+                            {item.name}
+                          </p>
+
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                              item.is_active
+                                ? isSelected
+                                  ? "bg-emerald-400/15 text-emerald-200"
+                                  : "bg-emerald-100 text-emerald-700"
+                                : isSelected
+                                ? "bg-white/10 text-slate-200"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {item.is_active ? "Activo" : "Inactivo"}
+                          </span>
+
+                          {isSelected ? (
+                            <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white">
+                              Editando
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <div
+                            className={`rounded-2xl border px-3 py-2.5 ${
+                              isSelected
+                                ? "border-white/10 bg-white/5"
+                                : "border-slate-200 bg-white"
+                            }`}
+                          >
+                            <p
+                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                                isSelected ? "text-slate-300" : "text-slate-400"
+                              }`}
+                            >
+                              Rol
+                            </p>
+                            <p
+                              className={`mt-1 text-sm ${
+                                isSelected ? "text-white" : "text-slate-700"
+                              }`}
+                            >
+                              {item.role || "No definido"}
+                            </p>
+                          </div>
+
+                          <div
+                            className={`rounded-2xl border px-3 py-2.5 ${
+                              isSelected
+                                ? "border-white/10 bg-white/5"
+                                : "border-slate-200 bg-white"
+                            }`}
+                          >
+                            <p
+                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                                isSelected ? "text-slate-300" : "text-slate-400"
+                              }`}
+                            >
+                              Orden
+                            </p>
+                            <p
+                              className={`mt-1 text-sm ${
+                                isSelected ? "text-white" : "text-slate-700"
+                              }`}
+                            >
+                              {item.sort_order ?? 0}
+                            </p>
+                          </div>
+
+                          <div
+                            className={`rounded-2xl border px-3 py-2.5 ${
+                              isSelected
+                                ? "border-white/10 bg-white/5"
+                                : "border-slate-200 bg-white"
+                            }`}
+                          >
+                            <p
+                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                                isSelected ? "text-slate-300" : "text-slate-400"
+                              }`}
+                            >
+                              Correo
+                            </p>
+                            <p
+                              className={`mt-1 break-all text-sm ${
+                                isSelected ? "text-white" : "text-slate-700"
+                              }`}
+                            >
+                              {item.email || "No definido"}
+                            </p>
+                          </div>
+
+                          <div
+                            className={`rounded-2xl border px-3 py-2.5 ${
+                              isSelected
+                                ? "border-white/10 bg-white/5"
+                                : "border-slate-200 bg-white"
+                            }`}
+                          >
+                            <p
+                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                                isSelected ? "text-slate-300" : "text-slate-400"
+                              }`}
+                            >
+                              Teléfono
+                            </p>
+                            <p
+                              className={`mt-1 text-sm ${
+                                isSelected ? "text-white" : "text-slate-700"
+                              }`}
+                            >
+                              {item.phone || "No definido"}
+                            </p>
+                          </div>
+
+                          <div
+                            className={`sm:col-span-2 rounded-2xl border px-3 py-2.5 ${
+                              isSelected
+                                ? "border-white/10 bg-white/5"
+                                : "border-slate-200 bg-white"
+                            }`}
+                          >
+                            <p
+                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                                isSelected ? "text-slate-300" : "text-slate-400"
+                              }`}
+                            >
+                              Horario
+                            </p>
+                            <p
+                              className={`mt-1 text-sm ${
+                                isSelected ? "text-white" : "text-slate-700"
+                              }`}
+                            >
+                              {item.use_business_hours
+                                ? "Usa horario del negocio"
+                                : "Horario propio"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(item)}
+                          className={`inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-medium transition ${
+                            isSelected
+                              ? "border border-white/15 bg-white/10 text-white hover:bg-white/15"
+                              : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          {item.is_active ? "Activo" : "Inactivo"}
-                        </span>
+                          Editar
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item.id)}
+                          className={`inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-medium transition ${
+                            isSelected
+                              ? "border border-rose-300/20 bg-rose-400/10 text-rose-100 hover:bg-rose-400/15"
+                              : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                          }`}
+                        >
+                          Eliminar
+                        </button>
                       </div>
-
-                      <div className="mt-3 space-y-1 text-sm text-slate-600">
-                        <p>Rol: {item.role || "No definido"}</p>
-                        <p>Correo: {item.email || "No definido"}</p>
-                        <p>Teléfono: {item.phone || "No definido"}</p>
-                        <p>Orden: {item.sort_order ?? 0}</p>
-                        <p>
-                          Horario:{" "}
-                          {item.use_business_hours
-                            ? "Usa horario del negocio"
-                            : "Horario propio"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(item)}
-                        className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                      >
-                        Editar
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(item.id)}
-                        className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
-                      >
-                        Eliminar
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Panel>
