@@ -278,6 +278,11 @@ function formatDate(dateString?: string | null) {
   });
 }
 
+function formatRemainingDays(value?: number | null) {
+  if (value == null || Number.isNaN(Number(value))) return "—";
+  return `${Number(value).toFixed(2)} días`;
+}
+
 function normalizePlanFromUrl(rawValue: string | null): PlanKey {
   const raw = String(rawValue || "vip").toLowerCase();
 
@@ -682,10 +687,14 @@ function PlanesPageContent() {
     }
   }
 
-  const previewType = preview?.change_type || (isCurrentPlan ? "same_plan" : "upgrade");
-  const billingEndLabel = formatDate(
-    preview?.scheduled_change_at || preview?.billing_cycle_end
-  );
+const previewType =
+  preview?.change_type || (isCurrentPlan ? "same_plan" : "upgrade");
+
+const billingEndLabel = formatDate(
+  preview?.scheduled_change_at || preview?.billing_cycle_end
+);
+
+const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
 
   const ctaLabel =
     previewType === "same_plan"
@@ -980,34 +989,51 @@ function PlanesPageContent() {
                     </span>
                   </div>
 
-                  {previewType === "upgrade" ? (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">
-                          Crédito por plan actual
-                        </span>
-                        <span className="text-sm font-semibold text-emerald-300">
-                          - {formatCLP(Number(preview?.credit || 0))}
-                        </span>
-                      </div>
+{previewType === "upgrade" ? (
+  <>
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-slate-300">
+        Días restantes del ciclo
+      </span>
+      <span className="text-sm font-semibold text-white">
+        {remainingDaysLabel}
+      </span>
+    </div>
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">
-                          Cargo proporcional nuevo plan
-                        </span>
-                        <span className="text-sm font-semibold text-white">
-                          {formatCLP(Number(preview?.charge || 0))}
-                        </span>
-                      </div>
-                    </>
-                  ) : null}
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-slate-300">
+        Crédito proporcional plan actual
+      </span>
+      <span className="text-sm font-semibold text-emerald-300">
+        - {formatCLP(Number(preview?.credit || 0))}
+      </span>
+    </div>
 
-                  {previewType === "downgrade" ? (
-                    <div className="rounded-2xl border border-amber-300/15 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
-                      El downgrade comenzará el{" "}
-                      <span className="font-semibold">{billingEndLabel}</span>.
-                    </div>
-                  ) : null}
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-slate-300">
+        Cargo proporcional nuevo plan
+      </span>
+      <span className="text-sm font-semibold text-white">
+        {formatCLP(Number(preview?.charge || 0))}
+      </span>
+    </div>
+
+    <div className="rounded-2xl border border-sky-300/15 bg-sky-500/10 px-3 py-3 text-sm text-sky-100">
+      Te quedan <span className="font-semibold">{remainingDaysLabel}</span>{" "}
+      en tu ciclo actual. El crédito y el cobro se calcularon solo sobre ese período.
+    </div>
+  </>
+) : null}
+
+{previewType === "downgrade" ? (
+  <div className="rounded-2xl border border-amber-300/15 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
+    El downgrade comenzará el{" "}
+    <span className="font-semibold">{billingEndLabel}</span>.
+    <div className="mt-1 text-xs text-amber-50/90">
+      Mantendrás tu plan actual hasta esa fecha.
+    </div>
+  </div>
+) : null}
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-300">
