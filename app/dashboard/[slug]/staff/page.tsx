@@ -466,6 +466,13 @@ function toggleStaffSelection(staffId: string) {
     setSpecialDateForm(emptySpecialDateForm);
     setEditingSpecialDateId(null);
   }
+function toggleStaffSelection(staffId: string) {
+  setSelectedStaffToKeep((prev) =>
+    prev.includes(staffId)
+      ? prev.filter((id) => id !== staffId)
+      : [...prev, staffId]
+  );
+}
 
   function resetForm() {
     setForm(emptyForm);
