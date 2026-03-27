@@ -405,8 +405,8 @@ function PlanesPageContent() {
   const supportsCampaignExtra = selectedPlan.extras.includes("campaigns");
   const supportsAiExtra = selectedPlan.extras.includes("ai");
 
-  const subtotal = useMemo(() => {
-    let total = selectedPlan.price;
+  const extrasSubtotal = useMemo(() => {
+    let total = 0;
 
     if (supportsStaffExtra) total += staffExtras * extraConfig.staff.unitPrice;
     if (supportsReminderExtra) {
@@ -422,7 +422,6 @@ function PlanesPageContent() {
     aiExtras,
     campaignExtras,
     reminderExtras,
-    selectedPlan.price,
     staffExtras,
     supportsAiExtra,
     supportsCampaignExtra,
@@ -430,8 +429,13 @@ function PlanesPageContent() {
     supportsStaffExtra,
   ]);
 
-  const iva = Math.round(subtotal * 0.19);
-  const total = subtotal + iva;
+  const extrasIva = Math.round(extrasSubtotal * 0.19);
+  const extrasTotal = extrasSubtotal + extrasIva;
+
+  const totalConPlan = selectedPlan.price + extrasSubtotal;
+  const totalIva = Math.round(totalConPlan * 0.19);
+  const total = totalConPlan + totalIva;
+
 
   const currentStaffTotal = selectedPlan.includedStaff + staffExtras;
   const currentServicesTotal =
