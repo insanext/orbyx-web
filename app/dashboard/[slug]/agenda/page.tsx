@@ -7,6 +7,8 @@ import { Panel } from "../../../../components/dashboard/panel";
 
 type Appointment = {
   id: string;
+  branch_id?: string | null;
+  staff_id?: string | null;
   start_at: string;
   end_at: string;
   customer_name: string;
@@ -31,6 +33,41 @@ type BranchItem = {
   id: string;
   tenant_id?: string;
   name: string;
+};
+
+type StaffItem = {
+  id: string;
+  tenant_id?: string;
+  branch_id?: string | null;
+  name: string;
+  role?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  color?: string | null;
+  is_active: boolean;
+  sort_order?: number;
+  use_business_hours?: boolean;
+};
+
+type BusinessHourItem = {
+  id?: string;
+  tenant_id?: string;
+  branch_id?: string | null;
+  day_of_week: number;
+  enabled: boolean;
+  start_time: string | null;
+  end_time: string | null;
+};
+
+type StaffHourItem = {
+  id?: string;
+  tenant_id?: string;
+  branch_id?: string | null;
+  staff_id: string;
+  day_of_week: number;
+  enabled: boolean;
+  start_time: string | null;
+  end_time: string | null;
 };
 
 type FilterValue =
@@ -68,6 +105,13 @@ export default function AgendaPage() {
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
+
+  const [staffList, setStaffList] = useState<StaffItem[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState("");
+  const [loadingStaff, setLoadingStaff] = useState(false);
+
+  const [businessHours, setBusinessHours] = useState<BusinessHourItem[]>([]);
+  const [staffHours, setStaffHours] = useState<StaffHourItem[]>([]);
 
   const [weekBaseDate, setWeekBaseDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -166,13 +210,43 @@ export default function AgendaPage() {
     });
   }
 
-  function generateDaySlots(day: Date) {
+  function timeStringToMinutes(value: string | null | undefined) {
+    if (!value) return null;
+    const [hours, minutes] = String(value).slice(0, 5).split(":").map(Number);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+    return hours * 60 + minutes;
+  }
+
+  function generateDaySlots(
+    day: Date,
+    options?: {
+      startMinutes?: number | null;
+      endMinutes?: number | null;
+    }
+  ) {
     const slots: string[] = [];
+
+    const startMinutes =
+      options?.startMinutes !== undefined && options?.startMinutes !== null
+        ? options.startMinutes
+        : 9 * 60;
+
+    const endMinutes =
+      options?.endMinutes !== undefined && options?.endMinutes !== null
+        ? options.endMinutes
+        : 18 * 60;
+
+    if (endMinutes <= startMinutes) {
+      return slots;
+    }
+
     const start = new Date(day);
-    start.setHours(9, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+    start.setMinutes(startMinutes);
 
     const end = new Date(day);
-    end.setHours(18, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    end.setMinutes(endMinutes);
 
     const cursor = new Date(start);
 
@@ -418,6 +492,83 @@ export default function AgendaPage() {
     );
   }
 
+  function getStaffName(staffId?: string | null) {
+    if (!staffId) return "Sin profesional";
+    return staffList.find((staff) => staff.id === staffId)?.name || "Profesional";
+  }
+
+  function getWeekdayForAgenda(date: Date) {
+    const jsDay = date.getDay();
+    return jsDay === 0 ? 0 : jsDay;
+  }
+
+  function getSelectedStaffDayWindow(day: Date) {
+    if (!selectedStaffId) {
+      return {
+        startMinutes: 9 * 60,
+        endMinutes: 18 * 60,
+        hasConfiguredHours: false,
+      };
+    }
+
+    const selectedStaff = staffList.find((staff) => staff.id === selectedStaffId);
+
+    if (!selectedStaff) {
+      return {
+        startMinutes: 9 * 60,
+        endMinutes: 18 * 60,
+        hasConfiguredHours: false,
+      };
+    }
+
+    const weekday = getWeekdayForAgenda(day);
+
+    if (selectedStaff.use_business_hours) {
+      const row = businessHours.find((item) => {
+        const sameBranch =
+          !item.branch_id || item.branch_id === selectedBranchId;
+        return sameBranch && Number(item.day_of_week) === weekday;
+      });
+
+      if (!row || !row.enabled) {
+        return {
+          startMinutes: null,
+          endMinutes: null,
+          hasConfiguredHours: true,
+        };
+      }
+
+      return {
+        startMinutes: timeStringToMinutes(row.start_time),
+        endMinutes: timeStringToMinutes(row.end_time),
+        hasConfiguredHours: true,
+      };
+    }
+
+    const row = staffHours.find((item) => {
+      const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
+      return (
+        sameBranch &&
+        item.staff_id === selectedStaffId &&
+        Number(item.day_of_week) === weekday
+      );
+    });
+
+    if (!row || !row.enabled) {
+      return {
+        startMinutes: null,
+        endMinutes: null,
+        hasConfiguredHours: true,
+      };
+    }
+
+    return {
+      startMinutes: timeStringToMinutes(row.start_time),
+      endMinutes: timeStringToMinutes(row.end_time),
+      hasConfiguredHours: true,
+    };
+  }
+
   async function loadBranches(currentTenantId: string) {
     try {
       setLoadingBranches(true);
@@ -465,6 +616,78 @@ export default function AgendaPage() {
     }
   }
 
+  async function loadStaff(currentTenantId: string, currentBranchId: string) {
+    try {
+      setLoadingStaff(true);
+
+      const query = new URLSearchParams({
+        tenant_id: currentTenantId,
+        branch_id: currentBranchId,
+        active: "true",
+      });
+
+      const response = await fetch(`${BACKEND_URL}/staff?${query.toString()}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo cargar el staff");
+      }
+
+      const rows: StaffItem[] = Array.isArray(data?.staff) ? data.staff : [];
+      setStaffList(rows);
+
+      setSelectedStaffId((prev) => {
+        if (!prev) return "";
+        const exists = rows.some((staff) => staff.id === prev);
+        return exists ? prev : "";
+      });
+    } catch (err) {
+      console.error("Error cargando staff", err);
+      setStaffList([]);
+      setSelectedStaffId("");
+    } finally {
+      setLoadingStaff(false);
+    }
+  }
+
+  async function loadBusinessHours(currentTenantId: string) {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudieron cargar los horarios");
+      }
+
+      const rows: BusinessHourItem[] = Array.isArray(data?.hours) ? data.hours : [];
+      setBusinessHours(rows);
+    } catch (err) {
+      console.error("Error cargando business hours", err);
+      setBusinessHours([]);
+    }
+  }
+
+  async function loadStaffHours(currentTenantId: string) {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/staff-hours?tenant_id=${currentTenantId}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudieron cargar los horarios del staff");
+      }
+
+      const rows: StaffHourItem[] = Array.isArray(data?.hours) ? data.hours : [];
+      setStaffHours(rows);
+    } catch (err) {
+      console.error("Error cargando staff hours", err);
+      setStaffHours([]);
+    }
+  }
+
   const weekStart = useMemo(() => startOfWeek(weekBaseDate), [weekBaseDate]);
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -491,6 +714,10 @@ export default function AgendaPage() {
         to,
         branch_id: selectedBranchId,
       });
+
+      if (selectedStaffId) {
+        query.set("staff_id", selectedStaffId);
+      }
 
       const res = await fetch(
         `${BACKEND_URL}/appointments/by-range/${slug}?${query.toString()}`
@@ -587,10 +814,20 @@ export default function AgendaPage() {
         return;
       }
 
+      const query = new URLSearchParams({
+        q: trimmedQuery,
+      });
+
+      if (selectedBranchId) {
+        query.set("branch_id", selectedBranchId);
+      }
+
+      if (selectedStaffId) {
+        query.set("staff_id", selectedStaffId);
+      }
+
       const res = await fetch(
-        `${BACKEND_URL}/appointments/search/${slug}?q=${encodeURIComponent(
-          trimmedQuery
-        )}`
+        `${BACKEND_URL}/appointments/search/${slug}?${query.toString()}`
       );
 
       const data = await res.json();
@@ -682,7 +919,12 @@ export default function AgendaPage() {
 
         const currentTenantId = businessData.business.id;
         setTenantId(currentTenantId);
-        await loadBranches(currentTenantId);
+
+        await Promise.all([
+          loadBranches(currentTenantId),
+          loadBusinessHours(currentTenantId),
+          loadStaffHours(currentTenantId),
+        ]);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "No se pudo cargar agenda");
       }
@@ -690,6 +932,16 @@ export default function AgendaPage() {
 
     loadInitial();
   }, [slug]);
+
+  useEffect(() => {
+    if (!tenantId || !selectedBranchId) {
+      setStaffList([]);
+      setSelectedStaffId("");
+      return;
+    }
+
+    loadStaff(tenantId, selectedBranchId);
+  }, [tenantId, selectedBranchId]);
 
   useEffect(() => {
     if (!slug) return;
@@ -701,7 +953,7 @@ export default function AgendaPage() {
     }
 
     loadAppointments();
-  }, [slug, weekStart.getTime(), selectedBranchId]);
+  }, [slug, weekStart.getTime(), selectedBranchId, selectedStaffId]);
 
   useEffect(() => {
     function handleBranchChanged(event: Event) {
@@ -715,9 +967,13 @@ export default function AgendaPage() {
       if (eventSlug !== slug) return;
 
       setSelectedBranchId(branchId);
+      setSelectedStaffId("");
       setSelectedAppointment(null);
       setIsEditingReservation(false);
       setHoverCard(null);
+      setSearchResults([]);
+      setSearchQuery("");
+      setSearchError("");
     }
 
     function handleStorage(event: StorageEvent) {
@@ -725,9 +981,13 @@ export default function AgendaPage() {
 
       const nextBranchId = event.newValue || "";
       setSelectedBranchId(nextBranchId);
+      setSelectedStaffId("");
       setSelectedAppointment(null);
       setIsEditingReservation(false);
       setHoverCard(null);
+      setSearchResults([]);
+      setSearchQuery("");
+      setSearchError("");
     }
 
     window.addEventListener(
@@ -849,6 +1109,9 @@ export default function AgendaPage() {
   const selectedBranchName =
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
 
+  const selectedStaffName =
+    staffList.find((staff) => staff.id === selectedStaffId)?.name || "";
+
   return (
     <div className="space-y-4 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 p-1">
       <div className="rounded-[24px] border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur">
@@ -856,8 +1119,12 @@ export default function AgendaPage() {
           eyebrow="Agenda"
           title="Agenda semanal"
           description={
-            selectedBranchName
+            selectedBranchName && selectedStaffName
+              ? `Vista filtrada por sucursal: ${selectedBranchName} • Profesional: ${selectedStaffName}`
+              : selectedBranchName
               ? `Vista filtrada por sucursal: ${selectedBranchName}`
+              : selectedStaffName
+              ? `Vista filtrada por profesional: ${selectedStaffName}`
               : "Vista enfocada en reservas activas."
           }
           actions={
@@ -948,7 +1215,11 @@ export default function AgendaPage() {
             title="Calendario semanal"
             description={
               activeFilter === "canceled"
-                ? "Vista semanal de reservas canceladas."
+                ? selectedStaffName
+                  ? `Vista semanal de reservas canceladas de ${selectedStaffName}.`
+                  : "Vista semanal de reservas canceladas."
+                : selectedStaffName
+                ? `Vista semanal de ${selectedStaffName}.`
                 : "Vista semanal enfocada en reservas activas."
             }
           >
@@ -964,19 +1235,32 @@ export default function AgendaPage() {
                   const dayKey = formatDateYYYYMMDD(day);
                   const dayAppointments = appointmentsByDay[dayKey] || [];
                   const isToday = dayKey === todayKey;
-                  const daySlots = generateDaySlots(day);
+
+                  const dayWindow = getSelectedStaffDayWindow(day);
+                  const daySlots = generateDaySlots(day, {
+                    startMinutes: dayWindow.startMinutes,
+                    endMinutes: dayWindow.endMinutes,
+                  });
+
                   const dayPendingCount = appointments
                     .filter(
                       (appt) =>
                         formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
                     )
                     .filter(isPastPendingClosure).length;
+
                   const dayCanceledCount = appointments
                     .filter(
                       (appt) =>
                         formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
                     )
                     .filter(isCanceled).length;
+
+                  const showClosedBySchedule =
+                    !!selectedStaffId &&
+                    dayWindow.hasConfiguredHours &&
+                    daySlots.length === 0 &&
+                    dayAppointments.length === 0;
 
                   return (
                     <div
@@ -1035,7 +1319,11 @@ export default function AgendaPage() {
                       </div>
 
                       <div className="space-y-1.5">
-                        {activeFilter === "canceled" ? (
+                        {showClosedBySchedule ? (
+                          <div className="rounded-lg border border-dashed border-slate-200 bg-white px-2 py-3 text-center text-[11px] text-slate-400">
+                            Sin horario para este profesional
+                          </div>
+                        ) : activeFilter === "canceled" ? (
                           dayAppointments.length === 0 ? (
                             <div className="rounded-lg border border-dashed border-slate-200 bg-white px-2 py-3 text-center text-[11px] text-slate-400">
                               Sin canceladas
@@ -1101,6 +1389,16 @@ export default function AgendaPage() {
                                       }`}
                                     >
                                       {appt.service_name_snapshot || "Reserva"}
+                                    </p>
+
+                                    <p
+                                      className={`truncate text-[11px] ${
+                                        isSelected
+                                          ? "text-slate-200"
+                                          : "text-slate-500"
+                                      }`}
+                                    >
+                                      {getStaffName(appt.staff_id)}
                                     </p>
                                   </div>
                                 </button>
@@ -1196,9 +1494,19 @@ export default function AgendaPage() {
                                       isSelected
                                         ? "text-slate-200"
                                         : "text-slate-500"
-                                    }`}
+                                      }`}
                                   >
                                     {appt.service_name_snapshot || "Reserva"}
+                                  </p>
+
+                                  <p
+                                    className={`truncate text-[11px] ${
+                                      isSelected
+                                        ? "text-slate-200"
+                                        : "text-slate-500"
+                                      }`}
+                                  >
+                                    {getStaffName(appt.staff_id)}
                                   </p>
 
                                   {isPastPendingClosure(appt) ? (
@@ -1299,6 +1607,15 @@ export default function AgendaPage() {
                                 >
                                   {appt.service_name_snapshot || "Reserva"}
                                 </p>
+                                <p
+                                  className={`mt-1 truncate text-xs ${
+                                    isSelected
+                                      ? "text-slate-200"
+                                      : "text-slate-500"
+                                  }`}
+                                >
+                                  {getStaffName(appt.staff_id)}
+                                </p>
                               </div>
 
                               <span
@@ -1326,6 +1643,44 @@ export default function AgendaPage() {
                       })}
                     </div>
                   ) : null}
+                </div>
+              </Panel>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <Panel
+                title="Profesional"
+                description="Filtra la agenda por profesional."
+              >
+                <div className="space-y-3">
+                  <select
+                    value={selectedStaffId}
+                    onChange={(e) => {
+                      setSelectedStaffId(e.target.value);
+                      setSelectedAppointment(null);
+                      setIsEditingReservation(false);
+                      setHoverCard(null);
+                      setSearchResults([]);
+                      setSearchError("");
+                    }}
+                    disabled={!selectedBranchId || loadingStaff}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="">Todos los profesionales</option>
+                    {staffList.map((staff) => (
+                      <option key={staff.id} value={staff.id}>
+                        {staff.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    {loadingStaff
+                      ? "Cargando profesionales..."
+                      : selectedStaffName
+                      ? `Viendo agenda de ${selectedStaffName}.`
+                      : "Viendo todos los profesionales de la sucursal."}
+                  </div>
                 </div>
               </Panel>
             </div>
@@ -1438,7 +1793,9 @@ export default function AgendaPage() {
                   {loading
                     ? "Cargando..."
                     : nextAppointment
-                    ? nextAppointment.customer_name
+                    ? `${nextAppointment.customer_name} • ${getStaffName(
+                        nextAppointment.staff_id
+                      )}`
                     : "Sin próximas reservas."}
                 </p>
               </div>
@@ -1476,6 +1833,9 @@ export default function AgendaPage() {
                       <p className="mt-1 text-sm text-slate-600">
                         {formatHour(selectedAppointment.start_at)} -{" "}
                         {formatHour(selectedAppointment.end_at)}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Profesional: {getStaffName(selectedAppointment.staff_id)}
                       </p>
                     </div>
 
@@ -1594,6 +1954,15 @@ export default function AgendaPage() {
 
                           <div className="rounded-xl border border-slate-200 bg-white p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Profesional
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-900">
+                              {getStaffName(selectedAppointment.staff_id)}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-200 bg-white p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                               Estado
                             </p>
                             <p className="mt-1 text-sm font-medium text-slate-900">
@@ -1702,6 +2071,15 @@ export default function AgendaPage() {
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 {formatLongDate(hoverCard.appointment.start_at)}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Profesional
+              </p>
+              <p className="mt-1 text-sm font-medium text-slate-900">
+                {getStaffName(hoverCard.appointment.staff_id)}
               </p>
             </div>
 
