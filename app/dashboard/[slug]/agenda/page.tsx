@@ -59,6 +59,17 @@ type BusinessHourItem = {
   end_time: string | null;
 };
 
+type StaffHourItem = {
+  id?: string;
+  tenant_id?: string;
+  branch_id?: string | null;
+  staff_id: string;
+  day_of_week: number;
+  enabled: boolean;
+  start_time: string | null;
+  end_time: string | null;
+};
+
 type BusinessSpecialDateItem = {
   id?: string;
   tenant_id?: string;
