@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
-import { StatCard } from "../../../../components/dashboard/stat-card";
 
 type BusinessResponse = {
   business: {
@@ -942,105 +940,126 @@ export default function StaffPage() {
   return (
     <div className="space-y-6 pb-6">
       <section
-        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+  className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+  style={{
+    borderColor: "rgba(59,130,246,0.25)",
+    background:
+      "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+  }}
+>
+  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="max-w-3xl">
+      <p
+        className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
+        style={{ color: "var(--text-muted)" }}
+      >
+        Equipo
+      </p>
+
+      <h1
+        className="text-3xl font-semibold tracking-tight sm:text-4xl"
+        style={{ color: "var(--text-main)" }}
+      >
+        Staff
+      </h1>
+
+      <p
+        className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {selectedBranchName
+          ? `Administra el staff de la sucursal ${selectedBranchName}, sus servicios, horarios y excepciones.`
+          : "Administra las personas que atienden en tu negocio, sus servicios, horarios y excepciones."}
+      </p>
+    </div>
+
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        className="rounded-2xl border px-4 py-3"
         style={{
-          borderColor: "rgba(59,130,246,0.25)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+          borderColor: "rgba(59,130,246,0.24)",
+          background: "rgba(255,255,255,0.08)",
         }}
       >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p
-              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Equipo
-            </p>
+        <p
+          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Total staff
+        </p>
+        <p
+          className="mt-2 text-sm font-semibold"
+          style={{ color: "var(--text-main)" }}
+        >
+          {loading ? "..." : staff.length}
+        </p>
+      </div>
 
-            <h1
-              className="text-3xl font-semibold tracking-tight sm:text-4xl"
-              style={{ color: "var(--text-main)" }}
-            >
-              Staff
-            </h1>
+      <div
+        className="rounded-2xl border px-4 py-3"
+        style={{
+          borderColor: "rgba(59,130,246,0.24)",
+          background: "rgba(255,255,255,0.08)",
+        }}
+      >
+        <p
+          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Activos
+        </p>
+        <p
+          className="mt-2 text-sm font-semibold"
+          style={{ color: "var(--text-main)" }}
+        >
+          {loading ? "..." : activeCount}
+        </p>
+      </div>
 
-            <p
-              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {selectedBranchName
-                ? `Administra el staff de la sucursal ${selectedBranchName}, sus servicios, horarios y excepciones.`
-                : "Administra las personas que atienden en tu negocio, sus servicios, horarios y excepciones."}
-            </p>
-          </div>
+      <div
+        className="rounded-2xl border px-4 py-3"
+        style={{
+          borderColor: "rgba(59,130,246,0.24)",
+          background: "rgba(255,255,255,0.08)",
+        }}
+      >
+        <p
+          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Usan horario negocio
+        </p>
+        <p
+          className="mt-2 text-sm font-semibold"
+          style={{ color: "var(--text-main)" }}
+        >
+          {loading ? "..." : usingBusinessHoursCount}
+        </p>
+      </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Total staff
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : staff.length}
-              </p>
-            </div>
-
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Activos
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : activeCount}
-              </p>
-            </div>
-
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Plan
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold capitalize"
-                style={{ color: "var(--text-main)" }}
-              >
-                {plan}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <div
+        className="rounded-2xl border px-4 py-3"
+        style={{
+          borderColor: "rgba(59,130,246,0.24)",
+          background: "rgba(255,255,255,0.08)",
+        }}
+      >
+        <p
+          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Límite del plan
+        </p>
+        <p
+          className="mt-2 text-sm font-semibold"
+          style={{ color: "var(--text-main)" }}
+        >
+          {loading ? "..." : `${activeCount}/${caps.max_staff}`}
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
 
       {loadingBranches && !selectedBranchId ? (
         <div className="rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
@@ -1063,41 +1082,7 @@ export default function StaffPage() {
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Total staff"
-          value={loading ? "..." : String(staff.length)}
-          helper="Profesionales registrados en esta sucursal."
-        />
-
-        <StatCard
-          label="Activos"
-          value={loading ? "..." : String(activeCount)}
-          helper="Disponibles actualmente."
-        />
-
-        <StatCard
-          label="Usan horario negocio"
-          value={loading ? "..." : String(usingBusinessHoursCount)}
-          helper="Heredan el horario general."
-        />
-
-        <StatCard
-          label="Límite del plan"
-          value={loading ? "..." : `${activeCount}/${caps.max_staff}`}
-          helper={
-            loading
-              ? "Cargando plan..."
-              : reachedLimit
-              ? "Llegaste al límite de staff de tu plan."
-              : `Puedes agregar ${Math.max(
-                  0,
-                  caps.max_staff - activeCount
-                )} más.`
-          }
-        />
-      </section>
-
+      
       <section className="grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
         <Panel
           title={editingId ? "Editar staff" : "Nuevo staff"}
@@ -1398,15 +1383,15 @@ export default function StaffPage() {
               </div>
 
               {form.use_business_hours ? (
-                <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-4">
-                  <p className="text-sm font-medium text-emerald-300">
-                    Este staff usará el horario general del negocio.
-                  </p>
-                  <p className="mt-1 text-sm text-emerald-200/90">
-                    El editor de horarios propios queda oculto para evitar
-                    configuraciones duplicadas.
-                  </p>
-                </div>
+<div className="rounded-2xl border border-emerald-400/60 bg-emerald-500/12 px-4 py-4">
+  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+    Este staff usará el horario general del negocio.
+  </p>
+  <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-100/90">
+    El editor de horarios propios queda oculto para evitar
+    configuraciones duplicadas.
+  </p>
+</div>
               ) : (
                 <div
                   className="rounded-2xl border p-4"
@@ -1654,10 +1639,10 @@ export default function StaffPage() {
                 </div>
 
                 {!editingId ? (
-                  <div className="rounded-2xl border border-amber-300/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
-                    Primero crea o guarda el staff para poder administrar sus
-                    excepciones.
-                  </div>
+<div className="rounded-2xl border border-amber-400/60 bg-amber-500/12 px-4 py-3 text-sm font-medium text-amber-800 dark:text-amber-200">
+  Primero crea o guarda el staff para poder administrar sus
+  excepciones.
+</div>
                 ) : (
                   <div className="space-y-4">
                     <div className="grid gap-3 md:grid-cols-[1fr_1.5fr_0.9fr_1fr_1fr_auto_auto]">
@@ -1924,26 +1909,29 @@ export default function StaffPage() {
 
               <div className="space-y-3 pt-2">
                 {!editingId && reachedLimit ? (
-                  <div className="rounded-2xl border border-amber-300/50 bg-amber-500/10 px-4 py-4 text-sm text-amber-300">
-                    <p className="font-semibold">
-                      Llegaste al límite de profesionales de tu plan
-                    </p>
-                    <p className="mt-1">
-                      Ya usaste {activeCount} de {caps.max_staff} profesionales
-                      disponibles.
-                    </p>
-                    <p className="mt-1">
-                      Agrega más profesionales o mejora tu plan para seguir
-                      creciendo.
-                    </p>
+<div className="rounded-2xl border border-amber-400/60 bg-amber-500/12 px-4 py-4 text-sm">
+  <p className="font-semibold text-amber-900 dark:text-amber-100">
+    Llegaste al límite de profesionales de tu plan
+  </p>
+  <p className="mt-1 text-amber-800 dark:text-amber-100/90">
+    Ya usaste {activeCount} de {caps.max_staff} profesionales disponibles.
+  </p>
+  <p className="mt-1 text-amber-800 dark:text-amber-100/90">
+    Agrega más profesionales o mejora tu plan para seguir creciendo.
+  </p>
 
-                    <Link
-                      href={`/planes?current_plan=${plan}&from=staff&slug=${slug}&tenant_id=${tenantId}`}
-                      className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
-                    >
-                      Mejora tu plan
-                    </Link>
-                  </div>
+  <Link
+    href={`/planes?current_plan=${plan}&from=staff&slug=${slug}&tenant_id=${tenantId}`}
+    className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.02]"
+    style={{
+      background:
+        "linear-gradient(135deg, rgb(37 99 235), rgb(168 85 247))",
+    }}
+  >
+    Mejora tu plan
+  </Link>
+</div>
+
                 ) : null}
 
                 <div className="flex flex-wrap gap-3">
