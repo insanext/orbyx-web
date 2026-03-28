@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 
 type Appointment = {
@@ -107,6 +106,14 @@ type HoverCardState = {
   y: number;
 } | null;
 
+type NoticeTone =
+  | "info"
+  | "success"
+  | "warning"
+  | "limit"
+  | "danger"
+  | "neutral";
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 const filterLabels: Record<FilterValue, string> = {
@@ -118,6 +125,99 @@ const filterLabels: Record<FilterValue, string> = {
   canceled: "Canceladas",
 };
 
+function getNoticeStyles(tone: NoticeTone): {
+  wrapper: CSSProperties;
+  title: CSSProperties;
+  description: CSSProperties;
+} {
+  const tones: Record<
+    NoticeTone,
+    { border: string; background: string; text: string }
+  > = {
+    info: {
+      border: "rgba(34,197,94,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.05))",
+      text: "var(--text-main)",
+    },
+    success: {
+      border: "rgba(16,185,129,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.05))",
+      text: "var(--text-main)",
+    },
+    warning: {
+      border: "rgba(245,158,11,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.05))",
+      text: "var(--text-main)",
+    },
+    limit: {
+      border: "rgba(249,115,22,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.05))",
+      text: "var(--text-main)",
+    },
+    danger: {
+      border: "rgba(244,63,94,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(244,63,94,0.12), rgba(244,63,94,0.05))",
+      text: "var(--text-main)",
+    },
+    neutral: {
+      border: "var(--border-color)",
+      background: "var(--bg-soft)",
+      text: "var(--text-main)",
+    },
+  };
+
+  const current = tones[tone];
+
+  return {
+    wrapper: {
+      borderColor: current.border,
+      background: current.background,
+      boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px ${current.border}`,
+    },
+    title: {
+      color: current.text,
+    },
+    description: {
+      color: "var(--text-muted)",
+    },
+  };
+}
+
+function Notice({
+  tone,
+  title,
+  description,
+  children,
+}: {
+  tone: NoticeTone;
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+}) {
+  const styles = getNoticeStyles(tone);
+
+  return (
+    <div className="rounded-2xl border px-4 py-4 shadow-sm" style={styles.wrapper}>
+      <p className="text-sm font-semibold" style={styles.title}>
+        {title}
+      </p>
+
+      {description ? (
+        <p className="mt-1 text-sm leading-6" style={styles.description}>
+          {description}
+        </p>
+      ) : null}
+
+      {children ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
+}
+
 export default function AgendaPage() {
   const params = useParams();
   const slug =
@@ -125,6 +225,7 @@ export default function AgendaPage() {
     ((params as { Slug?: string })?.Slug as string);
 
   const [tenantId, setTenantId] = useState("");
+  const [businessName, setBusinessName] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -425,33 +526,33 @@ export default function AgendaPage() {
   ) {
     if (filter === "pending_close") {
       if (active) {
-        return "inline-flex h-8 items-center justify-center rounded-lg border border-rose-600 bg-rose-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700";
+        return "inline-flex h-9 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700";
       }
 
       if (count > 0) {
-        return "inline-flex h-8 items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-3 text-xs font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-100";
+        return "inline-flex h-9 items-center justify-center rounded-xl border border-rose-300 bg-rose-50 px-3 text-xs font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-100";
       }
 
-      return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
+      return "inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
     }
 
     if (filter === "canceled") {
       if (active) {
-        return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-700 bg-slate-700 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800";
+        return "inline-flex h-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-700 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800";
       }
 
       if (count > 0) {
-        return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-200";
+        return "inline-flex h-9 items-center justify-center rounded-xl border border-slate-300 bg-slate-100 px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-200";
       }
 
-      return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
+      return "inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
     }
 
     if (active) {
-      return "inline-flex h-8 items-center justify-center rounded-lg bg-slate-900 px-3 text-xs font-medium text-white transition hover:bg-slate-800";
+      return "inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-medium text-white transition hover:bg-slate-800";
     }
 
-    return "inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
+    return "inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50";
   }
 
   function syncEditForm(appt: Appointment | null) {
@@ -536,26 +637,31 @@ export default function AgendaPage() {
       startMinutes: number | null;
       endMinutes: number | null;
       hasConfiguredHours: boolean;
+      fullyClosed?: boolean;
+      closedLabel?: string;
     },
     specialDates: Array<{
       is_closed: boolean;
       start_time: string | null;
       end_time: string | null;
+      label?: string | null;
     }>
   ) {
     if (!specialDates.length) {
       return baseWindow;
     }
 
-    const fullDayClosed = specialDates.some(
+    const fullDayClosedRow = specialDates.find(
       (row) => row.is_closed && !row.start_time && !row.end_time
     );
 
-    if (fullDayClosed) {
+    if (fullDayClosedRow) {
       return {
         startMinutes: null,
         endMinutes: null,
         hasConfiguredHours: true,
+        fullyClosed: true,
+        closedLabel: (fullDayClosedRow.label || "").trim() || "No disponible",
       };
     }
 
@@ -630,6 +736,8 @@ export default function AgendaPage() {
         startMinutes: null,
         endMinutes: null,
         hasConfiguredHours: true,
+        fullyClosed: false,
+        closedLabel: "",
       };
     }
 
@@ -639,6 +747,8 @@ export default function AgendaPage() {
       startMinutes: workingWindows[0].start,
       endMinutes: workingWindows[workingWindows.length - 1].end,
       hasConfiguredHours: true,
+      fullyClosed: false,
+      closedLabel: "",
     };
   }
 
@@ -655,7 +765,9 @@ export default function AgendaPage() {
         sameBranch &&
         item.staff_id === selectedStaffId &&
         item.date === dayKey &&
-        item.is_closed
+        item.is_closed &&
+        !item.start_time &&
+        !item.end_time
       );
     });
 
@@ -663,7 +775,6 @@ export default function AgendaPage() {
 
     return (matchedRow.label || "").trim() || "No disponible";
   }
-
 
   function getSelectedStaffDayWindow(day: Date) {
     const dayKey = formatDateYYYYMMDD(day);
@@ -673,6 +784,8 @@ export default function AgendaPage() {
         startMinutes: 9 * 60,
         endMinutes: 18 * 60,
         hasConfiguredHours: false,
+        fullyClosed: false,
+        closedLabel: "",
       };
     }
 
@@ -683,6 +796,8 @@ export default function AgendaPage() {
         startMinutes: 9 * 60,
         endMinutes: 18 * 60,
         hasConfiguredHours: false,
+        fullyClosed: false,
+        closedLabel: "",
       };
     }
 
@@ -699,6 +814,8 @@ export default function AgendaPage() {
         startMinutes: null as number | null,
         endMinutes: null as number | null,
         hasConfiguredHours: true,
+        fullyClosed: false,
+        closedLabel: "",
       };
 
       if (row?.enabled) {
@@ -706,6 +823,8 @@ export default function AgendaPage() {
           startMinutes: timeStringToMinutes(row.start_time),
           endMinutes: timeStringToMinutes(row.end_time),
           hasConfiguredHours: true,
+          fullyClosed: false,
+          closedLabel: "",
         };
       }
 
@@ -748,6 +867,8 @@ export default function AgendaPage() {
       startMinutes: null as number | null,
       endMinutes: null as number | null,
       hasConfiguredHours: true,
+      fullyClosed: false,
+      closedLabel: "",
     };
 
     if (row?.enabled) {
@@ -755,6 +876,8 @@ export default function AgendaPage() {
         startMinutes: timeStringToMinutes(row.start_time),
         endMinutes: timeStringToMinutes(row.end_time),
         hasConfiguredHours: true,
+        fullyClosed: false,
+        closedLabel: "",
       };
     }
 
@@ -1169,6 +1292,7 @@ export default function AgendaPage() {
 
         const currentTenantId = businessData.business.id;
         setTenantId(currentTenantId);
+        setBusinessName(businessData.business.name || slug || "");
 
         await Promise.all([
           loadBranches(currentTenantId),
@@ -1365,104 +1489,173 @@ export default function AgendaPage() {
     staffList.find((staff) => staff.id === selectedStaffId)?.name || "";
 
   return (
-    <div className="space-y-4 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 p-1">
-      <div className="rounded-[24px] border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur">
-        <PageHeader
-          eyebrow="Agenda"
-          title="Agenda semanal"
-          description={
-            selectedBranchName && selectedStaffName
-              ? `Vista filtrada por sucursal: ${selectedBranchName} • Profesional: ${selectedStaffName}`
-              : selectedBranchName
-              ? `Vista filtrada por sucursal: ${selectedBranchName}`
-              : selectedStaffName
-              ? `Vista filtrada por profesional: ${selectedStaffName}`
-              : "Vista enfocada en reservas activas."
-          }
-          actions={
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {hasPendingClose ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveFilter("pending_close");
-                    if (pendingCloseAppointments[0]) {
-                      handleSelectAppointment(pendingCloseAppointments[0]);
-                    }
-                  }}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
-                >
-                  Pendientes: {pendingCloseCount}
-                </button>
-              ) : (
-                <div className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 text-sm font-semibold text-emerald-700">
-                  Sin pendientes
-                </div>
-              )}
+    <div className="space-y-6 pb-6">
+      <section
+        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+        style={{
+          borderColor: "rgba(59,130,246,0.25)",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+        }}
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Agenda
+            </p>
 
-              <div className="flex items-center rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
-                <button
-                  type="button"
-                  onClick={goPrevWeek}
-                  className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                >
-                  ← Anterior
-                </button>
+            <h1
+              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+              style={{ color: "var(--text-main)" }}
+            >
+              Agenda semanal
+            </h1>
 
-                <button
-                  type="button"
-                  onClick={goToday}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-3.5 text-sm font-medium text-white transition hover:bg-slate-800"
-                >
-                  Hoy
-                </button>
+            <p
+              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {selectedBranchName && selectedStaffName
+                ? `Vista filtrada por sucursal ${selectedBranchName} y profesional ${selectedStaffName}.`
+                : selectedBranchName
+                ? `Vista filtrada por sucursal ${selectedBranchName}.`
+                : selectedStaffName
+                ? `Vista filtrada por profesional ${selectedStaffName}.`
+                : `Gestiona las reservas de ${loading ? "tu negocio" : businessName}.`}
+            </p>
+          </div>
 
-                <button
-                  type="button"
-                  onClick={goNextWeek}
-                  className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                >
-                  Siguiente →
-                </button>
-              </div>
-
-              <div className="inline-flex h-10 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 px-3.5 text-sm font-semibold text-sky-800">
-                {formatRangeTitle(weekStart, weekEnd)}
-              </div>
-
-              <input
-                type="date"
-                value={formatDateYYYYMMDD(weekBaseDate)}
-                onChange={(e) => {
-                  if (!e.target.value) return;
-                  setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
-                  setSelectedAppointment(null);
-                  setIsEditingReservation(false);
-                  setHoverCard(null);
-                }}
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-              />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Hoy
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : appointmentsToday.length}
+              </p>
             </div>
-          }
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Semana
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading
+                  ? "..."
+                  : activeFilter === "active"
+                  ? counts.active
+                  : activeFilter === "pending_close"
+                  ? counts.pending_close
+                  : activeFilter === "booked"
+                  ? counts.booked
+                  : activeFilter === "completed"
+                  ? counts.completed
+                  : activeFilter === "no_show"
+                  ? counts.no_show
+                  : counts.canceled}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Pendientes
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : pendingCloseCount}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Próxima
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : nextAppointment ? formatHour(nextAppointment.start_at) : "--"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {loadingBranches && !selectedBranchId ? (
+        <div className="rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
+          <span style={{ color: "var(--text-muted)" }}>
+            Cargando sucursal activa...
+          </span>
+        </div>
+      ) : null}
+
+      {!loadingBranches && !selectedBranchId ? (
+        <Notice
+          tone="warning"
+          title="Debes seleccionar una sucursal activa."
+          description="Selecciona una sucursal en el sidebar para ver la agenda."
         />
-      </div>
+      ) : null}
 
       {hasPendingClose ? (
-        <div className="rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-amber-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
-          Tienes <span className="font-semibold">{pendingCloseCount}</span>{" "}
-          cita{pendingCloseCount === 1 ? "" : "s"} pendiente
-          {pendingCloseCount === 1 ? "" : "s"} de cierre.
-        </div>
+        <Notice
+          tone="danger"
+          title={`Tienes ${pendingCloseCount} cita${pendingCloseCount === 1 ? "" : "s"} pendiente${pendingCloseCount === 1 ? "" : "s"} de cierre.`}
+          description="Revísalas para mantener la agenda actualizada."
+        />
       ) : null}
 
-      {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
-          {error}
-        </div>
-      ) : null}
+      {error ? <Notice tone="danger" title={error} /> : null}
 
-      <div className="grid gap-4 xl:grid-cols-[1.7fr_0.55fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="grid gap-6 xl:grid-cols-[1.7fr_0.55fr]">
+        <div className="rounded-2xl border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
           <Panel
             title="Calendario semanal"
             description={
@@ -1474,121 +1667,448 @@ export default function AgendaPage() {
                 ? `Vista semanal de ${selectedStaffName}.`
                 : "Vista semanal enfocada en reservas activas."
             }
+            className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
           >
             {!selectedBranchId ? (
-              <p className="px-2 py-4 text-sm text-slate-500">
+              <div
+                className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-muted)",
+                }}
+              >
                 Selecciona una sucursal en el sidebar para ver la agenda.
-              </p>
+              </div>
             ) : loading ? (
-              <p className="px-2 py-4 text-sm text-slate-500">Cargando agenda...</p>
+              <div
+                className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                Cargando agenda...
+              </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-                {weekDays.map((day) => {
-                  const dayKey = formatDateYYYYMMDD(day);
-                  const dayAppointments = appointmentsByDay[dayKey] || [];
-                  const isToday = dayKey === todayKey;
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
+                      const count =
+                        filter === "active"
+                          ? counts.active
+                          : filter === "pending_close"
+                          ? counts.pending_close
+                          : filter === "booked"
+                          ? counts.booked
+                          : filter === "completed"
+                          ? counts.completed
+                          : filter === "no_show"
+                          ? counts.no_show
+                          : counts.canceled;
 
-                  const dayWindow = getSelectedStaffDayWindow(day);
-                  const daySlots = generateDaySlots(day, {
-                    startMinutes: dayWindow.startMinutes,
-                    endMinutes: dayWindow.endMinutes,
-                  });
+                      return (
+                        <button
+                          key={filter}
+                          type="button"
+                          onClick={() => setActiveFilter(filter)}
+                          className={getFilterButtonClasses(
+                            filter,
+                            activeFilter === filter,
+                            count
+                          )}
+                        >
+                          {filterLabels[filter]} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                  const dayPendingCount = appointments
-                    .filter(
-                      (appt) =>
-                        formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
-                    )
-                    .filter(isPastPendingClosure).length;
-
-                  const dayCanceledCount = appointments
-                    .filter(
-                      (appt) =>
-                        formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
-                    )
-                    .filter(isCanceled).length;
-
-                  const closedLabel = getSelectedStaffClosedLabel(day);
-
-                  const showClosedBySchedule =
-                    !!selectedStaffId &&
-                    dayWindow.hasConfiguredHours &&
-                    daySlots.length === 0 &&
-                    dayAppointments.length === 0;
-
-                  return (
-                    <div
-                      key={dayKey}
-                      className={`rounded-xl border p-2.5 ${
-                        dayPendingCount > 0
-                          ? "border-rose-200 bg-gradient-to-b from-rose-50 to-white"
-                          : isToday
-                          ? "border-sky-200 bg-gradient-to-b from-sky-50 to-white"
-                          : "border-slate-200 bg-slate-50/70"
-                      }`}
-                    >
-                      <div
-                        className={`mb-2.5 pb-2.5 ${
-                          dayPendingCount > 0
-                            ? "border-b border-rose-200"
-                            : isToday
-                            ? "border-b border-sky-200"
-                            : "border-b border-slate-200"
-                        }`}
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {hasPendingClose ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveFilter("pending_close");
+                          if (pendingCloseAppointments[0]) {
+                            handleSelectAppointment(pendingCloseAppointments[0]);
+                          }
+                        }}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="text-sm font-semibold capitalize text-slate-800">
+                        Pendientes: {pendingCloseCount}
+                      </button>
+                    ) : (
+                      <div className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-300/50 bg-emerald-500/10 px-3.5 text-sm font-semibold text-emerald-300">
+                        Sin pendientes
+                      </div>
+                    )}
+
+                    <div
+                      className="flex items-center rounded-2xl border p-1 shadow-sm"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={goPrevWeek}
+                        className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium transition"
+                        style={{ color: "var(--text-main)" }}
+                      >
+                        ← Anterior
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={goToday}
+                        className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium text-white transition"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                        }}
+                      >
+                        Hoy
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={goNextWeek}
+                        className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium transition"
+                        style={{ color: "var(--text-main)" }}
+                      >
+                        Siguiente →
+                      </button>
+                    </div>
+
+                    <div
+                      className="inline-flex h-10 items-center justify-center rounded-xl border px-3.5 text-sm font-semibold"
+                      style={{
+                        borderColor: "rgba(59,130,246,0.24)",
+                        background: "rgba(59,130,246,0.10)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      {formatRangeTitle(weekStart, weekEnd)}
+                    </div>
+
+                    <input
+                      type="date"
+                      value={formatDateYYYYMMDD(weekBaseDate)}
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
+                        setSelectedAppointment(null);
+                        setIsEditingReservation(false);
+                        setHoverCard(null);
+                      }}
+                      className="h-10 rounded-xl border px-3.5 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+                  {weekDays.map((day) => {
+                    const dayKey = formatDateYYYYMMDD(day);
+                    const dayAppointments = appointmentsByDay[dayKey] || [];
+                    const isToday = dayKey === todayKey;
+
+                    const dayWindow = getSelectedStaffDayWindow(day);
+                    const dayPendingCount = appointments
+                      .filter(
+                        (appt) =>
+                          formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
+                      )
+                      .filter(isPastPendingClosure).length;
+
+                    const dayCanceledCount = appointments
+                      .filter(
+                        (appt) =>
+                          formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
+                      )
+                      .filter(isCanceled).length;
+
+                    const closedLabel =
+                      dayWindow.closedLabel || getSelectedStaffClosedLabel(day);
+
+                    const showClosedBySchedule =
+                      !!selectedStaffId &&
+                      dayWindow.hasConfiguredHours &&
+                      dayWindow.fullyClosed &&
+                      dayAppointments.length === 0;
+
+                    const hasNoWorkingWindow =
+                      !!selectedStaffId &&
+                      dayWindow.hasConfiguredHours &&
+                      !dayWindow.fullyClosed &&
+                      dayWindow.startMinutes === null &&
+                      dayWindow.endMinutes === null &&
+                      dayAppointments.length === 0;
+
+                    const daySlots =
+                      showClosedBySchedule || hasNoWorkingWindow
+                        ? []
+                        : generateDaySlots(day, {
+                            startMinutes: dayWindow.startMinutes,
+                            endMinutes: dayWindow.endMinutes,
+                          });
+
+                    return (
+                      <div
+                        key={dayKey}
+                        className="rounded-xl border p-2.5"
+                        style={{
+                          borderColor: dayPendingCount > 0
+                            ? "rgba(244,63,94,0.24)"
+                            : isToday
+                            ? "rgba(56,189,248,0.24)"
+                            : "var(--border-color)",
+                          background: dayPendingCount > 0
+                            ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
+                            : isToday
+                            ? "linear-gradient(180deg, rgba(56,189,248,0.08), var(--bg-card))"
+                            : "var(--bg-soft)",
+                        }}
+                      >
+                        <div
+                          className="mb-2.5 pb-2.5"
+                          style={{
+                            borderBottom: `1px solid ${
+                              dayPendingCount > 0
+                                ? "rgba(244,63,94,0.24)"
+                                : isToday
+                                ? "rgba(56,189,248,0.24)"
+                                : "var(--border-color)"
+                            }`,
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div
+                              className="text-sm font-semibold capitalize"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {day.toLocaleDateString("es-CL", {
+                                weekday: "long",
+                              })}
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              {dayCanceledCount > 0 ? (
+                                <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                  {dayCanceledCount} c
+                                </span>
+                              ) : null}
+
+                              {dayPendingCount > 0 ? (
+                                <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                  {dayPendingCount}
+                                </span>
+                              ) : null}
+
+                              {isToday ? (
+                                <span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                  Hoy
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div
+                            className="mt-1 text-[11px]"
+                            style={{ color: "var(--text-muted)" }}
+                          >
                             {day.toLocaleDateString("es-CL", {
-                              weekday: "long",
+                              day: "2-digit",
+                              month: "2-digit",
                             })}
                           </div>
-
-                          <div className="flex items-center gap-1.5">
-                            {dayCanceledCount > 0 ? (
-                              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                {dayCanceledCount} c
-                              </span>
-                            ) : null}
-
-                            {dayPendingCount > 0 ? (
-                              <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                {dayPendingCount}
-                              </span>
-                            ) : null}
-
-                            {isToday ? (
-                              <span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                Hoy
-                              </span>
-                            ) : null}
-                          </div>
                         </div>
 
-                        <div className="mt-1 text-[11px] text-slate-500">
-                          {day.toLocaleDateString("es-CL", {
-                            day: "2-digit",
-                            month: "2-digit",
-                          })}
-                        </div>
-                      </div>
+                        <div className="space-y-1.5">
+                          {showClosedBySchedule ? (
+                            <div
+                              className="rounded-lg border border-dashed px-2 py-3 text-center"
+                              style={{
+                                borderColor: "rgba(245,158,11,0.34)",
+                                background: "rgba(245,158,11,0.10)",
+                              }}
+                            >
+                              <span
+                                className="block text-[11px] font-semibold"
+                                style={{ color: "var(--text-main)" }}
+                              >
+                                {closedLabel || "No disponible"}
+                              </span>
+                              <span
+                                className="mt-1 block text-[10px]"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                Profesional no disponible este día
+                              </span>
+                            </div>
+                          ) : hasNoWorkingWindow ? (
+                            <div
+                              className="rounded-lg border border-dashed px-2 py-3 text-center"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                              }}
+                            >
+                              <span
+                                className="block text-[11px] font-semibold"
+                                style={{ color: "var(--text-main)" }}
+                              >
+                                Sin horario disponible
+                              </span>
+                              <span
+                                className="mt-1 block text-[10px]"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                No hay bloques configurados para este día
+                              </span>
+                            </div>
+                          ) : activeFilter === "canceled" ? (
+                            dayAppointments.length === 0 ? (
+                              <div
+                                className="rounded-lg border border-dashed px-2 py-3 text-center text-[11px]"
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-muted)",
+                                }}
+                              >
+                                Sin canceladas
+                              </div>
+                            ) : (
+                              dayAppointments.map((appt) => {
+                                const isSelected =
+                                  selectedAppointment?.id === appt.id;
 
-                      <div className="space-y-1.5">
-                        {showClosedBySchedule ? (
-                          <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50 px-2 py-3 text-center">
-                            <span className="block text-[11px] font-semibold text-amber-800">
-                              {closedLabel || "No disponible"}
-                            </span>
-                            <span className="mt-1 block text-[10px] text-amber-700">
-                              Profesional no disponible este día
-                            </span>
-                          </div>
-                        ) : activeFilter === "canceled" ? (
-                          dayAppointments.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-slate-200 bg-white px-2 py-3 text-center text-[11px] text-slate-400">
-                              Sin canceladas
+                                return (
+                                  <button
+                                    key={appt.id}
+                                    type="button"
+                                    onClick={() => handleSelectAppointment(appt)}
+                                    onMouseEnter={(e) =>
+                                      handleAppointmentMouseEnter(e, appt)
+                                    }
+                                    onMouseLeave={handleAppointmentMouseLeave}
+                                    className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
+                                      appt,
+                                      isSelected
+                                    )}`}
+                                  >
+                                    <div className="space-y-1.5">
+                                      <div
+                                        className={`text-[11px] font-semibold ${
+                                          isSelected
+                                            ? "text-slate-200"
+                                            : "text-slate-600"
+                                        }`}
+                                      >
+                                        {formatHour(appt.start_at)} -{" "}
+                                        {formatHour(appt.end_at)}
+                                      </div>
+
+                                      <div>
+                                        <span
+                                          className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                            isSelected
+                                              ? "border-white/20 bg-white/10 text-white"
+                                              : getStatusBadgeClass(appt)
+                                          }`}
+                                        >
+                                          {getCalendarBadgeLabel(appt)}
+                                        </span>
+                                      </div>
+
+                                      <p
+                                        className={`truncate text-sm font-semibold ${
+                                          isSelected
+                                            ? "text-white"
+                                            : "text-slate-900"
+                                        }`}
+                                      >
+                                        {appt.customer_name}
+                                      </p>
+
+                                      <p
+                                        className={`truncate text-[11px] ${
+                                          isSelected
+                                            ? "text-slate-200"
+                                            : "text-slate-500"
+                                        }`}
+                                      >
+                                        {appt.service_name_snapshot || "Reserva"}
+                                      </p>
+
+                                      <p
+                                        className={`truncate text-[11px] ${
+                                          isSelected
+                                            ? "text-slate-200"
+                                            : "text-slate-500"
+                                        }`}
+                                      >
+                                        {getStaffName(appt.staff_id)}
+                                      </p>
+                                    </div>
+                                  </button>
+                                );
+                              })
+                            )
+                          ) : daySlots.length === 0 && dayAppointments.length === 0 ? (
+                            <div
+                              className="rounded-lg border border-dashed px-2 py-3 text-center text-[11px]"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-muted)",
+                              }}
+                            >
+                              Sin bloques disponibles
                             </div>
                           ) : (
-                            dayAppointments.map((appt) => {
+                            daySlots.map((slot, index) => {
+                              const appt = dayAppointments.find(
+                                (a) =>
+                                  new Date(a.start_at).getTime() ===
+                                  new Date(slot).getTime()
+                              );
+
+                              const isHourStart = index % 2 === 0;
+                              const isEvenBand = Math.floor(index / 2) % 2 === 0;
+
+                              if (!appt) {
+                                return (
+                                  <div
+                                    key={slot}
+                                    className="rounded-lg border px-2 py-2 text-center text-[11px]"
+                                    style={{
+                                      borderColor: isHourStart
+                                        ? "rgba(148,163,184,0.28)"
+                                        : "var(--border-color)",
+                                      background: isEvenBand
+                                        ? "var(--bg-soft)"
+                                        : "var(--bg-card)",
+                                      color: "var(--text-muted)",
+                                    }}
+                                  >
+                                    <span className="block font-medium">
+                                      {formatHour(slot)}
+                                    </span>
+                                    <span className="block">Libre</span>
+                                  </div>
+                                );
+                              }
+
                               const isSelected =
                                 selectedAppointment?.id === appt.id;
 
@@ -1655,139 +2175,32 @@ export default function AgendaPage() {
                                         isSelected
                                           ? "text-slate-200"
                                           : "text-slate-500"
-                                      }`}
+                                        }`}
                                     >
                                       {getStaffName(appt.staff_id)}
                                     </p>
+
+                                    {isPastPendingClosure(appt) ? (
+                                      <div
+                                        className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${
+                                          isSelected
+                                            ? "bg-white/10 text-white"
+                                            : "bg-rose-100 text-rose-700"
+                                        }`}
+                                      >
+                                        Requiere cierre
+                                      </div>
+                                    ) : null}
                                   </div>
                                 </button>
                               );
                             })
-                          )
-                        ) : (
-                          daySlots.map((slot, index) => {
-                            const appt = dayAppointments.find(
-                              (a) =>
-                                new Date(a.start_at).getTime() ===
-                                new Date(slot).getTime()
-                            );
-
-                            const isHourStart = index % 2 === 0;
-                            const isEvenBand = Math.floor(index / 2) % 2 === 0;
-
-                            if (!appt) {
-                              return (
-                                <div
-                                  key={slot}
-                                  className={`rounded-lg border px-2 py-2 text-center text-[11px] ${
-                                    isHourStart
-                                      ? "border-slate-300"
-                                      : "border-slate-200"
-                                  } ${
-                                    isEvenBand
-                                      ? "bg-slate-100 text-slate-500"
-                                      : "bg-white text-slate-400"
-                                  }`}
-                                >
-                                  <span className="block font-medium">
-                                    {formatHour(slot)}
-                                  </span>
-                                  <span className="block">Libre</span>
-                                </div>
-                              );
-                            }
-
-                            const isSelected =
-                              selectedAppointment?.id === appt.id;
-
-                            return (
-                              <button
-                                key={appt.id}
-                                type="button"
-                                onClick={() => handleSelectAppointment(appt)}
-                                onMouseEnter={(e) =>
-                                  handleAppointmentMouseEnter(e, appt)
-                                }
-                                onMouseLeave={handleAppointmentMouseLeave}
-                                className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
-                                  appt,
-                                  isSelected
-                                )}`}
-                              >
-                                <div className="space-y-1.5">
-                                  <div
-                                    className={`text-[11px] font-semibold ${
-                                      isSelected
-                                        ? "text-slate-200"
-                                        : "text-slate-600"
-                                    }`}
-                                  >
-                                    {formatHour(appt.start_at)} -{" "}
-                                    {formatHour(appt.end_at)}
-                                  </div>
-
-                                  <div>
-                                    <span
-                                      className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                                        isSelected
-                                          ? "border-white/20 bg-white/10 text-white"
-                                          : getStatusBadgeClass(appt)
-                                      }`}
-                                    >
-                                      {getCalendarBadgeLabel(appt)}
-                                    </span>
-                                  </div>
-
-                                  <p
-                                    className={`truncate text-sm font-semibold ${
-                                      isSelected
-                                        ? "text-white"
-                                        : "text-slate-900"
-                                    }`}
-                                  >
-                                    {appt.customer_name}
-                                  </p>
-
-                                  <p
-                                    className={`truncate text-[11px] ${
-                                      isSelected
-                                        ? "text-slate-200"
-                                        : "text-slate-500"
-                                      }`}
-                                  >
-                                    {appt.service_name_snapshot || "Reserva"}
-                                  </p>
-
-                                  <p
-                                    className={`truncate text-[11px] ${
-                                      isSelected
-                                        ? "text-slate-200"
-                                        : "text-slate-500"
-                                      }`}
-                                  >
-                                    {getStaffName(appt.staff_id)}
-                                  </p>
-
-                                  {isPastPendingClosure(appt) ? (
-                                    <div
-                                      className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${
-                                        isSelected
-                                          ? "bg-white/10 text-white"
-                                          : "bg-rose-100 text-rose-700"
-                                      }`}
-                                    >
-                                      Requiere cierre
-                                    </div>
-                                  ) : null}
-                                </div>
-                              </button>
-                            );
-                          })
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </Panel>
@@ -1795,10 +2208,11 @@ export default function AgendaPage() {
 
         <div ref={detailRef} className="self-start xl:sticky xl:top-6">
           <div className="space-y-3">
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="rounded-2xl border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
               <Panel
                 title="Buscar cliente o reserva"
                 description="Busca por nombre, email o teléfono."
+                className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
               >
                 <div className="space-y-3">
                   <div className="flex gap-2">
@@ -1812,22 +2226,29 @@ export default function AgendaPage() {
                         }
                       }}
                       placeholder="Ej: Camilo, gmail.com, +569..."
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
                     />
                     <button
                       type="button"
                       onClick={handleSearchAppointments}
                       disabled={searchLoading}
-                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl px-4 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                      }}
                     >
                       {searchLoading ? "Buscando..." : "Buscar"}
                     </button>
                   </div>
 
                   {searchError ? (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                      {searchError}
-                    </div>
+                    <Notice tone="warning" title={searchError} />
                   ) : null}
 
                   {searchResults.length > 0 ? (
@@ -1843,35 +2264,52 @@ export default function AgendaPage() {
                             className={`w-full rounded-xl border p-3 text-left transition ${
                               isSelected
                                 ? "border-slate-900 bg-slate-900 text-white"
-                                : "border-slate-200 bg-slate-50 hover:border-sky-300 hover:bg-sky-50"
+                                : ""
                             }`}
+                            style={
+                              isSelected
+                                ? undefined
+                                : {
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-soft)",
+                                  }
+                            }
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <p
                                   className={`truncate text-sm font-semibold ${
-                                    isSelected
-                                      ? "text-white"
-                                      : "text-slate-900"
+                                    isSelected ? "text-white" : ""
                                   }`}
+                                  style={
+                                    isSelected
+                                      ? undefined
+                                      : { color: "var(--text-main)" }
+                                  }
                                 >
                                   {appt.customer_name}
                                 </p>
                                 <p
                                   className={`mt-1 truncate text-xs ${
-                                    isSelected
-                                      ? "text-slate-200"
-                                      : "text-slate-500"
+                                    isSelected ? "text-slate-200" : ""
                                   }`}
+                                  style={
+                                    isSelected
+                                      ? undefined
+                                      : { color: "var(--text-muted)" }
+                                  }
                                 >
                                   {appt.service_name_snapshot || "Reserva"}
                                 </p>
                                 <p
                                   className={`mt-1 truncate text-xs ${
-                                    isSelected
-                                      ? "text-slate-200"
-                                      : "text-slate-500"
+                                    isSelected ? "text-slate-200" : ""
                                   }`}
+                                  style={
+                                    isSelected
+                                      ? undefined
+                                      : { color: "var(--text-muted)" }
+                                  }
                                 >
                                   {getStaffName(appt.staff_id)}
                                 </p>
@@ -1890,10 +2328,13 @@ export default function AgendaPage() {
 
                             <p
                               className={`mt-2 text-xs ${
-                                isSelected
-                                  ? "text-slate-200"
-                                  : "text-slate-600"
+                                isSelected ? "text-slate-200" : ""
                               }`}
+                              style={
+                                isSelected
+                                  ? undefined
+                                  : { color: "var(--text-muted)" }
+                              }
                             >
                               {formatCompactDateTime(appt.start_at)}
                             </p>
@@ -1906,7 +2347,7 @@ export default function AgendaPage() {
               </Panel>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="rounded-2xl border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
               <Panel
                 title="Profesional"
                 description="Filtra la agenda por profesional."
@@ -1923,7 +2364,12 @@ export default function AgendaPage() {
                       setSearchError("");
                     }}
                     disabled={!selectedBranchId || loadingStaff}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   >
                     <option value="">Todos los profesionales</option>
                     {staffList.map((staff) => (
@@ -1933,7 +2379,14 @@ export default function AgendaPage() {
                     ))}
                   </select>
 
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <div
+                    className="rounded-xl border px-3 py-2 text-xs"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
                     {loadingStaff
                       ? "Cargando profesionales..."
                       : selectedStaffName
@@ -1944,136 +2397,37 @@ export default function AgendaPage() {
               </Panel>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <Panel title="Filtros" description="Estado actual de la vista.">
-                <div className="flex flex-wrap gap-2">
-                  {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
-                    const count =
-                      filter === "active"
-                        ? counts.active
-                        : filter === "pending_close"
-                        ? counts.pending_close
-                        : filter === "booked"
-                        ? counts.booked
-                        : filter === "completed"
-                        ? counts.completed
-                        : filter === "no_show"
-                        ? counts.no_show
-                        : counts.canceled;
-
-                    return (
-                      <button
-                        key={filter}
-                        type="button"
-                        onClick={() => setActiveFilter(filter)}
-                        className={getFilterButtonClasses(
-                          filter,
-                          activeFilter === filter,
-                          count
-                        )}
-                      >
-                        {filterLabels[filter]} ({count})
-                      </button>
-                    );
-                  })}
-                </div>
-              </Panel>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  Hoy
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {loading ? "..." : String(appointmentsToday.length)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  En vista actual.
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  Semana
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {loading
-                    ? "..."
-                    : String(
-                        activeFilter === "active"
-                          ? counts.active
-                          : activeFilter === "pending_close"
-                          ? counts.pending_close
-                          : activeFilter === "booked"
-                          ? counts.booked
-                          : activeFilter === "completed"
-                          ? counts.completed
-                          : activeFilter === "no_show"
-                          ? counts.no_show
-                          : counts.canceled
-                      )}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">Según filtro.</p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  Pendientes
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {loading ? "..." : String(pendingCloseCount)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">Por cerrar.</p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  Canceladas
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {loading ? "..." : String(canceledCount)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">Esta semana.</p>
-              </div>
-
-              <div className="col-span-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  Próxima
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {loading
-                    ? "..."
-                    : nextAppointment
-                    ? formatHour(nextAppointment.start_at)
-                    : "--"}
-                </p>
-                <p className="mt-1 truncate text-xs text-slate-500">
-                  {loading
-                    ? "Cargando..."
-                    : nextAppointment
-                    ? `${nextAppointment.customer_name} • ${getStaffName(
-                        nextAppointment.staff_id
-                      )}`
-                    : "Sin próximas reservas."}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="rounded-2xl border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
               <Panel
                 title="Detalle de reserva"
                 description="Cliente, horario, estado y edición."
               >
                 {!selectedAppointment ? (
-                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                  <div
+                    className="rounded-xl border border-dashed px-4 py-5 text-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
                     Haz clic en una reserva para ver el detalle.
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-3">
+                    <div
+                      className="rounded-xl border p-3"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background:
+                          "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-soft))",
+                      }}
+                    >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--text-main)" }}
+                        >
                           {selectedAppointment.service_name_snapshot || "Reserva"}
                         </p>
 
@@ -2086,28 +2440,34 @@ export default function AgendaPage() {
                         </span>
                       </div>
 
-                      <p className="mt-1.5 text-sm capitalize text-slate-600">
+                      <p
+                        className="mt-1.5 text-sm capitalize"
+                        style={{ color: "var(--text-muted)" }}
+                      >
                         {formatLongDate(selectedAppointment.start_at)}
                       </p>
-                      <p className="mt-1 text-sm text-slate-600">
+                      <p
+                        className="mt-1 text-sm"
+                        style={{ color: "var(--text-muted)" }}
+                      >
                         {formatHour(selectedAppointment.start_at)} -{" "}
                         {formatHour(selectedAppointment.end_at)}
                       </p>
-                      <p className="mt-1 text-sm text-slate-600">
+                      <p
+                        className="mt-1 text-sm"
+                        style={{ color: "var(--text-muted)" }}
+                      >
                         Profesional: {getStaffName(selectedAppointment.staff_id)}
                       </p>
                     </div>
 
                     {isPastPendingClosure(selectedAppointment) ? (
-                      <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
-                        <p className="text-sm font-semibold text-rose-800">
-                          Esta cita ya terminó
-                        </p>
-                        <p className="mt-1 text-sm text-rose-700">
-                          Debes cerrar su estado para mantener la agenda al día.
-                        </p>
-
-                        <div className="mt-3 grid grid-cols-1 gap-2">
+                      <Notice
+                        tone="danger"
+                        title="Esta cita ya terminó."
+                        description="Debes cerrar su estado para mantener la agenda al día."
+                      >
+                        <div className="grid grid-cols-1 gap-2">
                           <button
                             type="button"
                             onClick={() =>
@@ -2136,12 +2496,21 @@ export default function AgendaPage() {
                             {statusSaving ? "Guardando..." : "Marcar no asistió"}
                           </button>
                         </div>
-                      </div>
+                      </Notice>
                     ) : null}
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-3">
+                    <div
+                      className="rounded-xl border p-3"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                      }}
+                    >
                       <div className="mb-3 flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--text-main)" }}
+                        >
                           Datos del cliente
                         </p>
 
@@ -2152,7 +2521,12 @@ export default function AgendaPage() {
                               setIsEditingReservation(true);
                               syncEditForm(selectedAppointment);
                             }}
-                            className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                            className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm font-medium transition"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
                           >
                             Editar
                           </button>
@@ -2164,7 +2538,12 @@ export default function AgendaPage() {
                                 setIsEditingReservation(false);
                                 syncEditForm(selectedAppointment);
                               }}
-                              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                              className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm font-medium transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
                             >
                               Cancelar
                             </button>
@@ -2182,49 +2561,109 @@ export default function AgendaPage() {
 
                       {!isEditingReservation ? (
                         <div className="space-y-2">
-                          <div className="rounded-xl border border-slate-200 bg-white p-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          <div
+                            className="rounded-xl border p-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            <p
+                              className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Cliente
                             </p>
-                            <p className="mt-1 text-sm font-medium text-slate-900">
+                            <p
+                              className="mt-1 text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               {selectedAppointment.customer_name}
                             </p>
                           </div>
 
-                          <div className="rounded-xl border border-slate-200 bg-white p-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          <div
+                            className="rounded-xl border p-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            <p
+                              className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Teléfono
                             </p>
-                            <p className="mt-1 text-sm font-medium text-slate-900">
+                            <p
+                              className="mt-1 text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               {selectedAppointment.customer_phone ||
                                 "No disponible"}
                             </p>
                           </div>
 
-                          <div className="rounded-xl border border-slate-200 bg-white p-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          <div
+                            className="rounded-xl border p-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            <p
+                              className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Email
                             </p>
-                            <p className="mt-1 break-all text-sm font-medium text-slate-900">
+                            <p
+                              className="mt-1 break-all text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               {selectedAppointment.customer_email ||
                                 "No disponible"}
                             </p>
                           </div>
 
-                          <div className="rounded-xl border border-slate-200 bg-white p-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          <div
+                            className="rounded-xl border p-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            <p
+                              className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Profesional
                             </p>
-                            <p className="mt-1 text-sm font-medium text-slate-900">
+                            <p
+                              className="mt-1 text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               {getStaffName(selectedAppointment.staff_id)}
                             </p>
                           </div>
 
-                          <div className="rounded-xl border border-slate-200 bg-white p-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          <div
+                            className="rounded-xl border p-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            <p
+                              className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Estado
                             </p>
-                            <p className="mt-1 text-sm font-medium text-slate-900">
+                            <p
+                              className="mt-1 text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               {getStatusLabel(selectedAppointment)}
                             </p>
                           </div>
@@ -2232,7 +2671,10 @@ export default function AgendaPage() {
                       ) : (
                         <div className="space-y-3">
                           <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            <label
+                              className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Cliente
                             </label>
                             <input
@@ -2244,12 +2686,20 @@ export default function AgendaPage() {
                                   customer_name: e.target.value,
                                 }))
                               }
-                              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
                             />
                           </div>
 
                           <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            <label
+                              className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Teléfono
                             </label>
                             <input
@@ -2261,12 +2711,20 @@ export default function AgendaPage() {
                                   customer_phone: e.target.value,
                                 }))
                               }
-                              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
                             />
                           </div>
 
                           <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            <label
+                              className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Email
                             </label>
                             <input
@@ -2278,7 +2736,12 @@ export default function AgendaPage() {
                                   customer_email: e.target.value,
                                 }))
                               }
-                              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
                             />
                           </div>
                         </div>
@@ -2294,8 +2757,10 @@ export default function AgendaPage() {
 
       {hoverCard ? (
         <div
-          className="pointer-events-none fixed z-[80] hidden w-[290px] rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35)] backdrop-blur xl:block"
+          className="pointer-events-none fixed z-[80] hidden w-[290px] rounded-2xl border p-4 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35)] backdrop-blur xl:block"
           style={{
+            borderColor: "var(--border-color)",
+            background: "rgba(255,255,255,0.95)",
             left: Math.min(hoverCard.x, window.innerWidth - 320),
             top: Math.max(16, hoverCard.y - window.scrollY),
           }}
