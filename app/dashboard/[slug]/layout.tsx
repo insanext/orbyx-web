@@ -13,7 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import clsx from "clsx";
-import { useTheme } from "../../../../lib/use-theme";
+import { useTheme } from "../../../lib/use-theme";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
