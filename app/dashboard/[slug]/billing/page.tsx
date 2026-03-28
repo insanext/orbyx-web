@@ -656,12 +656,12 @@ export default function BillingPage() {
                   <label
                     key={branch.id}
                     className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
-                      hasBranchExcess
-                        ? selectedBranchesToKeep.includes(branch.id)
-                          ? "border-emerald-300/35 bg-emerald-500/18 text-white"
-                          : "border-rose-300/35 bg-rose-500/18 text-white"
-                        : "border-white/15 bg-slate-900/40 text-white"
-                    }`}
+  hasBranchExcess
+    ? selectedBranchesToKeep.includes(branch.id)
+      ? "border-emerald-500/60 bg-emerald-700/35 text-white"
+      : "border-rose-600/60 bg-rose-800/35 text-white"
+    : "border-white/15 bg-slate-900/40 text-white"
+}`}
                   >
                     <input
                       type="checkbox"
@@ -672,7 +672,9 @@ export default function BillingPage() {
                       disabled={!hasBranchExcess}
                       className="h-4 w-4 rounded border-slate-300"
                     />
-                    <span className="font-semibold">{branch.name}</span>
+                    <span className="font-semibold tracking-tight text-white">
+  {branch.name}
+</span>
                   </label>
                 ))}
               </div>
