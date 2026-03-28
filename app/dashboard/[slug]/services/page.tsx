@@ -12,10 +12,10 @@ type BusinessResponse = {
     id: string;
     name: string;
     slug: string;
+    plan_slug?: string | null;
   };
   calendar_id: string;
   google_connected?: boolean;
-  plan_slug?: string | null;
 };
 
 type Service = {
@@ -79,6 +79,10 @@ export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [staff, setStaff] = useState<StaffItem[]>([]);
   const [staffServices, setStaffServices] = useState<StaffServiceRow[]>([]);
+  const [selectedServicesToKeep, setSelectedServicesToKeep] = useState<string[]>(
+    []
+  );
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -104,19 +108,22 @@ export default function ServicesPage() {
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
+
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
   }, [slug]);
 
   const planCaps: Record<string, { max_services: number }> = {
-    starter: { max_services: 3 },
+    starter: { max_services: 10 },
     pro: { max_services: 10 },
-    premium: { max_services: 30 },
-    vip: { max_services: 999 },
+    premium: { max_services: 25 },
+    vip: { max_services: 50 },
+    platinum: { max_services: 100 },
   };
 
   const caps = planCaps[plan] || planCaps.starter;
   const maxServices = caps.max_services;
+
   const servicesLimitReached = services.length >= maxServices;
   const servicesRemainingCount = Math.max(0, maxServices - services.length);
 
@@ -124,6 +131,9 @@ export default function ServicesPage() {
   const servicesWithDescriptionCount = services.filter(
     (service) => String(service.description || "").trim() !== ""
   ).length;
+
+  const excessServices = Math.max(0, activeServicesCount - maxServices);
+  const hasExcess = excessServices > 0;
 
   const selectedBranchName =
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
@@ -151,7 +161,10 @@ export default function ServicesPage() {
       }));
   }
 
-  async function fetchBranchData(currentTenantId: string, currentBranchId: string) {
+  async function fetchBranchData(
+    currentTenantId: string,
+    currentBranchId: string
+  ) {
     const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
       fetch(
         `${BACKEND_URL}/services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
@@ -254,6 +267,74 @@ export default function ServicesPage() {
     });
   }
 
+  function toggleServiceSelection(serviceId: string) {
+    setSelectedServicesToKeep((prev) =>
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  }
+
+  async function applyServicesAdjustment() {
+    try {
+      const toDeactivate = services.filter(
+        (service) =>
+          service.active && !selectedServicesToKeep.includes(service.id)
+      );
+
+      if (toDeactivate.length === 0) {
+        alert("No hay servicios para desactivar.");
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Se desactivarán ${toDeactivate.length} servicio${
+          toDeactivate.length === 1 ? "" : "s"
+        }. ¿Continuar?`
+      );
+
+      if (!confirmed) return;
+
+      setSaving(true);
+      setSaveError("");
+      setSaveOk("");
+
+      for (const service of toDeactivate) {
+        const response = await fetch(`${BACKEND_URL}/services/${service.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            branch_id: selectedBranchId,
+            active: false,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error || `No se pudo desactivar el servicio ${service.name}`
+          );
+        }
+      }
+
+      if (tenantId && selectedBranchId) {
+        await fetchBranchData(tenantId, selectedBranchId);
+      }
+
+      setSaveOk("Ajuste aplicado correctamente.");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo aplicar el ajuste";
+      setSaveError(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function loadBranches(currentTenantId: string) {
     try {
       setLoadingBranches(true);
@@ -326,7 +407,7 @@ export default function ServicesPage() {
 
       setTenantId(currentTenantId);
       setBusinessName(businessData.business.name || slug);
-      setPlan((businessData.plan_slug || "starter").toLowerCase());
+      setPlan((businessData.business.plan_slug || "starter").toLowerCase());
 
       await loadBranches(currentTenantId);
     } catch (error: unknown) {
@@ -345,7 +426,10 @@ export default function ServicesPage() {
 
   useEffect(() => {
     function handleBranchChanged(event: Event) {
-      const customEvent = event as CustomEvent<{ slug?: string; branchId?: string }>;
+      const customEvent = event as CustomEvent<{
+        slug?: string;
+        branchId?: string;
+      }>;
       const eventSlug = customEvent.detail?.slug;
       const branchId = customEvent.detail?.branchId || "";
 
@@ -429,6 +513,17 @@ export default function ServicesPage() {
     loadBranchData();
   }, [tenantId, selectedBranchId]);
 
+  useEffect(() => {
+    if (!hasExcess) {
+      setSelectedServicesToKeep([]);
+      return;
+    }
+
+    const activeServices = services.filter((service) => service.active);
+    const allowedIds = activeServices.slice(0, maxServices).map((s) => s.id);
+    setSelectedServicesToKeep(allowedIds);
+  }, [hasExcess, services, maxServices]);
+
   async function saveServiceStaffRelations(
     serviceId: string,
     selectedStaffIds: string[]
@@ -486,8 +581,8 @@ export default function ServicesPage() {
         throw new Error("Debes seleccionar una sucursal activa");
       }
 
-      if (servicesLimitReached) {
-        throw new Error("Límite de servicios alcanzado");
+      if (servicesLimitReached || hasExcess) {
+        throw new Error("No puedes crear más servicios con tu plan actual");
       }
 
       if (!form.name.trim()) {
@@ -663,7 +758,9 @@ export default function ServicesPage() {
       setSaveOk("Servicio eliminado correctamente.");
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : "No se pudo eliminar el servicio";
+        error instanceof Error
+          ? error.message
+          : "No se pudo eliminar el servicio";
       setSaveError(message);
     } finally {
       setSaving(false);
@@ -701,7 +798,8 @@ export default function ServicesPage() {
         </div>
       ) : !selectedBranchId ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
-          Debes seleccionar una sucursal activa en el sidebar para gestionar servicios.
+          Debes seleccionar una sucursal activa en el sidebar para gestionar
+          servicios.
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
@@ -748,10 +846,12 @@ export default function ServicesPage() {
         />
         <StatCard
           label="Límite del plan"
-          value={loading ? "..." : `${services.length}/${maxServices}`}
+          value={loading ? "..." : `${activeServicesCount}/${maxServices}`}
           helper={
             loading
               ? "Cargando plan..."
+              : hasExcess
+              ? "Estás sobre el límite de servicios del plan."
               : servicesLimitReached
               ? "Llegaste al límite de servicios de tu plan."
               : `Te quedan ${servicesRemainingCount} servicios disponibles.`
@@ -766,7 +866,8 @@ export default function ServicesPage() {
         >
           {!selectedBranchId ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
-              Selecciona una sucursal activa en el sidebar para ver los servicios.
+              Selecciona una sucursal activa en el sidebar para ver los
+              servicios.
             </div>
           ) : loading ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
@@ -780,6 +881,7 @@ export default function ServicesPage() {
             <div className="space-y-4">
               {services.map((service) => {
                 const assignedStaffNames = getStaffNamesForService(service.id);
+                const isMarkedToKeep = selectedServicesToKeep.includes(service.id);
 
                 return (
                   <div
@@ -882,15 +984,15 @@ export default function ServicesPage() {
                               Staff que puede realizar este servicio
                             </p>
                             <p className="mt-1 text-sm text-slate-500">
-                              Selecciona las personas del equipo que pueden atender
-                              este servicio.
+                              Selecciona las personas del equipo que pueden
+                              atender este servicio.
                             </p>
                           </div>
 
                           {staff.length === 0 ? (
                             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-                              Aún no tienes staff activo. Primero crea staff en el
-                              módulo Staff.
+                              Aún no tienes staff activo. Primero crea staff en
+                              el módulo Staff.
                             </div>
                           ) : (
                             <div className="grid gap-3 sm:grid-cols-2">
@@ -965,6 +1067,18 @@ export default function ServicesPage() {
                       </div>
                     ) : (
                       <div className="space-y-5">
+                        {hasExcess && service.active ? (
+                          <label className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700">
+                            <input
+                              type="checkbox"
+                              checked={isMarkedToKeep}
+                              onChange={() => toggleServiceSelection(service.id)}
+                              className="h-4 w-4 rounded border-slate-300"
+                            />
+                            Mantener activo
+                          </label>
+                        ) : null}
+
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
@@ -975,11 +1089,17 @@ export default function ServicesPage() {
                               <span
                                 className={`rounded-full px-3 py-1 text-xs font-semibold ${
                                   service.active
-                                    ? "bg-emerald-50 text-emerald-700"
+                                    ? hasExcess
+                                      ? "bg-rose-100 text-rose-700"
+                                      : "bg-emerald-50 text-emerald-700"
                                     : "bg-slate-100 text-slate-600"
                                 }`}
                               >
-                                {service.active ? "Activo" : "Inactivo"}
+                                {service.active
+                                  ? hasExcess
+                                    ? "Exceso"
+                                    : "Activo"
+                                  : "Inactivo"}
                               </span>
                             </div>
 
@@ -1036,11 +1156,17 @@ export default function ServicesPage() {
                             <p
                               className={`mt-2 text-sm font-semibold ${
                                 service.active
-                                  ? "text-emerald-600"
+                                  ? hasExcess
+                                    ? "text-rose-600"
+                                    : "text-emerald-600"
                                   : "text-slate-600"
                               }`}
                             >
-                              {service.active ? "Disponible" : "Oculto"}
+                              {service.active
+                                ? hasExcess
+                                  ? "Sobre límite"
+                                  : "Disponible"
+                                : "Oculto"}
                             </p>
                           </div>
                         </div>
@@ -1079,29 +1205,55 @@ export default function ServicesPage() {
                   Plan actual: <span className="capitalize">{plan}</span>
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  Has creado {services.length} de {maxServices} servicios
-                  disponibles en tu plan.
+                  Has creado {activeServicesCount} de {maxServices} servicios
+                  activos disponibles en tu plan.
                 </p>
+
+                {hasExcess && (
+                  <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                    Estás sobre el límite del plan. Debes desactivar{" "}
+                    <span className="font-semibold">{excessServices}</span>{" "}
+                    servicio{excessServices === 1 ? "" : "s"} antes del próximo
+                    ciclo.
+
+                    <div className="mt-2 text-xs text-slate-600">
+                      Seleccionados: {selectedServicesToKeep.length} /{" "}
+                      {maxServices}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={applyServicesAdjustment}
+                      disabled={saving}
+                      className="mt-3 w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {saving
+                        ? "Aplicando ajuste..."
+                        : "Aplicar ajuste al plan"}
+                    </button>
+                  </div>
+                )}
               </div>
 
-{servicesLimitReached ? (
-  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 shadow-sm">
-    <p className="font-semibold">Límite de servicios alcanzado</p>
-    <p className="mt-1">
-      Ya usaste {services.length} de {maxServices} servicios disponibles en tu plan.
-    </p>
-    <p className="mt-1">
-      Para agregar más servicios, debes subir de plan.
-    </p>
+              {servicesLimitReached && !hasExcess ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 shadow-sm">
+                  <p className="font-semibold">Límite de servicios alcanzado</p>
+                  <p className="mt-1">
+                    Ya usaste {services.length} de {maxServices} servicios
+                    disponibles en tu plan.
+                  </p>
+                  <p className="mt-1">
+                    Para agregar más servicios, debes subir de plan.
+                  </p>
 
-    <Link
-      href="/pricing"
-      className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
-    >
-      Ver planes
-    </Link>
-  </div>
-) : null}
+                  <Link
+                    href={`/planes?current_plan=${plan}&from=services&slug=${slug}&tenant_id=${tenantId}`}
+                    className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                  >
+                    Ver planes
+                  </Link>
+                </div>
+              ) : null}
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -1114,7 +1266,7 @@ export default function ServicesPage() {
                     setForm((prev) => ({ ...prev, name: e.target.value }))
                   }
                   placeholder="Ej: Corte premium"
-                  disabled={servicesLimitReached}
+                  disabled={servicesLimitReached || hasExcess}
                   className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 />
               </div>
@@ -1132,7 +1284,7 @@ export default function ServicesPage() {
                     }))
                   }
                   placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
-                  disabled={servicesLimitReached}
+                  disabled={servicesLimitReached || hasExcess}
                   className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 />
               </div>
@@ -1151,7 +1303,7 @@ export default function ServicesPage() {
                       duration_minutes: e.target.value,
                     }))
                   }
-                  disabled={servicesLimitReached}
+                  disabled={servicesLimitReached || hasExcess}
                   className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 />
               </div>
@@ -1168,7 +1320,7 @@ export default function ServicesPage() {
                     setForm((prev) => ({ ...prev, price: e.target.value }))
                   }
                   placeholder="Ej: 10000"
-                  disabled={servicesLimitReached}
+                  disabled={servicesLimitReached || hasExcess}
                   className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 />
               </div>
@@ -1200,7 +1352,7 @@ export default function ServicesPage() {
                           type="checkbox"
                           checked={form.staff_ids.includes(staffItem.id)}
                           onChange={() => toggleCreateStaff(staffItem.id)}
-                          disabled={servicesLimitReached}
+                          disabled={servicesLimitReached || hasExcess}
                           className="h-4 w-4 rounded border-slate-300"
                         />
                         <span className="flex items-center gap-2">
@@ -1224,16 +1376,16 @@ export default function ServicesPage() {
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-sm font-medium text-slate-700">Consejo</p>
                 <p className="mt-1 text-sm text-slate-500">
-                  Describe qué incluye el servicio para que tus clientes entiendan
-                  mejor lo que están reservando y para que la IA pueda responder
-                  dudas.
+                  Describe qué incluye el servicio para que tus clientes
+                  entiendan mejor lo que están reservando y para que la IA pueda
+                  responder dudas.
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={handleCreateService}
-                disabled={saving || loading || servicesLimitReached}
+                disabled={saving || loading || servicesLimitReached || hasExcess}
                 className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? "Guardando..." : "Crear servicio"}
