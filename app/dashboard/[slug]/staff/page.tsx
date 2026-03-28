@@ -12,7 +12,7 @@ type BusinessResponse = {
     id: string;
     name: string;
     slug: string;
-    plan_slug?: string;
+    plan_slug?: string | null;
   };
   calendar_id: string;
   google_connected?: boolean;
@@ -27,6 +27,7 @@ type BranchItem = {
 type StaffItem = {
   id: string;
   tenant_id: string;
+  branch_id?: string | null;
   name: string;
   role?: string | null;
   email?: string | null;
@@ -104,10 +105,21 @@ const emptySpecialDateForm: StaffSpecialDateItem = {
   end_time: "18:00",
 };
 
+function normalizePlanSlug(planSlug?: string | null) {
+  const normalized = String(planSlug || "pro").toLowerCase();
+  if (normalized === "starter") return "pro";
+  if (["pro", "premium", "vip", "platinum"].includes(normalized)) {
+    return normalized;
+  }
+  return "pro";
+}
+
 export default function StaffPage() {
   const params = useParams();
   const slug =
-    ((params as any)?.slug as string) || ((params as any)?.Slug as string);
+    ((params as { slug?: string })?.slug as string) ||
+    ((params as { Slug?: string })?.Slug as string) ||
+    "";
 
   const [tenantId, setTenantId] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
@@ -121,7 +133,6 @@ export default function StaffPage() {
   const [saveOk, setSaveOk] = useState("");
 
   const [staff, setStaff] = useState<StaffItem[]>([]);
-const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [form, setForm] = useState(emptyForm);
@@ -139,7 +150,8 @@ const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
-  const [plan, setPlan] = useState("starter");
+  const [plan, setPlan] = useState("pro");
+  const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
 
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
@@ -163,25 +175,36 @@ const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
     premium: { max_staff: 5 },
     vip: { max_staff: 10 },
     platinum: { max_staff: 20 },
-    starter: { max_staff: 2 },
   };
 
-  const caps = planCaps[plan] || planCaps.starter;
+  const caps = planCaps[plan] || planCaps.pro;
   const reachedLimit = activeCount >= caps.max_staff;
-const excessStaff = Math.max(0, activeCount - caps.max_staff);
-const hasExcess = excessStaff > 0;
-useEffect(() => {
-  if (hasExcess) {
-    const activeStaff = staff.filter((s) => s.is_active);
-    const allowed = activeStaff.slice(0, caps.max_staff).map((s) => s.id);
-    setSelectedStaffToKeep(allowed);
-  }
-}, [hasExcess, staff, caps.max_staff]);
+  const excessStaff = Math.max(0, activeCount - caps.max_staff);
+  const hasExcess = excessStaff > 0;
+
+  const inputClass =
+    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+  const selectClass =
+    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+  const primaryButtonClass =
+    "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+  const secondaryButtonClass =
+    "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
     return localStorage.getItem(branchStorageKey) || "";
   }
+
+  useEffect(() => {
+    if (hasExcess) {
+      const activeStaff = staff.filter((s) => s.is_active);
+      const allowed = activeStaff.slice(0, caps.max_staff).map((s) => s.id);
+      setSelectedStaffToKeep(allowed);
+    } else {
+      setSelectedStaffToKeep([]);
+    }
+  }, [hasExcess, staff, caps.max_staff]);
 
   useEffect(() => {
     async function loadPage() {
@@ -205,11 +228,14 @@ useEffect(() => {
         }
 
         setTenantId(data.business.id);
-        setPlan((data.business as any).plan_slug || "starter");
-
+        setPlan(normalizePlanSlug(data.business.plan_slug));
         await loadBranches(data.business.id);
-      } catch (error: any) {
-        setLoadError(error?.message || "No se pudo cargar el módulo staff");
+      } catch (error: unknown) {
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo cargar el módulo staff"
+        );
       } finally {
         setLoading(false);
       }
@@ -234,8 +260,12 @@ useEffect(() => {
       try {
         setLoadError("");
         await Promise.all([loadStaff(tenantId), loadServices(tenantId)]);
-      } catch (error: any) {
-        setLoadError(error?.message || "No se pudo cargar staff o servicios");
+      } catch (error: unknown) {
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo cargar staff o servicios"
+        );
       }
     }
 
@@ -243,8 +273,13 @@ useEffect(() => {
   }, [tenantId, selectedBranchId]);
 
   useEffect(() => {
-    function handleBranchChanged(event: Event) {
-      const customEvent = event as CustomEvent<{ slug?: string; branchId?: string }>;
+    function handleBranchChanged(
+      event: Event
+    ) {
+      const customEvent = event as CustomEvent<{
+        slug?: string;
+        branchId?: string;
+      }>;
       const eventSlug = customEvent.detail?.slug;
       const branchId = customEvent.detail?.branchId || "";
 
@@ -268,13 +303,6 @@ useEffect(() => {
     );
     window.addEventListener("storage", handleStorage);
 
-function toggleStaffSelection(staffId: string) {
-  setSelectedStaffToKeep((prev) =>
-    prev.includes(staffId)
-      ? prev.filter((id) => id !== staffId)
-      : [...prev, staffId]
-  );
-}
     return () => {
       window.removeEventListener(
         "orbyx-branch-changed",
@@ -299,7 +327,7 @@ function toggleStaffSelection(staffId: string) {
       throw new Error(data?.error || "No se pudo cargar el staff");
     }
 
-    setStaff(data.staff || []);
+    setStaff(Array.isArray(data.staff) ? data.staff : []);
   }
 
   async function loadStaffHours(id: string, staffId: string) {
@@ -317,7 +345,8 @@ function toggleStaffSelection(staffId: string) {
 
     const merged = days.map((day) => {
       const found = rows.find(
-        (row: any) => Number(row.day_of_week) === Number(day.value)
+        (row: { day_of_week: number }) =>
+          Number(row.day_of_week) === Number(day.value)
       );
 
       return {
@@ -379,7 +408,9 @@ function toggleStaffSelection(staffId: string) {
         throw new Error(data?.error || "Error cargando sucursales");
       }
 
-      const rows: BranchItem[] = Array.isArray(data.branches) ? data.branches : [];
+      const rows: BranchItem[] = Array.isArray(data.branches)
+        ? data.branches
+        : [];
       setBranches(rows);
 
       if (rows.length === 0) {
@@ -389,8 +420,8 @@ function toggleStaffSelection(staffId: string) {
 
       const storedBranchId = readStoredBranchId();
       const storedExists = rows.some(
-  (branch: BranchItem) => branch.id === storedBranchId
-);
+        (branch: BranchItem) => branch.id === storedBranchId
+      );
 
       if (storedExists) {
         setSelectedBranchId(storedBranchId);
@@ -427,8 +458,8 @@ function toggleStaffSelection(staffId: string) {
 
     setSelectedServiceIds(
       rows
-        .map((item: any) => item.service_id)
-        .filter((value: any) => typeof value === "string")
+        .map((item: { service_id?: string }) => item.service_id)
+        .filter((value: unknown): value is string => typeof value === "string")
     );
   }
 
@@ -466,52 +497,67 @@ function toggleStaffSelection(staffId: string) {
     setSpecialDateForm(emptySpecialDateForm);
     setEditingSpecialDateId(null);
   }
-function toggleStaffSelection(staffId: string) {
-  setSelectedStaffToKeep((prev) =>
-    prev.includes(staffId)
-      ? prev.filter((id) => id !== staffId)
-      : [...prev, staffId]
-  );
-}
 
-async function applyStaffAdjustment() {
-  try {
-    const toDeactivate = staff.filter(
-      (s) => s.is_active && !selectedStaffToKeep.includes(s.id)
+  function toggleStaffSelection(staffId: string) {
+    setSelectedStaffToKeep((prev) =>
+      prev.includes(staffId)
+        ? prev.filter((id) => id !== staffId)
+        : [...prev, staffId]
     );
+  }
 
-    if (toDeactivate.length === 0) {
-      alert("No hay profesionales para desactivar");
-      return;
-    }
+  async function applyStaffAdjustment() {
+    try {
+      const toDeactivate = staff.filter(
+        (s) => s.is_active && !selectedStaffToKeep.includes(s.id)
+      );
 
-    const confirmAction = confirm(
-      `Se desactivarán ${toDeactivate.length} profesionales. ¿Continuar?`
-    );
+      if (toDeactivate.length === 0) {
+        alert("No hay profesionales para desactivar");
+        return;
+      }
 
-    if (!confirmAction) return;
+      const confirmAction = confirm(
+        `Se desactivarán ${toDeactivate.length} profesionales. ¿Continuar?`
+      );
 
-    for (const staffItem of toDeactivate) {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/staff/${staffItem.id}`,
-        {
-          method: "PATCH",
+      if (!confirmAction) return;
+
+      for (const staffItem of toDeactivate) {
+        const res = await fetch(`${BACKEND_URL}/staff/${staffItem.id}`, {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            tenant_id: staffItem.tenant_id,
+            branch_id: staffItem.branch_id || selectedBranchId,
+            name: staffItem.name,
+            role: staffItem.role || "",
+            email: staffItem.email || "",
+            phone: staffItem.phone || "",
+            color: staffItem.color || "#0f172a",
             is_active: false,
+            sort_order: Number(staffItem.sort_order || 0),
+            use_business_hours:
+              staffItem.use_business_hours === undefined
+                ? true
+                : Boolean(staffItem.use_business_hours),
           }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || `Error desactivando ${staffItem.name}`);
         }
-      );
+      }
+
+      await loadStaff(tenantId);
+      alert("Ajuste aplicado correctamente");
+    } catch (error) {
+      console.error(error);
+      alert("Error al aplicar ajuste");
     }
-
-    alert("Ajuste aplicado correctamente");
-
-    window.location.reload();
-  } catch (error) {
-    console.error(error);
-    alert("Error al aplicar ajuste");
   }
-}
 
   function resetForm() {
     setForm(emptyForm);
@@ -550,9 +596,11 @@ async function applyStaffAdjustment() {
         loadStaffSpecialDates(item.tenant_id, item.id),
         loadStaffServices(item.tenant_id, item.id),
       ]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSaveError(
-        error?.message || "No se pudo cargar la configuración del staff"
+        error instanceof Error
+          ? error.message
+          : "No se pudo cargar la configuración del staff"
       );
     } finally {
       setLoading(false);
@@ -723,8 +771,12 @@ async function applyStaffAdjustment() {
           ? "Staff actualizado correctamente."
           : "Staff creado correctamente."
       );
-    } catch (error: any) {
-      setSaveError(error?.message || "No se pudo guardar el staff");
+    } catch (error: unknown) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar el staff"
+      );
     } finally {
       setSaving(false);
     }
@@ -750,8 +802,10 @@ async function applyStaffAdjustment() {
       if (editingId === id) {
         resetForm();
       }
-    } catch (error: any) {
-      alert(error?.message || "No se pudo eliminar el staff");
+    } catch (error: unknown) {
+      alert(
+        error instanceof Error ? error.message : "No se pudo eliminar el staff"
+      );
     }
   }
 
@@ -838,8 +892,12 @@ async function applyStaffAdjustment() {
           ? "Excepción del staff actualizada correctamente."
           : "Excepción del staff creada correctamente."
       );
-    } catch (error: any) {
-      setSaveError(error?.message || "No se pudo guardar la excepción");
+    } catch (error: unknown) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar la excepción"
+      );
     } finally {
       setSpecialDateSaving(false);
     }
@@ -872,144 +930,285 @@ async function applyStaffAdjustment() {
       }
 
       setSaveOk("Excepción eliminada correctamente.");
-    } catch (error: any) {
-      setSaveError(error?.message || "No se pudo eliminar la excepción");
+    } catch (error: unknown) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo eliminar la excepción"
+      );
     }
   }
 
   return (
     <div className="space-y-6 pb-6">
-      <PageHeader
-        eyebrow="Equipo"
-        title="Staff"
-        description={
-          selectedBranchName
-            ? `Administra el staff de la sucursal: ${selectedBranchName}.`
-            : "Administra las personas que atienden en tu negocio."
-        }
-      />
+      <section
+        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+        style={{
+          borderColor: "rgba(59,130,246,0.25)",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+        }}
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Equipo
+            </p>
 
-      {loadingBranches ? (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 shadow-sm">
-          Cargando sucursal activa...
+            <h1
+              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+              style={{ color: "var(--text-main)" }}
+            >
+              Staff
+            </h1>
+
+            <p
+              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {selectedBranchName
+                ? `Administra el staff de la sucursal ${selectedBranchName}, sus servicios, horarios y excepciones.`
+                : "Administra las personas que atienden en tu negocio, sus servicios, horarios y excepciones."}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Total staff
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : staff.length}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Activos
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : activeCount}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Plan
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold capitalize"
+                style={{ color: "var(--text-main)" }}
+              >
+                {plan}
+              </p>
+            </div>
+          </div>
         </div>
-      ) : !selectedBranchId ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
-          Debes seleccionar una sucursal activa en el sidebar para administrar el staff.
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-          Sucursal activa:{" "}
-          <span className="font-semibold text-slate-900">
-            {selectedBranchName || selectedBranchId}
+      </section>
+
+      {loadingBranches && !selectedBranchId ? (
+        <div className="rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
+          <span style={{ color: "var(--text-muted)" }}>
+            Cargando sucursal activa...
           </span>
         </div>
-      )}
+      ) : null}
+
+      {!loadingBranches && !selectedBranchId ? (
+        <div className="rounded-2xl border border-amber-300/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-300 shadow-sm">
+          Debes seleccionar una sucursal activa en el sidebar para administrar
+          el staff.
+        </div>
+      ) : null}
 
       {loadError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
+        <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
           {loadError}
         </div>
       ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-[24px] border border-slate-200 bg-white p-1 shadow-sm">
-          <StatCard
-            label="Total staff"
-            value={loading ? "..." : String(staff.length)}
-          />
-        </div>
+        <StatCard
+          label="Total staff"
+          value={loading ? "..." : String(staff.length)}
+          helper="Profesionales registrados en esta sucursal."
+        />
 
-        <div className="rounded-[24px] border border-slate-200 bg-white p-1 shadow-sm">
-          <StatCard
-            label="Activos"
-            value={loading ? "..." : String(activeCount)}
-          />
-        </div>
+        <StatCard
+          label="Activos"
+          value={loading ? "..." : String(activeCount)}
+          helper="Disponibles actualmente."
+        />
 
-        <div className="rounded-[24px] border border-slate-200 bg-white p-1 shadow-sm">
-          <StatCard
-            label="Usan horario negocio"
-            value={loading ? "..." : String(usingBusinessHoursCount)}
-          />
-        </div>
+        <StatCard
+          label="Usan horario negocio"
+          value={loading ? "..." : String(usingBusinessHoursCount)}
+          helper="Heredan el horario general."
+        />
 
-        <div className="rounded-[24px] border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-1 shadow-sm">
-          <StatCard
-            label="Límite del plan"
-            value={loading ? "..." : `${activeCount}/${caps.max_staff}`}
-            helper={
-              loading
-                ? "Cargando plan..."
-                : reachedLimit
-                ? "Llegaste al límite de staff de tu plan."
-                : `Puedes agregar ${Math.max(0, caps.max_staff - activeCount)} más.`
-            }
-          />
-        </div>
+        <StatCard
+          label="Límite del plan"
+          value={loading ? "..." : `${activeCount}/${caps.max_staff}`}
+          helper={
+            loading
+              ? "Cargando plan..."
+              : reachedLimit
+              ? "Llegaste al límite de staff de tu plan."
+              : `Puedes agregar ${Math.max(
+                  0,
+                  caps.max_staff - activeCount
+                )} más.`
+          }
+        />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
         <Panel
           title={editingId ? "Editar staff" : "Nuevo staff"}
           description="Agrega personas del equipo y deja su información base lista."
+          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
         >
           {!selectedBranchId ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Selecciona una sucursal activa en el sidebar para gestionar staff.
             </div>
           ) : loading ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Cargando...
             </div>
           ) : (
-<div className="space-y-5">
-<div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-  <p className="text-sm font-medium text-slate-700">
-    Plan actual: <span className="capitalize">{plan}</span>
-  </p>
+            <div className="space-y-5">
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+                }}
+              >
+                <p
+                  className="text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Plan actual: <span className="capitalize">{plan}</span>
+                </p>
 
-  <p className="mt-1 text-sm text-slate-500">
-    Has creado {activeCount} de {caps.max_staff} staff disponibles en tu plan.
-  </p>
+                <p
+                  className="mt-1 text-sm"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Has creado {activeCount} de {caps.max_staff} staff disponibles
+                  en tu plan.
+                </p>
 
-{hasExcess && (
-  <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-    Estás sobre el límite del plan. Debes desactivar{" "}
-    <span className="font-semibold">{excessStaff}</span>{" "}
-    profesional{excessStaff === 1 ? "" : "es"} antes del próximo ciclo.
+                {hasExcess ? (
+                  <div className="mt-3 rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+                    Estás sobre el límite del plan. Debes desactivar{" "}
+                    <span className="font-semibold">{excessStaff}</span>{" "}
+                    profesional{excessStaff === 1 ? "" : "es"} antes del próximo
+                    ciclo.
 
-    <div className="mt-2 text-xs text-slate-600">
-      Seleccionados: {selectedStaffToKeep.length} / {caps.max_staff}
-    </div>
+                    <div
+                      className="mt-2 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Seleccionados: {selectedStaffToKeep.length} /{" "}
+                      {caps.max_staff}
+                    </div>
 
-    <button
-      onClick={applyStaffAdjustment}
-      className="mt-3 w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
-    >
-      Aplicar ajuste al plan
-    </button>
-  </div>
-)}
-</div>
-  <div>
-    <label className="mb-2 block text-sm font-medium text-slate-700">
-      Nombre
-    </label>
+                    <button
+                      onClick={applyStaffAdjustment}
+                      className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-semibold text-white transition"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgb(225 29 72), rgb(244 63 94))",
+                      }}
+                    >
+                      Aplicar ajuste al plan
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
+              <div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Nombre
+                </label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, name: e.target.value }))
                   }
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  className={inputClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                   placeholder="Ej: Eduardo"
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Rol
                   </label>
                   <input
@@ -1018,13 +1217,21 @@ async function applyStaffAdjustment() {
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, role: e.target.value }))
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                     placeholder="Ej: Barbero"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Orden
                   </label>
                   <input
@@ -1036,14 +1243,22 @@ async function applyStaffAdjustment() {
                         sort_order: Number(e.target.value || 0),
                       }))
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Correo
                   </label>
                   <input
@@ -1052,13 +1267,21 @@ async function applyStaffAdjustment() {
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, email: e.target.value }))
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                     placeholder="Ej: eduardo@negocio.cl"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Teléfono
                   </label>
                   <input
@@ -1067,7 +1290,12 @@ async function applyStaffAdjustment() {
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, phone: e.target.value }))
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                     placeholder="Ej: +56 9 1234 5678"
                   />
                 </div>
@@ -1075,7 +1303,10 @@ async function applyStaffAdjustment() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Color
                   </label>
                   <input
@@ -1084,12 +1315,23 @@ async function applyStaffAdjustment() {
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, color: e.target.value }))
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-2"
+                    className="h-11 w-full rounded-2xl border px-2"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                    }}
                   />
                 </div>
 
                 <div className="flex items-end">
-                  <label className="flex h-11 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700">
+                  <label
+                    className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={form.is_active}
@@ -1099,26 +1341,46 @@ async function applyStaffAdjustment() {
                           is_active: e.target.checked,
                         }))
                       }
-                      className="h-4 w-4 rounded border-slate-300"
+                      className="h-4 w-4 rounded"
                     />
                     Staff activo
                   </label>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-soft))",
+                }}
+              >
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--text-main)" }}
+                    >
                       Usar horario del negocio
                     </p>
-                    <p className="mt-1 text-sm text-slate-600">
+                    <p
+                      className="mt-1 text-sm"
+                      style={{ color: "var(--text-muted)" }}
+                    >
                       Si está activo, este profesional heredará los horarios del
                       negocio.
                     </p>
                   </div>
 
-                  <label className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
+                  <label
+                    className="inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={form.use_business_hours}
@@ -1128,7 +1390,7 @@ async function applyStaffAdjustment() {
                           use_business_hours: e.target.checked,
                         }))
                       }
-                      className="h-4 w-4 rounded border-slate-300"
+                      className="h-4 w-4 rounded"
                     />
                     {form.use_business_hours ? "Activo" : "Desactivado"}
                   </label>
@@ -1136,34 +1398,49 @@ async function applyStaffAdjustment() {
               </div>
 
               {form.use_business_hours ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
-                  <p className="text-sm font-medium text-emerald-800">
+                <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-4">
+                  <p className="text-sm font-medium text-emerald-300">
                     Este staff usará el horario general del negocio.
                   </p>
-                  <p className="mt-1 text-sm text-emerald-700">
+                  <p className="mt-1 text-sm text-emerald-200/90">
                     El editor de horarios propios queda oculto para evitar
                     configuraciones duplicadas.
                   </p>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div
+                  className="rounded-2xl border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                  }}
+                >
                   <div className="mb-4">
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--text-main)" }}
+                    >
                       Horarios del staff
                     </p>
-                    <p className="mt-1 text-sm text-slate-600">
+                    <p
+                      className="mt-1 text-sm"
+                      style={{ color: "var(--text-muted)" }}
+                    >
                       Configura el horario semanal propio de este profesional.
                     </p>
                   </div>
 
                   <div className="space-y-3">
-                    <div className="hidden gap-3 px-3 md:grid md:grid-cols-[1.2fr_0.8fr_1fr_1fr]">
+                    <div
+                      className="hidden gap-3 px-3 md:grid md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
                       <div></div>
                       <div></div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <div className="text-xs font-semibold uppercase tracking-wide">
                         Inicio
                       </div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <div className="text-xs font-semibold uppercase tracking-wide">
                         Fin
                       </div>
                     </div>
@@ -1180,16 +1457,26 @@ async function applyStaffAdjustment() {
                       return (
                         <div
                           key={day.value}
-                          className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                          className="rounded-2xl border p-3"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                          }}
                         >
                           <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr_1fr_1fr] md:items-center">
                             <div>
-                              <p className="text-sm font-medium text-slate-900">
+                              <p
+                                className="text-sm font-medium"
+                                style={{ color: "var(--text-main)" }}
+                              >
                                 {day.label}
                               </p>
                             </div>
 
-                            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                            <label
+                              className="inline-flex items-center gap-2 text-sm"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               <input
                                 type="checkbox"
                                 checked={hour.enabled}
@@ -1200,7 +1487,7 @@ async function applyStaffAdjustment() {
                                     e.target.checked
                                   )
                                 }
-                                className="h-4 w-4 rounded border-slate-300"
+                                className="h-4 w-4 rounded"
                               />
                               Activo
                             </label>
@@ -1217,7 +1504,13 @@ async function applyStaffAdjustment() {
                                     e.target.value
                                   )
                                 }
-                                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                                className={inputClass}
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                  opacity: !hour.enabled ? 0.6 : 1,
+                                }}
                               />
                             </div>
 
@@ -1227,13 +1520,15 @@ async function applyStaffAdjustment() {
                                 value={hour.end_time || "18:00"}
                                 disabled={!hour.enabled}
                                 onChange={(e) =>
-                                  updateHour(
-                                    day.value,
-                                    "end_time",
-                                    e.target.value
-                                  )
+                                  updateHour(day.value, "end_time", e.target.value)
                                 }
-                                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                                className={inputClass}
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                  opacity: !hour.enabled ? 0.6 : 1,
+                                }}
                               />
                             </div>
                           </div>
@@ -1243,7 +1538,7 @@ async function applyStaffAdjustment() {
                   </div>
 
                   {!editingId ? (
-                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <div className="mt-4 rounded-2xl border border-amber-300/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
                       Puedes dejar estos horarios listos ahora. Al crear el
                       staff, se guardarán automáticamente.
                     </div>
@@ -1251,18 +1546,37 @@ async function applyStaffAdjustment() {
                 </div>
               )}
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
                 <div className="mb-4">
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Servicios que atiende
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: "var(--text-muted)" }}
+                  >
                     Selecciona qué servicios puede realizar este profesional.
                   </p>
                 </div>
 
                 {services.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                  <div
+                    className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
                     No hay servicios activos disponibles para asignar.
                   </div>
                 ) : (
@@ -1273,24 +1587,34 @@ async function applyStaffAdjustment() {
                       return (
                         <label
                           key={service.id}
-                          className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
-                            checked
-                              ? "border-slate-900 bg-slate-50"
-                              : "border-slate-200 bg-white hover:bg-slate-50"
-                          }`}
+                          className="flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition"
+                          style={{
+                            borderColor: checked
+                              ? "rgba(37,99,235,0.45)"
+                              : "var(--border-color)",
+                            background: checked
+                              ? "linear-gradient(135deg, rgba(37,99,235,0.10), var(--bg-soft))"
+                              : "var(--bg-card)",
+                          }}
                         >
                           <input
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleService(service.id)}
-                            className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                            className="mt-0.5 h-4 w-4 rounded"
                           />
 
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-slate-900">
+                            <p
+                              className="text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               {service.name}
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p
+                              className="mt-1 text-xs"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Duración: {service.duration_minutes ?? 0} min
                               {service.price != null
                                 ? ` · $${Number(service.price).toLocaleString(
@@ -1306,19 +1630,31 @@ async function applyStaffAdjustment() {
                 )}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
                 <div className="mb-4">
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Excepciones del staff
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: "var(--text-muted)" }}
+                  >
                     Configura días libres o horarios especiales para este
                     profesional.
                   </p>
                 </div>
 
                 {!editingId ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <div className="rounded-2xl border border-amber-300/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
                     Primero crea o guarda el staff para poder administrar sus
                     excepciones.
                   </div>
@@ -1326,7 +1662,10 @@ async function applyStaffAdjustment() {
                   <div className="space-y-4">
                     <div className="grid gap-3 md:grid-cols-[1fr_1.5fr_0.9fr_1fr_1fr_auto_auto]">
                       <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <label
+                          className="mb-2 block text-xs font-semibold uppercase tracking-wide"
+                          style={{ color: "var(--text-muted)" }}
+                        >
                           Fecha
                         </label>
                         <input
@@ -1338,12 +1677,20 @@ async function applyStaffAdjustment() {
                               date: e.target.value,
                             }))
                           }
-                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
                         />
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <label
+                          className="mb-2 block text-xs font-semibold uppercase tracking-wide"
+                          style={{ color: "var(--text-muted)" }}
+                        >
                           Etiqueta
                         </label>
                         <input
@@ -1356,12 +1703,24 @@ async function applyStaffAdjustment() {
                             }))
                           }
                           placeholder="Ej: Vacaciones"
-                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
                         />
                       </div>
 
                       <div className="flex items-end">
-                        <label className="flex h-11 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700">
+                        <label
+                          className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
+                        >
                           <input
                             type="checkbox"
                             checked={specialDateForm.is_closed}
@@ -1371,14 +1730,17 @@ async function applyStaffAdjustment() {
                                 is_closed: e.target.checked,
                               }))
                             }
-                            className="h-4 w-4 rounded border-slate-300"
+                            className="h-4 w-4 rounded"
                           />
                           Cerrado
                         </label>
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <label
+                          className="mb-2 block text-xs font-semibold uppercase tracking-wide"
+                          style={{ color: "var(--text-muted)" }}
+                        >
                           Inicio
                         </label>
                         <input
@@ -1391,12 +1753,21 @@ async function applyStaffAdjustment() {
                               start_time: e.target.value,
                             }))
                           }
-                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                            opacity: specialDateForm.is_closed ? 0.6 : 1,
+                          }}
                         />
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <label
+                          className="mb-2 block text-xs font-semibold uppercase tracking-wide"
+                          style={{ color: "var(--text-muted)" }}
+                        >
                           Fin
                         </label>
                         <input
@@ -1409,7 +1780,13 @@ async function applyStaffAdjustment() {
                               end_time: e.target.value,
                             }))
                           }
-                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                            opacity: specialDateForm.is_closed ? 0.6 : 1,
+                          }}
                         />
                       </div>
 
@@ -1418,7 +1795,11 @@ async function applyStaffAdjustment() {
                           type="button"
                           onClick={handleSaveSpecialDate}
                           disabled={specialDateSaving}
-                          className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={primaryButtonClass}
+                          style={{
+                            background:
+                              "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                          }}
                         >
                           {specialDateSaving
                             ? editingSpecialDateId
@@ -1435,7 +1816,12 @@ async function applyStaffAdjustment() {
                           type="button"
                           onClick={resetSpecialDateForm}
                           disabled={specialDateSaving}
-                          className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={secondaryButtonClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
                         >
                           Cancelar
                         </button>
@@ -1443,14 +1829,21 @@ async function applyStaffAdjustment() {
                     </div>
 
                     {editingSpecialDateId ? (
-                      <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+                      <div className="rounded-2xl border border-sky-300/50 bg-sky-500/10 px-4 py-3 text-sm text-sky-300">
                         Estás editando una excepción existente. Guarda los
                         cambios o presiona cancelar.
                       </div>
                     ) : null}
 
                     {staffSpecialDates.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                      <div
+                        className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-muted)",
+                        }}
+                      >
                         Este staff aún no tiene excepciones configuradas.
                       </div>
                     ) : (
@@ -1458,13 +1851,24 @@ async function applyStaffAdjustment() {
                         {staffSpecialDates.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background:
+                                "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-soft))",
+                            }}
                           >
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-slate-900">
+                              <p
+                                className="text-sm font-medium"
+                                style={{ color: "var(--text-main)" }}
+                              >
                                 {item.date}
                               </p>
-                              <p className="mt-1 text-sm text-slate-600">
+                              <p
+                                className="mt-1 text-sm"
+                                style={{ color: "var(--text-muted)" }}
+                              >
                                 {item.label || "Sin etiqueta"} ·{" "}
                                 {item.is_closed
                                   ? "Cerrado todo el día"
@@ -1478,7 +1882,12 @@ async function applyStaffAdjustment() {
                               <button
                                 type="button"
                                 onClick={() => handleEditSpecialDate(item)}
-                                className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                                className={secondaryButtonClass}
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                }}
                               >
                                 Editar
                               </button>
@@ -1488,7 +1897,7 @@ async function applyStaffAdjustment() {
                                 onClick={() =>
                                   item.id && handleDeleteSpecialDate(item.id)
                                 }
-                                className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+                                className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
                               >
                                 Eliminar
                               </button>
@@ -1502,46 +1911,51 @@ async function applyStaffAdjustment() {
               </div>
 
               {saveError ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
                   {saveError}
                 </div>
               ) : null}
 
               {saveOk ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
                   {saveOk}
                 </div>
               ) : null}
 
               <div className="space-y-3 pt-2">
                 {!editingId && reachedLimit ? (
-  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
-    <p className="font-semibold">
-      Llegaste al límite de profesionales de tu plan
-    </p>
-    <p className="mt-1">
-      Ya usaste {activeCount} de {caps.max_staff} profesionales disponibles.
-    </p>
-    <p className="mt-1">
-      Agrega más profesionales o mejora tu plan para seguir creciendo.
-    </p>
+                  <div className="rounded-2xl border border-amber-300/50 bg-amber-500/10 px-4 py-4 text-sm text-amber-300">
+                    <p className="font-semibold">
+                      Llegaste al límite de profesionales de tu plan
+                    </p>
+                    <p className="mt-1">
+                      Ya usaste {activeCount} de {caps.max_staff} profesionales
+                      disponibles.
+                    </p>
+                    <p className="mt-1">
+                      Agrega más profesionales o mejora tu plan para seguir
+                      creciendo.
+                    </p>
 
-    <Link
-  href={`/planes?current_plan=${plan}&from=staff&slug=${slug}&tenant_id=${tenantId}`}
-  className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
->
-  Mejora tu plan
-</Link>
-
-  </div>
-) : null}
+                    <Link
+                      href={`/planes?current_plan=${plan}&from=staff&slug=${slug}&tenant_id=${tenantId}`}
+                      className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                    >
+                      Mejora tu plan
+                    </Link>
+                  </div>
+                ) : null}
 
                 <div className="flex flex-wrap gap-3">
                   <button
-  type="button"
-  onClick={handleSave}
-  disabled={saving || (!editingId && (reachedLimit || hasExcess))}
-                    className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving || (!editingId && (reachedLimit || hasExcess))}
+                    className={primaryButtonClass}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                    }}
                   >
                     {saving
                       ? "Guardando..."
@@ -1553,7 +1967,12 @@ async function applyStaffAdjustment() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    className={secondaryButtonClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
                   >
                     Limpiar
                   </button>
@@ -1563,22 +1982,42 @@ async function applyStaffAdjustment() {
           )}
         </Panel>
 
-       
-
         <Panel
           title="Equipo actual"
           description="Visualiza, edita o elimina integrantes del staff."
+          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
           {!selectedBranchId ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Selecciona una sucursal activa en el sidebar para ver el staff.
             </div>
           ) : loading ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Cargando staff...
             </div>
           ) : staff.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Aún no has creado staff.
             </div>
           ) : (
@@ -1589,186 +2028,130 @@ async function applyStaffAdjustment() {
                 return (
                   <div
                     key={item.id}
-                    className={`rounded-[24px] border p-4 transition ${
-                      isSelected
-                        ? "border-slate-900 bg-slate-900 text-white shadow-lg"
-                        : "border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm"
-                    }`}
+                    className="rounded-[24px] border p-4 transition"
+                    style={{
+                      borderColor: isSelected
+                        ? "rgba(37,99,235,0.45)"
+                        : "var(--border-color)",
+                      background: isSelected
+                        ? "linear-gradient(135deg, rgba(37,99,235,0.22), rgba(14,165,233,0.12), var(--bg-card))"
+                        : "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                      color: "var(--text-main)",
+                    }}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
-{hasExcess && item.is_active && (
-  <div className="mb-2">
-    <label className="flex items-center gap-2 text-xs text-slate-600">
-      <input
-        type="checkbox"
-        checked={selectedStaffToKeep.includes(item.id)}
-        onChange={() => toggleStaffSelection(item.id)}
-      />
-      Mantener activo
-    </label>
-  </div>
-)}
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-3">
                           <span
-                            className={`h-3.5 w-3.5 rounded-full ring-4 ${
-                              isSelected ? "ring-white/10" : "ring-slate-100"
-                            }`}
+                            className="h-3.5 w-3.5 rounded-full"
                             style={{ backgroundColor: item.color || "#0f172a" }}
                           />
 
                           <p
-                            className={`text-base font-semibold ${
-                              isSelected ? "text-white" : "text-slate-900"
-                            }`}
+                            className="text-base font-semibold"
+                            style={{ color: "var(--text-main)" }}
                           >
                             {item.name}
                           </p>
 
-<span
-  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-    item.is_active
-      ? hasExcess
-        ? "bg-rose-100 text-rose-700"
-        : isSelected
-        ? "bg-emerald-400/15 text-emerald-200"
-        : "bg-emerald-100 text-emerald-700"
-      : isSelected
-      ? "bg-white/10 text-slate-200"
-      : "bg-slate-100 text-slate-600"
-  }`}
->
-  {item.is_active
-    ? hasExcess
-      ? "Exceso"
-      : "Activo"
-    : "Inactivo"}
-</span>
+                          <span
+                            className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                            style={{
+                              background: item.is_active
+                                ? hasExcess
+                                  ? "rgba(244,63,94,0.14)"
+                                  : "rgba(16,185,129,0.14)"
+                                : "rgba(148,163,184,0.16)",
+                              color: item.is_active
+                                ? hasExcess
+                                  ? "rgb(251 113 133)"
+                                  : "rgb(52 211 153)"
+                                : "var(--text-muted)",
+                            }}
+                          >
+                            {item.is_active
+                              ? hasExcess
+                                ? "Exceso"
+                                : "Activo"
+                              : "Inactivo"}
+                          </span>
 
                           {isSelected ? (
-                            <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white">
+                            <span
+                              className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                              style={{
+                                background: "rgba(37,99,235,0.14)",
+                                color: "rgb(96 165 250)",
+                              }}
+                            >
                               Editando
                             </span>
                           ) : null}
                         </div>
 
+                        {hasExcess && item.is_active ? (
+                          <div className="mt-3">
+                            <label
+                              className="flex items-center gap-2 text-xs"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedStaffToKeep.includes(item.id)}
+                                onChange={() => toggleStaffSelection(item.id)}
+                              />
+                              Mantener activo
+                            </label>
+                          </div>
+                        ) : null}
+
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          <div
-                            className={`rounded-2xl border px-3 py-2.5 ${
-                              isSelected
-                                ? "border-white/10 bg-white/5"
-                                : "border-slate-200 bg-white"
-                            }`}
-                          >
-                            <p
-                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
-                                isSelected ? "text-slate-300" : "text-slate-400"
-                              }`}
-                            >
-                              Rol
-                            </p>
-                            <p
-                              className={`mt-1 text-sm ${
-                                isSelected ? "text-white" : "text-slate-700"
-                              }`}
-                            >
-                              {item.role || "No definido"}
-                            </p>
-                          </div>
-
-                          <div
-                            className={`rounded-2xl border px-3 py-2.5 ${
-                              isSelected
-                                ? "border-white/10 bg-white/5"
-                                : "border-slate-200 bg-white"
-                            }`}
-                          >
-                            <p
-                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
-                                isSelected ? "text-slate-300" : "text-slate-400"
-                              }`}
-                            >
-                              Orden
-                            </p>
-                            <p
-                              className={`mt-1 text-sm ${
-                                isSelected ? "text-white" : "text-slate-700"
-                              }`}
-                            >
-                              {item.sort_order ?? 0}
-                            </p>
-                          </div>
-
-                          <div
-                            className={`rounded-2xl border px-3 py-2.5 ${
-                              isSelected
-                                ? "border-white/10 bg-white/5"
-                                : "border-slate-200 bg-white"
-                            }`}
-                          >
-                            <p
-                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
-                                isSelected ? "text-slate-300" : "text-slate-400"
-                              }`}
-                            >
-                              Correo
-                            </p>
-                            <p
-                              className={`mt-1 break-all text-sm ${
-                                isSelected ? "text-white" : "text-slate-700"
-                              }`}
-                            >
-                              {item.email || "No definido"}
-                            </p>
-                          </div>
-
-                          <div
-                            className={`rounded-2xl border px-3 py-2.5 ${
-                              isSelected
-                                ? "border-white/10 bg-white/5"
-                                : "border-slate-200 bg-white"
-                            }`}
-                          >
-                            <p
-                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
-                                isSelected ? "text-slate-300" : "text-slate-400"
-                              }`}
-                            >
-                              Teléfono
-                            </p>
-                            <p
-                              className={`mt-1 text-sm ${
-                                isSelected ? "text-white" : "text-slate-700"
-                              }`}
-                            >
-                              {item.phone || "No definido"}
-                            </p>
-                          </div>
-
-                          <div
-                            className={`sm:col-span-2 rounded-2xl border px-3 py-2.5 ${
-                              isSelected
-                                ? "border-white/10 bg-white/5"
-                                : "border-slate-200 bg-white"
-                            }`}
-                          >
-                            <p
-                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
-                                isSelected ? "text-slate-300" : "text-slate-400"
-                              }`}
-                            >
-                              Horario
-                            </p>
-                            <p
-                              className={`mt-1 text-sm ${
-                                isSelected ? "text-white" : "text-slate-700"
-                              }`}
-                            >
-                              {item.use_business_hours
+                          {[
+                            { label: "Rol", value: item.role || "No definido" },
+                            {
+                              label: "Orden",
+                              value: String(item.sort_order ?? 0),
+                            },
+                            {
+                              label: "Correo",
+                              value: item.email || "No definido",
+                            },
+                            {
+                              label: "Teléfono",
+                              value: item.phone || "No definido",
+                            },
+                            {
+                              label: "Horario",
+                              value: item.use_business_hours
                                 ? "Usa horario del negocio"
-                                : "Horario propio"}
-                            </p>
-                          </div>
+                                : "Horario propio",
+                              wide: true,
+                            },
+                          ].map((block) => (
+                            <div
+                              key={`${item.id}-${block.label}`}
+                              className={`rounded-2xl border px-3 py-2.5 ${
+                                block.wide ? "sm:col-span-2" : ""
+                              }`}
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-soft)",
+                              }}
+                            >
+                              <p
+                                className="text-[11px] font-semibold uppercase tracking-[0.14em]"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                {block.label}
+                              </p>
+                              <p
+                                className="mt-1 break-all text-sm"
+                                style={{ color: "var(--text-main)" }}
+                              >
+                                {block.value}
+                              </p>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
@@ -1776,11 +2159,12 @@ async function applyStaffAdjustment() {
                         <button
                           type="button"
                           onClick={() => startEdit(item)}
-                          className={`inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-medium transition ${
-                            isSelected
-                              ? "border border-white/15 bg-white/10 text-white hover:bg-white/15"
-                              : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                          }`}
+                          className={secondaryButtonClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
                         >
                           Editar
                         </button>
@@ -1788,11 +2172,7 @@ async function applyStaffAdjustment() {
                         <button
                           type="button"
                           onClick={() => handleDelete(item.id)}
-                          className={`inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-medium transition ${
-                            isSelected
-                              ? "border border-rose-300/20 bg-rose-400/10 text-rose-100 hover:bg-rose-400/15"
-                              : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                          }`}
+                          className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
                         >
                           Eliminar
                         </button>
