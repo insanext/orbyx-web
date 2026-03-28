@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
-import { StatCard } from "../../../../components/dashboard/stat-card";
 
 type BusinessResponse = {
   business: {
@@ -61,7 +59,117 @@ type BranchItem = {
   name: string;
 };
 
+type NoticeTone =
+  | "info"
+  | "success"
+  | "warning"
+  | "limit"
+  | "danger"
+  | "neutral";
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
+
+function normalizePlanSlug(planSlug?: string | null) {
+  const normalized = String(planSlug || "pro").toLowerCase();
+  if (normalized === "starter") return "pro";
+  if (["pro", "premium", "vip", "platinum"].includes(normalized)) {
+    return normalized;
+  }
+  return "pro";
+}
+
+function getNoticeStyles(tone: NoticeTone): {
+  wrapper: CSSProperties;
+  title: CSSProperties;
+  description: CSSProperties;
+} {
+  const tones: Record<
+    NoticeTone,
+    { border: string; background: string; text: string }
+  > = {
+    info: {
+      border: "rgba(34,197,94,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.05))",
+      text: "var(--text-main)",
+    },
+    success: {
+      border: "rgba(16,185,129,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.05))",
+      text: "var(--text-main)",
+    },
+    warning: {
+      border: "rgba(245,158,11,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.05))",
+      text: "var(--text-main)",
+    },
+    limit: {
+      border: "rgba(249,115,22,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.05))",
+      text: "var(--text-main)",
+    },
+    danger: {
+      border: "rgba(244,63,94,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(244,63,94,0.12), rgba(244,63,94,0.05))",
+      text: "var(--text-main)",
+    },
+    neutral: {
+      border: "var(--border-color)",
+      background: "var(--bg-soft)",
+      text: "var(--text-main)",
+    },
+  };
+
+  const current = tones[tone];
+
+  return {
+    wrapper: {
+      borderColor: current.border,
+      background: current.background,
+      boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px ${current.border}`,
+    },
+    title: {
+      color: current.text,
+    },
+    description: {
+      color: "var(--text-muted)",
+    },
+  };
+}
+
+function Notice({
+  tone,
+  title,
+  description,
+  children,
+}: {
+  tone: NoticeTone;
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+}) {
+  const styles = getNoticeStyles(tone);
+
+  return (
+    <div className="rounded-2xl border px-4 py-4 shadow-sm" style={styles.wrapper}>
+      <p className="text-sm font-semibold" style={styles.title}>
+        {title}
+      </p>
+
+      {description ? (
+        <p className="mt-1 text-sm leading-6" style={styles.description}>
+          {description}
+        </p>
+      ) : null}
+
+      {children ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
+}
 
 export default function ServicesPage() {
   const params = useParams();
@@ -75,7 +183,7 @@ export default function ServicesPage() {
   const [loadingBranches, setLoadingBranches] = useState(false);
 
   const [businessName, setBusinessName] = useState("");
-  const [plan, setPlan] = useState("starter");
+  const [plan, setPlan] = useState("pro");
   const [services, setServices] = useState<Service[]>([]);
   const [staff, setStaff] = useState<StaffItem[]>([]);
   const [staffServices, setStaffServices] = useState<StaffServiceRow[]>([]);
@@ -114,14 +222,13 @@ export default function ServicesPage() {
   }, [slug]);
 
   const planCaps: Record<string, { max_services: number }> = {
-    starter: { max_services: 10 },
     pro: { max_services: 10 },
     premium: { max_services: 25 },
     vip: { max_services: 50 },
     platinum: { max_services: 100 },
   };
 
-  const caps = planCaps[plan] || planCaps.starter;
+  const caps = planCaps[plan] || planCaps.pro;
   const maxServices = caps.max_services;
 
   const servicesLimitReached = services.length >= maxServices;
@@ -278,8 +385,7 @@ export default function ServicesPage() {
   async function applyServicesAdjustment() {
     try {
       const toDeactivate = services.filter(
-        (service) =>
-          service.active && !selectedServicesToKeep.includes(service.id)
+        (service) => service.active && !selectedServicesToKeep.includes(service.id)
       );
 
       if (toDeactivate.length === 0) {
@@ -406,8 +512,8 @@ export default function ServicesPage() {
       const currentTenantId = businessData.business.id;
 
       setTenantId(currentTenantId);
-      setBusinessName(businessData.business.name || slug);
-      setPlan((businessData.business.plan_slug || "starter").toLowerCase());
+      setBusinessName(businessData.business.name || slug || "");
+      setPlan(normalizePlanSlug(businessData.business.plan_slug));
 
       await loadBranches(currentTenantId);
     } catch (error: unknown) {
@@ -768,113 +874,203 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Servicios"
-        title={loading ? "Cargando servicios..." : "Servicios del negocio"}
-        description={
-          selectedBranchName
-            ? `Gestiona los servicios de la sucursal ${selectedBranchName}.`
-            : `Gestiona los servicios que tus clientes podrán reservar en ${
-                loading ? "tu negocio" : businessName
-              }.`
-        }
-        actions={
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={publicUrl}
-              target="_blank"
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+    <div className="space-y-6 pb-6">
+      <section
+        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+        style={{
+          borderColor: "rgba(59,130,246,0.25)",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+        }}
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
+              style={{ color: "var(--text-muted)" }}
             >
-              Ver página pública
-            </Link>
-          </div>
-        }
-      />
+              Servicios
+            </p>
 
-      {loadingBranches ? (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 shadow-sm">
-          Cargando sucursal activa...
+            <h1
+              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+              style={{ color: "var(--text-main)" }}
+            >
+              Servicios del negocio
+            </h1>
+
+            <p
+              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {selectedBranchName
+                ? `Gestiona los servicios de la sucursal ${selectedBranchName}.`
+                : `Gestiona los servicios que tus clientes podrán reservar en ${
+                    loading ? "tu negocio" : businessName
+                  }.`}
+            </p>
+
+            <div className="mt-4">
+              <Link
+                href={publicUrl}
+                target="_blank"
+                className="inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition"
+                style={{
+                  borderColor: "rgba(59,130,246,0.24)",
+                  background: "rgba(255,255,255,0.08)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Ver página pública
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Total servicios
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : services.length}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Activos
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : activeServicesCount}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Con descripción
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : servicesWithDescriptionCount}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Límite del plan
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : `${activeServicesCount}/${maxServices}`}
+              </p>
+            </div>
+          </div>
         </div>
-      ) : !selectedBranchId ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
-          Debes seleccionar una sucursal activa en el sidebar para gestionar
-          servicios.
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-          Sucursal activa:{" "}
-          <span className="font-semibold text-slate-900">
-            {selectedBranchName || selectedBranchId}
+      </section>
+
+      {loadingBranches && !selectedBranchId ? (
+        <div className="rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
+          <span style={{ color: "var(--text-muted)" }}>
+            Cargando sucursal activa...
           </span>
         </div>
-      )}
-
-      {loadError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
-          {loadError}
-        </div>
       ) : null}
 
-      {saveError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
-          {saveError}
-        </div>
+      {!loadingBranches && !selectedBranchId ? (
+        <Notice
+          tone="warning"
+          title="Debes seleccionar una sucursal activa."
+          description="Selecciona una sucursal en el sidebar para administrar los servicios."
+        />
       ) : null}
 
-      {saveOk ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 shadow-sm">
-          {saveOk}
-        </div>
-      ) : null}
-
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard
-          label="Total servicios"
-          value={loading ? "..." : String(services.length)}
-          helper="Cantidad total registrada en la sucursal."
-        />
-        <StatCard
-          label="Activos"
-          value={loading ? "..." : String(activeServicesCount)}
-          helper="Servicios disponibles actualmente para reserva."
-        />
-        <StatCard
-          label="Con descripción"
-          value={loading ? "..." : String(servicesWithDescriptionCount)}
-          helper="Servicios con detalle útil para clientes e IA."
-        />
-        <StatCard
-          label="Límite del plan"
-          value={loading ? "..." : `${activeServicesCount}/${maxServices}`}
-          helper={
-            loading
-              ? "Cargando plan..."
-              : hasExcess
-              ? "Estás sobre el límite de servicios del plan."
-              : servicesLimitReached
-              ? "Llegaste al límite de servicios de tu plan."
-              : `Te quedan ${servicesRemainingCount} servicios disponibles.`
-          }
-        />
-      </section>
+      {loadError ? <Notice tone="danger" title={loadError} /> : null}
+      {saveError ? <Notice tone="danger" title={saveError} /> : null}
+      {saveOk ? <Notice tone="success" title={saveOk} /> : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
         <Panel
           title="Servicios actuales"
           description="Edita, activa o elimina los servicios de tu negocio."
+          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
         >
           {!selectedBranchId ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
-              Selecciona una sucursal activa en el sidebar para ver los
-              servicios.
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
+              Selecciona una sucursal activa en el sidebar para ver los servicios.
             </div>
           ) : loading ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Cargando servicios...
             </div>
           ) : services.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Aún no tienes servicios creados.
             </div>
           ) : (
@@ -886,29 +1082,54 @@ export default function ServicesPage() {
                 return (
                   <div
                     key={service.id}
-                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                    className="rounded-[24px] border p-5 transition"
+                    style={{
+                      borderColor:
+                        editingId === service.id
+                          ? "rgba(37,99,235,0.45)"
+                          : "var(--border-color)",
+                      background:
+                        editingId === service.id
+                          ? "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.10), var(--bg-card))"
+                          : "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                    }}
                   >
                     {editingId === service.id ? (
                       <div className="space-y-5">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <p className="text-base font-semibold text-slate-900">
+                            <p
+                              className="text-base font-semibold"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               Editar servicio
                             </p>
-                            <p className="mt-1 text-sm text-slate-500">
+                            <p
+                              className="mt-1 text-sm"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Actualiza nombre, descripción, duración, precio,
                               estado y staff.
                             </p>
                           </div>
 
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                          <span
+                            className="rounded-full px-3 py-1 text-xs font-semibold"
+                            style={{
+                              background: "rgba(37,99,235,0.14)",
+                              color: "rgb(96 165 250)",
+                            }}
+                          >
                             Modo edición
                           </span>
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="md:col-span-2">
-                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                            <label
+                              className="mb-2 block text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               Nombre del servicio
                             </label>
                             <input
@@ -920,12 +1141,20 @@ export default function ServicesPage() {
                                   name: e.target.value,
                                 }))
                               }
-                              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                              className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
                             />
                           </div>
 
                           <div className="md:col-span-2">
-                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                            <label
+                              className="mb-2 block text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               Descripción del servicio
                             </label>
                             <textarea
@@ -937,12 +1166,20 @@ export default function ServicesPage() {
                                 }))
                               }
                               placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
-                              className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                              className="min-h-[110px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
                             />
                           </div>
 
                           <div>
-                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                            <label
+                              className="mb-2 block text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               Duración (minutos)
                             </label>
                             <input
@@ -955,12 +1192,20 @@ export default function ServicesPage() {
                                   duration_minutes: e.target.value,
                                 }))
                               }
-                              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                              className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
                             />
                           </div>
 
                           <div>
-                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                            <label
+                              className="mb-2 block text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               Precio
                             </label>
                             <input
@@ -973,24 +1218,42 @@ export default function ServicesPage() {
                                   price: e.target.value,
                                 }))
                               }
-                              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                              className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
                             />
                           </div>
                         </div>
 
                         <div className="space-y-3">
                           <div>
-                            <p className="text-sm font-medium text-slate-700">
+                            <p
+                              className="text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               Staff que puede realizar este servicio
                             </p>
-                            <p className="mt-1 text-sm text-slate-500">
+                            <p
+                              className="mt-1 text-sm"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Selecciona las personas del equipo que pueden
                               atender este servicio.
                             </p>
                           </div>
 
                           {staff.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                            <div
+                              className="rounded-2xl border border-dashed px-4 py-4 text-sm"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-soft)",
+                                color: "var(--text-muted)",
+                              }}
+                            >
                               Aún no tienes staff activo. Primero crea staff en
                               el módulo Staff.
                             </div>
@@ -999,7 +1262,12 @@ export default function ServicesPage() {
                               {staff.map((staffItem) => (
                                 <label
                                   key={staffItem.id}
-                                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-soft)",
+                                    color: "var(--text-main)",
+                                  }}
                                 >
                                   <input
                                     type="checkbox"
@@ -1007,7 +1275,7 @@ export default function ServicesPage() {
                                       staffItem.id
                                     )}
                                     onChange={() => toggleEditStaff(staffItem.id)}
-                                    className="h-4 w-4 rounded border-slate-300"
+                                    className="h-4 w-4 rounded"
                                   />
                                   <span className="flex items-center gap-2">
                                     <span
@@ -1030,7 +1298,14 @@ export default function ServicesPage() {
                           )}
                         </div>
 
-                        <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        <label
+                          className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
+                        >
                           <input
                             type="checkbox"
                             checked={editForm.active}
@@ -1040,7 +1315,7 @@ export default function ServicesPage() {
                                 active: e.target.checked,
                               }))
                             }
-                            className="h-4 w-4 rounded border-slate-300"
+                            className="h-4 w-4 rounded"
                           />
                           Servicio activo
                         </label>
@@ -1050,7 +1325,11 @@ export default function ServicesPage() {
                             type="button"
                             onClick={() => handleSaveEdit(service.id)}
                             disabled={saving}
-                            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{
+                              background:
+                                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                            }}
                           >
                             {saving ? "Guardando..." : "Guardar cambios"}
                           </button>
@@ -1059,7 +1338,12 @@ export default function ServicesPage() {
                             type="button"
                             onClick={cancelEditing}
                             disabled={saving}
-                            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                            className="inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                              color: "var(--text-main)",
+                            }}
                           >
                             Cancelar
                           </button>
@@ -1068,12 +1352,19 @@ export default function ServicesPage() {
                     ) : (
                       <div className="space-y-5">
                         {hasExcess && service.active ? (
-                          <label className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700">
+                          <label
+                            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
+                            style={{
+                              borderColor: "rgba(249,115,22,0.34)",
+                              background: "rgba(249,115,22,0.10)",
+                              color: "rgb(249 115 22)",
+                            }}
+                          >
                             <input
                               type="checkbox"
                               checked={isMarkedToKeep}
                               onChange={() => toggleServiceSelection(service.id)}
-                              className="h-4 w-4 rounded border-slate-300"
+                              className="h-4 w-4 rounded"
                             />
                             Mantener activo
                           </label>
@@ -1082,18 +1373,27 @@ export default function ServicesPage() {
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+                              <h3
+                                className="text-lg font-semibold tracking-tight"
+                                style={{ color: "var(--text-main)" }}
+                              >
                                 {service.name}
                               </h3>
 
                               <span
-                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                  service.active
+                                className="rounded-full px-3 py-1 text-xs font-semibold"
+                                style={{
+                                  background: service.active
                                     ? hasExcess
-                                      ? "bg-rose-100 text-rose-700"
-                                      : "bg-emerald-50 text-emerald-700"
-                                    : "bg-slate-100 text-slate-600"
-                                }`}
+                                      ? "rgba(249,115,22,0.14)"
+                                      : "rgba(16,185,129,0.14)"
+                                    : "rgba(148,163,184,0.16)",
+                                  color: service.active
+                                    ? hasExcess
+                                      ? "rgb(249 115 22)"
+                                      : "rgb(16 185 129)"
+                                    : "var(--text-muted)",
+                                }}
                               >
                                 {service.active
                                   ? hasExcess
@@ -1103,7 +1403,10 @@ export default function ServicesPage() {
                               </span>
                             </div>
 
-                            <p className="mt-2 text-sm text-slate-500">
+                            <p
+                              className="mt-2 text-sm"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               {service.description?.trim()
                                 ? service.description
                                 : "Agrega una descripción para explicar qué incluye este servicio."}
@@ -1114,7 +1417,12 @@ export default function ServicesPage() {
                             <button
                               type="button"
                               onClick={() => startEditing(service)}
-                              className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
                             >
                               Editar
                             </button>
@@ -1123,7 +1431,12 @@ export default function ServicesPage() {
                               type="button"
                               onClick={() => handleDeleteService(service.id)}
                               disabled={saving}
-                              className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                borderColor: "rgba(244,63,94,0.34)",
+                                background: "rgba(244,63,94,0.10)",
+                                color: "rgb(244 63 94)",
+                              }}
                             >
                               Eliminar
                             </button>
@@ -1131,36 +1444,70 @@ export default function ServicesPage() {
                         </div>
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          <div
+                            className="rounded-2xl border px-4 py-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            <p
+                              className="text-xs font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Duración
                             </p>
-                            <p className="mt-2 text-sm font-semibold text-slate-900">
+                            <p
+                              className="mt-2 text-sm font-semibold"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               {service.duration_minutes} min
                             </p>
                           </div>
 
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          <div
+                            className="rounded-2xl border px-4 py-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            <p
+                              className="text-xs font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Precio
                             </p>
-                            <p className="mt-2 text-sm font-semibold text-slate-900">
+                            <p
+                              className="mt-2 text-sm font-semibold"
+                              style={{ color: "var(--text-main)" }}
+                            >
                               {formatPrice(service.price)}
                             </p>
                           </div>
 
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          <div
+                            className="rounded-2xl border px-4 py-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            <p
+                              className="text-xs font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               Estado
                             </p>
                             <p
-                              className={`mt-2 text-sm font-semibold ${
-                                service.active
+                              className="mt-2 text-sm font-semibold"
+                              style={{
+                                color: service.active
                                   ? hasExcess
-                                    ? "text-rose-600"
-                                    : "text-emerald-600"
-                                  : "text-slate-600"
-                              }`}
+                                    ? "rgb(249 115 22)"
+                                    : "rgb(16 185 129)"
+                                  : "var(--text-muted)",
+                              }}
                             >
                               {service.active
                                 ? hasExcess
@@ -1171,11 +1518,23 @@ export default function ServicesPage() {
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        <div
+                          className="rounded-2xl border px-4 py-3"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                          }}
+                        >
+                          <p
+                            className="text-xs font-semibold uppercase tracking-[0.16em]"
+                            style={{ color: "var(--text-muted)" }}
+                          >
                             Staff asignado
                           </p>
-                          <p className="mt-2 text-sm font-semibold text-slate-900">
+                          <p
+                            className="mt-2 text-sm font-semibold"
+                            style={{ color: "var(--text-main)" }}
+                          >
                             {assignedStaffNames.length > 0
                               ? assignedStaffNames.join(", ")
                               : "Sin staff asignado"}
@@ -1193,70 +1552,103 @@ export default function ServicesPage() {
         <Panel
           title="Crear nuevo servicio"
           description="Agrega un nuevo servicio para ofrecer más opciones de reserva."
+          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
           {!selectedBranchId ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Selecciona una sucursal activa en el sidebar para crear servicios.
             </div>
           ) : (
             <div className="space-y-5">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-medium text-slate-700">
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+                }}
+              >
+                <p
+                  className="text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Plan actual: <span className="capitalize">{plan}</span>
                 </p>
-                <p className="mt-1 text-sm text-slate-500">
+                <p
+                  className="mt-1 text-sm"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   Has creado {activeServicesCount} de {maxServices} servicios
                   activos disponibles en tu plan.
                 </p>
 
-                {hasExcess && (
-                  <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                    Estás sobre el límite del plan. Debes desactivar{" "}
-                    <span className="font-semibold">{excessServices}</span>{" "}
-                    servicio{excessServices === 1 ? "" : "s"} antes del próximo
-                    ciclo.
-
-                    <div className="mt-2 text-xs text-slate-600">
-                      Seleccionados: {selectedServicesToKeep.length} /{" "}
-                      {maxServices}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={applyServicesAdjustment}
-                      disabled={saving}
-                      className="mt-3 w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                {hasExcess ? (
+                  <div className="mt-4">
+                    <Notice
+                      tone="limit"
+                      title="Estás sobre el límite del plan."
+                      description={`Debes desactivar ${excessServices} servicio${
+                        excessServices === 1 ? "" : "s"
+                      } antes del próximo ciclo.`}
                     >
-                      {saving
-                        ? "Aplicando ajuste..."
-                        : "Aplicar ajuste al plan"}
-                    </button>
+                      <div
+                        className="text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Seleccionados: {selectedServicesToKeep.length} /{" "}
+                        {maxServices}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={applyServicesAdjustment}
+                        disabled={saving}
+                        className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
+                        }}
+                      >
+                        {saving
+                          ? "Aplicando ajuste..."
+                          : "Aplicar ajuste al plan"}
+                      </button>
+                    </Notice>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {servicesLimitReached && !hasExcess ? (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 shadow-sm">
-                  <p className="font-semibold">Límite de servicios alcanzado</p>
-                  <p className="mt-1">
-                    Ya usaste {services.length} de {maxServices} servicios
-                    disponibles en tu plan.
-                  </p>
-                  <p className="mt-1">
-                    Para agregar más servicios, debes subir de plan.
-                  </p>
-
+                <Notice
+                  tone="limit"
+                  title="Límite de servicios alcanzado."
+                  description={`Ya usaste ${services.length} de ${maxServices} servicios disponibles en tu plan. Para agregar más servicios, debes subir de plan.`}
+                >
                   <Link
                     href={`/planes?current_plan=${plan}&from=services&slug=${slug}&tenant_id=${tenantId}`}
-                    className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                    className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-medium text-white transition"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
+                    }}
                   >
                     Ver planes
                   </Link>
-                </div>
+                </Notice>
               ) : null}
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Nombre del servicio
                 </label>
                 <input
@@ -1267,12 +1659,20 @@ export default function ServicesPage() {
                   }
                   placeholder="Ej: Corte premium"
                   disabled={servicesLimitReached || hasExcess}
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Descripción del servicio
                 </label>
                 <textarea
@@ -1285,12 +1685,20 @@ export default function ServicesPage() {
                   }
                   placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
                   disabled={servicesLimitReached || hasExcess}
-                  className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  className="min-h-[110px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Duración (minutos)
                 </label>
                 <input
@@ -1304,13 +1712,21 @@ export default function ServicesPage() {
                     }))
                   }
                   disabled={servicesLimitReached || hasExcess}
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Precio <span className="text-slate-400">(opcional)</span>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Precio <span style={{ color: "var(--text-muted)" }}>(opcional)</span>
                 </label>
                 <input
                   type="number"
@@ -1321,23 +1737,41 @@ export default function ServicesPage() {
                   }
                   placeholder="Ej: 10000"
                   disabled={servicesLimitReached || hasExcess}
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 />
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-slate-700">
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Staff que puede realizar este servicio
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: "var(--text-muted)" }}
+                  >
                     Selecciona las personas del equipo que podrán atender este
                     servicio.
                   </p>
                 </div>
 
                 {staff.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                  <div
+                    className="rounded-2xl border border-dashed px-4 py-4 text-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
                     Aún no tienes staff activo. Primero crea staff en el módulo
                     Staff.
                   </div>
@@ -1346,14 +1780,19 @@ export default function ServicesPage() {
                     {staff.map((staffItem) => (
                       <label
                         key={staffItem.id}
-                        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                        className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                        }}
                       >
                         <input
                           type="checkbox"
                           checked={form.staff_ids.includes(staffItem.id)}
                           onChange={() => toggleCreateStaff(staffItem.id)}
                           disabled={servicesLimitReached || hasExcess}
-                          className="h-4 w-4 rounded border-slate-300"
+                          className="h-4 w-4 rounded"
                         />
                         <span className="flex items-center gap-2">
                           <span
@@ -1373,20 +1812,21 @@ export default function ServicesPage() {
                 )}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-medium text-slate-700">Consejo</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Describe qué incluye el servicio para que tus clientes
-                  entiendan mejor lo que están reservando y para que la IA pueda
-                  responder dudas.
-                </p>
-              </div>
+              <Notice
+                tone="info"
+                title="Consejo"
+                description="Describe qué incluye el servicio para que tus clientes entiendan mejor lo que están reservando y para que la IA pueda responder dudas."
+              />
 
               <button
                 type="button"
                 onClick={handleCreateService}
                 disabled={saving || loading || servicesLimitReached || hasExcess}
-                className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                }}
               >
                 {saving ? "Guardando..." : "Crear servicio"}
               </button>
