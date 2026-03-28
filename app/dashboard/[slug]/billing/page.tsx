@@ -101,6 +101,19 @@ function formatRemainingDays(endDate?: string | null) {
   return `${diffDays.toFixed(2)} días`;
 }
 
+function getRemainingDaysNumber(endDate?: string | null) {
+  if (!endDate) return null;
+
+  const end = new Date(endDate);
+  if (Number.isNaN(end.getTime())) return null;
+
+  const now = new Date();
+  const diffMs = end.getTime() - now.getTime();
+  const diffDays = Math.max(0, diffMs / (1000 * 60 * 60 * 24));
+
+  return Number(diffDays.toFixed(2));
+}
+
 export default function BillingPage() {
   const params = useParams();
   const slug =
@@ -448,6 +461,16 @@ export default function BillingPage() {
     ? PLAN_LABELS[scheduledPlanSlug] || scheduledPlanSlug
     : null;
 
+  const remainingDaysNumber = getRemainingDaysNumber(
+    scheduledChangeAt || billingCycleEnd
+  );
+
+  const isUrgentAdjustment =
+    hasAnyExcess &&
+    pendingChangeType === "downgrade" &&
+    remainingDaysNumber !== null &&
+    remainingDaysNumber <= 2;
+
   return (
     <div className="space-y-6 rounded-[28px] bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.12),_transparent_30%),linear-gradient(180deg,_#0f172a_0%,_#111827_42%,_#0b1120_100%)] p-4 sm:p-6">
       <PageHeader
@@ -549,10 +572,17 @@ export default function BillingPage() {
       </section>
 
       {hasAnyExcess ? (
-        <div className="rounded-3xl border border-amber-400/25 bg-amber-500/10 p-5 text-sm text-amber-100 shadow-[0_20px_60px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+        <div
+          className={`rounded-3xl p-5 text-sm shadow-[0_20px_60px_rgba(15,23,42,0.35)] backdrop-blur-xl ${
+            isUrgentAdjustment
+              ? "border border-rose-400/30 bg-rose-500/12 text-rose-100"
+              : "border border-amber-400/25 bg-amber-500/10 text-amber-100"
+          }`}
+        >
           <p className="text-base font-semibold text-white">
             Tu negocio está sobre el límite del plan
           </p>
+
           <div className="mt-3 space-y-2">
             {hasBranchExcess ? (
               <div>• Sucursales en exceso: {excessBranches}</div>
@@ -565,16 +595,46 @@ export default function BillingPage() {
             ) : null}
           </div>
 
+          <div
+            className={`mt-4 rounded-2xl px-4 py-3 text-sm ${
+              isUrgentAdjustment
+                ? "border border-rose-300/30 bg-rose-500/12 text-rose-50"
+                : "border border-amber-300/20 bg-amber-500/10 text-amber-50"
+            }`}
+          >
+            {isUrgentAdjustment ? (
+              <>
+                Te quedan <span className="font-semibold">{remainingDaysNumber}</span>{" "}
+                días para ajustar staff, servicios y sucursales antes del cambio
+                de plan. Si no lo haces a tiempo, el sistema deberá aplicar el
+                downgrade con bloqueo automático de excedentes.
+              </>
+            ) : (
+              <>
+                Ajusta estos elementos antes del{" "}
+                <span className="font-semibold">
+                  {formatDate(scheduledChangeAt || billingCycleEnd)}
+                </span>{" "}
+                para que el downgrade se aplique sin problemas.
+              </>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={applyFullAdjustment}
             disabled={saving}
-            className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-amber-500 px-5 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`mt-4 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isUrgentAdjustment
+                ? "bg-rose-500 text-white hover:bg-rose-400"
+                : "bg-amber-500 text-slate-950 hover:bg-amber-400"
+            }`}
           >
             {saving ? "Aplicando ajuste..." : "Aplicar ajuste completo"}
           </button>
         </div>
       ) : (
+
         <div className="rounded-3xl border border-emerald-400/20 bg-emerald-500/10 p-5 text-sm text-emerald-100 shadow-[0_20px_60px_rgba(15,23,42,0.35)] backdrop-blur-xl">
           Todo está dentro del límite de tu plan actual.
         </div>
@@ -594,13 +654,8 @@ export default function BillingPage() {
               <div className="space-y-3">
                 {activeBranches.map((branch) => (
                   <label
-                    key={branch.id}
-                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
-                      hasBranchExcess
-                        ? "border-rose-300/20 bg-rose-500/10 text-rose-50"
-                        : "border-white/10 bg-white/5 text-slate-200"
-                    }`}
-                  >
+                   key={branch.id}
+
                     <input
                       type="checkbox"
                       checked={
@@ -611,7 +666,9 @@ export default function BillingPage() {
                       disabled={!hasBranchExcess}
                       className="h-4 w-4 rounded border-slate-300"
                     />
-                    <span className="font-medium">{branch.name}</span>
+                    <span className="font-semibold">
+                      {branch.name}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -635,8 +692,10 @@ export default function BillingPage() {
                     key={item.id}
                     className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
                       hasStaffExcess
-                        ? "border-rose-300/20 bg-rose-500/10 text-rose-50"
-                        : "border-white/10 bg-white/5 text-slate-200"
+                        ? selectedStaffToKeep.includes(item.id)
+                          ? "border-emerald-300/25 bg-emerald-500/12 text-emerald-50"
+                          : "border-rose-300/25 bg-rose-500/12 text-rose-50"
+                        : "border-white/10 bg-white/6 text-white"
                     }`}
                   >
                     <input
@@ -671,12 +730,14 @@ export default function BillingPage() {
             ) : (
               <div className="space-y-3">
                 {activeServices.map((item) => (
-                  <label
+                   <label
                     key={item.id}
                     className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
                       hasServicesExcess
-                        ? "border-rose-300/20 bg-rose-500/10 text-rose-50"
-                        : "border-white/10 bg-white/5 text-slate-200"
+                        ? selectedServicesToKeep.includes(item.id)
+                          ? "border-emerald-300/25 bg-emerald-500/12 text-emerald-50"
+                          : "border-rose-300/25 bg-rose-500/12 text-rose-50"
+                        : "border-white/10 bg-white/6 text-white"
                     }`}
                   >
                     <input
