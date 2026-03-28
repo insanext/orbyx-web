@@ -22,7 +22,14 @@ export function Panel({
       }}
     >
       {title || description ? (
-        <div className="mb-5">
+        <div
+          className="mb-5 rounded-2xl border px-4 py-4"
+          style={{
+            borderColor: "rgba(59,130,246,0.22)",
+            background:
+              "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.08))",
+          }}
+        >
           {title ? (
             <h3
               className="text-base font-semibold tracking-tight"
@@ -31,6 +38,7 @@ export function Panel({
               {title}
             </h3>
           ) : null}
+
           {description ? (
             <p
               className="mt-1 text-sm leading-6"
