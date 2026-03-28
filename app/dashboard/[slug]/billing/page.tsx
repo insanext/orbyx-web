@@ -576,19 +576,23 @@ const servicesToDeactivate = hasServicesExcess
         </div>
       </section>
 
-      {hasAnyExcess ? (
-        <div
-          className={`rounded-3xl p-5 text-sm shadow-[0_20px_60px_rgba(15,23,42,0.35)] backdrop-blur-xl ${
-            isUrgentAdjustment
-              ? "border border-rose-400/30 bg-rose-500/12 text-rose-100"
-              : "border border-amber-400/25 bg-amber-500/10 text-amber-100"
-          }`}
-        >
-          <p className="text-base font-semibold text-white">
-            Tu negocio está sobre el límite del plan
-          </p>
+{hasAnyExcess ? (
+  <div
+    className={`rounded-3xl p-5 text-sm shadow-[0_20px_60px_rgba(15,23,42,0.35)] backdrop-blur-xl ${
+      isUrgentAdjustment
+        ? "border border-rose-400/30 bg-rose-500/12 text-rose-100"
+        : "border border-amber-400/25 bg-amber-500/10 text-amber-100"
+    }`}
+  >
+    <p className="text-base font-semibold text-white">
+      Tu negocio está sobre el límite del plan
+    </p>
 
-          <div className="mt-3 space-y-2">
+    <p className="mt-2 text-sm text-slate-300">
+      Selecciona qué elementos quieres conservar. Los no seleccionados serán desactivados automáticamente.
+    </p>
+
+    <div className="mt-3 space-y-2">
             {hasBranchExcess ? (
               <div>• Sucursales en exceso: {excessBranches}</div>
             ) : null}
@@ -646,10 +650,10 @@ const servicesToDeactivate = hasServicesExcess
 
       <section className="grid gap-6 xl:grid-cols-3">
         <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-[0_20px_60px_rgba(15,23,42,0.35)] [&>div]:backdrop-blur-xl">
-          <Panel
-            title="Sucursales"
-            description={`Activas: ${activeBranches.length} / ${caps.max_branches}`}
-          >
+<Panel
+  title="Sucursales"
+  description={`Selecciona las sucursales que deseas MANTENER activas (${activeBranches.length} / ${caps.max_branches})`}
+>
             {activeBranches.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-6 text-sm text-slate-300">
                 No hay sucursales activas.
@@ -689,7 +693,7 @@ const servicesToDeactivate = hasServicesExcess
         <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-[0_20px_60px_rgba(15,23,42,0.35)] [&>div]:backdrop-blur-xl">
           <Panel
             title="Profesionales"
-            description={`Activos: ${activeStaff.length} / ${caps.max_staff}`}
+description={`Selecciona los profesionales que deseas MANTENER activos (${activeStaff.length} / ${caps.max_staff})`}
           >
             {activeStaff.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-6 text-sm text-slate-300">
@@ -731,7 +735,7 @@ const servicesToDeactivate = hasServicesExcess
         <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-[0_20px_60px_rgba(15,23,42,0.35)] [&>div]:backdrop-blur-xl">
           <Panel
             title="Servicios"
-            description={`Activos: ${activeServices.length} / ${caps.max_services}`}
+description={`Selecciona los servicios que deseas MANTENER activos (${activeServices.length} / ${caps.max_services})`}
           >
             {activeServices.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-6 text-sm text-slate-300">
