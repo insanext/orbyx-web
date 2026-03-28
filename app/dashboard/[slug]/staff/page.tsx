@@ -2018,7 +2018,7 @@ export default function StaffPage() {
   >
     <div className="mt-1">
       <a
-        href={`/dashboard/${slug}/billing`}
+        href={`/planes?current_plan=${plan}&tenant_id=${tenantId}&slug=${slug}&from=staff`}
         className="inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
         style={{
           background:
