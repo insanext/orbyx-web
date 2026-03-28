@@ -2009,14 +2009,27 @@ export default function StaffPage() {
 
               <div className="space-y-3 pt-2">
                 {!editingId && reachedLimit ? (
-                  <Notice
-                    tone="limit"
-                    title="Has alcanzado el límite de staff de tu plan."
-                    description={`Tu plan ${plan} permite ${caps.max_staff} profesional${
-                      caps.max_staff === 1 ? "" : "es"
-                    } activos. Para crear otro, debes mejorar el plan o desactivar uno existente.`}
-                  />
-                ) : null}
+  <Notice
+    tone="limit"
+    title="Has alcanzado el límite de staff de tu plan."
+    description={`Tu plan ${plan} permite ${caps.max_staff} profesional${
+      caps.max_staff === 1 ? "" : "es"
+    } activos. Para crear otro, debes mejorar el plan o desactivar uno existente.`}
+  >
+    <div className="mt-1">
+      <a
+        href={`/dashboard/${slug}/billing`}
+        className="inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+        style={{
+          background:
+            "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
+        }}
+      >
+        Mejorar plan
+      </a>
+    </div>
+  </Notice>
+) : null}
 
                 <div className="flex flex-wrap gap-3">
                   <button
