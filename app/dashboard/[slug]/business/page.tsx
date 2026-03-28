@@ -582,96 +582,101 @@ async function copyPublicUrl() {
 
   return (
     <div className="space-y-6">
-      <section
-        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
-        style={{
-          borderColor: "rgba(59,130,246,0.25)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-        }}
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p
-              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Negocio
-            </p>
-
-            <h1
-              className="text-3xl font-semibold tracking-tight sm:text-4xl"
-              style={{ color: "var(--text-main)" }}
-            >
-              Datos del negocio
-            </h1>
-
-            <p
-              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Actualiza la información principal, horarios, fechas especiales y
-              campos que pedirás al cliente al reservar.
-            </p>
-          </div>
-
-<div
-  className="rounded-2xl border px-4 py-3"
+<section
+  className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
   style={{
-    borderColor: "rgba(59,130,246,0.24)",
-    background: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(59,130,246,0.25)",
+    background:
+      "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
   }}
 >
-  <div className="flex items-start justify-between gap-3">
-    <div className="min-w-0 flex-1">
+  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="max-w-3xl">
       <p
-        className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+        className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
         style={{ color: "var(--text-muted)" }}
       >
-        URL pública
+        Negocio
       </p>
 
-      <p className="mt-2 break-all text-sm font-semibold">{publicUrl}</p>
+      <h1
+        className="text-3xl font-semibold tracking-tight sm:text-4xl"
+        style={{ color: "var(--text-main)" }}
+      >
+        Datos del negocio
+      </h1>
+
+      <p
+        className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+        style={{ color: "var(--text-muted)" }}
+      >
+        Actualiza la información principal, horarios, fechas especiales y
+        campos que pedirás al cliente al reservar.
+      </p>
     </div>
 
-    <button
-      type="button"
-      onClick={copyPublicUrl}
-      className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl px-3 text-xs font-semibold transition"
-      style={{
-        background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-        color: "#ffffff",
-      }}
+    <div
+      className="grid gap-3 sm:grid-cols-2"
+      style={{ color: "var(--text-main)" }}
     >
-      Copiar
-    </button>
-  </div>
-</div>
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
+      <div
+        className="rounded-2xl border px-4 py-3"
+        style={{
+          borderColor: "rgba(59,130,246,0.24)",
+          background: "rgba(255,255,255,0.08)",
+        }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+              style={{ color: "var(--text-muted)" }}
             >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Google Calendar
-              </p>
-              <p className="mt-2 text-sm font-semibold">
-                {loading
-                  ? "Cargando..."
-                  : googleConnected
-                  ? "Conectado"
-                  : "Pendiente"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+              URL pública
+            </p>
 
+            <p className="mt-2 break-all text-sm font-semibold">{publicUrl}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={copyPublicUrl}
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl px-3 text-xs font-semibold transition"
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+              color: "#ffffff",
+            }}
+          >
+            Copiar
+          </button>
+        </div>
+      </div>
+
+      <div
+        className="rounded-2xl border px-4 py-3"
+        style={{
+          borderColor: "rgba(59,130,246,0.24)",
+          background: "rgba(255,255,255,0.08)",
+        }}
+      >
+        <p
+          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Google Calendar
+        </p>
+        <p className="mt-2 text-sm font-semibold">
+          {loading
+            ? "Cargando..."
+            : googleConnected
+            ? "Conectado"
+            : "Pendiente"}
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
       {loadError ? (
         <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
           {loadError}
