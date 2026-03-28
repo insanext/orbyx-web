@@ -571,6 +571,15 @@ export default function BusinessPage() {
     return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
   }
 
+async function copyPublicUrl() {
+  try {
+    await navigator.clipboard.writeText(publicUrl);
+    alert("URL copiada");
+  } catch {
+    alert("No se pudo copiar la URL");
+  }
+}
+
   return (
     <div className="space-y-6">
       <section
@@ -606,26 +615,38 @@ export default function BusinessPage() {
             </p>
           </div>
 
-          <div
-            className="grid gap-3 sm:grid-cols-2"
-            style={{ color: "var(--text-main)" }}
-          >
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                URL pública
-              </p>
-              <p className="mt-2 break-all text-sm font-semibold">{publicUrl}</p>
-            </div>
+<div
+  className="rounded-2xl border px-4 py-3"
+  style={{
+    borderColor: "rgba(59,130,246,0.24)",
+    background: "rgba(255,255,255,0.08)",
+  }}
+>
+  <div className="flex items-start justify-between gap-3">
+    <div className="min-w-0 flex-1">
+      <p
+        className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+        style={{ color: "var(--text-muted)" }}
+      >
+        URL pública
+      </p>
 
+      <p className="mt-2 break-all text-sm font-semibold">{publicUrl}</p>
+    </div>
+
+    <button
+      type="button"
+      onClick={copyPublicUrl}
+      className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl px-3 text-xs font-semibold transition"
+      style={{
+        background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+        color: "#ffffff",
+      }}
+    >
+      Copiar
+    </button>
+  </div>
+</div>
             <div
               className="rounded-2xl border px-4 py-3"
               style={{
