@@ -1384,13 +1384,13 @@ export default function StaffPage() {
 
               {form.use_business_hours ? (
 <div className="rounded-2xl border px-4 py-4
-  border-slate-200 bg-slate-50
-  dark:border-emerald-400/40 dark:bg-emerald-500/10"
+  bg-emerald-100 border-emerald-300
+  dark:bg-emerald-500/10 dark:border-emerald-400/40"
 >
-  <p className="text-sm font-semibold text-slate-800 dark:text-emerald-200">
+  <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
     Este staff usará el horario general del negocio.
   </p>
-  <p className="mt-1 text-sm text-slate-600 dark:text-emerald-100/80">
+  <p className="mt-1 text-sm text-emerald-800 dark:text-emerald-100/80">
     El editor de horarios propios queda oculto para evitar configuraciones duplicadas.
   </p>
 </div>
@@ -1641,9 +1641,10 @@ export default function StaffPage() {
                 </div>
 
                 {!editingId ? (
+
 <div className="rounded-2xl border px-4 py-3 text-sm font-medium
-  border-slate-200 bg-slate-50 text-slate-700
-  dark:border-amber-400/50 dark:bg-amber-500/10 dark:text-amber-200"
+  bg-amber-100 border-amber-300 text-amber-900
+  dark:bg-amber-500/10 dark:border-amber-400/50 dark:text-amber-200"
 >
   Primero crea o guarda el staff para poder administrar sus excepciones.
 </div>
@@ -1914,18 +1915,18 @@ export default function StaffPage() {
               <div className="space-y-3 pt-2">
                 {!editingId && reachedLimit ? (
 <div className="rounded-2xl border px-4 py-4 text-sm
-  border-slate-200 bg-slate-50
-  dark:border-amber-400/50 dark:bg-amber-500/10"
+  bg-amber-100 border-amber-300
+  dark:bg-amber-500/10 dark:border-amber-400/50"
 >
-  <p className="font-semibold text-slate-900 dark:text-amber-100">
+  <p className="font-semibold text-amber-900 dark:text-amber-100">
     Llegaste al límite de profesionales de tu plan
   </p>
 
-  <p className="mt-1 text-slate-700 dark:text-amber-100/90">
+  <p className="mt-1 text-amber-800 dark:text-amber-100/90">
     Ya usaste {activeCount} de {caps.max_staff} profesionales disponibles.
   </p>
 
-  <p className="mt-1 text-slate-700 dark:text-amber-100/90">
+  <p className="mt-1 text-amber-800 dark:text-amber-100/90">
     Agrega más profesionales o mejora tu plan para seguir creciendo.
   </p>
 
