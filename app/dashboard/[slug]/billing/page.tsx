@@ -652,25 +652,29 @@ export default function BillingPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {activeBranches.map((branch) => (
-                  <label
-                   key={branch.id}
-
-                    <input
-                      type="checkbox"
-                      checked={
-                        !hasBranchExcess ||
-                        selectedBranchesToKeep.includes(branch.id)
-                      }
-                      onChange={() => toggleBranchSelection(branch.id)}
-                      disabled={!hasBranchExcess}
-                      className="h-4 w-4 rounded border-slate-300"
-                    />
-                    <span className="font-semibold">
-                      {branch.name}
-                    </span>
-                  </label>
-                ))}
+{activeBranches.map((branch) => (
+  <label
+    key={branch.id}
+    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
+      hasBranchExcess
+        ? selectedBranchesToKeep.includes(branch.id)
+          ? "border-emerald-300/25 bg-emerald-500/12 text-emerald-50"
+          : "border-rose-300/25 bg-rose-500/12 text-rose-50"
+        : "border-white/10 bg-white/6 text-white"
+    }`}
+  >
+    <input
+      type="checkbox"
+      checked={
+        !hasBranchExcess || selectedBranchesToKeep.includes(branch.id)
+      }
+      onChange={() => toggleBranchSelection(branch.id)}
+      disabled={!hasBranchExcess}
+      className="h-4 w-4 rounded border-slate-300"
+    />
+    <span className="font-semibold">{branch.name}</span>
+  </label>
+))}
               </div>
             )}
           </Panel>
