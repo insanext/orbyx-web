@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 
 type BookingField = {
@@ -47,11 +46,6 @@ type SpecialDate = {
   end_time: string;
 };
 
-type BranchItem = {
-  id: string;
-  name: string;
-};
-
 const days = [
   "Domingo",
   "Lunes",
@@ -72,10 +66,6 @@ export default function BusinessPage() {
     "";
 
   const [tenantId, setTenantId] = useState("");
-  const [branches, setBranches] = useState<BranchItem[]>([]);
-  const [selectedBranchId, setSelectedBranchId] = useState("");
-  const [loadingBranches, setLoadingBranches] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingHours, setSavingHours] = useState(false);
@@ -106,10 +96,8 @@ export default function BusinessPage() {
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
 
-  const surfaceClass =
-    "rounded-2xl border px-4 py-3 shadow-sm";
-  const softCardClass =
-    "rounded-2xl border p-4";
+  const surfaceClass = "rounded-2xl border px-4 py-3 shadow-sm";
+  const softCardClass = "rounded-2xl border p-4";
   const inputClass =
     "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
   const textareaClass =
@@ -146,7 +134,6 @@ export default function BusinessPage() {
         }
 
         setTenantId(data.business.id);
-        await loadBranches(data.business.id);
         setGoogleConnected(Boolean(data.google_connected));
 
         setForm({
@@ -331,34 +318,6 @@ export default function BusinessPage() {
     } catch (err) {
       console.error("Error cargando fechas especiales", err);
       setSpecialDates([]);
-    }
-  }
-
-  async function loadBranches(currentTenantId: string) {
-    try {
-      setLoadingBranches(true);
-
-      const res = await fetch(
-        `https://orbyx-backend.onrender.com/branches?tenant_id=${currentTenantId}`
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Error cargando sucursales");
-      }
-
-      const rows = Array.isArray(data.branches) ? data.branches : [];
-      setBranches(rows);
-
-      if (rows.length === 1) {
-        setSelectedBranchId(rows[0].id);
-      }
-    } catch (err) {
-      console.error("Error cargando branches", err);
-      setBranches([]);
-    } finally {
-      setLoadingBranches(false);
     }
   }
 
@@ -614,71 +573,83 @@ export default function BusinessPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Negocio"
-        title="Datos del negocio"
-        description="Actualiza la información principal, horarios, fechas especiales y campos que pedirás al cliente al reservar."
-      />
-
-      <Panel
-        title="Sucursales"
-        description="Gestiona y selecciona la sucursal con la que estás trabajando."
-        className="bg-[linear-gradient(135deg,rgba(37,99,235,0.12),rgba(14,165,233,0.06))]"
+      <section
+        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+        style={{
+          borderColor: "rgba(59,130,246,0.25)",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+        }}
       >
-        {loadingBranches ? (
-          <div
-            className={surfaceClass}
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-soft)",
-              color: "var(--text-muted)",
-            }}
-          >
-            Cargando sucursales...
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Negocio
+            </p>
+
+            <h1
+              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+              style={{ color: "var(--text-main)" }}
+            >
+              Datos del negocio
+            </h1>
+
+            <p
+              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Actualiza la información principal, horarios, fechas especiales y
+              campos que pedirás al cliente al reservar.
+            </p>
           </div>
-        ) : branches.length === 0 ? (
+
           <div
-            className={surfaceClass}
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-soft)",
-              color: "var(--text-muted)",
-            }}
+            className="grid gap-3 sm:grid-cols-2"
+            style={{ color: "var(--text-main)" }}
           >
-            No hay sucursales creadas aún.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              className={selectClass}
+            <div
+              className="rounded-2xl border px-4 py-3"
               style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-card)",
-                color: "var(--text-main)",
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
               }}
             >
-              <option value="">Selecciona una sucursal</option>
-
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-
-            {selectedBranchId ? (
-              <div
-                className="text-xs"
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
                 style={{ color: "var(--text-muted)" }}
               >
-                Trabajando sobre esta sucursal.
-              </div>
-            ) : null}
+                URL pública
+              </p>
+              <p className="mt-2 break-all text-sm font-semibold">{publicUrl}</p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Google Calendar
+              </p>
+              <p className="mt-2 text-sm font-semibold">
+                {loading
+                  ? "Cargando..."
+                  : googleConnected
+                  ? "Conectado"
+                  : "Pendiente"}
+              </p>
+            </div>
           </div>
-        )}
-      </Panel>
+        </div>
+      </section>
 
       {loadError ? (
         <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
@@ -686,7 +657,7 @@ export default function BusinessPage() {
         </div>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Panel
           title="Información principal"
           description="Edita los datos que verán tus clientes y que también podrá usar la IA."
@@ -1077,244 +1048,246 @@ export default function BusinessPage() {
         </Panel>
       </section>
 
-      <Panel
-        title="Campos de reserva"
-        description="Define qué información solicitar al cliente al reservar."
-        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
-      >
-        <div className="space-y-4">
-          {bookingFields.length === 0 ? (
+      <section className="grid gap-6 xl:grid-cols-2">
+        <Panel
+          title="Campos de reserva"
+          description="Define qué información solicitar al cliente al reservar."
+          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
+        >
+          <div className="space-y-4">
+            {bookingFields.length === 0 ? (
+              <div
+                className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                No hay campos configurables cargados aún.
+              </div>
+            ) : (
+              bookingFields.map((field, index) => (
+                <div
+                  key={field.key}
+                  className="flex items-center justify-between rounded-2xl border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background:
+                      "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                  }}
+                >
+                  <div>
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {field.label}
+                    </p>
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {field.enabled
+                        ? field.required
+                          ? "Obligatorio"
+                          : "Opcional"
+                        : "Desactivado"}
+                    </p>
+                  </div>
+
+                  <div
+                    className="flex items-center gap-4 text-sm"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={field.enabled}
+                        onChange={(e) =>
+                          updateBookingField(index, "enabled", e.target.checked)
+                        }
+                      />
+                      Activo
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={field.required}
+                        disabled={!field.enabled}
+                        onChange={(e) =>
+                          updateBookingField(index, "required", e.target.checked)
+                        }
+                      />
+                      Obligatorio
+                    </label>
+                  </div>
+                </div>
+              ))
+            )}
+
+            <button
+              onClick={saveBookingFields}
+              disabled={savingFields}
+              className={primaryButtonClass}
+              style={{
+                background:
+                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+              }}
+            >
+              {savingFields ? "Guardando..." : "Guardar campos"}
+            </button>
+          </div>
+        </Panel>
+
+        <Panel
+          title="Horarios de atención"
+          description="Define cuándo tu negocio está disponible para recibir reservas."
+          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+        >
+          <div
+            className="overflow-hidden rounded-2xl border"
+            style={{ borderColor: "var(--border-color)" }}
+          >
             <div
-              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              className="grid grid-cols-[120px_80px_1fr_30px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
               style={{
                 borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
+                background:
+                  "linear-gradient(135deg, rgba(37,99,235,0.12), var(--bg-soft))",
                 color: "var(--text-muted)",
               }}
             >
-              No hay campos configurables cargados aún.
+              <div>Día</div>
+              <div>Activo</div>
+              <div>Inicio</div>
+              <div></div>
+              <div>Fin</div>
             </div>
-          ) : (
-            bookingFields.map((field, index) => (
-              <div
-                key={field.key}
-                className="flex items-center justify-between rounded-2xl border p-4"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background:
-                    "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
-                }}
-              >
-                <div>
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "var(--text-main)" }}
+
+            <div
+              className="divide-y"
+              style={{ borderColor: "var(--border-color)" }}
+            >
+              {displayOrder.map((dayIndex) => {
+                const h =
+                  businessHours.find((d) => d.day_of_week === dayIndex) || {
+                    day_of_week: dayIndex,
+                    enabled: false,
+                    start_time: "09:00",
+                    end_time: "18:00",
+                  };
+
+                const startValid = isValidTime(h.start_time);
+                const endValid = isValidTime(h.end_time);
+
+                return (
+                  <div
+                    key={dayIndex}
+                    className="grid grid-cols-[120px_80px_1fr_30px_1fr] items-center gap-3 px-4 py-3"
+                    style={{ background: "var(--bg-card)" }}
                   >
-                    {field.label}
-                  </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {field.enabled
-                      ? field.required
-                        ? "Obligatorio"
-                        : "Opcional"
-                      : "Desactivado"}
-                  </p>
-                </div>
+                    <div
+                      className="text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {days[dayIndex]}
+                    </div>
 
-                <div
-                  className="flex items-center gap-4 text-sm"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={field.enabled}
-                      onChange={(e) =>
-                        updateBookingField(index, "enabled", e.target.checked)
-                      }
-                    />
-                    Activo
-                  </label>
+                    <div>
+                      <input
+                        type="checkbox"
+                        checked={h.enabled}
+                        onChange={(e) =>
+                          updateHour(dayIndex, "enabled", e.target.checked)
+                        }
+                      />
+                    </div>
 
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={field.required}
-                      disabled={!field.enabled}
-                      onChange={(e) =>
-                        updateBookingField(index, "required", e.target.checked)
-                      }
-                    />
-                    Obligatorio
-                  </label>
-                </div>
-              </div>
-            ))
-          )}
+                    <div>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="09:00"
+                        value={h.start_time}
+                        onChange={(e) =>
+                          updateHour(
+                            dayIndex,
+                            "start_time",
+                            normalizeTimeInput(e.target.value)
+                          )
+                        }
+                        disabled={!h.enabled}
+                        className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                        style={{
+                          borderColor: !h.enabled
+                            ? "var(--border-color)"
+                            : startValid
+                            ? "var(--border-color)"
+                            : "rgb(253 164 175)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                          opacity: !h.enabled ? 0.6 : 1,
+                        }}
+                      />
+                    </div>
 
-          <button
-            onClick={saveBookingFields}
-            disabled={savingFields}
-            className={primaryButtonClass}
-            style={{
-              background:
-                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-            }}
-          >
-            {savingFields ? "Guardando..." : "Guardar campos"}
-          </button>
-        </div>
-      </Panel>
+                    <div
+                      className="text-center"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      —
+                    </div>
 
-      <Panel
-        title="Horarios de atención"
-        description="Define cuándo tu negocio está disponible para recibir reservas."
-        className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
-      >
-        <div
-          className="overflow-hidden rounded-2xl border"
-          style={{ borderColor: "var(--border-color)" }}
-        >
-          <div
-            className="grid grid-cols-[160px_90px_1fr_40px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
-            style={{
-              borderColor: "var(--border-color)",
-              background:
-                "linear-gradient(135deg, rgba(37,99,235,0.12), var(--bg-soft))",
-              color: "var(--text-muted)",
-            }}
-          >
-            <div>Día</div>
-            <div>Activo</div>
-            <div>Inicio</div>
-            <div></div>
-            <div>Fin</div>
+                    <div>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="18:00"
+                        value={h.end_time}
+                        onChange={(e) =>
+                          updateHour(
+                            dayIndex,
+                            "end_time",
+                            normalizeTimeInput(e.target.value)
+                          )
+                        }
+                        disabled={!h.enabled}
+                        className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                        style={{
+                          borderColor: !h.enabled
+                            ? "var(--border-color)"
+                            : endValid
+                            ? "var(--border-color)"
+                            : "rgb(253 164 175)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                          opacity: !h.enabled ? 0.6 : 1,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div
-            className="divide-y"
-            style={{ borderColor: "var(--border-color)" }}
-          >
-            {displayOrder.map((dayIndex) => {
-              const h =
-                businessHours.find((d) => d.day_of_week === dayIndex) || {
-                  day_of_week: dayIndex,
-                  enabled: false,
-                  start_time: "09:00",
-                  end_time: "18:00",
-                };
-
-              const startValid = isValidTime(h.start_time);
-              const endValid = isValidTime(h.end_time);
-
-              return (
-                <div
-                  key={dayIndex}
-                  className="grid grid-cols-[160px_90px_1fr_40px_1fr] items-center gap-3 px-4 py-3"
-                  style={{ background: "var(--bg-card)" }}
-                >
-                  <div
-                    className="text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    {days[dayIndex]}
-                  </div>
-
-                  <div>
-                    <input
-                      type="checkbox"
-                      checked={h.enabled}
-                      onChange={(e) =>
-                        updateHour(dayIndex, "enabled", e.target.checked)
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="09:00"
-                      value={h.start_time}
-                      onChange={(e) =>
-                        updateHour(
-                          dayIndex,
-                          "start_time",
-                          normalizeTimeInput(e.target.value)
-                        )
-                      }
-                      disabled={!h.enabled}
-                      className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                      style={{
-                        borderColor: !h.enabled
-                          ? "var(--border-color)"
-                          : startValid
-                          ? "var(--border-color)"
-                          : "rgb(253 164 175)",
-                        background: "var(--bg-soft)",
-                        color: "var(--text-main)",
-                        opacity: !h.enabled ? 0.6 : 1,
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    className="text-center"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    —
-                  </div>
-
-                  <div>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="18:00"
-                      value={h.end_time}
-                      onChange={(e) =>
-                        updateHour(
-                          dayIndex,
-                          "end_time",
-                          normalizeTimeInput(e.target.value)
-                        )
-                      }
-                      disabled={!h.enabled}
-                      className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                      style={{
-                        borderColor: !h.enabled
-                          ? "var(--border-color)"
-                          : endValid
-                          ? "var(--border-color)"
-                          : "rgb(253 164 175)",
-                        background: "var(--bg-soft)",
-                        color: "var(--text-main)",
-                        opacity: !h.enabled ? 0.6 : 1,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              onClick={saveBusinessHours}
+              disabled={savingHours}
+              className={primaryButtonClass}
+              style={{
+                background:
+                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+              }}
+            >
+              {savingHours ? "Guardando..." : "Guardar horarios"}
+            </button>
           </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            onClick={saveBusinessHours}
-            disabled={savingHours}
-            className={primaryButtonClass}
-            style={{
-              background:
-                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-            }}
-          >
-            {savingHours ? "Guardando..." : "Guardar horarios"}
-          </button>
-        </div>
-      </Panel>
+        </Panel>
+      </section>
 
       <Panel
         title="Fechas especiales"
