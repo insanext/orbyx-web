@@ -1384,15 +1384,18 @@ export default function StaffPage() {
 
               {form.use_business_hours ? (
 
-<div className="rounded-2xl px-4 py-4 shadow-sm
-  border border-emerald-400/60
-  bg-gradient-to-r from-emerald-200 to-emerald-100
-  dark:from-emerald-500/20 dark:to-emerald-500/10"
+<div
+  className="rounded-2xl px-4 py-4 border shadow-sm"
+  style={{
+    background: "rgba(59,130,246,0.10)", // MISMO estilo azul suave
+    borderColor: "rgba(16,185,129,0.6)", // borde verde más fuerte
+    boxShadow: "0 0 0 1px rgba(16,185,129,0.25)",
+  }}
 >
-  <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-200">
+  <p className="text-sm font-semibold text-slate-900">
     Este staff usará el horario general del negocio.
   </p>
-  <p className="mt-1 text-sm text-emerald-900 dark:text-emerald-100/80">
+  <p className="mt-1 text-sm text-slate-700">
     El editor de horarios propios queda oculto para evitar configuraciones duplicadas.
   </p>
 </div>
@@ -1644,12 +1647,17 @@ export default function StaffPage() {
 
                 {!editingId ? (
 
-<div className="rounded-2xl px-4 py-3 text-sm font-medium shadow-sm
-  border border-amber-400/60
-  bg-gradient-to-r from-amber-200 to-amber-100 text-amber-950
-  dark:from-amber-500/20 dark:to-amber-500/10 dark:text-amber-200"
+<div
+  className="rounded-2xl px-4 py-3 border shadow-sm"
+  style={{
+    background: "rgba(59,130,246,0.08)",
+    borderColor: "rgba(245,158,11,0.7)",
+    boxShadow: "0 0 0 1px rgba(245,158,11,0.25)",
+  }}
 >
-  Primero crea o guarda el staff para poder administrar sus excepciones.
+  <p className="text-sm font-medium text-slate-900">
+    Primero crea o guarda el staff para poder administrar sus excepciones.
+  </p>
 </div>
                 ) : (
                   <div className="space-y-4">
@@ -1917,26 +1925,29 @@ export default function StaffPage() {
 
               <div className="space-y-3 pt-2">
                 {!editingId && reachedLimit ? (
-<div className="rounded-2xl px-4 py-4 text-sm shadow-md
-  border border-amber-500/70
-  bg-gradient-to-r from-amber-300 to-amber-200
-  dark:from-amber-500/20 dark:to-amber-500/10"
+<div
+  className="rounded-2xl px-4 py-4 border shadow-sm"
+  style={{
+    background: "rgba(59,130,246,0.08)",
+    borderColor: "rgba(249,115,22,0.8)",
+    boxShadow: "0 0 0 1px rgba(249,115,22,0.3)",
+  }}
 >
-  <p className="font-semibold text-amber-950 dark:text-amber-100">
+  <p className="font-semibold text-slate-900">
     Llegaste al límite de profesionales de tu plan
   </p>
 
-  <p className="mt-1 text-amber-900 dark:text-amber-100/90">
+  <p className="mt-1 text-slate-700">
     Ya usaste {activeCount} de {caps.max_staff} profesionales disponibles.
   </p>
 
-  <p className="mt-1 text-amber-900 dark:text-amber-100/90">
+  <p className="mt-1 text-slate-700">
     Agrega más profesionales o mejora tu plan para seguir creciendo.
   </p>
 
   <Link
     href={`/planes?current_plan=${plan}&from=staff&slug=${slug}&tenant_id=${tenantId}`}
-    className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.03]"
+    className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.02]"
     style={{
       background: "linear-gradient(135deg, rgb(37 99 235), rgb(168 85 247))",
     }}
