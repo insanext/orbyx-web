@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { PageHeader } from "../../../../../components/dashboard/page-header";
-import { Panel } from "../../../../../components/dashboard/panel";
-import { StatCard } from "../../../../../components/dashboard/stat-card";
+import { PageHeader } from "../../../../components/dashboard/page-header";
+import { Panel } from "../../../../components/dashboard/panel";
+import { StatCard } from "../../../../components/dashboard/stat-card";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
