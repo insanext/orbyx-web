@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
-import { StatCard } from "../../../../components/dashboard/stat-card";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -55,6 +53,14 @@ type ServiceItem = {
   price?: number | null;
   active: boolean;
 };
+
+type NoticeTone =
+  | "info"
+  | "success"
+  | "warning"
+  | "limit"
+  | "danger"
+  | "neutral";
 
 const PLAN_LABELS: Record<string, string> = {
   pro: "Pro",
@@ -121,6 +127,97 @@ function getRemainingDaysNumber(endDate?: string | null) {
   return Math.ceil(diffDays);
 }
 
+function getNoticeStyles(tone: NoticeTone): {
+  wrapper: CSSProperties;
+  title: CSSProperties;
+  description: CSSProperties;
+} {
+  const tones: Record<
+    NoticeTone,
+    { border: string; background: string; text: string }
+  > = {
+    info: {
+      border: "rgba(34,197,94,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.05))",
+      text: "var(--text-main)",
+    },
+    success: {
+      border: "rgba(16,185,129,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.05))",
+      text: "var(--text-main)",
+    },
+    warning: {
+      border: "rgba(245,158,11,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.05))",
+      text: "var(--text-main)",
+    },
+    limit: {
+      border: "rgba(249,115,22,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.05))",
+      text: "var(--text-main)",
+    },
+    danger: {
+      border: "rgba(244,63,94,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(244,63,94,0.12), rgba(244,63,94,0.05))",
+      text: "var(--text-main)",
+    },
+    neutral: {
+      border: "var(--border-color)",
+      background: "var(--bg-soft)",
+      text: "var(--text-main)",
+    },
+  };
+
+  const current = tones[tone];
+
+  return {
+    wrapper: {
+      borderColor: current.border,
+      background: current.background,
+      boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px ${current.border}`,
+    },
+    title: {
+      color: current.text,
+    },
+    description: {
+      color: "var(--text-muted)",
+    },
+  };
+}
+
+function Notice({
+  tone,
+  title,
+  description,
+  children,
+}: {
+  tone: NoticeTone;
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+}) {
+  const styles = getNoticeStyles(tone);
+
+  return (
+    <div className="rounded-2xl border px-4 py-4 shadow-sm" style={styles.wrapper}>
+      <p className="text-sm font-semibold" style={styles.title}>
+        {title}
+      </p>
+      {description ? (
+        <p className="mt-1 text-sm leading-6" style={styles.description}>
+          {description}
+        </p>
+      ) : null}
+      {children ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
+}
+
 export default function BillingPage() {
   const params = useParams();
   const slug =
@@ -141,8 +238,12 @@ export default function BillingPage() {
   const [services, setServices] = useState<ServiceItem[]>([]);
 
   const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
-  const [selectedServicesToKeep, setSelectedServicesToKeep] = useState<string[]>([]);
-  const [selectedBranchesToKeep, setSelectedBranchesToKeep] = useState<string[]>([]);
+  const [selectedServicesToKeep, setSelectedServicesToKeep] = useState<string[]>(
+    []
+  );
+  const [selectedBranchesToKeep, setSelectedBranchesToKeep] = useState<string[]>(
+    []
+  );
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -361,21 +462,21 @@ export default function BillingPage() {
       setSaveError("");
       setSaveOk("");
 
-const branchesToDeactivate = hasBranchExcess
-  ? activeBranches.filter(
-      (branch) => !selectedBranchesToKeep.includes(branch.id)
-    )
-  : [];
+      const branchesToDeactivate = hasBranchExcess
+        ? activeBranches.filter(
+            (branch) => !selectedBranchesToKeep.includes(branch.id)
+          )
+        : [];
 
-const staffToDeactivate = hasStaffExcess
-  ? activeStaff.filter((item) => !selectedStaffToKeep.includes(item.id))
-  : [];
+      const staffToDeactivate = hasStaffExcess
+        ? activeStaff.filter((item) => !selectedStaffToKeep.includes(item.id))
+        : [];
 
-const servicesToDeactivate = hasServicesExcess
-  ? activeServices.filter(
-      (item) => !selectedServicesToKeep.includes(item.id)
-    )
-  : [];
+      const servicesToDeactivate = hasServicesExcess
+        ? activeServices.filter(
+            (item) => !selectedServicesToKeep.includes(item.id)
+          )
+        : [];
 
       if (
         branchesToDeactivate.length === 0 &&
@@ -481,296 +582,371 @@ const servicesToDeactivate = hasServicesExcess
     remainingDaysNumber <= 2;
 
   return (
-    <div className="space-y-6 rounded-[28px] bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.12),_transparent_30%),linear-gradient(180deg,_#0f172a_0%,_#111827_42%,_#0b1120_100%)] p-4 sm:p-6">
-      <PageHeader
-        eyebrow="Billing"
-        title={loading ? "Cargando ajustes..." : "Ajustar plan"}
-        description={
-          loading
-            ? "Cargando información del negocio..."
-            : `Centraliza aquí los ajustes del plan de ${businessName}.`
-        }
-        actions={
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={`/planes?current_plan=${plan}&from=billing&slug=${slug}&tenant_id=${tenantId}`}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-5 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/15"
+    <div className="space-y-6 pb-6">
+      <section
+        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+        style={{
+          borderColor: "rgba(34,197,94,0.25)",
+          background:
+            "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(16,185,129,0.06) 35%, var(--bg-card) 85%)",
+        }}
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
+              style={{ color: "var(--text-muted)" }}
             >
-              Ver planes
-            </Link>
+              Billing
+            </p>
 
-            <button
-              type="button"
-              onClick={() => loadAll()}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-white px-5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+            <h1
+              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+              style={{ color: "var(--text-main)" }}
             >
-              Recargar
-            </button>
+              Ajustar plan
+            </h1>
+
+            <p
+              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {loading
+                ? "Cargando información del negocio..."
+                : `Gestiona el plan y los límites de ${businessName}.`}
+            </p>
           </div>
-        }
-      />
 
-      {loadError ? (
-        <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100 shadow-sm backdrop-blur-sm">
-          {loadError}
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(34,197,94,0.22)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Plan actual
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : planLabel}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(34,197,94,0.22)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Próxima renovación
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : formatDate(billingCycleEnd)}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(34,197,94,0.22)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Cambio programado
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : scheduledPlanLabel || "Sin cambio"}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(34,197,94,0.22)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Problemas detectados
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : hasAnyExcess ? "Sí" : "No"}
+              </p>
+            </div>
+          </div>
         </div>
-      ) : null}
 
-      {saveError ? (
-        <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100 shadow-sm backdrop-blur-sm">
-          {saveError}
-        </div>
-      ) : null}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href={`/planes?current_plan=${plan}&from=billing&slug=${slug}&tenant_id=${tenantId}`}
+            className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            Ver planes
+          </Link>
 
-      {saveOk ? (
-        <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100 shadow-sm backdrop-blur-sm">
-          {saveOk}
-        </div>
-      ) : null}
-
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-xl [&>div]:backdrop-blur-md [&_p]:text-slate-300 [&_span]:text-slate-300">
-          <StatCard
-            label="Plan actual"
-            value={loading ? "..." : planLabel}
-            helper="Plan activo del negocio."
-          />
-        </div>
-
-        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-xl [&>div]:backdrop-blur-md [&_p]:text-slate-300 [&_span]:text-slate-300">
-          <StatCard
-            label="Próxima renovación"
-            value={loading ? "..." : formatDate(billingCycleEnd)}
-            helper={loading ? "..." : `Te quedan ${formatRemainingDays(billingCycleEnd)}`}
-          />
-        </div>
-
-        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-xl [&>div]:backdrop-blur-md [&_p]:text-slate-300 [&_span]:text-slate-300">
-          <StatCard
-            label="Cambio programado"
-            value={loading ? "..." : scheduledPlanLabel || "Sin cambio"}
-            helper={
-              loading
-                ? "..."
-                : scheduledPlanLabel
-                ? `${pendingChangeType || "change"} · ${formatDate(
-                    scheduledChangeAt
-                  )}`
-                : "No hay downgrade programado"
-            }
-          />
-        </div>
-
-        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-xl [&>div]:backdrop-blur-md [&_p]:text-slate-300 [&_span]:text-slate-300">
-          <StatCard
-            label="Problemas detectados"
-            value={loading ? "..." : hasAnyExcess ? "Sí" : "No"}
-            helper={
-              loading
-                ? "..."
-                : hasAnyExcess
-                ? "Debes ajustar antes del próximo ciclo."
-                : "Todo está dentro del límite del plan."
-            }
-          />
+          <button
+            type="button"
+            onClick={() => loadAll()}
+            className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(34 197 94), rgb(16 185 129))",
+            }}
+          >
+            Recargar
+          </button>
         </div>
       </section>
 
-{hasAnyExcess ? (
-  <div
-    className={`rounded-3xl p-5 text-sm shadow-[0_20px_60px_rgba(15,23,42,0.35)] backdrop-blur-xl ${
-      isUrgentAdjustment
-        ? "border border-rose-400/30 bg-rose-500/12 text-rose-100"
-        : "border border-amber-400/25 bg-amber-500/10 text-amber-100"
-    }`}
-  >
-    <p className="text-base font-semibold text-white">
-      Tu negocio está sobre el límite del plan
-    </p>
+      {loadError ? <Notice tone="danger" title={loadError} /> : null}
+      {saveError ? <Notice tone="danger" title={saveError} /> : null}
+      {saveOk ? <Notice tone="success" title={saveOk} /> : null}
 
-    <p className="mt-2 text-sm text-slate-300">
-      Selecciona qué elementos quieres conservar. Los no seleccionados serán desactivados automáticamente.
-    </p>
-
-    <div className="mt-3 space-y-2">
-            {hasBranchExcess ? (
-              <div>• Sucursales en exceso: {excessBranches}</div>
-            ) : null}
-            {hasStaffExcess ? (
-              <div>• Staff en exceso: {excessStaff}</div>
-            ) : null}
-            {hasServicesExcess ? (
-              <div>• Servicios en exceso: {excessServices}</div>
-            ) : null}
+      {hasAnyExcess ? (
+        <Notice
+          tone={isUrgentAdjustment ? "danger" : "limit"}
+          title="Tu negocio está sobre el límite del plan."
+          description="Selecciona qué elementos quieres conservar. Los no seleccionados serán desactivados automáticamente."
+        >
+          <div className="space-y-1 text-sm" style={{ color: "var(--text-main)" }}>
+            {hasBranchExcess ? <div>• Sucursales en exceso: {excessBranches}</div> : null}
+            {hasStaffExcess ? <div>• Staff en exceso: {excessStaff}</div> : null}
+            {hasServicesExcess ? <div>• Servicios en exceso: {excessServices}</div> : null}
           </div>
 
-          <div
-            className={`mt-4 rounded-2xl px-4 py-3 text-sm ${
-              isUrgentAdjustment
-                ? "border border-rose-300/30 bg-rose-500/12 text-rose-50"
-                : "border border-amber-300/20 bg-amber-500/10 text-amber-50"
-            }`}
-          >
-            {isUrgentAdjustment ? (
-              <>
-                Te quedan <span className="font-semibold">{remainingDaysNumber}</span>{" "}
-                días para ajustar staff, servicios y sucursales antes del cambio
-                de plan. Si no lo haces a tiempo, el sistema deberá aplicar el
-                downgrade con bloqueo automático de excedentes.
-              </>
-            ) : (
-              <>
-                Ajusta estos elementos antes del{" "}
-                <span className="font-semibold">
-                  {formatDate(scheduledChangeAt || billingCycleEnd)}
-                </span>{" "}
-                para que el downgrade se aplique sin problemas.
-              </>
-            )}
+          <div className="mt-4">
+            <Notice
+              tone={isUrgentAdjustment ? "danger" : "warning"}
+              title={
+                isUrgentAdjustment
+                  ? `Te quedan ${remainingDaysNumber} días para ajustar.`
+                  : "Ajusta estos elementos antes del próximo cambio."
+              }
+              description={
+                isUrgentAdjustment
+                  ? "Si no lo haces a tiempo, el sistema deberá aplicar el downgrade con bloqueo automático de excedentes."
+                  : `Ajusta antes del ${formatDate(
+                      scheduledChangeAt || billingCycleEnd
+                    )} para que el downgrade se aplique sin problemas.`
+              }
+            />
           </div>
 
           <button
             type="button"
             onClick={applyFullAdjustment}
             disabled={saving}
-            className={`mt-4 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-              isUrgentAdjustment
-                ? "bg-rose-500 text-white hover:bg-rose-400"
-                : "bg-amber-500 text-slate-950 hover:bg-amber-400"
-            }`}
+            className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              background: isUrgentAdjustment
+                ? "linear-gradient(135deg, rgb(244 63 94), rgb(225 29 72))"
+                : "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
+            }}
           >
             {saving ? "Aplicando ajuste..." : "Aplicar ajuste completo"}
           </button>
-        </div>
+        </Notice>
       ) : (
-        <div className="rounded-3xl border border-emerald-400/20 bg-emerald-500/10 p-5 text-sm text-emerald-100 shadow-[0_20px_60px_rgba(15,23,42,0.35)] backdrop-blur-xl">
-          Todo está dentro del límite de tu plan actual.
-        </div>
+        <Notice
+          tone="success"
+          title="Todo está dentro del límite de tu plan actual."
+          description="No necesitas hacer ajustes por ahora."
+        />
       )}
 
       <section className="grid gap-6 xl:grid-cols-3">
-        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-[0_20px_60px_rgba(15,23,42,0.35)] [&>div]:backdrop-blur-xl">
-<Panel
-  title="Sucursales"
-  description={`Selecciona las sucursales que deseas MANTENER activas (${activeBranches.length} / ${caps.max_branches})`}
->
-            {activeBranches.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-6 text-sm text-slate-300">
-                No hay sucursales activas.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {activeBranches.map((branch) => (
-                  <label
-                    key={branch.id}
-                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
-  hasBranchExcess
-    ? selectedBranchesToKeep.includes(branch.id)
-      ? "border-emerald-500/60 bg-emerald-700/35 text-white"
-      : "border-rose-600/60 bg-rose-800/35 text-white"
-    : "border-white/15 bg-slate-900/40 text-white"
-}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={
-                        !hasBranchExcess || selectedBranchesToKeep.includes(branch.id)
-                      }
-                      onChange={() => toggleBranchSelection(branch.id)}
-                      disabled={!hasBranchExcess}
-                      className="h-4 w-4 rounded border-slate-300"
-                    />
-                    <span className="font-semibold tracking-tight text-white">
-  {branch.name}
-</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </Panel>
-        </div>
+        <Panel
+          title="Sucursales"
+          description={`Selecciona las sucursales que deseas mantener activas (${activeBranches.length} / ${caps.max_branches})`}
+          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
+        >
+          {activeBranches.length === 0 ? (
+            <div
+              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
+              No hay sucursales activas.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeBranches.map((branch) => (
+                <label
+                  key={branch.id}
+                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                  style={{
+                    borderColor: hasBranchExcess
+                      ? selectedBranchesToKeep.includes(branch.id)
+                        ? "rgba(16,185,129,0.34)"
+                        : "rgba(244,63,94,0.34)"
+                      : "var(--border-color)",
+                    background: hasBranchExcess
+                      ? selectedBranchesToKeep.includes(branch.id)
+                        ? "rgba(16,185,129,0.10)"
+                        : "rgba(244,63,94,0.10)"
+                      : "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={
+                      !hasBranchExcess || selectedBranchesToKeep.includes(branch.id)
+                    }
+                    onChange={() => toggleBranchSelection(branch.id)}
+                    disabled={!hasBranchExcess}
+                    className="h-4 w-4 rounded"
+                  />
+                  <span className="font-semibold">{branch.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </Panel>
 
-        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-[0_20px_60px_rgba(15,23,42,0.35)] [&>div]:backdrop-blur-xl">
-          <Panel
-            title="Profesionales"
-description={`Selecciona los profesionales que deseas MANTENER activos (${activeStaff.length} / ${caps.max_staff})`}
-          >
-            {activeStaff.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-6 text-sm text-slate-300">
-                No hay staff activo.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {activeStaff.map((item) => (
-                  <label
-                    key={item.id}
-                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
-                      hasStaffExcess
-                        ? selectedStaffToKeep.includes(item.id)
-                          ? "border-emerald-300/35 bg-emerald-500/18 text-white"
-                          : "border-rose-300/35 bg-rose-500/18 text-white"
-                        : "border-white/15 bg-slate-900/40 text-white"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={
-                        !hasStaffExcess || selectedStaffToKeep.includes(item.id)
-                      }
-                      onChange={() => toggleStaffSelection(item.id)}
-                      disabled={!hasStaffExcess}
-                      className="h-4 w-4 rounded border-slate-300"
-                    />
-                    <span className="font-medium">
-                      {item.name}
-                      {item.role ? ` · ${item.role}` : ""}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </Panel>
-        </div>
+        <Panel
+          title="Profesionales"
+          description={`Selecciona los profesionales que deseas mantener activos (${activeStaff.length} / ${caps.max_staff})`}
+          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
+        >
+          {activeStaff.length === 0 ? (
+            <div
+              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
+              No hay staff activo.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeStaff.map((item) => (
+                <label
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                  style={{
+                    borderColor: hasStaffExcess
+                      ? selectedStaffToKeep.includes(item.id)
+                        ? "rgba(16,185,129,0.34)"
+                        : "rgba(244,63,94,0.34)"
+                      : "var(--border-color)",
+                    background: hasStaffExcess
+                      ? selectedStaffToKeep.includes(item.id)
+                        ? "rgba(16,185,129,0.10)"
+                        : "rgba(244,63,94,0.10)"
+                      : "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={
+                      !hasStaffExcess || selectedStaffToKeep.includes(item.id)
+                    }
+                    onChange={() => toggleStaffSelection(item.id)}
+                    disabled={!hasStaffExcess}
+                    className="h-4 w-4 rounded"
+                  />
+                  <span className="font-medium">
+                    {item.name}
+                    {item.role ? ` · ${item.role}` : ""}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </Panel>
 
-        <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-[0_20px_60px_rgba(15,23,42,0.35)] [&>div]:backdrop-blur-xl">
-          <Panel
-            title="Servicios"
-description={`Selecciona los servicios que deseas MANTENER activos (${activeServices.length} / ${caps.max_services})`}
-          >
-            {activeServices.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-6 text-sm text-slate-300">
-                No hay servicios activos.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {activeServices.map((item) => (
-                  <label
-                    key={item.id}
-                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
-                      hasServicesExcess
-                        ? selectedServicesToKeep.includes(item.id)
-                          ? "border-emerald-300/35 bg-emerald-500/18 text-white"
-                          : "border-rose-300/35 bg-rose-500/18 text-white"
-                        : "border-white/15 bg-slate-900/40 text-white"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={
-                        !hasServicesExcess ||
-                        selectedServicesToKeep.includes(item.id)
-                      }
-                      onChange={() => toggleServiceSelection(item.id)}
-                      disabled={!hasServicesExcess}
-                      className="h-4 w-4 rounded border-slate-300"
-                    />
-                    <span className="font-medium">{item.name}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </Panel>
-        </div>
+        <Panel
+          title="Servicios"
+          description={`Selecciona los servicios que deseas mantener activos (${activeServices.length} / ${caps.max_services})`}
+          className="bg-[linear-gradient(180deg,rgba(34,197,94,0.06),transparent_40%)]"
+        >
+          {activeServices.length === 0 ? (
+            <div
+              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
+              No hay servicios activos.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeServices.map((item) => (
+                <label
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                  style={{
+                    borderColor: hasServicesExcess
+                      ? selectedServicesToKeep.includes(item.id)
+                        ? "rgba(16,185,129,0.34)"
+                        : "rgba(244,63,94,0.34)"
+                      : "var(--border-color)",
+                    background: hasServicesExcess
+                      ? selectedServicesToKeep.includes(item.id)
+                        ? "rgba(16,185,129,0.10)"
+                        : "rgba(244,63,94,0.10)"
+                      : "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={
+                      !hasServicesExcess ||
+                      selectedServicesToKeep.includes(item.id)
+                    }
+                    onChange={() => toggleServiceSelection(item.id)}
+                    disabled={!hasServicesExcess}
+                    className="h-4 w-4 rounded"
+                  />
+                  <span className="font-medium">{item.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </Panel>
       </section>
     </div>
   );
