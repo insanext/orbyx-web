@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader } from "../../../components/dashboard/page-header";
 import { Panel } from "../../../components/dashboard/panel";
-import { StatCard } from "../../../components/dashboard/stat-card";
 
 type BusinessResponse = {
   business: {
@@ -17,15 +16,150 @@ type BusinessResponse = {
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
+type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
+
+const PLAN_LABELS: Record<PlanSlug, string> = {
+  starter: "Pro",
+  pro: "Pro",
+  premium: "Premium",
+  vip: "VIP",
+  platinum: "Platinum",
+};
+
+const PLAN_ORDER: Record<PlanSlug, number> = {
+  starter: 1,
+  pro: 1,
+  premium: 2,
+  vip: 3,
+  platinum: 4,
+};
+
+function normalizePlan(plan?: string): PlanSlug {
+  const value = (plan || "").toLowerCase();
+
+  if (value === "premium") return "premium";
+  if (value === "vip") return "vip";
+  if (value === "platinum") return "platinum";
+  if (value === "pro") return "pro";
+
+  return "starter";
+}
+
+function isPlanAtLeast(currentPlan: PlanSlug, requiredPlan: PlanSlug) {
+  return PLAN_ORDER[currentPlan] >= PLAN_ORDER[requiredPlan];
+}
+
+type MetricCardProps = {
+  title: string;
+  value: string;
+  description: string;
+  tone?: "default" | "success" | "warning" | "locked";
+};
+
+function MetricCard({
+  title,
+  value,
+  description,
+  tone = "default",
+}: MetricCardProps) {
+  const toneClasses =
+    tone === "success"
+      ? "border-emerald-500/30 bg-emerald-500/10"
+      : tone === "warning"
+      ? "border-amber-500/30 bg-amber-500/10"
+      : tone === "locked"
+      ? "border-slate-700 bg-slate-900/60"
+      : "border-slate-800 bg-slate-950/60";
+
+  const valueClasses =
+    tone === "success"
+      ? "text-emerald-300"
+      : tone === "warning"
+      ? "text-amber-300"
+      : tone === "locked"
+      ? "text-slate-300"
+      : "text-white";
+
+  return (
+    <div
+      className={`rounded-3xl border p-5 shadow-sm transition-all ${toneClasses}`}
+    >
+      <div className="space-y-2">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+          {title}
+        </p>
+        <p className={`text-3xl font-semibold ${valueClasses}`}>{value}</p>
+        <p className="text-sm leading-6 text-slate-400">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+type FeatureBlockProps = {
+  title: string;
+  description: string;
+  requiredPlan: PlanSlug;
+  currentPlan: PlanSlug;
+};
+
+function FeatureBlock({
+  title,
+  description,
+  requiredPlan,
+  currentPlan,
+}: FeatureBlockProps) {
+  const unlocked = isPlanAtLeast(currentPlan, requiredPlan);
+
+  return (
+    <div
+      className={`rounded-3xl border p-5 ${
+        unlocked
+          ? "border-slate-800 bg-slate-950/60"
+          : "border-amber-500/20 bg-amber-500/10"
+      }`}
+    >
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-white">{title}</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-400">{description}</p>
+        </div>
+
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            unlocked
+              ? "bg-emerald-500/15 text-emerald-300"
+              : "bg-amber-500/15 text-amber-300"
+          }`}
+        >
+          {unlocked ? "Disponible" : `Desde ${PLAN_LABELS[requiredPlan]}`}
+        </span>
+      </div>
+
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-sm text-slate-300">
+        {unlocked ? (
+          <p>
+            Este bloque ya queda habilitado visualmente para conectar métricas
+            reales del negocio cuando terminemos la integración correspondiente.
+          </p>
+        ) : (
+          <p>
+            Este espacio servirá para mostrar resultados avanzados y además
+            funcionará como gatillo de upgrade dentro del panel.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardHomePage() {
   const params = useParams();
 
   const slug =
-    ((params as any)?.slug as string) ||
-    ((params as any)?.Slug as string);
+    ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
   const [businessName, setBusinessName] = useState("");
-  const [plan, setPlan] = useState("starter");
+  const [plan, setPlan] = useState<PlanSlug>("starter");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -35,12 +169,8 @@ export default function DashboardHomePage() {
         setLoading(true);
         setError("");
 
-        const res = await fetch(
-          `${BACKEND_URL}/public/business/${slug}`
-        );
-
-        const data: BusinessResponse | { error?: string } =
-          await res.json();
+        const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+        const data: BusinessResponse | { error?: string } = await res.json();
 
         if (!res.ok) {
           throw new Error(
@@ -55,7 +185,7 @@ export default function DashboardHomePage() {
         }
 
         setBusinessName(data.business.name || "");
-        setPlan(data.business.plan_slug || "starter");
+        setPlan(normalizePlan(data.business.plan_slug));
       } catch (err: any) {
         setError(err?.message || "Error cargando dashboard");
       } finally {
@@ -68,66 +198,210 @@ export default function DashboardHomePage() {
     }
   }, [slug]);
 
+  const planLabel = useMemo(() => PLAN_LABELS[plan], [plan]);
+
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Resumen"
-        title={loading ? "Cargando..." : businessName || "Dashboard"}
-        description="Vista general de tu negocio y estado actual."
+        eyebrow="Dashboard"
+        title={loading ? "Cargando..." : businessName || "Mi negocio"}
+        description="Vista general de rendimiento, operación y crecimiento del negocio."
       />
 
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {error}
         </div>
       ) : null}
 
-      {/* Stats principales */}
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard
-          label="Plan"
-          value={loading ? "..." : plan.toUpperCase()}
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+        <MetricCard
+          title="Plan actual"
+          value={loading ? "..." : planLabel}
+          description="La visibilidad de métricas avanzadas depende del plan activo."
+          tone="success"
         />
-        <StatCard
-          label="Estado"
+        <MetricCard
+          title="Estado del panel"
           value={loading ? "..." : "Activo"}
+          description="Tu panel administrativo está operativo y listo para seguir creciendo."
         />
-        <StatCard
-          label="Módulos"
-          value={loading ? "..." : "Operativos"}
+        <MetricCard
+          title="Módulos base"
+          value={loading ? "..." : "5"}
+          description="Agenda, staff, servicios, sucursales y facturación ya están integrados visualmente."
         />
-        <StatCard
-          label="Sistema"
-          value={loading ? "..." : "OK"}
+        <MetricCard
+          title="Próximo enfoque"
+          value={loading ? "..." : "Métricas"}
+          description="El resumen fue reemplazado por una base de dashboard pensada como producto SaaS real."
+          tone="warning"
         />
       </section>
 
-      {/* Panel principal */}
       <Panel
-        title="Bienvenido a Orbyx"
-        description="Tu sistema de reservas ya está funcionando."
+        title="Resumen ejecutivo"
+        description="Base del nuevo dashboard del negocio."
       >
-        <div className="space-y-3 text-sm text-slate-600">
-          <p>
-            Desde aquí puedes gestionar tu agenda, staff, servicios y sucursales.
-          </p>
-          <p>
-            Usa el menú lateral para navegar entre los distintos módulos del sistema.
-          </p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <MetricCard
+            title="Reservas de hoy"
+            value="—"
+            description="Aquí mostraremos las reservas creadas para el día actual."
+          />
+          <MetricCard
+            title="Reservas de la semana"
+            value="—"
+            description="Bloque pensado para medir el movimiento semanal del negocio."
+          />
+          <MetricCard
+            title="Próximas reservas"
+            value="—"
+            description="Servirá para mostrar actividad inmediata y carga operativa."
+          />
+          <MetricCard
+            title="Atendidas"
+            value="—"
+            description="Contador de citas completadas para seguimiento operacional."
+          />
+          <MetricCard
+            title="Canceladas"
+            value="—"
+            description="Métrica clave para detectar fricción o pérdida de agenda."
+          />
+          <MetricCard
+            title="No show"
+            value="—"
+            description="Indicador importante para control de ausencias y optimización."
+          />
         </div>
       </Panel>
 
-      {/* Próximos pasos */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+        <Panel
+          title="Prioridades del dashboard"
+          description="Orden recomendado para seguir construyendo esta página."
+        >
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Fase 1 · Operación
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-slate-300">
+                Conectar reservas de hoy, semana, atendidas, canceladas, no show
+                y próximas reservas desde agenda.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Fase 2 · Rendimiento
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-slate-300">
+                Agregar comparación semanal, horas más demandadas, rendimiento
+                por profesional y comportamiento por sucursal.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Fase 3 · Marketing y automatización
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-slate-300">
+                Incorporar impacto de campañas por email, campañas por WhatsApp,
+                recuperación de clientes y más adelante resultados de IA.
+              </p>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel
+          title="Visión del producto"
+          description="Cómo debe crecer este panel."
+        >
+          <div className="space-y-3 text-sm leading-6 text-slate-300">
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+              Dashboard = métricas y decisiones del negocio.
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+              Campañas = administración de envíos por email y WhatsApp.
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+              WhatsApp = bandeja, automatizaciones e IA más adelante.
+            </div>
+          </div>
+        </Panel>
+      </div>
+
       <Panel
-        title="Siguientes pasos"
-        description="Para sacarle el máximo provecho a Orbyx."
+        title="Bloques avanzados por plan"
+        description="Estos espacios quedan listos para activarse visualmente según el plan."
       >
-        <ul className="space-y-2 text-sm text-slate-600">
-          <li>• Configura tu staff por sucursal</li>
-          <li>• Define servicios por sucursal</li>
-          <li>• Revisa tu agenda y estados de citas</li>
-          <li>• Conecta automatizaciones (WhatsApp / IA)</li>
-        </ul>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <FeatureBlock
+            title="Comparación semanal"
+            description="Evolución de reservas respecto a la semana anterior y tendencia general del negocio."
+            requiredPlan="premium"
+            currentPlan={plan}
+          />
+          <FeatureBlock
+            title="Campañas y canales"
+            description="Reservas generadas por web, email y WhatsApp para medir impacto comercial."
+            requiredPlan="vip"
+            currentPlan={plan}
+          />
+          <FeatureBlock
+            title="IA y recuperación"
+            description="Clientes reactivados, conversaciones asistidas y conversión atribuida a automatización."
+            requiredPlan="platinum"
+            currentPlan={plan}
+          />
+        </div>
+      </Panel>
+
+      <Panel
+        title="Qué sigue después"
+        description="Ruta recomendada para no mezclar módulos."
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+              01
+            </p>
+            <h3 className="mt-2 text-base font-semibold text-white">
+              Conectar agenda
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Primero aterrizamos métricas reales del negocio desde appointments.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+              02
+            </p>
+            <h3 className="mt-2 text-base font-semibold text-white">
+              Crear campañas
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Luego construimos una página separada para campañas por email y
+              WhatsApp.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+              03
+            </p>
+            <h3 className="mt-2 text-base font-semibold text-white">
+              Activar IA
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              La IA después entra como capa premium, no como mezcla dentro del
+              dashboard.
+            </p>
+          </div>
+        </div>
       </Panel>
     </div>
   );
