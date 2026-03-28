@@ -1383,13 +1383,15 @@ export default function StaffPage() {
               </div>
 
               {form.use_business_hours ? (
-<div className="rounded-2xl border border-emerald-400/60 bg-emerald-500/12 px-4 py-4">
-  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+<div className="rounded-2xl border px-4 py-4
+  border-slate-200 bg-slate-50
+  dark:border-emerald-400/40 dark:bg-emerald-500/10"
+>
+  <p className="text-sm font-semibold text-slate-800 dark:text-emerald-200">
     Este staff usará el horario general del negocio.
   </p>
-  <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-100/90">
-    El editor de horarios propios queda oculto para evitar
-    configuraciones duplicadas.
+  <p className="mt-1 text-sm text-slate-600 dark:text-emerald-100/80">
+    El editor de horarios propios queda oculto para evitar configuraciones duplicadas.
   </p>
 </div>
               ) : (
@@ -1639,9 +1641,11 @@ export default function StaffPage() {
                 </div>
 
                 {!editingId ? (
-<div className="rounded-2xl border border-amber-400/60 bg-amber-500/12 px-4 py-3 text-sm font-medium text-amber-800 dark:text-amber-200">
-  Primero crea o guarda el staff para poder administrar sus
-  excepciones.
+<div className="rounded-2xl border px-4 py-3 text-sm font-medium
+  border-slate-200 bg-slate-50 text-slate-700
+  dark:border-amber-400/50 dark:bg-amber-500/10 dark:text-amber-200"
+>
+  Primero crea o guarda el staff para poder administrar sus excepciones.
 </div>
                 ) : (
                   <div className="space-y-4">
@@ -1909,14 +1913,19 @@ export default function StaffPage() {
 
               <div className="space-y-3 pt-2">
                 {!editingId && reachedLimit ? (
-<div className="rounded-2xl border border-amber-400/60 bg-amber-500/12 px-4 py-4 text-sm">
-  <p className="font-semibold text-amber-900 dark:text-amber-100">
+<div className="rounded-2xl border px-4 py-4 text-sm
+  border-slate-200 bg-slate-50
+  dark:border-amber-400/50 dark:bg-amber-500/10"
+>
+  <p className="font-semibold text-slate-900 dark:text-amber-100">
     Llegaste al límite de profesionales de tu plan
   </p>
-  <p className="mt-1 text-amber-800 dark:text-amber-100/90">
+
+  <p className="mt-1 text-slate-700 dark:text-amber-100/90">
     Ya usaste {activeCount} de {caps.max_staff} profesionales disponibles.
   </p>
-  <p className="mt-1 text-amber-800 dark:text-amber-100/90">
+
+  <p className="mt-1 text-slate-700 dark:text-amber-100/90">
     Agrega más profesionales o mejora tu plan para seguir creciendo.
   </p>
 
@@ -1924,8 +1933,7 @@ export default function StaffPage() {
     href={`/planes?current_plan=${plan}&from=staff&slug=${slug}&tenant_id=${tenantId}`}
     className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.02]"
     style={{
-      background:
-        "linear-gradient(135deg, rgb(37 99 235), rgb(168 85 247))",
+      background: "linear-gradient(135deg, rgb(37 99 235), rgb(168 85 247))",
     }}
   >
     Mejora tu plan
