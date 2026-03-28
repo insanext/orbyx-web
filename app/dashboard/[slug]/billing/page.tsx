@@ -361,17 +361,21 @@ export default function BillingPage() {
       setSaveError("");
       setSaveOk("");
 
-      const branchesToDeactivate = activeBranches.filter(
-        (branch) => !selectedBranchesToKeep.includes(branch.id)
-      );
+const branchesToDeactivate = hasBranchExcess
+  ? activeBranches.filter(
+      (branch) => !selectedBranchesToKeep.includes(branch.id)
+    )
+  : [];
 
-      const staffToDeactivate = activeStaff.filter(
-        (item) => !selectedStaffToKeep.includes(item.id)
-      );
+const staffToDeactivate = hasStaffExcess
+  ? activeStaff.filter((item) => !selectedStaffToKeep.includes(item.id))
+  : [];
 
-      const servicesToDeactivate = activeServices.filter(
-        (item) => !selectedServicesToKeep.includes(item.id)
-      );
+const servicesToDeactivate = hasServicesExcess
+  ? activeServices.filter(
+      (item) => !selectedServicesToKeep.includes(item.id)
+    )
+  : [];
 
       if (
         branchesToDeactivate.length === 0 &&
