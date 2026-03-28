@@ -57,7 +57,6 @@ type ServiceItem = {
 };
 
 const PLAN_LABELS: Record<string, string> = {
-  starter: "Starter",
   pro: "Pro",
   premium: "Premium",
   vip: "VIP",
@@ -68,12 +67,20 @@ const PLAN_CAPS: Record<
   string,
   { max_staff: number; max_services: number; max_branches: number }
 > = {
-  starter: { max_staff: 2, max_services: 10, max_branches: 1 },
   pro: { max_staff: 2, max_services: 10, max_branches: 1 },
   premium: { max_staff: 5, max_services: 25, max_branches: 2 },
   vip: { max_staff: 10, max_services: 50, max_branches: 3 },
   platinum: { max_staff: 20, max_services: 100, max_branches: 10 },
 };
+
+function normalizePlanSlug(planSlug?: string | null) {
+  const normalized = String(planSlug || "pro").toLowerCase();
+
+  if (normalized === "starter") return "pro";
+  if (normalized in PLAN_CAPS) return normalized;
+
+  return "pro";
+}
 
 function formatDate(dateString?: string | null) {
   if (!dateString) return "—";
@@ -98,7 +105,7 @@ function formatRemainingDays(endDate?: string | null) {
   const diffMs = end.getTime() - now.getTime();
   const diffDays = Math.max(0, diffMs / (1000 * 60 * 60 * 24));
 
-  return `${diffDays.toFixed(2)} días`;
+  return `${Math.ceil(diffDays)} días`;
 }
 
 function getRemainingDaysNumber(endDate?: string | null) {
@@ -111,7 +118,7 @@ function getRemainingDaysNumber(endDate?: string | null) {
   const diffMs = end.getTime() - now.getTime();
   const diffDays = Math.max(0, diffMs / (1000 * 60 * 60 * 24));
 
-  return Number(diffDays.toFixed(2));
+  return Math.ceil(diffDays);
 }
 
 export default function BillingPage() {
@@ -123,7 +130,7 @@ export default function BillingPage() {
 
   const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [plan, setPlan] = useState("starter");
+  const [plan, setPlan] = useState("pro");
   const [billingCycleEnd, setBillingCycleEnd] = useState<string | null>(null);
   const [scheduledPlanSlug, setScheduledPlanSlug] = useState<string | null>(null);
   const [scheduledChangeAt, setScheduledChangeAt] = useState<string | null>(null);
@@ -134,12 +141,8 @@ export default function BillingPage() {
   const [services, setServices] = useState<ServiceItem[]>([]);
 
   const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
-  const [selectedServicesToKeep, setSelectedServicesToKeep] = useState<string[]>(
-    []
-  );
-  const [selectedBranchesToKeep, setSelectedBranchesToKeep] = useState<string[]>(
-    []
-  );
+  const [selectedServicesToKeep, setSelectedServicesToKeep] = useState<string[]>([]);
+  const [selectedBranchesToKeep, setSelectedBranchesToKeep] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,7 +150,7 @@ export default function BillingPage() {
   const [saveError, setSaveError] = useState("");
   const [saveOk, setSaveOk] = useState("");
 
-  const caps = PLAN_CAPS[plan] || PLAN_CAPS.starter;
+  const caps = PLAN_CAPS[plan] || PLAN_CAPS.pro;
 
   const activeBranches = useMemo(
     () => branches.filter((branch) => branch.is_active !== false),
@@ -172,8 +175,7 @@ export default function BillingPage() {
   const hasStaffExcess = excessStaff > 0;
   const hasServicesExcess = excessServices > 0;
 
-  const hasAnyExcess =
-    hasBranchExcess || hasStaffExcess || hasServicesExcess;
+  const hasAnyExcess = hasBranchExcess || hasStaffExcess || hasServicesExcess;
 
   useEffect(() => {
     if (!hasBranchExcess) {
@@ -227,15 +229,16 @@ export default function BillingPage() {
       }
 
       const currentTenantId = businessData.business.id;
-      const currentPlan = String(
-        businessData.business.plan_slug || "starter"
-      ).toLowerCase();
+      const currentPlan = normalizePlanSlug(businessData.business.plan_slug);
+      const nextScheduledPlan = businessData.business.scheduled_plan_slug
+        ? normalizePlanSlug(businessData.business.scheduled_plan_slug)
+        : null;
 
       setTenantId(currentTenantId);
       setBusinessName(businessData.business.name || slug);
       setPlan(currentPlan);
       setBillingCycleEnd(businessData.business.billing_cycle_end || null);
-      setScheduledPlanSlug(businessData.business.scheduled_plan_slug || null);
+      setScheduledPlanSlug(nextScheduledPlan);
       setScheduledChangeAt(businessData.business.scheduled_change_at || null);
       setPendingChangeType(businessData.business.pending_change_type || null);
 
@@ -256,7 +259,9 @@ export default function BillingPage() {
 
       setBranches(branchRows);
 
-      const activeBranchRows = branchRows.filter((branch) => branch.is_active !== false);
+      const activeBranchRows = branchRows.filter(
+        (branch) => branch.is_active !== false
+      );
 
       const perBranchResponses = await Promise.all(
         activeBranchRows.map(async (branch) => {
@@ -456,7 +461,7 @@ export default function BillingPage() {
     }
   }
 
-  const planLabel = PLAN_LABELS[plan] || "Starter";
+  const planLabel = PLAN_LABELS[plan] || "Pro";
   const scheduledPlanLabel = scheduledPlanSlug
     ? PLAN_LABELS[scheduledPlanSlug] || scheduledPlanSlug
     : null;
@@ -539,11 +544,7 @@ export default function BillingPage() {
         <div className="[&>div]:border-white/10 [&>div]:bg-white/10 [&>div]:text-white [&>div]:shadow-xl [&>div]:backdrop-blur-md [&_p]:text-slate-300 [&_span]:text-slate-300">
           <StatCard
             label="Cambio programado"
-            value={
-              loading
-                ? "..."
-                : scheduledPlanLabel || "Sin cambio"
-            }
+            value={loading ? "..." : scheduledPlanLabel || "Sin cambio"}
             helper={
               loading
                 ? "..."
@@ -634,7 +635,6 @@ export default function BillingPage() {
           </button>
         </div>
       ) : (
-
         <div className="rounded-3xl border border-emerald-400/20 bg-emerald-500/10 p-5 text-sm text-emerald-100 shadow-[0_20px_60px_rgba(15,23,42,0.35)] backdrop-blur-xl">
           Todo está dentro del límite de tu plan actual.
         </div>
@@ -652,29 +652,29 @@ export default function BillingPage() {
               </div>
             ) : (
               <div className="space-y-3">
-{activeBranches.map((branch) => (
-  <label
-    key={branch.id}
-    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
-      hasBranchExcess
-        ? selectedBranchesToKeep.includes(branch.id)
-          ? "border-emerald-300/25 bg-emerald-500/12 text-emerald-50"
-          : "border-rose-300/25 bg-rose-500/12 text-rose-50"
-        : "border-white/10 bg-white/6 text-white"
-    }`}
-  >
-    <input
-      type="checkbox"
-      checked={
-        !hasBranchExcess || selectedBranchesToKeep.includes(branch.id)
-      }
-      onChange={() => toggleBranchSelection(branch.id)}
-      disabled={!hasBranchExcess}
-      className="h-4 w-4 rounded border-slate-300"
-    />
-    <span className="font-semibold">{branch.name}</span>
-  </label>
-))}
+                {activeBranches.map((branch) => (
+                  <label
+                    key={branch.id}
+                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
+                      hasBranchExcess
+                        ? selectedBranchesToKeep.includes(branch.id)
+                          ? "border-emerald-300/35 bg-emerald-500/18 text-white"
+                          : "border-rose-300/35 bg-rose-500/18 text-white"
+                        : "border-white/15 bg-slate-900/40 text-white"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={
+                        !hasBranchExcess || selectedBranchesToKeep.includes(branch.id)
+                      }
+                      onChange={() => toggleBranchSelection(branch.id)}
+                      disabled={!hasBranchExcess}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    <span className="font-semibold">{branch.name}</span>
+                  </label>
+                ))}
               </div>
             )}
           </Panel>
@@ -697,9 +697,9 @@ export default function BillingPage() {
                     className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
                       hasStaffExcess
                         ? selectedStaffToKeep.includes(item.id)
-                          ? "border-emerald-300/25 bg-emerald-500/12 text-emerald-50"
-                          : "border-rose-300/25 bg-rose-500/12 text-rose-50"
-                        : "border-white/10 bg-white/6 text-white"
+                          ? "border-emerald-300/35 bg-emerald-500/18 text-white"
+                          : "border-rose-300/35 bg-rose-500/18 text-white"
+                        : "border-white/15 bg-slate-900/40 text-white"
                     }`}
                   >
                     <input
@@ -734,14 +734,14 @@ export default function BillingPage() {
             ) : (
               <div className="space-y-3">
                 {activeServices.map((item) => (
-                   <label
+                  <label
                     key={item.id}
                     className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
                       hasServicesExcess
                         ? selectedServicesToKeep.includes(item.id)
-                          ? "border-emerald-300/25 bg-emerald-500/12 text-emerald-50"
-                          : "border-rose-300/25 bg-rose-500/12 text-rose-50"
-                        : "border-white/10 bg-white/6 text-white"
+                          ? "border-emerald-300/35 bg-emerald-500/18 text-white"
+                          : "border-rose-300/35 bg-rose-500/18 text-white"
+                        : "border-white/15 bg-slate-900/40 text-white"
                     }`}
                   >
                     <input
