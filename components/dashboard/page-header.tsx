@@ -12,20 +12,35 @@ export function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div
+      className="mb-6 flex flex-col gap-4 rounded-3xl p-6 sm:flex-row sm:items-center sm:justify-between"
+      style={{
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-color)",
+      }}
+    >
       <div>
         {eyebrow ? (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          <p
+            className="mb-2 text-xs font-semibold uppercase tracking-[0.18em]"
+            style={{ color: "var(--text-muted)" }}
+          >
             {eyebrow}
           </p>
         ) : null}
 
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ color: "var(--text-main)" }}
+        >
           {title}
         </h1>
 
         {description ? (
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+          <p
+            className="mt-2 max-w-2xl text-sm leading-6"
+            style={{ color: "var(--text-muted)" }}
+          >
             {description}
           </p>
         ) : null}
