@@ -67,7 +67,9 @@ const displayOrder = [1, 2, 3, 4, 5, 6, 0];
 export default function BusinessPage() {
   const params = useParams();
   const slug =
-    ((params as any)?.slug as string) || ((params as any)?.Slug as string);
+    ((params as { slug?: string })?.slug as string) ||
+    ((params as { Slug?: string })?.Slug as string) ||
+    "";
 
   const [tenantId, setTenantId] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
@@ -103,6 +105,21 @@ export default function BusinessPage() {
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
+
+  const surfaceClass =
+    "rounded-2xl border px-4 py-3 shadow-sm";
+  const softCardClass =
+    "rounded-2xl border p-4";
+  const inputClass =
+    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+  const textareaClass =
+    "min-h-[120px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition";
+  const selectClass =
+    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+  const primaryButtonClass =
+    "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+  const secondaryButtonClass =
+    "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
   useEffect(() => {
     async function loadBusiness() {
@@ -152,8 +169,12 @@ export default function BusinessPage() {
         await loadBusinessHours(data.business.id);
         await loadSpecialDates(data.business.id);
         await loadBookingFields();
-      } catch (error: any) {
-        setLoadError(error?.message || "No se pudo cargar el negocio");
+      } catch (error: unknown) {
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo cargar el negocio"
+        );
       } finally {
         setLoading(false);
       }
@@ -246,7 +267,8 @@ export default function BusinessPage() {
         if (data.hours?.length) {
           const normalized = getDefaultHours().map((fallback) => {
             const existing = data.hours.find(
-              (item: any) => item.day_of_week === fallback.day_of_week
+              (item: { day_of_week: number }) =>
+                item.day_of_week === fallback.day_of_week
             );
 
             return {
@@ -286,14 +308,23 @@ export default function BusinessPage() {
       }
 
       const normalized = Array.isArray(data.special_dates)
-        ? data.special_dates.map((item: any) => ({
-            id: item.id,
-            date: item.date || "",
-            label: item.label || "",
-            is_closed: Boolean(item.is_closed),
-            start_time: String(item.start_time || "").slice(0, 5),
-            end_time: String(item.end_time || "").slice(0, 5),
-          }))
+        ? data.special_dates.map(
+            (item: {
+              id?: string;
+              date?: string;
+              label?: string;
+              is_closed?: boolean;
+              start_time?: string;
+              end_time?: string;
+            }) => ({
+              id: item.id,
+              date: item.date || "",
+              label: item.label || "",
+              is_closed: Boolean(item.is_closed),
+              start_time: String(item.start_time || "").slice(0, 5),
+              end_time: String(item.end_time || "").slice(0, 5),
+            })
+          )
         : [];
 
       setSpecialDates(normalized);
@@ -303,12 +334,12 @@ export default function BusinessPage() {
     }
   }
 
-  async function loadBranches(tenantId: string) {
+  async function loadBranches(currentTenantId: string) {
     try {
       setLoadingBranches(true);
 
       const res = await fetch(
-        `https://orbyx-backend.onrender.com/branches?tenant_id=${tenantId}`
+        `https://orbyx-backend.onrender.com/branches?tenant_id=${currentTenantId}`
       );
 
       const data = await res.json();
@@ -347,7 +378,7 @@ export default function BusinessPage() {
   function updateSpecialDate(
     index: number,
     field: keyof SpecialDate,
-    value: any
+    value: string | boolean
   ) {
     setSpecialDates((prev) =>
       prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
@@ -422,8 +453,12 @@ export default function BusinessPage() {
 
       await loadSpecialDates(tenantId);
       alert("Fechas especiales guardadas correctamente");
-    } catch (err: any) {
-      alert(err.message || "No se pudieron guardar las fechas especiales");
+    } catch (err: unknown) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "No se pudieron guardar las fechas especiales"
+      );
     } finally {
       setSavingSpecialDates(false);
     }
@@ -461,8 +496,8 @@ export default function BusinessPage() {
       }
 
       alert("Horarios guardados correctamente");
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Error guardando horarios");
     } finally {
       setSavingHours(false);
     }
@@ -490,8 +525,12 @@ export default function BusinessPage() {
       }
 
       alert("Campos guardados correctamente");
-    } catch (err: any) {
-      alert(err.message || "No se pudieron guardar los campos");
+    } catch (err: unknown) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "No se pudieron guardar los campos"
+      );
     } finally {
       setSavingFields(false);
     }
@@ -521,14 +560,22 @@ export default function BusinessPage() {
       }
 
       setSaveOk("Datos del negocio actualizados correctamente.");
-    } catch (error: any) {
-      setSaveError(error?.message || "No se pudo guardar la información");
+    } catch (error: unknown) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar la información"
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  function updateHour(dayOfWeek: number, field: keyof BusinessHour, value: any) {
+  function updateHour(
+    dayOfWeek: number,
+    field: keyof BusinessHour,
+    value: string | boolean | number
+  ) {
     setBusinessHours((prev) =>
       prev.map((item) =>
         item.day_of_week === dayOfWeek ? { ...item, [field]: value } : item
@@ -542,9 +589,7 @@ export default function BusinessPage() {
     value: boolean
   ) {
     setBookingFields((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      )
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
   }
 
@@ -578,11 +623,28 @@ export default function BusinessPage() {
       <Panel
         title="Sucursales"
         description="Gestiona y selecciona la sucursal con la que estás trabajando."
+        className="bg-[linear-gradient(135deg,rgba(37,99,235,0.12),rgba(14,165,233,0.06))]"
       >
         {loadingBranches ? (
-          <div className="text-sm text-slate-500">Cargando sucursales...</div>
+          <div
+            className={surfaceClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+              color: "var(--text-muted)",
+            }}
+          >
+            Cargando sucursales...
+          </div>
         ) : branches.length === 0 ? (
-          <div className="text-sm text-slate-500">
+          <div
+            className={surfaceClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+              color: "var(--text-muted)",
+            }}
+          >
             No hay sucursales creadas aún.
           </div>
         ) : (
@@ -590,7 +652,12 @@ export default function BusinessPage() {
             <select
               value={selectedBranchId}
               onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm"
+              className={selectClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
             >
               <option value="">Selecciona una sucursal</option>
 
@@ -601,17 +668,20 @@ export default function BusinessPage() {
               ))}
             </select>
 
-            {selectedBranchId && (
-              <div className="text-xs text-slate-500">
+            {selectedBranchId ? (
+              <div
+                className="text-xs"
+                style={{ color: "var(--text-muted)" }}
+              >
                 Trabajando sobre esta sucursal.
               </div>
-            )}
+            ) : null}
           </div>
         )}
       </Panel>
 
       {loadError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
+        <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
           {loadError}
         </div>
       ) : null}
@@ -620,15 +690,26 @@ export default function BusinessPage() {
         <Panel
           title="Información principal"
           description="Edita los datos que verán tus clientes y que también podrá usar la IA."
+          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
         >
           {loading ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Cargando datos...
             </div>
           ) : (
             <div className="space-y-5">
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Nombre del negocio
                 </label>
                 <input
@@ -637,13 +718,21 @@ export default function BusinessPage() {
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, name: e.target.value }))
                   }
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  className={inputClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Teléfono
                   </label>
                   <input
@@ -653,12 +742,20 @@ export default function BusinessPage() {
                       setForm((prev) => ({ ...prev, phone: e.target.value }))
                     }
                     placeholder="Ej: +56 9 1234 5678"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     WhatsApp
                   </label>
                   <input
@@ -668,13 +765,21 @@ export default function BusinessPage() {
                       setForm((prev) => ({ ...prev, whatsapp: e.target.value }))
                     }
                     placeholder="Ej: +56 9 1234 5678"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Correo de contacto
                 </label>
                 <input
@@ -684,12 +789,20 @@ export default function BusinessPage() {
                     setForm((prev) => ({ ...prev, email: e.target.value }))
                   }
                   placeholder="Ej: contacto@tunegocio.cl"
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  className={inputClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Dirección
                 </label>
                 <input
@@ -699,13 +812,21 @@ export default function BusinessPage() {
                     setForm((prev) => ({ ...prev, address: e.target.value }))
                   }
                   placeholder="Ej: Avenida Principal 123, Concepción"
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  className={inputClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Instagram
                   </label>
                   <input
@@ -718,12 +839,20 @@ export default function BusinessPage() {
                       }))
                     }
                     placeholder="Ej: https://instagram.com/tu_negocio"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Facebook
                   </label>
                   <input
@@ -736,13 +865,21 @@ export default function BusinessPage() {
                       }))
                     }
                     placeholder="Ej: https://facebook.com/tu_negocio"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Descripción del negocio
                 </label>
                 <textarea
@@ -754,12 +891,20 @@ export default function BusinessPage() {
                     }))
                   }
                   placeholder="Describe tu negocio, especialidad, estilo de atención y lo que te diferencia."
-                  className="min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  className={textareaClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Tiempo mínimo antes de reservar
                 </label>
 
@@ -771,7 +916,12 @@ export default function BusinessPage() {
                       min_booking_notice_minutes: Number(e.target.value),
                     }))
                   }
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  className={selectClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 >
                   <option value={0}>Sin restricción</option>
                   <option value={15}>15 minutos</option>
@@ -780,14 +930,20 @@ export default function BusinessPage() {
                   <option value={120}>2 horas</option>
                 </select>
 
-                <p className="mt-2 text-xs text-slate-500">
+                <p
+                  className="mt-2 text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes
                   solo podrán reservar con al menos 60 minutos de anticipación.
                 </p>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Máximo días hacia adelante
                 </label>
 
@@ -799,7 +955,12 @@ export default function BusinessPage() {
                       max_booking_days_ahead: Number(e.target.value),
                     }))
                   }
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
+                  className={selectClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 >
                   <option value={7}>7 días</option>
                   <option value={14}>14 días</option>
@@ -808,20 +969,23 @@ export default function BusinessPage() {
                   <option value={90}>90 días</option>
                 </select>
 
-                <p className="mt-2 text-xs text-slate-500">
+                <p
+                  className="mt-2 text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   Limita cuántos días hacia el futuro pueden agendar los
                   clientes.
                 </p>
               </div>
 
               {saveError ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
                   {saveError}
                 </div>
               ) : null}
 
               {saveOk ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
                   {saveOk}
                 </div>
               ) : null}
@@ -831,7 +995,11 @@ export default function BusinessPage() {
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={primaryButtonClass}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                  }}
                 >
                   {saving ? "Guardando..." : "Guardar cambios"}
                 </button>
@@ -843,71 +1011,68 @@ export default function BusinessPage() {
         <Panel
           title="Vista rápida"
           description="Resumen visual del perfil actual de tu negocio."
+          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
           <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Nombre
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {loading ? "Cargando..." : form.name || "No definido"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Contacto
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {loading
+            {[
+              {
+                label: "Nombre",
+                value: loading ? "Cargando..." : form.name || "No definido",
+              },
+              {
+                label: "Contacto",
+                value: loading
                   ? "Cargando..."
-                  : form.phone || form.whatsapp || "No definido"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Correo
-              </p>
-              <p className="mt-2 break-all text-sm font-semibold text-slate-900">
-                {loading ? "Cargando..." : form.email || "No definido"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Redes sociales
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {loading
+                  : form.phone || form.whatsapp || "No definido",
+              },
+              {
+                label: "Correo",
+                value: loading ? "Cargando..." : form.email || "No definido",
+              },
+              {
+                label: "Redes sociales",
+                value: loading
                   ? "Cargando..."
                   : form.instagram_url || form.facebook_url
                   ? "Configuradas"
-                  : "No configuradas"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                URL pública
-              </p>
-              <p className="mt-2 break-all text-sm font-semibold text-slate-900">
-                {publicUrl}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Google Calendar
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {loading
+                  : "No configuradas",
+              },
+              {
+                label: "URL pública",
+                value: publicUrl,
+              },
+              {
+                label: "Google Calendar",
+                value: loading
                   ? "Cargando..."
                   : googleConnected
                   ? "Conectado"
-                  : "Pendiente"}
-              </p>
-            </div>
+                  : "Pendiente",
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className={softCardClass}
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+                }}
+              >
+                <p
+                  className="text-xs font-semibold uppercase tracking-[0.16em]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {item.label}
+                </p>
+                <p
+                  className="mt-2 break-all text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  {item.value}
+                </p>
+              </div>
+            ))}
           </div>
         </Panel>
       </section>
@@ -915,23 +1080,42 @@ export default function BusinessPage() {
       <Panel
         title="Campos de reserva"
         description="Define qué información solicitar al cliente al reservar."
+        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
       >
         <div className="space-y-4">
           {bookingFields.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               No hay campos configurables cargados aún.
             </div>
           ) : (
             bookingFields.map((field, index) => (
               <div
                 key={field.key}
-                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4"
+                className="flex items-center justify-between rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                }}
               >
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     {field.label}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
                     {field.enabled
                       ? field.required
                         ? "Obligatorio"
@@ -940,8 +1124,11 @@ export default function BusinessPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 text-sm">
+                <div
+                  className="flex items-center gap-4 text-sm"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={field.enabled}
@@ -952,7 +1139,7 @@ export default function BusinessPage() {
                     Activo
                   </label>
 
-                  <label className="flex items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={field.required}
@@ -971,7 +1158,11 @@ export default function BusinessPage() {
           <button
             onClick={saveBookingFields}
             disabled={savingFields}
-            className="rounded-2xl bg-slate-900 px-5 py-3 text-sm text-white"
+            className={primaryButtonClass}
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+            }}
           >
             {savingFields ? "Guardando..." : "Guardar campos"}
           </button>
@@ -981,9 +1172,21 @@ export default function BusinessPage() {
       <Panel
         title="Horarios de atención"
         description="Define cuándo tu negocio está disponible para recibir reservas."
+        className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
       >
-        <div className="overflow-hidden rounded-2xl border border-slate-200">
-          <div className="grid grid-cols-[160px_90px_1fr_40px_1fr] gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+        <div
+          className="overflow-hidden rounded-2xl border"
+          style={{ borderColor: "var(--border-color)" }}
+        >
+          <div
+            className="grid grid-cols-[160px_90px_1fr_40px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
+            style={{
+              borderColor: "var(--border-color)",
+              background:
+                "linear-gradient(135deg, rgba(37,99,235,0.12), var(--bg-soft))",
+              color: "var(--text-muted)",
+            }}
+          >
             <div>Día</div>
             <div>Activo</div>
             <div>Inicio</div>
@@ -991,7 +1194,10 @@ export default function BusinessPage() {
             <div>Fin</div>
           </div>
 
-          <div className="divide-y divide-slate-200">
+          <div
+            className="divide-y"
+            style={{ borderColor: "var(--border-color)" }}
+          >
             {displayOrder.map((dayIndex) => {
               const h =
                 businessHours.find((d) => d.day_of_week === dayIndex) || {
@@ -1008,8 +1214,12 @@ export default function BusinessPage() {
                 <div
                   key={dayIndex}
                   className="grid grid-cols-[160px_90px_1fr_40px_1fr] items-center gap-3 px-4 py-3"
+                  style={{ background: "var(--bg-card)" }}
                 >
-                  <div className="text-sm font-medium text-slate-900">
+                  <div
+                    className="text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     {days[dayIndex]}
                   </div>
 
@@ -1037,17 +1247,26 @@ export default function BusinessPage() {
                         )
                       }
                       disabled={!h.enabled}
-                      className={`h-11 w-full rounded-2xl border bg-white px-4 text-sm text-slate-900 outline-none transition ${
-                        !h.enabled
-                          ? "border-slate-200 opacity-60"
+                      className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                      style={{
+                        borderColor: !h.enabled
+                          ? "var(--border-color)"
                           : startValid
-                          ? "border-slate-200 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                          : "border-rose-300 focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
-                      }`}
+                          ? "var(--border-color)"
+                          : "rgb(253 164 175)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                        opacity: !h.enabled ? 0.6 : 1,
+                      }}
                     />
                   </div>
 
-                  <div className="text-center text-slate-400">—</div>
+                  <div
+                    className="text-center"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    —
+                  </div>
 
                   <div>
                     <input
@@ -1063,13 +1282,17 @@ export default function BusinessPage() {
                         )
                       }
                       disabled={!h.enabled}
-                      className={`h-11 w-full rounded-2xl border bg-white px-4 text-sm text-slate-900 outline-none transition ${
-                        !h.enabled
-                          ? "border-slate-200 opacity-60"
+                      className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                      style={{
+                        borderColor: !h.enabled
+                          ? "var(--border-color)"
                           : endValid
-                          ? "border-slate-200 focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60"
-                          : "border-rose-300 focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
-                      }`}
+                          ? "var(--border-color)"
+                          : "rgb(253 164 175)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                        opacity: !h.enabled ? 0.6 : 1,
+                      }}
                     />
                   </div>
                 </div>
@@ -1082,7 +1305,11 @@ export default function BusinessPage() {
           <button
             onClick={saveBusinessHours}
             disabled={savingHours}
-            className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className={primaryButtonClass}
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+            }}
           >
             {savingHours ? "Guardando..." : "Guardar horarios"}
           </button>
@@ -1092,14 +1319,21 @@ export default function BusinessPage() {
       <Panel
         title="Fechas especiales"
         description="Configura feriados, vísperas, vacaciones, cierres y horarios especiales por fecha."
+        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
       >
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-slate-900">
+              <p
+                className="text-sm font-medium"
+                style={{ color: "var(--text-main)" }}
+              >
                 Excepciones del calendario
               </p>
-              <p className="text-sm text-slate-500">
+              <p
+                className="text-sm"
+                style={{ color: "var(--text-muted)" }}
+              >
                 Ejemplos: 18 septiembre cerrado, 24 diciembre 09:00 a 13:00.
               </p>
             </div>
@@ -1107,14 +1341,26 @@ export default function BusinessPage() {
             <button
               type="button"
               onClick={addSpecialDate}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className={secondaryButtonClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
             >
               Agregar fecha especial
             </button>
           </div>
 
           {specialDates.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+            <div
+              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
               Aún no has agregado fechas especiales.
             </div>
           ) : (
@@ -1122,11 +1368,19 @@ export default function BusinessPage() {
               {specialDates.map((item, index) => (
                 <div
                   key={item.id || `new-${index}`}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                  className="rounded-2xl border p-4 shadow-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background:
+                      "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                  }}
                 >
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-700">
+                      <label
+                        className="mb-2 block text-sm font-medium"
+                        style={{ color: "var(--text-main)" }}
+                      >
                         Fecha
                       </label>
                       <input
@@ -1135,12 +1389,20 @@ export default function BusinessPage() {
                         onChange={(e) =>
                           updateSpecialDate(index, "date", e.target.value)
                         }
-                        className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                        className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                        }}
                       />
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="mb-2 block text-sm font-medium text-slate-700">
+                      <label
+                        className="mb-2 block text-sm font-medium"
+                        style={{ color: "var(--text-main)" }}
+                      >
                         Motivo o etiqueta
                       </label>
                       <input
@@ -1150,12 +1412,24 @@ export default function BusinessPage() {
                         onChange={(e) =>
                           updateSpecialDate(index, "label", e.target.value)
                         }
-                        className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                        className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                        }}
                       />
                     </div>
 
                     <div className="flex items-end">
-                      <label className="flex h-11 w-full items-center gap-3 rounded-2xl border border-slate-300 bg-slate-50 px-4 text-sm text-slate-700">
+                      <label
+                        className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                        }}
+                      >
                         <input
                           type="checkbox"
                           checked={item.is_closed}
@@ -1166,7 +1440,7 @@ export default function BusinessPage() {
                               e.target.checked
                             )
                           }
-                          className="h-4 w-4 rounded border-slate-300"
+                          className="h-4 w-4 rounded"
                         />
                         Cerrado todo el día
                       </label>
@@ -1176,7 +1450,7 @@ export default function BusinessPage() {
                       <button
                         type="button"
                         onClick={() => removeSpecialDate(index)}
-                        className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+                        className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
                       >
                         Quitar
                       </button>
@@ -1186,7 +1460,10 @@ export default function BusinessPage() {
                   {!item.is_closed ? (
                     <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                        <label
+                          className="mb-2 block text-sm font-medium"
+                          style={{ color: "var(--text-main)" }}
+                        >
                           Hora inicio
                         </label>
                         <input
@@ -1199,12 +1476,20 @@ export default function BusinessPage() {
                               e.target.value
                             )
                           }
-                          className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                          className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
                         />
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                        <label
+                          className="mb-2 block text-sm font-medium"
+                          style={{ color: "var(--text-main)" }}
+                        >
                           Hora fin
                         </label>
                         <input
@@ -1213,7 +1498,12 @@ export default function BusinessPage() {
                           onChange={(e) =>
                             updateSpecialDate(index, "end_time", e.target.value)
                           }
-                          className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                          className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
                         />
                       </div>
                     </div>
@@ -1228,7 +1518,11 @@ export default function BusinessPage() {
               type="button"
               onClick={saveSpecialDates}
               disabled={savingSpecialDates}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className={primaryButtonClass}
+              style={{
+                background:
+                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+              }}
             >
               {savingSpecialDates ? "Guardando..." : "Guardar fechas especiales"}
             </button>
