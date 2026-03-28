@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { Panel } from "../../../../components/dashboard/panel";
 
@@ -65,6 +64,14 @@ type ServiceItem = {
   active?: boolean;
 };
 
+type NoticeTone =
+  | "info"
+  | "success"
+  | "warning"
+  | "limit"
+  | "danger"
+  | "neutral";
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 const days = [
@@ -110,6 +117,105 @@ function normalizePlanSlug(planSlug?: string | null) {
     return normalized;
   }
   return "pro";
+}
+
+function getNoticeStyles(tone: NoticeTone): {
+  wrapper: CSSProperties;
+  title: CSSProperties;
+  description: CSSProperties;
+} {
+  const tones: Record<
+    NoticeTone,
+    { border: string; background: string; accent: string; text: string }
+  > = {
+    info: {
+      border: "rgba(34,197,94,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.05))",
+      accent: "rgb(34 197 94)",
+      text: "var(--text-main)",
+    },
+    success: {
+      border: "rgba(16,185,129,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.05))",
+      accent: "rgb(16 185 129)",
+      text: "var(--text-main)",
+    },
+    warning: {
+      border: "rgba(245,158,11,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.05))",
+      accent: "rgb(245 158 11)",
+      text: "var(--text-main)",
+    },
+    limit: {
+      border: "rgba(249,115,22,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.05))",
+      accent: "rgb(249 115 22)",
+      text: "var(--text-main)",
+    },
+    danger: {
+      border: "rgba(244,63,94,0.34)",
+      background:
+        "linear-gradient(135deg, rgba(244,63,94,0.12), rgba(244,63,94,0.05))",
+      accent: "rgb(244 63 94)",
+      text: "var(--text-main)",
+    },
+    neutral: {
+      border: "var(--border-color)",
+      background: "var(--bg-soft)",
+      accent: "var(--text-main)",
+      text: "var(--text-main)",
+    },
+  };
+
+  const current = tones[tone];
+
+  return {
+    wrapper: {
+      borderColor: current.border,
+      background: current.background,
+      boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px ${current.border}`,
+    },
+    title: {
+      color: current.text,
+    },
+    description: {
+      color: "var(--text-muted)",
+    },
+  };
+}
+
+function Notice({
+  tone,
+  title,
+  description,
+  children,
+}: {
+  tone: NoticeTone;
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+}) {
+  const styles = getNoticeStyles(tone);
+
+  return (
+    <div className="rounded-2xl border px-4 py-4 shadow-sm" style={styles.wrapper}>
+      <p className="text-sm font-semibold" style={styles.title}>
+        {title}
+      </p>
+
+      {description ? (
+        <p className="mt-1 text-sm leading-6" style={styles.description}>
+          {description}
+        </p>
+      ) : null}
+
+      {children ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
 }
 
 export default function StaffPage() {
@@ -181,8 +287,6 @@ export default function StaffPage() {
   const hasExcess = excessStaff > 0;
 
   const inputClass =
-    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
-  const selectClass =
     "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
   const primaryButtonClass =
     "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
@@ -271,9 +375,7 @@ export default function StaffPage() {
   }, [tenantId, selectedBranchId]);
 
   useEffect(() => {
-    function handleBranchChanged(
-      event: Event
-    ) {
+    function handleBranchChanged(event: Event) {
       const customEvent = event as CustomEvent<{
         slug?: string;
         branchId?: string;
@@ -940,126 +1042,126 @@ export default function StaffPage() {
   return (
     <div className="space-y-6 pb-6">
       <section
-  className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
-  style={{
-    borderColor: "rgba(59,130,246,0.25)",
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-  }}
->
-  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-    <div className="max-w-3xl">
-      <p
-        className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
-        style={{ color: "var(--text-muted)" }}
-      >
-        Equipo
-      </p>
-
-      <h1
-        className="text-3xl font-semibold tracking-tight sm:text-4xl"
-        style={{ color: "var(--text-main)" }}
-      >
-        Staff
-      </h1>
-
-      <p
-        className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
-        style={{ color: "var(--text-muted)" }}
-      >
-        {selectedBranchName
-          ? `Administra el staff de la sucursal ${selectedBranchName}, sus servicios, horarios y excepciones.`
-          : "Administra las personas que atienden en tu negocio, sus servicios, horarios y excepciones."}
-      </p>
-    </div>
-
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <div
-        className="rounded-2xl border px-4 py-3"
+        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
         style={{
-          borderColor: "rgba(59,130,246,0.24)",
-          background: "rgba(255,255,255,0.08)",
+          borderColor: "rgba(59,130,246,0.25)",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
         }}
       >
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Total staff
-        </p>
-        <p
-          className="mt-2 text-sm font-semibold"
-          style={{ color: "var(--text-main)" }}
-        >
-          {loading ? "..." : staff.length}
-        </p>
-      </div>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Equipo
+            </p>
 
-      <div
-        className="rounded-2xl border px-4 py-3"
-        style={{
-          borderColor: "rgba(59,130,246,0.24)",
-          background: "rgba(255,255,255,0.08)",
-        }}
-      >
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Activos
-        </p>
-        <p
-          className="mt-2 text-sm font-semibold"
-          style={{ color: "var(--text-main)" }}
-        >
-          {loading ? "..." : activeCount}
-        </p>
-      </div>
+            <h1
+              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+              style={{ color: "var(--text-main)" }}
+            >
+              Staff
+            </h1>
 
-      <div
-        className="rounded-2xl border px-4 py-3"
-        style={{
-          borderColor: "rgba(59,130,246,0.24)",
-          background: "rgba(255,255,255,0.08)",
-        }}
-      >
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Usan horario negocio
-        </p>
-        <p
-          className="mt-2 text-sm font-semibold"
-          style={{ color: "var(--text-main)" }}
-        >
-          {loading ? "..." : usingBusinessHoursCount}
-        </p>
-      </div>
+            <p
+              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {selectedBranchName
+                ? `Administra el staff de la sucursal ${selectedBranchName}, sus servicios, horarios y excepciones.`
+                : "Administra las personas que atienden en tu negocio, sus servicios, horarios y excepciones."}
+            </p>
+          </div>
 
-      <div
-        className="rounded-2xl border px-4 py-3"
-        style={{
-          borderColor: "rgba(59,130,246,0.24)",
-          background: "rgba(255,255,255,0.08)",
-        }}
-      >
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Límite del plan
-        </p>
-        <p
-          className="mt-2 text-sm font-semibold"
-          style={{ color: "var(--text-main)" }}
-        >
-          {loading ? "..." : `${activeCount}/${caps.max_staff}`}
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Total staff
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : staff.length}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Activos
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : activeCount}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Usan horario negocio
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : usingBusinessHoursCount}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Límite del plan
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {loading ? "..." : `${activeCount}/${caps.max_staff}`}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {loadingBranches && !selectedBranchId ? (
         <div className="rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
@@ -1070,19 +1172,17 @@ export default function StaffPage() {
       ) : null}
 
       {!loadingBranches && !selectedBranchId ? (
-        <div className="rounded-2xl border border-amber-300/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-300 shadow-sm">
-          Debes seleccionar una sucursal activa en el sidebar para administrar
-          el staff.
-        </div>
+        <Notice
+          tone="warning"
+          title="Debes seleccionar una sucursal activa."
+          description="Selecciona una sucursal en el sidebar para administrar el staff."
+        />
       ) : null}
 
       {loadError ? (
-        <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
-          {loadError}
-        </div>
+        <Notice tone="danger" title={loadError} />
       ) : null}
 
-      
       <section className="grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
         <Panel
           title={editingId ? "Editar staff" : "Nuevo staff"}
@@ -1137,30 +1237,33 @@ export default function StaffPage() {
                 </p>
 
                 {hasExcess ? (
-                  <div className="mt-3 rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
-                    Estás sobre el límite del plan. Debes desactivar{" "}
-                    <span className="font-semibold">{excessStaff}</span>{" "}
-                    profesional{excessStaff === 1 ? "" : "es"} antes del próximo
-                    ciclo.
-
-                    <div
-                      className="mt-2 text-xs"
-                      style={{ color: "var(--text-muted)" }}
+                  <div className="mt-4">
+                    <Notice
+                      tone="limit"
+                      title={`Estás sobre el límite del plan.`}
+                      description={`Debes desactivar ${excessStaff} profesional${
+                        excessStaff === 1 ? "" : "es"
+                      } antes del próximo ciclo.`}
                     >
-                      Seleccionados: {selectedStaffToKeep.length} /{" "}
-                      {caps.max_staff}
-                    </div>
+                      <div
+                        className="text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Seleccionados: {selectedStaffToKeep.length} /{" "}
+                        {caps.max_staff}
+                      </div>
 
-                    <button
-                      onClick={applyStaffAdjustment}
-                      className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-semibold text-white transition"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, rgb(225 29 72), rgb(244 63 94))",
-                      }}
-                    >
-                      Aplicar ajuste al plan
-                    </button>
+                      <button
+                        onClick={applyStaffAdjustment}
+                        className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-semibold text-white transition"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
+                        }}
+                      >
+                        Aplicar ajuste al plan
+                      </button>
+                    </Notice>
                   </div>
                 ) : null}
               </div>
@@ -1383,22 +1486,11 @@ export default function StaffPage() {
               </div>
 
               {form.use_business_hours ? (
-
-<div
-  className="rounded-2xl px-4 py-4 border shadow-sm"
-  style={{
-    background: "rgba(59,130,246,0.10)", // MISMO estilo azul suave
-    borderColor: "rgba(16,185,129,0.6)", // borde verde más fuerte
-    boxShadow: "0 0 0 1px rgba(16,185,129,0.25)",
-  }}
->
-  <p className="text-sm font-semibold text-slate-900">
-    Este staff usará el horario general del negocio.
-  </p>
-  <p className="mt-1 text-sm text-slate-700">
-    El editor de horarios propios queda oculto para evitar configuraciones duplicadas.
-  </p>
-</div>
+                <Notice
+                  tone="info"
+                  title="Este staff usará el horario general del negocio."
+                  description="El editor de horarios propios queda oculto para evitar configuraciones duplicadas."
+                />
               ) : (
                 <div
                   className="rounded-2xl border p-4"
@@ -1530,9 +1622,12 @@ export default function StaffPage() {
                   </div>
 
                   {!editingId ? (
-                    <div className="mt-4 rounded-2xl border border-amber-300/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
-                      Puedes dejar estos horarios listos ahora. Al crear el
-                      staff, se guardarán automáticamente.
+                    <div className="mt-4">
+                      <Notice
+                        tone="warning"
+                        title="Puedes dejar estos horarios listos ahora."
+                        description="Al crear el staff, se guardarán automáticamente."
+                      />
                     </div>
                   ) : null}
                 </div>
@@ -1646,19 +1741,11 @@ export default function StaffPage() {
                 </div>
 
                 {!editingId ? (
-
-<div
-  className="rounded-2xl px-4 py-3 border shadow-sm"
-  style={{
-    background: "rgba(59,130,246,0.08)",
-    borderColor: "rgba(245,158,11,0.7)",
-    boxShadow: "0 0 0 1px rgba(245,158,11,0.25)",
-  }}
->
-  <p className="text-sm font-medium text-slate-900">
-    Primero crea o guarda el staff para poder administrar sus excepciones.
-  </p>
-</div>
+                  <Notice
+                    tone="warning"
+                    title="Primero crea o guarda el staff."
+                    description="Después podrás administrar sus excepciones."
+                  />
                 ) : (
                   <div className="space-y-4">
                     <div className="grid gap-3 md:grid-cols-[1fr_1.5fr_0.9fr_1fr_1fr_auto_auto]">
@@ -1830,10 +1917,11 @@ export default function StaffPage() {
                     </div>
 
                     {editingSpecialDateId ? (
-                      <div className="rounded-2xl border border-sky-300/50 bg-sky-500/10 px-4 py-3 text-sm text-sky-300">
-                        Estás editando una excepción existente. Guarda los
-                        cambios o presiona cancelar.
-                      </div>
+                      <Notice
+                        tone="warning"
+                        title="Estás editando una excepción existente."
+                        description="Guarda los cambios o presiona cancelar."
+                      />
                     ) : null}
 
                     {staffSpecialDates.length === 0 ? (
@@ -1912,50 +2000,22 @@ export default function StaffPage() {
               </div>
 
               {saveError ? (
-                <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-                  {saveError}
-                </div>
+                <Notice tone="danger" title={saveError} />
               ) : null}
 
               {saveOk ? (
-                <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-                  {saveOk}
-                </div>
+                <Notice tone="success" title={saveOk} />
               ) : null}
 
               <div className="space-y-3 pt-2">
                 {!editingId && reachedLimit ? (
-<div
-  className="rounded-2xl px-4 py-4 border shadow-sm"
-  style={{
-    background: "rgba(59,130,246,0.08)",
-    borderColor: "rgba(249,115,22,0.8)",
-    boxShadow: "0 0 0 1px rgba(249,115,22,0.3)",
-  }}
->
-  <p className="font-semibold text-slate-900">
-    Llegaste al límite de profesionales de tu plan
-  </p>
-
-  <p className="mt-1 text-slate-700">
-    Ya usaste {activeCount} de {caps.max_staff} profesionales disponibles.
-  </p>
-
-  <p className="mt-1 text-slate-700">
-    Agrega más profesionales o mejora tu plan para seguir creciendo.
-  </p>
-
-  <Link
-    href={`/planes?current_plan=${plan}&from=staff&slug=${slug}&tenant_id=${tenantId}`}
-    className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.02]"
-    style={{
-      background: "linear-gradient(135deg, rgb(37 99 235), rgb(168 85 247))",
-    }}
-  >
-    Mejora tu plan
-  </Link>
-</div>
-
+                  <Notice
+                    tone="limit"
+                    title="Has alcanzado el límite de staff de tu plan."
+                    description={`Tu plan ${plan} permite ${caps.max_staff} profesional${
+                      caps.max_staff === 1 ? "" : "es"
+                    } activos. Para crear otro, debes mejorar el plan o desactivar uno existente.`}
+                  />
                 ) : null}
 
                 <div className="flex flex-wrap gap-3">
@@ -2071,13 +2131,13 @@ export default function StaffPage() {
                             style={{
                               background: item.is_active
                                 ? hasExcess
-                                  ? "rgba(244,63,94,0.14)"
+                                  ? "rgba(249,115,22,0.14)"
                                   : "rgba(16,185,129,0.14)"
                                 : "rgba(148,163,184,0.16)",
                               color: item.is_active
                                 ? hasExcess
-                                  ? "rgb(251 113 133)"
-                                  : "rgb(52 211 153)"
+                                  ? "rgb(249 115 22)"
+                                  : "rgb(16 185 129)"
                                 : "var(--text-muted)",
                             }}
                           >
