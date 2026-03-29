@@ -890,15 +890,23 @@ export default function CampaignsPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          slug,
-          campaign_name: campaignName.trim() || null,
-          segment,
-          inactive_days: Number(inactiveDays),
-          subject: subject.trim(),
-          message: message.trim(),
-          limit: Number(sendLimit),
-          sort,
-        }),
+  slug,
+  channel,
+  campaign_name: campaignName.trim() || null,
+  segment,
+  inactive_days: Number(inactiveDays),
+  subject: subject.trim(),
+  message: message.trim(),
+  limit: Number(sendLimit),
+  sort,
+
+  brand_color: brandColor,
+  hero_image_url: heroImageUrl.trim(),
+  cta_text: ctaText.trim(),
+  cta_url: ctaUrl.trim(),
+  show_cta: showCta,
+  footer_note: footerNote.trim(),
+}),
       });
 
       const data: SendEmailResponse = await res.json();
