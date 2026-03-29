@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useParams } from "next/navigation";
 import {
   CalendarDays,
-  LayoutDashboard,
+  BarChart3,
   Briefcase,
   Scissors,
   Users,
   GitBranch,
   ChevronRight,
+  Megaphone,
+  CreditCard,
 } from "lucide-react";
 import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
@@ -33,9 +35,9 @@ type BranchItem = {
 
 const navItems = [
   {
-    label: "Dashboard",
+    label: "Métricas",
     href: "",
-    icon: LayoutDashboard,
+    icon: BarChart3,
   },
   {
     label: "Agenda",
@@ -46,6 +48,11 @@ const navItems = [
     label: "Clientes",
     href: "/customers",
     icon: Users,
+  },
+  {
+    label: "Campañas",
+    href: "/campaigns",
+    icon: Megaphone,
   },
   {
     label: "Servicios",
@@ -70,7 +77,7 @@ const navItems = [
   {
     label: "Billing",
     href: "/billing",
-    icon: Briefcase,
+    icon: CreditCard,
   },
 ];
 
@@ -221,7 +228,7 @@ export default function DashboardLayout({
   const showBranchSelector = branches.length > 1;
   const hasSingleBranch = branches.length === 1;
 
-  const sidebarBg = theme === "nocturno" ? "var(--bg-card)" : "var(--bg-card)";
+  const sidebarBg = "var(--bg-card)";
   const sidebarBorder = "var(--border-color)";
   const softBg = "var(--bg-soft)";
   const cardBg = "var(--bg-card)";
@@ -419,8 +426,8 @@ export default function DashboardLayout({
                   {slug}
                 </p>
                 <p className="mt-1 text-sm" style={{ color: textMuted }}>
-                  Administra tu agenda, sucursales, staff, servicios y datos del
-                  negocio.
+                  Administra métricas, clientes, campañas, agenda y
+                  configuración del negocio.
                 </p>
               </div>
             </div>
@@ -431,7 +438,10 @@ export default function DashboardLayout({
           <header
             className="sticky top-0 z-20 border-b backdrop-blur"
             style={{
-              background: theme === "nocturno" ? "rgba(17,24,39,0.88)" : "rgba(255,255,255,0.88)",
+              background:
+                theme === "nocturno"
+                  ? "rgba(17,24,39,0.88)"
+                  : "rgba(255,255,255,0.88)",
               borderColor: sidebarBorder,
             }}
           >

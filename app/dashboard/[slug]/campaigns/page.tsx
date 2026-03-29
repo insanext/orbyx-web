@@ -10,6 +10,16 @@ const BACKEND_URL = "https://orbyx-backend.onrender.com";
 type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
 type CampaignChannel = "email" | "whatsapp";
 type CampaignSort = "oldest" | "recent" | "most_visits" | "least_visits";
+type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
+
+type BusinessResponse = {
+  business: {
+    id: string;
+    name: string;
+    slug: string;
+    plan_slug?: string;
+  };
+};
 
 type Customer = {
   id: string;
@@ -48,6 +58,11 @@ type SendEmailResponse = {
   campaign_name?: string | null;
   channel?: string;
   slug?: string;
+  plan?: string;
+  plan_limit?: number;
+  requested_limit?: number;
+  applied_limit?: number;
+  sort?: string;
   segment?: string;
   inactive_days?: number;
   audience_total?: number;
@@ -60,6 +75,22 @@ type SendEmailResponse = {
     error: string;
   }>;
   error?: string;
+};
+
+const PLAN_LABELS: Record<PlanSlug, string> = {
+  starter: "Pro",
+  pro: "Pro",
+  premium: "Premium",
+  vip: "VIP",
+  platinum: "Platinum",
+};
+
+const PLAN_EMAIL_LIMITS: Record<PlanSlug, number> = {
+  starter: 50,
+  pro: 50,
+  premium: 150,
+  vip: 400,
+  platinum: 1000,
 };
 
 const SEGMENT_OPTIONS: Array<{
@@ -106,8 +137,6 @@ const CHANNEL_OPTIONS: Array<{
   },
 ];
 
-const SEND_LIMIT_OPTIONS = ["10", "25", "50", "100"];
-
 const SORT_OPTIONS: Array<{
   key: CampaignSort;
   label: string;
@@ -134,6 +163,17 @@ const SORT_OPTIONS: Array<{
     description: "Prioriza clientes menos recurrentes.",
   },
 ];
+
+function normalizePlan(plan?: string): PlanSlug {
+  const value = (plan || "").toLowerCase();
+
+  if (value === "premium") return "premium";
+  if (value === "vip") return "vip";
+  if (value === "platinum") return "platinum";
+  if (value === "pro") return "pro";
+
+  return "starter";
+}
 
 function formatDate(value?: string | null) {
   if (!value) return "Sin visitas";
@@ -281,6 +321,7 @@ export default function CampaignsPage() {
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
+  const [plan, setPlan] = useState<PlanSlug>("starter");
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [segment, setSegment] = useState<CustomerSegment>("inactive");
   const [inactiveDays, setInactiveDays] = useState("60");
@@ -297,6 +338,36 @@ export default function CampaignsPage() {
   const [error, setError] = useState("");
   const [resultMessage, setResultMessage] = useState("");
   const [sendSummary, setSendSummary] = useState<SendEmailResponse | null>(null);
+
+  const planLimit = PLAN_EMAIL_LIMITS[plan];
+  const availableLimitOptions = ["10", "25", "50", "100", "150", "400", "1000"]
+    .map(Number)
+    .filter((value) => value <= planLimit)
+    .map(String);
+
+  useEffect(() => {
+    async function loadBusinessPlan() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+        const data: BusinessResponse | { error?: string } = await res.json();
+
+        if (res.ok && "business" in data) {
+          const normalizedPlan = normalizePlan(data.business.plan_slug);
+          setPlan(normalizedPlan);
+        }
+      } catch (_) {}
+    }
+
+    if (slug) {
+      loadBusinessPlan();
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    if (!availableLimitOptions.includes(sendLimit)) {
+      setSendLimit(String(planLimit));
+    }
+  }, [sendLimit, availableLimitOptions, planLimit]);
 
   useEffect(() => {
     async function loadAudience() {
@@ -457,6 +528,11 @@ export default function CampaignsPage() {
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
         <StatCard
+          title="Plan actual"
+          value={PLAN_LABELS[plan]}
+          description={`Límite por campaña email: ${planLimit} destinatarios.`}
+        />
+        <StatCard
           title="Canal"
           value={selectedChannelLabel}
           description="Canal seleccionado para esta campaña."
@@ -465,11 +541,6 @@ export default function CampaignsPage() {
           title="Segmento"
           value={selectedSegmentLabel}
           description="Grupo de clientes elegido para esta acción."
-        />
-        <StatCard
-          title="Audiencia total"
-          value={loadingAudience ? "..." : String(audienceStats.total)}
-          description="Clientes encontrados dentro del segmento actual."
         />
         <StatCard
           title="Listos para enviar"
@@ -577,7 +648,7 @@ export default function CampaignsPage() {
                   onChange={(e) => setSendLimit(e.target.value)}
                   className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
                 >
-                  {SEND_LIMIT_OPTIONS.map((option) => (
+                  {availableLimitOptions.map((option) => (
                     <option key={option} value={option}>
                       {option} destinatarios
                     </option>
@@ -606,6 +677,12 @@ export default function CampaignsPage() {
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
               <p className="text-sm font-semibold text-slate-900 dark:text-white">
                 Regla actual del envío
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                Tu plan <span className="font-semibold">{PLAN_LABELS[plan]}</span>{" "}
+                permite hasta{" "}
+                <span className="font-semibold">{planLimit}</span> correos por
+                campaña.
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
                 Se intentará enviar hasta{" "}
@@ -678,13 +755,21 @@ export default function CampaignsPage() {
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">
                   Resultado del envío
                 </p>
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-5">
                   <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                       Audiencia
                     </p>
                     <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
                       {sendSummary.audience_total || 0}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Límite aplicado
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                      {sendSummary.applied_limit || 0}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
