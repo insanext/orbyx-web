@@ -197,24 +197,17 @@ const SORT_OPTIONS: Array<{
 
 function normalizePlan(plan?: string): PlanSlug {
   const value = (plan || "").toLowerCase();
-
   if (value === "premium") return "premium";
   if (value === "vip") return "vip";
   if (value === "platinum") return "platinum";
   if (value === "pro") return "pro";
-
   return "starter";
 }
 
 function formatDate(value?: string | null) {
   if (!value) return "Sin fecha";
-
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Sin fecha";
-  }
-
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
   return new Intl.DateTimeFormat("es-CL", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -223,13 +216,8 @@ function formatDate(value?: string | null) {
 
 function formatLastVisit(value?: string | null) {
   if (!value) return "Sin visitas";
-
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Sin visitas";
-  }
-
+  if (Number.isNaN(date.getTime())) return "Sin visitas";
   return new Intl.DateTimeFormat("es-CL", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -244,7 +232,6 @@ function getCustomerSegmentStyles(segment?: string) {
         "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
     };
   }
-
   if (segment === "recurrent") {
     return {
       label: "Recurrente",
@@ -252,7 +239,6 @@ function getCustomerSegmentStyles(segment?: string) {
         "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
     };
   }
-
   if (segment === "inactive") {
     return {
       label: "Inactivo",
@@ -260,7 +246,6 @@ function getCustomerSegmentStyles(segment?: string) {
         "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
     };
   }
-
   return {
     label: "Nuevo",
     className:
@@ -276,7 +261,6 @@ function getChannelStyles(channel?: string) {
         "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
     };
   }
-
   return {
     label: "Email",
     className:
@@ -323,7 +307,6 @@ function getPerformanceStyles(rate: number, failedCount: number) {
         "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
     };
   }
-
   if (bucket === "good") {
     return {
       label: "Bueno",
@@ -331,7 +314,6 @@ function getPerformanceStyles(rate: number, failedCount: number) {
         "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
     };
   }
-
   if (bucket === "warning") {
     return {
       label: "Regular",
@@ -339,7 +321,6 @@ function getPerformanceStyles(rate: number, failedCount: number) {
         "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
     };
   }
-
   return {
     label: "Fallido",
     className:
@@ -383,22 +364,12 @@ function isDateWithinPeriod(
     const from = customFrom ? new Date(`${customFrom}T00:00:00`) : null;
     const to = customTo ? new Date(`${customTo}T23:59:59`) : null;
 
-    if (
-      from &&
-      !Number.isNaN(from.getTime()) &&
-      itemDate.getTime() < from.getTime()
-    ) {
+    if (from && !Number.isNaN(from.getTime()) && itemDate.getTime() < from.getTime()) {
       return false;
     }
-
-    if (
-      to &&
-      !Number.isNaN(to.getTime()) &&
-      itemDate.getTime() > to.getTime()
-    ) {
+    if (to && !Number.isNaN(to.getTime()) && itemDate.getTime() > to.getTime()) {
       return false;
     }
-
     return true;
   }
 
@@ -429,7 +400,7 @@ function StatCard({
   );
 }
 
-function SectionCard({
+function ClassicSection({
   title,
   description,
   children,
@@ -439,8 +410,8 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
-      <div className="mb-4 rounded-3xl border border-sky-200 bg-sky-50 px-4 py-4 dark:border-sky-900/40 dark:bg-sky-950/30">
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
+      <div className="mb-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 dark:border-sky-900/40 dark:bg-sky-950/30">
         <p className="text-base font-semibold text-slate-900 dark:text-white">
           {title}
         </p>
@@ -607,6 +578,7 @@ export default function CampaignsPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loadingAudience, setLoadingAudience] = useState(true);
   const [sending, setSending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState("");
   const [resultMessage, setResultMessage] = useState("");
   const [sendSummary, setSendSummary] = useState<SendEmailResponse | null>(null);
@@ -616,12 +588,8 @@ export default function CampaignsPage() {
   const [historyError, setHistoryError] = useState("");
 
   const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>("30d");
-  const [historyChannel, setHistoryChannel] = useState<
-    "all" | CampaignChannel
-  >("all");
-  const [historySegment, setHistorySegment] = useState<
-    "all" | CustomerSegment
-  >("all");
+  const [historyChannel, setHistoryChannel] = useState<"all" | CampaignChannel>("all");
+  const [historySegment, setHistorySegment] = useState<"all" | CustomerSegment>("all");
   const [historyPerformance, setHistoryPerformance] =
     useState<HistoryPerformance>("all");
   const [historySearch, setHistorySearch] = useState("");
@@ -629,15 +597,13 @@ export default function CampaignsPage() {
   const [customTo, setCustomTo] = useState("");
 
   const [emailPreset, setEmailPreset] = useState<EmailVisualPreset>("promo");
-  const [brandColor, setBrandColor] = useState("#0f172a");
+  const [brandColor, setBrandColor] = useState("#0f766e");
   const [heroImageUrl, setHeroImageUrl] = useState("");
-  const [ctaText, setCtaText] = useState("Reservar ahora");
-  const [ctaUrl, setCtaUrl] = useState(
-    slug ? `https://www.orbyx.cl/${slug}` : "https://www.orbyx.cl"
-  );
+  const [ctaText, setCtaText] = useState("Agendar visita");
+  const [ctaUrl, setCtaUrl] = useState("");
   const [showCta, setShowCta] = useState(true);
   const [footerNote, setFooterNote] = useState(
-    "Este correo fue enviado por tu negocio a través de Orbyx."
+    "Te esperamos para ayudarte a mantener tu agenda al día."
   );
 
   const planLimit = PLAN_EMAIL_LIMITS[plan];
@@ -660,20 +626,18 @@ export default function CampaignsPage() {
       setCtaText("Reservar hora");
       setFooterNote("Gracias por seguir confiando en nosotros.");
     }
-
     if (emailPreset === "promo") {
-      setBrandColor("#1d4ed8");
-      setShowCta(true);
-      setCtaText("Ver horas disponibles");
-      setFooterNote("Aprovecha esta campaña especial por tiempo limitado.");
-    }
-
-    if (emailPreset === "reminder") {
       setBrandColor("#0f766e");
-      setHeroImageUrl("");
       setShowCta(true);
       setCtaText("Agendar visita");
       setFooterNote("Te esperamos para ayudarte a mantener tu agenda al día.");
+    }
+    if (emailPreset === "reminder") {
+      setBrandColor("#1d4ed8");
+      setHeroImageUrl("");
+      setShowCta(true);
+      setCtaText("Ver horas disponibles");
+      setFooterNote("Recuerda que tenemos agenda disponible para ti.");
     }
   }, [emailPreset]);
 
@@ -767,7 +731,6 @@ export default function CampaignsPage() {
     const total = customers.length;
     const withEmail = customers.filter((c) => !!c.email).length;
     const withWhatsapp = customers.filter((c) => !!c.phone).length;
-
     const availableForChannel = channel === "email" ? withEmail : withWhatsapp;
 
     return {
@@ -779,10 +742,7 @@ export default function CampaignsPage() {
   }, [customers, channel]);
 
   const limitedAudienceCount = useMemo(() => {
-    return Math.min(
-      Number(sendLimit || 50),
-      audienceStats.availableForChannel || 0
-    );
+    return Math.min(Number(sendLimit || 50), audienceStats.availableForChannel || 0);
   }, [sendLimit, audienceStats.availableForChannel]);
 
   const previewRecipients = useMemo(() => {
@@ -797,10 +757,7 @@ export default function CampaignsPage() {
   const filteredHistory = useMemo(() => {
     return history.filter((item) => {
       const successRate = getSuccessRate(item);
-      const performanceBucket = getPerformanceBucket(
-        successRate,
-        item.failed_count
-      );
+      const performanceBucket = getPerformanceBucket(successRate, item.failed_count);
       const search = historySearch.trim().toLowerCase();
 
       const matchesPeriod = isDateWithinPeriod(
@@ -858,10 +815,6 @@ export default function CampaignsPage() {
       (acc, item) => acc + Number(item.sent_count || 0),
       0
     );
-    const totalFailed = filteredHistory.reduce(
-      (acc, item) => acc + Number(item.failed_count || 0),
-      0
-    );
     const totalApplied = filteredHistory.reduce(
       (acc, item) => acc + Number(item.applied_limit || 0),
       0
@@ -874,8 +827,6 @@ export default function CampaignsPage() {
     return {
       total,
       totalSent,
-      totalFailed,
-      totalApplied,
       avgSuccess,
       latest,
     };
@@ -900,30 +851,41 @@ export default function CampaignsPage() {
     setCustomTo("");
   }
 
-  async function handleSendCampaign() {
+  function handleOpenConfirm() {
+    setError("");
+    setResultMessage("");
+    setSendSummary(null);
+
+    if (channel !== "email") {
+      setError("WhatsApp todavía no está conectado. Primero activaremos Email.");
+      return;
+    }
+
+    if (!subject.trim()) {
+      setError("Debes ingresar un asunto.");
+      return;
+    }
+
+    if (!message.trim()) {
+      setError("Debes ingresar un mensaje.");
+      return;
+    }
+
+    if (limitedAudienceCount <= 0) {
+      setError("No hay correos disponibles para enviar con esta segmentación.");
+      return;
+    }
+
+    setConfirmOpen(true);
+  }
+
+  async function handleSendCampaignConfirmed() {
     try {
+      setSending(true);
+      setConfirmOpen(false);
       setError("");
       setResultMessage("");
       setSendSummary(null);
-
-      if (channel !== "email") {
-        setError(
-          "WhatsApp todavía no está conectado. Primero activaremos Email."
-        );
-        return;
-      }
-
-      if (!subject.trim()) {
-        setError("Debes ingresar un asunto.");
-        return;
-      }
-
-      if (!message.trim()) {
-        setError("Debes ingresar un mensaje.");
-        return;
-      }
-
-      setSending(true);
 
       const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
         method: "POST",
@@ -1006,9 +968,7 @@ export default function CampaignsPage() {
         />
         <StatCard
           title="Listos para enviar"
-          value={
-            loadingAudience ? "..." : String(audienceStats.availableForChannel)
-          }
+          value={loadingAudience ? "..." : String(audienceStats.availableForChannel)}
           description={
             channel === "email"
               ? "Clientes con email disponible."
@@ -1017,61 +977,50 @@ export default function CampaignsPage() {
         />
       </section>
 
-      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
-          <SectionCard
+          <ClassicSection
             title="Configuración de campaña"
-            description="Define nombre, canal, segmento, cantidad y el contenido principal."
+            description="Aquí defines a quién se le enviará la campaña."
           >
             <div className="space-y-5">
-              <div className="space-y-3">
-                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Nombre interno
-                </label>
-                <input
-                  type="text"
-                  value={campaignName}
-                  onChange={(e) => setCampaignName(e.target.value)}
-                  placeholder="Ej: Recuperación clientes 60 días"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Canal
-                </label>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {CHANNEL_OPTIONS.map((item) => (
-                    <ChannelButton
-                      key={item.key}
-                      active={channel === item.key}
-                      label={item.label}
-                      description={item.description}
-                      onClick={() => setChannel(item.key)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Segmento
-                </label>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {SEGMENT_OPTIONS.map((item) => (
-                    <SegmentButton
-                      key={item.key}
-                      active={segment === item.key}
-                      label={item.label}
-                      description={item.description}
-                      onClick={() => setSegment(item.key)}
-                    />
-                  ))}
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Canal
+                  </label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {CHANNEL_OPTIONS.map((item) => (
+                      <ChannelButton
+                        key={item.key}
+                        active={channel === item.key}
+                        label={item.label}
+                        description={item.description}
+                        onClick={() => setChannel(item.key)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Segmento
+                  </label>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {SEGMENT_OPTIONS.map((item) => (
+                      <SegmentButton
+                        key={item.key}
+                        active={segment === item.key}
+                        label={item.label}
+                        description={item.description}
+                        onClick={() => setSegment(item.key)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
                 <div className="space-y-3">
                   <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                     Inactivos en
@@ -1093,10 +1042,9 @@ export default function CampaignsPage() {
                     Nota de segmentación
                   </p>
                   <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                    El valor de inactividad impacta sobre el segmento{" "}
-                    <span className="font-semibold">Inactivos</span>. Para nuevos,
-                    recurrentes y frecuentes, el cálculo depende del total de
-                    visitas del cliente.
+                    El valor de inactividad impacta sobre el segmento inactivos.
+                    Para nuevos, recurrentes y frecuentes, el cálculo depende del
+                    total de visitas del cliente.
                   </p>
                 </div>
               </div>
@@ -1147,19 +1095,37 @@ export default function CampaignsPage() {
                   correos por campaña.
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Se intentará enviar hasta{" "}
-                  <span className="font-semibold">{sendLimit}</span> correos,
-                  ordenados por{" "}
-                  <span className="font-semibold">{selectedSortLabel}</span>.
+                  Se intentará enviar hasta <span className="font-semibold">{sendLimit}</span>{" "}
+                  correos, ordenados por <span className="font-semibold">{selectedSortLabel}</span>.
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
                   Con la audiencia actual, el sistema podría enviar hasta{" "}
                   <span className="font-semibold">{limitedAudienceCount}</span>{" "}
-                  mensajes por este canal.
+                  correos reales por este canal.
                 </p>
               </div>
+            </div>
+          </ClassicSection>
 
-              {channel === "email" ? (
+          <ClassicSection
+            title="Correo"
+            description="Aquí defines el contenido y el estilo del email."
+          >
+            <div className="space-y-6">
+              <div className="space-y-5">
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Nombre interno
+                  </label>
+                  <input
+                    type="text"
+                    value={campaignName}
+                    onChange={(e) => setCampaignName(e.target.value)}
+                    placeholder="Ej: Recuperación clientes 60 días"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                  />
+                </div>
+
                 <div className="space-y-3">
                   <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                     Asunto
@@ -1172,147 +1138,142 @@ export default function CampaignsPage() {
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                   />
                 </div>
-              ) : null}
 
-              <div className="space-y-3">
-                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Mensaje
-                </label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={8}
-                  placeholder="Escribe el mensaje base de la campaña..."
-                  className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Puedes usar textos como{" "}
-                  <span className="font-semibold">{"{{nombre}}"}</span> para
-                  personalización futura.
-                </p>
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            title="Estilo del correo"
-            description="Configura una presentación más visual para el email. De momento afecta el preview."
-          >
-            <div className="space-y-5">
-              <div className="space-y-3">
-                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Plantilla visual
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <PresetButton
-                    active={emailPreset === "minimal"}
-                    label="Minimal"
-                    onClick={() => setEmailPreset("minimal")}
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Mensaje
+                  </label>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={7}
+                    placeholder="Escribe el mensaje base de la campaña..."
+                    className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                   />
-                  <PresetButton
-                    active={emailPreset === "promo"}
-                    label="Promo"
-                    onClick={() => setEmailPreset("promo")}
-                  />
-                  <PresetButton
-                    active={emailPreset === "reminder"}
-                    label="Recordatorio"
-                    onClick={() => setEmailPreset("reminder")}
-                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Puedes usar textos como <span className="font-semibold">{"{{nombre}}"}</span> para personalización futura.
+                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Color principal
-                  </label>
-                  <div className="flex items-center gap-3">
+              <div className="border-t border-slate-200 pt-5 dark:border-slate-700">
+                <div className="space-y-5">
+                  <div className="space-y-3">
+                    <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Plantilla visual
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <PresetButton
+                        active={emailPreset === "minimal"}
+                        label="Minimal"
+                        onClick={() => setEmailPreset("minimal")}
+                      />
+                      <PresetButton
+                        active={emailPreset === "promo"}
+                        label="Promo"
+                        onClick={() => setEmailPreset("promo")}
+                      />
+                      <PresetButton
+                        active={emailPreset === "reminder"}
+                        label="Recordatorio"
+                        onClick={() => setEmailPreset("reminder")}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-3">
+                      <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        Color principal
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={brandColor}
+                          onChange={(e) => setBrandColor(e.target.value)}
+                          className="h-11 w-16 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-950"
+                        />
+                        <input
+                          type="text"
+                          value={brandColor}
+                          onChange={(e) => setBrandColor(e.target.value)}
+                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        Imagen/banner URL
+                      </label>
+                      <input
+                        type="text"
+                        value={heroImageUrl}
+                        onChange={(e) => setHeroImageUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-3">
+                      <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        Texto botón CTA
+                      </label>
+                      <input
+                        type="text"
+                        value={ctaText}
+                        onChange={(e) => setCtaText(e.target.value)}
+                        placeholder="Reservar ahora"
+                        className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        URL botón CTA
+                      </label>
+                      <input
+                        type="text"
+                        value={ctaUrl}
+                        onChange={(e) => setCtaUrl(e.target.value)}
+                        placeholder="https://www.orbyx.cl/tu-negocio"
+                        className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                      />
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
                     <input
-                      type="color"
-                      value={brandColor}
-                      onChange={(e) => setBrandColor(e.target.value)}
-                      className="h-11 w-16 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-950"
+                      type="checkbox"
+                      checked={showCta}
+                      onChange={(e) => setShowCta(e.target.checked)}
+                      className="h-4 w-4"
                     />
-                    <input
-                      type="text"
-                      value={brandColor}
-                      onChange={(e) => setBrandColor(e.target.value)}
-                      className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                    Mostrar botón CTA en el correo
+                  </label>
+
+                  <div className="space-y-3">
+                    <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Nota inferior
+                    </label>
+                    <textarea
+                      value={footerNote}
+                      onChange={(e) => setFooterNote(e.target.value)}
+                      rows={3}
+                      className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                     />
                   </div>
                 </div>
-
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Imagen/banner URL
-                  </label>
-                  <input
-                    type="text"
-                    value={heroImageUrl}
-                    onChange={(e) => setHeroImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Texto botón CTA
-                  </label>
-                  <input
-                    type="text"
-                    value={ctaText}
-                    onChange={(e) => setCtaText(e.target.value)}
-                    placeholder="Reservar ahora"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    URL botón CTA
-                  </label>
-                  <input
-                    type="text"
-                    value={ctaUrl}
-                    onChange={(e) => setCtaUrl(e.target.value)}
-                    placeholder="https://www.orbyx.cl/tu-negocio"
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                  />
-                </div>
-              </div>
-
-              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={showCta}
-                  onChange={(e) => setShowCta(e.target.checked)}
-                  className="h-4 w-4"
-                />
-                Mostrar botón CTA en el correo
-              </label>
-
-              <div className="space-y-3">
-                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Nota inferior
-                </label>
-                <textarea
-                  value={footerNote}
-                  onChange={(e) => setFooterNote(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                />
               </div>
             </div>
-          </SectionCard>
+          </ClassicSection>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={handleSendCampaign}
+              onClick={handleOpenConfirm}
               disabled={sending || loadingAudience}
               className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
             >
@@ -1320,9 +1281,7 @@ export default function CampaignsPage() {
             </button>
 
             <div className="text-sm text-slate-500 dark:text-slate-400">
-              {channel === "email"
-                ? `Se enviará a un máximo de ${sendLimit} clientes con email disponible.`
-                : "WhatsApp se conectará en el siguiente paso."}
+              Se intentarán enviar hasta {limitedAudienceCount} correos reales con la configuración actual.
             </div>
           </div>
 
@@ -1378,7 +1337,7 @@ export default function CampaignsPage() {
         </div>
 
         <div className="space-y-6">
-          <SectionCard
+          <ClassicSection
             title="Preview de audiencia"
             description="A quiénes impactaría esta campaña según canal y segmento."
           >
@@ -1386,16 +1345,12 @@ export default function CampaignsPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
                 <StatCard
                   title="Con email"
-                  value={
-                    loadingAudience ? "..." : String(audienceStats.withEmail)
-                  }
+                  value={loadingAudience ? "..." : String(audienceStats.withEmail)}
                   description="Clientes alcanzables por correo."
                 />
                 <StatCard
                   title="Con WhatsApp"
-                  value={
-                    loadingAudience ? "..." : String(audienceStats.withWhatsapp)
-                  }
+                  value={loadingAudience ? "..." : String(audienceStats.withWhatsapp)}
                   description="Clientes alcanzables por teléfono."
                 />
                 <StatCard
@@ -1410,18 +1365,13 @@ export default function CampaignsPage() {
                   Resumen actual
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Canal:{" "}
-                  <span className="font-semibold">{selectedChannelLabel}</span>
-                  {" · "}Segmento:{" "}
-                  <span className="font-semibold">{selectedSegmentLabel}</span>
-                  {" · "}Inactividad:{" "}
-                  <span className="font-semibold">{inactiveDays} días</span>
+                  Canal: <span className="font-semibold">{selectedChannelLabel}</span>
+                  {" · "}Segmento: <span className="font-semibold">{selectedSegmentLabel}</span>
+                  {" · "}Inactividad: <span className="font-semibold">{inactiveDays} días</span>
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Prioridad:{" "}
-                  <span className="font-semibold">{selectedSortLabel}</span>
-                  {" · "}Límite:{" "}
-                  <span className="font-semibold">{sendLimit}</span>
+                  Prioridad: <span className="font-semibold">{selectedSortLabel}</span>
+                  {" · "}Límite: <span className="font-semibold">{sendLimit}</span>
                 </p>
               </div>
 
@@ -1442,14 +1392,11 @@ export default function CampaignsPage() {
                     ))
                   ) : previewRecipients.length === 0 ? (
                     <div className="px-4 py-10 text-sm text-slate-600 dark:text-slate-400">
-                      No hay clientes disponibles para este canal con la
-                      segmentación actual.
+                      No hay clientes disponibles para este canal con la segmentación actual.
                     </div>
                   ) : (
                     previewRecipients.map((customer) => {
-                      const segmentStyle = getCustomerSegmentStyles(
-                        customer.segment
-                      );
+                      const segmentStyle = getCustomerSegmentStyles(customer.segment);
 
                       return (
                         <div
@@ -1467,8 +1414,7 @@ export default function CampaignsPage() {
                                   : customer.phone || "Sin teléfono"}
                               </p>
                               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Última visita:{" "}
-                                {formatLastVisit(customer.last_visit_at)}
+                                Última visita: {formatLastVisit(customer.last_visit_at)}
                               </p>
                             </div>
 
@@ -1485,29 +1431,27 @@ export default function CampaignsPage() {
                 </div>
               </div>
             </div>
-          </SectionCard>
+          </ClassicSection>
 
-          <SectionCard
+          <ClassicSection
             title="Preview del correo"
-            description="Vista previa más visual del email antes del envío."
+            description="Vista previa del email antes del envío."
           >
-            <div className="rounded-[28px] border border-slate-200 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60">
-              <div className="mx-auto max-w-[680px] rounded-[28px] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
+              <div className="mx-auto max-w-[680px] overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div
-                  className="rounded-t-[28px] px-6 py-6 text-white"
+                  className="px-6 py-6 text-white"
                   style={{ backgroundColor: brandColor }}
                 >
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/75">
                     Campaña Orbyx
                   </p>
                   <h3 className="mt-2 text-2xl font-bold">{emailPreviewTitle}</h3>
-                  <p className="mt-2 text-sm text-white/85">
-                    {subject || "Sin asunto"}
-                  </p>
+                  <p className="mt-2 text-sm text-white/85">{subject || "Sin asunto"}</p>
                 </div>
 
                 {heroImageUrl ? (
-                  <div className="border-b border-slate-200 dark:border-slate-700">
+                  <div className="border-b border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
                     <img
                       src={heroImageUrl}
                       alt="Banner campaña"
@@ -1528,7 +1472,7 @@ export default function CampaignsPage() {
                     {showCta ? (
                       <div className="mt-5">
                         <a
-                          href={ctaUrl}
+                          href={ctaUrl || "#"}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex rounded-2xl px-5 py-3 text-sm font-semibold text-white"
@@ -1546,7 +1490,7 @@ export default function CampaignsPage() {
                 </div>
               </div>
             </div>
-          </SectionCard>
+          </ClassicSection>
         </div>
       </div>
 
@@ -1895,6 +1839,45 @@ export default function CampaignsPage() {
           </div>
         </Panel>
       </section>
+
+      {confirmOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              Confirmar envío
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+              ¿Estás seguro?
+            </h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">
+              Enviarás hasta <span className="font-semibold">{limitedAudienceCount}</span>{" "}
+              correos en simultáneo usando el segmento{" "}
+              <span className="font-semibold">{selectedSegmentLabel}</span>.
+            </p>
+            <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-400">
+              Asunto: <span className="font-semibold">{subject || "Sin asunto"}</span>
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSendCampaignConfirmed}
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              >
+                Sí, enviar campaña
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
