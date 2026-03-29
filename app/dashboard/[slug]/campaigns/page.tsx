@@ -450,38 +450,38 @@ function SelectableCard({
   onClick: () => void;
 }) {
     return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-2xl border p-4 text-left transition"
+  <button
+    type="button"
+    onClick={onClick}
+    className="rounded-2xl border p-4 text-left transition"
+    style={{
+      borderColor: active ? "rgba(16,185,129,0.45)" : "var(--border-color)",
+      background: active
+        ? "linear-gradient(135deg, rgba(16,185,129,0.22), rgba(34,197,94,0.16), rgba(255,255,255,0.02))"
+        : "var(--bg-card)",
+      boxShadow: active
+        ? "0 10px 30px rgba(16,185,129,0.18)"
+        : "0 1px 2px rgba(0,0,0,0.04)",
+    }}
+  >
+    <p
+      className="text-sm font-semibold"
       style={{
-        borderColor: active ? "rgba(37,99,235,0.42)" : "var(--border-color)",
-        background: active
-          ? "linear-gradient(135deg, rgba(37,99,235,0.22), rgba(14,165,233,0.16), rgba(255,255,255,0.02))"
-          : "var(--bg-card)",
-        boxShadow: active
-          ? "0 10px 30px rgba(37,99,235,0.16)"
-          : "0 1px 2px rgba(0,0,0,0.04)",
+        color: active ? "rgb(6 95 70)" : "var(--text-main)",
       }}
     >
-      <p
-        className="text-sm font-semibold"
-        style={{
-          color: active ? "rgb(15 23 42)" : "var(--text-main)",
-        }}
-      >
-        {title}
-      </p>
-      <p
-        className="mt-2 text-sm leading-6"
-        style={{
-          color: active ? "rgb(51 65 85)" : "var(--text-muted)",
-        }}
-      >
-        {description}
-      </p>
-    </button>
-  );
+      {title}
+    </p>
+    <p
+      className="mt-2 text-sm leading-6"
+      style={{
+        color: active ? "rgb(20 83 45)" : "var(--text-muted)",
+      }}
+    >
+      {description}
+    </p>
+  </button>
+);
 }
 
 function SoftChip({
