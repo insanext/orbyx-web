@@ -7,6 +7,8 @@ import { Panel } from "../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
+type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
+
 type Customer = {
   id: string;
   tenant_id: string;
@@ -17,13 +19,38 @@ type Customer = {
   total_visits: number;
   created_at: string;
   updated_at: string;
+  segment?: CustomerSegment;
+  is_inactive?: boolean;
 };
 
 type CustomersResponse = {
   total: number;
   customers: Customer[];
+  summary?: {
+    total: number;
+    nuevos: number;
+    recurrentes: number;
+    frecuentes: number;
+    inactivos: number;
+  };
+  filters?: {
+    q?: string;
+    segment?: string | null;
+    inactive_days?: number;
+  };
   error?: string;
 };
+
+const SEGMENT_OPTIONS: Array<{
+  key: "all" | CustomerSegment;
+  label: string;
+}> = [
+  { key: "all", label: "Todos" },
+  { key: "new", label: "Nuevos" },
+  { key: "recurrent", label: "Recurrentes" },
+  { key: "frequent", label: "Frecuentes" },
+  { key: "inactive", label: "Inactivos" },
+];
 
 function formatDate(value?: string | null) {
   if (!value) return "Sin visitas";
@@ -40,8 +67,8 @@ function formatDate(value?: string | null) {
   }).format(date);
 }
 
-function getCustomerSegment(totalVisits: number) {
-  if (totalVisits >= 5) {
+function getCustomerSegmentStyles(segment?: string) {
+  if (segment === "frequent") {
     return {
       label: "Frecuente",
       className:
@@ -49,11 +76,19 @@ function getCustomerSegment(totalVisits: number) {
     };
   }
 
-  if (totalVisits >= 2) {
+  if (segment === "recurrent") {
     return {
       label: "Recurrente",
       className:
         "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
+    };
+  }
+
+  if (segment === "inactive") {
+    return {
+      label: "Inactivo",
+      className:
+        "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
     };
   }
 
@@ -96,8 +131,17 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [segment, setSegment] = useState<"all" | CustomerSegment>("all");
+  const [inactiveDays, setInactiveDays] = useState("60");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [summary, setSummary] = useState({
+    total: 0,
+    nuevos: 0,
+    recurrentes: 0,
+    frecuentes: 0,
+    inactivos: 0,
+  });
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -113,8 +157,21 @@ export default function CustomersPage() {
         setLoading(true);
         setError("");
 
-        const url = search
-          ? `${BACKEND_URL}/customers/${slug}?q=${encodeURIComponent(search)}`
+        const params = new URLSearchParams();
+
+        if (search) {
+          params.set("q", search);
+        }
+
+        if (segment !== "all") {
+          params.set("segment", segment);
+        }
+
+        params.set("inactive_days", inactiveDays);
+
+        const queryString = params.toString();
+        const url = queryString
+          ? `${BACKEND_URL}/customers/${slug}?${queryString}`
           : `${BACKEND_URL}/customers/${slug}`;
 
         const res = await fetch(url);
@@ -125,9 +182,23 @@ export default function CustomersPage() {
         }
 
         setCustomers(Array.isArray(data.customers) ? data.customers : []);
+        setSummary({
+          total: Number(data.summary?.total || 0),
+          nuevos: Number(data.summary?.nuevos || 0),
+          recurrentes: Number(data.summary?.recurrentes || 0),
+          frecuentes: Number(data.summary?.frecuentes || 0),
+          inactivos: Number(data.summary?.inactivos || 0),
+        });
       } catch (err: any) {
         setError(err?.message || "Error cargando clientes");
         setCustomers([]);
+        setSummary({
+          total: 0,
+          nuevos: 0,
+          recurrentes: 0,
+          frecuentes: 0,
+          inactivos: 0,
+        });
       } finally {
         setLoading(false);
       }
@@ -136,31 +207,20 @@ export default function CustomersPage() {
     if (slug) {
       loadCustomers();
     }
-  }, [slug, search]);
+  }, [slug, search, segment, inactiveDays]);
 
-  const stats = useMemo(() => {
-    const total = customers.length;
-    const frecuentes = customers.filter((c) => Number(c.total_visits || 0) >= 5).length;
-    const recurrentes = customers.filter((c) => {
-      const visits = Number(c.total_visits || 0);
-      return visits >= 2 && visits < 5;
-    }).length;
-    const nuevos = customers.filter((c) => Number(c.total_visits || 0) <= 1).length;
-
-    return {
-      total,
-      frecuentes,
-      recurrentes,
-      nuevos,
-    };
-  }, [customers]);
+  const activeSegmentLabel = useMemo(() => {
+    return (
+      SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Todos"
+    );
+  }, [segment]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Clientes"
         title="Base de clientes"
-        description="Gestiona los clientes del negocio y prepara la base para campañas, recuperación y seguimiento."
+        description="Gestiona segmentos, detecta inactivos y prepara la base para campañas por email y WhatsApp."
       />
 
       {error ? (
@@ -169,156 +229,219 @@ export default function CustomersPage() {
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-5">
         <CustomerStatCard
-          title="Clientes visibles"
-          value={loading ? "..." : String(stats.total)}
-          description="Clientes encontrados en la base actual del negocio."
+          title="Total"
+          value={loading ? "..." : String(summary.total)}
+          description="Clientes visibles en tu base."
         />
         <CustomerStatCard
           title="Nuevos"
-          value={loading ? "..." : String(stats.nuevos)}
-          description="Clientes con 1 visita o menos."
+          value={loading ? "..." : String(summary.nuevos)}
+          description="1 visita o primera captación."
         />
         <CustomerStatCard
           title="Recurrentes"
-          value={loading ? "..." : String(stats.recurrentes)}
-          description="Clientes que ya han vuelto más de una vez."
+          value={loading ? "..." : String(summary.recurrentes)}
+          description="Ya han vuelto más de una vez."
         />
         <CustomerStatCard
           title="Frecuentes"
-          value={loading ? "..." : String(stats.frecuentes)}
-          description="Clientes con alta recurrencia, ideales para fidelización."
+          value={loading ? "..." : String(summary.frecuentes)}
+          description="Clientes con alta recurrencia."
+        />
+        <CustomerStatCard
+          title="Inactivos"
+          value={loading ? "..." : String(summary.inactivos)}
+          description={`Sin actividad en ${inactiveDays} días.`}
         />
       </section>
 
       <Panel
-        title="Listado de clientes"
-        description="Esta base servirá después para campañas por email, WhatsApp y recuperación."
+        title="Filtros de clientes"
+        description="Esta segmentación será la base para campañas, recuperación y automatizaciones."
       >
         <div className="space-y-4">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-            <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              Buscar cliente
-            </label>
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Buscar por nombre, email o teléfono"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
-            />
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_1fr_220px]">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+              <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                Buscar cliente
+              </label>
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Buscar por nombre, email o teléfono"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+              />
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+              <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                Segmento
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {SEGMENT_OPTIONS.map((option) => {
+                  const active = segment === option.key;
+
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => setSegment(option.key)}
+                      className="rounded-2xl border px-4 py-2 text-sm font-medium transition"
+                      style={{
+                        background: active ? "var(--text-main)" : "transparent",
+                        color: active ? "var(--bg-card)" : "var(--text-main)",
+                        borderColor: "var(--border-color)",
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+              <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                Inactivos en
+              </label>
+              <select
+                value={inactiveDays}
+                onChange={(e) => setInactiveDays(e.target.value)}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+              >
+                <option value="30">30 días</option>
+                <option value="60">60 días</option>
+                <option value="90">90 días</option>
+                <option value="120">120 días</option>
+              </select>
+            </div>
           </div>
 
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-slate-50 dark:bg-slate-800/80">
-                  <tr>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Cliente
-                    </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Contacto
-                    </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Visitas
-                    </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Segmento
-                    </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Última visita
-                    </th>
-                  </tr>
-                </thead>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
+            Viendo: <span className="font-semibold">{activeSegmentLabel}</span>
+            {search ? (
+              <>
+                {" "}
+                · búsqueda: <span className="font-semibold">{search}</span>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </Panel>
 
-                <tbody>
-                  {loading ? (
-                    Array.from({ length: 6 }).map((_, index) => (
-                      <tr
-                        key={index}
-                        className="border-t border-slate-200 dark:border-slate-700"
-                      >
-                        <td className="px-5 py-4">
-                          <div className="h-4 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="h-4 w-40 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="h-4 w-16 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="h-6 w-24 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="h-4 w-36 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-                        </td>
-                      </tr>
-                    ))
-                  ) : customers.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-5 py-12 text-center text-sm text-slate-600 dark:text-slate-400"
-                      >
-                        No hay clientes aún o no hubo resultados para tu búsqueda.
+      <Panel
+        title="Listado de clientes"
+        description="Clientes listos para seguimiento, campañas y recuperación."
+      >
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-slate-50 dark:bg-slate-800/80">
+                <tr>
+                  <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Cliente
+                  </th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Contacto
+                  </th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Visitas
+                  </th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Segmento
+                  </th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Última visita
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, index) => (
+                    <tr
+                      key={index}
+                      className="border-t border-slate-200 dark:border-slate-700"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="h-4 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="h-4 w-40 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="h-4 w-16 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="h-6 w-24 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="h-4 w-36 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
                       </td>
                     </tr>
-                  ) : (
-                    customers.map((customer) => {
-                      const segment = getCustomerSegment(
-                        Number(customer.total_visits || 0)
-                      );
+                  ))
+                ) : customers.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-5 py-12 text-center text-sm text-slate-600 dark:text-slate-400"
+                    >
+                      No hay clientes aún o no hubo resultados para este filtro.
+                    </td>
+                  </tr>
+                ) : (
+                  customers.map((customer) => {
+                    const segment = getCustomerSegmentStyles(customer.segment);
 
-                      return (
-                        <tr
-                          key={customer.id}
-                          className="border-t border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
-                        >
-                          <td className="px-5 py-4 align-top">
-                            <div>
-                              <p className="font-medium text-slate-900 dark:text-white">
-                                {customer.name || "Sin nombre"}
-                              </p>
-                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                ID cliente: {customer.id.slice(0, 8)}
-                              </p>
-                            </div>
-                          </td>
+                    return (
+                      <tr
+                        key={customer.id}
+                        className="border-t border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                      >
+                        <td className="px-5 py-4 align-top">
+                          <div>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {customer.name || "Sin nombre"}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              ID cliente: {customer.id.slice(0, 8)}
+                            </p>
+                          </div>
+                        </td>
 
-                          <td className="px-5 py-4 align-top">
-                            <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                              <p>{customer.email || "Sin email"}</p>
-                              <p>{customer.phone || "Sin teléfono"}</p>
-                            </div>
-                          </td>
+                        <td className="px-5 py-4 align-top">
+                          <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                            <p>{customer.email || "Sin email"}</p>
+                            <p>{customer.phone || "Sin teléfono"}</p>
+                          </div>
+                        </td>
 
-                          <td className="px-5 py-4 align-top">
-                            <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                              {Number(customer.total_visits || 0)}
-                            </span>
-                          </td>
+                        <td className="px-5 py-4 align-top">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                            {Number(customer.total_visits || 0)}
+                          </span>
+                        </td>
 
-                          <td className="px-5 py-4 align-top">
-                            <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${segment.className}`}
-                            >
-                              {segment.label}
-                            </span>
-                          </td>
+                        <td className="px-5 py-4 align-top">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${segment.className}`}
+                          >
+                            {segment.label}
+                          </span>
+                        </td>
 
-                          <td className="px-5 py-4 align-top text-sm text-slate-600 dark:text-slate-400">
-                            {formatDate(customer.last_visit_at)}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        <td className="px-5 py-4 align-top text-sm text-slate-600 dark:text-slate-400">
+                          {formatDate(customer.last_visit_at)}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </Panel>
