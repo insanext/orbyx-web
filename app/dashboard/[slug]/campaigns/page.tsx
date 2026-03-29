@@ -77,6 +77,33 @@ type SendEmailResponse = {
   error?: string;
 };
 
+type CampaignHistoryItem = {
+  id: string;
+  tenant_id: string;
+  campaign_name: string | null;
+  channel: CampaignChannel;
+  segment: CustomerSegment;
+  inactive_days: number;
+  subject: string | null;
+  message: string | null;
+  sort: CampaignSort;
+  plan_slug: string | null;
+  plan_limit: number;
+  requested_limit: number;
+  applied_limit: number;
+  audience_total: number;
+  recipients_with_contact: number;
+  sent_count: number;
+  failed_count: number;
+  created_at: string;
+};
+
+type CampaignHistoryResponse = {
+  total: number;
+  campaigns: CampaignHistoryItem[];
+  error?: string;
+};
+
 const PLAN_LABELS: Record<PlanSlug, string> = {
   starter: "Pro",
   pro: "Pro",
@@ -176,6 +203,21 @@ function normalizePlan(plan?: string): PlanSlug {
 }
 
 function formatDate(value?: string | null) {
+  if (!value) return "Sin fecha";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Sin fecha";
+  }
+
+  return new Intl.DateTimeFormat("es-CL", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function formatLastVisit(value?: string | null) {
   if (!value) return "Sin visitas";
 
   const date = new Date(value);
@@ -220,6 +262,34 @@ function getCustomerSegmentStyles(segment?: string) {
     className:
       "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
   };
+}
+
+function getChannelStyles(channel?: string) {
+  if (channel === "whatsapp") {
+    return {
+      label: "WhatsApp",
+      className:
+        "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+    };
+  }
+
+  return {
+    label: "Email",
+    className:
+      "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
+  };
+}
+
+function getSortLabel(sort?: string) {
+  return SORT_OPTIONS.find((item) => item.key === sort)?.label || "Sin orden";
+}
+
+function getSegmentLabel(segment?: string) {
+  return SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Segmento";
+}
+
+function getPlanLabel(plan?: string | null) {
+  return PLAN_LABELS[normalizePlan(plan || "starter")];
 }
 
 function StatCard({
@@ -316,6 +386,20 @@ function SegmentButton({
   );
 }
 
+function HistorySkeleton() {
+  return (
+    <div className="divide-y divide-slate-200 dark:divide-slate-700">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="px-4 py-4">
+          <div className="h-4 w-40 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+          <div className="mt-3 h-4 w-56 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+          <div className="mt-2 h-4 w-72 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CampaignsPage() {
   const params = useParams();
   const slug =
@@ -339,11 +423,36 @@ export default function CampaignsPage() {
   const [resultMessage, setResultMessage] = useState("");
   const [sendSummary, setSendSummary] = useState<SendEmailResponse | null>(null);
 
+  const [history, setHistory] = useState<CampaignHistoryItem[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [historyError, setHistoryError] = useState("");
+
   const planLimit = PLAN_EMAIL_LIMITS[plan];
   const availableLimitOptions = ["10", "25", "50", "100", "150", "400", "1000"]
     .map(Number)
     .filter((value) => value <= planLimit)
     .map(String);
+
+  async function loadCampaignHistory(currentSlug: string) {
+    try {
+      setLoadingHistory(true);
+      setHistoryError("");
+
+      const res = await fetch(`${BACKEND_URL}/campaigns/history/${currentSlug}`);
+      const data: CampaignHistoryResponse = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cargar el historial");
+      }
+
+      setHistory(Array.isArray(data.campaigns) ? data.campaigns : []);
+    } catch (err: any) {
+      setHistoryError(err?.message || "Error cargando historial");
+      setHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
 
   useEffect(() => {
     async function loadBusinessPlan() {
@@ -404,6 +513,12 @@ export default function CampaignsPage() {
     }
   }, [slug, segment, inactiveDays]);
 
+  useEffect(() => {
+    if (slug) {
+      loadCampaignHistory(slug);
+    }
+  }, [slug]);
+
   const audienceStats = useMemo(() => {
     const total = customers.length;
     const withEmail = customers.filter((c) => !!c.email).length;
@@ -435,6 +550,26 @@ export default function CampaignsPage() {
 
     return filtered.slice(0, 6);
   }, [customers, channel]);
+
+  const historyStats = useMemo(() => {
+    const total = history.length;
+    const totalSent = history.reduce(
+      (acc, item) => acc + Number(item.sent_count || 0),
+      0
+    );
+    const totalFailed = history.reduce(
+      (acc, item) => acc + Number(item.failed_count || 0),
+      0
+    );
+    const latest = history[0] || null;
+
+    return {
+      total,
+      totalSent,
+      totalFailed,
+      latest,
+    };
+  }, [history]);
 
   const selectedSegmentLabel =
     SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Segmento";
@@ -499,6 +634,10 @@ export default function CampaignsPage() {
           data.failed || 0
         }.`
       );
+
+      if (slug) {
+        await loadCampaignHistory(slug);
+      }
     } catch (err: any) {
       setError(err?.message || "Error enviando campaña");
     } finally {
@@ -892,7 +1031,7 @@ export default function CampaignsPage() {
                                   : customer.phone || "Sin teléfono"}
                               </p>
                               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Última visita: {formatDate(customer.last_visit_at)}
+                                Última visita: {formatLastVisit(customer.last_visit_at)}
                               </p>
                             </div>
 
@@ -940,6 +1079,185 @@ export default function CampaignsPage() {
           </Panel>
         </div>
       </div>
+
+      <section className="space-y-6">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+          <StatCard
+            title="Campañas registradas"
+            value={loadingHistory ? "..." : String(historyStats.total)}
+            description="Historial real guardado en base de datos."
+          />
+          <StatCard
+            title="Correos enviados"
+            value={loadingHistory ? "..." : String(historyStats.totalSent)}
+            description="Suma de enviados en el historial cargado."
+          />
+          <StatCard
+            title="Fallidos"
+            value={loadingHistory ? "..." : String(historyStats.totalFailed)}
+            description="Total de errores registrados en campañas."
+          />
+          <StatCard
+            title="Último envío"
+            value={
+              loadingHistory
+                ? "..."
+                : historyStats.latest
+                ? formatDate(historyStats.latest.created_at)
+                : "Sin envíos"
+            }
+            description="Fecha del registro más reciente."
+          />
+        </div>
+
+        <Panel
+          title="Historial de campañas"
+          description="Resumen SaaS de campañas enviadas con resultados reales."
+        >
+          {historyError ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+              {historyError}
+            </div>
+          ) : null}
+
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70">
+            <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                Últimas campañas
+              </p>
+            </div>
+
+            {loadingHistory ? (
+              <HistorySkeleton />
+            ) : history.length === 0 ? (
+              <div className="px-4 py-10 text-sm text-slate-600 dark:text-slate-400">
+                Todavía no hay campañas registradas.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                {history.map((item) => {
+                  const channelStyle = getChannelStyles(item.channel);
+                  const segmentStyle = getCustomerSegmentStyles(item.segment);
+                  const successRate =
+                    item.applied_limit > 0
+                      ? Math.round((item.sent_count / item.applied_limit) * 100)
+                      : 0;
+
+                  return (
+                    <div key={item.id} className="px-4 py-5">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate text-base font-semibold text-slate-900 dark:text-white">
+                              {item.campaign_name?.trim() || "Campaña sin nombre"}
+                            </p>
+
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${channelStyle.className}`}
+                            >
+                              {channelStyle.label}
+                            </span>
+
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${segmentStyle.className}`}
+                            >
+                              {getSegmentLabel(item.segment)}
+                            </span>
+                          </div>
+
+                          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                            {formatDate(item.created_at)}
+                          </p>
+
+                          {item.subject ? (
+                            <p className="mt-3 text-sm font-medium text-slate-900 dark:text-white">
+                              Asunto: {item.subject}
+                            </p>
+                          ) : null}
+
+                          {item.message ? (
+                            <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600 dark:text-slate-400">
+                              {item.message}
+                            </p>
+                          ) : null}
+
+                          <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                              Plan: {getPlanLabel(item.plan_slug)}
+                            </span>
+                            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                              Orden: {getSortLabel(item.sort)}
+                            </span>
+                            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                              Inactividad: {item.inactive_days} días
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="grid min-w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-w-[360px]">
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                              Audiencia
+                            </p>
+                            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                              {item.audience_total}
+                            </p>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                              Aplicado
+                            </p>
+                            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                              {item.applied_limit}
+                            </p>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                              Con contacto
+                            </p>
+                            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                              {item.recipients_with_contact}
+                            </p>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                              Enviados
+                            </p>
+                            <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-300">
+                              {item.sent_count}
+                            </p>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                              Fallidos
+                            </p>
+                            <p className="mt-1 text-lg font-semibold text-rose-600 dark:text-rose-300">
+                              {item.failed_count}
+                            </p>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                              Éxito
+                            </p>
+                            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                              {successRate}%
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Panel>
+      </section>
     </div>
   );
 }
