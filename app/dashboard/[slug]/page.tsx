@@ -14,6 +14,19 @@ type BusinessResponse = {
   };
 };
 
+type MetricsResponse = {
+  ok?: boolean;
+  metrics?: {
+    reservas_hoy: number;
+    reservas_semana: number;
+    proximas_reservas: number;
+    atendidas: number;
+    canceladas: number;
+    no_show: number;
+  };
+  error?: string;
+};
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
@@ -47,6 +60,11 @@ function normalizePlan(plan?: string): PlanSlug {
 
 function isPlanAtLeast(currentPlan: PlanSlug, requiredPlan: PlanSlug) {
   return PLAN_ORDER[currentPlan] >= PLAN_ORDER[requiredPlan];
+}
+
+function formatMetricValue(value: number, loading: boolean) {
+  if (loading) return "...";
+  return String(value ?? 0);
 }
 
 type MetricCardProps = {
@@ -90,7 +108,9 @@ function MetricCard({
       className={`rounded-3xl border p-5 shadow-sm transition-all ${toneClasses}`}
     >
       <div className="space-y-2">
-        <p className={`text-xs font-medium uppercase tracking-[0.18em] ${titleClasses}`}>
+        <p
+          className={`text-xs font-medium uppercase tracking-[0.18em] ${titleClasses}`}
+        >
           {title}
         </p>
         <p className={`text-3xl font-semibold ${valueClasses}`}>{value}</p>
@@ -192,30 +212,67 @@ export default function DashboardHomePage() {
   const [plan, setPlan] = useState<PlanSlug>("starter");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [metrics, setMetrics] = useState({
+    reservas_hoy: 0,
+    reservas_semana: 0,
+    proximas_reservas: 0,
+    atendidas: 0,
+    canceladas: 0,
+    no_show: 0,
+  });
 
   useEffect(() => {
-    async function loadBusiness() {
+    async function loadDashboard() {
       try {
         setLoading(true);
         setError("");
 
-        const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
-        const data: BusinessResponse | { error?: string } = await res.json();
+        const [businessRes, metricsRes] = await Promise.all([
+          fetch(`${BACKEND_URL}/public/business/${slug}`),
+          fetch(`${BACKEND_URL}/dashboard/metrics/${slug}`),
+        ]);
 
-        if (!res.ok) {
+        const businessData: BusinessResponse | { error?: string } =
+          await businessRes.json();
+
+        const metricsData: MetricsResponse = await metricsRes.json();
+
+        if (!businessRes.ok) {
           throw new Error(
-            "error" in data && data.error
-              ? data.error
+            "error" in businessData && businessData.error
+              ? businessData.error
               : "No se pudo cargar el negocio"
           );
         }
 
-        if (!("business" in data)) {
+        if (!("business" in businessData)) {
           throw new Error("Respuesta inválida del backend");
         }
 
-        setBusinessName(data.business.name || "");
-        setPlan(normalizePlan(data.business.plan_slug));
+        setBusinessName(businessData.business.name || "");
+        setPlan(normalizePlan(businessData.business.plan_slug));
+
+        if (metricsRes.ok && metricsData?.metrics) {
+          setMetrics({
+            reservas_hoy: Number(metricsData.metrics.reservas_hoy || 0),
+            reservas_semana: Number(metricsData.metrics.reservas_semana || 0),
+            proximas_reservas: Number(
+              metricsData.metrics.proximas_reservas || 0
+            ),
+            atendidas: Number(metricsData.metrics.atendidas || 0),
+            canceladas: Number(metricsData.metrics.canceladas || 0),
+            no_show: Number(metricsData.metrics.no_show || 0),
+          });
+        } else {
+          setMetrics({
+            reservas_hoy: 0,
+            reservas_semana: 0,
+            proximas_reservas: 0,
+            atendidas: 0,
+            canceladas: 0,
+            no_show: 0,
+          });
+        }
       } catch (err: any) {
         setError(err?.message || "Error cargando dashboard");
       } finally {
@@ -224,7 +281,7 @@ export default function DashboardHomePage() {
     }
 
     if (slug) {
-      loadBusiness();
+      loadDashboard();
     }
   }, [slug]);
 
@@ -276,32 +333,32 @@ export default function DashboardHomePage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           <MetricCard
             title="Reservas de hoy"
-            value="—"
+            value={formatMetricValue(metrics.reservas_hoy, loading)}
             description="Aquí mostraremos las reservas creadas para el día actual."
           />
           <MetricCard
             title="Reservas de la semana"
-            value="—"
+            value={formatMetricValue(metrics.reservas_semana, loading)}
             description="Bloque pensado para medir el movimiento semanal del negocio."
           />
           <MetricCard
             title="Próximas reservas"
-            value="—"
+            value={formatMetricValue(metrics.proximas_reservas, loading)}
             description="Servirá para mostrar actividad inmediata y carga operativa."
           />
           <MetricCard
             title="Atendidas"
-            value="—"
+            value={formatMetricValue(metrics.atendidas, loading)}
             description="Contador de citas completadas para seguimiento operacional."
           />
           <MetricCard
             title="Canceladas"
-            value="—"
+            value={formatMetricValue(metrics.canceladas, loading)}
             description="Métrica clave para detectar fricción o pérdida de agenda."
           />
           <MetricCard
             title="No show"
-            value="—"
+            value={formatMetricValue(metrics.no_show, loading)}
             description="Indicador importante para control de ausencias y optimización."
           />
         </div>
