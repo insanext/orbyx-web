@@ -438,7 +438,7 @@ function SectionStat({
   );
 }
 
-function SelectableCard({
+function SelectableRow({
   active,
   title,
   description,
@@ -449,39 +449,52 @@ function SelectableCard({
   description: string;
   onClick: () => void;
 }) {
-    return (
-  <button
-    type="button"
-    onClick={onClick}
-    className="rounded-2xl border p-4 text-left transition"
-    style={{
-      borderColor: active ? "rgba(16,185,129,0.45)" : "var(--border-color)",
-      background: active
-        ? "linear-gradient(135deg, rgba(16,185,129,0.22), rgba(34,197,94,0.16), rgba(255,255,255,0.02))"
-        : "var(--bg-card)",
-      boxShadow: active
-        ? "0 10px 30px rgba(16,185,129,0.18)"
-        : "0 1px 2px rgba(0,0,0,0.04)",
-    }}
-  >
-    <p
-      className="text-sm font-semibold"
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition"
       style={{
-        color: active ? "rgb(6 95 70)" : "var(--text-main)",
+        borderColor: active ? "rgba(37,99,235,0.32)" : "var(--border-color)",
+        background: active
+          ? "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.05), var(--bg-card))"
+          : "var(--bg-card)",
+        boxShadow: active
+          ? "0 8px 24px rgba(37,99,235,0.10)"
+          : "0 1px 2px rgba(0,0,0,0.04)",
       }}
     >
-      {title}
-    </p>
-    <p
-      className="mt-2 text-sm leading-6"
-      style={{
-        color: active ? "rgb(20 83 45)" : "var(--text-muted)",
-      }}
-    >
-      {description}
-    </p>
-  </button>
-);
+      <span
+        className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
+        style={{
+          borderColor: active ? "rgb(37 99 235)" : "var(--border-color)",
+          background: active ? "rgba(37,99,235,0.12)" : "transparent",
+        }}
+      >
+        <span
+          className="h-2.5 w-2.5 rounded-full"
+          style={{
+            background: active ? "rgb(37 99 235)" : "transparent",
+          }}
+        />
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span
+          className="block text-sm font-semibold"
+          style={{ color: "var(--text-main)" }}
+        >
+          {title}
+        </span>
+        <span
+          className="mt-1 block text-sm leading-6"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {description}
+        </span>
+      </span>
+    </button>
+  );
 }
 
 function SoftChip({
@@ -900,23 +913,22 @@ export default function CampaignsPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-  slug,
-  channel,
-  campaign_name: campaignName.trim() || null,
-  segment,
-  inactive_days: Number(inactiveDays),
-  subject: subject.trim(),
-  message: message.trim(),
-  limit: Number(sendLimit),
-  sort,
-
-  brand_color: brandColor,
-  hero_image_url: heroImageUrl.trim(),
-  cta_text: ctaText.trim(),
-  cta_url: ctaUrl.trim(),
-  show_cta: showCta,
-  footer_note: footerNote.trim(),
-}),
+          slug,
+          channel,
+          campaign_name: campaignName.trim() || null,
+          segment,
+          inactive_days: Number(inactiveDays),
+          subject: subject.trim(),
+          message: message.trim(),
+          limit: Number(sendLimit),
+          sort,
+          brand_color: brandColor,
+          hero_image_url: heroImageUrl.trim(),
+          cta_text: ctaText.trim(),
+          cta_url: ctaUrl.trim(),
+          show_cta: showCta,
+          footer_note: footerNote.trim(),
+        }),
       });
 
       const data: SendEmailResponse = await res.json();
@@ -1077,7 +1089,7 @@ export default function CampaignsPage() {
             className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
           >
             <div className="space-y-6">
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
                 <div>
                   <label
                     className="mb-3 block text-sm font-medium"
@@ -1086,9 +1098,9 @@ export default function CampaignsPage() {
                     Canal
                   </label>
 
-                  <div className="grid gap-3">
+                  <div className="space-y-3">
                     {CHANNEL_OPTIONS.map((item) => (
-                      <SelectableCard
+                      <SelectableRow
                         key={item.key}
                         active={channel === item.key}
                         title={item.label}
@@ -1109,7 +1121,7 @@ export default function CampaignsPage() {
 
                   <div className="grid gap-3 md:grid-cols-2">
                     {SEGMENT_OPTIONS.map((item) => (
-                      <SelectableCard
+                      <SelectableRow
                         key={item.key}
                         active={segment === item.key}
                         title={item.label}
