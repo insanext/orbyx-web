@@ -106,6 +106,8 @@ type CampaignHistoryResponse = {
   error?: string;
 };
 
+type EmailVisualPreset = "minimal" | "promo" | "reminder";
+
 const PLAN_LABELS: Record<PlanSlug, string> = {
   starter: "Pro",
   pro: "Pro",
@@ -300,7 +302,10 @@ function getSuccessRate(item: CampaignHistoryItem) {
   return Math.round((Number(item.sent_count || 0) / base) * 100);
 }
 
-function getPerformanceBucket(rate: number, failedCount: number): HistoryPerformance {
+function getPerformanceBucket(
+  rate: number,
+  failedCount: number
+): HistoryPerformance {
   if (rate === 0 && failedCount > 0) return "failed";
   if (rate >= 90) return "excellent";
   if (rate >= 70) return "good";
@@ -378,11 +383,19 @@ function isDateWithinPeriod(
     const from = customFrom ? new Date(`${customFrom}T00:00:00`) : null;
     const to = customTo ? new Date(`${customTo}T23:59:59`) : null;
 
-    if (from && !Number.isNaN(from.getTime()) && itemDate.getTime() < from.getTime()) {
+    if (
+      from &&
+      !Number.isNaN(from.getTime()) &&
+      itemDate.getTime() < from.getTime()
+    ) {
       return false;
     }
 
-    if (to && !Number.isNaN(to.getTime()) && itemDate.getTime() > to.getTime()) {
+    if (
+      to &&
+      !Number.isNaN(to.getTime()) &&
+      itemDate.getTime() > to.getTime()
+    ) {
       return false;
     }
 
@@ -416,6 +429,32 @@ function StatCard({
   );
 }
 
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
+      <div className="mb-4 rounded-3xl border border-sky-200 bg-sky-50 px-4 py-4 dark:border-sky-900/40 dark:bg-sky-950/30">
+        <p className="text-base font-semibold text-slate-900 dark:text-white">
+          {title}
+        </p>
+        {description ? (
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            {description}
+          </p>
+        ) : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function ChannelButton({
   active,
   label,
@@ -431,19 +470,19 @@ function ChannelButton({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-3xl border p-4 text-left transition"
-      style={{
-        background: active ? "var(--text-main)" : "var(--bg-card)",
-        color: active ? "var(--bg-card)" : "var(--text-main)",
-        borderColor: "var(--border-color)",
-      }}
+      className={`rounded-3xl border p-4 text-left transition ${
+        active
+          ? "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900"
+          : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+      }`}
     >
       <p className="text-sm font-semibold">{label}</p>
       <p
-        className="mt-1 text-sm"
-        style={{
-          color: active ? "rgba(255,255,255,0.82)" : "var(--text-muted)",
-        }}
+        className={`mt-1 text-sm ${
+          active
+            ? "text-white/80 dark:text-slate-900/70"
+            : "text-slate-500 dark:text-slate-400"
+        }`}
       >
         {description}
       </p>
@@ -466,19 +505,19 @@ function SegmentButton({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-3xl border p-4 text-left transition"
-      style={{
-        background: active ? "var(--text-main)" : "var(--bg-card)",
-        color: active ? "var(--bg-card)" : "var(--text-main)",
-        borderColor: "var(--border-color)",
-      }}
+      className={`rounded-3xl border p-4 text-left transition ${
+        active
+          ? "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900"
+          : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+      }`}
     >
       <p className="text-sm font-semibold">{label}</p>
       <p
-        className="mt-1 text-sm"
-        style={{
-          color: active ? "rgba(255,255,255,0.82)" : "var(--text-muted)",
-        }}
+        className={`mt-1 text-sm ${
+          active
+            ? "text-white/80 dark:text-slate-900/70"
+            : "text-slate-500 dark:text-slate-400"
+        }`}
       >
         {description}
       </p>
@@ -500,6 +539,30 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
+        active
+          ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+          : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function PresetButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
         active
           ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
           : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
@@ -540,6 +603,7 @@ export default function CampaignsPage() {
   const [message, setMessage] = useState(
     "Hola {{nombre}}, queremos invitarte a volver. Tenemos horas disponibles esta semana y nos encantaría atenderte nuevamente."
   );
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loadingAudience, setLoadingAudience] = useState(true);
   const [sending, setSending] = useState(false);
@@ -552,19 +616,66 @@ export default function CampaignsPage() {
   const [historyError, setHistoryError] = useState("");
 
   const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>("30d");
-  const [historyChannel, setHistoryChannel] = useState<"all" | CampaignChannel>("all");
-  const [historySegment, setHistorySegment] = useState<"all" | CustomerSegment>("all");
+  const [historyChannel, setHistoryChannel] = useState<
+    "all" | CampaignChannel
+  >("all");
+  const [historySegment, setHistorySegment] = useState<
+    "all" | CustomerSegment
+  >("all");
   const [historyPerformance, setHistoryPerformance] =
     useState<HistoryPerformance>("all");
   const [historySearch, setHistorySearch] = useState("");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
+  const [emailPreset, setEmailPreset] = useState<EmailVisualPreset>("promo");
+  const [brandColor, setBrandColor] = useState("#0f172a");
+  const [heroImageUrl, setHeroImageUrl] = useState("");
+  const [ctaText, setCtaText] = useState("Reservar ahora");
+  const [ctaUrl, setCtaUrl] = useState(
+    slug ? `https://www.orbyx.cl/${slug}` : "https://www.orbyx.cl"
+  );
+  const [showCta, setShowCta] = useState(true);
+  const [footerNote, setFooterNote] = useState(
+    "Este correo fue enviado por tu negocio a través de Orbyx."
+  );
+
   const planLimit = PLAN_EMAIL_LIMITS[plan];
   const availableLimitOptions = ["10", "25", "50", "100", "150", "400", "1000"]
     .map(Number)
     .filter((value) => value <= planLimit)
     .map(String);
+
+  useEffect(() => {
+    if (slug) {
+      setCtaUrl(`https://www.orbyx.cl/${slug}`);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    if (emailPreset === "minimal") {
+      setBrandColor("#0f172a");
+      setHeroImageUrl("");
+      setShowCta(true);
+      setCtaText("Reservar hora");
+      setFooterNote("Gracias por seguir confiando en nosotros.");
+    }
+
+    if (emailPreset === "promo") {
+      setBrandColor("#1d4ed8");
+      setShowCta(true);
+      setCtaText("Ver horas disponibles");
+      setFooterNote("Aprovecha esta campaña especial por tiempo limitado.");
+    }
+
+    if (emailPreset === "reminder") {
+      setBrandColor("#0f766e");
+      setHeroImageUrl("");
+      setShowCta(true);
+      setCtaText("Agendar visita");
+      setFooterNote("Te esperamos para ayudarte a mantener tu agenda al día.");
+    }
+  }, [emailPreset]);
 
   async function loadCampaignHistory(currentSlug: string) {
     try {
@@ -686,7 +797,10 @@ export default function CampaignsPage() {
   const filteredHistory = useMemo(() => {
     return history.filter((item) => {
       const successRate = getSuccessRate(item);
-      const performanceBucket = getPerformanceBucket(successRate, item.failed_count);
+      const performanceBucket = getPerformanceBucket(
+        successRate,
+        item.failed_count
+      );
       const search = historySearch.trim().toLowerCase();
 
       const matchesPeriod = isDateWithinPeriod(
@@ -851,6 +965,9 @@ export default function CampaignsPage() {
     }
   }
 
+  const emailPreviewTitle =
+    campaignName.trim() || subject.trim() || "Campaña de Orbyx";
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -900,254 +1017,368 @@ export default function CampaignsPage() {
         />
       </section>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Panel
-          title="Configuración de campaña"
-          description="Selecciona canal, segmento, cantidad y define el mensaje base."
-        >
-          <div className="space-y-5">
-            <div className="space-y-3">
-              <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Nombre interno
-              </label>
-              <input
-                type="text"
-                value={campaignName}
-                onChange={(e) => setCampaignName(e.target.value)}
-                placeholder="Ej: Recuperación clientes 60 días"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Canal
-              </label>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {CHANNEL_OPTIONS.map((item) => (
-                  <ChannelButton
-                    key={item.key}
-                    active={channel === item.key}
-                    label={item.label}
-                    description={item.description}
-                    onClick={() => setChannel(item.key)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Segmento
-              </label>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {SEGMENT_OPTIONS.map((item) => (
-                  <SegmentButton
-                    key={item.key}
-                    active={segment === item.key}
-                    label={item.label}
-                    description={item.description}
-                    onClick={() => setSegment(item.key)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
+      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="space-y-6">
+          <SectionCard
+            title="Configuración de campaña"
+            description="Define nombre, canal, segmento, cantidad y el contenido principal."
+          >
+            <div className="space-y-5">
               <div className="space-y-3">
                 <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Inactivos en
-                </label>
-                <select
-                  value={inactiveDays}
-                  onChange={(e) => setInactiveDays(e.target.value)}
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
-                >
-                  <option value="30">30 días</option>
-                  <option value="60">60 días</option>
-                  <option value="90">90 días</option>
-                  <option value="120">120 días</option>
-                </select>
-              </div>
-
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  Nota de segmentación
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  El valor de inactividad impacta sobre el segmento{" "}
-                  <span className="font-semibold">Inactivos</span>. Para nuevos,
-                  recurrentes y frecuentes, el cálculo depende del total de
-                  visitas del cliente.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-3">
-                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Cantidad a enviar
-                </label>
-                <select
-                  value={sendLimit}
-                  onChange={(e) => setSendLimit(e.target.value)}
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
-                >
-                  {availableLimitOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option} destinatarios
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Prioridad de envío
-                </label>
-                <select
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as CampaignSort)}
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <option key={option.key} value={option.key}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                Regla actual del envío
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                Tu plan <span className="font-semibold">{PLAN_LABELS[plan]}</span>{" "}
-                permite hasta <span className="font-semibold">{planLimit}</span>{" "}
-                correos por campaña.
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                Se intentará enviar hasta{" "}
-                <span className="font-semibold">{sendLimit}</span> correos,
-                ordenados por{" "}
-                <span className="font-semibold">{selectedSortLabel}</span>.
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                Con la audiencia actual, el sistema podría enviar hasta{" "}
-                <span className="font-semibold">{limitedAudienceCount}</span>{" "}
-                mensajes por este canal.
-              </p>
-            </div>
-
-            {channel === "email" ? (
-              <div className="space-y-3">
-                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Asunto
+                  Nombre interno
                 </label>
                 <input
                   type="text"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Asunto del correo"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  placeholder="Ej: Recuperación clientes 60 días"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                 />
               </div>
-            ) : null}
 
-            <div className="space-y-3">
-              <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Mensaje
-              </label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows={8}
-                placeholder="Escribe el mensaje base de la campaña..."
-                className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
-              />
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Puedes usar textos como{" "}
-                <span className="font-semibold">{"{{nombre}}"}</span> para
-                personalización futura.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={handleSendCampaign}
-                disabled={sending || loadingAudience}
-                className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  background: "var(--text-main)",
-                }}
-              >
-                {sending ? "Enviando..." : "Enviar campaña"}
-              </button>
-
-              <div className="text-sm text-slate-500 dark:text-slate-400">
-                {channel === "email"
-                  ? `Se enviará a un máximo de ${sendLimit} clientes con email disponible.`
-                  : "WhatsApp se conectará en el siguiente paso."}
-              </div>
-            </div>
-
-            {sendSummary ? (
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  Resultado del envío
-                </p>
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-5">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Audiencia
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                      {sendSummary.audience_total || 0}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Límite aplicado
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                      {sendSummary.applied_limit || 0}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Con email
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                      {sendSummary.recipients_with_email || 0}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Enviados
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-300">
-                      {sendSummary.sent || 0}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Fallidos
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-rose-600 dark:text-rose-300">
-                      {sendSummary.failed || 0}
-                    </p>
-                  </div>
+              <div className="space-y-3">
+                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Canal
+                </label>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {CHANNEL_OPTIONS.map((item) => (
+                    <ChannelButton
+                      key={item.key}
+                      active={channel === item.key}
+                      label={item.label}
+                      description={item.description}
+                      onClick={() => setChannel(item.key)}
+                    />
+                  ))}
                 </div>
               </div>
-            ) : null}
+
+              <div className="space-y-3">
+                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Segmento
+                </label>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {SEGMENT_OPTIONS.map((item) => (
+                    <SegmentButton
+                      key={item.key}
+                      active={segment === item.key}
+                      label={item.label}
+                      description={item.description}
+                      onClick={() => setSegment(item.key)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Inactivos en
+                  </label>
+                  <select
+                    value={inactiveDays}
+                    onChange={(e) => setInactiveDays(e.target.value)}
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                  >
+                    <option value="30">30 días</option>
+                    <option value="60">60 días</option>
+                    <option value="90">90 días</option>
+                    <option value="120">120 días</option>
+                  </select>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Nota de segmentación
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                    El valor de inactividad impacta sobre el segmento{" "}
+                    <span className="font-semibold">Inactivos</span>. Para nuevos,
+                    recurrentes y frecuentes, el cálculo depende del total de
+                    visitas del cliente.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Cantidad a enviar
+                  </label>
+                  <select
+                    value={sendLimit}
+                    onChange={(e) => setSendLimit(e.target.value)}
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                  >
+                    {availableLimitOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option} destinatarios
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Prioridad de envío
+                  </label>
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as CampaignSort)}
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                  >
+                    {SORT_OPTIONS.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Regla actual del envío
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  Tu plan <span className="font-semibold">{PLAN_LABELS[plan]}</span>{" "}
+                  permite hasta <span className="font-semibold">{planLimit}</span>{" "}
+                  correos por campaña.
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  Se intentará enviar hasta{" "}
+                  <span className="font-semibold">{sendLimit}</span> correos,
+                  ordenados por{" "}
+                  <span className="font-semibold">{selectedSortLabel}</span>.
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  Con la audiencia actual, el sistema podría enviar hasta{" "}
+                  <span className="font-semibold">{limitedAudienceCount}</span>{" "}
+                  mensajes por este canal.
+                </p>
+              </div>
+
+              {channel === "email" ? (
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Asunto
+                  </label>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="Asunto del correo"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                  />
+                </div>
+              ) : null}
+
+              <div className="space-y-3">
+                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Mensaje
+                </label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={8}
+                  placeholder="Escribe el mensaje base de la campaña..."
+                  className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Puedes usar textos como{" "}
+                  <span className="font-semibold">{"{{nombre}}"}</span> para
+                  personalización futura.
+                </p>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Estilo del correo"
+            description="Configura una presentación más visual para el email. De momento afecta el preview."
+          >
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Plantilla visual
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <PresetButton
+                    active={emailPreset === "minimal"}
+                    label="Minimal"
+                    onClick={() => setEmailPreset("minimal")}
+                  />
+                  <PresetButton
+                    active={emailPreset === "promo"}
+                    label="Promo"
+                    onClick={() => setEmailPreset("promo")}
+                  />
+                  <PresetButton
+                    active={emailPreset === "reminder"}
+                    label="Recordatorio"
+                    onClick={() => setEmailPreset("reminder")}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Color principal
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={brandColor}
+                      onChange={(e) => setBrandColor(e.target.value)}
+                      className="h-11 w-16 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-950"
+                    />
+                    <input
+                      type="text"
+                      value={brandColor}
+                      onChange={(e) => setBrandColor(e.target.value)}
+                      className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Imagen/banner URL
+                  </label>
+                  <input
+                    type="text"
+                    value={heroImageUrl}
+                    onChange={(e) => setHeroImageUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Texto botón CTA
+                  </label>
+                  <input
+                    type="text"
+                    value={ctaText}
+                    onChange={(e) => setCtaText(e.target.value)}
+                    placeholder="Reservar ahora"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    URL botón CTA
+                  </label>
+                  <input
+                    type="text"
+                    value={ctaUrl}
+                    onChange={(e) => setCtaUrl(e.target.value)}
+                    placeholder="https://www.orbyx.cl/tu-negocio"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={showCta}
+                  onChange={(e) => setShowCta(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                Mostrar botón CTA en el correo
+              </label>
+
+              <div className="space-y-3">
+                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Nota inferior
+                </label>
+                <textarea
+                  value={footerNote}
+                  onChange={(e) => setFooterNote(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                />
+              </div>
+            </div>
+          </SectionCard>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSendCampaign}
+              disabled={sending || loadingAudience}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            >
+              {sending ? "Enviando..." : "Enviar campaña"}
+            </button>
+
+            <div className="text-sm text-slate-500 dark:text-slate-400">
+              {channel === "email"
+                ? `Se enviará a un máximo de ${sendLimit} clientes con email disponible.`
+                : "WhatsApp se conectará en el siguiente paso."}
+            </div>
           </div>
-        </Panel>
+
+          {sendSummary ? (
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                Resultado del envío
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-5">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Audiencia
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                    {sendSummary.audience_total || 0}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Límite aplicado
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                    {sendSummary.applied_limit || 0}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Con email
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                    {sendSummary.recipients_with_email || 0}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Enviados
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-300">
+                    {sendSummary.sent || 0}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Fallidos
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-rose-600 dark:text-rose-300">
+                    {sendSummary.failed || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
 
         <div className="space-y-6">
-          <Panel
+          <SectionCard
             title="Preview de audiencia"
             description="A quiénes impactaría esta campaña según canal y segmento."
           >
@@ -1174,23 +1405,23 @@ export default function CampaignsPage() {
                 />
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">
                   Resumen actual
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Canal: <span className="font-semibold">{selectedChannelLabel}</span>
-                  {" · "}
-                  Segmento:{" "}
+                  Canal:{" "}
+                  <span className="font-semibold">{selectedChannelLabel}</span>
+                  {" · "}Segmento:{" "}
                   <span className="font-semibold">{selectedSegmentLabel}</span>
-                  {" · "}
-                  Inactividad:{" "}
+                  {" · "}Inactividad:{" "}
                   <span className="font-semibold">{inactiveDays} días</span>
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Prioridad: <span className="font-semibold">{selectedSortLabel}</span>
-                  {" · "}
-                  Límite: <span className="font-semibold">{sendLimit}</span>
+                  Prioridad:{" "}
+                  <span className="font-semibold">{selectedSortLabel}</span>
+                  {" · "}Límite:{" "}
+                  <span className="font-semibold">{sendLimit}</span>
                 </p>
               </div>
 
@@ -1236,7 +1467,8 @@ export default function CampaignsPage() {
                                   : customer.phone || "Sin teléfono"}
                               </p>
                               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Última visita: {formatLastVisit(customer.last_visit_at)}
+                                Última visita:{" "}
+                                {formatLastVisit(customer.last_visit_at)}
                               </p>
                             </div>
 
@@ -1253,35 +1485,68 @@ export default function CampaignsPage() {
                 </div>
               </div>
             </div>
-          </Panel>
+          </SectionCard>
 
-          <Panel
-            title="Preview del mensaje"
-            description="Cómo se vería la campaña base."
+          <SectionCard
+            title="Preview del correo"
+            description="Vista previa más visual del email antes del envío."
           >
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/70">
-              {channel === "email" ? (
-                <>
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Asunto
+            <div className="rounded-[28px] border border-slate-200 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60">
+              <div className="mx-auto max-w-[680px] rounded-[28px] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div
+                  className="rounded-t-[28px] px-6 py-6 text-white"
+                  style={{ backgroundColor: brandColor }}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/75">
+                    Campaña Orbyx
                   </p>
-                  <p className="mt-2 text-base font-semibold text-slate-900 dark:text-white">
+                  <h3 className="mt-2 text-2xl font-bold">{emailPreviewTitle}</h3>
+                  <p className="mt-2 text-sm text-white/85">
                     {subject || "Sin asunto"}
                   </p>
-                </>
-              ) : (
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Mensaje WhatsApp
-                </p>
-              )}
+                </div>
 
-              <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-                <p className="whitespace-pre-line text-sm leading-7 text-slate-700 dark:text-slate-300">
-                  {message || "Sin contenido"}
-                </p>
+                {heroImageUrl ? (
+                  <div className="border-b border-slate-200 dark:border-slate-700">
+                    <img
+                      src={heroImageUrl}
+                      alt="Banner campaña"
+                      className="h-52 w-full object-cover"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="px-6 py-6">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+                    <p className="font-semibold text-slate-900 dark:text-white">
+                      Hola {"{{nombre}}"},
+                    </p>
+                    <p className="mt-3 whitespace-pre-line">
+                      {message || "Sin contenido"}
+                    </p>
+
+                    {showCta ? (
+                      <div className="mt-5">
+                        <a
+                          href={ctaUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex rounded-2xl px-5 py-3 text-sm font-semibold text-white"
+                          style={{ backgroundColor: brandColor }}
+                        >
+                          {ctaText || "Reservar ahora"}
+                        </a>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-5 border-t border-slate-200 pt-4 text-xs leading-6 text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    {footerNote}
+                  </div>
+                </div>
               </div>
             </div>
-          </Panel>
+          </SectionCard>
         </div>
       </div>
 
@@ -1326,7 +1591,7 @@ export default function CampaignsPage() {
           ) : null}
 
           <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <div className="space-y-3">
                   <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -1370,7 +1635,7 @@ export default function CampaignsPage() {
                           type="date"
                           value={customFrom}
                           onChange={(e) => setCustomFrom(e.target.value)}
-                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                         />
                       </div>
                       <div className="space-y-2">
@@ -1381,7 +1646,7 @@ export default function CampaignsPage() {
                           type="date"
                           value={customTo}
                           onChange={(e) => setCustomTo(e.target.value)}
-                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                         />
                       </div>
                     </div>
@@ -1397,7 +1662,7 @@ export default function CampaignsPage() {
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
                     placeholder="Buscar por nombre, asunto, mensaje, plan..."
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                   />
                 </div>
               </div>
@@ -1412,7 +1677,7 @@ export default function CampaignsPage() {
                     onChange={(e) =>
                       setHistoryChannel(e.target.value as "all" | CampaignChannel)
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                   >
                     <option value="all">Todos</option>
                     <option value="email">Email</option>
@@ -1427,11 +1692,9 @@ export default function CampaignsPage() {
                   <select
                     value={historySegment}
                     onChange={(e) =>
-                      setHistorySegment(
-                        e.target.value as "all" | CustomerSegment
-                      )
+                      setHistorySegment(e.target.value as "all" | CustomerSegment)
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                   >
                     <option value="all">Todos</option>
                     <option value="new">Nuevos</option>
@@ -1448,11 +1711,9 @@ export default function CampaignsPage() {
                   <select
                     value={historyPerformance}
                     onChange={(e) =>
-                      setHistoryPerformance(
-                        e.target.value as HistoryPerformance
-                      )
+                      setHistoryPerformance(e.target.value as HistoryPerformance)
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
                   >
                     <option value="all">Todos</option>
                     <option value="excellent">Excelente</option>
