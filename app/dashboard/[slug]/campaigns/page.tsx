@@ -449,25 +449,35 @@ function SelectableCard({
   description: string;
   onClick: () => void;
 }) {
-  return (
+    return (
     <button
       type="button"
       onClick={onClick}
       className="rounded-2xl border p-4 text-left transition"
       style={{
-        borderColor: active ? "rgba(37,99,235,0.34)" : "var(--border-color)",
+        borderColor: active ? "rgba(37,99,235,0.42)" : "var(--border-color)",
         background: active
-          ? "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.10), var(--bg-card))"
+          ? "linear-gradient(135deg, rgba(37,99,235,0.22), rgba(14,165,233,0.16), rgba(255,255,255,0.02))"
           : "var(--bg-card)",
         boxShadow: active
-          ? "0 8px 30px rgba(37,99,235,0.12)"
+          ? "0 10px 30px rgba(37,99,235,0.16)"
           : "0 1px 2px rgba(0,0,0,0.04)",
       }}
     >
-      <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+      <p
+        className="text-sm font-semibold"
+        style={{
+          color: active ? "rgb(15 23 42)" : "var(--text-main)",
+        }}
+      >
         {title}
       </p>
-      <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+      <p
+        className="mt-2 text-sm leading-6"
+        style={{
+          color: active ? "rgb(51 65 85)" : "var(--text-muted)",
+        }}
+      >
         {description}
       </p>
     </button>
