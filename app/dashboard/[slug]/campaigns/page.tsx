@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -13,6 +12,7 @@ type CampaignSort = "oldest" | "recent" | "most_visits" | "least_visits";
 type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
 type HistoryPeriod = "all" | "7d" | "30d" | "this_month" | "custom";
 type HistoryPerformance = "all" | "excellent" | "good" | "warning" | "failed";
+type EmailVisualPreset = "minimal" | "promo" | "reminder";
 
 type BusinessResponse = {
   business: {
@@ -106,8 +106,6 @@ type CampaignHistoryResponse = {
   error?: string;
 };
 
-type EmailVisualPreset = "minimal" | "promo" | "reminder";
-
 const PLAN_LABELS: Record<PlanSlug, string> = {
   starter: "Pro",
   pro: "Pro",
@@ -164,7 +162,7 @@ const CHANNEL_OPTIONS: Array<{
   {
     key: "whatsapp",
     label: "WhatsApp",
-    description: "Campañas y recuperación por WhatsApp.",
+    description: "Base lista para campañas y recuperación futura.",
   },
 ];
 
@@ -193,6 +191,14 @@ const SORT_OPTIONS: Array<{
     label: "Menos visitas",
     description: "Prioriza clientes menos recurrentes.",
   },
+];
+
+const INACTIVE_OPTIONS = [
+  { value: "30", label: "30 días" },
+  { value: "60", label: "60 días" },
+  { value: "90", label: "90 días" },
+  { value: "120", label: "120 días" },
+  { value: "121", label: "120+ días" },
 ];
 
 function normalizePlan(plan?: string): PlanSlug {
@@ -224,47 +230,106 @@ function formatLastVisit(value?: string | null) {
   }).format(date);
 }
 
-function getCustomerSegmentStyles(segment?: string) {
+function getCustomerSegmentMeta(segment?: string) {
   if (segment === "frequent") {
     return {
       label: "Frecuente",
-      className:
-        "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+      bg: "rgba(16,185,129,0.14)",
+      border: "rgba(16,185,129,0.28)",
+      color: "rgb(16 185 129)",
     };
   }
+
   if (segment === "recurrent") {
     return {
       label: "Recurrente",
-      className:
-        "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
+      bg: "rgba(14,165,233,0.14)",
+      border: "rgba(14,165,233,0.28)",
+      color: "rgb(14 165 233)",
     };
   }
+
   if (segment === "inactive") {
     return {
       label: "Inactivo",
-      className:
-        "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+      bg: "rgba(244,63,94,0.14)",
+      border: "rgba(244,63,94,0.28)",
+      color: "rgb(244 63 94)",
     };
   }
+
   return {
     label: "Nuevo",
-    className:
-      "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+    bg: "rgba(245,158,11,0.14)",
+    border: "rgba(245,158,11,0.28)",
+    color: "rgb(245 158 11)",
   };
 }
 
-function getChannelStyles(channel?: string) {
+function getChannelMeta(channel?: string) {
   if (channel === "whatsapp") {
     return {
       label: "WhatsApp",
-      className:
-        "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+      bg: "rgba(16,185,129,0.14)",
+      border: "rgba(16,185,129,0.28)",
+      color: "rgb(16 185 129)",
     };
   }
+
   return {
     label: "Email",
-    className:
-      "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
+    bg: "rgba(139,92,246,0.14)",
+    border: "rgba(139,92,246,0.28)",
+    color: "rgb(139 92 246)",
+  };
+}
+
+function getPerformanceBucket(
+  rate: number,
+  failedCount: number
+): HistoryPerformance {
+  if (rate === 0 && failedCount > 0) return "failed";
+  if (rate >= 90) return "excellent";
+  if (rate >= 70) return "good";
+  if (rate > 0) return "warning";
+  return "failed";
+}
+
+function getPerformanceMeta(rate: number, failedCount: number) {
+  const bucket = getPerformanceBucket(rate, failedCount);
+
+  if (bucket === "excellent") {
+    return {
+      label: "Excelente",
+      bg: "rgba(16,185,129,0.14)",
+      border: "rgba(16,185,129,0.28)",
+      color: "rgb(16 185 129)",
+    };
+  }
+
+  if (bucket === "good") {
+    return {
+      label: "Bueno",
+      bg: "rgba(14,165,233,0.14)",
+      border: "rgba(14,165,233,0.28)",
+      color: "rgb(14 165 233)",
+    };
+  }
+
+  if (bucket === "warning") {
+    return {
+      label: "Regular",
+      bg: "rgba(245,158,11,0.14)",
+      border: "rgba(245,158,11,0.28)",
+      color: "rgb(245 158 11)",
+    };
+  }
+
+  return {
+    label: "Fallido",
+    bg: "rgba(244,63,94,0.14)",
+    border: "rgba(244,63,94,0.28)",
+    color: "rgb(244 63 94)",
   };
 }
 
@@ -284,48 +349,6 @@ function getSuccessRate(item: CampaignHistoryItem) {
   const base = Number(item.applied_limit || 0);
   if (base <= 0) return 0;
   return Math.round((Number(item.sent_count || 0) / base) * 100);
-}
-
-function getPerformanceBucket(
-  rate: number,
-  failedCount: number
-): HistoryPerformance {
-  if (rate === 0 && failedCount > 0) return "failed";
-  if (rate >= 90) return "excellent";
-  if (rate >= 70) return "good";
-  if (rate > 0) return "warning";
-  return "failed";
-}
-
-function getPerformanceStyles(rate: number, failedCount: number) {
-  const bucket = getPerformanceBucket(rate, failedCount);
-
-  if (bucket === "excellent") {
-    return {
-      label: "Excelente",
-      className:
-        "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-    };
-  }
-  if (bucket === "good") {
-    return {
-      label: "Bueno",
-      className:
-        "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
-    };
-  }
-  if (bucket === "warning") {
-    return {
-      label: "Regular",
-      className:
-        "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-    };
-  }
-  return {
-    label: "Fallido",
-    className:
-      "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  };
 }
 
 function isDateWithinPeriod(
@@ -367,73 +390,62 @@ function isDateWithinPeriod(
     if (from && !Number.isNaN(from.getTime()) && itemDate.getTime() < from.getTime()) {
       return false;
     }
+
     if (to && !Number.isNaN(to.getTime()) && itemDate.getTime() > to.getTime()) {
       return false;
     }
+
     return true;
   }
 
   return true;
 }
 
-function StatCard({
-  title,
+function SectionStat({
+  label,
   value,
-  description,
+  helper,
 }: {
-  title: string;
+  label: string;
   value: string;
-  description: string;
+  helper: string;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-        {title}
+    <div
+      className="rounded-2xl border p-4"
+      style={{
+        borderColor: "var(--border-color)",
+        background:
+          "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+      }}
+    >
+      <p
+        className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {label}
       </p>
-      <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
+      <p
+        className="mt-2 text-2xl font-semibold"
+        style={{ color: "var(--text-main)" }}
+      >
         {value}
       </p>
-      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-        {description}
+      <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+        {helper}
       </p>
     </div>
   );
 }
 
-function ClassicSection({
+function SelectableCard({
+  active,
   title,
   description,
-  children,
+  onClick,
 }: {
+  active: boolean;
   title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
-      <div className="mb-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 dark:border-sky-900/40 dark:bg-sky-950/30">
-        <p className="text-base font-semibold text-slate-900 dark:text-white">
-          {title}
-        </p>
-        {description ? (
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            {description}
-          </p>
-        ) : null}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function ChannelButton({
-  active,
-  label,
-  description,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
   description: string;
   onClick: () => void;
 }) {
@@ -441,62 +453,28 @@ function ChannelButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-3xl border p-4 text-left transition ${
-        active
-          ? "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900"
-          : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
-      }`}
+      className="rounded-2xl border p-4 text-left transition"
+      style={{
+        borderColor: active ? "rgba(37,99,235,0.34)" : "var(--border-color)",
+        background: active
+          ? "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.10), var(--bg-card))"
+          : "var(--bg-card)",
+        boxShadow: active
+          ? "0 8px 30px rgba(37,99,235,0.12)"
+          : "0 1px 2px rgba(0,0,0,0.04)",
+      }}
     >
-      <p className="text-sm font-semibold">{label}</p>
-      <p
-        className={`mt-1 text-sm ${
-          active
-            ? "text-white/80 dark:text-slate-900/70"
-            : "text-slate-500 dark:text-slate-400"
-        }`}
-      >
+      <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+        {title}
+      </p>
+      <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
         {description}
       </p>
     </button>
   );
 }
 
-function SegmentButton({
-  active,
-  label,
-  description,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  description: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-3xl border p-4 text-left transition ${
-        active
-          ? "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900"
-          : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
-      }`}
-    >
-      <p className="text-sm font-semibold">{label}</p>
-      <p
-        className={`mt-1 text-sm ${
-          active
-            ? "text-white/80 dark:text-slate-900/70"
-            : "text-slate-500 dark:text-slate-400"
-        }`}
-      >
-        {description}
-      </p>
-    </button>
-  );
-}
-
-function FilterChip({
+function SoftChip({
   active,
   label,
   onClick,
@@ -509,35 +487,14 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
-        active
-          ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-          : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function PresetButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
-        active
-          ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-          : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-      }`}
+      className="rounded-full px-3 py-2 text-xs font-semibold transition"
+      style={{
+        background: active
+          ? "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))"
+          : "var(--bg-soft)",
+        color: active ? "#ffffff" : "var(--text-main)",
+        border: active ? "1px solid rgba(37,99,235,0.34)" : "1px solid var(--border-color)",
+      }}
     >
       {label}
     </button>
@@ -546,12 +503,28 @@ function PresetButton({
 
 function HistorySkeleton() {
   return (
-    <div className="divide-y divide-slate-200 dark:divide-slate-700">
+    <div className="space-y-4 p-4">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="px-4 py-4">
-          <div className="h-4 w-40 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-          <div className="mt-3 h-4 w-56 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-          <div className="mt-2 h-4 w-72 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+        <div
+          key={index}
+          className="rounded-2xl border p-4"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+          }}
+        >
+          <div
+            className="h-4 w-40 animate-pulse rounded"
+            style={{ background: "var(--bg-soft)" }}
+          />
+          <div
+            className="mt-3 h-4 w-56 animate-pulse rounded"
+            style={{ background: "var(--bg-soft)" }}
+          />
+          <div
+            className="mt-2 h-4 w-72 animate-pulse rounded"
+            style={{ background: "var(--bg-soft)" }}
+          />
         </div>
       ))}
     </div>
@@ -561,18 +534,21 @@ function HistorySkeleton() {
 export default function CampaignsPage() {
   const params = useParams();
   const slug =
-    ((params as any)?.slug as string) || ((params as any)?.Slug as string);
+    ((params as { slug?: string })?.slug as string) ||
+    ((params as { Slug?: string })?.Slug as string) ||
+    "";
 
+  const [businessName, setBusinessName] = useState("Orbyx");
   const [plan, setPlan] = useState<PlanSlug>("starter");
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [segment, setSegment] = useState<CustomerSegment>("inactive");
-  const [inactiveDays, setInactiveDays] = useState("60");
+  const [inactiveDays, setInactiveDays] = useState("121");
   const [sendLimit, setSendLimit] = useState("50");
   const [sort, setSort] = useState<CampaignSort>("oldest");
   const [campaignName, setCampaignName] = useState("");
-  const [subject, setSubject] = useState("Te extrañamos en Orbyx");
+  const [subject, setSubject] = useState("Te extrañamos en nuestro negocio");
   const [message, setMessage] = useState(
-    "Hola {{nombre}}, queremos invitarte a volver. Tenemos horas disponibles esta semana y nos encantaría atenderte nuevamente."
+    "Hola {{nombre}}, queremos invitarte a volver. Tenemos horas disponibles y nos encantaría atenderte nuevamente."
   );
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -603,10 +579,22 @@ export default function CampaignsPage() {
   const [ctaUrl, setCtaUrl] = useState("");
   const [showCta, setShowCta] = useState(true);
   const [footerNote, setFooterNote] = useState(
-    "Te esperamos para ayudarte a mantener tu agenda al día."
+    "Te esperamos para ayudarte a mantener tu agenda más activa."
   );
 
+  const inputClass =
+    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+  const textareaClass =
+    "min-h-[120px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition";
+  const selectClass =
+    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+  const primaryButtonClass =
+    "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+  const secondaryButtonClass =
+    "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+
   const planLimit = PLAN_EMAIL_LIMITS[plan];
+
   const availableLimitOptions = ["10", "25", "50", "100", "150", "400", "1000"]
     .map(Number)
     .filter((value) => value <= planLimit)
@@ -626,12 +614,14 @@ export default function CampaignsPage() {
       setCtaText("Reservar hora");
       setFooterNote("Gracias por seguir confiando en nosotros.");
     }
+
     if (emailPreset === "promo") {
       setBrandColor("#0f766e");
       setShowCta(true);
       setCtaText("Agendar visita");
-      setFooterNote("Te esperamos para ayudarte a mantener tu agenda al día.");
+      setFooterNote("Te esperamos para ayudarte a mantener tu agenda más activa.");
     }
+
     if (emailPreset === "reminder") {
       setBrandColor("#1d4ed8");
       setHeroImageUrl("");
@@ -640,27 +630,6 @@ export default function CampaignsPage() {
       setFooterNote("Recuerda que tenemos agenda disponible para ti.");
     }
   }, [emailPreset]);
-
-  async function loadCampaignHistory(currentSlug: string) {
-    try {
-      setLoadingHistory(true);
-      setHistoryError("");
-
-      const res = await fetch(`${BACKEND_URL}/campaigns/history/${currentSlug}`);
-      const data: CampaignHistoryResponse = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "No se pudo cargar el historial");
-      }
-
-      setHistory(Array.isArray(data.campaigns) ? data.campaigns : []);
-    } catch (err: any) {
-      setHistoryError(err?.message || "Error cargando historial");
-      setHistory([]);
-    } finally {
-      setLoadingHistory(false);
-    }
-  }
 
   useEffect(() => {
     async function loadBusinessPlan() {
@@ -671,8 +640,11 @@ export default function CampaignsPage() {
         if (res.ok && "business" in data) {
           const normalizedPlan = normalizePlan(data.business.plan_slug);
           setPlan(normalizedPlan);
+          setBusinessName(data.business.name || "Orbyx");
         }
-      } catch (_) {}
+      } catch {
+        //
+      }
     }
 
     if (slug) {
@@ -701,6 +673,7 @@ export default function CampaignsPage() {
         const res = await fetch(
           `${BACKEND_URL}/customers/${slug}?${params.toString()}`
         );
+
         const data: CustomersResponse = await res.json();
 
         if (!res.ok) {
@@ -708,8 +681,8 @@ export default function CampaignsPage() {
         }
 
         setCustomers(Array.isArray(data.customers) ? data.customers : []);
-      } catch (err: any) {
-        setError(err?.message || "Error cargando audiencia");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Error cargando audiencia");
         setCustomers([]);
       } finally {
         setLoadingAudience(false);
@@ -720,6 +693,27 @@ export default function CampaignsPage() {
       loadAudience();
     }
   }, [slug, segment, inactiveDays]);
+
+  async function loadCampaignHistory(currentSlug: string) {
+    try {
+      setLoadingHistory(true);
+      setHistoryError("");
+
+      const res = await fetch(`${BACKEND_URL}/campaigns/history/${currentSlug}`);
+      const data: CampaignHistoryResponse = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cargar el historial");
+      }
+
+      setHistory(Array.isArray(data.campaigns) ? data.campaigns : []);
+    } catch (err: unknown) {
+      setHistoryError(err instanceof Error ? err.message : "Error cargando historial");
+      setHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
 
   useEffect(() => {
     if (slug) {
@@ -841,6 +835,9 @@ export default function CampaignsPage() {
   const selectedSortLabel =
     SORT_OPTIONS.find((item) => item.key === sort)?.label || "Más antiguos";
 
+  const emailPreviewTitle =
+    campaignName.trim() || subject.trim() || "Campaña de Orbyx";
+
   function resetHistoryFilters() {
     setHistoryPeriod("30d");
     setHistoryChannel("all");
@@ -857,7 +854,7 @@ export default function CampaignsPage() {
     setSendSummary(null);
 
     if (channel !== "email") {
-      setError("WhatsApp todavía no está conectado. Primero activaremos Email.");
+      setError("WhatsApp quedará listo visualmente, pero el envío real sigue pendiente.");
       return;
     }
 
@@ -920,81 +917,163 @@ export default function CampaignsPage() {
       if (slug) {
         await loadCampaignHistory(slug);
       }
-    } catch (err: any) {
-      setError(err?.message || "Error enviando campaña");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error enviando campaña");
     } finally {
       setSending(false);
     }
   }
 
-  const emailPreviewTitle =
-    campaignName.trim() || subject.trim() || "Campaña de Orbyx";
-
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Campañas"
-        title="Campañas y recuperación"
-        description="Prepara campañas por email y WhatsApp usando la segmentación real de clientes."
-      />
+      <section
+        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+        style={{
+          borderColor: "rgba(59,130,246,0.25)",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+        }}
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Campañas
+            </p>
+
+            <h1
+              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+              style={{ color: "var(--text-main)" }}
+            >
+              Campañas y recuperación
+            </h1>
+
+            <p
+              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Prepara campañas por email, organiza tu audiencia real y deja lista
+              la base para recuperación automática y WhatsApp.
+            </p>
+          </div>
+
+          <div
+            className="grid gap-3 sm:grid-cols-2"
+            style={{ color: "var(--text-main)" }}
+          >
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Plan actual
+              </p>
+              <p className="mt-2 text-sm font-semibold">{PLAN_LABELS[plan]}</p>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Límite por campaña
+              </p>
+              <p className="mt-2 text-sm font-semibold">{planLimit} contactos</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+        <div
+          className="rounded-2xl border px-4 py-3 text-sm shadow-sm"
+          style={{
+            borderColor: "rgba(244,63,94,0.28)",
+            background: "rgba(244,63,94,0.10)",
+            color: "rgb(251 113 133)",
+          }}
+        >
           {error}
         </div>
       ) : null}
 
       {resultMessage ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+        <div
+          className="rounded-2xl border px-4 py-3 text-sm shadow-sm"
+          style={{
+            borderColor: "rgba(16,185,129,0.28)",
+            background: "rgba(16,185,129,0.10)",
+            color: "rgb(52 211 153)",
+          }}
+        >
           {resultMessage}
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-        <StatCard
-          title="Plan actual"
-          value={PLAN_LABELS[plan]}
-          description={`Límite por campaña email: ${planLimit} destinatarios.`}
-        />
-        <StatCard
-          title="Canal"
+      <section className="grid gap-4 xl:grid-cols-4">
+        <SectionStat
+          label="Canal"
           value={selectedChannelLabel}
-          description="Canal seleccionado para esta campaña."
+          helper="Canal elegido para esta campaña."
         />
-        <StatCard
-          title="Segmento"
+        <SectionStat
+          label="Segmento"
           value={selectedSegmentLabel}
-          description="Grupo de clientes elegido para esta acción."
+          helper="Grupo de clientes elegido."
         />
-        <StatCard
-          title="Listos para enviar"
+        <SectionStat
+          label="Listos para enviar"
           value={loadingAudience ? "..." : String(audienceStats.availableForChannel)}
-          description={
+          helper={
             channel === "email"
-              ? "Clientes con email disponible."
+              ? "Clientes con correo disponible."
               : "Clientes con teléfono disponible."
           }
         />
+        <SectionStat
+          label="Se enviarán"
+          value={loadingAudience ? "..." : String(limitedAudienceCount)}
+          helper="Tope real según filtro, canal y límite."
+        />
       </section>
 
-      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
-          <ClassicSection
+          <Panel
             title="Configuración de campaña"
-            description="Aquí defines a quién se le enviará la campaña."
+            description="Define canal, segmento, nivel de inactividad, prioridad y cantidad."
+            className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
           >
-            <div className="space-y-5">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <div className="space-y-6">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div>
+                  <label
+                    className="mb-3 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Canal
                   </label>
-                  <div className="grid grid-cols-1 gap-3">
+
+                  <div className="grid gap-3">
                     {CHANNEL_OPTIONS.map((item) => (
-                      <ChannelButton
+                      <SelectableCard
                         key={item.key}
                         active={channel === item.key}
-                        label={item.label}
+                        title={item.label}
                         description={item.description}
                         onClick={() => setChannel(item.key)}
                       />
@@ -1002,16 +1081,20 @@ export default function CampaignsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                <div>
+                  <label
+                    className="mb-3 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Segmento
                   </label>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+
+                  <div className="grid gap-3 md:grid-cols-2">
                     {SEGMENT_OPTIONS.map((item) => (
-                      <SegmentButton
+                      <SelectableCard
                         key={item.key}
                         active={segment === item.key}
-                        label={item.label}
+                        title={item.label}
                         description={item.description}
                         onClick={() => setSegment(item.key)}
                       />
@@ -1020,44 +1103,50 @@ export default function CampaignsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Inactivos en
                   </label>
+
                   <select
                     value={inactiveDays}
                     onChange={(e) => setInactiveDays(e.target.value)}
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                    className={selectClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   >
-                    <option value="30">30 días</option>
-                    <option value="60">60 días</option>
-                    <option value="90">90 días</option>
-                    <option value="120">120 días</option>
+                    {INACTIVE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Nota de segmentación
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                    El valor de inactividad impacta sobre el segmento inactivos.
-                    Para nuevos, recurrentes y frecuentes, el cálculo depende del
-                    total de visitas del cliente.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Cantidad a enviar
                   </label>
+
                   <select
                     value={sendLimit}
                     onChange={(e) => setSendLimit(e.target.value)}
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                    className={selectClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   >
                     {availableLimitOptions.map((option) => (
                       <option key={option} value={option}>
@@ -1067,14 +1156,23 @@ export default function CampaignsPage() {
                   </select>
                 </div>
 
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Prioridad de envío
                   </label>
+
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value as CampaignSort)}
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                    className={selectClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   >
                     {SORT_OPTIONS.map((option) => (
                       <option key={option.key} value={option.key}>
@@ -1085,343 +1183,499 @@ export default function CampaignsPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+                }}
+              >
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Regla actual del envío
                 </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Tu plan <span className="font-semibold">{PLAN_LABELS[plan]}</span>{" "}
-                  permite hasta <span className="font-semibold">{planLimit}</span>{" "}
-                  correos por campaña.
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Se intentará enviar hasta <span className="font-semibold">{sendLimit}</span>{" "}
-                  correos, ordenados por <span className="font-semibold">{selectedSortLabel}</span>.
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Con la audiencia actual, el sistema podría enviar hasta{" "}
-                  <span className="font-semibold">{limitedAudienceCount}</span>{" "}
-                  correos reales por este canal.
-                </p>
-              </div>
-            </div>
-          </ClassicSection>
 
-          <ClassicSection
-            title="Correo"
-            description="Aquí defines el contenido y el estilo del email."
-          >
-            <div className="space-y-6">
-              <div className="space-y-5">
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Nombre interno
-                  </label>
-                  <input
-                    type="text"
-                    value={campaignName}
-                    onChange={(e) => setCampaignName(e.target.value)}
-                    placeholder="Ej: Recuperación clientes 60 días"
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Asunto
-                  </label>
-                  <input
-                    type="text"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Asunto del correo"
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Mensaje
-                  </label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={7}
-                    placeholder="Escribe el mensaje base de la campaña..."
-                    className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                  />
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Puedes usar textos como <span className="font-semibold">{"{{nombre}}"}</span> para personalización futura.
+                <div
+                  className="mt-3 space-y-2 text-sm leading-6"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  <p>
+                    Tu plan <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{PLAN_LABELS[plan]}</span> permite hasta{" "}
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{planLimit}</span> contactos por campaña.
+                  </p>
+                  <p>
+                    El sistema intentará enviar hasta{" "}
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{sendLimit}</span> contactos,
+                    ordenados por{" "}
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{selectedSortLabel}</span>.
+                  </p>
+                  <p>
+                    Con la audiencia actual, el alcance real sería de{" "}
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{limitedAudienceCount}</span>{" "}
+                    contactos por este canal.
                   </p>
                 </div>
               </div>
+            </div>
+          </Panel>
 
-              <div className="border-t border-slate-200 pt-5 dark:border-slate-700">
-                <div className="space-y-5">
-                  <div className="space-y-3">
-                    <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Plantilla visual
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <PresetButton
-                        active={emailPreset === "minimal"}
-                        label="Minimal"
-                        onClick={() => setEmailPreset("minimal")}
-                      />
-                      <PresetButton
-                        active={emailPreset === "promo"}
-                        label="Promo"
-                        onClick={() => setEmailPreset("promo")}
-                      />
-                      <PresetButton
-                        active={emailPreset === "reminder"}
-                        label="Recordatorio"
-                        onClick={() => setEmailPreset("reminder")}
-                      />
-                    </div>
-                  </div>
+          <Panel
+            title="Email"
+            description="Separa el contenido del mensaje del estilo visual para que quede más profesional."
+            className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+          >
+            <div className="space-y-5">
+              <div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Nombre interno de campaña
+                </label>
+                <input
+                  type="text"
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  placeholder="Ej: Reactivación 120+ días"
+                  className={inputClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-3">
-                      <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                        Color principal
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="color"
-                          value={brandColor}
-                          onChange={(e) => setBrandColor(e.target.value)}
-                          className="h-11 w-16 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-950"
-                        />
-                        <input
-                          type="text"
-                          value={brandColor}
-                          onChange={(e) => setBrandColor(e.target.value)}
-                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                        />
-                      </div>
-                    </div>
+              <div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Asunto
+                </label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Ej: Te extrañamos, vuelve cuando quieras"
+                  className={inputClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
 
-                    <div className="space-y-3">
-                      <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                        Imagen/banner URL
-                      </label>
-                      <input
-                        type="text"
-                        value={heroImageUrl}
-                        onChange={(e) => setHeroImageUrl(e.target.value)}
-                        placeholder="https://..."
-                        className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                      />
-                    </div>
-                  </div>
+              <div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Mensaje
+                </label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Escribe el contenido principal del correo..."
+                  className={textareaClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+                <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                  Puedes dejar preparado el placeholder <strong>{"{{nombre}}"}</strong> para personalización futura.
+                </p>
+              </div>
+            </div>
+          </Panel>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-3">
-                      <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                        Texto botón CTA
-                      </label>
-                      <input
-                        type="text"
-                        value={ctaText}
-                        onChange={(e) => setCtaText(e.target.value)}
-                        placeholder="Reservar ahora"
-                        className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                      />
-                    </div>
+          <Panel
+            title="Estilo del email"
+            description="Branding visual, CTA, banner y nota final."
+            className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+          >
+            <div className="space-y-5">
+              <div>
+                <label
+                  className="mb-3 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Plantilla visual
+                </label>
 
-                    <div className="space-y-3">
-                      <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                        URL botón CTA
-                      </label>
-                      <input
-                        type="text"
-                        value={ctaUrl}
-                        onChange={(e) => setCtaUrl(e.target.value)}
-                        placeholder="https://www.orbyx.cl/tu-negocio"
-                        className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
-                      />
-                    </div>
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  <SoftChip
+                    active={emailPreset === "minimal"}
+                    label="Minimal"
+                    onClick={() => setEmailPreset("minimal")}
+                  />
+                  <SoftChip
+                    active={emailPreset === "promo"}
+                    label="Promo"
+                    onClick={() => setEmailPreset("promo")}
+                  />
+                  <SoftChip
+                    active={emailPreset === "reminder"}
+                    label="Recordatorio"
+                    onClick={() => setEmailPreset("reminder")}
+                  />
+                </div>
+              </div>
 
-                  <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={showCta}
-                      onChange={(e) => setShowCta(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Mostrar botón CTA en el correo
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Color principal
                   </label>
-
-                  <div className="space-y-3">
-                    <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Nota inferior
-                    </label>
-                    <textarea
-                      value={footerNote}
-                      onChange={(e) => setFooterNote(e.target.value)}
-                      rows={3}
-                      className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={brandColor}
+                      onChange={(e) => setBrandColor(e.target.value)}
+                      className="h-11 w-16 rounded-xl border p-1"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                      }}
+                    />
+                    <input
+                      type="text"
+                      value={brandColor}
+                      onChange={(e) => setBrandColor(e.target.value)}
+                      className={inputClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Imagen o banner URL
+                  </label>
+                  <input
+                    type="text"
+                    value={heroImageUrl}
+                    onChange={(e) => setHeroImageUrl(e.target.value)}
+                    placeholder="https://..."
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Texto CTA
+                  </label>
+                  <input
+                    type="text"
+                    value={ctaText}
+                    onChange={(e) => setCtaText(e.target.value)}
+                    placeholder="Ej: Agendar visita"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    URL CTA
+                  </label>
+                  <input
+                    type="text"
+                    value={ctaUrl}
+                    onChange={(e) => setCtaUrl(e.target.value)}
+                    placeholder={`https://www.orbyx.cl/${slug}`}
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <label
+                className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={showCta}
+                  onChange={(e) => setShowCta(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                Mostrar botón CTA en el correo
+              </label>
+
+              <div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Footer / nota final
+                </label>
+                <textarea
+                  value={footerNote}
+                  onChange={(e) => setFooterNote(e.target.value)}
+                  className={textareaClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
               </div>
             </div>
-          </ClassicSection>
+          </Panel>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={handleOpenConfirm}
-              disabled={sending || loadingAudience}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-            >
-              {sending ? "Enviando..." : "Enviar campaña"}
-            </button>
+          <div
+            className="rounded-[26px] border p-4 shadow-sm"
+            style={{
+              borderColor: "rgba(37,99,235,0.26)",
+              background:
+                "linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.10), var(--bg-card))",
+            }}
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Acción crítica
+                </p>
+                <p className="mt-1 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                  Esta campaña intentará impactar hasta{" "}
+                  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                    {limitedAudienceCount}
+                  </span>{" "}
+                  contactos reales con la configuración actual.
+                </p>
+              </div>
 
-            <div className="text-sm text-slate-500 dark:text-slate-400">
-              Se intentarán enviar hasta {limitedAudienceCount} correos reales con la configuración actual.
+              <button
+                type="button"
+                onClick={handleOpenConfirm}
+                disabled={sending || loadingAudience}
+                className={`${primaryButtonClass} min-w-[220px] font-semibold shadow-lg`}
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                  boxShadow: "0 18px 40px rgba(37,99,235,0.28)",
+                }}
+              >
+                {sending ? "Enviando campaña..." : "Enviar campaña"}
+              </button>
             </div>
           </div>
 
           {sendSummary ? (
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                Resultado del envío
-              </p>
-              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-5">
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Audiencia
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                    {sendSummary.audience_total || 0}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Límite aplicado
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                    {sendSummary.applied_limit || 0}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Con email
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                    {sendSummary.recipients_with_email || 0}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Enviados
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-300">
-                    {sendSummary.sent || 0}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Fallidos
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-rose-600 dark:text-rose-300">
-                    {sendSummary.failed || 0}
-                  </p>
-                </div>
+            <Panel
+              title="Resultado del envío"
+              description="Resumen del último envío realizado."
+              className="bg-[linear-gradient(180deg,rgba(16,185,129,0.05),transparent_35%)]"
+            >
+              <div className="grid gap-4 md:grid-cols-5">
+                <SectionStat
+                  label="Audiencia"
+                  value={String(sendSummary.audience_total || 0)}
+                  helper="Clientes encontrados."
+                />
+                <SectionStat
+                  label="Límite aplicado"
+                  value={String(sendSummary.applied_limit || 0)}
+                  helper="Tope real procesado."
+                />
+                <SectionStat
+                  label="Con email"
+                  value={String(sendSummary.recipients_with_email || 0)}
+                  helper="Correos válidos encontrados."
+                />
+                <SectionStat
+                  label="Enviados"
+                  value={String(sendSummary.sent || 0)}
+                  helper="Envíos exitosos."
+                />
+                <SectionStat
+                  label="Fallidos"
+                  value={String(sendSummary.failed || 0)}
+                  helper="Correos que fallaron."
+                />
               </div>
-            </div>
+            </Panel>
           ) : null}
         </div>
 
         <div className="space-y-6">
-          <ClassicSection
+          <Panel
             title="Preview de audiencia"
-            description="A quiénes impactaría esta campaña según canal y segmento."
+            description="A quiénes impactaría esta campaña según el canal activo."
+            className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
           >
             <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-                <StatCard
-                  title="Con email"
+              <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
+                <SectionStat
+                  label="Con email"
                   value={loadingAudience ? "..." : String(audienceStats.withEmail)}
-                  description="Clientes alcanzables por correo."
+                  helper="Clientes alcanzables por correo."
                 />
-                <StatCard
-                  title="Con WhatsApp"
+                <SectionStat
+                  label="Con WhatsApp"
                   value={loadingAudience ? "..." : String(audienceStats.withWhatsapp)}
-                  description="Clientes alcanzables por teléfono."
+                  helper="Clientes alcanzables por teléfono."
                 />
-                <StatCard
-                  title="Se enviarán"
+                <SectionStat
+                  label="Se enviarán"
                   value={loadingAudience ? "..." : String(limitedAudienceCount)}
-                  description="Cantidad máxima según filtro y límite elegido."
+                  helper="Máximo alcanzable según filtros."
                 />
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+                }}
+              >
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Resumen actual
                 </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Canal: <span className="font-semibold">{selectedChannelLabel}</span>
-                  {" · "}Segmento: <span className="font-semibold">{selectedSegmentLabel}</span>
-                  {" · "}Inactividad: <span className="font-semibold">{inactiveDays} días</span>
+                <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                  Canal: <strong style={{ color: "var(--text-main)" }}>{selectedChannelLabel}</strong>
+                  {" · "}Segmento:{" "}
+                  <strong style={{ color: "var(--text-main)" }}>{selectedSegmentLabel}</strong>
+                  {" · "}Inactividad:{" "}
+                  <strong style={{ color: "var(--text-main)" }}>
+                    {INACTIVE_OPTIONS.find((item) => item.value === inactiveDays)?.label || `${inactiveDays} días`}
+                  </strong>
                 </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Prioridad: <span className="font-semibold">{selectedSortLabel}</span>
-                  {" · "}Límite: <span className="font-semibold">{sendLimit}</span>
+                <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                  Prioridad: <strong style={{ color: "var(--text-main)" }}>{selectedSortLabel}</strong>
+                  {" · "}Límite: <strong style={{ color: "var(--text-main)" }}>{sendLimit}</strong>
                 </p>
               </div>
 
-              <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70">
-                <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              <div
+                className="overflow-hidden rounded-2xl border"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <div
+                  className="border-b px-4 py-3"
+                  style={{ borderColor: "var(--border-color)" }}
+                >
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Muestra de destinatarios
                   </p>
                 </div>
 
-                <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
                   {loadingAudience ? (
                     Array.from({ length: 5 }).map((_, index) => (
                       <div key={index} className="px-4 py-4">
-                        <div className="h-4 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-                        <div className="mt-2 h-4 w-44 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                        <div
+                          className="h-4 w-32 animate-pulse rounded"
+                          style={{ background: "var(--bg-soft)" }}
+                        />
+                        <div
+                          className="mt-2 h-4 w-44 animate-pulse rounded"
+                          style={{ background: "var(--bg-soft)" }}
+                        />
                       </div>
                     ))
                   ) : previewRecipients.length === 0 ? (
-                    <div className="px-4 py-10 text-sm text-slate-600 dark:text-slate-400">
+                    <div
+                      className="px-4 py-10 text-sm"
+                      style={{ color: "var(--text-muted)" }}
+                    >
                       No hay clientes disponibles para este canal con la segmentación actual.
                     </div>
                   ) : (
                     previewRecipients.map((customer) => {
-                      const segmentStyle = getCustomerSegmentStyles(customer.segment);
+                      const segmentMeta = getCustomerSegmentMeta(customer.segment);
 
                       return (
-                        <div
-                          key={customer.id}
-                          className="px-4 py-4 text-sm text-slate-700 dark:text-slate-300"
-                        >
+                        <div key={customer.id} className="px-4 py-4">
                           <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="font-semibold text-slate-900 dark:text-white">
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className="font-semibold"
+                                style={{ color: "var(--text-main)" }}
+                              >
                                 {customer.name || "Sin nombre"}
                               </p>
-                              <p className="mt-1 text-slate-600 dark:text-slate-400">
+                              <p
+                                className="mt-1 text-sm"
+                                style={{ color: "var(--text-muted)" }}
+                              >
                                 {channel === "email"
                                   ? customer.email || "Sin email"
                                   : customer.phone || "Sin teléfono"}
                               </p>
-                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              <p
+                                className="mt-1 text-xs"
+                                style={{ color: "var(--text-muted)" }}
+                              >
                                 Última visita: {formatLastVisit(customer.last_visit_at)}
                               </p>
                             </div>
 
                             <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${segmentStyle.className}`}
+                              className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                              style={{
+                                background: segmentMeta.bg,
+                                borderColor: segmentMeta.border,
+                                color: segmentMeta.color,
+                              }}
                             >
-                              {segmentStyle.label}
+                              {segmentMeta.label}
                             </span>
                           </div>
                         </div>
@@ -1431,27 +1685,43 @@ export default function CampaignsPage() {
                 </div>
               </div>
             </div>
-          </ClassicSection>
+          </Panel>
 
-          <ClassicSection
+          <Panel
             title="Preview del correo"
-            description="Vista previa del email antes del envío."
+            description="Vista previa más cercana a una pieza de marketing real."
+            className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
           >
-            <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
-              <div className="mx-auto max-w-[680px] overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div
+              className="rounded-[28px] border p-4"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <div
+                className="mx-auto max-w-[680px] overflow-hidden rounded-[28px] border shadow-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "#ffffff",
+                }}
+              >
                 <div
                   className="px-6 py-6 text-white"
-                  style={{ backgroundColor: brandColor }}
+                  style={{
+                    background:
+                      `linear-gradient(135deg, ${brandColor}, ${brandColor}DD)`,
+                  }}
                 >
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/75">
-                    Campaña Orbyx
+                    {businessName}
                   </p>
                   <h3 className="mt-2 text-2xl font-bold">{emailPreviewTitle}</h3>
                   <p className="mt-2 text-sm text-white/85">{subject || "Sin asunto"}</p>
                 </div>
 
                 {heroImageUrl ? (
-                  <div className="border-b border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                  <div style={{ background: "#F3F4F6" }}>
                     <img
                       src={heroImageUrl}
                       alt="Banner campaña"
@@ -1461,10 +1731,18 @@ export default function CampaignsPage() {
                 ) : null}
 
                 <div className="px-6 py-6">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
-                    <p className="font-semibold text-slate-900 dark:text-white">
+                  <div
+                    className="rounded-2xl border p-5 text-sm leading-7"
+                    style={{
+                      borderColor: "#E5E7EB",
+                      background: "#F8FAFC",
+                      color: "#334155",
+                    }}
+                  >
+                    <p className="font-semibold" style={{ color: "#0F172A" }}>
                       Hola {"{{nombre}}"},
                     </p>
+
                     <p className="mt-3 whitespace-pre-line">
                       {message || "Sin contenido"}
                     </p>
@@ -1476,7 +1754,10 @@ export default function CampaignsPage() {
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex rounded-2xl px-5 py-3 text-sm font-semibold text-white"
-                          style={{ backgroundColor: brandColor }}
+                          style={{
+                            background:
+                              `linear-gradient(135deg, ${brandColor}, ${brandColor}DD)`,
+                          }}
                         >
                           {ctaText || "Reservar ahora"}
                         </a>
@@ -1484,35 +1765,41 @@ export default function CampaignsPage() {
                     ) : null}
                   </div>
 
-                  <div className="mt-5 border-t border-slate-200 pt-4 text-xs leading-6 text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  <div
+                    className="mt-5 border-t pt-4 text-xs leading-6"
+                    style={{
+                      borderColor: "#E5E7EB",
+                      color: "#64748B",
+                    }}
+                  >
                     {footerNote}
                   </div>
                 </div>
               </div>
             </div>
-          </ClassicSection>
+          </Panel>
         </div>
       </div>
 
       <section className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-          <StatCard
-            title="Campañas filtradas"
+        <div className="grid gap-4 xl:grid-cols-4">
+          <SectionStat
+            label="Campañas filtradas"
             value={loadingHistory ? "..." : String(historyStats.total)}
-            description="Resultado según filtros activos."
+            helper="Resultado según filtros activos."
           />
-          <StatCard
-            title="Correos enviados"
+          <SectionStat
+            label="Correos enviados"
             value={loadingHistory ? "..." : String(historyStats.totalSent)}
-            description="Suma total de enviados en la vista actual."
+            helper="Suma total en la vista actual."
           />
-          <StatCard
-            title="Tasa promedio"
+          <SectionStat
+            label="Tasa promedio"
             value={loadingHistory ? "..." : `${historyStats.avgSuccess}%`}
-            description="Éxito promedio según límite aplicado."
+            helper="Éxito promedio según límite aplicado."
           />
-          <StatCard
-            title="Último envío"
+          <SectionStat
+            label="Último envío"
             value={
               loadingHistory
                 ? "..."
@@ -1520,49 +1807,68 @@ export default function CampaignsPage() {
                 ? formatDate(historyStats.latest.created_at)
                 : "Sin envíos"
             }
-            description="Registro más reciente dentro del filtro."
+            helper="Registro más reciente del filtro."
           />
         </div>
 
         <Panel
           title="Historial de campañas"
-          description="Ahora con filtros por canal, segmento, fecha, búsqueda y rendimiento."
+          description="Filtros por canal, segmento, fecha, búsqueda y rendimiento."
+          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
         >
           {historyError ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+            <div
+              className="rounded-2xl border px-4 py-3 text-sm"
+              style={{
+                borderColor: "rgba(244,63,94,0.28)",
+                background: "rgba(244,63,94,0.10)",
+                color: "rgb(251 113 133)",
+              }}
+            >
               {historyError}
             </div>
           ) : null}
 
           <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div
+              className="rounded-2xl border p-4"
+              style={{
+                borderColor: "var(--border-color)",
+                background:
+                  "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+              }}
+            >
+              <div className="grid gap-4 xl:grid-cols-2">
                 <div className="space-y-3">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  <p
+                    className="text-xs font-medium uppercase tracking-[0.18em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
                     Período
                   </p>
+
                   <div className="flex flex-wrap gap-2">
-                    <FilterChip
+                    <SoftChip
                       active={historyPeriod === "all"}
                       label="Todo"
                       onClick={() => setHistoryPeriod("all")}
                     />
-                    <FilterChip
+                    <SoftChip
                       active={historyPeriod === "7d"}
                       label="7 días"
                       onClick={() => setHistoryPeriod("7d")}
                     />
-                    <FilterChip
+                    <SoftChip
                       active={historyPeriod === "30d"}
                       label="30 días"
                       onClick={() => setHistoryPeriod("30d")}
                     />
-                    <FilterChip
+                    <SoftChip
                       active={historyPeriod === "this_month"}
                       label="Este mes"
                       onClick={() => setHistoryPeriod("this_month")}
                     />
-                    <FilterChip
+                    <SoftChip
                       active={historyPeriod === "custom"}
                       label="Personalizado"
                       onClick={() => setHistoryPeriod("custom")}
@@ -1570,27 +1876,44 @@ export default function CampaignsPage() {
                   </div>
 
                   {historyPeriod === "custom" ? (
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <label
+                          className="mb-2 block text-sm font-medium"
+                          style={{ color: "var(--text-main)" }}
+                        >
                           Desde
                         </label>
                         <input
                           type="date"
                           value={customFrom}
                           onChange={(e) => setCustomFrom(e.target.value)}
-                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
+
+                      <div>
+                        <label
+                          className="mb-2 block text-sm font-medium"
+                          style={{ color: "var(--text-main)" }}
+                        >
                           Hasta
                         </label>
                         <input
                           type="date"
                           value={customTo}
                           onChange={(e) => setCustomTo(e.target.value)}
-                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
                         />
                       </div>
                     </div>
@@ -1598,22 +1921,34 @@ export default function CampaignsPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  <label
+                    className="block text-xs font-medium uppercase tracking-[0.18em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
                     Búsqueda
-                  </p>
+                  </label>
+
                   <input
                     type="text"
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
                     placeholder="Buscar por nombre, asunto, mensaje, plan..."
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   />
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Canal
                   </label>
                   <select
@@ -1621,7 +1956,12 @@ export default function CampaignsPage() {
                     onChange={(e) =>
                       setHistoryChannel(e.target.value as "all" | CampaignChannel)
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                    className={selectClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   >
                     <option value="all">Todos</option>
                     <option value="email">Email</option>
@@ -1629,8 +1969,11 @@ export default function CampaignsPage() {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Segmento
                   </label>
                   <select
@@ -1638,7 +1981,12 @@ export default function CampaignsPage() {
                     onChange={(e) =>
                       setHistorySegment(e.target.value as "all" | CustomerSegment)
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                    className={selectClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   >
                     <option value="all">Todos</option>
                     <option value="new">Nuevos</option>
@@ -1648,8 +1996,11 @@ export default function CampaignsPage() {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     Rendimiento
                   </label>
                   <select
@@ -1657,7 +2008,12 @@ export default function CampaignsPage() {
                     onChange={(e) =>
                       setHistoryPerformance(e.target.value as HistoryPerformance)
                     }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-slate-500"
+                    className={selectClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
                   >
                     <option value="all">Todos</option>
                     <option value="excellent">Excelente</option>
@@ -1672,7 +2028,12 @@ export default function CampaignsPage() {
                 <button
                   type="button"
                   onClick={resetHistoryFilters}
-                  className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className={secondaryButtonClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 >
                   Limpiar filtros
                 </button>
@@ -1680,16 +2041,33 @@ export default function CampaignsPage() {
                 <button
                   type="button"
                   onClick={() => slug && loadCampaignHistory(slug)}
-                  className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className={secondaryButtonClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 >
                   Recargar historial
                 </button>
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70">
-              <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+            <div
+              className="overflow-hidden rounded-2xl border"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+              }}
+            >
+              <div
+                className="border-b px-4 py-3"
+                style={{ borderColor: "var(--border-color)" }}
+              >
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
                   Últimas campañas
                 </p>
               </div>
@@ -1697,137 +2075,156 @@ export default function CampaignsPage() {
               {loadingHistory ? (
                 <HistorySkeleton />
               ) : filteredHistory.length === 0 ? (
-                <div className="px-4 py-10 text-sm text-slate-600 dark:text-slate-400">
+                <div
+                  className="px-4 py-10 text-sm"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   No hay campañas que coincidan con los filtros actuales.
                 </div>
               ) : (
-                <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                <div className="space-y-4 p-4">
                   {filteredHistory.map((item) => {
-                    const channelStyle = getChannelStyles(item.channel);
-                    const segmentStyle = getCustomerSegmentStyles(item.segment);
+                    const channelMeta = getChannelMeta(item.channel);
+                    const segmentMeta = getCustomerSegmentMeta(item.segment);
                     const successRate = getSuccessRate(item);
-                    const performanceStyle = getPerformanceStyles(
+                    const performanceMeta = getPerformanceMeta(
                       successRate,
                       item.failed_count
                     );
 
                     return (
-                      <div key={item.id} className="px-4 py-5">
+                      <div
+                        key={item.id}
+                        className="rounded-2xl border p-4 shadow-sm"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background:
+                            "linear-gradient(135deg, rgba(37,99,235,0.04), var(--bg-card))",
+                        }}
+                      >
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="truncate text-base font-semibold text-slate-900 dark:text-white">
+                              <p
+                                className="truncate text-base font-semibold"
+                                style={{ color: "var(--text-main)" }}
+                              >
                                 {item.campaign_name?.trim() || "Campaña sin nombre"}
                               </p>
 
                               <span
-                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${channelStyle.className}`}
+                                className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                                style={{
+                                  background: channelMeta.bg,
+                                  borderColor: channelMeta.border,
+                                  color: channelMeta.color,
+                                }}
                               >
-                                {channelStyle.label}
+                                {channelMeta.label}
                               </span>
 
                               <span
-                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${segmentStyle.className}`}
+                                className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                                style={{
+                                  background: segmentMeta.bg,
+                                  borderColor: segmentMeta.border,
+                                  color: segmentMeta.color,
+                                }}
                               >
                                 {getSegmentLabel(item.segment)}
                               </span>
 
                               <span
-                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${performanceStyle.className}`}
+                                className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                                style={{
+                                  background: performanceMeta.bg,
+                                  borderColor: performanceMeta.border,
+                                  color: performanceMeta.color,
+                                }}
                               >
-                                {performanceStyle.label}
+                                {performanceMeta.label}
                               </span>
                             </div>
 
-                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                            <p
+                              className="mt-2 text-sm"
+                              style={{ color: "var(--text-muted)" }}
+                            >
                               {formatDate(item.created_at)}
                             </p>
 
                             {item.subject ? (
-                              <p className="mt-3 text-sm font-medium text-slate-900 dark:text-white">
+                              <p
+                                className="mt-3 text-sm font-medium"
+                                style={{ color: "var(--text-main)" }}
+                              >
                                 Asunto: {item.subject}
                               </p>
                             ) : null}
 
                             {item.message ? (
-                              <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600 dark:text-slate-400">
+                              <p
+                                className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6"
+                                style={{ color: "var(--text-muted)" }}
+                              >
                                 {item.message}
                               </p>
                             ) : null}
 
                             <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                Plan: {getPlanLabel(item.plan_slug)}
-                              </span>
-                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                Orden: {getSortLabel(item.sort)}
-                              </span>
-                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                Inactividad: {item.inactive_days} días
-                              </span>
-                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                Plan límite: {item.plan_limit}
-                              </span>
-                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                Pedido: {item.requested_limit}
-                              </span>
+                              {[
+                                `Plan: ${getPlanLabel(item.plan_slug)}`,
+                                `Orden: ${getSortLabel(item.sort)}`,
+                                `Inactividad: ${item.inactive_days} días`,
+                                `Plan límite: ${item.plan_limit}`,
+                                `Pedido: ${item.requested_limit}`,
+                              ].map((label) => (
+                                <span
+                                  key={label}
+                                  className="rounded-full border px-3 py-1 font-medium"
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-soft)",
+                                    color: "var(--text-main)",
+                                  }}
+                                >
+                                  {label}
+                                </span>
+                              ))}
                             </div>
                           </div>
 
                           <div className="grid min-w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                                Audiencia
-                              </p>
-                              <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                                {item.audience_total}
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                                Aplicado
-                              </p>
-                              <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                                {item.applied_limit}
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                                Con contacto
-                              </p>
-                              <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                                {item.recipients_with_contact}
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                                Enviados
-                              </p>
-                              <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-300">
-                                {item.sent_count}
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                                Fallidos
-                              </p>
-                              <p className="mt-1 text-lg font-semibold text-rose-600 dark:text-rose-300">
-                                {item.failed_count}
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                                Éxito
-                              </p>
-                              <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                                {successRate}%
-                              </p>
-                            </div>
+                            <SectionStat
+                              label="Audiencia"
+                              value={String(item.audience_total)}
+                              helper="Total encontrado."
+                            />
+                            <SectionStat
+                              label="Aplicado"
+                              value={String(item.applied_limit)}
+                              helper="Límite usado."
+                            />
+                            <SectionStat
+                              label="Con contacto"
+                              value={String(item.recipients_with_contact)}
+                              helper="Contactos válidos."
+                            />
+                            <SectionStat
+                              label="Enviados"
+                              value={String(item.sent_count)}
+                              helper="Envíos exitosos."
+                            />
+                            <SectionStat
+                              label="Fallidos"
+                              value={String(item.failed_count)}
+                              helper="Intentos fallidos."
+                            />
+                            <SectionStat
+                              label="Éxito"
+                              value={`${successRate}%`}
+                              helper="Tasa de éxito."
+                            />
                           </div>
                         </div>
                       </div>
@@ -1841,28 +2238,66 @@ export default function CampaignsPage() {
       </section>
 
       {confirmOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
-          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgba(2, 6, 23, 0.65)" }}
+        >
+          <div
+            className="w-full max-w-lg rounded-[28px] border p-6 shadow-2xl"
+            style={{
+              borderColor: "rgba(59,130,246,0.25)",
+              background:
+                "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.06), var(--bg-card))",
+            }}
+          >
+            <p
+              className="text-xs font-medium uppercase tracking-[0.18em]"
+              style={{ color: "var(--text-muted)" }}
+            >
               Confirmar envío
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-              ¿Estás seguro?
+
+            <h3
+              className="mt-2 text-2xl font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              ¿Enviar campaña ahora?
             </h3>
-            <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">
-              Enviarás hasta <span className="font-semibold">{limitedAudienceCount}</span>{" "}
-              correos en simultáneo usando el segmento{" "}
-              <span className="font-semibold">{selectedSegmentLabel}</span>.
+
+            <p
+              className="mt-3 text-sm leading-7"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Estás a punto de enviar hasta{" "}
+              <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                {limitedAudienceCount}
+              </span>{" "}
+              correos del segmento{" "}
+              <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                {selectedSegmentLabel}
+              </span>.
             </p>
-            <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-400">
-              Asunto: <span className="font-semibold">{subject || "Sin asunto"}</span>
+
+            <p
+              className="mt-2 text-sm leading-7"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Asunto:{" "}
+              <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                {subject || "Sin asunto"}
+              </span>
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                className={secondaryButtonClass}
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
               >
                 Cancelar
               </button>
@@ -1870,7 +2305,12 @@ export default function CampaignsPage() {
               <button
                 type="button"
                 onClick={handleSendCampaignConfirmed}
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                className={`${primaryButtonClass} font-semibold`}
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                  boxShadow: "0 18px 40px rgba(37,99,235,0.28)",
+                }}
               >
                 Sí, enviar campaña
               </button>
