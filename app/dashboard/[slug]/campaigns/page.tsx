@@ -9,6 +9,7 @@ const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
 type CampaignChannel = "email" | "whatsapp";
+type CampaignSort = "oldest" | "recent" | "most_visits" | "least_visits";
 
 type Customer = {
   id: string;
@@ -102,6 +103,35 @@ const CHANNEL_OPTIONS: Array<{
     key: "whatsapp",
     label: "WhatsApp",
     description: "Campañas y recuperación por WhatsApp.",
+  },
+];
+
+const SEND_LIMIT_OPTIONS = ["10", "25", "50", "100"];
+
+const SORT_OPTIONS: Array<{
+  key: CampaignSort;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: "oldest",
+    label: "Más antiguos",
+    description: "Prioriza clientes con visita más antigua.",
+  },
+  {
+    key: "recent",
+    label: "Más recientes",
+    description: "Prioriza clientes con visita más reciente.",
+  },
+  {
+    key: "most_visits",
+    label: "Más visitas",
+    description: "Prioriza clientes más frecuentes.",
+  },
+  {
+    key: "least_visits",
+    label: "Menos visitas",
+    description: "Prioriza clientes menos recurrentes.",
   },
 ];
 
@@ -254,6 +284,8 @@ export default function CampaignsPage() {
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [segment, setSegment] = useState<CustomerSegment>("inactive");
   const [inactiveDays, setInactiveDays] = useState("60");
+  const [sendLimit, setSendLimit] = useState("50");
+  const [sort, setSort] = useState<CampaignSort>("oldest");
   const [campaignName, setCampaignName] = useState("");
   const [subject, setSubject] = useState("Te extrañamos en Orbyx");
   const [message, setMessage] = useState(
@@ -317,6 +349,13 @@ export default function CampaignsPage() {
     };
   }, [customers, channel]);
 
+  const limitedAudienceCount = useMemo(() => {
+    return Math.min(
+      Number(sendLimit || 50),
+      audienceStats.availableForChannel || 0
+    );
+  }, [sendLimit, audienceStats.availableForChannel]);
+
   const previewRecipients = useMemo(() => {
     const filtered =
       channel === "email"
@@ -332,6 +371,9 @@ export default function CampaignsPage() {
   const selectedChannelLabel =
     CHANNEL_OPTIONS.find((item) => item.key === channel)?.label || "Canal";
 
+  const selectedSortLabel =
+    SORT_OPTIONS.find((item) => item.key === sort)?.label || "Más antiguos";
+
   async function handleSendCampaign() {
     try {
       setError("");
@@ -339,7 +381,9 @@ export default function CampaignsPage() {
       setSendSummary(null);
 
       if (channel !== "email") {
-        setError("WhatsApp todavía no está conectado. Primero activaremos Email.");
+        setError(
+          "WhatsApp todavía no está conectado. Primero activaremos Email."
+        );
         return;
       }
 
@@ -367,6 +411,8 @@ export default function CampaignsPage() {
           inactive_days: Number(inactiveDays),
           subject: subject.trim(),
           message: message.trim(),
+          limit: Number(sendLimit),
+          sort,
         }),
       });
 
@@ -378,7 +424,9 @@ export default function CampaignsPage() {
 
       setSendSummary(data);
       setResultMessage(
-        `Campaña enviada. Correos enviados: ${data.sent || 0}. Fallidos: ${data.failed || 0}.`
+        `Campaña enviada. Correos enviados: ${data.sent || 0}. Fallidos: ${
+          data.failed || 0
+        }.`
       );
     } catch (err: any) {
       setError(err?.message || "Error enviando campaña");
@@ -439,7 +487,7 @@ export default function CampaignsPage() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Panel
           title="Configuración de campaña"
-          description="Selecciona canal, segmento y define el mensaje base."
+          description="Selecciona canal, segmento, cantidad y define el mensaje base."
         >
           <div className="space-y-5">
             <div className="space-y-3">
@@ -519,6 +567,59 @@ export default function CampaignsPage() {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-3">
+                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Cantidad a enviar
+                </label>
+                <select
+                  value={sendLimit}
+                  onChange={(e) => setSendLimit(e.target.value)}
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                >
+                  {SEND_LIMIT_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option} destinatarios
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Prioridad de envío
+                </label>
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as CampaignSort)}
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                Regla actual del envío
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                Se intentará enviar hasta{" "}
+                <span className="font-semibold">{sendLimit}</span> correos,
+                ordenados por{" "}
+                <span className="font-semibold">{selectedSortLabel}</span>.
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                Con la audiencia actual, el sistema podría enviar hasta{" "}
+                <span className="font-semibold">{limitedAudienceCount}</span>{" "}
+                mensajes por este canal.
+              </p>
+            </div>
+
             {channel === "email" ? (
               <div className="space-y-3">
                 <label className="block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -567,7 +668,7 @@ export default function CampaignsPage() {
 
               <div className="text-sm text-slate-500 dark:text-slate-400">
                 {channel === "email"
-                  ? "Se enviará a clientes con email disponible."
+                  ? `Se enviará a un máximo de ${sendLimit} clientes con email disponible.`
                   : "WhatsApp se conectará en el siguiente paso."}
               </div>
             </div>
@@ -625,7 +726,9 @@ export default function CampaignsPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
                 <StatCard
                   title="Con email"
-                  value={loadingAudience ? "..." : String(audienceStats.withEmail)}
+                  value={
+                    loadingAudience ? "..." : String(audienceStats.withEmail)
+                  }
                   description="Clientes alcanzables por correo."
                 />
                 <StatCard
@@ -636,13 +739,9 @@ export default function CampaignsPage() {
                   description="Clientes alcanzables por teléfono."
                 />
                 <StatCard
-                  title="Canal activo"
-                  value={
-                    loadingAudience
-                      ? "..."
-                      : String(audienceStats.availableForChannel)
-                  }
-                  description="Clientes listos para este envío."
+                  title="Se enviarán"
+                  value={loadingAudience ? "..." : String(limitedAudienceCount)}
+                  description="Cantidad máxima según filtro y límite elegido."
                 />
               </div>
 
@@ -658,6 +757,11 @@ export default function CampaignsPage() {
                   {" · "}
                   Inactividad:{" "}
                   <span className="font-semibold">{inactiveDays} días</span>
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  Prioridad: <span className="font-semibold">{selectedSortLabel}</span>
+                  {" · "}
+                  Límite: <span className="font-semibold">{sendLimit}</span>
                 </p>
               </div>
 
