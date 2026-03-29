@@ -42,6 +42,25 @@ type CustomersResponse = {
   error?: string;
 };
 
+type SendEmailResponse = {
+  ok?: boolean;
+  campaign_name?: string | null;
+  channel?: string;
+  slug?: string;
+  segment?: string;
+  inactive_days?: number;
+  audience_total?: number;
+  recipients_with_email?: number;
+  sent?: number;
+  failed?: number;
+  errors?: Array<{
+    customer_id: string;
+    email: string;
+    error: string;
+  }>;
+  error?: string;
+};
+
 const SEGMENT_OPTIONS: Array<{
   key: CustomerSegment;
   label: string;
@@ -242,13 +261,18 @@ export default function CampaignsPage() {
   );
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loadingAudience, setLoadingAudience] = useState(true);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [resultMessage, setResultMessage] = useState("");
+  const [sendSummary, setSendSummary] = useState<SendEmailResponse | null>(null);
 
   useEffect(() => {
     async function loadAudience() {
       try {
         setLoadingAudience(true);
         setError("");
+        setResultMessage("");
+        setSendSummary(null);
 
         const params = new URLSearchParams();
         params.set("segment", segment);
@@ -308,6 +332,61 @@ export default function CampaignsPage() {
   const selectedChannelLabel =
     CHANNEL_OPTIONS.find((item) => item.key === channel)?.label || "Canal";
 
+  async function handleSendCampaign() {
+    try {
+      setError("");
+      setResultMessage("");
+      setSendSummary(null);
+
+      if (channel !== "email") {
+        setError("WhatsApp todavía no está conectado. Primero activaremos Email.");
+        return;
+      }
+
+      if (!subject.trim()) {
+        setError("Debes ingresar un asunto.");
+        return;
+      }
+
+      if (!message.trim()) {
+        setError("Debes ingresar un mensaje.");
+        return;
+      }
+
+      setSending(true);
+
+      const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          slug,
+          campaign_name: campaignName.trim() || null,
+          segment,
+          inactive_days: Number(inactiveDays),
+          subject: subject.trim(),
+          message: message.trim(),
+        }),
+      });
+
+      const data: SendEmailResponse = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo enviar la campaña");
+      }
+
+      setSendSummary(data);
+      setResultMessage(
+        `Campaña enviada. Correos enviados: ${data.sent || 0}. Fallidos: ${data.failed || 0}.`
+      );
+    } catch (err: any) {
+      setError(err?.message || "Error enviando campaña");
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -319,6 +398,12 @@ export default function CampaignsPage() {
       {error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
           {error}
+        </div>
+      ) : null}
+
+      {resultMessage ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+          {resultMessage}
         </div>
       ) : null}
 
@@ -467,16 +552,67 @@ export default function CampaignsPage() {
               </p>
             </div>
 
-            <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                Envío aún no activado
-              </p>
-              <p className="mt-2 text-sm leading-6 text-amber-700 dark:text-amber-200/90">
-                Esta primera versión deja lista la configuración, la audiencia y
-                el preview. El siguiente paso será conectar el envío real por
-                email y después por WhatsApp.
-              </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSendCampaign}
+                disabled={sending || loadingAudience}
+                className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: "var(--text-main)",
+                }}
+              >
+                {sending ? "Enviando..." : "Enviar campaña"}
+              </button>
+
+              <div className="text-sm text-slate-500 dark:text-slate-400">
+                {channel === "email"
+                  ? "Se enviará a clientes con email disponible."
+                  : "WhatsApp se conectará en el siguiente paso."}
+              </div>
             </div>
+
+            {sendSummary ? (
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Resultado del envío
+                </p>
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Audiencia
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                      {sendSummary.audience_total || 0}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Con email
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                      {sendSummary.recipients_with_email || 0}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Enviados
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-300">
+                      {sendSummary.sent || 0}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Fallidos
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-rose-600 dark:text-rose-300">
+                      {sendSummary.failed || 0}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </Panel>
 
