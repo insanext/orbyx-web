@@ -33,7 +33,7 @@ type BranchItem = {
 
 const navItems = [
   {
-    label: "Resumen",
+    label: "Dashboard",
     href: "",
     icon: LayoutDashboard,
   },
@@ -43,9 +43,9 @@ const navItems = [
     icon: CalendarDays,
   },
   {
-    label: "Sucursales",
-    href: "/branches",
-    icon: GitBranch,
+    label: "Clientes",
+    href: "/customers",
+    icon: Users,
   },
   {
     label: "Servicios",
@@ -58,8 +58,18 @@ const navItems = [
     icon: Users,
   },
   {
+    label: "Sucursales",
+    href: "/branches",
+    icon: GitBranch,
+  },
+  {
     label: "Negocio",
     href: "/business",
+    icon: Briefcase,
+  },
+  {
+    label: "Billing",
+    href: "/billing",
     icon: Briefcase,
   },
 ];
