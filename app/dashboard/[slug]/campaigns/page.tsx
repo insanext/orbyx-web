@@ -11,6 +11,8 @@ type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
 type CampaignChannel = "email" | "whatsapp";
 type CampaignSort = "oldest" | "recent" | "most_visits" | "least_visits";
 type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
+type HistoryPeriod = "all" | "7d" | "30d" | "this_month" | "custom";
+type HistoryPerformance = "all" | "excellent" | "good" | "warning" | "failed";
 
 type BusinessResponse = {
   business: {
@@ -292,6 +294,104 @@ function getPlanLabel(plan?: string | null) {
   return PLAN_LABELS[normalizePlan(plan || "starter")];
 }
 
+function getSuccessRate(item: CampaignHistoryItem) {
+  const base = Number(item.applied_limit || 0);
+  if (base <= 0) return 0;
+  return Math.round((Number(item.sent_count || 0) / base) * 100);
+}
+
+function getPerformanceBucket(rate: number, failedCount: number): HistoryPerformance {
+  if (rate === 0 && failedCount > 0) return "failed";
+  if (rate >= 90) return "excellent";
+  if (rate >= 70) return "good";
+  if (rate > 0) return "warning";
+  return "failed";
+}
+
+function getPerformanceStyles(rate: number, failedCount: number) {
+  const bucket = getPerformanceBucket(rate, failedCount);
+
+  if (bucket === "excellent") {
+    return {
+      label: "Excelente",
+      className:
+        "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+    };
+  }
+
+  if (bucket === "good") {
+    return {
+      label: "Bueno",
+      className:
+        "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
+    };
+  }
+
+  if (bucket === "warning") {
+    return {
+      label: "Regular",
+      className:
+        "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+    };
+  }
+
+  return {
+    label: "Fallido",
+    className:
+      "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  };
+}
+
+function isDateWithinPeriod(
+  dateValue: string,
+  period: HistoryPeriod,
+  customFrom: string,
+  customTo: string
+) {
+  const itemDate = new Date(dateValue);
+  if (Number.isNaN(itemDate.getTime())) return false;
+
+  const now = new Date();
+
+  if (period === "all") return true;
+
+  if (period === "7d") {
+    const min = new Date(now);
+    min.setDate(now.getDate() - 7);
+    return itemDate.getTime() >= min.getTime();
+  }
+
+  if (period === "30d") {
+    const min = new Date(now);
+    min.setDate(now.getDate() - 30);
+    return itemDate.getTime() >= min.getTime();
+  }
+
+  if (period === "this_month") {
+    return (
+      itemDate.getFullYear() === now.getFullYear() &&
+      itemDate.getMonth() === now.getMonth()
+    );
+  }
+
+  if (period === "custom") {
+    const from = customFrom ? new Date(`${customFrom}T00:00:00`) : null;
+    const to = customTo ? new Date(`${customTo}T23:59:59`) : null;
+
+    if (from && !Number.isNaN(from.getTime()) && itemDate.getTime() < from.getTime()) {
+      return false;
+    }
+
+    if (to && !Number.isNaN(to.getTime()) && itemDate.getTime() > to.getTime()) {
+      return false;
+    }
+
+    return true;
+  }
+
+  return true;
+}
+
 function StatCard({
   title,
   value,
@@ -386,6 +486,30 @@ function SegmentButton({
   );
 }
 
+function FilterChip({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
+        active
+          ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+          : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
 function HistorySkeleton() {
   return (
     <div className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -426,6 +550,15 @@ export default function CampaignsPage() {
   const [history, setHistory] = useState<CampaignHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState("");
+
+  const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>("30d");
+  const [historyChannel, setHistoryChannel] = useState<"all" | CampaignChannel>("all");
+  const [historySegment, setHistorySegment] = useState<"all" | CustomerSegment>("all");
+  const [historyPerformance, setHistoryPerformance] =
+    useState<HistoryPerformance>("all");
+  const [historySearch, setHistorySearch] = useState("");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   const planLimit = PLAN_EMAIL_LIMITS[plan];
   const availableLimitOptions = ["10", "25", "50", "100", "150", "400", "1000"]
@@ -524,8 +657,7 @@ export default function CampaignsPage() {
     const withEmail = customers.filter((c) => !!c.email).length;
     const withWhatsapp = customers.filter((c) => !!c.phone).length;
 
-    const availableForChannel =
-      channel === "email" ? withEmail : withWhatsapp;
+    const availableForChannel = channel === "email" ? withEmail : withWhatsapp;
 
     return {
       total,
@@ -551,25 +683,89 @@ export default function CampaignsPage() {
     return filtered.slice(0, 6);
   }, [customers, channel]);
 
+  const filteredHistory = useMemo(() => {
+    return history.filter((item) => {
+      const successRate = getSuccessRate(item);
+      const performanceBucket = getPerformanceBucket(successRate, item.failed_count);
+      const search = historySearch.trim().toLowerCase();
+
+      const matchesPeriod = isDateWithinPeriod(
+        item.created_at,
+        historyPeriod,
+        customFrom,
+        customTo
+      );
+
+      const matchesChannel =
+        historyChannel === "all" || item.channel === historyChannel;
+
+      const matchesSegment =
+        historySegment === "all" || item.segment === historySegment;
+
+      const matchesPerformance =
+        historyPerformance === "all" || performanceBucket === historyPerformance;
+
+      const searchableText = [
+        item.campaign_name || "",
+        item.subject || "",
+        item.message || "",
+        item.channel || "",
+        item.segment || "",
+        item.sort || "",
+        item.plan_slug || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch = !search || searchableText.includes(search);
+
+      return (
+        matchesPeriod &&
+        matchesChannel &&
+        matchesSegment &&
+        matchesPerformance &&
+        matchesSearch
+      );
+    });
+  }, [
+    history,
+    historyPeriod,
+    customFrom,
+    customTo,
+    historyChannel,
+    historySegment,
+    historyPerformance,
+    historySearch,
+  ]);
+
   const historyStats = useMemo(() => {
-    const total = history.length;
-    const totalSent = history.reduce(
+    const total = filteredHistory.length;
+    const totalSent = filteredHistory.reduce(
       (acc, item) => acc + Number(item.sent_count || 0),
       0
     );
-    const totalFailed = history.reduce(
+    const totalFailed = filteredHistory.reduce(
       (acc, item) => acc + Number(item.failed_count || 0),
       0
     );
-    const latest = history[0] || null;
+    const totalApplied = filteredHistory.reduce(
+      (acc, item) => acc + Number(item.applied_limit || 0),
+      0
+    );
+    const avgSuccess =
+      totalApplied > 0 ? Math.round((totalSent / totalApplied) * 100) : 0;
+
+    const latest = filteredHistory[0] || null;
 
     return {
       total,
       totalSent,
       totalFailed,
+      totalApplied,
+      avgSuccess,
       latest,
     };
-  }, [history]);
+  }, [filteredHistory]);
 
   const selectedSegmentLabel =
     SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Segmento";
@@ -579,6 +775,16 @@ export default function CampaignsPage() {
 
   const selectedSortLabel =
     SORT_OPTIONS.find((item) => item.key === sort)?.label || "Más antiguos";
+
+  function resetHistoryFilters() {
+    setHistoryPeriod("30d");
+    setHistoryChannel("all");
+    setHistorySegment("all");
+    setHistoryPerformance("all");
+    setHistorySearch("");
+    setCustomFrom("");
+    setCustomTo("");
+  }
 
   async function handleSendCampaign() {
     try {
@@ -819,9 +1025,8 @@ export default function CampaignsPage() {
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
                 Tu plan <span className="font-semibold">{PLAN_LABELS[plan]}</span>{" "}
-                permite hasta{" "}
-                <span className="font-semibold">{planLimit}</span> correos por
-                campaña.
+                permite hasta <span className="font-semibold">{planLimit}</span>{" "}
+                correos por campaña.
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
                 Se intentará enviar hasta{" "}
@@ -1083,19 +1288,19 @@ export default function CampaignsPage() {
       <section className="space-y-6">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
           <StatCard
-            title="Campañas registradas"
+            title="Campañas filtradas"
             value={loadingHistory ? "..." : String(historyStats.total)}
-            description="Historial real guardado en base de datos."
+            description="Resultado según filtros activos."
           />
           <StatCard
             title="Correos enviados"
             value={loadingHistory ? "..." : String(historyStats.totalSent)}
-            description="Suma de enviados en el historial cargado."
+            description="Suma total de enviados en la vista actual."
           />
           <StatCard
-            title="Fallidos"
-            value={loadingHistory ? "..." : String(historyStats.totalFailed)}
-            description="Total de errores registrados en campañas."
+            title="Tasa promedio"
+            value={loadingHistory ? "..." : `${historyStats.avgSuccess}%`}
+            description="Éxito promedio según límite aplicado."
           />
           <StatCard
             title="Último envío"
@@ -1106,13 +1311,13 @@ export default function CampaignsPage() {
                 ? formatDate(historyStats.latest.created_at)
                 : "Sin envíos"
             }
-            description="Fecha del registro más reciente."
+            description="Registro más reciente dentro del filtro."
           />
         </div>
 
         <Panel
           title="Historial de campañas"
-          description="Resumen SaaS de campañas enviadas con resultados reales."
+          description="Ahora con filtros por canal, segmento, fecha, búsqueda y rendimiento."
         >
           {historyError ? (
             <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
@@ -1120,141 +1325,312 @@ export default function CampaignsPage() {
             </div>
           ) : null}
 
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70">
-            <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                Últimas campañas
-              </p>
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <div className="space-y-3">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Período
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <FilterChip
+                      active={historyPeriod === "all"}
+                      label="Todo"
+                      onClick={() => setHistoryPeriod("all")}
+                    />
+                    <FilterChip
+                      active={historyPeriod === "7d"}
+                      label="7 días"
+                      onClick={() => setHistoryPeriod("7d")}
+                    />
+                    <FilterChip
+                      active={historyPeriod === "30d"}
+                      label="30 días"
+                      onClick={() => setHistoryPeriod("30d")}
+                    />
+                    <FilterChip
+                      active={historyPeriod === "this_month"}
+                      label="Este mes"
+                      onClick={() => setHistoryPeriod("this_month")}
+                    />
+                    <FilterChip
+                      active={historyPeriod === "custom"}
+                      label="Personalizado"
+                      onClick={() => setHistoryPeriod("custom")}
+                    />
+                  </div>
+
+                  {historyPeriod === "custom" ? (
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                          Desde
+                        </label>
+                        <input
+                          type="date"
+                          value={customFrom}
+                          onChange={(e) => setCustomFrom(e.target.value)}
+                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                          Hasta
+                        </label>
+                        <input
+                          type="date"
+                          value={customTo}
+                          onChange={(e) => setCustomTo(e.target.value)}
+                          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Búsqueda
+                  </p>
+                  <input
+                    type="text"
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    placeholder="Buscar por nombre, asunto, mensaje, plan..."
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Canal
+                  </label>
+                  <select
+                    value={historyChannel}
+                    onChange={(e) =>
+                      setHistoryChannel(e.target.value as "all" | CampaignChannel)
+                    }
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="email">Email</option>
+                    <option value="whatsapp">WhatsApp</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Segmento
+                  </label>
+                  <select
+                    value={historySegment}
+                    onChange={(e) =>
+                      setHistorySegment(
+                        e.target.value as "all" | CustomerSegment
+                      )
+                    }
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="new">Nuevos</option>
+                    <option value="recurrent">Recurrentes</option>
+                    <option value="frequent">Frecuentes</option>
+                    <option value="inactive">Inactivos</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Rendimiento
+                  </label>
+                  <select
+                    value={historyPerformance}
+                    onChange={(e) =>
+                      setHistoryPerformance(
+                        e.target.value as HistoryPerformance
+                      )
+                    }
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="excellent">Excelente</option>
+                    <option value="good">Bueno</option>
+                    <option value="warning">Regular</option>
+                    <option value="failed">Fallido</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={resetHistoryFilters}
+                  className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  Limpiar filtros
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => slug && loadCampaignHistory(slug)}
+                  className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  Recargar historial
+                </button>
+              </div>
             </div>
 
-            {loadingHistory ? (
-              <HistorySkeleton />
-            ) : history.length === 0 ? (
-              <div className="px-4 py-10 text-sm text-slate-600 dark:text-slate-400">
-                Todavía no hay campañas registradas.
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70">
+              <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Últimas campañas
+                </p>
               </div>
-            ) : (
-              <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                {history.map((item) => {
-                  const channelStyle = getChannelStyles(item.channel);
-                  const segmentStyle = getCustomerSegmentStyles(item.segment);
-                  const successRate =
-                    item.applied_limit > 0
-                      ? Math.round((item.sent_count / item.applied_limit) * 100)
-                      : 0;
 
-                  return (
-                    <div key={item.id} className="px-4 py-5">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate text-base font-semibold text-slate-900 dark:text-white">
-                              {item.campaign_name?.trim() || "Campaña sin nombre"}
+              {loadingHistory ? (
+                <HistorySkeleton />
+              ) : filteredHistory.length === 0 ? (
+                <div className="px-4 py-10 text-sm text-slate-600 dark:text-slate-400">
+                  No hay campañas que coincidan con los filtros actuales.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {filteredHistory.map((item) => {
+                    const channelStyle = getChannelStyles(item.channel);
+                    const segmentStyle = getCustomerSegmentStyles(item.segment);
+                    const successRate = getSuccessRate(item);
+                    const performanceStyle = getPerformanceStyles(
+                      successRate,
+                      item.failed_count
+                    );
+
+                    return (
+                      <div key={item.id} className="px-4 py-5">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="truncate text-base font-semibold text-slate-900 dark:text-white">
+                                {item.campaign_name?.trim() || "Campaña sin nombre"}
+                              </p>
+
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${channelStyle.className}`}
+                              >
+                                {channelStyle.label}
+                              </span>
+
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${segmentStyle.className}`}
+                              >
+                                {getSegmentLabel(item.segment)}
+                              </span>
+
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${performanceStyle.className}`}
+                              >
+                                {performanceStyle.label}
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                              {formatDate(item.created_at)}
                             </p>
 
-                            <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${channelStyle.className}`}
-                            >
-                              {channelStyle.label}
-                            </span>
+                            {item.subject ? (
+                              <p className="mt-3 text-sm font-medium text-slate-900 dark:text-white">
+                                Asunto: {item.subject}
+                              </p>
+                            ) : null}
 
-                            <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${segmentStyle.className}`}
-                            >
-                              {getSegmentLabel(item.segment)}
-                            </span>
+                            {item.message ? (
+                              <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600 dark:text-slate-400">
+                                {item.message}
+                              </p>
+                            ) : null}
+
+                            <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                Plan: {getPlanLabel(item.plan_slug)}
+                              </span>
+                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                Orden: {getSortLabel(item.sort)}
+                              </span>
+                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                Inactividad: {item.inactive_days} días
+                              </span>
+                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                Plan límite: {item.plan_limit}
+                              </span>
+                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                Pedido: {item.requested_limit}
+                              </span>
+                            </div>
                           </div>
 
-                          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                            {formatDate(item.created_at)}
-                          </p>
+                          <div className="grid min-w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-w-[420px]">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                                Audiencia
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                                {item.audience_total}
+                              </p>
+                            </div>
 
-                          {item.subject ? (
-                            <p className="mt-3 text-sm font-medium text-slate-900 dark:text-white">
-                              Asunto: {item.subject}
-                            </p>
-                          ) : null}
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                                Aplicado
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                                {item.applied_limit}
+                              </p>
+                            </div>
 
-                          {item.message ? (
-                            <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600 dark:text-slate-400">
-                              {item.message}
-                            </p>
-                          ) : null}
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                                Con contacto
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                                {item.recipients_with_contact}
+                              </p>
+                            </div>
 
-                          <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                              Plan: {getPlanLabel(item.plan_slug)}
-                            </span>
-                            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                              Orden: {getSortLabel(item.sort)}
-                            </span>
-                            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                              Inactividad: {item.inactive_days} días
-                            </span>
-                          </div>
-                        </div>
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                                Enviados
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-300">
+                                {item.sent_count}
+                              </p>
+                            </div>
 
-                        <div className="grid min-w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-w-[360px]">
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                              Audiencia
-                            </p>
-                            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                              {item.audience_total}
-                            </p>
-                          </div>
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                                Fallidos
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-rose-600 dark:text-rose-300">
+                                {item.failed_count}
+                              </p>
+                            </div>
 
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                              Aplicado
-                            </p>
-                            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                              {item.applied_limit}
-                            </p>
-                          </div>
-
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                              Con contacto
-                            </p>
-                            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                              {item.recipients_with_contact}
-                            </p>
-                          </div>
-
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                              Enviados
-                            </p>
-                            <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-300">
-                              {item.sent_count}
-                            </p>
-                          </div>
-
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                              Fallidos
-                            </p>
-                            <p className="mt-1 text-lg font-semibold text-rose-600 dark:text-rose-300">
-                              {item.failed_count}
-                            </p>
-                          </div>
-
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                              Éxito
-                            </p>
-                            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                              {successRate}%
-                            </p>
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                                Éxito
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                                {successRate}%
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </Panel>
       </section>
