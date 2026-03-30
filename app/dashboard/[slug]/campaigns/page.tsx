@@ -2675,12 +2675,14 @@ export default function CampaignsPage() {
             </div>
           </div>
         );
-      })}
+            })}
     </div>
   )}
 </div>
 
-      {confirmOpen ? (
+</div>
+
+{confirmOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{ background: "rgba(2, 6, 23, 0.65)" }}
