@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Panel } from "../../../../components/dashboard/panel";
 
@@ -13,6 +13,9 @@ type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
 type HistoryPeriod = "all" | "7d" | "30d" | "this_month" | "custom";
 type HistoryPerformance = "all" | "excellent" | "good" | "warning" | "failed";
 type EmailVisualPreset = "minimal" | "promo" | "reminder";
+type TextAlignType = "left" | "center" | "right";
+type ImageFitType = "cover" | "contain";
+
 type CampaignImageItem = {
   id: string;
   tenant_id: string;
@@ -260,6 +263,49 @@ function getImageDisplayName(image: CampaignImageItem) {
   return image.file_name || "Imagen";
 }
 
+function escapeHtml(value: string) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function normalizeEditorHtml(html?: string | null) {
+  if (!html) return "";
+
+  let value = String(html);
+
+  value = value.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+  value = value.replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "");
+  value = value.replace(/\son\w+="[^"]*"/gi, "");
+  value = value.replace(/\son\w+='[^']*'/gi, "");
+  value = value.replace(/javascript:/gi, "");
+
+  return value.trim();
+}
+
+function editorHtmlToPlainText(html?: string | null) {
+  if (!html) return "";
+  return String(html)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function plainTextToHtml(value?: string | null) {
+  const safe = escapeHtml(String(value || "").trim());
+  if (!safe) return "";
+  return safe
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br />")}</p>`)
+    .join("");
+}
+
 function getCustomerSegmentMeta(segment?: string) {
   if (segment === "frequent") {
     return {
@@ -431,6 +477,178 @@ function isDateWithinPeriod(
   return true;
 }
 
+function buildEmailPreviewHtml({
+  businessName,
+  subject,
+  brandColor,
+  heroImageUrl,
+  heroImageHeight,
+  heroImagePositionY,
+  heroImageFit,
+  messageHtml,
+  footerHtml,
+  ctaText,
+  ctaUrl,
+  showCta,
+}: {
+  businessName: string;
+  subject: string;
+  brandColor: string;
+  heroImageUrl: string;
+  heroImageHeight: number;
+  heroImagePositionY: number;
+  heroImageFit: ImageFitType;
+  messageHtml: string;
+  footerHtml: string;
+  ctaText: string;
+  ctaUrl: string;
+  showCta: boolean;
+}) {
+  const safeBusinessName = escapeHtml(businessName || "Orbyx");
+  const safeSubject = escapeHtml(subject || "Campaña");
+  const safeBrandColor = String(brandColor || "#0f766e").trim();
+  const safeHeroImageUrl = String(heroImageUrl || "").trim();
+  const safeCtaText = escapeHtml(ctaText || "Agendar visita");
+  const safeCtaUrl = String(ctaUrl || "").trim();
+
+  const normalizedMessageHtml =
+    normalizeEditorHtml(messageHtml) || `<p>${escapeHtml("Sin contenido")}</p>`;
+
+  const normalizedFooterHtml =
+    normalizeEditorHtml(footerHtml) ||
+    `<p>${escapeHtml("Este correo fue enviado por Orbyx.")}</p>`;
+
+  const heroBlock = safeHeroImageUrl
+    ? `
+      <tr>
+        <td style="background:#e2e8f0;">
+          <img
+            src="${safeHeroImageUrl}"
+            alt="Banner campaña"
+            style="
+              display:block;
+              width:100%;
+              height:${heroImageHeight}px;
+              object-fit:${heroImageFit};
+              object-position:center ${heroImagePositionY}%;
+              border:0;
+              background:#e2e8f0;
+            "
+          />
+        </td>
+      </tr>
+    `
+    : "";
+
+  const ctaBlock =
+    showCta && safeCtaUrl
+      ? `
+        <div style="margin-top:28px;">
+          <a
+            href="${safeCtaUrl}"
+            target="_blank"
+            rel="noreferrer"
+            style="
+              display:inline-block;
+              padding:14px 22px;
+              border-radius:16px;
+              background:${safeBrandColor};
+              color:#ffffff;
+              font-size:14px;
+              font-weight:700;
+              text-decoration:none;
+            "
+          >
+            ${safeCtaText}
+          </a>
+        </div>
+      `
+      : "";
+
+  return `
+    <div style="margin:0;padding:0;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;padding:32px 16px;">
+        <tr>
+          <td align="center">
+            <table
+              role="presentation"
+              width="100%"
+              cellspacing="0"
+              cellpadding="0"
+              style="
+                max-width:680px;
+                background:#ffffff;
+                border:1px solid #e2e8f0;
+                border-radius:28px;
+                overflow:hidden;
+              "
+            >
+              <tr>
+                <td
+                  style="
+                    padding:32px 32px 24px 32px;
+                    background:${safeBrandColor};
+                    color:#ffffff;
+                  "
+                >
+                  <div style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;opacity:0.78;font-weight:700;">
+                    ${safeBusinessName}
+                  </div>
+
+                  <h1 style="margin:12px 0 0 0;font-size:28px;line-height:1.2;font-weight:700;">
+                    ${safeSubject}
+                  </h1>
+                </td>
+              </tr>
+
+              ${heroBlock}
+
+              <tr>
+                <td style="padding:32px;">
+                  <div
+                    style="
+                      border:1px solid #e2e8f0;
+                      border-radius:20px;
+                      background:#f8fafc;
+                      padding:24px;
+                      font-size:16px;
+                      line-height:1.8;
+                      color:#334155;
+                    "
+                  >
+                    <div style="font-weight:700;color:#0f172a;">
+                      Hola {{nombre}},
+                    </div>
+
+                    <div style="margin-top:14px;">
+                      ${normalizedMessageHtml}
+                    </div>
+
+                    ${ctaBlock}
+                  </div>
+
+                  <div
+                    style="
+                      margin-top:24px;
+                      padding-top:20px;
+                      border-top:1px solid #e2e8f0;
+                      font-size:13px;
+                      line-height:1.7;
+                      color:#64748b;
+                    "
+                  >
+                    ${normalizedFooterHtml}
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
 function SectionStat({
   label,
   value,
@@ -520,6 +738,7 @@ function SelectableRow({
     </button>
   );
 }
+
 function SoftChip({
   active,
   label,
@@ -577,6 +796,162 @@ function HistorySkeleton() {
   );
 }
 
+function RichTextEditor({
+  label,
+  value,
+  onChange,
+  placeholder,
+  minHeight = 180,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  minHeight?: number;
+}) {
+  const editorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+    if (editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value || "";
+    }
+  }, [value]);
+
+  function focusEditor() {
+    editorRef.current?.focus();
+  }
+
+  function runCommand(command: string, commandValue?: string) {
+    focusEditor();
+    document.execCommand(command, false, commandValue);
+    onChange(normalizeEditorHtml(editorRef.current?.innerHTML || ""));
+  }
+
+  function handleLink() {
+    const url = window.prompt("Ingresa la URL del enlace");
+    if (!url) return;
+    runCommand("createLink", url);
+  }
+
+  function handleTextColor() {
+    const color = window.prompt("Color HEX. Ej: #0f766e", "#0f766e");
+    if (!color) return;
+    runCommand("foreColor", color);
+  }
+
+  function handleInput() {
+    onChange(normalizeEditorHtml(editorRef.current?.innerHTML || ""));
+  }
+
+  return (
+    <div>
+      <label
+        className="mb-2 block text-sm font-medium"
+        style={{ color: "var(--text-main)" }}
+      >
+        {label}
+      </label>
+
+      <div
+        className="overflow-hidden rounded-[22px] border"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+        }}
+      >
+        <div
+          className="flex flex-wrap gap-2 border-b p-3"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+          }}
+        >
+          <button type="button" onClick={() => runCommand("bold")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            B
+          </button>
+          <button type="button" onClick={() => runCommand("italic")} className="rounded-xl border px-3 py-2 text-xs font-semibold italic" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            I
+          </button>
+          <button type="button" onClick={() => runCommand("underline")} className="rounded-xl border px-3 py-2 text-xs font-semibold underline" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            U
+          </button>
+          <button type="button" onClick={() => runCommand("formatBlock", "<h1>")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            H1
+          </button>
+          <button type="button" onClick={() => runCommand("formatBlock", "<h2>")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            H2
+          </button>
+          <button type="button" onClick={() => runCommand("insertUnorderedList")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            Lista
+          </button>
+          <button type="button" onClick={() => runCommand("justifyLeft")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            Izq
+          </button>
+          <button type="button" onClick={() => runCommand("justifyCenter")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            Centro
+          </button>
+          <button type="button" onClick={() => runCommand("justifyRight")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            Der
+          </button>
+          <button type="button" onClick={handleLink} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            Link
+          </button>
+          <button type="button" onClick={handleTextColor} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            Color
+          </button>
+          <button type="button" onClick={() => runCommand("removeFormat")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+            Limpiar
+          </button>
+        </div>
+
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleInput}
+          data-placeholder={placeholder || ""}
+          className="rich-editor px-4 py-4 text-sm outline-none"
+          style={{
+            minHeight,
+            color: "var(--text-main)",
+          }}
+        />
+      </div>
+
+      <style jsx>{`
+        .rich-editor:empty:before {
+          content: attr(data-placeholder);
+          color: var(--text-muted);
+        }
+        .rich-editor h1 {
+          font-size: 1.5rem;
+          font-weight: 700;
+          line-height: 1.25;
+          margin: 0.6rem 0;
+        }
+        .rich-editor h2 {
+          font-size: 1.25rem;
+          font-weight: 700;
+          line-height: 1.3;
+          margin: 0.55rem 0;
+        }
+        .rich-editor p {
+          margin: 0.55rem 0;
+        }
+        .rich-editor ul {
+          margin: 0.6rem 0 0.6rem 1.25rem;
+          list-style: disc;
+        }
+        .rich-editor a {
+          color: #2563eb;
+          text-decoration: underline;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function CampaignsPage() {
   const params = useParams();
   const slug =
@@ -595,6 +970,11 @@ export default function CampaignsPage() {
   const [subject, setSubject] = useState("Te extrañamos en nuestro negocio");
   const [message, setMessage] = useState(
     "Hola {{nombre}}, queremos invitarte a volver. Tenemos horas disponibles y nos encantaría atenderte nuevamente."
+  );
+  const [messageHtml, setMessageHtml] = useState(
+    plainTextToHtml(
+      "Hola {{nombre}}, queremos invitarte a volver. Tenemos horas disponibles y nos encantaría atenderte nuevamente."
+    )
   );
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -621,11 +1001,17 @@ export default function CampaignsPage() {
   const [emailPreset, setEmailPreset] = useState<EmailVisualPreset>("promo");
   const [brandColor, setBrandColor] = useState("#0f766e");
   const [heroImageUrl, setHeroImageUrl] = useState("");
+  const [heroImageHeight, setHeroImageHeight] = useState(260);
+  const [heroImagePositionY, setHeroImagePositionY] = useState(50);
+  const [heroImageFit, setHeroImageFit] = useState<ImageFitType>("cover");
   const [ctaText, setCtaText] = useState("Agendar visita");
   const [ctaUrl, setCtaUrl] = useState("");
   const [showCta, setShowCta] = useState(true);
   const [footerNote, setFooterNote] = useState(
     "Te esperamos para ayudarte a mantener tu agenda más activa."
+  );
+  const [footerHtml, setFooterHtml] = useState(
+    plainTextToHtml("Te esperamos para ayudarte a mantener tu agenda más activa.")
   );
   const [campaignImages, setCampaignImages] = useState<CampaignImageItem[]>([]);
   const [imagesLoading, setImagesLoading] = useState(false);
@@ -667,6 +1053,7 @@ export default function CampaignsPage() {
       setShowCta(true);
       setCtaText("Reservar hora");
       setFooterNote("Gracias por seguir confiando en nosotros.");
+      setFooterHtml(plainTextToHtml("Gracias por seguir confiando en nosotros."));
     }
 
     if (emailPreset === "promo") {
@@ -674,6 +1061,9 @@ export default function CampaignsPage() {
       setShowCta(true);
       setCtaText("Agendar visita");
       setFooterNote("Te esperamos para ayudarte a mantener tu agenda más activa.");
+      setFooterHtml(
+        plainTextToHtml("Te esperamos para ayudarte a mantener tu agenda más activa.")
+      );
     }
 
     if (emailPreset === "reminder") {
@@ -681,8 +1071,17 @@ export default function CampaignsPage() {
       setShowCta(true);
       setCtaText("Ver horas disponibles");
       setFooterNote("Recuerda que tenemos agenda disponible para ti.");
+      setFooterHtml(plainTextToHtml("Recuerda que tenemos agenda disponible para ti."));
     }
   }, [emailPreset]);
+
+  useEffect(() => {
+    setMessage(editorHtmlToPlainText(messageHtml));
+  }, [messageHtml]);
+
+  useEffect(() => {
+    setFooterNote(editorHtmlToPlainText(footerHtml));
+  }, [footerHtml]);
 
   useEffect(() => {
     async function loadBusinessPlan() {
@@ -1003,6 +1402,36 @@ export default function CampaignsPage() {
   const emailPreviewTitle =
     campaignName.trim() || subject.trim() || "Campaña de Orbyx";
 
+  const previewHtml = useMemo(() => {
+    return buildEmailPreviewHtml({
+      businessName,
+      subject: emailPreviewTitle,
+      brandColor,
+      heroImageUrl,
+      heroImageHeight,
+      heroImagePositionY,
+      heroImageFit,
+      messageHtml,
+      footerHtml,
+      ctaText,
+      ctaUrl,
+      showCta,
+    });
+  }, [
+    businessName,
+    emailPreviewTitle,
+    brandColor,
+    heroImageUrl,
+    heroImageHeight,
+    heroImagePositionY,
+    heroImageFit,
+    messageHtml,
+    footerHtml,
+    ctaText,
+    ctaUrl,
+    showCta,
+  ]);
+
   function resetHistoryFilters() {
     setHistoryPeriod("30d");
     setHistoryChannel("all");
@@ -1028,7 +1457,7 @@ export default function CampaignsPage() {
       return;
     }
 
-    if (!message.trim()) {
+    if (!editorHtmlToPlainText(messageHtml).trim()) {
       setError("Debes ingresar un mensaje.");
       return;
     }
@@ -1061,15 +1490,20 @@ export default function CampaignsPage() {
           segment,
           inactive_days: Number(inactiveDays),
           subject: subject.trim(),
-          message: message.trim(),
+          message: editorHtmlToPlainText(messageHtml).trim(),
+          message_html: normalizeEditorHtml(messageHtml),
           limit: Number(sendLimit),
           sort,
           brand_color: brandColor,
           hero_image_url: heroImageUrl.trim(),
+          hero_image_height: heroImageHeight,
+          hero_image_position_y: heroImagePositionY,
+          hero_image_fit: heroImageFit,
           cta_text: ctaText.trim(),
           cta_url: ctaUrl.trim(),
           show_cta: showCta,
-          footer_note: footerNote.trim(),
+          footer_note: editorHtmlToPlainText(footerHtml).trim(),
+          footer_note_html: normalizeEditorHtml(footerHtml),
         }),
       });
 
@@ -1261,8 +1695,8 @@ export default function CampaignsPage() {
                     Segmento
                   </label>
 
-                 <div className="space-y-2">
-  {SEGMENT_OPTIONS.map((item) => (
+                  <div className="space-y-2">
+                    {SEGMENT_OPTIONS.map((item) => (
                       <SelectableRow
                         key={item.key}
                         active={segment === item.key}
@@ -1396,7 +1830,7 @@ export default function CampaignsPage() {
 
           <Panel
             title="Email"
-            description="Separa el contenido del mensaje del estilo visual para que quede más profesional."
+            description="Contenido real del correo con rich text."
             className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
           >
             <div className="space-y-5">
@@ -1442,28 +1876,17 @@ export default function CampaignsPage() {
                 />
               </div>
 
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Mensaje
-                </label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Escribe el contenido principal del correo..."
-                  className={textareaClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-                <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-                  Puedes dejar preparado el placeholder <strong>{"{{nombre}}"}</strong> para personalización futura.
-                </p>
-              </div>
+              <RichTextEditor
+                label="Mensaje"
+                value={messageHtml}
+                onChange={setMessageHtml}
+                placeholder="Escribe el contenido principal del correo..."
+                minHeight={220}
+              />
+
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                Puedes usar <strong>{"{{nombre}}"}</strong>, negrita, cursiva, subrayado, títulos, listas, alineación, links y color de texto.
+              </p>
             </div>
           </Panel>
 
@@ -1544,20 +1967,20 @@ export default function CampaignsPage() {
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-3">
                       <button
-  type="button"
-  onClick={() => {
-    setImageLibraryOpen(true);
-    if (slug) loadCampaignImages(slug);
-  }}
-  className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
-  style={{
-    background: "rgba(148,163,184,0.12)",
-    border: "1px solid rgba(148,163,184,0.35)",
-    color: "rgb(203 213 225)",
-  }}
->
-  📁 Biblioteca de imágenes
-</button>
+                        type="button"
+                        onClick={() => {
+                          setImageLibraryOpen(true);
+                          if (slug) loadCampaignImages(slug);
+                        }}
+                        className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
+                        style={{
+                          background: "rgba(148,163,184,0.12)",
+                          border: "1px solid rgba(148,163,184,0.35)",
+                          color: "rgb(203 213 225)",
+                        }}
+                      >
+                        📁 Biblioteca de imágenes
+                      </button>
 
                       {heroImageUrl ? (
                         <button
@@ -1593,6 +2016,72 @@ export default function CampaignsPage() {
                       Límite actual: <strong style={{ color: "var(--text-main)" }}>{imagesLimitInfo.current}/{imagesLimitInfo.max}</strong>.
                     </p>
                   </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Altura imagen
+                  </label>
+                  <input
+                    type="range"
+                    min={160}
+                    max={420}
+                    step={10}
+                    value={heroImageHeight}
+                    onChange={(e) => setHeroImageHeight(Number(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                    {heroImageHeight}px
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Posición vertical
+                  </label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={heroImagePositionY}
+                    onChange={(e) => setHeroImagePositionY(Number(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                    {heroImagePositionY}%
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Enfoque
+                  </label>
+                  <select
+                    value={heroImageFit}
+                    onChange={(e) => setHeroImageFit(e.target.value as ImageFitType)}
+                    className={selectClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    <option value="cover">Cover</option>
+                    <option value="contain">Contain</option>
+                  </select>
                 </div>
               </div>
 
@@ -1657,24 +2146,13 @@ export default function CampaignsPage() {
                 Mostrar botón CTA en el correo
               </label>
 
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Footer / nota final
-                </label>
-                <textarea
-                  value={footerNote}
-                  onChange={(e) => setFooterNote(e.target.value)}
-                  className={textareaClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
+              <RichTextEditor
+                label="Footer / nota final"
+                value={footerHtml}
+                onChange={setFooterHtml}
+                placeholder="Escribe el footer del correo..."
+                minHeight={160}
+              />
             </div>
           </Panel>
 
@@ -1902,7 +2380,7 @@ export default function CampaignsPage() {
 
           <Panel
             title="Preview del correo"
-            description="Vista previa más cercana a una pieza de marketing real."
+            description="Render HTML real del email."
             className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
           >
             <div
@@ -1912,82 +2390,17 @@ export default function CampaignsPage() {
                 background: "var(--bg-soft)",
               }}
             >
-              <div
-                className="mx-auto max-w-[680px] overflow-hidden rounded-[28px] border shadow-sm"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "#ffffff",
-                }}
-              >
-                <div
-                  className="px-6 py-6 text-white"
+              <div className="overflow-hidden rounded-[24px] border bg-white" style={{ borderColor: "var(--border-color)" }}>
+                <iframe
+                  title="Preview email"
+                  srcDoc={previewHtml}
+                  className="w-full"
                   style={{
-                    background:
-                      `linear-gradient(135deg, ${brandColor}, ${brandColor}DD)`,
+                    height: heroImageUrl ? 820 : 680,
+                    border: "0",
+                    background: "#ffffff",
                   }}
-                >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/75">
-                    {businessName}
-                  </p>
-                  <h3 className="mt-2 text-2xl font-bold">{emailPreviewTitle}</h3>
-                  <p className="mt-2 text-sm text-white/85">{subject || "Sin asunto"}</p>
-                </div>
-
-                {heroImageUrl ? (
-                  <div style={{ background: "#F3F4F6" }}>
-                    <img
-                      src={heroImageUrl}
-                      alt="Banner campaña"
-                      className="h-52 w-full object-cover"
-                    />
-                  </div>
-                ) : null}
-
-                <div className="px-6 py-6">
-                  <div
-                    className="rounded-2xl border p-5 text-sm leading-7"
-                    style={{
-                      borderColor: "#E5E7EB",
-                      background: "#F8FAFC",
-                      color: "#334155",
-                    }}
-                  >
-                    <p className="font-semibold" style={{ color: "#0F172A" }}>
-                      Hola {"{{nombre}}"},
-                    </p>
-
-                    <p className="mt-3 whitespace-pre-line">
-                      {message || "Sin contenido"}
-                    </p>
-
-                    {showCta ? (
-                      <div className="mt-5">
-                        <a
-                          href={ctaUrl || "#"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex rounded-2xl px-5 py-3 text-sm font-semibold text-white"
-                          style={{
-                            background:
-                              `linear-gradient(135deg, ${brandColor}, ${brandColor}DD)`,
-                          }}
-                        >
-                          {ctaText || "Reservar ahora"}
-                        </a>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div
-                    className="mt-5 border-t pt-4 text-xs leading-6"
-                    style={{
-                      borderColor: "#E5E7EB",
-                      color: "#64748B",
-                    }}
-                  >
-                    {footerNote}
-                  </div>
-                </div>
+                />
               </div>
             </div>
           </Panel>
@@ -2450,123 +2863,128 @@ export default function CampaignsPage() {
         </Panel>
       </section>
 
-     {imageLibraryOpen ? (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-    style={{ background: "rgba(2, 6, 23, 0.72)" }}
-  >
-    <div
-      className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
-      style={{
-        borderColor: "rgba(59,130,246,0.25)",
-        background:
-          "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.04), var(--bg-card))",
-      }}
-    >
-      {/* HEADER */}
-      <div
-        className="flex flex-wrap items-start justify-between gap-4 border-b px-6 py-5"
-        style={{ borderColor: "var(--border-color)" }}
-      >
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>
-            Biblioteca SaaS
-          </p>
-          <h3 className="mt-2 text-2xl font-semibold" style={{ color: "var(--text-main)" }}>
-            Imágenes de campañas
-          </h3>
-          <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-            Guarda imágenes reutilizables o usa una URL externa.
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <button onClick={() => slug && loadCampaignImages(slug)} className={secondaryButtonClass}>
-            Recargar
-          </button>
-          <button onClick={() => setImageLibraryOpen(false)} className={secondaryButtonClass}>
-            Cerrar
-          </button>
-        </div>
-      </div>
-
-      {/* CONTENT */}
-      <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
-        
-        {/* LEFT */}
-        <div className="space-y-4">
-          <div className="rounded-[26px] border p-4" style={{ background: "var(--bg-soft)" }}>
-            <p className="text-sm font-semibold">Subir imagen</p>
-
-            <input
-              type="file"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  handleUploadCampaignImage(file);
-                  e.currentTarget.value = "";
-                }
-              }}
-              className="mt-3 text-sm"
-            />
-
-            <p className="text-xs mt-2">
-              {imagesLimitInfo.current}/{imagesLimitInfo.max}
-            </p>
-          </div>
-
-          {imageLibraryError && <div className="text-red-400 text-sm">{imageLibraryError}</div>}
-          {imageLibraryMessage && <div className="text-green-400 text-sm">{imageLibraryMessage}</div>}
-        </div>
-
-        {/* RIGHT */}
+      {imageLibraryOpen ? (
         <div
-          className="rounded-[26px] border p-5"
-          style={{ background: "#0B0F1A" }}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+          style={{ background: "rgba(2, 6, 23, 0.72)" }}
         >
-          <div className="flex justify-between mb-4">
-            <h4 className="text-white">Biblioteca</h4>
-          </div>
+          <div
+            className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
+            style={{
+              borderColor: "rgba(59,130,246,0.25)",
+              background:
+                "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.04), var(--bg-card))",
+            }}
+          >
+            <div
+              className="flex flex-wrap items-start justify-between gap-4 border-b px-6 py-5"
+              style={{ borderColor: "var(--border-color)" }}
+            >
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>
+                  Biblioteca SaaS
+                </p>
+                <h3 className="mt-2 text-2xl font-semibold" style={{ color: "var(--text-main)" }}>
+                  Imágenes de campañas
+                </h3>
+                <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                  Guarda imágenes reutilizables o usa una URL externa.
+                </p>
+              </div>
 
-          {imagesLoading ? (
-            <div className="text-gray-400">Cargando...</div>
-          ) : campaignImages.length === 0 ? (
-            <div className="text-gray-500">No hay imágenes</div>
-          ) : (
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
-              {campaignImages.map((image) => (
-                <div key={image.id} className="relative group">
-                  <img
-                    src={image.public_url || ""}
-                    className="w-full h-32 object-cover rounded-lg"
+              <div className="flex gap-3">
+                <button onClick={() => slug && loadCampaignImages(slug)} className={secondaryButtonClass}>
+                  Recargar
+                </button>
+                <button onClick={() => setImageLibraryOpen(false)} className={secondaryButtonClass}>
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
+              <div className="space-y-4">
+                <div className="rounded-[26px] border p-4" style={{ background: "var(--bg-soft)" }}>
+                  <p className="text-sm font-semibold">Subir imagen</p>
+
+                  <input
+                    type="file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleUploadCampaignImage(file);
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                    className="mt-3 text-sm"
                   />
 
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => setHeroImageUrl(image.public_url || "")}
-                      className="bg-blue-600 text-white px-2 py-1 text-xs rounded"
-                    >
-                      Usar
-                    </button>
-
-                    <button
-                      onClick={() => handleDeleteCampaignImage(image.id)}
-                      className="bg-red-600 text-white px-2 py-1 text-xs rounded"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
+                  <p className="mt-2 text-xs">
+                    {imageUploading ? "Subiendo..." : `${imagesLimitInfo.current}/${imagesLimitInfo.max}`}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  </div>
-) : null}
 
-{confirmOpen ? (
+                {imageLibraryError && <div className="text-red-400 text-sm">{imageLibraryError}</div>}
+                {imageLibraryMessage && <div className="text-green-400 text-sm">{imageLibraryMessage}</div>}
+              </div>
+
+              <div
+                className="rounded-[26px] border p-5"
+                style={{ background: "#0B0F1A" }}
+              >
+                <div className="mb-4 flex justify-between">
+                  <h4 className="text-white">Biblioteca</h4>
+                </div>
+
+                {imagesLoading ? (
+                  <div className="text-gray-400">Cargando...</div>
+                ) : campaignImages.length === 0 ? (
+                  <div className="text-gray-500">No hay imágenes</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                    {campaignImages.map((image) => (
+                      <div key={image.id} className="group relative">
+                        <img
+                          src={image.public_url || ""}
+                          alt={getImageDisplayName(image)}
+                          className="h-32 w-full rounded-lg object-cover"
+                        />
+
+                        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 group-hover:opacity-100">
+                          <button
+                            onClick={() => {
+                              setHeroImageUrl(image.public_url || "");
+                              setImageLibraryOpen(false);
+                            }}
+                            className="rounded bg-blue-600 px-2 py-1 text-xs text-white"
+                          >
+                            Usar
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteCampaignImage(image.id)}
+                            disabled={imageDeletingId === image.id}
+                            className="rounded bg-red-600 px-2 py-1 text-xs text-white"
+                          >
+                            {imageDeletingId === image.id ? "..." : "Eliminar"}
+                          </button>
+                        </div>
+
+                        <div className="mt-2 text-xs text-slate-300">
+                          <p className="truncate">{getImageDisplayName(image)}</p>
+                          <p>{formatBytes(image.size_bytes)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{ background: "rgba(2, 6, 23, 0.65)" }}
