@@ -1315,6 +1315,22 @@ export default function CampaignsPage() {
     }
   }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   async function loadCampaignImages(currentSlug: string, keepMessage = false) {
     try {
       setImagesLoading(true);
@@ -1330,11 +1346,25 @@ export default function CampaignsPage() {
         throw new Error(data?.error || "No se pudo cargar la biblioteca");
       }
 
-      setCampaignImages(Array.isArray(data.images) ? data.images : []);
-      setImagesLimitInfo({
-        current: Number(data?.limits?.current_count || 0),
-        max: Number(data?.limits?.max_images || planImageLimit),
-      });
+const images = Array.isArray(data.images) ? data.images : [];
+
+setCampaignImages(images);
+setImagesLimitInfo({
+  current:
+    Number(
+      data?.limits?.current_count ??
+        data?.limits?.current ??
+        images.length ??
+        0
+    ) || 0,
+  max:
+    Number(
+      data?.limits?.max_images ??
+        data?.limits?.max ??
+        planImageLimit
+    ) || planImageLimit,
+});
+
     } catch (err: unknown) {
       setImageLibraryError(err instanceof Error ? err.message : "Error cargando imágenes");
       setCampaignImages([]);
@@ -2115,20 +2145,22 @@ export default function CampaignsPage() {
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-3">
                       <button
-                        type="button"
-                        onClick={() => {
-                          setImageLibraryOpen(true);
-                          if (slug) loadCampaignImages(slug);
-                        }}
-                        className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
-                        style={{
-                          background: "rgba(148,163,184,0.12)",
-                          border: "1px solid rgba(148,163,184,0.35)",
-                          color: "rgb(203 213 225)",
-                        }}
-                      >
-                        📁 Biblioteca de imágenes
-                      </button>
+  type="button"
+  onClick={() => {
+    setImageLibraryOpen(true);
+    if (slug) loadCampaignImages(slug);
+  }}
+  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition"
+  style={{
+    background: "rgba(245, 158, 11, 0.14)",
+    border: "1px solid rgba(245, 158, 11, 0.38)",
+    color: "rgb(180 83 9)",
+    boxShadow: "0 10px 24px rgba(245,158,11,0.10)",
+  }}
+>
+  <span style={{ fontSize: 15 }}>📁</span>
+  <span>Biblioteca de imágenes</span>
+</button>
 
                       {heroImageUrl ? (
                         <button
