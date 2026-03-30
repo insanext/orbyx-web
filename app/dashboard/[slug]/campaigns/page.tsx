@@ -453,22 +453,16 @@ function SelectableRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition"
+      className="flex w-full items-start gap-3 px-1 py-2 text-left transition"
       style={{
-        borderColor: active ? "rgba(37,99,235,0.32)" : "var(--border-color)",
-        background: active
-          ? "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.05), var(--bg-card))"
-          : "var(--bg-card)",
-        boxShadow: active
-          ? "0 8px 24px rgba(37,99,235,0.10)"
-          : "0 1px 2px rgba(0,0,0,0.04)",
+        background: "transparent",
       }}
     >
       <span
-        className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
+        className="mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
         style={{
           borderColor: active ? "rgb(37 99 235)" : "var(--border-color)",
-          background: active ? "rgba(37,99,235,0.12)" : "transparent",
+          background: active ? "rgba(37,99,235,0.08)" : "transparent",
         }}
       >
         <span
@@ -496,7 +490,6 @@ function SelectableRow({
     </button>
   );
 }
-
 function SoftChip({
   active,
   label,
@@ -1119,8 +1112,8 @@ export default function CampaignsPage() {
                     Segmento
                   </label>
 
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {SEGMENT_OPTIONS.map((item) => (
+                 <div className="space-y-2">
+  {SEGMENT_OPTIONS.map((item) => (
                       <SelectableRow
                         key={item.key}
                         active={segment === item.key}
@@ -1906,7 +1899,7 @@ export default function CampaignsPage() {
                   </div>
 
                   {historyPeriod === "custom" ? (
-                    <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
                       <div>
                         <label
                           className="mb-2 block text-sm font-medium"
