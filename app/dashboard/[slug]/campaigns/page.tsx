@@ -2414,9 +2414,9 @@ setImagesLimitInfo({
           ) : null}
         </div>
 
-        <div className="space-y-6">
-          <Panel
-            title="Preview de audiencia"
+        <div className="space-y-6 self-start xl:sticky xl:top-6">
+  <Panel
+    title="Preview de audiencia"
             description="A quiénes impactaría esta campaña según el canal activo."
             className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
           >
