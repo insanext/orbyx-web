@@ -13,6 +13,17 @@ type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
 type HistoryPeriod = "all" | "7d" | "30d" | "this_month" | "custom";
 type HistoryPerformance = "all" | "excellent" | "good" | "warning" | "failed";
 type EmailVisualPreset = "minimal" | "promo" | "reminder";
+type CampaignImageItem = {
+  id: string;
+  tenant_id: string;
+  file_name: string | null;
+  file_path: string;
+  public_url: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  file_ext?: string | null;
+  created_at: string;
+};
 
 type BusinessResponse = {
   business: {
@@ -122,6 +133,14 @@ const PLAN_EMAIL_LIMITS: Record<PlanSlug, number> = {
   platinum: 1000,
 };
 
+const PLAN_IMAGE_LIMITS: Record<PlanSlug, number> = {
+  starter: 7,
+  pro: 7,
+  premium: 15,
+  vip: 30,
+  platinum: 100,
+};
+
 const SEGMENT_OPTIONS: Array<{
   key: CustomerSegment;
   label: string;
@@ -227,6 +246,18 @@ function formatLastVisit(value?: string | null) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function formatBytes(value?: number | null) {
+  const size = Number(value || 0);
+  if (!size) return "0 KB";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function getImageDisplayName(image: CampaignImageItem) {
+  return image.file_name || "Imagen";
 }
 
 function getCustomerSegmentMeta(segment?: string) {
@@ -596,6 +627,14 @@ export default function CampaignsPage() {
   const [footerNote, setFooterNote] = useState(
     "Te esperamos para ayudarte a mantener tu agenda más activa."
   );
+  const [campaignImages, setCampaignImages] = useState<CampaignImageItem[]>([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageDeletingId, setImageDeletingId] = useState<string | null>(null);
+  const [imageLibraryOpen, setImageLibraryOpen] = useState(false);
+  const [imageLibraryError, setImageLibraryError] = useState("");
+  const [imageLibraryMessage, setImageLibraryMessage] = useState("");
+  const [imagesLimitInfo, setImagesLimitInfo] = useState({ current: 0, max: 7 });
 
   const inputClass =
     "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
@@ -609,6 +648,7 @@ export default function CampaignsPage() {
     "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
   const planLimit = PLAN_EMAIL_LIMITS[plan];
+  const planImageLimit = PLAN_IMAGE_LIMITS[plan];
 
   const availableLimitOptions = ["10", "25", "50", "100", "150", "400", "1000"]
     .map(Number)
@@ -624,7 +664,6 @@ export default function CampaignsPage() {
   useEffect(() => {
     if (emailPreset === "minimal") {
       setBrandColor("#0f172a");
-      setHeroImageUrl("");
       setShowCta(true);
       setCtaText("Reservar hora");
       setFooterNote("Gracias por seguir confiando en nosotros.");
@@ -639,7 +678,6 @@ export default function CampaignsPage() {
 
     if (emailPreset === "reminder") {
       setBrandColor("#1d4ed8");
-      setHeroImageUrl("");
       setShowCta(true);
       setCtaText("Ver horas disponibles");
       setFooterNote("Recuerda que tenemos agenda disponible para ti.");
@@ -730,9 +768,121 @@ export default function CampaignsPage() {
     }
   }
 
+  async function loadCampaignImages(currentSlug: string, keepMessage = false) {
+    try {
+      setImagesLoading(true);
+      setImageLibraryError("");
+      if (!keepMessage) {
+        setImageLibraryMessage("");
+      }
+
+      const res = await fetch(`${BACKEND_URL}/campaign-images/${currentSlug}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cargar la biblioteca");
+      }
+
+      setCampaignImages(Array.isArray(data.images) ? data.images : []);
+      setImagesLimitInfo({
+        current: Number(data?.limits?.current_count || 0),
+        max: Number(data?.limits?.max_images || planImageLimit),
+      });
+    } catch (err: unknown) {
+      setImageLibraryError(err instanceof Error ? err.message : "Error cargando imágenes");
+      setCampaignImages([]);
+    } finally {
+      setImagesLoading(false);
+    }
+  }
+
+  async function handleUploadCampaignImage(file: File) {
+    try {
+      setImageLibraryError("");
+      setImageLibraryMessage("");
+
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+      const fileExtension = file.name.split(".").pop()?.toLowerCase() || "";
+      const allowedExtensions = ["jpg", "jpeg", "png", "webp"];
+
+      if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
+        throw new Error("Solo puedes subir archivos jpg, jpeg, png o webp");
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        throw new Error("La imagen supera el máximo permitido de 2 MB");
+      }
+
+      if (imagesLimitInfo.current >= imagesLimitInfo.max) {
+        throw new Error(`Llegaste al límite de imágenes de tu plan (${imagesLimitInfo.max})`);
+      }
+
+      const formData = new FormData();
+      formData.append("slug", slug);
+      formData.append("file", file);
+
+      setImageUploading(true);
+
+      const res = await fetch(`${BACKEND_URL}/upload/campaign-image`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo subir la imagen");
+      }
+
+      setImageLibraryMessage("Imagen subida correctamente.");
+
+      if (data?.image?.public_url) {
+        setHeroImageUrl(data.image.public_url);
+      }
+
+      await loadCampaignImages(slug, true);
+    } catch (err: unknown) {
+      setImageLibraryError(err instanceof Error ? err.message : "Error subiendo imagen");
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
+  async function handleDeleteCampaignImage(imageId: string) {
+    try {
+      setImageDeletingId(imageId);
+      setImageLibraryError("");
+      setImageLibraryMessage("");
+
+      const res = await fetch(`${BACKEND_URL}/campaign-images/${imageId}?slug=${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo eliminar la imagen");
+      }
+
+      const removed = campaignImages.find((item) => item.id === imageId);
+
+      if (removed?.public_url && heroImageUrl === removed.public_url) {
+        setHeroImageUrl("");
+      }
+
+      setImageLibraryMessage("Imagen eliminada correctamente.");
+      await loadCampaignImages(slug, true);
+    } catch (err: unknown) {
+      setImageLibraryError(err instanceof Error ? err.message : "Error eliminando imagen");
+    } finally {
+      setImageDeletingId(null);
+    }
+  }
+
   useEffect(() => {
     if (slug) {
       loadCampaignHistory(slug);
+      loadCampaignImages(slug);
     }
   }, [slug]);
 
@@ -1388,20 +1538,63 @@ export default function CampaignsPage() {
                     className="mb-2 block text-sm font-medium"
                     style={{ color: "var(--text-main)" }}
                   >
-                    Imagen o banner URL
+                    Imagen principal
                   </label>
-                  <input
-                    type="text"
-                    value={heroImageUrl}
-                    onChange={(e) => setHeroImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className={inputClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  />
+
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageLibraryOpen(true);
+                          if (slug) {
+                            loadCampaignImages(slug);
+                          }
+                        }}
+                        className={secondaryButtonClass}
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        Biblioteca de imágenes
+                      </button>
+
+                      {heroImageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => setHeroImageUrl("")}
+                          className={secondaryButtonClass}
+                          style={{
+                            borderColor: "rgba(244,63,94,0.28)",
+                            background: "rgba(244,63,94,0.08)",
+                            color: "rgb(244 63 94)",
+                          }}
+                        >
+                          Quitar imagen
+                        </button>
+                      ) : null}
+                    </div>
+
+                    <input
+                      type="text"
+                      value={heroImageUrl}
+                      onChange={(e) => setHeroImageUrl(e.target.value)}
+                      placeholder="https://... o selecciona una imagen guardada"
+                      className={inputClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+
+                    <p className="text-xs leading-6" style={{ color: "var(--text-muted)" }}>
+                      Puedes usar una URL externa como fallback o elegir una imagen guardada en tu biblioteca.
+                      Límite actual: <strong style={{ color: "var(--text-main)" }}>{imagesLimitInfo.current}/{imagesLimitInfo.max}</strong>.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -2258,6 +2451,257 @@ export default function CampaignsPage() {
           </div>
         </Panel>
       </section>
+
+      {imageLibraryOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+          style={{ background: "rgba(2, 6, 23, 0.72)" }}
+        >
+          <div
+            className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
+            style={{
+              borderColor: "rgba(59,130,246,0.25)",
+              background:
+                "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.04), var(--bg-card))",
+            }}
+          >
+            <div
+              className="flex flex-wrap items-start justify-between gap-4 border-b px-6 py-5"
+              style={{ borderColor: "var(--border-color)" }}
+            >
+              <div>
+                <p
+                  className="text-xs font-medium uppercase tracking-[0.18em]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Biblioteca SaaS
+                </p>
+                <h3
+                  className="mt-2 text-2xl font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Imágenes de campañas
+                </h3>
+                <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                  Guarda imágenes reutilizables, selecciónalas para el hero del correo o usa una URL externa cuando quieras.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => slug && loadCampaignImages(slug)}
+                  className={secondaryButtonClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Recargar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageLibraryOpen(false)}
+                  className={secondaryButtonClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
+              <div className="space-y-4">
+                <div
+                  className="rounded-[26px] border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                    Subir nueva imagen
+                  </p>
+                  <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                    Formatos permitidos: jpg, jpeg, png y webp. Peso máximo: 2 MB.
+                  </p>
+
+                  <div
+                    className="mt-4 rounded-2xl border border-dashed p-4"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                  >
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleUploadCampaignImage(file);
+                          e.currentTarget.value = "";
+                        }
+                      }}
+                      className="block w-full text-sm"
+                      style={{ color: "var(--text-main)" }}
+                    />
+
+                    <p className="mt-3 text-xs leading-6" style={{ color: "var(--text-muted)" }}>
+                      Cupo usado: <strong style={{ color: "var(--text-main)" }}>{imagesLimitInfo.current}/{imagesLimitInfo.max}</strong> imágenes.
+                    </p>
+                    {imageUploading ? (
+                      <p className="mt-2 text-xs leading-6" style={{ color: "var(--text-main)" }}>
+                        Subiendo imagen...
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                {imageLibraryError ? (
+                  <div
+                    className="rounded-2xl border px-4 py-3 text-sm"
+                    style={{
+                      borderColor: "rgba(244,63,94,0.28)",
+                      background: "rgba(244,63,94,0.10)",
+                      color: "rgb(251 113 133)",
+                    }}
+                  >
+                    {imageLibraryError}
+                  </div>
+                ) : null}
+
+                {imageLibraryMessage ? (
+                  <div
+                    className="rounded-2xl border px-4 py-3 text-sm"
+                    style={{
+                      borderColor: "rgba(16,185,129,0.28)",
+                      background: "rgba(16,185,129,0.10)",
+                      color: "rgb(52 211 153)",
+                    }}
+                  >
+                    {imageLibraryMessage}
+                  </div>
+                ) : null}
+
+                <SectionStat
+                  label="Imágenes guardadas"
+                  value={`${imagesLimitInfo.current}/${imagesLimitInfo.max}`}
+                  helper="Límite actual según tu plan."
+                />
+
+                <SectionStat
+                  label="Imagen activa"
+                  value={heroImageUrl ? "Seleccionada" : "Sin imagen"}
+                  helper="La imagen activa se usará como hero del correo."
+                />
+              </div>
+
+              <div>
+                {imagesLoading ? (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="rounded-[24px] border p-4"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                      >
+                        <div className="h-40 animate-pulse rounded-2xl" style={{ background: "var(--bg-soft)" }} />
+                        <div className="mt-3 h-4 w-32 animate-pulse rounded" style={{ background: "var(--bg-soft)" }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : campaignImages.length === 0 ? (
+                  <div
+                    className="rounded-[26px] border px-6 py-10 text-sm"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-muted)" }}
+                  >
+                    Aún no tienes imágenes guardadas. Súbelas aquí y luego reutilízalas en todas tus campañas.
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {campaignImages.map((image) => {
+                      const isActive = !!heroImageUrl && heroImageUrl === image.public_url;
+
+                      return (
+                        <div
+                          key={image.id}
+                          className="overflow-hidden rounded-[26px] border shadow-sm"
+                          style={{
+                            borderColor: isActive ? "rgba(37,99,235,0.35)" : "var(--border-color)",
+                            background:
+                              isActive
+                                ? "linear-gradient(135deg, rgba(37,99,235,0.10), var(--bg-card))"
+                                : "var(--bg-card)",
+                          }}
+                        >
+                          <div className="h-44 overflow-hidden" style={{ background: "var(--bg-soft)" }}>
+                            {image.public_url ? (
+                              <img
+                                src={image.public_url}
+                                alt={getImageDisplayName(image)}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-sm" style={{ color: "var(--text-muted)" }}>
+                                Sin preview
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-3 p-4">
+                            <div>
+                              <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                                {getImageDisplayName(image)}
+                              </p>
+                              <p className="mt-1 text-xs leading-6" style={{ color: "var(--text-muted)" }}>
+                                {formatDate(image.created_at)} · {formatBytes(image.size_bytes)}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setHeroImageUrl(image.public_url || "");
+                                  setImageLibraryMessage("Imagen seleccionada para la campaña.");
+                                }}
+                                className={primaryButtonClass}
+                                style={{
+                                  background:
+                                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                                }}
+                              >
+                                {isActive ? "En uso" : "Usar"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCampaignImage(image.id)}
+                                disabled={imageDeletingId === image.id}
+                                className={secondaryButtonClass}
+                                style={{
+                                  borderColor: "rgba(244,63,94,0.28)",
+                                  background: "rgba(244,63,94,0.08)",
+                                  color: "rgb(244 63 94)",
+                                }}
+                              >
+                                {imageDeletingId === image.id ? "Eliminando..." : "Eliminar"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {confirmOpen ? (
         <div
