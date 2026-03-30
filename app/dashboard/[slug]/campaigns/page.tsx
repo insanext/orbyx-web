@@ -2600,108 +2600,85 @@ export default function CampaignsPage() {
               </div>
 
               <div>
-                {imagesLoading ? (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                      <div
-                        key={index}
-                        className="rounded-[24px] border p-4"
-                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
-                      >
-                        <div className="h-40 animate-pulse rounded-2xl" style={{ background: "var(--bg-soft)" }} />
-                        <div className="mt-3 h-4 w-32 animate-pulse rounded" style={{ background: "var(--bg-soft)" }} />
-                      </div>
-                    ))}
-                  </div>
-                ) : campaignImages.length === 0 ? (
-                  <div
-                    className="rounded-[26px] border px-6 py-10 text-sm"
-                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-muted)" }}
-                  >
-                    Aún no tienes imágenes guardadas. Súbelas aquí y luego reutilízalas en todas tus campañas.
-                  </div>
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {campaignImages.map((image) => {
-                      const isActive = !!heroImageUrl && heroImageUrl === image.public_url;
+                <div
+  className="rounded-[26px] border p-5"
+  style={{
+    borderColor: "var(--border-color)",
+    background: "#0B0F1A",
+  }}
+>
+  <div className="flex items-center justify-between mb-4">
+    <h4 className="text-sm font-semibold text-white">
+      Biblioteca de imágenes
+    </h4>
 
-                      return (
-                        <div
-                          key={image.id}
-                          className="overflow-hidden rounded-[26px] border shadow-sm"
-                          style={{
-                            borderColor: isActive ? "rgba(37,99,235,0.35)" : "var(--border-color)",
-                            background:
-                              isActive
-                                ? "linear-gradient(135deg, rgba(37,99,235,0.10), var(--bg-card))"
-                                : "var(--bg-card)",
-                          }}
-                        >
-                          <div className="h-44 overflow-hidden" style={{ background: "var(--bg-soft)" }}>
-                            {image.public_url ? (
-                              <img
-                                src={image.public_url}
-                                alt={getImageDisplayName(image)}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center text-sm" style={{ color: "var(--text-muted)" }}>
-                                Sin preview
-                              </div>
-                            )}
-                          </div>
+    <span className="text-xs text-gray-400">
+      {imagesLimitInfo.current}/{imagesLimitInfo.max} imágenes
+    </span>
+  </div>
 
-                          <div className="space-y-3 p-4">
-                            <div>
-                              <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                                {getImageDisplayName(image)}
-                              </p>
-                              <p className="mt-1 text-xs leading-6" style={{ color: "var(--text-muted)" }}>
-                                {formatDate(image.created_at)} · {formatBytes(image.size_bytes)}
-                              </p>
-                            </div>
+  {imagesLoading ? (
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={index}
+          className="h-40 animate-pulse rounded-xl"
+          style={{ background: "#111827" }}
+        />
+      ))}
+    </div>
+  ) : campaignImages.length === 0 ? (
+    <div className="text-center py-10 text-sm text-gray-500">
+      No tienes imágenes aún
+    </div>
+  ) : (
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {campaignImages.map((image) => {
+        const isActive =
+          heroImageUrl && heroImageUrl === image.public_url;
 
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setHeroImageUrl(image.public_url || "");
-                                  setImageLibraryMessage("Imagen seleccionada para la campaña.");
-                                }}
-                                className={primaryButtonClass}
-                                style={{
-                                  background:
-                                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                                }}
-                              >
-                                {isActive ? "En uso" : "Usar"}
-                              </button>
+        return (
+          <div
+            key={image.id}
+            className="relative group rounded-xl overflow-hidden border"
+            style={{
+              borderColor: isActive
+                ? "rgba(37,99,235,0.5)"
+                : "#1F2937",
+              background: "#111827",
+            }}
+          >
+            <img
+              src={image.public_url || ""}
+              className="w-full h-40 object-cover"
+            />
 
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteCampaignImage(image.id)}
-                                disabled={imageDeletingId === image.id}
-                                className={secondaryButtonClass}
-                                style={{
-                                  borderColor: "rgba(244,63,94,0.28)",
-                                  background: "rgba(244,63,94,0.08)",
-                                  color: "rgb(244 63 94)",
-                                }}
-                              >
-                                {imageDeletingId === image.id ? "Eliminando..." : "Eliminar"}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+            {/* overlay */}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+              
+              <button
+                onClick={() => {
+                  setHeroImageUrl(image.public_url || "");
+                  setImageLibraryMessage("Imagen seleccionada");
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg"
+              >
+                Usar
+              </button>
+
+              <button
+                onClick={() => handleDeleteCampaignImage(image.id)}
+                className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg"
+              >
+                Eliminar
+              </button>
             </div>
           </div>
-        </div>
-      ) : null}
+        );
+      })}
+    </div>
+  )}
+</div>
 
       {confirmOpen ? (
         <div
