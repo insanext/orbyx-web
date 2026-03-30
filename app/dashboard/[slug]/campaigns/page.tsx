@@ -1544,22 +1544,20 @@ export default function CampaignsPage() {
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-3">
                       <button
-                        type="button"
-                        onClick={() => {
-                          setImageLibraryOpen(true);
-                          if (slug) {
-                            loadCampaignImages(slug);
-                          }
-                        }}
-                        className={secondaryButtonClass}
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                          color: "var(--text-main)",
-                        }}
-                      >
-                        Biblioteca de imágenes
-                      </button>
+  type="button"
+  onClick={() => {
+    setImageLibraryOpen(true);
+    if (slug) loadCampaignImages(slug);
+  }}
+  className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
+  style={{
+    background: "rgba(148,163,184,0.12)",
+    border: "1px solid rgba(148,163,184,0.35)",
+    color: "rgb(203 213 225)",
+  }}
+>
+  📁 Biblioteca de imágenes
+</button>
 
                       {heroImageUrl ? (
                         <button
