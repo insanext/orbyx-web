@@ -2675,11 +2675,9 @@ export default function CampaignsPage() {
             </div>
           </div>
         );
-            })}
+      })}
     </div>
-  )}
 </div>
-
 </div>
 
 {confirmOpen ? (
