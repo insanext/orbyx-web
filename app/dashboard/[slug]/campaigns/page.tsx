@@ -2452,233 +2452,121 @@ export default function CampaignsPage() {
         </Panel>
       </section>
 
-      {imageLibraryOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-          style={{ background: "rgba(2, 6, 23, 0.72)" }}
-        >
-          <div
-            className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
-            style={{
-              borderColor: "rgba(59,130,246,0.25)",
-              background:
-                "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.04), var(--bg-card))",
-            }}
-          >
-            <div
-              className="flex flex-wrap items-start justify-between gap-4 border-b px-6 py-5"
-              style={{ borderColor: "var(--border-color)" }}
-            >
-              <div>
-                <p
-                  className="text-xs font-medium uppercase tracking-[0.18em]"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Biblioteca SaaS
-                </p>
-                <h3
-                  className="mt-2 text-2xl font-semibold"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Imágenes de campañas
-                </h3>
-                <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                  Guarda imágenes reutilizables, selecciónalas para el hero del correo o usa una URL externa cuando quieras.
-                </p>
-              </div>
+     {imageLibraryOpen ? (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+    style={{ background: "rgba(2, 6, 23, 0.72)" }}
+  >
+    <div
+      className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
+      style={{
+        borderColor: "rgba(59,130,246,0.25)",
+        background:
+          "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.04), var(--bg-card))",
+      }}
+    >
+      {/* HEADER */}
+      <div
+        className="flex flex-wrap items-start justify-between gap-4 border-b px-6 py-5"
+        style={{ borderColor: "var(--border-color)" }}
+      >
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>
+            Biblioteca SaaS
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold" style={{ color: "var(--text-main)" }}>
+            Imágenes de campañas
+          </h3>
+          <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+            Guarda imágenes reutilizables o usa una URL externa.
+          </p>
+        </div>
 
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => slug && loadCampaignImages(slug)}
-                  className={secondaryButtonClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  Recargar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setImageLibraryOpen(false)}
-                  className={secondaryButtonClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
+        <div className="flex gap-3">
+          <button onClick={() => slug && loadCampaignImages(slug)} className={secondaryButtonClass}>
+            Recargar
+          </button>
+          <button onClick={() => setImageLibraryOpen(false)} className={secondaryButtonClass}>
+            Cerrar
+          </button>
+        </div>
+      </div>
 
-            <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
-              <div className="space-y-4">
-                <div
-                  className="rounded-[26px] border p-4"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                  }}
-                >
-                  <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                    Subir nueva imagen
-                  </p>
-                  <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                    Formatos permitidos: jpg, jpeg, png y webp. Peso máximo: 2 MB.
-                  </p>
+      {/* CONTENT */}
+      <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
+        
+        {/* LEFT */}
+        <div className="space-y-4">
+          <div className="rounded-[26px] border p-4" style={{ background: "var(--bg-soft)" }}>
+            <p className="text-sm font-semibold">Subir imagen</p>
 
-                  <div
-                    className="mt-4 rounded-2xl border border-dashed p-4"
-                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
-                  >
-                    <input
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          handleUploadCampaignImage(file);
-                          e.currentTarget.value = "";
-                        }
-                      }}
-                      className="block w-full text-sm"
-                      style={{ color: "var(--text-main)" }}
-                    />
-
-                    <p className="mt-3 text-xs leading-6" style={{ color: "var(--text-muted)" }}>
-                      Cupo usado: <strong style={{ color: "var(--text-main)" }}>{imagesLimitInfo.current}/{imagesLimitInfo.max}</strong> imágenes.
-                    </p>
-                    {imageUploading ? (
-                      <p className="mt-2 text-xs leading-6" style={{ color: "var(--text-main)" }}>
-                        Subiendo imagen...
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
-                {imageLibraryError ? (
-                  <div
-                    className="rounded-2xl border px-4 py-3 text-sm"
-                    style={{
-                      borderColor: "rgba(244,63,94,0.28)",
-                      background: "rgba(244,63,94,0.10)",
-                      color: "rgb(251 113 133)",
-                    }}
-                  >
-                    {imageLibraryError}
-                  </div>
-                ) : null}
-
-                {imageLibraryMessage ? (
-                  <div
-                    className="rounded-2xl border px-4 py-3 text-sm"
-                    style={{
-                      borderColor: "rgba(16,185,129,0.28)",
-                      background: "rgba(16,185,129,0.10)",
-                      color: "rgb(52 211 153)",
-                    }}
-                  >
-                    {imageLibraryMessage}
-                  </div>
-                ) : null}
-
-                <SectionStat
-                  label="Imágenes guardadas"
-                  value={`${imagesLimitInfo.current}/${imagesLimitInfo.max}`}
-                  helper="Límite actual según tu plan."
-                />
-
-                <SectionStat
-                  label="Imagen activa"
-                  value={heroImageUrl ? "Seleccionada" : "Sin imagen"}
-                  helper="La imagen activa se usará como hero del correo."
-                />
-              </div>
-
-              <div>
-                <div
-  className="rounded-[26px] border p-5"
-  style={{
-    borderColor: "var(--border-color)",
-    background: "#0B0F1A",
-  }}
->
-  <div className="flex items-center justify-between mb-4">
-    <h4 className="text-sm font-semibold text-white">
-      Biblioteca de imágenes
-    </h4>
-
-    <span className="text-xs text-gray-400">
-      {imagesLimitInfo.current}/{imagesLimitInfo.max} imágenes
-    </span>
-  </div>
-
-  {imagesLoading ? (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, index) => (
-        <div
-          key={index}
-          className="h-40 animate-pulse rounded-xl"
-          style={{ background: "#111827" }}
-        />
-      ))}
-    </div>
-  ) : campaignImages.length === 0 ? (
-    <div className="text-center py-10 text-sm text-gray-500">
-      No tienes imágenes aún
-    </div>
-  ) : (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {campaignImages.map((image) => {
-        const isActive =
-          heroImageUrl && heroImageUrl === image.public_url;
-
-        return (
-          <div
-            key={image.id}
-            className="relative group rounded-xl overflow-hidden border"
-            style={{
-              borderColor: isActive
-                ? "rgba(37,99,235,0.5)"
-                : "#1F2937",
-              background: "#111827",
-            }}
-          >
-            <img
-              src={image.public_url || ""}
-              className="w-full h-40 object-cover"
+            <input
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleUploadCampaignImage(file);
+                  e.currentTarget.value = "";
+                }
+              }}
+              className="mt-3 text-sm"
             />
 
-            {/* overlay */}
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
-              
-              <button
-                onClick={() => {
-                  setHeroImageUrl(image.public_url || "");
-                  setImageLibraryMessage("Imagen seleccionada");
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg"
-              >
-                Usar
-              </button>
-
-              <button
-                onClick={() => handleDeleteCampaignImage(image.id)}
-                className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg"
-              >
-                Eliminar
-              </button>
-            </div>
+            <p className="text-xs mt-2">
+              {imagesLimitInfo.current}/{imagesLimitInfo.max}
+            </p>
           </div>
-        );
-      })}
+
+          {imageLibraryError && <div className="text-red-400 text-sm">{imageLibraryError}</div>}
+          {imageLibraryMessage && <div className="text-green-400 text-sm">{imageLibraryMessage}</div>}
+        </div>
+
+        {/* RIGHT */}
+        <div
+          className="rounded-[26px] border p-5"
+          style={{ background: "#0B0F1A" }}
+        >
+          <div className="flex justify-between mb-4">
+            <h4 className="text-white">Biblioteca</h4>
+          </div>
+
+          {imagesLoading ? (
+            <div className="text-gray-400">Cargando...</div>
+          ) : campaignImages.length === 0 ? (
+            <div className="text-gray-500">No hay imágenes</div>
+          ) : (
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+              {campaignImages.map((image) => (
+                <div key={image.id} className="relative group">
+                  <img
+                    src={image.public_url || ""}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => setHeroImageUrl(image.public_url || "")}
+                      className="bg-blue-600 text-white px-2 py-1 text-xs rounded"
+                    >
+                      Usar
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteCampaignImage(image.id)}
+                      className="bg-red-600 text-white px-2 py-1 text-xs rounded"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-</div>
-</div>
+  </div>
+) : null}
 
 {confirmOpen ? (
         <div
