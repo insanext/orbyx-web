@@ -197,8 +197,7 @@ const INACTIVE_OPTIONS = [
   { value: "30", label: "30 días" },
   { value: "60", label: "60 días" },
   { value: "90", label: "90 días" },
-  { value: "120", label: "120 días" },
-  { value: "121", label: "120+ días" },
+  { value: "120", label: "120+ días" },
 ];
 
 function normalizePlan(plan?: string): PlanSlug {
@@ -558,7 +557,7 @@ export default function CampaignsPage() {
   const [plan, setPlan] = useState<PlanSlug>("starter");
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [segment, setSegment] = useState<CustomerSegment>("inactive");
-  const [inactiveDays, setInactiveDays] = useState("121");
+  const [inactiveDays, setInactiveDays] = useState("120");
   const [sendLimit, setSendLimit] = useState("50");
   const [sort, setSort] = useState<CampaignSort>("oldest");
   const [campaignName, setCampaignName] = useState("");
