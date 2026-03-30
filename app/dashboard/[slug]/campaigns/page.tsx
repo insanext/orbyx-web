@@ -796,6 +796,7 @@ function HistorySkeleton() {
   );
 }
 
+
 function RichTextEditor({
   label,
   value,
@@ -810,6 +811,9 @@ function RichTextEditor({
   minHeight?: number;
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const [currentFontSize, setCurrentFontSize] = useState("3");
+  const [currentFontName, setCurrentFontName] = useState("Arial");
+  const colorInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -822,26 +826,76 @@ function RichTextEditor({
     editorRef.current?.focus();
   }
 
-  function runCommand(command: string, commandValue?: string) {
-    focusEditor();
-    document.execCommand(command, false, commandValue);
+  function syncHtml() {
     onChange(normalizeEditorHtml(editorRef.current?.innerHTML || ""));
   }
 
+  function runCommand(command: string, commandValue?: string) {
+    focusEditor();
+    document.execCommand(command, false, commandValue);
+    syncHtml();
+  }
+
+  function handleInput() {
+    syncHtml();
+  }
+
   function handleLink() {
-    const url = window.prompt("Ingresa la URL del enlace");
+    const url = window.prompt("Ingresa la URL del enlace", "https://");
     if (!url) return;
     runCommand("createLink", url);
   }
 
-  function handleTextColor() {
-    const color = window.prompt("Color HEX. Ej: #0f766e", "#0f766e");
-    if (!color) return;
-    runCommand("foreColor", color);
+  function applyFormatBlock(value: "p" | "h1" | "h2") {
+    if (value === "p") {
+      runCommand("formatBlock", "<p>");
+      return;
+    }
+
+    if (value === "h1") {
+      runCommand("formatBlock", "<h1>");
+      return;
+    }
+
+    runCommand("formatBlock", "<h2>");
   }
 
-  function handleInput() {
-    onChange(normalizeEditorHtml(editorRef.current?.innerHTML || ""));
+  function applyFontSize(size: string) {
+    setCurrentFontSize(size);
+    runCommand("fontSize", size);
+  }
+
+  function applyFontName(font: string) {
+    setCurrentFontName(font);
+    runCommand("fontName", font);
+  }
+
+  function ToolbarButton({
+    onClick,
+    children,
+    title,
+    className = "",
+  }: {
+    onClick: () => void;
+    children: React.ReactNode;
+    title: string;
+    className?: string;
+  }) {
+    return (
+      <button
+        type="button"
+        title={title}
+        onClick={onClick}
+        className={`inline-flex h-10 min-w-[40px] items-center justify-center rounded-xl border px-3 text-sm font-semibold transition ${className}`}
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+          color: "var(--text-main)",
+        }}
+      >
+        {children}
+      </button>
+    );
   }
 
   return (
@@ -861,48 +915,128 @@ function RichTextEditor({
         }}
       >
         <div
-          className="flex flex-wrap gap-2 border-b p-3"
+          className="flex flex-wrap items-center gap-2 border-b p-3"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-soft)",
           }}
         >
-          <button type="button" onClick={() => runCommand("bold")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            B
-          </button>
-          <button type="button" onClick={() => runCommand("italic")} className="rounded-xl border px-3 py-2 text-xs font-semibold italic" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            I
-          </button>
-          <button type="button" onClick={() => runCommand("underline")} className="rounded-xl border px-3 py-2 text-xs font-semibold underline" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            U
-          </button>
-          <button type="button" onClick={() => runCommand("formatBlock", "<h1>")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            H1
-          </button>
-          <button type="button" onClick={() => runCommand("formatBlock", "<h2>")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            H2
-          </button>
-          <button type="button" onClick={() => runCommand("insertUnorderedList")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            Lista
-          </button>
-          <button type="button" onClick={() => runCommand("justifyLeft")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            Izq
-          </button>
-          <button type="button" onClick={() => runCommand("justifyCenter")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            Centro
-          </button>
-          <button type="button" onClick={() => runCommand("justifyRight")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            Der
-          </button>
-          <button type="button" onClick={handleLink} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+          <select
+            value="p"
+            onChange={(e) => applyFormatBlock(e.target.value as "p" | "h1" | "h2")}
+            className="h-10 rounded-xl border px-3 text-sm outline-none"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value="p">Normal</option>
+            <option value="h1">Título grande</option>
+            <option value="h2">Subtítulo</option>
+          </select>
+
+          <select
+            value={currentFontName}
+            onChange={(e) => applyFontName(e.target.value)}
+            className="h-10 rounded-xl border px-3 text-sm outline-none"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value="Arial">Arial</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Tahoma">Tahoma</option>
+            <option value="Times New Roman">Times New Roman</option>
+          </select>
+
+          <select
+            value={currentFontSize}
+            onChange={(e) => applyFontSize(e.target.value)}
+            className="h-10 rounded-xl border px-3 text-sm outline-none"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value="2">Pequeña</option>
+            <option value="3">Normal</option>
+            <option value="4">Mediana</option>
+            <option value="5">Grande</option>
+          </select>
+
+          <ToolbarButton title="Negrita" onClick={() => runCommand("bold")}>
+            <span className="font-bold">B</span>
+          </ToolbarButton>
+
+          <ToolbarButton title="Cursiva" onClick={() => runCommand("italic")}>
+            <span className="italic">I</span>
+          </ToolbarButton>
+
+          <ToolbarButton title="Subrayado" onClick={() => runCommand("underline")}>
+            <span className="underline">U</span>
+          </ToolbarButton>
+
+          <ToolbarButton
+            title="Lista con viñetas"
+            onClick={() => runCommand("insertUnorderedList")}
+          >
+            • Lista
+          </ToolbarButton>
+
+          <ToolbarButton title="Alinear izquierda" onClick={() => runCommand("justifyLeft")}>
+            ⬅
+          </ToolbarButton>
+
+          <ToolbarButton title="Centrar" onClick={() => runCommand("justifyCenter")}>
+            ↔
+          </ToolbarButton>
+
+          <ToolbarButton title="Alinear derecha" onClick={() => runCommand("justifyRight")}>
+            ➡
+          </ToolbarButton>
+
+          <ToolbarButton title="Insertar enlace" onClick={handleLink}>
             Link
-          </button>
-          <button type="button" onClick={handleTextColor} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-            Color
-          </button>
-          <button type="button" onClick={() => runCommand("removeFormat")} className="rounded-xl border px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+          </ToolbarButton>
+
+          <div
+            className="flex h-10 items-center gap-2 rounded-xl border px-3"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <span className="text-xs font-semibold">Color</span>
+
+            <button
+              type="button"
+              onClick={() => colorInputRef.current?.click()}
+              className="h-6 w-6 rounded-full border"
+              style={{
+                borderColor: "rgba(255,255,255,0.16)",
+                background: "linear-gradient(135deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6)",
+              }}
+              title="Elegir color"
+            />
+
+            <input
+              ref={colorInputRef}
+              type="color"
+              defaultValue="#0f766e"
+              onChange={(e) => runCommand("foreColor", e.target.value)}
+              className="sr-only"
+            />
+          </div>
+
+          <ToolbarButton title="Limpiar formato" onClick={() => runCommand("removeFormat")}>
             Limpiar
-          </button>
+          </ToolbarButton>
         </div>
 
         <div
@@ -925,16 +1059,16 @@ function RichTextEditor({
           color: var(--text-muted);
         }
         .rich-editor h1 {
-          font-size: 1.5rem;
+          font-size: 1.9rem;
           font-weight: 700;
-          line-height: 1.25;
-          margin: 0.6rem 0;
+          line-height: 1.2;
+          margin: 0.7rem 0;
         }
         .rich-editor h2 {
-          font-size: 1.25rem;
+          font-size: 1.35rem;
           font-weight: 700;
-          line-height: 1.3;
-          margin: 0.55rem 0;
+          line-height: 1.28;
+          margin: 0.6rem 0;
         }
         .rich-editor p {
           margin: 0.55rem 0;
@@ -947,10 +1081,24 @@ function RichTextEditor({
           color: #2563eb;
           text-decoration: underline;
         }
+        .rich-editor font[size="2"] {
+          font-size: 0.9rem;
+        }
+        .rich-editor font[size="3"] {
+          font-size: 1rem;
+        }
+        .rich-editor font[size="4"] {
+          font-size: 1.125rem;
+        }
+        .rich-editor font[size="5"] {
+          font-size: 1.35rem;
+        }
       `}</style>
     </div>
   );
 }
+
+
 
 export default function CampaignsPage() {
   const params = useParams();
@@ -2863,126 +3011,232 @@ export default function CampaignsPage() {
         </Panel>
       </section>
 
-      {imageLibraryOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-          style={{ background: "rgba(2, 6, 23, 0.72)" }}
-        >
-          <div
-            className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
+
+
+{imageLibraryOpen ? (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+    style={{ background: "rgba(2, 6, 23, 0.78)" }}
+  >
+    <div
+      className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
+      style={{
+        borderColor: "rgba(59,130,246,0.22)",
+        background:
+          "linear-gradient(135deg, rgba(15,23,42,0.96), rgba(2,6,23,0.98))",
+      }}
+    >
+      <div
+        className="flex flex-wrap items-start justify-between gap-4 border-b px-6 py-5"
+        style={{ borderColor: "rgba(148,163,184,0.14)" }}
+      >
+        <div>
+          <p
+            className="text-xs font-medium uppercase tracking-[0.18em]"
+            style={{ color: "rgba(148,163,184,0.9)" }}
+          >
+            Biblioteca SaaS
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">
+            Imágenes de campañas
+          </h3>
+          <p
+            className="mt-2 text-sm leading-6"
+            style={{ color: "rgba(203,213,225,0.82)" }}
+          >
+            Guarda imágenes reutilizables o usa una URL externa.
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => slug && loadCampaignImages(slug)}
+            className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
             style={{
-              borderColor: "rgba(59,130,246,0.25)",
-              background:
-                "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.04), var(--bg-card))",
+              background: "rgba(15,23,42,0.9)",
+              border: "1px solid rgba(148,163,184,0.24)",
+              color: "#e2e8f0",
             }}
           >
-            <div
-              className="flex flex-wrap items-start justify-between gap-4 border-b px-6 py-5"
-              style={{ borderColor: "var(--border-color)" }}
-            >
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>
-                  Biblioteca SaaS
-                </p>
-                <h3 className="mt-2 text-2xl font-semibold" style={{ color: "var(--text-main)" }}>
-                  Imágenes de campañas
-                </h3>
-                <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                  Guarda imágenes reutilizables o usa una URL externa.
-                </p>
-              </div>
+            Recargar
+          </button>
 
-              <div className="flex gap-3">
-                <button onClick={() => slug && loadCampaignImages(slug)} className={secondaryButtonClass}>
-                  Recargar
-                </button>
-                <button onClick={() => setImageLibraryOpen(false)} className={secondaryButtonClass}>
-                  Cerrar
-                </button>
-              </div>
-            </div>
-
-            <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
-              <div className="space-y-4">
-                <div className="rounded-[26px] border p-4" style={{ background: "var(--bg-soft)" }}>
-                  <p className="text-sm font-semibold">Subir imagen</p>
-
-                  <input
-                    type="file"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleUploadCampaignImage(file);
-                        e.currentTarget.value = "";
-                      }
-                    }}
-                    className="mt-3 text-sm"
-                  />
-
-                  <p className="mt-2 text-xs">
-                    {imageUploading ? "Subiendo..." : `${imagesLimitInfo.current}/${imagesLimitInfo.max}`}
-                  </p>
-                </div>
-
-                {imageLibraryError && <div className="text-red-400 text-sm">{imageLibraryError}</div>}
-                {imageLibraryMessage && <div className="text-green-400 text-sm">{imageLibraryMessage}</div>}
-              </div>
-
-              <div
-                className="rounded-[26px] border p-5"
-                style={{ background: "#0B0F1A" }}
-              >
-                <div className="mb-4 flex justify-between">
-                  <h4 className="text-white">Biblioteca</h4>
-                </div>
-
-                {imagesLoading ? (
-                  <div className="text-gray-400">Cargando...</div>
-                ) : campaignImages.length === 0 ? (
-                  <div className="text-gray-500">No hay imágenes</div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                    {campaignImages.map((image) => (
-                      <div key={image.id} className="group relative">
-                        <img
-                          src={image.public_url || ""}
-                          alt={getImageDisplayName(image)}
-                          className="h-32 w-full rounded-lg object-cover"
-                        />
-
-                        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 group-hover:opacity-100">
-                          <button
-                            onClick={() => {
-                              setHeroImageUrl(image.public_url || "");
-                              setImageLibraryOpen(false);
-                            }}
-                            className="rounded bg-blue-600 px-2 py-1 text-xs text-white"
-                          >
-                            Usar
-                          </button>
-
-                          <button
-                            onClick={() => handleDeleteCampaignImage(image.id)}
-                            disabled={imageDeletingId === image.id}
-                            className="rounded bg-red-600 px-2 py-1 text-xs text-white"
-                          >
-                            {imageDeletingId === image.id ? "..." : "Eliminar"}
-                          </button>
-                        </div>
-
-                        <div className="mt-2 text-xs text-slate-300">
-                          <p className="truncate">{getImageDisplayName(image)}</p>
-                          <p>{formatBytes(image.size_bytes)}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <button
+            onClick={() => setImageLibraryOpen(false)}
+            className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
+            style={{
+              background: "rgba(15,23,42,0.9)",
+              border: "1px solid rgba(148,163,184,0.24)",
+              color: "#e2e8f0",
+            }}
+          >
+            Cerrar
+          </button>
         </div>
-      ) : null}
+      </div>
+
+      <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
+        <div className="space-y-4">
+          <div
+            className="rounded-[26px] border p-4"
+            style={{
+              borderColor: "rgba(148,163,184,0.16)",
+              background: "rgba(15,23,42,0.9)",
+            }}
+          >
+            <p className="text-sm font-semibold text-white">Subir imagen</p>
+
+            <label
+              className="mt-3 inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl px-4 text-sm font-semibold transition"
+              style={{
+                background:
+                  imageUploading
+                    ? "rgba(71,85,105,0.5)"
+                    : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                color: "#ffffff",
+                boxShadow: imageUploading
+                  ? "none"
+                  : "0 12px 30px rgba(37,99,235,0.24)",
+              }}
+            >
+              {imageUploading ? "Subiendo..." : "Elegir imagen"}
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleUploadCampaignImage(file);
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+            </label>
+
+            <p
+              className="mt-3 text-xs leading-6"
+              style={{ color: "rgba(203,213,225,0.78)" }}
+            >
+              Formatos permitidos: JPG, PNG, WEBP. Máximo 2 MB.
+            </p>
+
+            <p
+              className="mt-2 text-xs font-semibold"
+              style={{ color: "rgba(148,163,184,0.95)" }}
+            >
+              {imagesLimitInfo.current}/{imagesLimitInfo.max}
+            </p>
+          </div>
+
+          {imageLibraryError ? (
+            <div
+              className="rounded-2xl border px-4 py-3 text-sm"
+              style={{
+                borderColor: "rgba(244,63,94,0.26)",
+                background: "rgba(127,29,29,0.26)",
+                color: "rgb(253 164 175)",
+              }}
+            >
+              {imageLibraryError}
+            </div>
+          ) : null}
+
+          {imageLibraryMessage ? (
+            <div
+              className="rounded-2xl border px-4 py-3 text-sm"
+              style={{
+                borderColor: "rgba(16,185,129,0.24)",
+                background: "rgba(6,78,59,0.22)",
+                color: "rgb(110 231 183)",
+              }}
+            >
+              {imageLibraryMessage}
+            </div>
+          ) : null}
+        </div>
+
+        <div
+          className="rounded-[26px] border p-5"
+          style={{
+            borderColor: "rgba(148,163,184,0.14)",
+            background: "#000000",
+          }}
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h4 className="text-base font-semibold text-white">Biblioteca</h4>
+            <p
+              className="text-xs"
+              style={{ color: "rgba(148,163,184,0.88)" }}
+            >
+              Fondo oscuro para resaltar mejor las imágenes
+            </p>
+          </div>
+
+          {imagesLoading ? (
+            <div className="text-sm text-slate-400">Cargando...</div>
+          ) : campaignImages.length === 0 ? (
+            <div className="text-sm text-slate-500">No hay imágenes</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              {campaignImages.map((image) => (
+                <div
+                  key={image.id}
+                  className="group rounded-2xl border p-2"
+                  style={{
+                    borderColor: "rgba(148,163,184,0.12)",
+                    background: "rgba(15,23,42,0.72)",
+                  }}
+                >
+                  <div className="relative overflow-hidden rounded-xl">
+                    <img
+                      src={image.public_url || ""}
+                      alt={getImageDisplayName(image)}
+                      className="h-36 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                    />
+
+                    <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/65 opacity-0 transition group-hover:opacity-100">
+                      <button
+                        onClick={() => {
+                          setHeroImageUrl(image.public_url || "");
+                          setImageLibraryOpen(false);
+                        }}
+                        className="inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold text-white"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                        }}
+                      >
+                        Usar
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteCampaignImage(image.id)}
+                        disabled={imageDeletingId === image.id}
+                        className="inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold text-white disabled:opacity-60"
+                        style={{
+                          background: "linear-gradient(135deg, rgb(220 38 38), rgb(244 63 94))",
+                        }}
+                      >
+                        {imageDeletingId === image.id ? "..." : "Eliminar"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-xs text-slate-300">
+                    <p className="truncate font-medium">{getImageDisplayName(image)}</p>
+                    <p className="mt-1 text-slate-400">{formatBytes(image.size_bytes)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+) : null}
+      
 
       {confirmOpen ? (
         <div
