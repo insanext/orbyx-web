@@ -13,7 +13,6 @@ type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
 type HistoryPeriod = "all" | "7d" | "30d" | "this_month" | "custom";
 type HistoryPerformance = "all" | "excellent" | "good" | "warning" | "failed";
 type EmailVisualPreset = "minimal" | "promo" | "reminder";
-type TextAlignType = "left" | "center" | "right";
 type ImageFitType = "cover" | "contain";
 
 type CampaignImageItem = {
@@ -49,6 +48,26 @@ type Customer = {
   updated_at: string;
   segment?: CustomerSegment;
   is_inactive?: boolean;
+};
+
+type AudienceRecipientSource = "segment" | "manual";
+
+type AudienceRecipient = {
+  id: string;
+  source: AudienceRecipientSource;
+  included: boolean;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  segment?: CustomerSegment;
+  last_visit_at?: string | null;
+  total_visits?: number;
+};
+
+type ManualRecipientForm = {
+  name: string;
+  email: string;
+  phone: string;
 };
 
 type CustomersResponse = {
@@ -427,6 +446,27 @@ function getSuccessRate(item: CampaignHistoryItem) {
   return Math.round((Number(item.sent_count || 0) / base) * 100);
 }
 
+function buildRecipientId(source: AudienceRecipientSource, rawId: string) {
+  return `${source}:${rawId}`;
+}
+
+function normalizeEmail(value: string) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizePhone(value: string) {
+  return String(value || "").replace(/\s+/g, "").trim();
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+}
+
+function isValidPhone(value: string) {
+  const normalized = normalizePhone(value).replace(/[^\d+]/g, "");
+  return normalized.length >= 8;
+}
+
 function isDateWithinPeriod(
   dateValue: string,
   period: HistoryPeriod,
@@ -796,7 +836,6 @@ function HistorySkeleton() {
   );
 }
 
-
 function RichTextEditor({
   label,
   value,
@@ -1098,8 +1137,6 @@ function RichTextEditor({
   );
 }
 
-
-
 export default function CampaignsPage() {
   const params = useParams();
   const slug =
@@ -1126,6 +1163,14 @@ export default function CampaignsPage() {
   );
 
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [audienceSearch, setAudienceSearch] = useState("");
+  const [manualRecipientForm, setManualRecipientForm] = useState<ManualRecipientForm>({
+    name: "",
+    email: "",
+    phone: "",
+  });
+  const [manualRecipients, setManualRecipients] = useState<AudienceRecipient[]>([]);
+  const [excludedRecipientIds, setExcludedRecipientIds] = useState<string[]>([]);
   const [loadingAudience, setLoadingAudience] = useState(true);
   const [sending, setSending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -1315,22 +1360,6 @@ export default function CampaignsPage() {
     }
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   async function loadCampaignImages(currentSlug: string, keepMessage = false) {
     try {
       setImagesLoading(true);
@@ -1346,25 +1375,24 @@ export default function CampaignsPage() {
         throw new Error(data?.error || "No se pudo cargar la biblioteca");
       }
 
-const images = Array.isArray(data.images) ? data.images : [];
+      const images = Array.isArray(data.images) ? data.images : [];
 
-setCampaignImages(images);
-setImagesLimitInfo({
-  current:
-    Number(
-      data?.limits?.current_count ??
-        data?.limits?.current ??
-        images.length ??
-        0
-    ) || 0,
-  max:
-    Number(
-      data?.limits?.max_images ??
-        data?.limits?.max ??
-        planImageLimit
-    ) || planImageLimit,
-});
-
+      setCampaignImages(images);
+      setImagesLimitInfo({
+        current:
+          Number(
+            data?.limits?.current_count ??
+              data?.limits?.current ??
+              images.length ??
+              0
+          ) || 0,
+        max:
+          Number(
+            data?.limits?.max_images ??
+              data?.limits?.max ??
+              planImageLimit
+          ) || planImageLimit,
+      });
     } catch (err: unknown) {
       setImageLibraryError(err instanceof Error ? err.message : "Error cargando imágenes");
       setCampaignImages([]);
@@ -1431,9 +1459,12 @@ setImagesLimitInfo({
       setImageLibraryError("");
       setImageLibraryMessage("");
 
-      const res = await fetch(`${BACKEND_URL}/campaign-images/${imageId}?slug=${encodeURIComponent(slug)}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `${BACKEND_URL}/campaign-images/${imageId}?slug=${encodeURIComponent(slug)}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const data = await res.json();
 
@@ -1456,6 +1487,109 @@ setImagesLimitInfo({
     }
   }
 
+  function resetManualRecipientForm() {
+    setManualRecipientForm({
+      name: "",
+      email: "",
+      phone: "",
+    });
+  }
+
+  function toggleRecipientIncluded(recipientId: string) {
+    setExcludedRecipientIds((prev) =>
+      prev.includes(recipientId)
+        ? prev.filter((id) => id !== recipientId)
+        : [...prev, recipientId]
+    );
+  }
+
+  function removeManualRecipient(recipientId: string) {
+    setManualRecipients((prev) => prev.filter((item) => item.id !== recipientId));
+    setExcludedRecipientIds((prev) => prev.filter((id) => id !== recipientId));
+  }
+
+  function handleAddManualRecipient() {
+    const trimmedName = manualRecipientForm.name.trim();
+
+    if (!trimmedName) {
+      setError("Debes ingresar el nombre del destinatario manual.");
+      return;
+    }
+
+    if (channel === "email") {
+      const email = normalizeEmail(manualRecipientForm.email);
+
+      if (!isValidEmail(email)) {
+        setError("Debes ingresar un correo válido.");
+        return;
+      }
+
+      const duplicateInManual = manualRecipients.some(
+        (item) => normalizeEmail(item.email || "") === email
+      );
+
+      const duplicateInCustomers = customers.some(
+        (item) => normalizeEmail(item.email || "") === email
+      );
+
+      if (duplicateInManual || duplicateInCustomers) {
+        setError("Ese correo ya está agregado en la audiencia.");
+        return;
+      }
+
+      setManualRecipients((prev) => [
+        {
+          id: buildRecipientId("manual", `email:${email}`),
+          source: "manual",
+          included: true,
+          name: trimmedName,
+          email,
+          phone: null,
+        },
+        ...prev,
+      ]);
+
+      setError("");
+      resetManualRecipientForm();
+      return;
+    }
+
+    const phone = normalizePhone(manualRecipientForm.phone);
+
+    if (!isValidPhone(phone)) {
+      setError("Debes ingresar un teléfono válido.");
+      return;
+    }
+
+    const duplicateInManual = manualRecipients.some(
+      (item) => normalizePhone(item.phone || "") === phone
+    );
+
+    const duplicateInCustomers = customers.some(
+      (item) => normalizePhone(item.phone || "") === phone
+    );
+
+    if (duplicateInManual || duplicateInCustomers) {
+      setError("Ese teléfono ya está agregado en la audiencia.");
+      return;
+    }
+
+    setManualRecipients((prev) => [
+      {
+        id: buildRecipientId("manual", `phone:${phone}`),
+        source: "manual",
+        included: true,
+        name: trimmedName,
+        email: null,
+        phone,
+      },
+      ...prev,
+    ]);
+
+    setError("");
+    resetManualRecipientForm();
+  }
+
   useEffect(() => {
     if (slug) {
       loadCampaignHistory(slug);
@@ -1463,32 +1597,100 @@ setImagesLimitInfo({
     }
   }, [slug]);
 
+  const segmentRecipients = useMemo<AudienceRecipient[]>(() => {
+    return customers
+      .filter((customer) =>
+        channel === "email" ? !!customer.email : !!customer.phone
+      )
+      .map((customer) => ({
+        id: buildRecipientId("segment", customer.id),
+        source: "segment",
+        included: !excludedRecipientIds.includes(buildRecipientId("segment", customer.id)),
+        name: customer.name || "Sin nombre",
+        email: customer.email,
+        phone: customer.phone,
+        segment: customer.segment,
+        last_visit_at: customer.last_visit_at,
+        total_visits: customer.total_visits,
+      }));
+  }, [customers, channel, excludedRecipientIds]);
+
+  const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
+    const manualForChannel = manualRecipients.filter((item) =>
+      channel === "email" ? !!item.email : !!item.phone
+    );
+
+    const merged = [...manualForChannel, ...segmentRecipients].map((item) => ({
+      ...item,
+      included: !excludedRecipientIds.includes(item.id),
+    }));
+
+    return merged;
+  }, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
+
+  const audienceSearchNormalized = audienceSearch.trim().toLowerCase();
+
+  const filteredAudienceRecipients = useMemo(() => {
+    if (!audienceSearchNormalized) return allAudienceRecipients;
+
+    return allAudienceRecipients.filter((item) => {
+      const searchable = [
+        item.name || "",
+        item.email || "",
+        item.phone || "",
+        item.segment || "",
+        item.source || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(audienceSearchNormalized);
+    });
+  }, [allAudienceRecipients, audienceSearchNormalized]);
+
+  const includedAudienceRecipients = useMemo(() => {
+    return allAudienceRecipients.filter((item) => item.included);
+  }, [allAudienceRecipients]);
+
+  const limitedIncludedRecipients = useMemo(() => {
+    return includedAudienceRecipients.slice(0, Number(sendLimit || 50));
+  }, [includedAudienceRecipients, sendLimit]);
+
   const audienceStats = useMemo(() => {
-    const total = customers.length;
-    const withEmail = customers.filter((c) => !!c.email).length;
-    const withWhatsapp = customers.filter((c) => !!c.phone).length;
-    const availableForChannel = channel === "email" ? withEmail : withWhatsapp;
+    const rawWithEmail = customers.filter((c) => !!c.email).length;
+    const rawWithWhatsapp = customers.filter((c) => !!c.phone).length;
+
+    const totalVisible = allAudienceRecipients.length;
+    const included = includedAudienceRecipients.length;
+    const excluded = Math.max(totalVisible - included, 0);
+    const manual = manualRecipients.filter((item) =>
+      channel === "email" ? !!item.email : !!item.phone
+    ).length;
 
     return {
-      total,
-      withEmail,
-      withWhatsapp,
-      availableForChannel,
+      totalVisible,
+      included,
+      excluded,
+      manual,
+      withEmail:
+        channel === "email"
+          ? totalVisible
+          : rawWithEmail + manualRecipients.filter((item) => !!item.email).length,
+      withWhatsapp:
+        channel === "whatsapp"
+          ? totalVisible
+          : rawWithWhatsapp + manualRecipients.filter((item) => !!item.phone).length,
+      availableForChannel: included,
     };
-  }, [customers, channel]);
+  }, [customers, allAudienceRecipients, includedAudienceRecipients, manualRecipients, channel]);
 
   const limitedAudienceCount = useMemo(() => {
-    return Math.min(Number(sendLimit || 50), audienceStats.availableForChannel || 0);
-  }, [sendLimit, audienceStats.availableForChannel]);
+    return Math.min(Number(sendLimit || 50), includedAudienceRecipients.length || 0);
+  }, [sendLimit, includedAudienceRecipients]);
 
   const previewRecipients = useMemo(() => {
-    const filtered =
-      channel === "email"
-        ? customers.filter((customer) => !!customer.email)
-        : customers.filter((customer) => !!customer.phone);
-
-    return filtered.slice(0, 6);
-  }, [customers, channel]);
+    return filteredAudienceRecipients.slice(0, 50);
+  }, [filteredAudienceRecipients]);
 
   const filteredHistory = useMemo(() => {
     return history.filter((item) => {
@@ -1640,8 +1842,8 @@ setImagesLimitInfo({
       return;
     }
 
-    if (limitedAudienceCount <= 0) {
-      setError("No hay correos disponibles para enviar con esta segmentación.");
+    if (limitedIncludedRecipients.length <= 0) {
+      setError("No hay destinatarios incluidos para enviar.");
       return;
     }
 
@@ -1655,6 +1857,14 @@ setImagesLimitInfo({
       setError("");
       setResultMessage("");
       setSendSummary(null);
+
+      const finalRecipients = limitedIncludedRecipients.map((item) => ({
+        id: item.id,
+        source: item.source,
+        name: item.name,
+        email: item.email,
+        phone: item.phone,
+      }));
 
       const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
         method: "POST",
@@ -1682,6 +1892,14 @@ setImagesLimitInfo({
           show_cta: showCta,
           footer_note: editorHtmlToPlainText(footerHtml).trim(),
           footer_note_html: normalizeEditorHtml(footerHtml),
+          final_recipients: finalRecipients,
+          excluded_recipient_ids: excludedRecipientIds,
+          manual_recipients: manualRecipients.map((item) => ({
+            id: item.id,
+            name: item.name,
+            email: item.email,
+            phone: item.phone,
+          })),
         }),
       });
 
@@ -1824,14 +2042,14 @@ setImagesLimitInfo({
           value={loadingAudience ? "..." : String(audienceStats.availableForChannel)}
           helper={
             channel === "email"
-              ? "Clientes con correo disponible."
-              : "Clientes con teléfono disponible."
+              ? "Destinatarios incluidos con correo."
+              : "Destinatarios incluidos con teléfono."
           }
         />
         <SectionStat
           label="Se enviarán"
           value={loadingAudience ? "..." : String(limitedAudienceCount)}
-          helper="Tope real según filtro, canal y límite."
+          helper="Tope real según curación manual y límite."
         />
       </section>
 
@@ -1987,18 +2205,32 @@ setImagesLimitInfo({
                   style={{ color: "var(--text-muted)" }}
                 >
                   <p>
-                    Tu plan <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{PLAN_LABELS[plan]}</span> permite hasta{" "}
-                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{planLimit}</span> contactos por campaña.
+                    Tu plan{" "}
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                      {PLAN_LABELS[plan]}
+                    </span>{" "}
+                    permite hasta{" "}
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                      {planLimit}
+                    </span>{" "}
+                    contactos por campaña.
                   </p>
                   <p>
                     El sistema intentará enviar hasta{" "}
-                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{sendLimit}</span> contactos,
-                    ordenados por{" "}
-                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{selectedSortLabel}</span>.
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                      {sendLimit}
+                    </span>{" "}
+                    destinatarios, ordenados por{" "}
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                      {selectedSortLabel}
+                    </span>
+                    .
                   </p>
                   <p>
-                    Con la audiencia actual, el alcance real sería de{" "}
-                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>{limitedAudienceCount}</span>{" "}
+                    Con la audiencia curada actual, el alcance real sería de{" "}
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                      {limitedAudienceCount}
+                    </span>{" "}
                     contactos por este canal.
                   </p>
                 </div>
@@ -2006,278 +2238,25 @@ setImagesLimitInfo({
             </div>
           </Panel>
 
-          <Panel
-            title="Email"
-            description="Contenido real del correo con rich text."
-            className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
-          >
-            <div className="space-y-5">
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Nombre interno de campaña
-                </label>
-                <input
-                  type="text"
-                  value={campaignName}
-                  onChange={(e) => setCampaignName(e.target.value)}
-                  placeholder="Ej: Reactivación 120+ días"
-                  className={inputClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Asunto
-                </label>
-                <input
-                  type="text"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Ej: Te extrañamos, vuelve cuando quieras"
-                  className={inputClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
-
-              <RichTextEditor
-                label="Mensaje"
-                value={messageHtml}
-                onChange={setMessageHtml}
-                placeholder="Escribe el contenido principal del correo..."
-                minHeight={220}
-              />
-
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                Puedes usar <strong>{"{{nombre}}"}</strong>, negrita, cursiva, subrayado, títulos, listas, alineación, links y color de texto.
-              </p>
-            </div>
-          </Panel>
-
-          <Panel
-            title="Estilo del email"
-            description="Branding visual, CTA, banner y nota final."
-            className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
-          >
-            <div className="space-y-5">
-              <div>
-                <label
-                  className="mb-3 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Plantilla visual
-                </label>
-
-                <div className="flex flex-wrap gap-2">
-                  <SoftChip
-                    active={emailPreset === "minimal"}
-                    label="Minimal"
-                    onClick={() => setEmailPreset("minimal")}
-                  />
-                  <SoftChip
-                    active={emailPreset === "promo"}
-                    label="Promo"
-                    onClick={() => setEmailPreset("promo")}
-                  />
-                  <SoftChip
-                    active={emailPreset === "reminder"}
-                    label="Recordatorio"
-                    onClick={() => setEmailPreset("reminder")}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
+          {channel === "email" ? (
+            <Panel
+              title="Email"
+              description="Contenido real del correo con rich text."
+              className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+            >
+              <div className="space-y-5">
                 <div>
                   <label
                     className="mb-2 block text-sm font-medium"
                     style={{ color: "var(--text-main)" }}
                   >
-                    Color principal
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={brandColor}
-                      onChange={(e) => setBrandColor(e.target.value)}
-                      className="h-11 w-16 rounded-xl border p-1"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={brandColor}
-                      onChange={(e) => setBrandColor(e.target.value)}
-                      className={inputClass}
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
-                        color: "var(--text-main)",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Imagen principal
-                  </label>
-
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap gap-3">
-                      <button
-  type="button"
-  onClick={() => {
-    setImageLibraryOpen(true);
-    if (slug) loadCampaignImages(slug);
-  }}
-  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition"
-  style={{
-    background: "rgba(245, 158, 11, 0.14)",
-    border: "1px solid rgba(245, 158, 11, 0.38)",
-    color: "rgb(180 83 9)",
-    boxShadow: "0 10px 24px rgba(245,158,11,0.10)",
-  }}
->
-  <span style={{ fontSize: 15 }}>📁</span>
-  <span>Biblioteca de imágenes</span>
-</button>
-
-                      {heroImageUrl ? (
-                        <button
-                          type="button"
-                          onClick={() => setHeroImageUrl("")}
-                          className={secondaryButtonClass}
-                          style={{
-                            borderColor: "rgba(244,63,94,0.28)",
-                            background: "rgba(244,63,94,0.08)",
-                            color: "rgb(244 63 94)",
-                          }}
-                        >
-                          Quitar imagen
-                        </button>
-                      ) : null}
-                    </div>
-
-                    <input
-                      type="text"
-                      value={heroImageUrl}
-                      onChange={(e) => setHeroImageUrl(e.target.value)}
-                      placeholder="https://... o selecciona una imagen guardada"
-                      className={inputClass}
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
-                        color: "var(--text-main)",
-                      }}
-                    />
-
-                    <p className="text-xs leading-6" style={{ color: "var(--text-muted)" }}>
-                      Puedes usar una URL externa como fallback o elegir una imagen guardada en tu biblioteca.
-                      Límite actual: <strong style={{ color: "var(--text-main)" }}>{imagesLimitInfo.current}/{imagesLimitInfo.max}</strong>.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Altura imagen
-                  </label>
-                  <input
-                    type="range"
-                    min={160}
-                    max={420}
-                    step={10}
-                    value={heroImageHeight}
-                    onChange={(e) => setHeroImageHeight(Number(e.target.value))}
-                    className="w-full"
-                  />
-                  <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-                    {heroImageHeight}px
-                  </p>
-                </div>
-
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Posición vertical
-                  </label>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={heroImagePositionY}
-                    onChange={(e) => setHeroImagePositionY(Number(e.target.value))}
-                    className="w-full"
-                  />
-                  <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-                    {heroImagePositionY}%
-                  </p>
-                </div>
-
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Enfoque
-                  </label>
-                  <select
-                    value={heroImageFit}
-                    onChange={(e) => setHeroImageFit(e.target.value as ImageFitType)}
-                    className={selectClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    <option value="cover">Cover</option>
-                    <option value="contain">Contain</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Texto CTA
+                    Nombre interno de campaña
                   </label>
                   <input
                     type="text"
-                    value={ctaText}
-                    onChange={(e) => setCtaText(e.target.value)}
-                    placeholder="Ej: Agendar visita"
+                    value={campaignName}
+                    onChange={(e) => setCampaignName(e.target.value)}
+                    placeholder="Ej: Reactivación 120+ días"
                     className={inputClass}
                     style={{
                       borderColor: "var(--border-color)",
@@ -2292,13 +2271,13 @@ setImagesLimitInfo({
                     className="mb-2 block text-sm font-medium"
                     style={{ color: "var(--text-main)" }}
                   >
-                    URL CTA
+                    Asunto
                   </label>
                   <input
                     type="text"
-                    value={ctaUrl}
-                    onChange={(e) => setCtaUrl(e.target.value)}
-                    placeholder={`https://www.orbyx.cl/${slug}`}
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="Ej: Te extrañamos, vuelve cuando quieras"
                     className={inputClass}
                     style={{
                       borderColor: "var(--border-color)",
@@ -2307,34 +2286,339 @@ setImagesLimitInfo({
                     }}
                   />
                 </div>
-              </div>
 
-              <label
-                className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                <RichTextEditor
+                  label="Mensaje"
+                  value={messageHtml}
+                  onChange={setMessageHtml}
+                  placeholder="Escribe el contenido principal del correo..."
+                  minHeight={220}
+                />
+
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  Puedes usar <strong>{"{{nombre}}"}</strong>, negrita, cursiva,
+                  subrayado, títulos, listas, alineación, links y color de texto.
+                </p>
+              </div>
+            </Panel>
+          ) : (
+            <Panel
+              title="WhatsApp"
+              description="Base visual lista para la futura sección propia de WhatsApp."
+              className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
+            >
+              <div
+                className="rounded-2xl border p-5"
                 style={{
                   borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
+                  background:
+                    "linear-gradient(135deg, rgba(16,185,129,0.10), var(--bg-soft))",
                 }}
               >
-                <input
-                  type="checkbox"
-                  checked={showCta}
-                  onChange={(e) => setShowCta(e.target.checked)}
-                  className="h-4 w-4"
-                />
-                Mostrar botón CTA en el correo
-              </label>
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Sección WhatsApp en preparación
+                </p>
+                <p
+                  className="mt-2 text-sm leading-6"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Aquí después irá el mensaje propio de WhatsApp, variables,
+                  estilo conversacional y lógica específica del canal. Mientras
+                  tanto, ya queda separada de Email.
+                </p>
+              </div>
+            </Panel>
+          )}
 
-              <RichTextEditor
-                label="Footer / nota final"
-                value={footerHtml}
-                onChange={setFooterHtml}
-                placeholder="Escribe el footer del correo..."
-                minHeight={160}
-              />
-            </div>
-          </Panel>
+          {channel === "email" ? (
+            <Panel
+              title="Estilo del email"
+              description="Branding visual, CTA, banner y nota final."
+              className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+            >
+              <div className="space-y-5">
+                <div>
+                  <label
+                    className="mb-3 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Plantilla visual
+                  </label>
+
+                  <div className="flex flex-wrap gap-2">
+                    <SoftChip
+                      active={emailPreset === "minimal"}
+                      label="Minimal"
+                      onClick={() => setEmailPreset("minimal")}
+                    />
+                    <SoftChip
+                      active={emailPreset === "promo"}
+                      label="Promo"
+                      onClick={() => setEmailPreset("promo")}
+                    />
+                    <SoftChip
+                      active={emailPreset === "reminder"}
+                      label="Recordatorio"
+                      onClick={() => setEmailPreset("reminder")}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Color principal
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={brandColor}
+                        onChange={(e) => setBrandColor(e.target.value)}
+                        className="h-11 w-16 rounded-xl border p-1"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                        }}
+                      />
+                      <input
+                        type="text"
+                        value={brandColor}
+                        onChange={(e) => setBrandColor(e.target.value)}
+                        className={inputClass}
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Imagen principal
+                    </label>
+
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageLibraryOpen(true);
+                            if (slug) loadCampaignImages(slug);
+                          }}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition"
+                          style={{
+                            background: "rgba(245, 158, 11, 0.14)",
+                            border: "1px solid rgba(245, 158, 11, 0.38)",
+                            color: "rgb(180 83 9)",
+                            boxShadow: "0 10px 24px rgba(245,158,11,0.10)",
+                          }}
+                        >
+                          <span style={{ fontSize: 15 }}>📁</span>
+                          <span>Biblioteca de imágenes</span>
+                        </button>
+
+                        {heroImageUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setHeroImageUrl("")}
+                            className={secondaryButtonClass}
+                            style={{
+                              borderColor: "rgba(244,63,94,0.28)",
+                              background: "rgba(244,63,94,0.08)",
+                              color: "rgb(244 63 94)",
+                            }}
+                          >
+                            Quitar imagen
+                          </button>
+                        ) : null}
+                      </div>
+
+                      <input
+                        type="text"
+                        value={heroImageUrl}
+                        onChange={(e) => setHeroImageUrl(e.target.value)}
+                        placeholder="https://... o selecciona una imagen guardada"
+                        className={inputClass}
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      />
+
+                      <p
+                        className="text-xs leading-6"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Puedes usar una URL externa como fallback o elegir una
+                        imagen guardada en tu biblioteca. Límite actual:{" "}
+                        <strong style={{ color: "var(--text-main)" }}>
+                          {imagesLimitInfo.current}/{imagesLimitInfo.max}
+                        </strong>
+                        .
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Altura imagen
+                    </label>
+                    <input
+                      type="range"
+                      min={160}
+                      max={420}
+                      step={10}
+                      value={heroImageHeight}
+                      onChange={(e) => setHeroImageHeight(Number(e.target.value))}
+                      className="w-full"
+                    />
+                    <p
+                      className="mt-2 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {heroImageHeight}px
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Posición vertical
+                    </label>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={heroImagePositionY}
+                      onChange={(e) =>
+                        setHeroImagePositionY(Number(e.target.value))
+                      }
+                      className="w-full"
+                    />
+                    <p
+                      className="mt-2 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {heroImagePositionY}%
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Enfoque
+                    </label>
+                    <select
+                      value={heroImageFit}
+                      onChange={(e) =>
+                        setHeroImageFit(e.target.value as ImageFitType)
+                      }
+                      className={selectClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <option value="cover">Cover</option>
+                      <option value="contain">Contain</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Texto CTA
+                    </label>
+                    <input
+                      type="text"
+                      value={ctaText}
+                      onChange={(e) => setCtaText(e.target.value)}
+                      placeholder="Ej: Agendar visita"
+                      className={inputClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      URL CTA
+                    </label>
+                    <input
+                      type="text"
+                      value={ctaUrl}
+                      onChange={(e) => setCtaUrl(e.target.value)}
+                      placeholder={`https://www.orbyx.cl/${slug}`}
+                      className={inputClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <label
+                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={showCta}
+                    onChange={(e) => setShowCta(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  Mostrar botón CTA en el correo
+                </label>
+
+                <RichTextEditor
+                  label="Footer / nota final"
+                  value={footerHtml}
+                  onChange={setFooterHtml}
+                  placeholder="Escribe el footer del correo..."
+                  minHeight={160}
+                />
+              </div>
+            </Panel>
+          ) : null}
 
           <div
             className="rounded-[26px] border p-4 shadow-sm"
@@ -2352,7 +2636,10 @@ setImagesLimitInfo({
                 >
                   Acción crítica
                 </p>
-                <p className="mt-1 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                <p
+                  className="mt-1 text-sm leading-6"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   Esta campaña intentará impactar hasta{" "}
                   <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
                     {limitedAudienceCount}
@@ -2415,27 +2702,32 @@ setImagesLimitInfo({
         </div>
 
         <div className="space-y-6 self-start xl:sticky xl:top-24">
-  <Panel
-    title="Preview de audiencia"
-            description="A quiénes impactaría esta campaña según el canal activo."
+          <Panel
+            title="Preview de audiencia"
+            description="Curación final de destinatarios antes de enviar."
             className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
           >
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
                 <SectionStat
-                  label="Con email"
-                  value={loadingAudience ? "..." : String(audienceStats.withEmail)}
-                  helper="Clientes alcanzables por correo."
+                  label="Total"
+                  value={loadingAudience ? "..." : String(audienceStats.totalVisible)}
+                  helper="Destinatarios visibles en este canal."
                 />
                 <SectionStat
-                  label="Con WhatsApp"
-                  value={loadingAudience ? "..." : String(audienceStats.withWhatsapp)}
-                  helper="Clientes alcanzables por teléfono."
+                  label="Incluidos"
+                  value={loadingAudience ? "..." : String(audienceStats.included)}
+                  helper="Entran a la lista final."
                 />
                 <SectionStat
-                  label="Se enviarán"
-                  value={loadingAudience ? "..." : String(limitedAudienceCount)}
-                  helper="Máximo alcanzable según filtros."
+                  label="Excluidos"
+                  value={loadingAudience ? "..." : String(audienceStats.excluded)}
+                  helper="Quitados manualmente."
+                />
+                <SectionStat
+                  label="Manuales"
+                  value={loadingAudience ? "..." : String(audienceStats.manual)}
+                  helper="Agregados fuera del segmento."
                 />
               </div>
 
@@ -2447,25 +2739,150 @@ setImagesLimitInfo({
                     "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
                 }}
               >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Resumen actual
+                    </p>
+                    <p
+                      className="mt-2 text-sm leading-6"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Canal:{" "}
+                      <strong style={{ color: "var(--text-main)" }}>
+                        {selectedChannelLabel}
+                      </strong>
+                      {" · "}Segmento:{" "}
+                      <strong style={{ color: "var(--text-main)" }}>
+                        {selectedSegmentLabel}
+                      </strong>
+                      {" · "}Prioridad:{" "}
+                      <strong style={{ color: "var(--text-main)" }}>
+                        {selectedSortLabel}
+                      </strong>
+                    </p>
+                    <p
+                      className="mt-2 text-sm leading-6"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Final incluidos:{" "}
+                      <strong style={{ color: "var(--text-main)" }}>
+                        {audienceStats.included}
+                      </strong>
+                      {" · "}Tope a procesar:{" "}
+                      <strong style={{ color: "var(--text-main)" }}>
+                        {limitedAudienceCount}
+                      </strong>
+                    </p>
+                  </div>
+
+                  <div className="w-full max-w-sm">
+                    <input
+                      type="text"
+                      value={audienceSearch}
+                      onChange={(e) => setAudienceSearch(e.target.value)}
+                      placeholder={
+                        channel === "email"
+                          ? "Buscar por nombre o correo..."
+                          : "Buscar por nombre o teléfono..."
+                      }
+                      className={inputClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
                 <p
                   className="text-sm font-semibold"
                   style={{ color: "var(--text-main)" }}
                 >
-                  Resumen actual
+                  Agregar destinatario manual
                 </p>
-                <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                  Canal: <strong style={{ color: "var(--text-main)" }}>{selectedChannelLabel}</strong>
-                  {" · "}Segmento:{" "}
-                  <strong style={{ color: "var(--text-main)" }}>{selectedSegmentLabel}</strong>
-                  {" · "}Inactividad:{" "}
-                  <strong style={{ color: "var(--text-main)" }}>
-                    {INACTIVE_OPTIONS.find((item) => item.value === inactiveDays)?.label || `${inactiveDays} días`}
-                  </strong>
-                </p>
-                <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                  Prioridad: <strong style={{ color: "var(--text-main)" }}>{selectedSortLabel}</strong>
-                  {" · "}Límite: <strong style={{ color: "var(--text-main)" }}>{sendLimit}</strong>
-                </p>
+
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <input
+                    type="text"
+                    value={manualRecipientForm.name}
+                    onChange={(e) =>
+                      setManualRecipientForm((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    placeholder="Nombre"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+
+                  {channel === "email" ? (
+                    <input
+                      type="email"
+                      value={manualRecipientForm.email}
+                      onChange={(e) =>
+                        setManualRecipientForm((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
+                      placeholder="correo@ejemplo.com"
+                      className={inputClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={manualRecipientForm.phone}
+                      onChange={(e) =>
+                        setManualRecipientForm((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }))
+                      }
+                      placeholder="+56912345678"
+                      className={inputClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleAddManualRecipient}
+                    className={primaryButtonClass}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                    }}
+                  >
+                    Agregar
+                  </button>
+                </div>
               </div>
 
               <div
@@ -2476,27 +2893,50 @@ setImagesLimitInfo({
                 }}
               >
                 <div
-                  className="border-b px-4 py-3"
+                  className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3"
                   style={{ borderColor: "var(--border-color)" }}
                 >
                   <p
                     className="text-sm font-semibold"
                     style={{ color: "var(--text-main)" }}
                   >
-                    Muestra de destinatarios
+                    Lista editable de destinatarios
                   </p>
+
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span
+                      className="rounded-full border px-3 py-1 font-semibold"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      Incluidos: {audienceStats.included}
+                    </span>
+                    <span
+                      className="rounded-full border px-3 py-1 font-semibold"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      Total: {audienceStats.totalVisible}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
                   {loadingAudience ? (
-                    Array.from({ length: 5 }).map((_, index) => (
+                    Array.from({ length: 6 }).map((_, index) => (
                       <div key={index} className="px-4 py-4">
                         <div
                           className="h-4 w-32 animate-pulse rounded"
                           style={{ background: "var(--bg-soft)" }}
                         />
                         <div
-                          className="mt-2 h-4 w-44 animate-pulse rounded"
+                          className="mt-2 h-4 w-56 animate-pulse rounded"
                           style={{ background: "var(--bg-soft)" }}
                         />
                       </div>
@@ -2506,48 +2946,109 @@ setImagesLimitInfo({
                       className="px-4 py-10 text-sm"
                       style={{ color: "var(--text-muted)" }}
                     >
-                      No hay clientes disponibles para este canal con la segmentación actual.
+                      No hay destinatarios para este canal con la búsqueda actual.
                     </div>
                   ) : (
-                    previewRecipients.map((customer) => {
-                      const segmentMeta = getCustomerSegmentMeta(customer.segment);
+                    previewRecipients.map((recipient) => {
+                      const segmentMeta = getCustomerSegmentMeta(recipient.segment);
+                      const isManual = recipient.source === "manual";
 
                       return (
-                        <div key={customer.id} className="px-4 py-4">
-                          <div className="flex items-start justify-between gap-3">
+                        <div key={recipient.id} className="px-4 py-4">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                             <div className="min-w-0 flex-1">
-                              <p
-                                className="font-semibold"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {customer.name || "Sin nombre"}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p
+                                  className="font-semibold"
+                                  style={{ color: "var(--text-main)" }}
+                                >
+                                  {recipient.name || "Sin nombre"}
+                                </p>
+
+                                <span
+                                  className="inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold"
+                                  style={{
+                                    background: isManual
+                                      ? "rgba(245,158,11,0.12)"
+                                      : "rgba(37,99,235,0.10)",
+                                    borderColor: isManual
+                                      ? "rgba(245,158,11,0.28)"
+                                      : "rgba(37,99,235,0.22)",
+                                    color: isManual ? "rgb(180 83 9)" : "rgb(37 99 235)",
+                                  }}
+                                >
+                                  {isManual ? "Manual" : "Segmento"}
+                                </span>
+
+                                {recipient.segment ? (
+                                  <span
+                                    className="inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold"
+                                    style={{
+                                      background: segmentMeta.bg,
+                                      borderColor: segmentMeta.border,
+                                      color: segmentMeta.color,
+                                    }}
+                                  >
+                                    {segmentMeta.label}
+                                  </span>
+                                ) : null}
+                              </div>
+
                               <p
                                 className="mt-1 text-sm"
                                 style={{ color: "var(--text-muted)" }}
                               >
                                 {channel === "email"
-                                  ? customer.email || "Sin email"
-                                  : customer.phone || "Sin teléfono"}
+                                  ? recipient.email || "Sin email"
+                                  : recipient.phone || "Sin teléfono"}
                               </p>
-                              <p
-                                className="mt-1 text-xs"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                Última visita: {formatLastVisit(customer.last_visit_at)}
-                              </p>
+
+                              {!isManual ? (
+                                <p
+                                  className="mt-1 text-xs"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  Última visita: {formatLastVisit(recipient.last_visit_at)}
+                                  {" · "}Visitas: {recipient.total_visits || 0}
+                                </p>
+                              ) : null}
                             </div>
 
-                            <span
-                              className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
-                              style={{
-                                background: segmentMeta.bg,
-                                borderColor: segmentMeta.border,
-                                color: segmentMeta.color,
-                              }}
-                            >
-                              {segmentMeta.label}
-                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleRecipientIncluded(recipient.id)}
+                                className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-xs font-semibold transition"
+                                style={{
+                                  background: recipient.included
+                                    ? "rgba(16,185,129,0.14)"
+                                    : "rgba(244,63,94,0.12)",
+                                  border: recipient.included
+                                    ? "1px solid rgba(16,185,129,0.28)"
+                                    : "1px solid rgba(244,63,94,0.28)",
+                                  color: recipient.included
+                                    ? "rgb(16 185 129)"
+                                    : "rgb(244 63 94)",
+                                }}
+                              >
+                                {recipient.included ? "Incluido" : "Excluido"}
+                              </button>
+
+                              {isManual ? (
+                                <button
+                                  type="button"
+                                  onClick={() => removeManualRecipient(recipient.id)}
+                                  className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-xs font-semibold transition"
+                                  style={{
+                                    background: "rgba(244,63,94,0.08)",
+                                    border: "1px solid rgba(244,63,94,0.22)",
+                                    color: "rgb(244 63 94)",
+                                  }}
+                                >
+                                  Quitar de lista
+                                </button>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       );
@@ -2558,35 +3059,68 @@ setImagesLimitInfo({
             </div>
           </Panel>
 
-          <Panel
-            title="Preview del correo"
-            description="Render HTML real del email."
-            className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
-          >
-            <div
-              className="rounded-[28px] border p-4"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-              }}
+          {channel === "email" ? (
+            <Panel
+              title="Preview del correo"
+              description="Render HTML real del email."
+              className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
             >
-              <div className="overflow-hidden rounded-[24px] border bg-white" style={{ borderColor: "var(--border-color)" }}>
-                <iframe
-                  title="Preview email"
-                  srcDoc={previewHtml}
-                  className="w-full"
-                  style={{
-                    height: heroImageUrl ? 820 : 680,
-                    border: "0",
-                    background: "#ffffff",
-                  }}
-                />
+              <div
+                className="rounded-[28px] border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                }}
+              >
+                <div
+                  className="overflow-hidden rounded-[24px] border bg-white"
+                  style={{ borderColor: "var(--border-color)" }}
+                >
+                  <iframe
+                    title="Preview email"
+                    srcDoc={previewHtml}
+                    className="w-full"
+                    style={{
+                      height: heroImageUrl ? 820 : 680,
+                      border: "0",
+                      background: "#ffffff",
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          </Panel>
+            </Panel>
+          ) : (
+            <Panel
+              title="Preview de WhatsApp"
+              description="Base futura del canal WhatsApp."
+              className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
+            >
+              <div
+                className="rounded-[28px] border p-5"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(16,185,129,0.10), var(--bg-soft))",
+                }}
+              >
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Aquí después irá el preview real de WhatsApp
+                </p>
+                <p
+                  className="mt-2 text-sm leading-6"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Burbuja de mensaje, variables, CTA conversacional, estado de
+                  plantilla y lógica específica del canal.
+                </p>
+              </div>
+            </Panel>
+          )}
         </div>
       </div>
-
       <section className="space-y-6">
         <div className="grid gap-4 xl:grid-cols-4">
           <SectionStat
@@ -3043,232 +3577,233 @@ setImagesLimitInfo({
         </Panel>
       </section>
 
-
-
-{imageLibraryOpen ? (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-    style={{ background: "rgba(2, 6, 23, 0.78)" }}
-  >
-    <div
-      className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
-      style={{
-        borderColor: "rgba(59,130,246,0.22)",
-        background:
-          "linear-gradient(135deg, rgba(15,23,42,0.96), rgba(2,6,23,0.98))",
-      }}
-    >
-      <div
-        className="flex flex-wrap items-start justify-between gap-4 border-b px-6 py-5"
-        style={{ borderColor: "rgba(148,163,184,0.14)" }}
-      >
-        <div>
-          <p
-            className="text-xs font-medium uppercase tracking-[0.18em]"
-            style={{ color: "rgba(148,163,184,0.9)" }}
-          >
-            Biblioteca SaaS
-          </p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">
-            Imágenes de campañas
-          </h3>
-          <p
-            className="mt-2 text-sm leading-6"
-            style={{ color: "rgba(203,213,225,0.82)" }}
-          >
-            Guarda imágenes reutilizables o usa una URL externa.
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => slug && loadCampaignImages(slug)}
-            className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
-            style={{
-              background: "rgba(15,23,42,0.9)",
-              border: "1px solid rgba(148,163,184,0.24)",
-              color: "#e2e8f0",
-            }}
-          >
-            Recargar
-          </button>
-
-          <button
-            onClick={() => setImageLibraryOpen(false)}
-            className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
-            style={{
-              background: "rgba(15,23,42,0.9)",
-              border: "1px solid rgba(148,163,184,0.24)",
-              color: "#e2e8f0",
-            }}
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
-        <div className="space-y-4">
-          <div
-            className="rounded-[26px] border p-4"
-            style={{
-              borderColor: "rgba(148,163,184,0.16)",
-              background: "rgba(15,23,42,0.9)",
-            }}
-          >
-            <p className="text-sm font-semibold text-white">Subir imagen</p>
-
-            <label
-              className="mt-3 inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl px-4 text-sm font-semibold transition"
-              style={{
-                background:
-                  imageUploading
-                    ? "rgba(71,85,105,0.5)"
-                    : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                color: "#ffffff",
-                boxShadow: imageUploading
-                  ? "none"
-                  : "0 12px 30px rgba(37,99,235,0.24)",
-              }}
-            >
-              {imageUploading ? "Subiendo..." : "Elegir imagen"}
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleUploadCampaignImage(file);
-                    e.currentTarget.value = "";
-                  }
-                }}
-              />
-            </label>
-
-            <p
-              className="mt-3 text-xs leading-6"
-              style={{ color: "rgba(203,213,225,0.78)" }}
-            >
-              Formatos permitidos: JPG, PNG, WEBP. Máximo 2 MB.
-            </p>
-
-            <p
-              className="mt-2 text-xs font-semibold"
-              style={{ color: "rgba(148,163,184,0.95)" }}
-            >
-              {imagesLimitInfo.current}/{imagesLimitInfo.max}
-            </p>
-          </div>
-
-          {imageLibraryError ? (
-            <div
-              className="rounded-2xl border px-4 py-3 text-sm"
-              style={{
-                borderColor: "rgba(244,63,94,0.26)",
-                background: "rgba(127,29,29,0.26)",
-                color: "rgb(253 164 175)",
-              }}
-            >
-              {imageLibraryError}
-            </div>
-          ) : null}
-
-          {imageLibraryMessage ? (
-            <div
-              className="rounded-2xl border px-4 py-3 text-sm"
-              style={{
-                borderColor: "rgba(16,185,129,0.24)",
-                background: "rgba(6,78,59,0.22)",
-                color: "rgb(110 231 183)",
-              }}
-            >
-              {imageLibraryMessage}
-            </div>
-          ) : null}
-        </div>
-
+      {imageLibraryOpen ? (
         <div
-          className="rounded-[26px] border p-5"
-          style={{
-            borderColor: "rgba(148,163,184,0.14)",
-            background: "#000000",
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+          style={{ background: "rgba(2, 6, 23, 0.78)" }}
         >
-          <div className="mb-4 flex items-center justify-between">
-            <h4 className="text-base font-semibold text-white">Biblioteca</h4>
-            <p
-              className="text-xs"
-              style={{ color: "rgba(148,163,184,0.88)" }}
+          <div
+            className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
+            style={{
+              borderColor: "rgba(59,130,246,0.22)",
+              background:
+                "linear-gradient(135deg, rgba(15,23,42,0.96), rgba(2,6,23,0.98))",
+            }}
+          >
+            <div
+              className="flex flex-wrap items-start justify-between gap-4 border-b px-6 py-5"
+              style={{ borderColor: "rgba(148,163,184,0.14)" }}
             >
-              Fondo oscuro para resaltar mejor las imágenes
-            </p>
-          </div>
+              <div>
+                <p
+                  className="text-xs font-medium uppercase tracking-[0.18em]"
+                  style={{ color: "rgba(148,163,184,0.9)" }}
+                >
+                  Biblioteca SaaS
+                </p>
+                <h3 className="mt-2 text-2xl font-semibold text-white">
+                  Imágenes de campañas
+                </h3>
+                <p
+                  className="mt-2 text-sm leading-6"
+                  style={{ color: "rgba(203,213,225,0.82)" }}
+                >
+                  Guarda imágenes reutilizables o usa una URL externa.
+                </p>
+              </div>
 
-          {imagesLoading ? (
-            <div className="text-sm text-slate-400">Cargando...</div>
-          ) : campaignImages.length === 0 ? (
-            <div className="text-sm text-slate-500">No hay imágenes</div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              {campaignImages.map((image) => (
-                <div
-                  key={image.id}
-                  className="group rounded-2xl border p-2"
+              <div className="flex gap-3">
+                <button
+                  onClick={() => slug && loadCampaignImages(slug)}
+                  className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
                   style={{
-                    borderColor: "rgba(148,163,184,0.12)",
-                    background: "rgba(15,23,42,0.72)",
+                    background: "rgba(15,23,42,0.9)",
+                    border: "1px solid rgba(148,163,184,0.24)",
+                    color: "#e2e8f0",
                   }}
                 >
-                  <div className="relative overflow-hidden rounded-xl">
-                    <img
-                      src={image.public_url || ""}
-                      alt={getImageDisplayName(image)}
-                      className="h-36 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                    />
+                  Recargar
+                </button>
 
-                    <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/65 opacity-0 transition group-hover:opacity-100">
-                      <button
-                        onClick={() => {
-                          setHeroImageUrl(image.public_url || "");
-                          setImageLibraryOpen(false);
-                        }}
-                        className="inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold text-white"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                        }}
-                      >
-                        Usar
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteCampaignImage(image.id)}
-                        disabled={imageDeletingId === image.id}
-                        className="inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold text-white disabled:opacity-60"
-                        style={{
-                          background: "linear-gradient(135deg, rgb(220 38 38), rgb(244 63 94))",
-                        }}
-                      >
-                        {imageDeletingId === image.id ? "..." : "Eliminar"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 text-xs text-slate-300">
-                    <p className="truncate font-medium">{getImageDisplayName(image)}</p>
-                    <p className="mt-1 text-slate-400">{formatBytes(image.size_bytes)}</p>
-                  </div>
-                </div>
-              ))}
+                <button
+                  onClick={() => setImageLibraryOpen(false)}
+                  className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
+                  style={{
+                    background: "rgba(15,23,42,0.9)",
+                    border: "1px solid rgba(148,163,184,0.24)",
+                    color: "#e2e8f0",
+                  }}
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
-          )}
+
+            <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
+              <div className="space-y-4">
+                <div
+                  className="rounded-[26px] border p-4"
+                  style={{
+                    borderColor: "rgba(148,163,184,0.16)",
+                    background: "rgba(15,23,42,0.9)",
+                  }}
+                >
+                  <p className="text-sm font-semibold text-white">Subir imagen</p>
+
+                  <label
+                    className="mt-3 inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl px-4 text-sm font-semibold transition"
+                    style={{
+                      background: imageUploading
+                        ? "rgba(71,85,105,0.5)"
+                        : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                      color: "#ffffff",
+                      boxShadow: imageUploading
+                        ? "none"
+                        : "0 12px 30px rgba(37,99,235,0.24)",
+                    }}
+                  >
+                    {imageUploading ? "Subiendo..." : "Elegir imagen"}
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleUploadCampaignImage(file);
+                          e.currentTarget.value = "";
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <p
+                    className="mt-3 text-xs leading-6"
+                    style={{ color: "rgba(203,213,225,0.78)" }}
+                  >
+                    Formatos permitidos: JPG, PNG, WEBP. Máximo 2 MB.
+                  </p>
+
+                  <p
+                    className="mt-2 text-xs font-semibold"
+                    style={{ color: "rgba(148,163,184,0.95)" }}
+                  >
+                    {imagesLimitInfo.current}/{imagesLimitInfo.max}
+                  </p>
+                </div>
+
+                {imageLibraryError ? (
+                  <div
+                    className="rounded-2xl border px-4 py-3 text-sm"
+                    style={{
+                      borderColor: "rgba(244,63,94,0.26)",
+                      background: "rgba(127,29,29,0.26)",
+                      color: "rgb(253 164 175)",
+                    }}
+                  >
+                    {imageLibraryError}
+                  </div>
+                ) : null}
+
+                {imageLibraryMessage ? (
+                  <div
+                    className="rounded-2xl border px-4 py-3 text-sm"
+                    style={{
+                      borderColor: "rgba(16,185,129,0.24)",
+                      background: "rgba(6,78,59,0.22)",
+                      color: "rgb(110 231 183)",
+                    }}
+                  >
+                    {imageLibraryMessage}
+                  </div>
+                ) : null}
+              </div>
+
+              <div
+                className="rounded-[26px] border p-5"
+                style={{
+                  borderColor: "rgba(148,163,184,0.14)",
+                  background: "#000000",
+                }}
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="text-base font-semibold text-white">Biblioteca</h4>
+                  <p
+                    className="text-xs"
+                    style={{ color: "rgba(148,163,184,0.88)" }}
+                  >
+                    Fondo oscuro para resaltar mejor las imágenes
+                  </p>
+                </div>
+
+                {imagesLoading ? (
+                  <div className="text-sm text-slate-400">Cargando...</div>
+                ) : campaignImages.length === 0 ? (
+                  <div className="text-sm text-slate-500">No hay imágenes</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                    {campaignImages.map((image) => (
+                      <div
+                        key={image.id}
+                        className="group rounded-2xl border p-2"
+                        style={{
+                          borderColor: "rgba(148,163,184,0.12)",
+                          background: "rgba(15,23,42,0.72)",
+                        }}
+                      >
+                        <div className="relative overflow-hidden rounded-xl">
+                          <img
+                            src={image.public_url || ""}
+                            alt={getImageDisplayName(image)}
+                            className="h-36 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                          />
+
+                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/65 opacity-0 transition group-hover:opacity-100">
+                            <button
+                              onClick={() => {
+                                setHeroImageUrl(image.public_url || "");
+                                setImageLibraryOpen(false);
+                              }}
+                              className="inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold text-white"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                              }}
+                            >
+                              Usar
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteCampaignImage(image.id)}
+                              disabled={imageDeletingId === image.id}
+                              className="inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold text-white disabled:opacity-60"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, rgb(220 38 38), rgb(244 63 94))",
+                              }}
+                            >
+                              {imageDeletingId === image.id ? "..." : "Eliminar"}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 text-xs text-slate-300">
+                          <p className="truncate font-medium">
+                            {getImageDisplayName(image)}
+                          </p>
+                          <p className="mt-1 text-slate-400">
+                            {formatBytes(image.size_bytes)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-) : null}
-      
+      ) : null}
 
       {confirmOpen ? (
         <div
@@ -3305,10 +3840,11 @@ setImagesLimitInfo({
               <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
                 {limitedAudienceCount}
               </span>{" "}
-              correos del segmento{" "}
+              correos de tu audiencia curada manualmente del segmento{" "}
               <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
                 {selectedSegmentLabel}
-              </span>.
+              </span>
+              .
             </p>
 
             <p
