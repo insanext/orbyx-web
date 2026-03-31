@@ -1615,7 +1615,7 @@ console.log("customers api", data.customers);
   }));
 }, [customers, excludedRecipientIds]);
 
-  const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
+const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
   const manualForChannel = manualRecipients.filter((item) =>
     channel === "email" ? !!item.email : !!item.phone
   );
@@ -1629,6 +1629,10 @@ console.log("customers api", data.customers);
     included: !excludedRecipientIds.includes(item.id),
   }));
 
+  return merged;
+}, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
+
+// 👇 ESTO VA FUERA (MUY IMPORTANTE)
 useEffect(() => {
   console.log("🔥 customers state:", customers);
   console.log("🔥 segmentRecipients:", segmentRecipients);
