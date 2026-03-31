@@ -1601,7 +1601,7 @@ console.log("customers api", data.customers);
     }
   }, [slug]);
 
-  const segmentRecipients = useMemo<AudienceRecipient[]>(() => {
+const segmentRecipients = useMemo<AudienceRecipient[]>(() => {
   return customers.map((customer) => ({
     id: buildRecipientId("segment", customer.id),
     source: "segment",
@@ -1615,14 +1615,23 @@ console.log("customers api", data.customers);
   }));
 }, [customers, excludedRecipientIds]);
 
+const hasContactsForChannel = useMemo(() => {
+  return segmentRecipients.some((item) =>
+    channel === "email" ? !!item.email : !!item.phone
+  );
+}, [segmentRecipients, channel]);
+
 const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
   const manualForChannel = manualRecipients.filter((item) =>
     channel === "email" ? !!item.email : !!item.phone
   );
 
-  const segmentForChannel = segmentRecipients.filter((item) =>
-    channel === "email" ? !!item.email : !!item.phone
-  );
+  const segmentForChannel = segmentRecipients.filter((item) => {
+  if (channel === "email") return !!item.email;
+
+  // whatsapp
+  return !!item.phone;
+});
 
   const merged = [...manualForChannel, ...segmentForChannel].map((item) => ({
     ...item,
@@ -2720,7 +2729,23 @@ useEffect(() => {
             className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
           >
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
+
+  {!hasContactsForChannel && !loadingAudience && (
+    <div
+      className="rounded-2xl border px-4 py-3 text-sm"
+      style={{
+        borderColor: "rgba(245,158,11,0.28)",
+        background: "rgba(245,158,11,0.10)",
+        color: "rgb(245 158 11)",
+      }}
+    >
+      {channel === "email"
+        ? "No tienes clientes con email para este segmento."
+        : "No tienes clientes con teléfono para este segmento."}
+    </div>
+  )}
+
+  <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
                 <SectionStat
                   label="Total"
                   value={loadingAudience ? "..." : String(audienceStats.totalVisible)}
