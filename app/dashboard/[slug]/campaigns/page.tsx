@@ -1326,6 +1326,10 @@ export default function CampaignsPage() {
         }
 
         setCustomers(Array.isArray(data.customers) ? data.customers : []);
+console.log("slug", slug);
+console.log("segment", segment);
+console.log("channel", channel);
+console.log("customers api", data.customers);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Error cargando audiencia");
         setCustomers([]);
@@ -1598,35 +1602,42 @@ export default function CampaignsPage() {
   }, [slug]);
 
   const segmentRecipients = useMemo<AudienceRecipient[]>(() => {
-    return customers
-      .filter((customer) =>
-        channel === "email" ? !!customer.email : !!customer.phone
-      )
-      .map((customer) => ({
-        id: buildRecipientId("segment", customer.id),
-        source: "segment",
-        included: !excludedRecipientIds.includes(buildRecipientId("segment", customer.id)),
-        name: customer.name || "Sin nombre",
-        email: customer.email,
-        phone: customer.phone,
-        segment: customer.segment,
-        last_visit_at: customer.last_visit_at,
-        total_visits: customer.total_visits,
-      }));
-  }, [customers, channel, excludedRecipientIds]);
+  return customers.map((customer) => ({
+    id: buildRecipientId("segment", customer.id),
+    source: "segment",
+    included: !excludedRecipientIds.includes(buildRecipientId("segment", customer.id)),
+    name: customer.name || "Sin nombre",
+    email: customer.email,
+    phone: customer.phone,
+    segment: customer.segment,
+    last_visit_at: customer.last_visit_at,
+    total_visits: customer.total_visits,
+  }));
+}, [customers, excludedRecipientIds]);
 
   const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
-    const manualForChannel = manualRecipients.filter((item) =>
-      channel === "email" ? !!item.email : !!item.phone
-    );
+  const manualForChannel = manualRecipients.filter((item) =>
+    channel === "email" ? !!item.email : !!item.phone
+  );
 
-    const merged = [...manualForChannel, ...segmentRecipients].map((item) => ({
-      ...item,
-      included: !excludedRecipientIds.includes(item.id),
-    }));
+  const segmentForChannel = segmentRecipients.filter((item) =>
+    channel === "email" ? !!item.email : !!item.phone
+  );
 
-    return merged;
-  }, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
+  const merged = [...manualForChannel, ...segmentForChannel].map((item) => ({
+    ...item,
+    included: !excludedRecipientIds.includes(item.id),
+  }));
+
+useEffect(() => {
+  console.log("🔥 customers state:", customers);
+  console.log("🔥 segmentRecipients:", segmentRecipients);
+  console.log("🔥 allAudienceRecipients:", allAudienceRecipients);
+}, [customers, segmentRecipients, allAudienceRecipients]);
+
+  return merged;
+}, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
+
 
   const audienceSearchNormalized = audienceSearch.trim().toLowerCase();
 
