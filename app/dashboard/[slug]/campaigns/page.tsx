@@ -1629,15 +1629,14 @@ const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
     included: !excludedRecipientIds.includes(item.id),
   }));
 
+  return merged;
+}, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
+
 useEffect(() => {
   console.log("🔥 customers state:", customers);
   console.log("🔥 segmentRecipients:", segmentRecipients);
   console.log("🔥 allAudienceRecipients:", allAudienceRecipients);
 }, [customers, segmentRecipients, allAudienceRecipients]);
-
-  return merged;
-}, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
-
 
   const audienceSearchNormalized = audienceSearch.trim().toLowerCase();
 
