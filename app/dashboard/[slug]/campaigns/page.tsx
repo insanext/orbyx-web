@@ -1632,7 +1632,6 @@ const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
   return merged;
 }, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
 
-// 👇 ESTO VA FUERA (MUY IMPORTANTE)
 useEffect(() => {
   console.log("🔥 customers state:", customers);
   console.log("🔥 segmentRecipients:", segmentRecipients);
