@@ -2106,31 +2106,33 @@ export default function CampaignsPage() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Inactivos en
-                  </label>
+                {segment === "inactive" && (
+  <div>
+    <label
+      className="mb-2 block text-sm font-medium"
+      style={{ color: "var(--text-main)" }}
+    >
+      Inactivos en
+    </label>
 
-                  <select
-                    value={inactiveDays}
-                    onChange={(e) => setInactiveDays(e.target.value)}
-                    className={selectClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    {INACTIVE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+    <select
+      value={inactiveDays}
+      onChange={(e) => setInactiveDays(e.target.value)}
+      className={selectClass}
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    >
+      {INACTIVE_OPTIONS.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
 
                 <div>
                   <label
