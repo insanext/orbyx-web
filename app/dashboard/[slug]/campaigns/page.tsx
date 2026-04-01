@@ -2436,6 +2436,7 @@ setToast({
             </Panel>
           )}
 
+<div className="mt-10">
           {channel === "email" ? (
             <Panel
               title="Estilo del email"
@@ -2546,7 +2547,7 @@ setToast({
                           </button>
                         ) : null}
                       </div>
-
+		</div>
                       <input
                         type="text"
                         value={heroImageUrl}
@@ -2731,7 +2732,10 @@ setToast({
                 "linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.10), var(--bg-card))",
             }}
           >
+<div className="mt-12 pt-10 border-t" style={{ borderColor: "var(--border-color)" }}>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+<div className="mt-12 pt-10 border-t" style={{ borderColor: "var(--border-color)" }}>
               <div>
                 <p
                   className="text-sm font-semibold"
@@ -2750,6 +2754,7 @@ setToast({
                   contactos reales con la configuración actual.
                 </p>
               </div>
+</div>
 
               <button
   type="button"
@@ -3298,6 +3303,8 @@ setToast({
           />
         </div>
 
+
+<div className="mt-14 pt-10 border-t" style={{ borderColor: "var(--border-color)" }}>
         <Panel
           title="Historial de campañas"
           description="Filtros por canal, segmento, fecha, búsqueda y rendimiento."
@@ -3731,6 +3738,7 @@ setToast({
             </div>
           </div>
         </Panel>
+</div>
 
 {selectedCampaign && (
   <Panel
