@@ -1946,7 +1946,7 @@ useEffect(() => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <section
         className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
         style={{
@@ -2079,7 +2079,7 @@ useEffect(() => {
             description="Define canal, segmento, nivel de inactividad, prioridad y cantidad."
             className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
           >
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
                 <div>
                   <label
@@ -2964,7 +2964,13 @@ useEffect(() => {
                   </div>
                 </div>
 
-                <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
+                <div
+  className="divide-y overflow-y-auto"
+  style={{
+    borderColor: "var(--border-color)",
+    maxHeight: "420px",
+  }}
+>
                   {loadingAudience ? (
                     Array.from({ length: 6 }).map((_, index) => (
                       <div key={index} className="px-4 py-4">
@@ -3459,7 +3465,12 @@ useEffect(() => {
                   No hay campañas que coincidan con los filtros actuales.
                 </div>
               ) : (
-                <div className="space-y-4 p-4">
+                <div
+  className="space-y-4 p-4 overflow-y-auto"
+  style={{
+    maxHeight: "520px",
+  }}
+>
                   {filteredHistory.map((item) => {
                     const channelMeta = getChannelMeta(item.channel);
                     const segmentMeta = getCustomerSegmentMeta(item.segment);
