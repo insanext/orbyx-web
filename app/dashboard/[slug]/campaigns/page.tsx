@@ -3214,38 +3214,38 @@ setToast({
             </div>
           </Panel>
 
-<div className="xl:sticky xl:top-28">
           {channel === "email" ? (
-            <Panel
-              title="Preview del correo"
-              description="Render HTML real del email."
-              className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
-            >
-              <div
-  className="rounded-[28px] border p-4 mt-2"
-  style={{
-    borderColor: "rgba(148,163,184,0.25)",
-    background: "linear-gradient(180deg, #e2e8f0, #f8fafc)",
-  }}
->
+            <div className="xl:sticky xl:top-28">
+              <Panel
+                title="Preview del correo"
+                description="Render HTML real del email."
+                className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
+              >
                 <div
-                  className="overflow-hidden rounded-[24px] border bg-white shadow-xl"
-                  style={{ borderColor: "var(--border-color)" }}
+                  className="rounded-[28px] border p-4 mt-2"
+                  style={{
+                    borderColor: "rgba(148,163,184,0.25)",
+                    background: "linear-gradient(180deg, #e2e8f0, #f8fafc)",
+                  }}
                 >
-                  <iframe
-  title="Preview email"
-  srcDoc={previewHtml}
-  className="w-full"
-  style={{
-    height: "780px",
-    border: "0",
-    background: "#ffffff",
-  }}
-/>
+                  <div
+                    className="overflow-hidden rounded-[24px] border bg-white shadow-xl"
+                    style={{ borderColor: "var(--border-color)" }}
+                  >
+                    <iframe
+                      title="Preview email"
+                      srcDoc={previewHtml}
+                      className="w-full"
+                      style={{
+                        height: "780px",
+                        border: "0",
+                        background: "#ffffff",
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            </Panel>
-</div>
+              </Panel>
+            </div>
           ) : (
             <Panel
               title="Preview de WhatsApp"
