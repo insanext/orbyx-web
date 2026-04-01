@@ -1182,6 +1182,11 @@ export default function CampaignsPage() {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState("");
 
+const [selectedCampaign, setSelectedCampaign] = useState<CampaignHistoryItem | null>(null);
+const [campaignLogs, setCampaignLogs] = useState<any[]>([]);
+const [loadingLogs, setLoadingLogs] = useState(false);
+const [logsError, setLogsError] = useState("");
+
   const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>("30d");
   const [historyChannel, setHistoryChannel] = useState<"all" | CampaignChannel>("all");
   const [historySegment, setHistorySegment] = useState<"all" | CustomerSegment>("all");
@@ -1363,6 +1368,27 @@ console.log("customers api", data.customers);
       setLoadingHistory(false);
     }
   }
+
+async function loadCampaignLogs(campaignId: string) {
+  try {
+    setLoadingLogs(true);
+    setLogsError("");
+
+    const res = await fetch(`${BACKEND_URL}/campaigns/logs/${campaignId}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudieron cargar los logs");
+    }
+
+    setCampaignLogs(Array.isArray(data.logs) ? data.logs : []);
+  } catch (err: unknown) {
+    setLogsError(err instanceof Error ? err.message : "Error cargando logs");
+    setCampaignLogs([]);
+  } finally {
+    setLoadingLogs(false);
+  }
+}
 
   async function loadCampaignImages(currentSlug: string, keepMessage = false) {
     try {
@@ -3109,26 +3135,26 @@ useEffect(() => {
               className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
             >
               <div
-                className="rounded-[28px] border p-4"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                }}
-              >
+  className="rounded-[28px] border p-4 mt-2"
+  style={{
+    borderColor: "rgba(148,163,184,0.25)",
+    background: "linear-gradient(180deg, #e2e8f0, #f8fafc)",
+  }}
+>
                 <div
-                  className="overflow-hidden rounded-[24px] border bg-white"
+                  className="overflow-hidden rounded-[24px] border bg-white shadow-xl"
                   style={{ borderColor: "var(--border-color)" }}
                 >
                   <iframe
-                    title="Preview email"
-                    srcDoc={previewHtml}
-                    className="w-full"
-                    style={{
-                      height: heroImageUrl ? 820 : 680,
-                      border: "0",
-                      background: "#ffffff",
-                    }}
-                  />
+  title="Preview email"
+  srcDoc={previewHtml}
+  className="w-full"
+  style={{
+    height: "780px",
+    border: "0",
+    background: "#ffffff",
+  }}
+/>
                 </div>
               </div>
             </Panel>
@@ -3482,8 +3508,18 @@ useEffect(() => {
 
                     return (
                       <div
-                        key={item.id}
-                        className="rounded-2xl border p-4 shadow-sm"
+  key={item.id}
+  onClick={() => {
+    setSelectedCampaign(item);
+    loadCampaignLogs(item.id);
+  }}
+  className="rounded-2xl border p-4 shadow-sm cursor-pointer transition"
+  style={{
+    borderColor: "var(--border-color)",
+    background:
+      "linear-gradient(135deg, rgba(37,99,235,0.04), var(--bg-card))",
+  }}
+>
                         style={{
                           borderColor: "var(--border-color)",
                           background:
@@ -3623,7 +3659,79 @@ useEffect(() => {
             </div>
           </div>
         </Panel>
+
+{selectedCampaign && (
+  <Panel
+    title={`Logs de campaña: ${selectedCampaign.campaign_name || "Sin nombre"}`}
+    description="Detalle por cliente: enviados, fallidos y estado."
+    className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+  >
+    {logsError ? (
+      <div
+        className="rounded-2xl border px-4 py-3 text-sm"
+        style={{
+          borderColor: "rgba(244,63,94,0.28)",
+          background: "rgba(244,63,94,0.10)",
+          color: "rgb(251 113 133)",
+        }}
+      >
+        {logsError}
+      </div>
+    ) : loadingLogs ? (
+      <div className="text-sm" style={{ color: "var(--text-muted)" }}>
+        Cargando logs...
+      </div>
+    ) : campaignLogs.length === 0 ? (
+      <div className="text-sm" style={{ color: "var(--text-muted)" }}>
+        No hay logs para esta campaña.
+      </div>
+    ) : (
+      <div
+        className="space-y-3 overflow-y-auto"
+        style={{ maxHeight: "420px" }}
+      >
+        {campaignLogs.map((log, idx) => (
+          <div
+            key={idx}
+            className="rounded-xl border p-3 flex justify-between items-center"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <div>
+              <p style={{ color: "var(--text-main)", fontWeight: 600 }}>
+                {log.name || "Sin nombre"}
+              </p>
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                {log.email || log.phone || "Sin contacto"}
+              </p>
+            </div>
+
+            <span
+              className="text-xs font-semibold px-3 py-1 rounded-full"
+              style={{
+                background:
+                  log.status === "sent"
+                    ? "rgba(16,185,129,0.14)"
+                    : "rgba(244,63,94,0.14)",
+                color:
+                  log.status === "sent"
+                    ? "rgb(16 185 129)"
+                    : "rgb(244 63 94)",
+              }}
+            >
+              {log.status === "sent" ? "Enviado" : "Fallido"}
+            </span>
+          </div>
+        ))}
+      </div>
+    )}
+  </Panel>
+)}
       </section>
+
+
 
       {imageLibraryOpen ? (
         <div
