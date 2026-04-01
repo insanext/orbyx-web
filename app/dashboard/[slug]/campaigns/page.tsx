@@ -2834,7 +2834,7 @@ setToast({
           ) : null}
         </div>
 
-        <div className="space-y-6 self-start xl:sticky xl:top-20">
+        <div className="space-y-6">
           <Panel
             title="Preview de audiencia"
             description="Curación final de destinatarios antes de enviar."
@@ -3214,6 +3214,7 @@ setToast({
             </div>
           </Panel>
 
+<div className="xl:sticky xl:top-28">
           {channel === "email" ? (
             <Panel
               title="Preview del correo"
@@ -3244,6 +3245,7 @@ setToast({
                 </div>
               </div>
             </Panel>
+</div>
           ) : (
             <Panel
               title="Preview de WhatsApp"
