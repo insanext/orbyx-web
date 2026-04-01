@@ -1177,6 +1177,10 @@ export default function CampaignsPage() {
   const [error, setError] = useState("");
   const [resultMessage, setResultMessage] = useState("");
   const [sendSummary, setSendSummary] = useState<SendEmailResponse | null>(null);
+  const [toast, setToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const [history, setHistory] = useState<CampaignHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -1282,6 +1286,16 @@ const [logsError, setLogsError] = useState("");
   }, [footerHtml]);
 
   useEffect(() => {
+    if (!toast) return;
+
+    const timer = window.setTimeout(() => {
+      setToast(null);
+    }, 3500);
+
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
     async function loadBusinessPlan() {
       try {
         const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
@@ -1352,7 +1366,9 @@ console.log("customers api", data.customers);
     try {
       setLoadingHistory(true);
       setHistoryError("");
-
+      setSelectedCampaign(null);
+      setCampaignLogs([]);
+      setLogsError("");
       const res = await fetch(`${BACKEND_URL}/campaigns/history/${currentSlug}`);
       const data: CampaignHistoryResponse = await res.json();
 
@@ -1868,32 +1884,41 @@ useEffect(() => {
   }
 
   function handleOpenConfirm() {
-    setError("");
-    setResultMessage("");
-    setSendSummary(null);
+  setError("");
+  setResultMessage("");
+  setSendSummary(null);
 
-    if (channel !== "email") {
-      setError("WhatsApp quedará listo visualmente, pero el envío real sigue pendiente.");
-      return;
-    }
-
-    if (!subject.trim()) {
-      setError("Debes ingresar un asunto.");
-      return;
-    }
-
-    if (!editorHtmlToPlainText(messageHtml).trim()) {
-      setError("Debes ingresar un mensaje.");
-      return;
-    }
-
-    if (limitedIncludedRecipients.length <= 0) {
-      setError("No hay destinatarios incluidos para enviar.");
-      return;
-    }
-
-    setConfirmOpen(true);
+  if (channel !== "email") {
+    setError("WhatsApp aún no tiene envío real habilitado.");
+    return;
   }
+
+  if (!subject.trim()) {
+    setError("⚠️ Debes ingresar un asunto antes de enviar.");
+    return;
+  }
+
+  if (!editorHtmlToPlainText(messageHtml).trim()) {
+    setError("⚠️ Debes escribir un mensaje antes de enviar.");
+    return;
+  }
+
+  if (!hasContactsForChannel) {
+    setError(
+      channel === "email"
+        ? "⚠️ No hay clientes con email en este segmento."
+        : "⚠️ No hay clientes con teléfono en este segmento."
+    );
+    return;
+  }
+
+  if (limitedIncludedRecipients.length <= 0) {
+    setError("⚠️ No hay destinatarios incluidos para enviar.");
+    return;
+  }
+
+  setConfirmOpen(true);
+}
 
   async function handleSendCampaignConfirmed() {
     try {
@@ -1954,19 +1979,32 @@ useEffect(() => {
         throw new Error(data?.error || "No se pudo enviar la campaña");
       }
 
-      setSendSummary(data);
-      setResultMessage(
-        `Campaña enviada. Correos enviados: ${data.sent || 0}. Fallidos: ${
-          data.failed || 0
-        }.`
-      );
+setResultMessage(
+  `Campaña enviada. Correos enviados: ${data.sent || 0}. Fallidos: ${
+    data.failed || 0
+  }.`
+);
+
+setToast({
+  type: "success",
+  message: `Campaña enviada correctamente. Enviados: ${data.sent || 0}. Fallidos: ${
+    data.failed || 0
+  }.`,
+});
 
       if (slug) {
         await loadCampaignHistory(slug);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Error enviando campaña");
-    } finally {
+  const message =
+    err instanceof Error ? err.message : "Error enviando campaña";
+
+  setError(message);
+  setToast({
+    type: "error",
+    message,
+  });
+} finally {
       setSending(false);
     }
   }
@@ -2045,29 +2083,47 @@ useEffect(() => {
         </div>
       </section>
 
-      {error ? (
-        <div
-          className="rounded-2xl border px-4 py-3 text-sm shadow-sm"
-          style={{
-            borderColor: "rgba(244,63,94,0.28)",
-            background: "rgba(244,63,94,0.10)",
-            color: "rgb(251 113 133)",
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
+      {toast ? (
+        <div className="fixed right-5 top-5 z-[80] w-full max-w-md">
+          <div
+            className="rounded-2xl border px-4 py-4 shadow-2xl backdrop-blur"
+            style={{
+              borderColor:
+                toast.type === "success"
+                  ? "rgba(16,185,129,0.30)"
+                  : "rgba(244,63,94,0.30)",
+              background:
+                toast.type === "success"
+                  ? "rgba(16,185,129,0.14)"
+                  : "rgba(244,63,94,0.14)",
+              color:
+                toast.type === "success"
+                  ? "rgb(16 185 129)"
+                  : "rgb(244 63 94)",
+            }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">
+                  {toast.type === "success" ? "Envío realizado" : "No se pudo enviar"}
+                </p>
+                <p className="mt-1 text-sm leading-6">{toast.message}</p>
+              </div>
 
-      {resultMessage ? (
-        <div
-          className="rounded-2xl border px-4 py-3 text-sm shadow-sm"
-          style={{
-            borderColor: "rgba(16,185,129,0.28)",
-            background: "rgba(16,185,129,0.10)",
-            color: "rgb(52 211 153)",
-          }}
-        >
-          {resultMessage}
+              <button
+                type="button"
+                onClick={() => setToast(null)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border text-sm font-semibold transition"
+                style={{
+                  borderColor: "rgba(255,255,255,0.12)",
+                  background: "rgba(15,23,42,0.16)",
+                  color: "inherit",
+                }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -2098,7 +2154,7 @@ useEffect(() => {
         />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_520px] 2xl:grid-cols-[minmax(0,1fr)_860px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_520px] 2xl:grid-cols-[minmax(0,1fr)_960px]">
         <div className="space-y-6">
           <Panel
             title="Configuración de campaña"
@@ -2696,18 +2752,40 @@ useEffect(() => {
               </div>
 
               <button
-                type="button"
-                onClick={handleOpenConfirm}
-                disabled={sending || loadingAudience}
-                className={`${primaryButtonClass} min-w-[220px] font-semibold shadow-lg`}
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                  boxShadow: "0 18px 40px rgba(37,99,235,0.28)",
-                }}
-              >
-                {sending ? "Enviando campaña..." : "Enviar campaña"}
-              </button>
+  type="button"
+  onClick={handleOpenConfirm}
+  disabled={
+  sending ||
+  loadingAudience ||
+  !hasContactsForChannel ||
+  limitedIncludedRecipients.length === 0
+}
+  className={`${primaryButtonClass} min-w-[220px] font-semibold shadow-lg flex items-center justify-center gap-2`}
+  style={{
+    background: sending
+      ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
+      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+    boxShadow: sending
+      ? "none"
+      : "0 18px 40px rgba(37,99,235,0.28)",
+    cursor: sending ? "not-allowed" : "pointer",
+  }}
+>
+  {sending ? (
+    <>
+      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+      Enviando...
+    </>
+  ) : (
+    <>Enviar campaña</>
+  )}
+</button>
+
+{!hasContactsForChannel && !loadingAudience ? (
+  <p className="mt-2 text-xs" style={{ color: "rgb(245 158 11)" }}>
+    No hay destinatarios válidos para este canal.
+  </p>
+) : null}
             </div>
           </div>
 
@@ -4022,17 +4100,29 @@ useEffect(() => {
               </button>
 
               <button
-                type="button"
-                onClick={handleSendCampaignConfirmed}
-                className={`${primaryButtonClass} font-semibold`}
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                  boxShadow: "0 18px 40px rgba(37,99,235,0.28)",
-                }}
-              >
-                Sí, enviar campaña
-              </button>
+  type="button"
+  onClick={handleSendCampaignConfirmed}
+  disabled={sending}
+  className={`${primaryButtonClass} font-semibold flex items-center justify-center gap-2`}
+  style={{
+    background: sending
+      ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
+      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+    boxShadow: sending
+      ? "none"
+      : "0 18px 40px rgba(37,99,235,0.28)",
+    cursor: sending ? "not-allowed" : "pointer",
+  }}
+>
+  {sending ? (
+    <>
+      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+      Enviando...
+    </>
+  ) : (
+    <>Sí, enviar campaña</>
+  )}
+</button>
             </div>
           </div>
         </div>
