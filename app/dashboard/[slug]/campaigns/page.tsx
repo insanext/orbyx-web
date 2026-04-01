@@ -699,8 +699,8 @@ function SectionStat({
   helper: string;
 }) {
   return (
-    <div
-      className="rounded-2xl border p-4"
+<div
+  className="rounded-2xl border p-3"
       style={{
         borderColor: "var(--border-color)",
         background:
@@ -714,7 +714,7 @@ function SectionStat({
         {label}
       </p>
       <p
-        className="mt-2 text-2xl font-semibold"
+        className="mt-1 text-lg font-semibold"
         style={{ color: "var(--text-main)" }}
       >
         {value}
@@ -2072,7 +2072,7 @@ useEffect(() => {
         />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_420px] 2xl:grid-cols-[minmax(0,1.1fr)_460px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_440px]">
         <div className="space-y-6">
           <Panel
             title="Configuración de campaña"
@@ -2722,7 +2722,7 @@ useEffect(() => {
           ) : null}
         </div>
 
-        <div className="space-y-6 self-start xl:sticky xl:top-20 max-h-[calc(100vh-120px)] overflow-y-auto pr-1">
+        <div className="space-y-6 self-start xl:sticky xl:top-20">
           <Panel
             title="Preview de audiencia"
             description="Curación final de destinatarios antes de enviar."
@@ -3468,7 +3468,7 @@ useEffect(() => {
                 <div
   className="space-y-4 p-4 overflow-y-auto"
   style={{
-    maxHeight: "520px",
+    maxHeight: "420px",
   }}
 >
                   {filteredHistory.map((item) => {
