@@ -2512,7 +2512,7 @@ setToast({
                       Imagen principal
                     </label>
 
-                    <div className="space-y-3">
+                                        <div className="space-y-3">
                       <div className="flex flex-wrap gap-3">
                         <button
                           type="button"
@@ -2547,7 +2547,7 @@ setToast({
                           </button>
                         ) : null}
                       </div>
-		</div>
+
                       <input
                         type="text"
                         value={heroImageUrl}
@@ -2723,76 +2723,79 @@ setToast({
               </div>
             </Panel>
           ) : null}
-
-          <div
-            className="rounded-[26px] border p-4 shadow-sm"
-            style={{
-              borderColor: "rgba(37,99,235,0.26)",
-              background:
-                "linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.10), var(--bg-card))",
-            }}
-          >
-<div className="mt-12 pt-10 border-t" style={{ borderColor: "var(--border-color)" }}>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-
-<div className="mt-12 pt-10 border-t" style={{ borderColor: "var(--border-color)" }}>
-              <div>
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Acción crítica
-                </p>
-                <p
-                  className="mt-1 text-sm leading-6"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Esta campaña intentará impactar hasta{" "}
-                  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-                    {limitedAudienceCount}
-                  </span>{" "}
-                  contactos reales con la configuración actual.
-                </p>
-              </div>
 </div>
+                    <div
+            className="mt-12 pt-10 border-t"
+            style={{ borderColor: "var(--border-color)" }}
+          >
+            <div
+              className="rounded-[26px] border p-4 shadow-sm"
+              style={{
+                borderColor: "rgba(37,99,235,0.26)",
+                background:
+                  "linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.10), var(--bg-card))",
+              }}
+            >
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Acción crítica
+                  </p>
+                  <p
+                    className="mt-1 text-sm leading-6"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Esta campaña intentará impactar hasta{" "}
+                    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                      {limitedAudienceCount}
+                    </span>{" "}
+                    contactos reales con la configuración actual.
+                  </p>
+                </div>
 
-              <button
-  type="button"
-  onClick={handleOpenConfirm}
-  disabled={
-  sending ||
-  loadingAudience ||
-  !hasContactsForChannel ||
-  limitedIncludedRecipients.length === 0
-}
-  className={`${primaryButtonClass} min-w-[220px] font-semibold shadow-lg flex items-center justify-center gap-2`}
-  style={{
-    background: sending
-      ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
-      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-    boxShadow: sending
-      ? "none"
-      : "0 18px 40px rgba(37,99,235,0.28)",
-    cursor: sending ? "not-allowed" : "pointer",
-  }}
->
-  {sending ? (
-    <>
-      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-      Enviando...
-    </>
-  ) : (
-    <>Enviar campaña</>
-  )}
-</button>
+                <button
+                  type="button"
+                  onClick={handleOpenConfirm}
+                  disabled={
+                    sending ||
+                    loadingAudience ||
+                    !hasContactsForChannel ||
+                    limitedIncludedRecipients.length === 0
+                  }
+                  className={`${primaryButtonClass} min-w-[220px] font-semibold shadow-lg flex items-center justify-center gap-2`}
+                  style={{
+                    background: sending
+                      ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
+                      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                    boxShadow: sending
+                      ? "none"
+                      : "0 18px 40px rgba(37,99,235,0.28)",
+                    cursor: sending ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {sending ? (
+                    <>
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>Enviar campaña</>
+                  )}
+                </button>
+              </div>
 
-{!hasContactsForChannel && !loadingAudience ? (
-  <p className="mt-2 text-xs" style={{ color: "rgb(245 158 11)" }}>
-    No hay destinatarios válidos para este canal.
-  </p>
-) : null}
+              {!hasContactsForChannel && !loadingAudience ? (
+                <p className="mt-2 text-xs" style={{ color: "rgb(245 158 11)" }}>
+                  No hay destinatarios válidos para este canal.
+                </p>
+              ) : null}
             </div>
           </div>
+
+
 
           {sendSummary ? (
             <Panel
