@@ -657,7 +657,7 @@ function buildEmailPreviewHtml({
                     "
                   >
                     <div style="font-weight:700;color:#0f172a;">
-                      Hola {{nombre}},
+                      Hola,
                     </div>
 
                     <div style="margin-top:14px;">
@@ -2072,7 +2072,7 @@ useEffect(() => {
         />
       </section>
 
-      <div className="grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_420px] 2xl:grid-cols-[minmax(0,1.1fr)_460px]">
         <div className="space-y-6">
           <Panel
             title="Configuración de campaña"
@@ -2722,7 +2722,7 @@ useEffect(() => {
           ) : null}
         </div>
 
-        <div className="space-y-6 self-start xl:sticky xl:top-24">
+        <div className="space-y-6 self-start xl:sticky xl:top-20 max-h-[calc(100vh-120px)] overflow-y-auto pr-1">
           <Panel
             title="Preview de audiencia"
             description="Curación final de destinatarios antes de enviar."
