@@ -3775,6 +3775,14 @@ setToast({
               <p style={{ color: "var(--text-main)", fontWeight: 600 }}>
                 {log.name || "Sin nombre"}
               </p>
+{log.error ? (
+  <p
+    className="mt-1 text-xs"
+    style={{ color: "rgb(244 63 94)" }}
+  >
+    {log.error}
+  </p>
+) : null}
               <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
                 {log.email || log.phone || "Sin contacto"}
               </p>
@@ -4075,6 +4083,62 @@ setToast({
               .
             </p>
 
+
+<div
+  className="mt-4 grid grid-cols-2 gap-3"
+>
+  <div
+    className="rounded-xl border px-3 py-3 text-sm"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-soft)",
+    }}
+  >
+    <p style={{ color: "var(--text-muted)" }}>Incluidos</p>
+    <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
+      {audienceStats.included}
+    </p>
+  </div>
+
+  <div
+    className="rounded-xl border px-3 py-3 text-sm"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-soft)",
+    }}
+  >
+    <p style={{ color: "var(--text-muted)" }}>Excluidos</p>
+    <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
+      {audienceStats.excluded}
+    </p>
+  </div>
+
+  <div
+    className="rounded-xl border px-3 py-3 text-sm"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-soft)",
+    }}
+  >
+    <p style={{ color: "var(--text-muted)" }}>Manuales</p>
+    <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
+      {audienceStats.manual}
+    </p>
+  </div>
+
+  <div
+    className="rounded-xl border px-3 py-3 text-sm"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-soft)",
+    }}
+  >
+    <p style={{ color: "var(--text-muted)" }}>Límite aplicado</p>
+    <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
+      {sendLimit}
+    </p>
+  </div>
+</div>
             <p
               className="mt-2 text-sm leading-7"
               style={{ color: "var(--text-muted)" }}
