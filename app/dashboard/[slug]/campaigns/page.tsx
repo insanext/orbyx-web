@@ -2098,7 +2098,7 @@ useEffect(() => {
         />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_520px] 2xl:grid-cols-[minmax(0,1fr)_560px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_520px] 2xl:grid-cols-[minmax(0,1fr)_860px]">
         <div className="space-y-6">
           <Panel
             title="Configuración de campaña"
