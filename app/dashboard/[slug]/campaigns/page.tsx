@@ -3507,26 +3507,20 @@ useEffect(() => {
                     );
 
                     return (
-                      <div
-  key={item.id}
-  onClick={() => {
-    setSelectedCampaign(item);
-    loadCampaignLogs(item.id);
-  }}
-  className="rounded-2xl border p-4 shadow-sm cursor-pointer transition"
-  style={{
-    borderColor: "var(--border-color)",
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.04), var(--bg-card))",
-  }}
->
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background:
-                            "linear-gradient(135deg, rgba(37,99,235,0.04), var(--bg-card))",
-                        }}
-                      >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <div
+    key={item.id}
+    onClick={() => {
+      setSelectedCampaign(item);
+      loadCampaignLogs(item.id);
+    }}
+    className="cursor-pointer rounded-2xl border p-4 shadow-sm transition"
+    style={{
+      borderColor: "var(--border-color)",
+      background:
+        "linear-gradient(135deg, rgba(37,99,235,0.04), var(--bg-card))",
+    }}
+  >
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p
