@@ -2111,7 +2111,7 @@ setToast({
   return (
     <div className="space-y-8">
       <section
-        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+        className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
         style={{
           borderColor: "rgba(59,130,246,0.25)",
           background:
@@ -2120,12 +2120,6 @@ setToast({
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <p
-              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Campañas
-            </p>
 
             <h1
               className="text-3xl font-semibold tracking-tight sm:text-4xl"
