@@ -2226,32 +2226,6 @@ setToast({
         </div>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-4">
-        <SectionStat
-          label="Canal"
-          value={selectedChannelLabel}
-          helper="Canal elegido para esta campaña."
-        />
-        <SectionStat
-          label="Segmento"
-          value={selectedSegmentLabel}
-          helper="Grupo de clientes elegido."
-        />
-        <SectionStat
-          label="Listos para enviar"
-          value={loadingAudience ? "..." : String(audienceStats.availableForChannel)}
-          helper={
-            channel === "email"
-              ? "Destinatarios incluidos con correo."
-              : "Destinatarios incluidos con teléfono."
-          }
-        />
-        <SectionStat
-          label="Se enviarán"
-          value={loadingAudience ? "..." : String(limitedAudienceCount)}
-          helper="Tope real según curación manual y límite."
-        />
-      </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_520px] 2xl:grid-cols-[minmax(0,1fr)_960px]">
         <div className="space-y-6">
