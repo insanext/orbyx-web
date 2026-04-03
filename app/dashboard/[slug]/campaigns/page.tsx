@@ -1987,40 +1987,8 @@ if (channel === "whatsapp") {
         phone: item.phone,
       }));
 
-if (channel === "whatsapp") {
-  const simulatedSent = finalRecipients.filter((item) => !!item.phone).length;
-  const simulatedFailed = Math.max(finalRecipients.length - simulatedSent, 0);
 
-  setResultMessage(
-    `Campaña WhatsApp preparada. Mensajes listos: ${simulatedSent}. Sin teléfono: ${simulatedFailed}.`
-  );
 
-  setToast({
-    type: "success",
-    message: `WhatsApp mock listo. Con teléfono: ${simulatedSent}. Sin teléfono: ${simulatedFailed}.`,
-  });
-
-  setSendSummary({
-    ok: true,
-    campaign_name: campaignName.trim() || null,
-    channel: "whatsapp",
-    slug,
-    plan,
-    plan_limit: planLimit,
-    requested_limit: Number(sendLimit),
-    applied_limit: Number(sendLimit),
-    sort,
-    segment,
-    inactive_days: Number(inactiveDays),
-    audience_total: includedAudienceRecipients.length,
-    recipients_with_email: 0,
-    sent: simulatedSent,
-    failed: simulatedFailed,
-  });
-
-  setSending(false);
-  return;
-}
 
 if (channel === "whatsapp") {
   const recipientsWithPhone = finalRecipients.filter(
