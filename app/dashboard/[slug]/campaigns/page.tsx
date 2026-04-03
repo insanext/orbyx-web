@@ -1169,10 +1169,16 @@ const [whatsappMessage, setWhatsappMessage] = useState(
   "Hola {{nombre}}, te escribimos desde {{negocio}}.\n\nAgenda aquí tu próxima hora:\n{{link_agenda}}"
 );
 
-const whatsappLink = useMemo(() => {
+const [whatsappCtaUrl, setWhatsappCtaUrl] = useState("");
+
+const whatsappDefaultLink = useMemo(() => {
   if (!slug) return "";
   return `https://www.orbyx.cl/${slug}`;
 }, [slug]);
+
+const whatsappLink = useMemo(() => {
+  return (whatsappCtaUrl || "").trim() || whatsappDefaultLink;
+}, [whatsappCtaUrl, whatsappDefaultLink]);
 
 const whatsappPreviewText = useMemo(() => {
   let text = (whatsappMessage || "").trim();
@@ -1272,6 +1278,12 @@ const [logsError, setLogsError] = useState("");
       setCtaUrl(`https://www.orbyx.cl/${slug}`);
     }
   }, [slug]);
+
+useEffect(() => {
+  if (slug && !whatsappCtaUrl.trim()) {
+    setWhatsappCtaUrl(`https://www.orbyx.cl/${slug}`);
+  }
+}, [slug, whatsappCtaUrl]);
 
   useEffect(() => {
     if (emailPreset === "minimal") {
@@ -2484,35 +2496,102 @@ setToast({
   description="Mensaje directo tipo conversación."
   className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
 >
-  <div className="space-y-5">
-
-    {/* TEXTAREA */}
-    <div>
-      <label
-        className="mb-2 block text-sm font-medium"
-        style={{ color: "var(--text-main)" }}
-      >
-        Mensaje
-      </label>
-
-      <textarea
-        value={whatsappMessage}
-        onChange={(e) => setWhatsappMessage(e.target.value)}
-        placeholder="Escribe tu mensaje de WhatsApp..."
-        className={textareaClass}
-        style={{
-          borderColor: "var(--border-color)",
-          background: "var(--bg-card)",
-          color: "var(--text-main)",
-        }}
-      />
-    </div>
-
-<p className="text-xs" style={{ color: "var(--text-muted)" }}>
-  Puedes usar <strong>{"{{nombre}}"}</strong>, <strong>{"{{negocio}}"}</strong> y <strong>{"{{link_agenda}}"}</strong>.
-</p>
-
+<div className="space-y-5">
+  <div>
+    <label
+      className="mb-2 block text-sm font-medium"
+      style={{ color: "var(--text-main)" }}
+    >
+      Nombre interno de campaña
+    </label>
+    <input
+      type="text"
+      value={campaignName}
+      onChange={(e) => setCampaignName(e.target.value)}
+      placeholder="Ej: Reactivación WhatsApp 120+ días"
+      className={inputClass}
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    />
   </div>
+
+  <div>
+    <label
+      className="mb-2 block text-sm font-medium"
+      style={{ color: "var(--text-main)" }}
+    >
+      Link de destino
+    </label>
+
+    <input
+      type="text"
+      value={whatsappCtaUrl}
+      onChange={(e) => setWhatsappCtaUrl(e.target.value)}
+      placeholder={`https://www.orbyx.cl/${slug}`}
+      className={inputClass}
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    />
+
+    <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+      Por defecto apunta a la agenda pública del negocio.
+    </p>
+  </div>
+
+  <div
+    className="rounded-2xl border p-4"
+    style={{
+      borderColor: "var(--border-color)",
+      background:
+        "linear-gradient(135deg, rgba(16,185,129,0.10), var(--bg-soft))",
+    }}
+  >
+    <p
+      className="text-sm font-semibold"
+      style={{ color: "var(--text-main)" }}
+    >
+      Objetivo del mensaje
+    </p>
+    <p
+      className="mt-2 text-sm leading-6"
+      style={{ color: "var(--text-muted)" }}
+    >
+      Esta campaña está pensada para reactivar clientes y llevarlos directo a la
+      agenda pública mediante un link de reserva.
+    </p>
+  </div>
+
+  <div>
+    <label
+      className="mb-2 block text-sm font-medium"
+      style={{ color: "var(--text-main)" }}
+    >
+      Mensaje
+    </label>
+
+    <textarea
+      value={whatsappMessage}
+      onChange={(e) => setWhatsappMessage(e.target.value)}
+      placeholder="Escribe tu mensaje de WhatsApp..."
+      className={textareaClass}
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    />
+  </div>
+
+  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+    Puedes usar <strong>{"{{nombre}}"}</strong>, <strong>{"{{negocio}}"}</strong> y <strong>{"{{link_agenda}}"}</strong>.
+  </p>
+</div>
 </Panel>
           )}
 
