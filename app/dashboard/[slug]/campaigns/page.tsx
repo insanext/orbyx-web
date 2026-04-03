@@ -1693,13 +1693,7 @@ const segmentRecipients = useMemo<AudienceRecipient[]>(() => {
   }));
 }, [customers, excludedRecipientIds]);
 
-const hasContactsForChannel = useMemo(() => {
-  return allAudienceRecipients.some((item) =>
-    channel === "email"
-      ? !!String(item.email || "").trim()
-      : !!String(item.phone || "").trim()
-  );
-}, [allAudienceRecipients, channel]);
+
 
 const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
   const manualForChannel = manualRecipients.filter((item) =>
@@ -1720,6 +1714,14 @@ const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
 
   return merged;
 }, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
+
+const hasContactsForChannel = useMemo(() => {
+  return allAudienceRecipients.some((item) =>
+    channel === "email"
+      ? !!String(item.email || "").trim()
+      : !!String(item.phone || "").trim()
+  );
+}, [allAudienceRecipients, channel]);
 
 useEffect(() => {
   console.log("🔥 customers state:", customers);
