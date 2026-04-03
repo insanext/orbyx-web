@@ -1169,10 +1169,19 @@ const [whatsappMessage, setWhatsappMessage] = useState(
   "Hola {{nombre}}, te escribimos desde Orbyx."
 );
 
+const whatsappLink = useMemo(() => {
+  if (!slug) return "";
+  return `https://www.orbyx.cl/${slug}`;
+}, [slug]);
+
 const whatsappPreviewText = useMemo(() => {
-  const base = (whatsappMessage || "").trim();
-  if (!base) return "Escribe tu mensaje de WhatsApp...";
-  return base.replace(/\{\{\s*nombre\s*\}\}/gi, "Camila");
+  let text = (whatsappMessage || "").trim();
+
+  if (!text) return "Escribe tu mensaje de WhatsApp...";
+
+  text = text.replace(/\{\{\s*nombre\s*\}\}/gi, "Camila");
+
+  return text;
 }, [whatsappMessage]);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -3336,18 +3345,46 @@ setToast({
         background: "#e5ddd5",
       }}
     >
-      {/* burbuja */}
-      <div className="flex justify-end">
-        <div
-          className="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-6"
-          style={{
-            background: "#dcf8c6",
-            color: "#0f172a",
-          }}
-        >
-          {whatsappPreviewText}
-        </div>
-      </div>
+<div className="flex flex-col gap-2 items-end">
+
+  {/* MENSAJE */}
+  <div
+    className="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm"
+    style={{
+      background: "#dcf8c6",
+      color: "#0f172a",
+    }}
+  >
+    <p className="whitespace-pre-line">
+      {whatsappPreviewText}
+    </p>
+
+    <div className="mt-2 text-[10px] text-right opacity-60">
+      12:45 ✓✓
+    </div>
+  </div>
+
+  {/* LINK CTA */}
+  {whatsappLink && (
+    <div
+      className="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-6 border"
+      style={{
+        background: "#ffffff",
+        borderColor: "rgba(15,23,42,0.08)",
+      }}
+    >
+      <p className="font-semibold">Agendar ahora</p>
+
+      <p
+        className="mt-1 text-xs break-all"
+        style={{ color: "#2563eb" }}
+      >
+        {whatsappLink}
+      </p>
+    </div>
+  )}
+
+</div>
     </div>
   </div>
 </Panel>
