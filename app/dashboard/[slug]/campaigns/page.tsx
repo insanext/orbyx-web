@@ -3332,46 +3332,155 @@ setToast({
   description="Simulación real del mensaje."
   className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
 >
-  <div
+<div
   className="rounded-[28px] border p-4"
   style={{
     borderColor: "rgba(148,163,184,0.25)",
-    background: "linear-gradient(180deg, #d9fdd3, #c7f0c2)",
+    background: "linear-gradient(180deg, #dcfce7, #bbf7d0)",
   }}
 >
-    <div
-  className="mx-auto w-full max-w-[360px] rounded-[28px] border p-4 shadow-xl"
-  style={{
-    borderColor: "rgba(15,23,42,0.08)",
-    background: "#e5ddd5",
-    backgroundImage:
-      "radial-gradient(rgba(255,255,255,0.22) 1px, transparent 1px)",
-    backgroundSize: "18px 18px",
-  }}
->
-<div className="flex justify-end">
   <div
-    className="max-w-[82%] rounded-[18px] px-4 py-3 text-sm leading-6 shadow-sm"
+    className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[34px] border shadow-2xl"
     style={{
-      background: "#dcf8c6",
-      color: "#111827",
-      boxShadow: "0 10px 24px rgba(15,23,42,0.10)",
+      borderColor: "rgba(15,23,42,0.08)",
+      background: "#e5ddd5",
     }}
   >
-    <p className="whitespace-pre-line break-words">
-      {whatsappPreviewText}
-    </p>
-
+    {/* STATUS BAR */}
     <div
-      className="mt-2 flex items-center justify-end gap-1 text-[10px]"
-      style={{ color: "rgba(15,23,42,0.45)" }}
+      className="flex items-center justify-between px-4 py-2 text-[11px] font-semibold"
+      style={{
+        background: "#075e54",
+        color: "#ffffff",
+      }}
     >
-      <span>12:45</span>
-      <span>✓✓</span>
+      <span>12:42</span>
+      <div className="flex items-center gap-2 opacity-90">
+        <span>◔</span>
+        <span>⌁</span>
+        <span>98%</span>
+      </div>
+    </div>
+
+    {/* HEADER CHAT */}
+    <div
+      className="flex items-center justify-between px-4 py-3"
+      style={{
+        background: "#075e54",
+        color: "#ffffff",
+        borderTop: "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className="text-base font-semibold"
+          style={{ color: "#ffffff", background: "transparent" }}
+        >
+          ←
+        </button>
+
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold"
+          style={{
+            background: "linear-gradient(135deg, #f59e0b, #fb7185)",
+            color: "#ffffff",
+          }}
+        >
+          {String(businessName || "N").trim().charAt(0).toUpperCase()}
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold leading-none">{businessName || "Negocio"}</p>
+          <p className="mt-1 text-[11px] leading-none opacity-80">escribiendo...</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 text-sm opacity-95">
+        <span>📹</span>
+        <span>📞</span>
+        <span>⋮</span>
+      </div>
+    </div>
+
+    {/* BODY CHAT */}
+    <div
+      className="min-h-[360px] px-4 py-4"
+      style={{
+        background: "#e5ddd5",
+        backgroundImage:
+          "radial-gradient(rgba(255,255,255,0.22) 1px, transparent 1px)",
+        backgroundSize: "18px 18px",
+      }}
+    >
+      <div className="mb-4 flex justify-center">
+        <span
+          className="rounded-full px-3 py-1 text-[11px] font-medium"
+          style={{
+            background: "rgba(255,255,255,0.65)",
+            color: "rgba(15,23,42,0.60)",
+            border: "1px solid rgba(15,23,42,0.06)",
+          }}
+        >
+          Hoy
+        </span>
+      </div>
+
+      <div className="flex justify-end">
+        <div
+          className="max-w-[82%] rounded-[16px] px-4 py-3 text-[14px] leading-6 shadow-sm"
+          style={{
+            background: "#dcf8c6",
+            color: "#111827",
+            boxShadow: "0 10px 24px rgba(15,23,42,0.10)",
+          }}
+        >
+          <p className="whitespace-pre-line break-words">
+            {whatsappPreviewText}
+          </p>
+
+          <div
+            className="mt-2 flex items-center justify-end gap-1 text-[10px]"
+            style={{ color: "rgba(15,23,42,0.45)" }}
+          >
+            <span>12:45</span>
+            <span>✓✓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* INPUT BAR */}
+    <div
+      className="flex items-center gap-3 px-4 py-3"
+      style={{
+        background: "#f0f2f5",
+        borderTop: "1px solid rgba(15,23,42,0.06)",
+      }}
+    >
+      <div
+        className="flex min-h-[42px] flex-1 items-center rounded-full px-4 text-sm"
+        style={{
+          background: "#ffffff",
+          color: "rgba(15,23,42,0.45)",
+          border: "1px solid rgba(15,23,42,0.06)",
+        }}
+      >
+        Escribir mensaje
+      </div>
+
+      <div
+        className="flex h-[42px] w-[42px] items-center justify-center rounded-full text-base"
+        style={{
+          background: "#00a884",
+          color: "#ffffff",
+        }}
+      >
+        🎤
+      </div>
     </div>
   </div>
-</div>    </div>
-  </div>
+</div>
 </Panel>
           )}
         </div>
