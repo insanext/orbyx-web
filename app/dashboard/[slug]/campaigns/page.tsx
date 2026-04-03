@@ -1166,7 +1166,7 @@ export default function CampaignsPage() {
 const isWhatsApp = channel === "whatsapp";
 
 const [whatsappMessage, setWhatsappMessage] = useState(
-  "Hola {{nombre}}, te escribimos desde Orbyx."
+  "Hola {{nombre}}, te escribimos desde {{negocio}}.\n\nAgenda aquí tu próxima hora:\n{{link_agenda}}"
 );
 
 const whatsappLink = useMemo(() => {
@@ -1180,9 +1180,11 @@ const whatsappPreviewText = useMemo(() => {
   if (!text) return "Escribe tu mensaje de WhatsApp...";
 
   text = text.replace(/\{\{\s*nombre\s*\}\}/gi, "Camila");
+  text = text.replace(/\{\{\s*negocio\s*\}\}/gi, businessName || "Tu negocio");
+  text = text.replace(/\{\{\s*link_agenda\s*\}\}/gi, whatsappLink || "");
 
   return text;
-}, [whatsappMessage]);
+}, [whatsappMessage, businessName, whatsappLink]);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [audienceSearch, setAudienceSearch] = useState("");
@@ -2506,10 +2508,9 @@ setToast({
       />
     </div>
 
-    {/* VARIABLES */}
-    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-      Puedes usar <strong>{"{{nombre}}"}</strong> para personalizar el mensaje.
-    </p>
+<p className="text-xs" style={{ color: "var(--text-muted)" }}>
+  Puedes usar <strong>{"{{nombre}}"}</strong>, <strong>{"{{negocio}}"}</strong> y <strong>{"{{link_agenda}}"}</strong>.
+</p>
 
   </div>
 </Panel>
@@ -3332,60 +3333,44 @@ setToast({
   className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
 >
   <div
-    className="rounded-[28px] border p-4"
-    style={{
-      borderColor: "rgba(148,163,184,0.25)",
-      background: "linear-gradient(180deg, #dcfce7, #bbf7d0)",
-    }}
-  >
+  className="rounded-[28px] border p-4"
+  style={{
+    borderColor: "rgba(148,163,184,0.25)",
+    background: "linear-gradient(180deg, #d9fdd3, #c7f0c2)",
+  }}
+>
     <div
-      className="mx-auto w-full max-w-[360px] rounded-[28px] border p-4 shadow-xl"
-      style={{
-        borderColor: "rgba(15,23,42,0.08)",
-        background: "#e5ddd5",
-      }}
-    >
-<div className="flex flex-col gap-2 items-end">
-
-  {/* MENSAJE */}
+  className="mx-auto w-full max-w-[360px] rounded-[28px] border p-4 shadow-xl"
+  style={{
+    borderColor: "rgba(15,23,42,0.08)",
+    background: "#e5ddd5",
+    backgroundImage:
+      "radial-gradient(rgba(255,255,255,0.22) 1px, transparent 1px)",
+    backgroundSize: "18px 18px",
+  }}
+>
+<div className="flex justify-end">
   <div
-    className="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm"
+    className="max-w-[82%] rounded-[18px] px-4 py-3 text-sm leading-6 shadow-sm"
     style={{
       background: "#dcf8c6",
-      color: "#0f172a",
+      color: "#111827",
+      boxShadow: "0 10px 24px rgba(15,23,42,0.10)",
     }}
   >
-    <p className="whitespace-pre-line">
+    <p className="whitespace-pre-line break-words">
       {whatsappPreviewText}
     </p>
 
-    <div className="mt-2 text-[10px] text-right opacity-60">
-      12:45 ✓✓
+    <div
+      className="mt-2 flex items-center justify-end gap-1 text-[10px]"
+      style={{ color: "rgba(15,23,42,0.45)" }}
+    >
+      <span>12:45</span>
+      <span>✓✓</span>
     </div>
   </div>
-
-  {/* LINK CTA */}
-  {whatsappLink && (
-    <div
-      className="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-6 border"
-      style={{
-        background: "#ffffff",
-        borderColor: "rgba(15,23,42,0.08)",
-      }}
-    >
-      <p className="font-semibold">Agendar ahora</p>
-
-      <p
-        className="mt-1 text-xs break-all"
-        style={{ color: "#2563eb" }}
-      >
-        {whatsappLink}
-      </p>
-    </div>
-  )}
-
-</div>
-    </div>
+</div>    </div>
   </div>
 </Panel>
           )}
