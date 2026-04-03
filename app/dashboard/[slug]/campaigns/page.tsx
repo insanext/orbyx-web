@@ -1162,6 +1162,19 @@ export default function CampaignsPage() {
     )
   );
 
+// 👉 WHATSAPP STATE
+const isWhatsApp = channel === "whatsapp";
+
+const [whatsappMessage, setWhatsappMessage] = useState(
+  "Hola {{nombre}}, te escribimos desde Orbyx."
+);
+
+const whatsappPreviewText = useMemo(() => {
+  const base = (whatsappMessage || "").trim();
+  if (!base) return "Escribe tu mensaje de WhatsApp...";
+  return base.replace(/\{\{\s*nombre\s*\}\}/gi, "Camila");
+}, [whatsappMessage]);
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [audienceSearch, setAudienceSearch] = useState("");
   const [manualRecipientForm, setManualRecipientForm] = useState<ManualRecipientForm>({
@@ -1888,10 +1901,25 @@ useEffect(() => {
   setResultMessage("");
   setSendSummary(null);
 
-  if (channel !== "email") {
-    setError("WhatsApp aún no tiene envío real habilitado.");
+if (channel === "whatsapp") {
+  if (!whatsappMessage.trim()) {
+    setError("⚠️ Debes escribir un mensaje de WhatsApp antes de continuar.");
     return;
   }
+
+  if (!hasContactsForChannel) {
+    setError("⚠️ No hay clientes con teléfono en este segmento.");
+    return;
+  }
+
+  if (limitedIncludedRecipients.length <= 0) {
+    setError("⚠️ No hay destinatarios incluidos para enviar.");
+    return;
+  }
+
+  setConfirmOpen(true);
+  return;
+}
 
   if (!subject.trim()) {
     setError("⚠️ Debes ingresar un asunto antes de enviar.");
@@ -1935,6 +1963,41 @@ useEffect(() => {
         email: item.email,
         phone: item.phone,
       }));
+
+if (channel === "whatsapp") {
+  const simulatedSent = finalRecipients.filter((item) => !!item.phone).length;
+  const simulatedFailed = Math.max(finalRecipients.length - simulatedSent, 0);
+
+  setResultMessage(
+    `Campaña WhatsApp preparada. Mensajes listos: ${simulatedSent}. Sin teléfono: ${simulatedFailed}.`
+  );
+
+  setToast({
+    type: "success",
+    message: `WhatsApp mock listo. Con teléfono: ${simulatedSent}. Sin teléfono: ${simulatedFailed}.`,
+  });
+
+  setSendSummary({
+    ok: true,
+    campaign_name: campaignName.trim() || null,
+    channel: "whatsapp",
+    slug,
+    plan,
+    plan_limit: planLimit,
+    requested_limit: Number(sendLimit),
+    applied_limit: Number(sendLimit),
+    sort,
+    segment,
+    inactive_days: Number(inactiveDays),
+    audience_total: includedAudienceRecipients.length,
+    recipients_with_email: 0,
+    sent: simulatedSent,
+    failed: simulatedFailed,
+  });
+
+  setSending(false);
+  return;
+}
 
       const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
         method: "POST",
@@ -2406,34 +2469,41 @@ setToast({
             </Panel>
           ) : (
             <Panel
-              title="WhatsApp"
-              description="Base visual lista para la futura sección propia de WhatsApp."
-              className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
-            >
-              <div
-                className="rounded-2xl border p-5"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background:
-                    "linear-gradient(135deg, rgba(16,185,129,0.10), var(--bg-soft))",
-                }}
-              >
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Sección WhatsApp en preparación
-                </p>
-                <p
-                  className="mt-2 text-sm leading-6"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Aquí después irá el mensaje propio de WhatsApp, variables,
-                  estilo conversacional y lógica específica del canal. Mientras
-                  tanto, ya queda separada de Email.
-                </p>
-              </div>
-            </Panel>
+  title="WhatsApp"
+  description="Mensaje directo tipo conversación."
+  className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
+>
+  <div className="space-y-5">
+
+    {/* TEXTAREA */}
+    <div>
+      <label
+        className="mb-2 block text-sm font-medium"
+        style={{ color: "var(--text-main)" }}
+      >
+        Mensaje
+      </label>
+
+      <textarea
+        value={whatsappMessage}
+        onChange={(e) => setWhatsappMessage(e.target.value)}
+        placeholder="Escribe tu mensaje de WhatsApp..."
+        className={textareaClass}
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+          color: "var(--text-main)",
+        }}
+      />
+    </div>
+
+    {/* VARIABLES */}
+    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+      Puedes usar <strong>{"{{nombre}}"}</strong> para personalizar el mensaje.
+    </p>
+
+  </div>
+</Panel>
           )}
 
 <div className="mt-10">
@@ -3248,33 +3318,39 @@ setToast({
             </div>
           ) : (
             <Panel
-              title="Preview de WhatsApp"
-              description="Base futura del canal WhatsApp."
-              className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
-            >
-              <div
-                className="rounded-[28px] border p-5"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background:
-                    "linear-gradient(135deg, rgba(16,185,129,0.10), var(--bg-soft))",
-                }}
-              >
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Aquí después irá el preview real de WhatsApp
-                </p>
-                <p
-                  className="mt-2 text-sm leading-6"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Burbuja de mensaje, variables, CTA conversacional, estado de
-                  plantilla y lógica específica del canal.
-                </p>
-              </div>
-            </Panel>
+  title="Preview de WhatsApp"
+  description="Simulación real del mensaje."
+  className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
+>
+  <div
+    className="rounded-[28px] border p-4"
+    style={{
+      borderColor: "rgba(148,163,184,0.25)",
+      background: "linear-gradient(180deg, #dcfce7, #bbf7d0)",
+    }}
+  >
+    <div
+      className="mx-auto w-full max-w-[360px] rounded-[28px] border p-4 shadow-xl"
+      style={{
+        borderColor: "rgba(15,23,42,0.08)",
+        background: "#e5ddd5",
+      }}
+    >
+      {/* burbuja */}
+      <div className="flex justify-end">
+        <div
+          className="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-6"
+          style={{
+            background: "#dcf8c6",
+            color: "#0f172a",
+          }}
+        >
+          {whatsappPreviewText}
+        </div>
+      </div>
+    </div>
+  </div>
+</Panel>
           )}
         </div>
       </div>
@@ -4078,23 +4154,24 @@ setToast({
               className="mt-2 text-2xl font-semibold"
               style={{ color: "var(--text-main)" }}
             >
-              ¿Enviar campaña ahora?
+              {channel === "email" ? "¿Enviar campaña ahora?" : "¿Preparar campaña de WhatsApp?"}
             </h3>
 
             <p
-              className="mt-3 text-sm leading-7"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Estás a punto de enviar hasta{" "}
-              <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-                {limitedAudienceCount}
-              </span>{" "}
-              correos de tu audiencia curada manualmente del segmento{" "}
-              <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-                {selectedSegmentLabel}
-              </span>
-              .
-            </p>
+  className="mt-3 text-sm leading-7"
+  style={{ color: "var(--text-muted)" }}
+>
+  Estás a punto de procesar hasta{" "}
+  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+    {limitedAudienceCount}
+  </span>{" "}
+  {channel === "email" ? "correos" : "mensajes de WhatsApp"} de tu audiencia
+  curada manualmente del segmento{" "}
+  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+    {selectedSegmentLabel}
+  </span>
+  .
+</p>
 
 
 <div
@@ -4152,15 +4229,27 @@ setToast({
     </p>
   </div>
 </div>
-            <p
-              className="mt-2 text-sm leading-7"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Asunto:{" "}
-              <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-                {subject || "Sin asunto"}
-              </span>
-            </p>
+            {channel === "email" ? (
+  <p
+    className="mt-2 text-sm leading-7"
+    style={{ color: "var(--text-muted)" }}
+  >
+    Asunto:{" "}
+    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+      {subject || "Sin asunto"}
+    </span>
+  </p>
+) : (
+  <p
+    className="mt-2 text-sm leading-7"
+    style={{ color: "var(--text-muted)" }}
+  >
+    Mensaje:{" "}
+    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+      {whatsappPreviewText}
+    </span>
+  </p>
+)}
 
             <div className="mt-6 flex flex-wrap gap-3">
               <button
@@ -4192,13 +4281,13 @@ setToast({
   }}
 >
   {sending ? (
-    <>
-      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-      Enviando...
-    </>
-  ) : (
-    <>Sí, enviar campaña</>
-  )}
+  <>
+    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+    Enviando...
+  </>
+) : (
+  <>{channel === "email" ? "Enviar campaña" : "Enviar campaña WhatsApp"}</>
+)}
 </button>
             </div>
           </div>
