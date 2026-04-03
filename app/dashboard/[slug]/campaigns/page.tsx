@@ -2022,6 +2022,47 @@ if (channel === "whatsapp") {
   return;
 }
 
+if (channel === "whatsapp") {
+  const recipientsWithPhone = finalRecipients.filter(
+    (item) => !!String(item.phone || "").trim()
+  );
+
+  const simulatedSent = recipientsWithPhone.length;
+  const simulatedFailed = Math.max(finalRecipients.length - simulatedSent, 0);
+
+  const whatsappSummary: SendEmailResponse = {
+    ok: true,
+    campaign_name: campaignName.trim() || null,
+    channel: "whatsapp",
+    slug,
+    plan,
+    plan_limit: planLimit,
+    requested_limit: Number(sendLimit),
+    applied_limit: Math.min(Number(sendLimit), finalRecipients.length),
+    sort,
+    segment,
+    inactive_days: Number(inactiveDays),
+    audience_total: includedAudienceRecipients.length,
+    recipients_with_email: 0,
+    sent: simulatedSent,
+    failed: simulatedFailed,
+  };
+
+  setSendSummary(whatsappSummary);
+
+  setResultMessage(
+    `Campaña WhatsApp preparada. Con teléfono: ${simulatedSent}. Sin teléfono: ${simulatedFailed}.`
+  );
+
+  setToast({
+    type: "success",
+    message: `WhatsApp mock listo. Con teléfono: ${simulatedSent}. Sin teléfono: ${simulatedFailed}.`,
+  });
+
+  setSending(false);
+  return;
+}
+
       const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
         method: "POST",
         headers: {
