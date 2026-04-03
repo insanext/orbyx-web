@@ -1694,10 +1694,12 @@ const segmentRecipients = useMemo<AudienceRecipient[]>(() => {
 }, [customers, excludedRecipientIds]);
 
 const hasContactsForChannel = useMemo(() => {
-  return segmentRecipients.some((item) =>
-    channel === "email" ? !!item.email : !!item.phone
+  return allAudienceRecipients.some((item) =>
+    channel === "email"
+      ? !!String(item.email || "").trim()
+      : !!String(item.phone || "").trim()
   );
-}, [segmentRecipients, channel]);
+}, [allAudienceRecipients, channel]);
 
 const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
   const manualForChannel = manualRecipients.filter((item) =>
