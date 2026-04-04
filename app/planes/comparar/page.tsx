@@ -35,7 +35,7 @@ const plans: Plan[] = [
     key: "pro",
     name: "Pro",
     priceLabel: "$24.990",
-    subtitle: "Empieza a ordenar tu negocio",
+    subtitle: "Ordena tu negocio y empieza a reservar online",
     icon: "mail",
     accentClass: "text-sky-300",
     borderClass: "border-sky-400/25",
@@ -45,7 +45,7 @@ const plans: Plan[] = [
     key: "premium",
     name: "Premium",
     priceLabel: "$44.990",
-    subtitle: "Más control y mejor comunicación",
+    subtitle: "Más control, seguimiento y menos ausencias",
     icon: "sparkles",
     accentClass: "text-violet-300",
     borderClass: "border-violet-400/25",
@@ -55,7 +55,7 @@ const plans: Plan[] = [
     key: "vip",
     name: "VIP",
     priceLabel: "$79.990",
-    subtitle: "WhatsApp y mejor contacto",
+    subtitle: "WhatsApp, activación e IA básica",
     icon: "crown",
     accentClass: "text-amber-300",
     borderClass: "border-amber-400/25",
@@ -65,7 +65,7 @@ const plans: Plan[] = [
     key: "platinum",
     name: "Platinum",
     priceLabel: "$229.990",
-    subtitle: "IA trabajando por tu negocio",
+    subtitle: "Automatización e IA avanzada",
     icon: "gem",
     accentClass: "text-emerald-300",
     borderClass: "border-emerald-400/25",
@@ -142,7 +142,7 @@ const comparisonRows: ComparisonRow[] = [
       vip: "Sí",
       platinum: "Sí",
     },
-    info: "Registro básico y seguimiento operativo de clientes dentro del sistema.",
+    info: "Registro y seguimiento operativo de clientes dentro del sistema.",
   },
   {
     label: "Emails automáticos",
@@ -152,7 +152,7 @@ const comparisonRows: ComparisonRow[] = [
       vip: "Avanzados",
       platinum: "Avanzados",
     },
-    info: "Incluye correos automáticos como confirmación de reserva y notificaciones operativas según el plan.",
+    info: "Incluye correos de confirmación y comunicaciones operativas según el plan.",
   },
   {
     label: "Recordatorios por email",
@@ -168,21 +168,61 @@ const comparisonRows: ComparisonRow[] = [
     label: "Campañas por email",
     values: {
       pro: "—",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
+      premium: "—",
+      vip: "Incluidas",
+      platinum: "Incluidas",
     },
-    info: "Mensajes masivos por correo para promociones, novedades o activación de clientes.",
+    info: "Mensajes masivos por correo para activar, recuperar o promocionar a tu base de clientes.",
   },
   {
-    label: "Encuestas por email",
+    label: "WhatsApp recordatorios",
     values: {
       pro: "—",
       premium: "—",
-      vip: "Sí",
-      platinum: "Sí",
+      vip: "200 / mes",
+      platinum: "800 / mes",
     },
-    info: "Encuestas automáticas post atención para medir satisfacción y obtener feedback.",
+    info: "Conversaciones incluidas para recordatorios automáticos por WhatsApp.",
+  },
+  {
+    label: "WhatsApp respuestas",
+    values: {
+      pro: "—",
+      premium: "—",
+      vip: "200 / mes",
+      platinum: "800 / mes",
+    },
+    info: "Capacidad incluida para responder y dar continuidad a conversaciones desde WhatsApp.",
+  },
+  {
+    label: "Campañas por WhatsApp",
+    values: {
+      pro: "—",
+      premium: "—",
+      vip: "Extra / consumo",
+      platinum: "Extra / consumo",
+    },
+    info: "No vienen incluidas por defecto. Se activan como consumo adicional según necesidad.",
+  },
+  {
+    label: "IA incluida",
+    values: {
+      pro: "—",
+      premium: "—",
+      vip: "200 / mes",
+      platinum: "800 / mes",
+    },
+    info: "Conversaciones asistidas por IA para apoyar la atención y la automatización.",
+  },
+  {
+    label: "Nivel de IA",
+    values: {
+      pro: "—",
+      premium: "—",
+      vip: "Básica",
+      platinum: "Avanzada",
+    },
+    info: "VIP incorpora una capa inicial de IA. Platinum lleva la automatización a un nivel más alto.",
   },
   {
     label: "Estadísticas básicas",
@@ -202,67 +242,7 @@ const comparisonRows: ComparisonRow[] = [
       vip: "Sí",
       platinum: "Sí",
     },
-    info: "Mayor visibilidad sobre desempeño del negocio, seguimiento y control operativo.",
-  },
-  {
-    label: "WhatsApp recordatorios",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "200 / mes",
-      platinum: "400 / mes",
-    },
-    info: "Conversaciones incluidas para recordatorios automáticos por WhatsApp.",
-  },
-  {
-    label: "WhatsApp campañas",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "Extra",
-      platinum: "50 / mes",
-    },
-    info: "Conversaciones orientadas a campañas, reactivación o mensajes salientes por WhatsApp.",
-  },
-  {
-    label: "IA asistida",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "—",
-      platinum: "200 / mes",
-    },
-    info: "Conversaciones donde la IA responde, orienta y ayuda a cerrar reservas automáticamente.",
-  },
-  {
-    label: "Atención automática por WhatsApp",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "—",
-      platinum: "Sí",
-    },
-    info: "La IA puede responder consultas frecuentes y ayudar al cliente fuera de horario.",
-  },
-  {
-    label: "Encuestas + análisis futuro",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "—",
-      platinum: "Sí",
-    },
-    info: "Preparado para evolucionar hacia análisis más inteligente del feedback recibido.",
-  },
-  {
-    label: "Métricas de conversión",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "—",
-      platinum: "Sí",
-    },
-    info: "Indicadores para revisar mejor cómo convierten las conversaciones y automatizaciones.",
+    info: "Mayor visibilidad sobre desempeño, seguimiento y control de la operación.",
   },
 ] as const;
 
@@ -290,21 +270,21 @@ function InfoDot({ text }: { text: string }) {
 export default function CompararPlanesPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
-      <section className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+      <section className="mx-auto w-full max-w-[1600px] px-4 py-8 lg:px-8 2xl:px-10">
         <div className="rounded-[34px] border border-white/10 bg-white/6 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl lg:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="max-w-4xl">
               <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
                 Comparador Orbyx
               </span>
 
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl">
-                Cuadro comparativo de planes
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl xl:text-[3.2rem] xl:leading-[1.05]">
+                Compara qué tan lejos puede llevarte cada plan
               </h1>
 
-              <p className="mt-3 max-w-2xl text-base leading-7 text-slate-300">
-                Revisa más en detalle qué incluye cada plan y cómo escala tu
-                operación.
+              <p className="mt-3 max-w-3xl text-base leading-7 text-slate-300 lg:text-lg">
+                Revisa qué incluye cada etapa de Orbyx para vender más, reducir ausencias
+                y avanzar hacia una operación más automatizada.
               </p>
             </div>
 
@@ -352,7 +332,7 @@ export default function CompararPlanesPage() {
 
           <div className="mt-8 overflow-hidden rounded-[28px] border border-white/10 bg-white/5">
             <div className="overflow-x-auto">
-              <table className="min-w-[980px] w-full border-collapse">
+              <table className="min-w-[1100px] w-full border-collapse">
                 <thead>
                   <tr className="bg-white/5">
                     <th className="px-4 py-4 text-left text-sm font-semibold text-slate-200">

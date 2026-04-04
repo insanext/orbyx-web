@@ -14,10 +14,11 @@ import {
   Sparkles,
   Users,
   Building2,
+  ArrowRight,
 } from "lucide-react";
 
 type PlanKey = "pro" | "premium" | "vip" | "platinum";
-type ExtraKey = "staff" | "reminders" | "campaigns" | "ai";
+type ExtraKey = "staff" | "reminders" | "campaigns";
 
 type FeatureItem = {
   title: string;
@@ -32,13 +33,15 @@ type Plan = {
   priceLabel: string;
   ivaLabel: string;
   subtitle: string;
+  benefit: string;
   badge?: string;
   includedBranches: number;
   includedStaff: number;
   includedServices: number;
   includedReminderConversations: number;
-  includedCampaignConversations: number;
+  includedWhatsappResponseConversations: number;
   includedAiConversations: number;
+  emailCampaignsIncluded: boolean;
   extras: ExtraKey[];
   summaryTitle: string;
   summaryIntro: string;
@@ -76,31 +79,33 @@ const plans: Plan[] = [
     price: 24990,
     priceLabel: "$24.990",
     ivaLabel: "mes + iva",
-    subtitle: "Empieza a ordenar tu negocio",
+    subtitle: "Ordena tu negocio y empieza a reservar online",
+    benefit: "La base para comenzar a llenar tu agenda con una operación más clara.",
     includedBranches: 1,
     includedStaff: 2,
     includedServices: 10,
     includedReminderConversations: 0,
-    includedCampaignConversations: 0,
+    includedWhatsappResponseConversations: 0,
     includedAiConversations: 0,
+    emailCampaignsIncluded: false,
     extras: ["staff"],
     summaryTitle: "Plan Pro",
-    summaryIntro: "La base ideal para comenzar a profesionalizar tu agenda.",
+    summaryIntro: "Empieza con una agenda profesional, reservas online y una base sólida para crecer.",
     features: [
       {
         title: "Agenda online y reservas públicas",
         description:
-          "Incluye la base para ordenar tu negocio y permitir reservas online.",
+          "Ordena tu disponibilidad y deja que tus clientes reserven sin fricción.",
       },
       {
-        title: "Emails automáticos básicos",
+        title: "Gestión inicial del negocio",
         description:
-          "Confirmación de citas por email para mantener informado al cliente.",
+          "Administra horarios, servicios, profesionales y clientes desde un solo lugar.",
       },
       {
-        title: "Operación inicial del negocio",
+        title: "Correos operativos básicos",
         description:
-          "Gestión de horarios, disponibilidad, servicios y clientes.",
+          "Mantén informado al cliente con confirmaciones y comunicaciones esenciales.",
       },
     ],
     icon: "mail",
@@ -116,31 +121,33 @@ const plans: Plan[] = [
     price: 44990,
     priceLabel: "$44.990",
     ivaLabel: "mes + iva",
-    subtitle: "Más control y mejor comunicación con tus clientes",
+    subtitle: "Más control, mejor seguimiento y menos ausencias",
+    benefit: "Para negocios que ya necesitan trabajar con más orden y mejor comunicación.",
     includedBranches: 2,
     includedStaff: 5,
     includedServices: 25,
     includedReminderConversations: 0,
-    includedCampaignConversations: 0,
+    includedWhatsappResponseConversations: 0,
     includedAiConversations: 0,
+    emailCampaignsIncluded: false,
     extras: ["staff"],
     summaryTitle: "Plan Premium",
-    summaryIntro: "Para negocios que necesitan mejor seguimiento y comunicación.",
+    summaryIntro: "Mejora el seguimiento de tu operación y da una experiencia más profesional a tus clientes.",
     features: [
       {
         title: "Recordatorios por email",
         description:
-          "Reduce ausencias con recordatorios automáticos antes de cada cita.",
+          "Reduce ausencias con avisos automáticos antes de cada cita.",
       },
       {
-        title: "Notificaciones automáticas",
+        title: "Notificaciones más completas",
         description:
-          "Comunica cambios y movimientos de agenda de forma más profesional.",
+          "Comunica cambios y movimientos de agenda con una imagen más profesional.",
       },
       {
-        title: "Campañas por email",
+        title: "Más capacidad para crecer",
         description:
-          "Envía promociones y mensajes a tus clientes de forma masiva.",
+          "Suma más profesionales, servicios y sucursales sin desordenar tu operación.",
       },
     ],
     icon: "sparkles",
@@ -156,33 +163,36 @@ const plans: Plan[] = [
     price: 79990,
     priceLabel: "$79.990",
     ivaLabel: "mes + iva",
-    subtitle: "Reduce ausencias y mantén un mejor contacto con tus clientes",
+    subtitle: "Recupera clientes y activa tu agenda con WhatsApp e IA básica",
+    benefit: "El plan para reactivar clientes, responder más rápido y vender mejor.",
     badge: "Más elegido",
     includedBranches: 3,
     includedStaff: 10,
     includedServices: 50,
     includedReminderConversations: 200,
-    includedCampaignConversations: 0,
-    includedAiConversations: 0,
+    includedWhatsappResponseConversations: 200,
+    includedAiConversations: 200,
+    emailCampaignsIncluded: true,
     extras: ["staff", "reminders", "campaigns"],
     summaryTitle: "Plan VIP",
     summaryIntro:
-      "Incorpora WhatsApp a tu operación sin entrar todavía en automatización con IA.",
+      "Da un salto en activación y seguimiento con campañas email, WhatsApp e IA básica incluida.",
     features: [
       {
-        title: "Recordatorios por WhatsApp",
+        title: "Campañas por email incluidas",
         description:
-          "Incluye conversaciones para recordatorios automáticos por WhatsApp.",
+          "Vuelve a hablarle a tu base de clientes y mueve tu agenda con campañas.",
+        highlight: true,
       },
       {
-        title: "Más control del negocio",
+        title: "Recordatorios y respuestas por WhatsApp",
         description:
-          "Accede a una operación más sólida con mejor seguimiento del negocio.",
+          "Reduce ausencias y mantén el contacto con clientes desde un canal más directo.",
       },
       {
-        title: "Encuestas automáticas por email",
+        title: "IA básica incluida",
         description:
-          "Solicita feedback después de la atención para mejorar la experiencia.",
+          "Automatiza respuestas iniciales y mejora la atención sin subirte todavía al nivel más avanzado.",
       },
     ],
     icon: "crown",
@@ -198,34 +208,36 @@ const plans: Plan[] = [
     price: 229990,
     priceLabel: "$229.990",
     ivaLabel: "mes + iva",
-    subtitle: "La IA trabaja por tu negocio incluso cuando no estás disponible",
-    badge: "IA incluida",
+    subtitle: "Automatización e IA avanzada para hacer crecer tu negocio",
+    benefit: "Para negocios que quieren que Orbyx trabaje incluso cuando ellos no están.",
+    badge: "IA avanzada",
     includedBranches: 10,
     includedStaff: 20,
     includedServices: 100,
-    includedReminderConversations: 400,
-    includedCampaignConversations: 50,
-    includedAiConversations: 200,
-    extras: ["staff", "reminders", "campaigns", "ai"],
+    includedReminderConversations: 800,
+    includedWhatsappResponseConversations: 800,
+    includedAiConversations: 800,
+    emailCampaignsIncluded: true,
+    extras: ["staff", "reminders", "campaigns"],
     summaryTitle: "Plan Platinum",
     summaryIntro:
-      "Una operación premium con WhatsApp e inteligencia artificial trabajando para generar más reservas.",
+      "La capa más avanzada de automatización, atención y escalabilidad para una operación premium.",
     features: [
       {
-        title: "Atención automática por WhatsApp con IA",
+        title: "IA avanzada trabajando por tu agenda",
         description:
-          "La IA responde consultas y ayuda a cerrar reservas automáticamente.",
+          "Más volumen, más capacidad de atención y una operación mucho más automatizada.",
         highlight: true,
       },
       {
-        title: "Encuestas + análisis inteligente",
+        title: "WhatsApp con mayor volumen incluido",
         description:
-          "Prepárate para una operación más avanzada basada en feedback.",
+          "Más recordatorios, más respuestas y mejor continuidad en la atención al cliente.",
       },
       {
-        title: "Métricas de conversaciones y conversión",
+        title: "Campañas email + operación premium",
         description:
-          "Visualiza mejor cómo convierten tus automatizaciones.",
+          "Activa, recupera y comunica con una experiencia más completa para tu negocio.",
       },
     ],
     icon: "gem",
@@ -244,19 +256,14 @@ const extraConfig = {
     unitPrice: 6000,
   },
   reminders: {
-    title: "Recordatorios por WhatsApp",
+    title: "Pack recordatorios WhatsApp",
     short: "$5.000 · 50 conversaciones",
     unitPrice: 5000,
   },
   campaigns: {
-    title: "Campañas por WhatsApp",
+    title: "Campañas WhatsApp bajo consumo",
     short: "$8.000 · 50 conversaciones",
     unitPrice: 8000,
-  },
-  ai: {
-    title: "Conversaciones asistidas por IA",
-    short: "$30.000 · 50 conversaciones",
-    unitPrice: 30000,
   },
 } as const;
 
@@ -280,7 +287,7 @@ function formatDate(dateString?: string | null) {
 
 function formatRemainingDays(value?: number | null) {
   if (value == null || Number.isNaN(Number(value))) return "—";
-  return `${Number(value).toFixed(2)} días`;
+  return `${Math.max(0, Math.round(Number(value)))} días`;
 }
 
 function normalizePlanFromUrl(rawValue: string | null): PlanKey {
@@ -326,18 +333,10 @@ function getExtraAccent(extraKey: ExtraKey) {
     };
   }
 
-  if (extraKey === "campaigns") {
-    return {
-      icon: "bg-amber-500/15 text-amber-200",
-      control: "border-amber-400/25 text-amber-100 hover:bg-amber-500/15",
-      info: "border-amber-400/20 bg-amber-500/10 text-amber-100",
-    };
-  }
-
   return {
-    icon: "bg-violet-500/15 text-violet-200",
-    control: "border-violet-400/25 text-violet-100 hover:bg-violet-500/15",
-    info: "border-violet-400/20 bg-violet-500/10 text-violet-100",
+    icon: "bg-amber-500/15 text-amber-200",
+    control: "border-amber-400/25 text-amber-100 hover:bg-amber-500/15",
+    info: "border-amber-400/20 bg-amber-500/10 text-amber-100",
   };
 }
 
@@ -424,7 +423,7 @@ function IncludeRow({
   return (
     <div className="flex items-center justify-between border-b border-white/8 py-2 last:border-b-0">
       <span className="text-sm text-slate-300">{label}</span>
-      <span className="text-sm font-semibold text-white">{value}</span>
+      <span className="text-right text-sm font-semibold text-white">{value}</span>
     </div>
   );
 }
@@ -444,7 +443,6 @@ function PlanesPageContent() {
   const [staffExtras, setStaffExtras] = useState(0);
   const [reminderExtras, setReminderExtras] = useState(0);
   const [campaignExtras, setCampaignExtras] = useState(0);
-  const [aiExtras, setAiExtras] = useState(0);
 
   const [preview, setPreview] = useState<BillingPreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -465,7 +463,6 @@ function PlanesPageContent() {
   const supportsStaffExtra = selectedPlan.extras.includes("staff");
   const supportsReminderExtra = selectedPlan.extras.includes("reminders");
   const supportsCampaignExtra = selectedPlan.extras.includes("campaigns");
-  const supportsAiExtra = selectedPlan.extras.includes("ai");
 
   const extrasSubtotal = useMemo(() => {
     let total = 0;
@@ -477,24 +474,16 @@ function PlanesPageContent() {
     if (supportsCampaignExtra) {
       total += campaignExtras * extraConfig.campaigns.unitPrice;
     }
-    if (supportsAiExtra) {
-      total += aiExtras * extraConfig.ai.unitPrice;
-    }
 
     return total;
   }, [
-    aiExtras,
     campaignExtras,
     reminderExtras,
     staffExtras,
-    supportsAiExtra,
     supportsCampaignExtra,
     supportsReminderExtra,
     supportsStaffExtra,
   ]);
-
-  const extrasIva = Math.round(extrasSubtotal * 0.19);
-  const extrasTotal = extrasSubtotal + extrasIva;
 
   const previewAmountToday = Number(preview?.amount_today || 0);
   const payTodaySubtotal = previewAmountToday + extrasSubtotal;
@@ -506,9 +495,10 @@ function PlanesPageContent() {
     selectedPlan.includedServices + staffExtras * SERVICES_PER_STAFF_EXTRA;
   const currentReminderTotal =
     selectedPlan.includedReminderConversations + reminderExtras * 50;
-  const currentCampaignTotal =
-    selectedPlan.includedCampaignConversations + campaignExtras * 50;
-  const currentAiTotal = selectedPlan.includedAiConversations + aiExtras * 50;
+  const currentCampaignTotal = campaignExtras * 50;
+  const currentWhatsappResponseTotal =
+    selectedPlan.includedWhatsappResponseConversations;
+  const currentAiTotal = selectedPlan.includedAiConversations;
 
   const extraItems = useMemo(() => {
     const items: { label: string; amount: number }[] = [];
@@ -522,7 +512,7 @@ function PlanesPageContent() {
 
     if (supportsReminderExtra && reminderExtras > 0) {
       items.push({
-        label: `Recordatorios WhatsApp x${reminderExtras}`,
+        label: `Pack recordatorios WhatsApp x${reminderExtras}`,
         amount: reminderExtras * extraConfig.reminders.unitPrice,
       });
     }
@@ -534,20 +524,11 @@ function PlanesPageContent() {
       });
     }
 
-    if (supportsAiExtra && aiExtras > 0) {
-      items.push({
-        label: `Conversaciones IA x${aiExtras}`,
-        amount: aiExtras * extraConfig.ai.unitPrice,
-      });
-    }
-
     return items;
   }, [
-    aiExtras,
     campaignExtras,
     reminderExtras,
     staffExtras,
-    supportsAiExtra,
     supportsCampaignExtra,
     supportsReminderExtra,
     supportsStaffExtra,
@@ -604,7 +585,6 @@ function PlanesPageContent() {
     setStaffExtras(0);
     setReminderExtras(0);
     setCampaignExtras(0);
-    setAiExtras(0);
     setApplyError("");
     setApplyOk("");
   }
@@ -619,9 +599,6 @@ function PlanesPageContent() {
     if (extraKey === "campaigns" && supportsCampaignExtra) {
       setCampaignExtras((prev) => prev + 1);
     }
-    if (extraKey === "ai" && supportsAiExtra) {
-      setAiExtras((prev) => prev + 1);
-    }
   }
 
   function decreaseExtra(extraKey: ExtraKey) {
@@ -633,9 +610,6 @@ function PlanesPageContent() {
     }
     if (extraKey === "campaigns" && supportsCampaignExtra) {
       setCampaignExtras((prev) => Math.max(0, prev - 1));
-    }
-    if (extraKey === "ai" && supportsAiExtra) {
-      setAiExtras((prev) => Math.max(0, prev - 1));
     }
   }
 
@@ -672,9 +646,7 @@ function PlanesPageContent() {
         );
       } else if (data?.change_type === "downgrade") {
         const dateText = formatDate(data?.tenant?.scheduled_change_at);
-        setApplyOk(
-          `Downgrade programado correctamente para el ${dateText}.`
-        );
+        setApplyOk(`Downgrade programado correctamente para el ${dateText}.`);
       } else {
         setApplyOk("Cambio aplicado correctamente.");
       }
@@ -687,14 +659,14 @@ function PlanesPageContent() {
     }
   }
 
-const previewType =
-  preview?.change_type || (isCurrentPlan ? "same_plan" : "upgrade");
+  const previewType =
+    preview?.change_type || (isCurrentPlan ? "same_plan" : "upgrade");
 
-const billingEndLabel = formatDate(
-  preview?.scheduled_change_at || preview?.billing_cycle_end
-);
+  const billingEndLabel = formatDate(
+    preview?.scheduled_change_at || preview?.billing_cycle_end
+  );
 
-const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
+  const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
 
   const ctaLabel =
     previewType === "same_plan"
@@ -705,14 +677,14 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
-      <section className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_410px]">
+      <section className="mx-auto w-full max-w-[1600px] px-4 py-8 lg:px-8 2xl:px-10">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_440px]">
           <div>
             <div className="rounded-[34px] border border-white/10 bg-white/6 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl lg:p-8">
-              <div className="max-w-3xl">
-                <div className="flex items-center gap-3">
+              <div className="max-w-5xl">
+                <div className="flex flex-wrap items-center gap-3">
                   <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
-                    Precios Orbyx
+                    Planes Orbyx
                   </span>
 
                   <Link
@@ -723,13 +695,14 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
                   </Link>
                 </div>
 
-                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl">
-                  Escala tu agenda con un plan hecho para crecer contigo
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl xl:text-[3.4rem] xl:leading-[1.05]">
+                  Elige el plan que te ayude a llenar tu agenda, reducir ausencias y crecer con más orden
                 </h1>
 
-                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                  Comienza con la base que necesita tu negocio y suma capacidad,
-                  campañas o automatización cuando tu operación lo pida.
+                <p className="mt-4 max-w-4xl text-base leading-7 text-slate-300 lg:text-lg">
+                  Orbyx no solo organiza reservas. Te ayuda a activar clientes,
+                  automatizar atención y profesionalizar tu operación según el
+                  momento en que está tu negocio.
                 </p>
 
                 {from === "staff" ? (
@@ -737,6 +710,35 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
                     Llegaste aquí porque alcanzaste el límite de profesionales de tu plan.
                   </div>
                 ) : null}
+
+                <div className="mt-6 grid gap-3 md:grid-cols-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Vende más
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-200">
+                      Campañas, activación y una mejor experiencia para convertir más reservas.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Reduce ausencias
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-200">
+                      Recordatorios automáticos y seguimiento para no perder horas valiosas.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Automatiza atención
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-200">
+                      Desde VIP ya sumas IA. En Platinum llevas la automatización a otro nivel.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-8 grid gap-4 xl:grid-cols-4">
@@ -749,7 +751,7 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
                       key={plan.key}
                       type="button"
                       onClick={() => handleSelectPlan(plan.key)}
-                      className={`relative flex min-h-[236px] flex-col rounded-3xl border px-4 py-5 text-left transition ${
+                      className={`relative flex min-h-[320px] flex-col rounded-3xl border px-5 py-5 text-left transition ${
                         isSelected
                           ? `scale-[1.02] bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] ${plan.borderClass} ${plan.softBgClass} ring-1 ring-white/20 shadow-[0_18px_45px_rgba(0,0,0,0.35)]`
                           : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
@@ -775,21 +777,32 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
                         <PlanIcon type={plan.icon} />
                       </span>
 
-                      <p className="mt-4 text-lg font-semibold text-white">
+                      <p className="mt-4 text-xl font-semibold text-white">
                         {plan.name}
                       </p>
 
-                      <p className="mt-1 text-sm leading-6 text-slate-300">
+                      <p className="mt-2 text-sm leading-6 text-slate-200">
                         {plan.subtitle}
                       </p>
 
-                      <div className="mt-auto pt-6">
-                        <p className="text-[1.85rem] font-semibold leading-none tracking-tight text-white lg:text-[2.05rem]">
+                      <p className="mt-4 text-sm leading-6 text-slate-400">
+                        {plan.benefit}
+                      </p>
+
+                      <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
+                        <p className="text-[1.95rem] font-semibold leading-none tracking-tight text-white lg:text-[2.2rem]">
                           {plan.priceLabel}
                         </p>
                         <p className="mt-2 text-sm text-slate-400">
                           {plan.ivaLabel}
                         </p>
+                      </div>
+
+                      <div className="mt-auto pt-5">
+                        <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                          <ArrowRight className="h-4 w-4" />
+                          Seleccionar plan
+                        </div>
                       </div>
                     </button>
                   );
@@ -800,10 +813,11 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                   <div>
                     <p className="text-lg font-semibold text-white">
-                      Adicionales disponibles
+                      Adicionales y consumo
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-slate-300">
-                      Se desbloquean según el plan seleccionado.
+                    <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-300">
+                      Los adicionales se habilitan según el plan. Las campañas por WhatsApp
+                      funcionan bajo consumo y no vienen incluidas por defecto.
                     </p>
                   </div>
 
@@ -857,25 +871,12 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
                     <CompactExtraRow
                       title={extraConfig.campaigns.title}
                       shortText={extraConfig.campaigns.short}
-                      infoText={`Tu plan ahora cuenta con ${currentCampaignTotal} conversaciones de campañas.`}
+                      infoText={`Llevas ${currentCampaignTotal} conversaciones de campañas WhatsApp seleccionadas como extra.`}
                       value={campaignExtras}
                       onDecrease={() => decreaseExtra("campaigns")}
                       onIncrease={() => increaseExtra("campaigns")}
                       accent={getExtraAccent("campaigns")}
                       icon={<Megaphone className="h-5 w-5" />}
-                    />
-                  ) : null}
-
-                  {supportsAiExtra ? (
-                    <CompactExtraRow
-                      title={extraConfig.ai.title}
-                      shortText={extraConfig.ai.short}
-                      infoText={`Tu plan ahora cuenta con ${currentAiTotal} conversaciones asistidas por IA.`}
-                      value={aiExtras}
-                      onDecrease={() => decreaseExtra("ai")}
-                      onIncrease={() => increaseExtra("ai")}
-                      accent={getExtraAccent("ai")}
-                      icon={<Bot className="h-5 w-5" />}
                     />
                   ) : null}
                 </div>
@@ -989,51 +990,51 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
                     </span>
                   </div>
 
-{previewType === "upgrade" ? (
-  <>
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-300">
-        Días restantes del ciclo
-      </span>
-      <span className="text-sm font-semibold text-white">
-        {remainingDaysLabel}
-      </span>
-    </div>
+                  {previewType === "upgrade" ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Días restantes del ciclo
+                        </span>
+                        <span className="text-sm font-semibold text-white">
+                          {remainingDaysLabel}
+                        </span>
+                      </div>
 
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-300">
-        Crédito proporcional plan actual
-      </span>
-      <span className="text-sm font-semibold text-emerald-300">
-        - {formatCLP(Number(preview?.credit || 0))}
-      </span>
-    </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Crédito proporcional plan actual
+                        </span>
+                        <span className="text-sm font-semibold text-emerald-300">
+                          - {formatCLP(Number(preview?.credit || 0))}
+                        </span>
+                      </div>
 
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-300">
-        Cargo proporcional nuevo plan
-      </span>
-      <span className="text-sm font-semibold text-white">
-        {formatCLP(Number(preview?.charge || 0))}
-      </span>
-    </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Cargo proporcional nuevo plan
+                        </span>
+                        <span className="text-sm font-semibold text-white">
+                          {formatCLP(Number(preview?.charge || 0))}
+                        </span>
+                      </div>
 
-    <div className="rounded-2xl border border-sky-300/15 bg-sky-500/10 px-3 py-3 text-sm text-sky-100">
-      Te quedan <span className="font-semibold">{remainingDaysLabel}</span>{" "}
-      en tu ciclo actual. El crédito y el cobro se calcularon solo sobre ese período.
-    </div>
-  </>
-) : null}
+                      <div className="rounded-2xl border border-sky-300/15 bg-sky-500/10 px-3 py-3 text-sm text-sky-100">
+                        Te quedan <span className="font-semibold">{remainingDaysLabel}</span>{" "}
+                        en tu ciclo actual. El crédito y el cobro se calcularon solo sobre ese período.
+                      </div>
+                    </>
+                  ) : null}
 
-{previewType === "downgrade" ? (
-  <div className="rounded-2xl border border-amber-300/15 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
-    El downgrade comenzará el{" "}
-    <span className="font-semibold">{billingEndLabel}</span>.
-    <div className="mt-1 text-xs text-amber-50/90">
-      Mantendrás tu plan actual hasta esa fecha.
-    </div>
-  </div>
-) : null}
+                  {previewType === "downgrade" ? (
+                    <div className="rounded-2xl border border-amber-300/15 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
+                      El downgrade comenzará el{" "}
+                      <span className="font-semibold">{billingEndLabel}</span>.
+                      <div className="mt-1 text-xs text-amber-50/90">
+                        Mantendrás tu plan actual hasta esa fecha.
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-300">
@@ -1157,6 +1158,12 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
                       value={currentServicesTotal}
                     />
                     <IncludeRow
+                      label="Campañas email"
+                      value={
+                        selectedPlan.emailCampaignsIncluded ? "Incluidas" : "No incluidas"
+                      }
+                    />
+                    <IncludeRow
                       label="WhatsApp recordatorios"
                       value={
                         currentReminderTotal > 0
@@ -1165,15 +1172,23 @@ const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
                       }
                     />
                     <IncludeRow
-                      label="Campañas por WhatsApp"
+                      label="WhatsApp respuestas"
                       value={
-                        currentCampaignTotal > 0
-                          ? `${currentCampaignTotal}`
+                        currentWhatsappResponseTotal > 0
+                          ? `${currentWhatsappResponseTotal}`
                           : "No incluido"
                       }
                     />
                     <IncludeRow
-                      label="IA asistida"
+                      label="Campañas WhatsApp"
+                      value={
+                        supportsCampaignExtra
+                          ? "Bajo consumo / extra"
+                          : "No incluido"
+                      }
+                    />
+                    <IncludeRow
+                      label="IA incluida"
                       value={
                         currentAiTotal > 0 ? `${currentAiTotal}` : "No incluida"
                       }
