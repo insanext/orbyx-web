@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Building2,
   Info,
+  Check,
 } from "lucide-react";
 
 type PlanKey = "pro" | "premium" | "vip" | "platinum";
@@ -22,12 +23,14 @@ type Plan = {
   accentClass: string;
   borderClass: string;
   softBgClass: string;
+  badge?: string;
 };
 
 type ComparisonRow = {
   label: string;
   values: Record<PlanKey, string>;
   info?: string;
+  highlight?: boolean;
 };
 
 const plans: Plan[] = [
@@ -45,7 +48,7 @@ const plans: Plan[] = [
     key: "premium",
     name: "Premium",
     priceLabel: "$29.990",
-    subtitle: "Más control, seguimiento y menos ausencias",
+    subtitle: "Más control, mejor seguimiento y menos ausencias",
     icon: "sparkles",
     accentClass: "text-violet-300",
     borderClass: "border-violet-400/25",
@@ -55,21 +58,23 @@ const plans: Plan[] = [
     key: "vip",
     name: "VIP",
     priceLabel: "$79.990",
-    subtitle: "WhatsApp, activación e IA básica",
+    subtitle: "Activa clientes y responde más rápido por WhatsApp",
     icon: "crown",
     accentClass: "text-amber-300",
     borderClass: "border-amber-400/25",
     softBgClass: "bg-amber-500/10",
+    badge: "Más elegido",
   },
   {
     key: "platinum",
     name: "Platinum",
     priceLabel: "$189.990",
-    subtitle: "Automatización e IA avanzada",
+    subtitle: "Automatiza tu negocio y convierte más reservas",
     icon: "gem",
     accentClass: "text-emerald-300",
     borderClass: "border-emerald-400/25",
     softBgClass: "bg-emerald-500/10",
+    badge: "IA avanzada",
   },
 ];
 
@@ -145,14 +150,14 @@ const comparisonRows: ComparisonRow[] = [
     info: "Registro y seguimiento operativo de clientes dentro del sistema.",
   },
   {
-    label: "Emails automáticos",
+    label: "Emails de confirmación y notificación",
     values: {
-      pro: "Básicos",
-      premium: "Avanzados",
-      vip: "Avanzados",
-      platinum: "Avanzados",
+      pro: "Sí",
+      premium: "Sí",
+      vip: "Sí",
+      platinum: "Sí",
     },
-    info: "Incluye correos de confirmación y comunicaciones operativas según el plan.",
+    info: "Correos automáticos que acompañan el flujo de reserva y comunicación básica con el cliente.",
   },
   {
     label: "Recordatorios por email",
@@ -173,56 +178,70 @@ const comparisonRows: ComparisonRow[] = [
       platinum: "Incluidas",
     },
     info: "Mensajes masivos por correo para activar, recuperar o promocionar a tu base de clientes.",
+    highlight: true,
   },
   {
-    label: "WhatsApp recordatorios",
+    label: "Recordatorios por WhatsApp",
     values: {
       pro: "—",
       premium: "—",
-      vip: "200 / mes",
-      platinum: "800 / mes",
+      vip: "Incluidos",
+      platinum: "Incluidos",
     },
-    info: "Conversaciones incluidas para recordatorios automáticos por WhatsApp.",
+    info: "Ayudan a reducir ausencias con un canal más directo y efectivo.",
+    highlight: true,
   },
   {
-    label: "WhatsApp respuestas",
+    label: "Respuestas por WhatsApp",
     values: {
       pro: "—",
       premium: "—",
-      vip: "200 / mes",
-      platinum: "800 / mes",
+      vip: "Incluidas",
+      platinum: "Incluidas",
     },
-    info: "Capacidad incluida para responder y dar continuidad a conversaciones desde WhatsApp.",
+    info: "Permiten mantener conversaciones activas con tus clientes desde un canal más cercano.",
+  },
+  {
+    label: "IA integrada en WhatsApp",
+    values: {
+      pro: "—",
+      premium: "—",
+      vip: "Responde y deriva a reserva",
+      platinum: "Responde, sigue y automatiza",
+    },
+    info: "En VIP la IA responde consultas y dirige al cliente a reservar. En Platinum además acompaña mejor el proceso y automatiza seguimiento.",
+    highlight: true,
   },
   {
     label: "Campañas por WhatsApp",
     values: {
       pro: "—",
       premium: "—",
-      vip: "Extra / consumo",
-      platinum: "Extra / consumo",
+      vip: "Disponible como adicional",
+      platinum: "Disponible como adicional",
     },
-    info: "No vienen incluidas por defecto. Se activan como consumo adicional según necesidad.",
+    info: "No vienen incluidas. Valor: $9.000 + iva por bloque. No acumulables y uso dentro del mes.",
   },
   {
-    label: "IA incluida",
+    label: "Automatizaciones avanzadas",
     values: {
       pro: "—",
       premium: "—",
-      vip: "200 / mes",
-      platinum: "800 / mes",
+      vip: "—",
+      platinum: "Sí",
     },
-    info: "Conversaciones asistidas por IA para apoyar la atención y la automatización.",
+    info: "Acciones automáticas como reactivación de clientes, recuperación de no-show y seguimiento sin intervención manual.",
+    highlight: true,
   },
   {
-    label: "Nivel de IA",
+    label: "Encuestas post atención por email",
     values: {
       pro: "—",
       premium: "—",
-      vip: "Básica",
-      platinum: "Avanzada",
+      vip: "—",
+      platinum: "Sí",
     },
-    info: "VIP incorpora una capa inicial de IA. Platinum lleva la automatización a un nivel más alto.",
+    info: "Encuestas automáticas para medir satisfacción, detectar problemas y mejorar la experiencia del cliente.",
   },
   {
     label: "Estadísticas básicas",
@@ -235,14 +254,14 @@ const comparisonRows: ComparisonRow[] = [
     info: "Vista inicial del comportamiento del negocio, reservas y operación general.",
   },
   {
-    label: "Estadísticas avanzadas",
+    label: "Visión más avanzada del negocio",
     values: {
       pro: "—",
       premium: "—",
       vip: "Sí",
       platinum: "Sí",
     },
-    info: "Mayor visibilidad sobre desempeño, seguimiento y control de la operación.",
+    info: "Mayor visibilidad para seguir mejor la operación, activar clientes y tomar decisiones con más contexto.",
   },
 ] as const;
 
@@ -267,6 +286,45 @@ function InfoDot({ text }: { text: string }) {
   );
 }
 
+function CellValue({
+  value,
+  highlight = false,
+}: {
+  value: string;
+  highlight?: boolean;
+}) {
+  const positive =
+    value === "Sí" ||
+    value === "Incluidas" ||
+    value === "Incluidos" ||
+    value === "Disponible como adicional";
+
+  if (value === "—") {
+    return <span className="text-slate-500">—</span>;
+  }
+
+  if (positive && !highlight) {
+    return (
+      <span className="inline-flex items-center justify-center gap-1 text-slate-100">
+        <Check className="h-4 w-4 text-emerald-300" />
+        {value}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={
+        highlight
+          ? "font-semibold text-white"
+          : "text-slate-200"
+      }
+    >
+      {value}
+    </span>
+  );
+}
+
 export default function CompararPlanesPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
@@ -279,12 +337,11 @@ export default function CompararPlanesPage() {
               </span>
 
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl xl:text-[3.2rem] xl:leading-[1.05]">
-                Compara qué incluye cada plan
+                Compara qué tan lejos puede llevarte cada plan
               </h1>
 
               <p className="mt-3 max-w-3xl text-base leading-7 text-slate-300 lg:text-lg">
-                Revisa en detalle cómo escala Orbyx desde la operación base hasta
-                la automatización avanzada.
+                Desde ordenar tu agenda hasta automatizar atención, recuperar clientes y convertir más reservas.
               </p>
             </div>
 
@@ -310,8 +367,14 @@ export default function CompararPlanesPage() {
             {plans.map((plan) => (
               <div
                 key={plan.key}
-                className={`rounded-3xl border ${plan.borderClass} ${plan.softBgClass} p-5`}
+                className={`relative rounded-3xl border ${plan.borderClass} ${plan.softBgClass} p-5`}
               >
+                {plan.badge ? (
+                  <span className="absolute right-4 top-4 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-900">
+                    {plan.badge}
+                  </span>
+                ) : null}
+
                 <span
                   className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ${plan.accentClass}`}
                 >
@@ -332,11 +395,11 @@ export default function CompararPlanesPage() {
 
           <div className="mt-8 overflow-hidden rounded-[28px] border border-white/10 bg-white/5">
             <div className="overflow-x-auto">
-              <table className="min-w-[1100px] w-full border-collapse">
+              <table className="min-w-[1180px] w-full border-collapse">
                 <thead>
                   <tr className="bg-white/5">
                     <th className="px-4 py-4 text-left text-sm font-semibold text-slate-200">
-                      Característica
+                      Qué incluye cada plan
                     </th>
                     {plans.map((plan) => (
                       <th
@@ -357,7 +420,9 @@ export default function CompararPlanesPage() {
                     >
                       <td className="border-t border-white/10 px-4 py-4 text-sm font-medium text-white">
                         <div className="flex items-center">
-                          <span>{row.label}</span>
+                          <span className={row.highlight ? "text-white font-semibold" : ""}>
+                            {row.label}
+                          </span>
                           {row.info ? <InfoDot text={row.info} /> : null}
                         </div>
                       </td>
@@ -367,7 +432,10 @@ export default function CompararPlanesPage() {
                           key={`${row.label}-${plan.key}`}
                           className="border-t border-white/10 px-4 py-4 text-center text-sm text-slate-300"
                         >
-                          {row.values[plan.key]}
+                          <CellValue
+                            value={row.values[plan.key]}
+                            highlight={Boolean(row.highlight)}
+                          />
                         </td>
                       ))}
                     </tr>
@@ -377,19 +445,32 @@ export default function CompararPlanesPage() {
             </div>
           </div>
 
-          <div className="mt-8 rounded-[24px] border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-slate-200">
-                <Building2 className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-white">
-                  Multi-sucursal por plan
-                </p>
-                <p className="text-sm text-slate-300">
-                  Pro: 1 · Premium: 2 · VIP: 3 · Platinum: 10
-                </p>
+          <div className="mt-8 grid gap-4 xl:grid-cols-2">
+            <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-slate-200">
+                  <Building2 className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-white">
+                    Multi-sucursal por plan
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    Pro: 1 · Premium: 2 · VIP: 3 · Platinum: 10
+                  </p>
+                </div>
               </div>
+            </div>
+
+            <div className="rounded-[24px] border border-amber-300/15 bg-amber-500/10 p-4">
+              <p className="text-sm font-semibold text-amber-100">
+                Importante sobre campañas y bloques
+              </p>
+              <p className="mt-2 text-sm leading-6 text-amber-50/90">
+                Las campañas por WhatsApp se contratan como adicional.
+                Su valor es <span className="font-semibold">$9.000 + iva</span> por bloque.
+                Los bloques mensuales incluidos y adicionales no son acumulables y deben usarse dentro del mes.
+              </p>
             </div>
           </div>
         </div>

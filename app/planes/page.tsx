@@ -79,7 +79,8 @@ const plans: Plan[] = [
     priceLabel: "$19.990",
     ivaLabel: "mes + iva",
     subtitle: "Ordena tu negocio y empieza a reservar online",
-    benefit: "La base para comenzar a llenar tu agenda con una operación más clara.",
+    benefit:
+      "La base para profesionalizar tu agenda, ordenar tu operación y empezar a convertir reservas con una experiencia más clara.",
     includedBranches: 1,
     includedStaff: 2,
     includedServices: 10,
@@ -90,22 +91,22 @@ const plans: Plan[] = [
     extras: ["staff"],
     summaryTitle: "Plan Pro",
     summaryIntro:
-      "Empieza con una agenda profesional, reservas online y una base sólida para crecer.",
+      "Ideal para dar el primer paso: agenda online, reservas y operación básica bien ordenada.",
     features: [
       {
         title: "Agenda online y reservas públicas",
         description:
-          "Ordena tu disponibilidad y deja que tus clientes reserven sin fricción.",
+          "Permite que tus clientes reserven fácil, sin depender de mensajes manuales para cada hora.",
       },
       {
         title: "Gestión inicial del negocio",
         description:
-          "Administra horarios, servicios, profesionales y clientes desde un solo lugar.",
+          "Administra servicios, profesionales, horarios y clientes desde un mismo lugar.",
       },
       {
-        title: "Correos operativos básicos",
+        title: "Emails de confirmación y notificación",
         description:
-          "Mantén informado al cliente con confirmaciones y comunicaciones esenciales.",
+          "Mantén informados a tus clientes con correos automáticos en cada movimiento importante.",
       },
     ],
     icon: "mail",
@@ -123,7 +124,7 @@ const plans: Plan[] = [
     ivaLabel: "mes + iva",
     subtitle: "Más control, mejor seguimiento y menos ausencias",
     benefit:
-      "Para negocios que ya necesitan trabajar con más orden y mejor comunicación.",
+      "Para negocios que necesitan una operación más sólida, mejor comunicación y menos horas perdidas por falta de seguimiento.",
     includedBranches: 2,
     includedStaff: 5,
     includedServices: 25,
@@ -134,21 +135,22 @@ const plans: Plan[] = [
     extras: ["staff"],
     summaryTitle: "Plan Premium",
     summaryIntro:
-      "Mejora el seguimiento de tu operación y da una experiencia más profesional a tus clientes.",
+      "Perfecto para ordenar mejor tu operación, reducir ausencias y dar una experiencia más profesional.",
     features: [
       {
-        title: "Recordatorios por email",
-        description: "Reduce ausencias con avisos automáticos antes de cada cita.",
+        title: "Recordatorios automáticos por email",
+        description:
+          "Reduce ausencias recordando cada cita antes de que se pierda una hora valiosa.",
       },
       {
-        title: "Notificaciones más completas",
+        title: "Operación más profesional",
         description:
-          "Comunica cambios y movimientos de agenda con una imagen más profesional.",
+          "Mejora el seguimiento del negocio con más capacidad para servicios, staff y sucursales.",
       },
       {
-        title: "Más capacidad para crecer",
+        title: "Más control para crecer",
         description:
-          "Suma más profesionales, servicios y sucursales sin desordenar tu operación.",
+          "Escala tu operación sin desorden, manteniendo una experiencia más consistente para tus clientes.",
       },
     ],
     icon: "sparkles",
@@ -164,8 +166,9 @@ const plans: Plan[] = [
     price: 79990,
     priceLabel: "$79.990",
     ivaLabel: "mes + iva",
-    subtitle: "Recupera clientes y activa tu agenda con WhatsApp e IA básica",
-    benefit: "El plan para reactivar clientes, responder más rápido y vender mejor.",
+    subtitle: "Activa clientes y responde más rápido por WhatsApp",
+    benefit:
+      "El plan ideal para reactivar clientes, reducir ausencias y atender mejor por WhatsApp sin cargar todo manualmente.",
     badge: "Más elegido",
     includedBranches: 3,
     includedStaff: 10,
@@ -177,23 +180,23 @@ const plans: Plan[] = [
     extras: ["staff", "reminders", "campaigns"],
     summaryTitle: "Plan VIP",
     summaryIntro:
-      "Da un salto en activación y seguimiento con campañas email, WhatsApp e IA básica incluida.",
+      "Da un salto en activación y atención: campañas por email, recordatorios por WhatsApp e IA que responde consultas.",
     features: [
       {
         title: "Campañas por email incluidas",
         description:
-          "Vuelve a hablarle a tu base de clientes y mueve tu agenda con campañas.",
+          "Vuelve a hablarle a tu base de clientes para activar la agenda y mover promociones o novedades.",
         highlight: true,
       },
       {
-        title: "Recordatorios y respuestas por WhatsApp",
+        title: "Recordatorios por WhatsApp",
         description:
-          "Reduce ausencias y mantén el contacto con clientes desde un canal más directo.",
+          "Reduce ausencias desde un canal mucho más directo y efectivo para tus clientes.",
       },
       {
-        title: "IA básica incluida",
+        title: "IA que responde consultas por WhatsApp",
         description:
-          "Automatiza respuestas iniciales y mejora la atención sin subirte todavía al nivel más avanzado.",
+          "Responde preguntas frecuentes, orienta al cliente y lo deriva a tu página de reservas para que agende online.",
       },
     ],
     icon: "crown",
@@ -209,9 +212,9 @@ const plans: Plan[] = [
     price: 189990,
     priceLabel: "$189.990",
     ivaLabel: "mes + iva",
-    subtitle: "Automatización e IA avanzada para hacer crecer tu negocio",
+    subtitle: "Automatiza tu negocio y convierte más reservas",
     benefit:
-      "Para negocios que quieren que Orbyx trabaje incluso cuando ellos no están.",
+      "Pensado para negocios que quieren que Orbyx responda, haga seguimiento y trabaje por su agenda incluso cuando no están disponibles.",
     badge: "IA avanzada",
     includedBranches: 10,
     includedStaff: 20,
@@ -223,23 +226,23 @@ const plans: Plan[] = [
     extras: ["staff", "reminders", "campaigns"],
     summaryTitle: "Plan Platinum",
     summaryIntro:
-      "La capa más avanzada de automatización, atención y escalabilidad para una operación premium.",
+      "La capa premium para automatizar atención, recuperar clientes y hacer crecer tu negocio con IA avanzada.",
     features: [
       {
-        title: "IA avanzada trabajando por tu agenda",
+        title: "Automatizaciones avanzadas",
         description:
-          "Más volumen, más capacidad de atención y una operación mucho más automatizada.",
+          "Recupera clientes inactivos, da seguimiento automático y trabaja mejor los no-show sin mover un dedo.",
         highlight: true,
       },
       {
-        title: "WhatsApp con mayor volumen incluido",
+        title: "IA avanzada en WhatsApp",
         description:
-          "Más recordatorios, más respuestas y mejor continuidad en la atención al cliente.",
+          "Responde, propone horarios, ayuda a concretar reservas y hace seguimiento automático de conversaciones.",
       },
       {
-        title: "Campañas email + operación premium",
+        title: "Encuestas inteligentes post atención",
         description:
-          "Activa, recupera y comunica con una experiencia más completa para tu negocio.",
+          "Mide satisfacción por email, detecta clientes insatisfechos y convierte buenas experiencias en mejores oportunidades.",
       },
     ],
     icon: "gem",
@@ -264,8 +267,8 @@ const extraConfig = {
   },
   campaigns: {
     title: "Campañas WhatsApp bajo consumo",
-    short: "$8.000 · 50 conversaciones",
-    unitPrice: 8000,
+    short: "$9.000 + iva · 50 conversaciones",
+    unitPrice: 9000,
   },
 } as const;
 
@@ -508,9 +511,6 @@ function PlanesPageContent() {
   const currentReminderTotal =
     selectedPlan.includedReminderConversations + reminderExtras * 50;
   const currentCampaignTotal = campaignExtras * 50;
-  const currentWhatsappResponseTotal =
-    selectedPlan.includedWhatsappResponseConversations;
-  const currentAiTotal = selectedPlan.includedAiConversations;
 
   const extraItems = useMemo(() => {
     const items: { label: string; amount: number }[] = [];
@@ -682,6 +682,9 @@ function PlanesPageContent() {
 
   const showTenantWarning = !tenantId && Boolean(from || slug);
 
+  const publicReferenceTotal =
+    selectedPlan.price + extrasSubtotal + Math.round(extrasSubtotal * 0.19);
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
       <section className="mx-auto w-full max-w-[1600px] px-4 py-6 lg:px-8 2xl:px-10">
@@ -703,12 +706,12 @@ function PlanesPageContent() {
                 </div>
 
                 <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-white lg:text-[2.8rem] lg:leading-[1.05]">
-                  Elige el plan ideal para tu negocio
+                  Elige el plan ideal para llenar tu agenda y hacer crecer tu negocio
                 </h1>
 
                 <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 lg:text-base">
-                  Escoge la etapa que mejor se ajusta a tu operación actual y
-                  amplía capacidad, automatización o canales cuando lo necesites.
+                  Empieza ordenando tu operación y avanza hacia recordatorios,
+                  campañas, automatizaciones e IA según la etapa en la que está tu negocio.
                 </p>
 
                 {from === "staff" ? (
@@ -796,6 +799,10 @@ function PlanesPageContent() {
                       Los adicionales se habilitan según el plan. Las campañas por
                       WhatsApp funcionan bajo consumo y no vienen incluidas por defecto.
                     </p>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                      Los bloques mensuales incluidos y adicionales no son acumulables y
+                      deben utilizarse dentro del mes.
+                    </p>
                   </div>
 
                   <div className="flex flex-col items-end gap-2">
@@ -848,7 +855,7 @@ function PlanesPageContent() {
                     <CompactExtraRow
                       title={extraConfig.campaigns.title}
                       shortText={extraConfig.campaigns.short}
-                      infoText={`Llevas ${currentCampaignTotal} conversaciones de campañas WhatsApp seleccionadas como extra.`}
+                      infoText={`Llevas ${currentCampaignTotal} conversaciones de campañas WhatsApp seleccionadas como extra. No son acumulables y deben usarse dentro del mes.`}
                       value={campaignExtras}
                       onDecrease={() => decreaseExtra("campaigns")}
                       onIncrease={() => increaseExtra("campaigns")}
@@ -1068,7 +1075,9 @@ function PlanesPageContent() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">IVA</span>
                       <span className="text-sm font-semibold text-white">
-                        {extrasSubtotal > 0 ? formatCLP(Math.round(extrasSubtotal * 0.19)) : "$0"}
+                        {extrasSubtotal > 0
+                          ? formatCLP(Math.round(extrasSubtotal * 0.19))
+                          : "$0"}
                       </span>
                     </div>
 
@@ -1077,9 +1086,7 @@ function PlanesPageContent() {
                         Referencia mensual
                       </span>
                       <span className="text-sm font-semibold text-emerald-300">
-                        {formatCLP(
-                          selectedPlan.price + extrasSubtotal + Math.round(extrasSubtotal * 0.19)
-                        )}
+                        {formatCLP(publicReferenceTotal)}
                       </span>
                     </div>
                   </div>
@@ -1124,7 +1131,7 @@ function PlanesPageContent() {
                     </p>
                   ) : (
                     <p className="text-center text-xs leading-5 text-slate-400">
-                      Selecciona un plan para revisar su estructura y lo que incluye.
+                      Selecciona un plan para revisar lo que incluye y la referencia mensual.
                     </p>
                   )}
 
@@ -1188,7 +1195,7 @@ function PlanesPageContent() {
                       value={currentServicesTotal}
                     />
                     <IncludeRow
-                      label="Campañas email"
+                      label="Campañas por email"
                       value={
                         selectedPlan.emailCampaignsIncluded
                           ? "Incluidas"
@@ -1196,32 +1203,38 @@ function PlanesPageContent() {
                       }
                     />
                     <IncludeRow
-                      label="WhatsApp recordatorios"
+                      label="Recordatorios por WhatsApp"
                       value={
-                        currentReminderTotal > 0
-                          ? `${currentReminderTotal}`
-                          : "No incluido"
+                        selectedPlan.includedReminderConversations > 0
+                          ? "Incluidos"
+                          : "No incluidos"
                       }
                     />
                     <IncludeRow
-                      label="WhatsApp respuestas"
+                      label="Respuestas por WhatsApp"
                       value={
-                        currentWhatsappResponseTotal > 0
-                          ? `${currentWhatsappResponseTotal}`
-                          : "No incluido"
+                        selectedPlan.includedWhatsappResponseConversations > 0
+                          ? "Incluidas"
+                          : "No incluidas"
                       }
                     />
                     <IncludeRow
-                      label="Campañas WhatsApp"
+                      label="Campañas por WhatsApp"
                       value={
                         supportsCampaignExtra
-                          ? "Bajo consumo / extra"
-                          : "No incluido"
+                          ? "Disponibles como adicional"
+                          : "No incluidas"
                       }
                     />
                     <IncludeRow
-                      label="IA incluida"
-                      value={currentAiTotal > 0 ? `${currentAiTotal}` : "No incluida"}
+                      label="IA integrada en WhatsApp"
+                      value={
+                        selectedPlan.key === "vip"
+                          ? "Incluida para responder y derivar a reserva"
+                          : selectedPlan.key === "platinum"
+                          ? "Incluida para responder, seguir y automatizar"
+                          : "No incluida"
+                      }
                     />
                   </div>
                 </div>
