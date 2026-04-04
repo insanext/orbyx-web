@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  Bot,
   Check,
   Crown,
   Gem,
@@ -123,7 +122,8 @@ const plans: Plan[] = [
     priceLabel: "$29.990",
     ivaLabel: "mes + iva",
     subtitle: "Más control, mejor seguimiento y menos ausencias",
-    benefit: "Para negocios que ya necesitan trabajar con más orden y mejor comunicación.",
+    benefit:
+      "Para negocios que ya necesitan trabajar con más orden y mejor comunicación.",
     includedBranches: 2,
     includedStaff: 5,
     includedServices: 25,
@@ -138,8 +138,7 @@ const plans: Plan[] = [
     features: [
       {
         title: "Recordatorios por email",
-        description:
-          "Reduce ausencias con avisos automáticos antes de cada cita.",
+        description: "Reduce ausencias con avisos automáticos antes de cada cita.",
       },
       {
         title: "Notificaciones más completas",
@@ -211,7 +210,8 @@ const plans: Plan[] = [
     priceLabel: "$189.990",
     ivaLabel: "mes + iva",
     subtitle: "Automatización e IA avanzada para hacer crecer tu negocio",
-    benefit: "Para negocios que quieren que Orbyx trabaje incluso cuando ellos no están.",
+    benefit:
+      "Para negocios que quieren que Orbyx trabaje incluso cuando ellos no están.",
     badge: "IA avanzada",
     includedBranches: 10,
     includedStaff: 20,
@@ -433,15 +433,22 @@ function IncludeRow({
 function PlanesPageContent() {
   const searchParams = useSearchParams();
 
-  const initialPlan = useMemo<PlanKey>(() => {
-    return normalizePlanFromUrl(searchParams.get("current_plan"));
-  }, [searchParams]);
-
   const tenantId = searchParams.get("tenant_id") || "";
   const slug = searchParams.get("slug") || "";
   const from = searchParams.get("from") || "";
+  const currentPlanParam = searchParams.get("current_plan");
 
-  const [selectedPlanKey, setSelectedPlanKey] = useState<PlanKey>(initialPlan);
+  const hasBillingContext = Boolean(tenantId && currentPlanParam);
+
+  const initialPlan = useMemo<PlanKey | null>(() => {
+    if (!hasBillingContext) return null;
+    return normalizePlanFromUrl(currentPlanParam);
+  }, [hasBillingContext, currentPlanParam]);
+
+  const [selectedPlanKey, setSelectedPlanKey] = useState<PlanKey>(
+    hasBillingContext && initialPlan ? initialPlan : "vip"
+  );
+
   const [staffExtras, setStaffExtras] = useState(0);
   const [reminderExtras, setReminderExtras] = useState(0);
   const [campaignExtras, setCampaignExtras] = useState(0);
@@ -454,13 +461,16 @@ function PlanesPageContent() {
   const [applyOk, setApplyOk] = useState("");
 
   useEffect(() => {
-    setSelectedPlanKey(initialPlan);
-  }, [initialPlan]);
+    if (hasBillingContext && initialPlan) {
+      setSelectedPlanKey(initialPlan);
+    }
+  }, [hasBillingContext, initialPlan]);
 
   const selectedPlan =
     plans.find((plan) => plan.key === selectedPlanKey) || plans[2];
 
-  const isCurrentPlan = selectedPlanKey === initialPlan;
+  const isCurrentPlan =
+    hasBillingContext && initialPlan ? selectedPlanKey === initialPlan : false;
 
   const supportsStaffExtra = selectedPlan.extras.includes("staff");
   const supportsReminderExtra = selectedPlan.extras.includes("reminders");
@@ -538,25 +548,17 @@ function PlanesPageContent() {
 
   useEffect(() => {
     async function loadPreview() {
+      if (!hasBillingContext || !initialPlan) {
+        setPreview(null);
+        setPreviewError("");
+        setPreviewLoading(false);
+        return;
+      }
+
       try {
         setPreviewLoading(true);
         setPreviewError("");
         setPreview(null);
-
-        if (!tenantId) {
-          const fallbackType = isCurrentPlan ? "same_plan" : "upgrade";
-          setPreview({
-            ok: true,
-            change_type: fallbackType,
-            current_plan: initialPlan,
-            new_plan: selectedPlanKey,
-            amount_today: isCurrentPlan ? 0 : selectedPlan.price,
-            message: isCurrentPlan
-              ? "Ya estás en este plan"
-              : "Cambio estimado sin tenant_id",
-          });
-          return;
-        }
 
         const url = `${BACKEND_URL}/billing/preview-change?tenant_id=${encodeURIComponent(
           tenantId
@@ -580,7 +582,7 @@ function PlanesPageContent() {
     }
 
     loadPreview();
-  }, [tenantId, selectedPlanKey, selectedPlan.price, initialPlan, isCurrentPlan]);
+  }, [hasBillingContext, initialPlan, tenantId, selectedPlanKey]);
 
   function handleSelectPlan(planKey: PlanKey) {
     setSelectedPlanKey(planKey);
@@ -653,16 +655,15 @@ function PlanesPageContent() {
         setApplyOk("Cambio aplicado correctamente.");
       }
     } catch (error: any) {
-      setApplyError(
-        error?.message || "No se pudo aplicar el cambio de plan"
-      );
+      setApplyError(error?.message || "No se pudo aplicar el cambio de plan");
     } finally {
       setApplying(false);
     }
   }
 
-  const previewType =
-    preview?.change_type || (isCurrentPlan ? "same_plan" : "upgrade");
+  const previewType = hasBillingContext
+    ? preview?.change_type || (isCurrentPlan ? "same_plan" : "upgrade")
+    : null;
 
   const billingEndLabel = formatDate(
     preview?.scheduled_change_at || preview?.billing_cycle_end
@@ -671,7 +672,9 @@ function PlanesPageContent() {
   const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
 
   const ctaLabel =
-    previewType === "same_plan"
+    !hasBillingContext
+      ? "Elegir este plan"
+      : previewType === "same_plan"
       ? "Mantener este plan"
       : previewType === "downgrade"
       ? "Programar downgrade"
@@ -710,7 +713,8 @@ function PlanesPageContent() {
 
                 {from === "staff" ? (
                   <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                    Llegaste aquí porque alcanzaste el límite de profesionales de tu plan.
+                    Llegaste aquí porque alcanzaste el límite de profesionales de tu
+                    plan.
                   </div>
                 ) : null}
               </div>
@@ -718,7 +722,8 @@ function PlanesPageContent() {
               <div className="mt-7 grid gap-4 xl:grid-cols-4">
                 {plans.map((plan) => {
                   const isSelected = selectedPlan.key === plan.key;
-                  const isCurrentCard = initialPlan === plan.key;
+                  const isCurrentCard =
+                    hasBillingContext && initialPlan === plan.key;
 
                   return (
                     <button
@@ -751,9 +756,7 @@ function PlanesPageContent() {
                         <PlanIcon type={plan.icon} />
                       </span>
 
-                      <p className="mt-4 text-xl font-semibold text-white">
-                        {plan.name}
-                      </p>
+                      <p className="mt-4 text-xl font-semibold text-white">{plan.name}</p>
 
                       <p className="mt-2 text-sm leading-7 text-slate-200">
                         {plan.subtitle}
@@ -790,8 +793,8 @@ function PlanesPageContent() {
                       Adicionales y consumo
                     </p>
                     <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-300">
-                      Los adicionales se habilitan según el plan. Las campañas por WhatsApp
-                      funcionan bajo consumo y no vienen incluidas por defecto.
+                      Los adicionales se habilitan según el plan. Las campañas por
+                      WhatsApp funcionan bajo consumo y no vienen incluidas por defecto.
                     </p>
                   </div>
 
@@ -881,19 +884,19 @@ function PlanesPageContent() {
               </div>
 
               <div className="p-6">
-                {previewLoading ? (
+                {hasBillingContext && previewLoading ? (
                   <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
                     Calculando cambio de plan...
                   </div>
                 ) : null}
 
-                {previewError ? (
+                {hasBillingContext && previewError ? (
                   <div className="mb-4 rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
                     {previewError}
                   </div>
                 ) : null}
 
-                {!previewLoading && !previewError ? (
+                {hasBillingContext && !previewLoading && !previewError && previewType ? (
                   <div
                     className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
                       previewType === "same_plan"
@@ -934,107 +937,153 @@ function PlanesPageContent() {
                   )}
                 </div>
 
-                <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Plan actual</span>
-                    <span className="text-sm font-semibold text-white">
-                      {planNameFromKey(initialPlan)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Plan seleccionado</span>
-                    <span className="text-sm font-semibold text-white">
-                      {selectedPlan.name}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">
-                      {previewType === "same_plan"
-                        ? "Plan base a pagar hoy"
-                        : previewType === "downgrade"
-                        ? "Cambio de plan hoy"
-                        : "Cambio inmediato de plan"}
-                    </span>
-                    <span className="text-sm font-semibold text-white">
-                      {previewType === "downgrade"
-                        ? "$0"
-                        : formatCLP(previewAmountToday)}
-                    </span>
-                  </div>
-
-                  {previewType === "upgrade" ? (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">
-                          Días restantes del ciclo
-                        </span>
-                        <span className="text-sm font-semibold text-white">
-                          {remainingDaysLabel}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">
-                          Crédito proporcional plan actual
-                        </span>
-                        <span className="text-sm font-semibold text-emerald-300">
-                          - {formatCLP(Number(preview?.credit || 0))}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">
-                          Cargo proporcional nuevo plan
-                        </span>
-                        <span className="text-sm font-semibold text-white">
-                          {formatCLP(Number(preview?.charge || 0))}
-                        </span>
-                      </div>
-
-                      <div className="rounded-2xl border border-sky-300/15 bg-sky-500/10 px-3 py-3 text-sm text-sky-100">
-                        Te quedan <span className="font-semibold">{remainingDaysLabel}</span>{" "}
-                        en tu ciclo actual. El crédito y el cobro se calcularon solo sobre ese período.
-                      </div>
-                    </>
-                  ) : null}
-
-                  {previewType === "downgrade" ? (
-                    <div className="rounded-2xl border border-amber-300/15 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
-                      El downgrade comenzará el{" "}
-                      <span className="font-semibold">{billingEndLabel}</span>.
-                      <div className="mt-1 text-xs text-amber-50/90">
-                        Mantendrás tu plan actual hasta esa fecha.
-                      </div>
+                {hasBillingContext ? (
+                  <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Plan actual</span>
+                      <span className="text-sm font-semibold text-white">
+                        {planNameFromKey(initialPlan)}
+                      </span>
                     </div>
-                  ) : null}
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">
-                      Adicionales seleccionados
-                    </span>
-                    <span className="text-sm font-semibold text-white">
-                      {extrasSubtotal > 0 ? formatCLP(extrasSubtotal) : "$0"}
-                    </span>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Plan seleccionado</span>
+                      <span className="text-sm font-semibold text-white">
+                        {selectedPlan.name}
+                      </span>
+                    </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">IVA</span>
-                    <span className="text-sm font-semibold text-white">
-                      {payTodaySubtotal > 0 ? formatCLP(payTodayIva) : "$0"}
-                    </span>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">
+                        {previewType === "same_plan"
+                          ? "Plan base a pagar hoy"
+                          : previewType === "downgrade"
+                          ? "Cambio de plan hoy"
+                          : "Cambio inmediato de plan"}
+                      </span>
+                      <span className="text-sm font-semibold text-white">
+                        {previewType === "downgrade"
+                          ? "$0"
+                          : formatCLP(previewAmountToday)}
+                      </span>
+                    </div>
 
-                  <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                    <span className="text-sm font-semibold text-white">
-                      Pagar hoy
-                    </span>
-                    <span className="text-sm font-semibold text-emerald-300">
-                      {payTodaySubtotal > 0 ? formatCLP(payTodayTotal) : "$0"}
-                    </span>
+                    {previewType === "upgrade" ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-300">
+                            Días restantes del ciclo
+                          </span>
+                          <span className="text-sm font-semibold text-white">
+                            {remainingDaysLabel}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-300">
+                            Crédito proporcional plan actual
+                          </span>
+                          <span className="text-sm font-semibold text-emerald-300">
+                            - {formatCLP(Number(preview?.credit || 0))}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-300">
+                            Cargo proporcional nuevo plan
+                          </span>
+                          <span className="text-sm font-semibold text-white">
+                            {formatCLP(Number(preview?.charge || 0))}
+                          </span>
+                        </div>
+
+                        <div className="rounded-2xl border border-sky-300/15 bg-sky-500/10 px-3 py-3 text-sm text-sky-100">
+                          Te quedan <span className="font-semibold">{remainingDaysLabel}</span>{" "}
+                          en tu ciclo actual. El crédito y el cobro se calcularon solo
+                          sobre ese período.
+                        </div>
+                      </>
+                    ) : null}
+
+                    {previewType === "downgrade" ? (
+                      <div className="rounded-2xl border border-amber-300/15 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
+                        El downgrade comenzará el{" "}
+                        <span className="font-semibold">{billingEndLabel}</span>.
+                        <div className="mt-1 text-xs text-amber-50/90">
+                          Mantendrás tu plan actual hasta esa fecha.
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">
+                        Adicionales seleccionados
+                      </span>
+                      <span className="text-sm font-semibold text-white">
+                        {extrasSubtotal > 0 ? formatCLP(extrasSubtotal) : "$0"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">IVA</span>
+                      <span className="text-sm font-semibold text-white">
+                        {payTodaySubtotal > 0 ? formatCLP(payTodayIva) : "$0"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                      <span className="text-sm font-semibold text-white">
+                        Pagar hoy
+                      </span>
+                      <span className="text-sm font-semibold text-emerald-300">
+                        {payTodaySubtotal > 0 ? formatCLP(payTodayTotal) : "$0"}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Plan seleccionado</span>
+                      <span className="text-sm font-semibold text-white">
+                        {selectedPlan.name}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Valor mensual</span>
+                      <span className="text-sm font-semibold text-white">
+                        {selectedPlan.priceLabel}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">
+                        Adicionales seleccionados
+                      </span>
+                      <span className="text-sm font-semibold text-white">
+                        {extrasSubtotal > 0 ? formatCLP(extrasSubtotal) : "$0"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">IVA</span>
+                      <span className="text-sm font-semibold text-white">
+                        {extrasSubtotal > 0 ? formatCLP(Math.round(extrasSubtotal * 0.19)) : "$0"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                      <span className="text-sm font-semibold text-white">
+                        Referencia mensual
+                      </span>
+                      <span className="text-sm font-semibold text-emerald-300">
+                        {formatCLP(
+                          selectedPlan.price + extrasSubtotal + Math.round(extrasSubtotal * 0.19)
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {applyError ? (
                   <div className="mt-4 rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
@@ -1051,8 +1100,8 @@ function PlanesPageContent() {
                 <div className="mt-5 space-y-3">
                   <button
                     type="button"
-                    onClick={handleApplyPlanChange}
-                    disabled={applying || previewLoading || !tenantId}
+                    onClick={hasBillingContext ? handleApplyPlanChange : undefined}
+                    disabled={hasBillingContext ? applying || previewLoading || !tenantId : true}
                     className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {applying ? "Procesando..." : ctaLabel}
@@ -1060,17 +1109,24 @@ function PlanesPageContent() {
 
                   {showTenantWarning ? (
                     <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                      Falta <span className="font-semibold">tenant_id</span> en la URL para aplicar el cambio real.
+                      Falta <span className="font-semibold">tenant_id</span> en la URL
+                      para aplicar el cambio real.
                     </div>
                   ) : null}
 
-                  <p className="text-center text-xs leading-5 text-slate-400">
-                    {previewType === "downgrade"
-                      ? "Seguirás con tu plan actual hasta el cierre del período."
-                      : previewType === "same_plan"
-                      ? "Tu plan base no se cobra de nuevo. Solo se suman adicionales."
-                      : "El upgrade se activa de inmediato con prorrateo del período restante."}
-                  </p>
+                  {hasBillingContext ? (
+                    <p className="text-center text-xs leading-5 text-slate-400">
+                      {previewType === "downgrade"
+                        ? "Seguirás con tu plan actual hasta el cierre del período."
+                        : previewType === "same_plan"
+                        ? "Tu plan base no se cobra de nuevo. Solo se suman adicionales."
+                        : "El upgrade se activa de inmediato con prorrateo del período restante."}
+                    </p>
+                  ) : (
+                    <p className="text-center text-xs leading-5 text-slate-400">
+                      Selecciona un plan para revisar su estructura y lo que incluye.
+                    </p>
+                  )}
 
                   {slug ? (
                     <Link
@@ -1134,7 +1190,9 @@ function PlanesPageContent() {
                     <IncludeRow
                       label="Campañas email"
                       value={
-                        selectedPlan.emailCampaignsIncluded ? "Incluidas" : "No incluidas"
+                        selectedPlan.emailCampaignsIncluded
+                          ? "Incluidas"
+                          : "No incluidas"
                       }
                     />
                     <IncludeRow
@@ -1163,9 +1221,7 @@ function PlanesPageContent() {
                     />
                     <IncludeRow
                       label="IA incluida"
-                      value={
-                        currentAiTotal > 0 ? `${currentAiTotal}` : "No incluida"
-                      }
+                      value={currentAiTotal > 0 ? `${currentAiTotal}` : "No incluida"}
                     />
                   </div>
                 </div>
@@ -1187,15 +1243,15 @@ function PlanesPageContent() {
                   </div>
                 </div>
 
-                {previewType === "downgrade" ? (
+                {hasBillingContext && previewType === "downgrade" ? (
                   <div className="mt-5 rounded-[22px] border border-amber-300/20 bg-amber-500/10 p-4">
                     <p className="text-sm font-semibold text-amber-100">
                       Importante para el downgrade
                     </p>
                     <p className="mt-2 text-sm leading-6 text-amber-50/90">
                       Antes de la fecha de cambio, el panel deberá permitirte elegir
-                      qué profesionales, servicios o sucursales quieres mantener
-                      activos dentro del nuevo límite.
+                      qué profesionales, servicios o sucursales quieres mantener activos
+                      dentro del nuevo límite.
                     </p>
                   </div>
                 ) : null}
