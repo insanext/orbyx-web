@@ -2068,7 +2068,7 @@ if (channel === "whatsapp") {
   }
 
   return;
-}}
+}
 
       const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
         method: "POST",
