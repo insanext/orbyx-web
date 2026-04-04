@@ -2896,35 +2896,43 @@ setToast({
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleOpenConfirm}
-                  disabled={
-                    sending ||
-                    loadingAudience ||
-                    !hasContactsForChannel ||
-                    limitedIncludedRecipients.length === 0
-                  }
-                  className={`${primaryButtonClass} min-w-[220px] font-semibold shadow-lg flex items-center justify-center gap-2`}
-                  style={{
-                    background: sending
-                      ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
-                      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                    boxShadow: sending
-                      ? "none"
-                      : "0 18px 40px rgba(37,99,235,0.28)",
-                    cursor: sending ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {sending ? (
-                    <>
-                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>Enviar campaña</>
-                  )}
-                </button>
+<button
+  type="button"
+  onClick={handleOpenConfirm}
+  disabled={
+    sending ||
+    loadingAudience ||
+    !hasContactsForChannel ||
+    limitedIncludedRecipients.length === 0
+  }
+  className={`${primaryButtonClass} min-w-[220px] font-semibold shadow-lg flex items-center justify-center gap-2`}
+  style={{
+    background: sending
+      ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
+      : channel === "whatsapp"
+      ? "linear-gradient(135deg, #25D366, #128C7E)"
+      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+    boxShadow:
+      sending
+        ? "none"
+        : channel === "whatsapp"
+        ? "0 18px 40px rgba(16,185,129,0.28)"
+        : "0 18px 40px rgba(37,99,235,0.28)",
+    cursor: sending ? "not-allowed" : "pointer",
+  }}
+>
+  {sending ? (
+    <>
+      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+      Enviando...
+    </>
+  ) : (
+    <>
+      {channel === "whatsapp" && "💬"}
+      {channel === "email" ? "Enviar campaña" : "Enviar WhatsApp"}
+    </>
+  )}
+</button>
               </div>
 
               {!hasContactsForChannel && !loadingAudience ? (
@@ -2954,21 +2962,33 @@ setToast({
                   value={String(sendSummary.applied_limit || 0)}
                   helper="Tope real procesado."
                 />
+<SectionStat
+  label={channel === "email" ? "Con email" : "Con teléfono"}
+  value={String(sendSummary.recipients_with_email || 0)}
+  helper={
+    channel === "email"
+      ? "Correos válidos encontrados."
+      : "Teléfonos válidos encontrados."
+  }
+/>
                 <SectionStat
-                  label="Con email"
-                  value={String(sendSummary.recipients_with_email || 0)}
-                  helper="Correos válidos encontrados."
-                />
-                <SectionStat
-                  label="Enviados"
-                  value={String(sendSummary.sent || 0)}
-                  helper="Envíos exitosos."
-                />
-                <SectionStat
-                  label="Fallidos"
-                  value={String(sendSummary.failed || 0)}
-                  helper="Correos que fallaron."
-                />
+  label={channel === "email" ? "Enviados" : "Mensajes enviados"}
+  value={String(sendSummary.sent || 0)}
+  helper={
+    channel === "email"
+      ? "Envíos exitosos."
+      : "Mensajes enviados correctamente."
+  }
+/>
+               <SectionStat
+  label="Fallidos"
+  value={String(sendSummary.failed || 0)}
+  helper={
+    channel === "email"
+      ? "Correos que fallaron."
+      : "Mensajes que fallaron."
+  }
+/>
               </div>
             </Panel>
           ) : null}
