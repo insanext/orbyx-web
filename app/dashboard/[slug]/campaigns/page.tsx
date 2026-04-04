@@ -3608,7 +3608,11 @@ setToast({
             helper="Resultado según filtros activos."
           />
           <SectionStat
-            label="Correos enviados"
+            label={
+  historyChannel === "whatsapp"
+    ? "Mensajes enviados"
+    : "Correos enviados"
+}
             value={loadingHistory ? "..." : String(historyStats.totalSent)}
             helper="Suma total en la vista actual."
           />
@@ -4035,21 +4039,33 @@ setToast({
                               value={String(item.applied_limit)}
                               helper="Límite usado."
                             />
-                            <SectionStat
-                              label="Con contacto"
-                              value={String(item.recipients_with_contact)}
-                              helper="Contactos válidos."
-                            />
-                            <SectionStat
-                              label="Enviados"
-                              value={String(item.sent_count)}
-                              helper="Envíos exitosos."
-                            />
-                            <SectionStat
-                              label="Fallidos"
-                              value={String(item.failed_count)}
-                              helper="Intentos fallidos."
-                            />
+                           <SectionStat
+  label={item.channel === "email" ? "Con correo" : "Con teléfono"}
+  value={String(item.recipients_with_contact)}
+  helper={
+    item.channel === "email"
+      ? "Contactos válidos para email."
+      : "Contactos válidos para WhatsApp."
+  }
+/>
+<SectionStat
+  label={item.channel === "email" ? "Correos enviados" : "Mensajes enviados"}
+  value={String(item.sent_count)}
+  helper={
+    item.channel === "email"
+      ? "Envíos exitosos por correo."
+      : "Mensajes enviados correctamente."
+  }
+/>
+<SectionStat
+  label={item.channel === "email" ? "Correos fallidos" : "Mensajes fallidos"}
+  value={String(item.failed_count)}
+  helper={
+    item.channel === "email"
+      ? "Correos que fallaron."
+      : "Mensajes que fallaron."
+  }
+/>
                             <SectionStat
                               label="Éxito"
                               value={`${successRate}%`}
@@ -4106,38 +4122,61 @@ setToast({
               background: "var(--bg-card)",
             }}
           >
-            <div>
-              <p style={{ color: "var(--text-main)", fontWeight: 600 }}>
-                {log.customer_name || "Sin nombre"}
-              </p>
-{log.error_message ? (
-  <p
-    className="mt-1 text-xs"
-    style={{ color: "rgb(244 63 94)" }}
+            <div className="flex items-start gap-3">
+  <div
+    className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
+    style={{
+      background: "rgba(37,99,235,0.12)",
+      color: "rgb(37 99 235)",
+    }}
   >
-    {log.error_message}
-  </p>
-) : null}
-              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                {log.customer_email || log.customer_phone || "Sin contacto"}
-              </p>
-            </div>
+    {(log.customer_name || log.customer_email || log.customer_phone || "?")
+      .charAt(0)
+      .toUpperCase()}
+  </div>
+
+  <div>
+    <p style={{ color: "var(--text-main)", fontWeight: 600 }}>
+      {log.customer_name || "Sin nombre"}
+    </p>
+
+    {log.error_message ? (
+      <p className="mt-1 text-xs" style={{ color: "rgb(244 63 94)" }}>
+        {log.error_message}
+      </p>
+    ) : null}
+
+    <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+      {selectedCampaign?.channel === "whatsapp"
+        ? log.customer_phone || "Sin contacto"
+        : log.customer_email || "Sin contacto"}
+    </p>
+  </div>
+</div>
 
             <span
-              className="text-xs font-semibold px-3 py-1 rounded-full"
-              style={{
-                background:
-                  log.status === "sent"
-                    ? "rgba(16,185,129,0.14)"
-                    : "rgba(244,63,94,0.14)",
-                color:
-                  log.status === "sent"
-                    ? "rgb(16 185 129)"
-                    : "rgb(244 63 94)",
-              }}
-            >
-              {log.status === "sent" ? "Enviado" : "Fallido"}
-            </span>
+  className="text-xs font-semibold px-3 py-1 rounded-full"
+  style={{
+    background:
+      !log.customer_email && !log.customer_phone
+        ? "rgba(148,163,184,0.18)"
+        : log.status === "sent"
+        ? "rgba(16,185,129,0.14)"
+        : "rgba(244,63,94,0.14)",
+    color:
+      !log.customer_email && !log.customer_phone
+        ? "rgb(100 116 139)"
+        : log.status === "sent"
+        ? "rgb(16 185 129)"
+        : "rgb(244 63 94)",
+  }}
+>
+  {!log.customer_email && !log.customer_phone
+    ? "Sin contacto"
+    : log.status === "sent"
+    ? "Enviado"
+    : "Fallido"}
+</span>
           </div>
         ))}
       </div>
