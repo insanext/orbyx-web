@@ -4108,18 +4108,18 @@ setToast({
           >
             <div>
               <p style={{ color: "var(--text-main)", fontWeight: 600 }}>
-                {log.name || "Sin nombre"}
+                {log.customer_name || "Sin nombre"}
               </p>
-{log.error ? (
+{log.error_message ? (
   <p
     className="mt-1 text-xs"
     style={{ color: "rgb(244 63 94)" }}
   >
-    {log.error}
+    {log.error_message}
   </p>
 ) : null}
               <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                {log.email || log.phone || "Sin contacto"}
+                {log.customer_email || log.customer_phone || "Sin contacto"}
               </p>
             </div>
 
