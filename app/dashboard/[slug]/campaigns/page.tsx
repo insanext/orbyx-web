@@ -2002,6 +2002,38 @@ if (channel === "whatsapp") {
   const simulatedSent = recipientsWithPhone.length;
   const simulatedFailed = Math.max(finalRecipients.length - simulatedSent, 0);
 
+  const res = await fetch(`${BACKEND_URL}/campaigns/save-whatsapp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      slug,
+      channel: "whatsapp",
+      campaign_name: campaignName.trim() || null,
+      segment,
+      inactive_days: Number(inactiveDays),
+      subject: null,
+      message: whatsappMessage.trim(),
+      sort,
+      plan,
+      plan_limit: planLimit,
+      requested_limit: Number(sendLimit),
+      applied_limit: Math.min(Number(sendLimit), finalRecipients.length),
+      audience_total: includedAudienceRecipients.length,
+      recipients_with_contact: recipientsWithPhone.length,
+      sent_count: simulatedSent,
+      failed_count: simulatedFailed,
+      final_recipients: finalRecipients,
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "No se pudo guardar la campaña de WhatsApp");
+  }
+
   const whatsappSummary: SendEmailResponse = {
     ok: true,
     campaign_name: campaignName.trim() || null,
@@ -2015,7 +2047,7 @@ if (channel === "whatsapp") {
     segment,
     inactive_days: Number(inactiveDays),
     audience_total: includedAudienceRecipients.length,
-    recipients_with_email: 0,
+    recipients_with_email: recipientsWithPhone.length,
     sent: simulatedSent,
     failed: simulatedFailed,
   };
@@ -2023,17 +2055,20 @@ if (channel === "whatsapp") {
   setSendSummary(whatsappSummary);
 
   setResultMessage(
-    `Campaña WhatsApp preparada. Con teléfono: ${simulatedSent}. Sin teléfono: ${simulatedFailed}.`
+    `Campaña WhatsApp guardada en historial. Mensajes enviados: ${simulatedSent}. Fallidos: ${simulatedFailed}.`
   );
 
   setToast({
     type: "success",
-    message: `WhatsApp mock listo. Con teléfono: ${simulatedSent}. Sin teléfono: ${simulatedFailed}.`,
+    message: `Campaña WhatsApp guardada en historial. Enviados: ${simulatedSent}. Fallidos: ${simulatedFailed}.`,
   });
 
-  setSending(false);
+  if (slug) {
+    await loadCampaignHistory(slug);
+  }
+
   return;
-}
+}}
 
       const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
         method: "POST",
