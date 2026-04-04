@@ -34,7 +34,7 @@ const plans: Plan[] = [
   {
     key: "pro",
     name: "Pro",
-    priceLabel: "$24.990",
+    priceLabel: "$19.990",
     subtitle: "Ordena tu negocio y empieza a reservar online",
     icon: "mail",
     accentClass: "text-sky-300",
@@ -44,7 +44,7 @@ const plans: Plan[] = [
   {
     key: "premium",
     name: "Premium",
-    priceLabel: "$44.990",
+    priceLabel: "$29.990",
     subtitle: "Más control, seguimiento y menos ausencias",
     icon: "sparkles",
     accentClass: "text-violet-300",
@@ -64,7 +64,7 @@ const plans: Plan[] = [
   {
     key: "platinum",
     name: "Platinum",
-    priceLabel: "$229.990",
+    priceLabel: "$189.990",
     subtitle: "Automatización e IA avanzada",
     icon: "gem",
     accentClass: "text-emerald-300",
@@ -279,12 +279,12 @@ export default function CompararPlanesPage() {
               </span>
 
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl xl:text-[3.2rem] xl:leading-[1.05]">
-                Compara qué tan lejos puede llevarte cada plan
+                Compara qué incluye cada plan
               </h1>
 
               <p className="mt-3 max-w-3xl text-base leading-7 text-slate-300 lg:text-lg">
-                Revisa qué incluye cada etapa de Orbyx para vender más, reducir ausencias
-                y avanzar hacia una operación más automatizada.
+                Revisa en detalle cómo escala Orbyx desde la operación base hasta
+                la automatización avanzada.
               </p>
             </div>
 

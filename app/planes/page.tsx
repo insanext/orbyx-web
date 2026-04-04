@@ -76,8 +76,8 @@ const plans: Plan[] = [
   {
     key: "pro",
     name: "Pro",
-    price: 24990,
-    priceLabel: "$24.990",
+    price: 19990,
+    priceLabel: "$19.990",
     ivaLabel: "mes + iva",
     subtitle: "Ordena tu negocio y empieza a reservar online",
     benefit: "La base para comenzar a llenar tu agenda con una operación más clara.",
@@ -90,7 +90,8 @@ const plans: Plan[] = [
     emailCampaignsIncluded: false,
     extras: ["staff"],
     summaryTitle: "Plan Pro",
-    summaryIntro: "Empieza con una agenda profesional, reservas online y una base sólida para crecer.",
+    summaryIntro:
+      "Empieza con una agenda profesional, reservas online y una base sólida para crecer.",
     features: [
       {
         title: "Agenda online y reservas públicas",
@@ -118,8 +119,8 @@ const plans: Plan[] = [
   {
     key: "premium",
     name: "Premium",
-    price: 44990,
-    priceLabel: "$44.990",
+    price: 29990,
+    priceLabel: "$29.990",
     ivaLabel: "mes + iva",
     subtitle: "Más control, mejor seguimiento y menos ausencias",
     benefit: "Para negocios que ya necesitan trabajar con más orden y mejor comunicación.",
@@ -132,7 +133,8 @@ const plans: Plan[] = [
     emailCampaignsIncluded: false,
     extras: ["staff"],
     summaryTitle: "Plan Premium",
-    summaryIntro: "Mejora el seguimiento de tu operación y da una experiencia más profesional a tus clientes.",
+    summaryIntro:
+      "Mejora el seguimiento de tu operación y da una experiencia más profesional a tus clientes.",
     features: [
       {
         title: "Recordatorios por email",
@@ -205,8 +207,8 @@ const plans: Plan[] = [
   {
     key: "platinum",
     name: "Platinum",
-    price: 229990,
-    priceLabel: "$229.990",
+    price: 189990,
+    priceLabel: "$189.990",
     ivaLabel: "mes + iva",
     subtitle: "Automatización e IA avanzada para hacer crecer tu negocio",
     benefit: "Para negocios que quieren que Orbyx trabaje incluso cuando ellos no están.",
@@ -675,13 +677,15 @@ function PlanesPageContent() {
       ? "Programar downgrade"
       : "Cambiar ahora";
 
+  const showTenantWarning = !tenantId && Boolean(from || slug);
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
-      <section className="mx-auto w-full max-w-[1600px] px-4 py-8 lg:px-8 2xl:px-10">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_440px]">
+      <section className="mx-auto w-full max-w-[1600px] px-4 py-6 lg:px-8 2xl:px-10">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div>
-            <div className="rounded-[34px] border border-white/10 bg-white/6 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl lg:p-8">
-              <div className="max-w-5xl">
+            <div className="rounded-[34px] border border-white/10 bg-white/6 p-5 shadow-[0_30px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl lg:p-7">
+              <div className="max-w-4xl">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
                     Planes Orbyx
@@ -695,14 +699,13 @@ function PlanesPageContent() {
                   </Link>
                 </div>
 
-                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl xl:text-[3.4rem] xl:leading-[1.05]">
-                  Elige el plan que te ayude a llenar tu agenda, reducir ausencias y crecer con más orden
+                <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-white lg:text-[2.8rem] lg:leading-[1.05]">
+                  Elige el plan ideal para tu negocio
                 </h1>
 
-                <p className="mt-4 max-w-4xl text-base leading-7 text-slate-300 lg:text-lg">
-                  Orbyx no solo organiza reservas. Te ayuda a activar clientes,
-                  automatizar atención y profesionalizar tu operación según el
-                  momento en que está tu negocio.
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 lg:text-base">
+                  Escoge la etapa que mejor se ajusta a tu operación actual y
+                  amplía capacidad, automatización o canales cuando lo necesites.
                 </p>
 
                 {from === "staff" ? (
@@ -710,38 +713,9 @@ function PlanesPageContent() {
                     Llegaste aquí porque alcanzaste el límite de profesionales de tu plan.
                   </div>
                 ) : null}
-
-                <div className="mt-6 grid gap-3 md:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                      Vende más
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-200">
-                      Campañas, activación y una mejor experiencia para convertir más reservas.
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                      Reduce ausencias
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-200">
-                      Recordatorios automáticos y seguimiento para no perder horas valiosas.
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                      Automatiza atención
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-200">
-                      Desde VIP ya sumas IA. En Platinum llevas la automatización a otro nivel.
-                    </p>
-                  </div>
-                </div>
               </div>
 
-              <div className="mt-8 grid gap-4 xl:grid-cols-4">
+              <div className="mt-7 grid gap-4 xl:grid-cols-4">
                 {plans.map((plan) => {
                   const isSelected = selectedPlan.key === plan.key;
                   const isCurrentCard = initialPlan === plan.key;
@@ -751,7 +725,7 @@ function PlanesPageContent() {
                       key={plan.key}
                       type="button"
                       onClick={() => handleSelectPlan(plan.key)}
-                      className={`relative flex min-h-[320px] flex-col rounded-3xl border px-5 py-5 text-left transition ${
+                      className={`relative flex min-h-[420px] flex-col rounded-3xl border px-5 py-5 text-left transition ${
                         isSelected
                           ? `scale-[1.02] bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] ${plan.borderClass} ${plan.softBgClass} ring-1 ring-white/20 shadow-[0_18px_45px_rgba(0,0,0,0.35)]`
                           : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
@@ -781,25 +755,25 @@ function PlanesPageContent() {
                         {plan.name}
                       </p>
 
-                      <p className="mt-2 text-sm leading-6 text-slate-200">
+                      <p className="mt-2 text-sm leading-7 text-slate-200">
                         {plan.subtitle}
                       </p>
 
-                      <p className="mt-4 text-sm leading-6 text-slate-400">
+                      <p className="mt-4 text-sm leading-7 text-slate-400">
                         {plan.benefit}
                       </p>
 
-                      <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
-                        <p className="text-[1.95rem] font-semibold leading-none tracking-tight text-white lg:text-[2.2rem]">
-                          {plan.priceLabel}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-400">
-                          {plan.ivaLabel}
-                        </p>
-                      </div>
+                      <div className="mt-auto pt-6">
+                        <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-4">
+                          <p className="text-[1.95rem] font-semibold leading-none tracking-tight text-white lg:text-[2.05rem]">
+                            {plan.priceLabel}
+                          </p>
+                          <p className="mt-2 text-sm text-slate-400">
+                            {plan.ivaLabel}
+                          </p>
+                        </div>
 
-                      <div className="mt-auto pt-5">
-                        <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                        <div className="mt-5 flex items-center gap-2 text-sm font-medium text-slate-200">
                           <ArrowRight className="h-4 w-4" />
                           Seleccionar plan
                         </div>
@@ -1084,7 +1058,7 @@ function PlanesPageContent() {
                     {applying ? "Procesando..." : ctaLabel}
                   </button>
 
-                  {!tenantId ? (
+                  {showTenantWarning ? (
                     <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                       Falta <span className="font-semibold">tenant_id</span> en la URL para aplicar el cambio real.
                     </div>
