@@ -185,10 +185,10 @@ const comparisonRows: ComparisonRow[] = [
     values: {
       pro: "—",
       premium: "—",
-      vip: "Incluidos",
-      platinum: "Incluidos",
+      vip: "200 / mes",
+      platinum: "800 / mes",
     },
-    info: "Ayudan a reducir ausencias con un canal más directo y efectivo.",
+    info: "Capacidad mensual incluida para reducir ausencias desde un canal mucho más directo.",
     highlight: true,
   },
   {
@@ -196,10 +196,10 @@ const comparisonRows: ComparisonRow[] = [
     values: {
       pro: "—",
       premium: "—",
-      vip: "Incluidas",
-      platinum: "Incluidas",
+      vip: "200 / mes",
+      platinum: "800 / mes",
     },
-    info: "Permiten mantener conversaciones activas con tus clientes desde un canal más cercano.",
+    info: "Capacidad mensual incluida para mantener conversaciones activas con tus clientes.",
   },
   {
     label: "IA integrada en WhatsApp",
@@ -209,7 +209,7 @@ const comparisonRows: ComparisonRow[] = [
       vip: "Responde y deriva a reserva",
       platinum: "Responde, sigue y automatiza",
     },
-    info: "En VIP la IA responde consultas y dirige al cliente a reservar. En Platinum además acompaña mejor el proceso y automatiza seguimiento.",
+    info: "En VIP la IA responde consultas y deriva a tu página de reservas. En Platinum además hace seguimiento y automatiza mejor la atención.",
     highlight: true,
   },
   {
@@ -313,13 +313,7 @@ function CellValue({
   }
 
   return (
-    <span
-      className={
-        highlight
-          ? "font-semibold text-white"
-          : "text-slate-200"
-      }
-    >
+    <span className={highlight ? "font-semibold text-white" : "text-slate-200"}>
       {value}
     </span>
   );
@@ -388,7 +382,7 @@ export default function CompararPlanesPage() {
                 <p className="mt-5 text-3xl font-semibold text-white">
                   {plan.priceLabel}
                 </p>
-                <p className="mt-1 text-sm text-slate-400">mes + iva</p>
+                <p className="mt-1 text-sm text-slate-400">+ iva / mes</p>
               </div>
             ))}
           </div>

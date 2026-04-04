@@ -77,7 +77,7 @@ const plans: Plan[] = [
     name: "Pro",
     price: 19990,
     priceLabel: "$19.990",
-    ivaLabel: "mes + iva",
+    ivaLabel: "+ iva / mes",
     subtitle: "Ordena tu negocio y empieza a reservar online",
     benefit:
       "La base para profesionalizar tu agenda, ordenar tu operación y empezar a convertir reservas con una experiencia más clara.",
@@ -121,7 +121,7 @@ const plans: Plan[] = [
     name: "Premium",
     price: 29990,
     priceLabel: "$29.990",
-    ivaLabel: "mes + iva",
+    ivaLabel: "+ iva / mes",
     subtitle: "Más control, mejor seguimiento y menos ausencias",
     benefit:
       "Para negocios que necesitan una operación más sólida, mejor comunicación y menos horas perdidas por falta de seguimiento.",
@@ -165,7 +165,7 @@ const plans: Plan[] = [
     name: "VIP",
     price: 79990,
     priceLabel: "$79.990",
-    ivaLabel: "mes + iva",
+    ivaLabel: "+ iva / mes",
     subtitle: "Activa clientes y responde más rápido por WhatsApp",
     benefit:
       "El plan ideal para reactivar clientes, reducir ausencias y atender mejor por WhatsApp sin cargar todo manualmente.",
@@ -211,7 +211,7 @@ const plans: Plan[] = [
     name: "Platinum",
     price: 189990,
     priceLabel: "$189.990",
-    ivaLabel: "mes + iva",
+    ivaLabel: "+ iva / mes",
     subtitle: "Automatiza tu negocio y convierte más reservas",
     benefit:
       "Pensado para negocios que quieren que Orbyx responda, haga seguimiento y trabaje por su agenda incluso cuando no están disponibles.",
@@ -257,12 +257,12 @@ const plans: Plan[] = [
 const extraConfig = {
   staff: {
     title: "Profesionales extra",
-    short: "$6.000 · 1 profesional + 5 servicios",
+    short: "$6.000 + iva · 1 profesional + 5 servicios",
     unitPrice: 6000,
   },
   reminders: {
     title: "Pack recordatorios WhatsApp",
-    short: "$5.000 · 50 conversaciones",
+    short: "$5.000 + iva · 50 conversaciones",
     unitPrice: 5000,
   },
   campaigns: {
@@ -673,7 +673,7 @@ function PlanesPageContent() {
 
   const ctaLabel =
     !hasBillingContext
-      ? "Elegir este plan"
+      ? "Quiero este plan"
       : previewType === "same_plan"
       ? "Mantener este plan"
       : previewType === "downgrade"
@@ -682,8 +682,10 @@ function PlanesPageContent() {
 
   const showTenantWarning = !tenantId && Boolean(from || slug);
 
+  const publicPlanIva = Math.round(selectedPlan.price * 0.19);
+  const publicExtrasIva = Math.round(extrasSubtotal * 0.19);
   const publicReferenceTotal =
-    selectedPlan.price + extrasSubtotal + Math.round(extrasSubtotal * 0.19);
+    selectedPlan.price + publicPlanIva + extrasSubtotal + publicExtrasIva;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
@@ -1057,9 +1059,16 @@ function PlanesPageContent() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">Valor mensual</span>
+                      <span className="text-sm text-slate-300">Valor mensual neto</span>
                       <span className="text-sm font-semibold text-white">
                         {selectedPlan.priceLabel}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">IVA del plan</span>
+                      <span className="text-sm font-semibold text-white">
+                        {formatCLP(publicPlanIva)}
                       </span>
                     </div>
 
@@ -1073,17 +1082,15 @@ function PlanesPageContent() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">IVA</span>
+                      <span className="text-sm text-slate-300">IVA adicionales</span>
                       <span className="text-sm font-semibold text-white">
-                        {extrasSubtotal > 0
-                          ? formatCLP(Math.round(extrasSubtotal * 0.19))
-                          : "$0"}
+                        {extrasSubtotal > 0 ? formatCLP(publicExtrasIva) : "$0"}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between border-t border-white/10 pt-3">
                       <span className="text-sm font-semibold text-white">
-                        Referencia mensual
+                        Referencia mensual total
                       </span>
                       <span className="text-sm font-semibold text-emerald-300">
                         {formatCLP(publicReferenceTotal)}
@@ -1105,14 +1112,23 @@ function PlanesPageContent() {
                 ) : null}
 
                 <div className="mt-5 space-y-3">
-                  <button
-                    type="button"
-                    onClick={hasBillingContext ? handleApplyPlanChange : undefined}
-                    disabled={hasBillingContext ? applying || previewLoading || !tenantId : true}
-                    className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {applying ? "Procesando..." : ctaLabel}
-                  </button>
+                  {hasBillingContext ? (
+                    <button
+                      type="button"
+                      onClick={handleApplyPlanChange}
+                      disabled={applying || previewLoading || !tenantId}
+                      className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {applying ? "Procesando..." : ctaLabel}
+                    </button>
+                  ) : (
+                    <Link
+                      href="/"
+                      className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)]"
+                    >
+                      {ctaLabel}
+                    </Link>
+                  )}
 
                   {showTenantWarning ? (
                     <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
@@ -1131,7 +1147,7 @@ function PlanesPageContent() {
                     </p>
                   ) : (
                     <p className="text-center text-xs leading-5 text-slate-400">
-                      Selecciona un plan para revisar lo que incluye y la referencia mensual.
+                      Selecciona un plan para revisar lo que incluye y su referencia mensual total con iva.
                     </p>
                   )}
 
@@ -1206,7 +1222,7 @@ function PlanesPageContent() {
                       label="Recordatorios por WhatsApp"
                       value={
                         selectedPlan.includedReminderConversations > 0
-                          ? "Incluidos"
+                          ? `${selectedPlan.includedReminderConversations} / mes`
                           : "No incluidos"
                       }
                     />
@@ -1214,7 +1230,7 @@ function PlanesPageContent() {
                       label="Respuestas por WhatsApp"
                       value={
                         selectedPlan.includedWhatsappResponseConversations > 0
-                          ? "Incluidas"
+                          ? `${selectedPlan.includedWhatsappResponseConversations} / mes`
                           : "No incluidas"
                       }
                     />
