@@ -1871,6 +1871,20 @@ useEffect(() => {
     };
   }, [filteredHistory]);
 
+const historySentLabel = useMemo(() => {
+  const channels = Array.from(new Set(filteredHistory.map((item) => item.channel)));
+
+  if (channels.length === 1 && channels[0] === "whatsapp") {
+    return "Mensajes enviados";
+  }
+
+  if (channels.length === 1 && channels[0] === "email") {
+    return "Correos enviados";
+  }
+
+  return "Envíos realizados";
+}, [filteredHistory]);
+
   const selectedSegmentLabel =
     SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Segmento";
 
@@ -3608,14 +3622,10 @@ setToast({
             helper="Resultado según filtros activos."
           />
           <SectionStat
-            label={
-  historyChannel === "whatsapp"
-    ? "Mensajes enviados"
-    : "Correos enviados"
-}
-            value={loadingHistory ? "..." : String(historyStats.totalSent)}
-            helper="Suma total en la vista actual."
-          />
+  label={loadingHistory ? "Envíos realizados" : historySentLabel}
+  value={loadingHistory ? "..." : String(historyStats.totalSent)}
+  helper="Suma total en la vista actual."
+/>
           <SectionStat
             label="Tasa promedio"
             value={loadingHistory ? "..." : `${historyStats.avgSuccess}%`}
