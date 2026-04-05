@@ -371,7 +371,7 @@ useEffect(() => {
 
   const timeout = setTimeout(async () => {
     try {
-      const res = await fetch(`/api/pets/${slug}?phone=${phone}`);
+      const res = await fetch(`https://agenda-oauth.onrender.com/api/pets/${slug}?phone=${phone}`);
       const data = await res.json();
       setPets(data.pets || []);
     } catch (error) {
