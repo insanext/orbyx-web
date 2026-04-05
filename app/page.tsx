@@ -9,9 +9,9 @@ import {
   CheckCircle2,
   Clock3,
   MessageCircleMore,
-  Rocket,
   Sparkles,
   Star,
+  Store,
   Users,
   Wand2,
 } from "lucide-react";
@@ -27,8 +27,27 @@ export default function OrbyxLandingPage() {
     "Barbería",
     "Peluquería",
     "Centro de estética",
-    "Clínica",
     "Spa",
+    "Salón de belleza",
+    "Clínica estética",
+    "Consulta médica",
+    "Consulta psicológica",
+    "Centro médico",
+    "Centro dental",
+    "Kinesiología",
+    "Masajes y terapias",
+    "Nutrición",
+    "Veterinaria",
+    "Tattoo studio",
+    "Estudio de uñas",
+    "Lashes / cejas",
+    "Gimnasio",
+    "Personal trainer",
+    "Estudio de yoga / pilates",
+    "Academia / clases",
+    "Asesorías profesionales",
+    "Restaurante",
+    "Cafetería",
     "Otro",
   ];
 
@@ -38,88 +57,56 @@ export default function OrbyxLandingPage() {
     {
       icon: MessageCircleMore,
       title: "Atención por WhatsApp con IA",
-      desc: "Aunque no tengas tiempo de responder, Orbyx atiende consultas, propone horarios y deriva a reserva.",
-    },
-    {
-      icon: CalendarDays,
-      title: "Agenda más activa",
-      desc: "Tus horarios disponibles se mueven mejor con recordatorios, seguimiento y recuperación de clientes.",
+      desc: "Aunque no tengas tiempo de responder, Orbyx puede contestar consultas frecuentes, orientar al cliente y ayudar a moverlo hacia una reserva.",
     },
     {
       icon: BellRing,
       title: "Recordatorios automáticos",
-      desc: "Reduce ausencias con mensajes automáticos antes de cada cita, sin tener que escribir manualmente.",
+      desc: "Reduce ausencias con mensajes automáticos antes de cada cita, sin tener que escribir uno por uno todos los días.",
+    },
+    {
+      icon: CalendarDays,
+      title: "Agenda más activa y ordenada",
+      desc: "Centraliza reservas, horarios, clientes y seguimiento en un solo lugar para trabajar con más orden y menos fricción.",
     },
     {
       icon: Users,
-      title: "Clientes e historial",
-      desc: "Centraliza la información de tus clientes para atender mejor y tomar decisiones con más contexto.",
-    },
-    {
-      icon: Sparkles,
-      title: "Recuperación de inactivos",
-      desc: "Detecta clientes que dejaron de venir y vuelve a activarlos con campañas y seguimiento.",
-    },
-    {
-      icon: Rocket,
-      title: "Menos coordinación manual",
-      desc: "Tu equipo deja de perder tiempo respondiendo lo mismo todos los días por chat o llamadas.",
-    },
-  ];
-
-  const whyCards = [
-    {
-      icon: Clock3,
-      title: "Responde incluso cuando estás ocupado",
-      desc: "Si estás atendiendo, en traslado o fuera del horario, la IA puede seguir respondiendo consultas frecuentes.",
+      title: "Recuperación de clientes",
+      desc: "Detecta clientes inactivos y vuelve a contactarlos con campañas y seguimiento, en vez de depender solo de quienes te escriben.",
     },
     {
       icon: Wand2,
-      title: "Convierte conversaciones en reservas",
-      desc: "No solo responde: también orienta al cliente para que avance hacia una cita o una acción concreta.",
+      title: "Menos trabajo repetitivo",
+      desc: "Tu equipo deja de perder tiempo explicando lo mismo, buscando huecos en la agenda o coordinando por varios canales a la vez.",
     },
     {
-      icon: BellRing,
-      title: "Mantiene el contacto sin perseguir clientes",
-      desc: "Recordatorios, seguimiento y reactivación ayudan a que tu agenda no dependa de escribir uno por uno.",
+      icon: Clock3,
+      title: "Atención incluso cuando estás ocupado",
+      desc: "Si estás atendiendo, cocinando, en sesión o fuera de horario, tu negocio no tiene por qué quedarse en silencio.",
     },
   ];
 
-  const includedCards = [
-    "Confirmaciones automáticas",
-    "Recordatorios por WhatsApp",
-    "Recuperación de clientes",
-    "Agenda clara y ordenada",
-    "Clientes e historial",
-    "Campañas y seguimiento",
+  const detailPoints = [
+    "Atiende consultas frecuentes por WhatsApp sin responder manualmente cada vez.",
+    "Ayuda a proponer horarios y ordenar mejor la agenda.",
+    "Envía recordatorios automáticos para reducir ausencias.",
+    "Permite mantener seguimiento sin depender de hacerlo a mano.",
+    "Centraliza clientes, historial y reservas en un solo lugar.",
+    "Da una imagen más profesional, más rápida y más ordenada frente al cliente.",
   ];
 
-  const steps = [
-    {
-      step: "01",
-      title: "Configura tu negocio",
-      desc: "Carga tus servicios, horarios y profesionales en minutos.",
-    },
-    {
-      step: "02",
-      title: "Activa tu atención",
-      desc: "Empieza a centralizar reservas y comunicación desde un solo lugar.",
-    },
-    {
-      step: "03",
-      title: "Deja que Orbyx responda",
-      desc: "La IA atiende consultas por WhatsApp y guía al cliente cuando tú no alcanzas.",
-    },
-    {
-      step: "04",
-      title: "Haz crecer tu agenda",
-      desc: "Usa recordatorios, seguimiento y campañas para mover mejor tu negocio.",
-    },
+  const businessExamples = [
+    "Barberías y peluquerías",
+    "Centros de estética y spa",
+    "Clínicas, consultas y terapias",
+    "Veterinarias",
+    "Gimnasios y clases",
+    "Restaurantes y cafeterías con reservas",
   ];
 
   return (
     <main className="min-h-screen bg-[#f7f8fc] text-slate-900">
-      {/* HERO */}
+      {/* SECCIÓN 1 — HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(59,130,246,0.10),transparent_26%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_10%,rgba(139,92,246,0.08),transparent_22%)]" />
@@ -215,7 +202,6 @@ export default function OrbyxLandingPage() {
               </p>
             </div>
 
-            {/* FORM */}
             <div className="lg:justify-self-end">
               <div className="w-full rounded-[34px] border border-white bg-white p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] lg:w-[540px]">
                 <div className="inline-flex rounded-full bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700">
@@ -291,7 +277,7 @@ export default function OrbyxLandingPage() {
         </div>
       </section>
 
-      {/* BENEFICIOS PRINCIPALES */}
+      {/* SECCIÓN 2 — BENEFICIOS */}
       <section className="relative py-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.05),transparent_30%)]" />
 
@@ -308,7 +294,7 @@ export default function OrbyxLandingPage() {
             </h2>
 
             <p className="mx-auto mt-6 max-w-3xl text-xl leading-9 text-slate-600">
-              Orbyx no solo ordena citas. También ayuda a responder mejor,
+              Orbyx no solo ordena reservas. También ayuda a responder mejor,
               mantener contacto con tus clientes y convertir conversaciones en
               oportunidades reales para tu negocio.
             </p>
@@ -341,208 +327,110 @@ export default function OrbyxLandingPage() {
         </div>
       </section>
 
-      {/* MENSAJE CENTRAL */}
-      <section className="py-8">
+      {/* SECCIÓN 3 — DETALLE DEL NEGOCIO */}
+      <section className="pb-24 pt-8">
         <div className="mx-auto max-w-[1600px] px-6 lg:px-10">
-          <div className="rounded-[36px] border border-sky-100 bg-gradient-to-r from-sky-50 via-white to-blue-50 p-8 shadow-[0_18px_44px_rgba(15,23,42,0.05)] lg:p-12">
-            <div className="grid items-center gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-[40px] border border-slate-200 bg-white p-8 shadow-[0_18px_44px_rgba(15,23,42,0.05)] lg:p-12">
+            <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
-                <div className="inline-flex rounded-full border border-sky-200 bg-white px-4 py-2 text-sm font-medium text-sky-700">
-                  Tu diferencial
+                <div className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700">
+                  Pensado para negocios reales
                 </div>
 
-                <h2 className="mt-5 text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">
-                  Si no alcanzas a responder, Orbyx puede seguir atendiendo por
-                  WhatsApp con inteligencia artificial
+                <h2 className="mt-6 text-4xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-5xl">
+                  Orbyx está hecho para negocios que atienden clientes,
+                  coordinan horarios y no pueden darse el lujo de perder tiempo
+                  respondiendo siempre lo mismo
                 </h2>
 
-                <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
-                  Eso significa menos mensajes perdidos, menos tiempo explicando
-                  lo mismo y más continuidad en la atención del cliente.
-                  Mientras tú trabajas, Orbyx ayuda a que la conversación no se
-                  corte.
+                <p className="mt-6 text-lg leading-8 text-slate-600">
+                  Si hoy recibes mensajes por WhatsApp, confirmas reservas a mano,
+                  haces seguimiento cuando puedes y dependes de recordar cada
+                  detalle por tu cuenta, Orbyx viene a ordenar todo eso.
                 </p>
-              </div>
 
-              <div className="rounded-[28px] border border-white bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      Atención más constante
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Incluso cuando estás ocupado
-                    </p>
-                  </div>
-                </div>
+                <p className="mt-5 text-lg leading-8 text-slate-600">
+                  La idea no es reemplazar la atención humana, sino ayudarte a
+                  que tu negocio responda mejor, mantenga continuidad y se vea
+                  más profesional frente al cliente, incluso en momentos donde tú
+                  o tu equipo no alcanzan a contestar.
+                </p>
 
-                <div className="mt-5 space-y-3">
-                  {[
-                    "Responde consultas frecuentes",
-                    "Ayuda a proponer horarios",
-                    "Deriva al cliente hacia la reserva",
-                    "Mantiene seguimiento sin hacerlo manual",
-                  ].map((line) => (
+                <div className="mt-8 grid gap-3">
+                  {detailPoints.map((item) => (
                     <div
-                      key={line}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                      key={item}
+                      className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
                     >
-                      {line}
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                      <span className="text-base leading-7 text-slate-700">
+                        {item}
+                      </span>
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* POR QUÉ IMPORTA */}
-      <section className="py-24">
-        <div className="mx-auto max-w-[1600px] px-6 lg:px-10">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex rounded-full border border-sky-200 bg-white px-4 py-2 text-sm font-medium text-sky-700 shadow-sm">
-              Por qué esto importa
-            </div>
+                <div className="mt-8 flex flex-wrap gap-4">
+                  <Link
+                    href="/planes"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 px-8 py-4 text-base font-semibold text-white shadow-[0_16px_36px_rgba(59,130,246,0.22)] transition hover:scale-[1.02]"
+                  >
+                    Ver planes
+                  </Link>
 
-            <h2 className="mt-6 text-4xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-5xl">
-              Tu negocio puede verse más ordenado,
-              <br />
-              más rápido y más presente
-            </h2>
-          </div>
-
-          <div className="mt-14 grid gap-6 lg:grid-cols-3">
-            {whyCards.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <div
-                  key={item.title}
-                  className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_14px_40px_rgba(15,23,42,0.05)]"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
-                    <Icon className="h-6 w-6" />
+                  <div className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-4 text-base font-medium text-slate-700">
+                    Prueba gratis por 7 días
                   </div>
+                </div>
+              </div>
 
-                  <h3 className="mt-5 text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                    {item.title}
-                  </h3>
+              <div className="rounded-[32px] bg-gradient-to-br from-sky-50 via-white to-blue-50 p-7">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-sm">
+                    <Store className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">
+                      Negocios donde encaja bien
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Verticales donde el orden y la respuesta rápida importan
+                    </p>
+                  </div>
+                </div>
 
-                  <p className="mt-4 text-base leading-8 text-slate-600">
-                    {item.desc}
+                <div className="mt-6 grid gap-3">
+                  {businessExamples.map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-2xl border border-white bg-white/90 px-4 py-4 text-base font-medium text-slate-700 shadow-sm"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-8 rounded-[28px] border border-white bg-white/90 p-6 shadow-sm">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Qué busca resolver Orbyx
                   </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
-      {/* INCLUIDO */}
-      <section className="py-8">
-        <div className="mx-auto max-w-[1600px] px-6 lg:px-10">
-          <div className="rounded-[36px] border border-slate-200 bg-white p-8 shadow-[0_18px_44px_rgba(15,23,42,0.05)] lg:p-12">
-            <div className="mx-auto max-w-3xl text-center">
-              <div className="inline-flex rounded-full border border-blue-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700">
-                Lo que puedes ordenar con Orbyx
-              </div>
-
-              <h2 className="mt-6 text-4xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-5xl">
-                Menos caos operativo.
-                <br />
-                Más control de tu negocio.
-              </h2>
-
-              <p className="mt-6 text-xl leading-9 text-slate-600">
-                Diseñado para negocios que quieren verse más profesionales y
-                dejar de depender del desorden por WhatsApp.
-              </p>
-            </div>
-
-            <div className="mt-12 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {includedCards.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-medium text-slate-700"
-                >
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PASOS */}
-      <section className="py-24">
-        <div className="mx-auto max-w-[1600px] px-6 lg:px-10">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex rounded-full border border-sky-200 bg-white px-4 py-2 text-sm font-medium text-sky-700 shadow-sm">
-              Cómo empezar
-            </div>
-
-            <h2 className="mt-6 text-4xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-5xl">
-              Empieza simple.
-              <br />
-              Escala después.
-            </h2>
-          </div>
-
-          <div className="mt-14 grid gap-6 lg:grid-cols-4">
-            {steps.map((item) => (
-              <div
-                key={item.step}
-                className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_14px_40px_rgba(15,23,42,0.05)]"
-              >
-                <div className="text-sm font-semibold tracking-[0.18em] text-sky-600">
-                  {item.step}
-                </div>
-
-                <h3 className="mt-4 text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                  {item.title}
-                </h3>
-
-                <p className="mt-4 text-base leading-8 text-slate-600">
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA FINAL */}
-      <section className="pb-24 pt-8">
-        <div className="mx-auto max-w-[1600px] px-6 lg:px-10">
-          <div className="rounded-[40px] bg-gradient-to-r from-sky-500 to-blue-600 p-10 text-white shadow-[0_26px_70px_rgba(59,130,246,0.26)] lg:p-14">
-            <div className="mx-auto max-w-4xl text-center">
-              <h2 className="text-4xl font-semibold tracking-[-0.03em] sm:text-5xl">
-                Haz que tu negocio responda mejor,
-                <br />
-                reserve mejor y se vea más profesional
-              </h2>
-
-              <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-blue-50">
-                Si hoy pierdes tiempo respondiendo mensajes, coordinando horarios
-                o haciendo seguimiento manual, Orbyx puede ayudarte a ordenar
-                todo eso en un solo lugar.
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-                <Link
-                  href="/planes"
-                  className="inline-flex items-center justify-center rounded-2xl bg-white px-8 py-4 text-base font-semibold text-blue-700 shadow-sm transition hover:scale-[1.02]"
-                >
-                  Ver planes
-                </Link>
-
-                <div className="rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-sm text-white/90">
-                  Prueba gratis por 7 días
+                  <div className="mt-4 space-y-3">
+                    {[
+                      "Mensajes que no se responden a tiempo",
+                      "Reservas coordinadas de forma manual",
+                      "Clientes que se enfrían por falta de seguimiento",
+                      "Agenda desordenada o poco visible",
+                      "Tiempo perdido en tareas repetitivas",
+                    ].map((item) => (
+                      <div
+                        key={item}
+                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                      >
+                        {item}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
