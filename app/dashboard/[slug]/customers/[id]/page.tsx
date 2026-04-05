@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader } from "../../../../../components/dashboard/page-header";
 import { Panel } from "../../../../../components/dashboard/panel";
@@ -22,11 +22,23 @@ type Pet = {
   id: string;
   name: string;
   species_base: string;
-  species_custom?: string;
-  breed?: string;
-  sex?: string;
-  weight_kg?: number;
+  species_custom?: string | null;
+  breed?: string | null;
+  sex?: string | null;
+  weight_kg?: number | null;
   is_sterilized?: boolean;
+  notes?: string | null;
+};
+
+type PetFormState = {
+  name: string;
+  species_base: "perro" | "gato" | "otro";
+  species_custom: string;
+  breed: string;
+  sex: string;
+  weight_kg: string;
+  is_sterilized: boolean;
+  notes: string;
 };
 
 type Appointment = {
@@ -55,6 +67,21 @@ export default function CustomerDetailPage() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [savingPet, setSavingPet] = useState(false);
+  const [petError, setPetError] = useState("");
+  const [petSuccess, setPetSuccess] = useState("");
+
+  const [petForm, setPetForm] = useState<PetFormState>({
+    name: "",
+    species_base: "perro",
+    species_custom: "",
+    breed: "",
+    sex: "",
+    weight_kg: "",
+    is_sterilized: false,
+    notes: "",
+  });
 
   useEffect(() => {
     async function loadData() {
@@ -87,7 +114,7 @@ export default function CustomerDetailPage() {
         /* ===== APPOINTMENTS (HISTORIAL) ===== */
         try {
           const resAppointments = await fetch(
-            `${BACKEND_URL}/appointments/${slug}?customer_id=${customerId}`
+            `${BACKEND_URL}/appointments/customer-history/${slug}?customer_id=${customerId}`
           );
           const dataAppointments = await resAppointments.json();
           setAppointments(dataAppointments.appointments || []);
@@ -105,6 +132,64 @@ export default function CustomerDetailPage() {
       loadData();
     }
   }, [slug, customerId]);
+
+
+  async function handleCreatePet(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    try {
+      setSavingPet(true);
+      setPetError("");
+      setPetSuccess("");
+
+      const res = await fetch(`${BACKEND_URL}/pets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          slug,
+          customer_id: customerId,
+          name: petForm.name,
+          species_base: petForm.species_base,
+          species_custom:
+            petForm.species_base === "otro" ? petForm.species_custom : "",
+          breed: petForm.breed,
+          sex: petForm.sex,
+          weight_kg: petForm.weight_kg,
+          is_sterilized: petForm.is_sterilized,
+          notes: petForm.notes,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo crear la mascota");
+      }
+
+      if (data?.pet) {
+        setPets((prev) => [data.pet, ...prev]);
+      }
+
+      setPetForm({
+        name: "",
+        species_base: "perro",
+        species_custom: "",
+        breed: "",
+        sex: "",
+        weight_kg: "",
+        is_sterilized: false,
+        notes: "",
+      });
+
+      setPetSuccess("Mascota creada correctamente.");
+    } catch (err: any) {
+      setPetError(err?.message || "Error creando mascota");
+    } finally {
+      setSavingPet(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -151,7 +236,156 @@ export default function CustomerDetailPage() {
       </Panel>
 
       {/* ================= MASCOTAS ================= */}
-      <Panel title="Mascotas">
+      <Panel title="Mascotas" description="Crea mascotas y construye la ficha veterinaria del cliente.">
+        <form onSubmit={handleCreatePet} className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div>
+              <label className="mb-2 block text-xs text-slate-500">Nombre</label>
+              <input
+                type="text"
+                value={petForm.name}
+                onChange={(e) =>
+                  setPetForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                placeholder="Ej: Luna"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs text-slate-500">Tipo</label>
+              <select
+                value={petForm.species_base}
+                onChange={(e) =>
+                  setPetForm((prev) => ({
+                    ...prev,
+                    species_base: e.target.value as "perro" | "gato" | "otro",
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+              >
+                <option value="perro">Perro</option>
+                <option value="gato">Gato</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+
+            {petForm.species_base === "otro" ? (
+              <div>
+                <label className="mb-2 block text-xs text-slate-500">Especificar tipo</label>
+                <input
+                  type="text"
+                  value={petForm.species_custom}
+                  onChange={(e) =>
+                    setPetForm((prev) => ({
+                      ...prev,
+                      species_custom: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                  placeholder="Ej: conejo"
+                  required
+                />
+              </div>
+            ) : null}
+
+            <div>
+              <label className="mb-2 block text-xs text-slate-500">Raza</label>
+              <input
+                type="text"
+                value={petForm.breed}
+                onChange={(e) =>
+                  setPetForm((prev) => ({ ...prev, breed: e.target.value }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                placeholder="Ej: Labrador"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs text-slate-500">Sexo</label>
+              <select
+                value={petForm.sex}
+                onChange={(e) =>
+                  setPetForm((prev) => ({ ...prev, sex: e.target.value }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+              >
+                <option value="">Seleccionar</option>
+                <option value="macho">Macho</option>
+                <option value="hembra">Hembra</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs text-slate-500">Peso (kg)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={petForm.weight_kg}
+                onChange={(e) =>
+                  setPetForm((prev) => ({ ...prev, weight_kg: e.target.value }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                placeholder="Ej: 12.5"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
+            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-slate-700 dark:bg-slate-950">
+              <input
+                type="checkbox"
+                checked={petForm.is_sterilized}
+                onChange={(e) =>
+                  setPetForm((prev) => ({
+                    ...prev,
+                    is_sterilized: e.target.checked,
+                  }))
+                }
+              />
+              Esterilizado
+            </label>
+
+            <div>
+              <label className="mb-2 block text-xs text-slate-500">Notas</label>
+              <textarea
+                value={petForm.notes}
+                onChange={(e) =>
+                  setPetForm((prev) => ({ ...prev, notes: e.target.value }))
+                }
+                className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                placeholder="Notas rápidas de la mascota"
+              />
+            </div>
+          </div>
+
+          {petError ? (
+            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+              {petError}
+            </div>
+          ) : null}
+
+          {petSuccess ? (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+              {petSuccess}
+            </div>
+          ) : null}
+
+          <div className="mt-4">
+            <button
+              type="submit"
+              disabled={savingPet}
+              className="rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+              style={{ background: "var(--text-main)" }}
+            >
+              {savingPet ? "Guardando..." : "Agregar mascota"}
+            </button>
+          </div>
+        </form>
+
         {pets.length === 0 ? (
           <p className="text-sm text-slate-500">
             Este cliente no tiene mascotas aún.
@@ -161,7 +395,7 @@ export default function CustomerDetailPage() {
             {pets.map((pet) => (
               <div
                 key={pet.id}
-                className="rounded-xl border p-4 bg-white"
+                className="rounded-xl border p-4 bg-white dark:bg-slate-950"
               >
                 <p className="font-semibold text-lg">{pet.name}</p>
 
@@ -179,11 +413,19 @@ export default function CustomerDetailPage() {
 
                 <div className="mt-2 text-xs text-slate-500">
                   {pet.sex && <span>Sexo: {pet.sex} · </span>}
-                  {pet.weight_kg && <span>{pet.weight_kg}kg · </span>}
+                  {pet.weight_kg !== null && pet.weight_kg !== undefined && (
+                    <span>{pet.weight_kg}kg · </span>
+                  )}
                   <span>
                     {pet.is_sterilized ? "Esterilizado" : "No esterilizado"}
                   </span>
                 </div>
+
+                {pet.notes ? (
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                    {pet.notes}
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>
