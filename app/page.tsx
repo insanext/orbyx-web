@@ -58,34 +58,23 @@ export default function OrbyxLandingPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] text-slate-900">
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: "url('/hero-light.png')",
-            backgroundRepeat: "no-repeat",
-            backgroundSize: "cover",
-            backgroundPosition: "center right",
-          }}
-        />
-
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(246,247,251,0.98)_0%,rgba(246,247,251,0.97)_18%,rgba(246,247,251,0.93)_36%,rgba(246,247,251,0.74)_54%,rgba(246,247,251,0.34)_72%,rgba(246,247,251,0.12)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_20%,rgba(59,130,246,0.10),transparent_28%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(246,247,251,0.14)_0%,rgba(246,247,251,0.08)_56%,#f6f7fb_100%)]" />
+    <main className="min-h-screen bg-[#f7f8fc] text-slate-900">
+      {/* HERO SUPERIOR LIMPIO */}
+      <section className="relative overflow-hidden bg-[#f7f8fc]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_18%,rgba(59,130,246,0.08),transparent_24%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_12%,rgba(99,102,241,0.07),transparent_22%)]" />
 
         <div className="relative mx-auto max-w-[1600px] px-6 pb-20 pt-16 lg:px-10 lg:pb-24 lg:pt-20">
-          <div className="grid min-h-[780px] items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_500px]">
+          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1.08fr)_520px]">
             {/* IZQUIERDA */}
             <div className="max-w-3xl">
               <div className="flex flex-wrap items-center gap-3">
                 <img
                   src="/orbyx-logo-dark.png"
                   alt="Orbyx"
-                  className="h-11 w-auto rounded-xl bg-white/80 p-1.5 shadow-sm"
+                  className="h-11 w-auto rounded-xl bg-white p-1.5 shadow-sm"
                 />
-                <span className="rounded-full border border-blue-200 bg-white/70 px-4 py-2 text-sm text-blue-700 shadow-sm backdrop-blur-sm">
+                <span className="rounded-full border border-blue-200 bg-white px-4 py-2 text-sm text-blue-700 shadow-sm">
                   Agendamiento con IA + seguimiento inteligente
                 </span>
               </div>
@@ -94,7 +83,7 @@ export default function OrbyxLandingPage() {
                 initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55 }}
-                className="mt-8 max-w-3xl text-5xl font-semibold leading-[1.02] tracking-[-0.04em] text-slate-900 sm:text-6xl xl:text-7xl"
+                className="mt-8 max-w-3xl text-5xl font-semibold leading-[1.02] tracking-[-0.04em] text-slate-950 sm:text-6xl xl:text-7xl"
               >
                 Automatiza tus
                 <br />
@@ -109,12 +98,12 @@ export default function OrbyxLandingPage() {
                 </span>
               </motion.h1>
 
-              <p className="mt-8 max-w-xl text-lg leading-9 text-slate-700 sm:text-[22px] sm:leading-10">
+              <p className="mt-8 max-w-2xl text-lg leading-9 text-slate-700 sm:text-[22px] sm:leading-10">
                 Deja de coordinar reservas por WhatsApp manualmente. Orbyx
                 responde, propone horarios y agenda automáticamente.
                 <br />
                 <br />
-                Además, mantiene tu agenda activa con recordatorios y
+                Además, ayuda a mantener tu agenda activa con recordatorios y
                 recuperación de clientes.
               </p>
 
@@ -127,8 +116,8 @@ export default function OrbyxLandingPage() {
                     transition={{ delay: index * 0.08 }}
                     className={
                       index === 0
-                        ? "inline-flex w-fit rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-3 text-base font-medium text-white shadow-[0_12px_28px_rgba(59,130,246,0.22)]"
-                        : "inline-flex w-fit rounded-full border border-slate-200 bg-white/80 px-6 py-3 text-base font-medium text-slate-700 shadow-sm backdrop-blur-sm"
+                        ? "inline-flex w-fit rounded-full bg-gradient-to-r from-blue-600 to-violet-500 px-6 py-3 text-base font-medium text-white shadow-[0_12px_28px_rgba(59,130,246,0.22)]"
+                        : "inline-flex w-fit rounded-full border border-slate-200 bg-white px-6 py-3 text-base font-medium text-slate-700 shadow-sm"
                     }
                   >
                     {chip}
@@ -147,7 +136,7 @@ export default function OrbyxLandingPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.07 }}
                       whileHover={{ y: -3 }}
-                      className="rounded-2xl border border-white/80 bg-white/70 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm"
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
                     >
                       <Icon className="mb-3 h-5 w-5 text-blue-600" />
                       <p className="text-sm font-medium text-slate-700">
@@ -161,7 +150,7 @@ export default function OrbyxLandingPage() {
               <div className="mt-10 flex flex-wrap items-center gap-6">
                 <Link
                   href="/planes"
-                  className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-violet-500 px-8 py-4 text-base font-semibold text-white shadow-[0_16px_36px_rgba(59,130,246,0.28)] transition hover:scale-[1.02]"
+                  className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-violet-500 px-8 py-4 text-base font-semibold text-white shadow-[0_16px_36px_rgba(59,130,246,0.24)] transition hover:scale-[1.02]"
                 >
                   Ver planes
                 </Link>
@@ -187,7 +176,7 @@ export default function OrbyxLandingPage() {
 
             {/* DERECHA */}
             <div className="lg:justify-self-end">
-              <div className="w-full rounded-[34px] border border-white/90 bg-white/88 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.14)] backdrop-blur-md lg:w-[500px]">
+              <div className="w-full rounded-[34px] border border-white bg-white p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] lg:w-[520px]">
                 <h2 className="text-4xl font-semibold tracking-[-0.03em] text-indigo-700">
                   Empieza gratis por 7 días
                 </h2>
@@ -233,64 +222,70 @@ export default function OrbyxLandingPage() {
                   Empieza gratis. Luego del periodo de prueba puedes pasarte a
                   un plan de pago.
                 </p>
-
-                <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-4 shadow-inner">
-                  <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-100 text-teal-700">
-                      ✦
-                    </div>
-                    IA respondió en WhatsApp
-                  </div>
-
-                  <div className="mt-4 rounded-2xl bg-white p-4 text-sm leading-7 text-slate-700 shadow-sm">
-                    Claro, ¿prefiere en la mañana o en la tarde?
-                    <div className="mt-2 text-right text-xs text-slate-400">
-                      11:24 ✓
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SEGUNDA SECCIÓN */}
-      <section className="relative py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.06),transparent_30%)]" />
+      {/* SECCIÓN VISUAL ABAJO CON LA MUCHACHA */}
+      <section className="relative overflow-hidden py-24">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: "url('/hero-light.png')",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            backgroundPosition: "center center",
+          }}
+        />
+
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(247,248,252,0.96)_0%,rgba(247,248,252,0.94)_16%,rgba(247,248,252,0.88)_32%,rgba(247,248,252,0.66)_52%,rgba(247,248,252,0.28)_74%,rgba(247,248,252,0.12)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,248,252,0.12)_0%,rgba(247,248,252,0.06)_70%,#f7f8fc_100%)]" />
 
         <div className="relative mx-auto max-w-[1600px] px-6 lg:px-10">
-          <div className="mx-auto max-w-5xl text-center">
-            <h2 className="text-4xl font-semibold tracking-[-0.03em] text-slate-900 sm:text-5xl">
-              Más que agenda, crecimiento real
-            </h2>
+          <div className="grid min-h-[760px] items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="max-w-2xl">
+              <div className="inline-flex rounded-full border border-blue-200 bg-white/85 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm backdrop-blur-sm">
+                Más que agenda, crecimiento real
+              </div>
 
-            <p className="mx-auto mt-5 max-w-3xl text-xl leading-9 text-slate-600">
-              Orbyx no solo agenda citas. Automatiza la comunicación con tus
-              clientes, optimiza tu tiempo y te ayuda a mantener tu agenda
-              siempre activa sin esfuerzo.
-            </p>
+              <h2 className="mt-6 text-4xl font-semibold tracking-[-0.03em] text-slate-900 sm:text-5xl">
+                Menos coordinación manual.
+                <br />
+                Más reservas, seguimiento y orden.
+              </h2>
 
-            <div className="mt-14 grid gap-6 sm:grid-cols-2">
-              {benefits.map((benefit) => (
-                <div
-                  key={benefit.title}
-                  className="rounded-[26px] border border-slate-200 bg-white/75 p-7 text-left shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-sm"
-                >
-                  <div className="mb-3 flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              <p className="mt-6 text-xl leading-9 text-slate-700">
+                Orbyx automatiza la comunicación con tus clientes, propone
+                horarios, envía recordatorios y te ayuda a recuperar clientes
+                inactivos sin que tengas que hacer seguimiento manual todos los
+                días.
+              </p>
+
+              <div className="mt-10 grid gap-5 sm:grid-cols-2">
+                {benefits.map((benefit) => (
+                  <div
+                    key={benefit.title}
+                    className="rounded-[26px] border border-white/70 bg-white/82 p-6 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-sm"
+                  >
+                    <div className="mb-3 flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-800">
+                        {benefit.title}
+                      </h3>
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-800">
-                      {benefit.title}
-                    </h3>
+                    <p className="text-base leading-7 text-slate-600">
+                      {benefit.desc}
+                    </p>
                   </div>
-                  <p className="text-base leading-8 text-slate-600">
-                    {benefit.desc}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+
+            <div />
           </div>
         </div>
       </section>
