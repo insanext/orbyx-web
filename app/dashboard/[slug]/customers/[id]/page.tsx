@@ -137,7 +137,17 @@ export default function CustomerDetailPage() {
   async function handleCreatePet(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    try {
+if (!petForm.name.trim()) {
+  setPetError("El nombre de la mascota es obligatorio");
+  return;
+}
+
+if (petForm.species_base === "otro" && !petForm.species_custom.trim()) {
+  setPetError("Debes especificar el tipo de mascota");
+  return;
+}
+
+try {
       setSavingPet(true);
       setPetError("");
       setPetSuccess("");
@@ -156,7 +166,7 @@ export default function CustomerDetailPage() {
             petForm.species_base === "otro" ? petForm.species_custom : "",
           breed: petForm.breed,
           sex: petForm.sex,
-          weight_kg: petForm.weight_kg,
+          weight_kg: petForm.weight_kg ? Number(petForm.weight_kg) : null,
           is_sterilized: petForm.is_sterilized,
           notes: petForm.notes,
         }),
@@ -184,6 +194,10 @@ export default function CustomerDetailPage() {
       });
 
       setPetSuccess("Mascota creada correctamente.");
+
+setTimeout(() => {
+  setPetSuccess("");
+}, 2500);
     } catch (err: any) {
       setPetError(err?.message || "Error creando mascota");
     } finally {
