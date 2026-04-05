@@ -238,6 +238,8 @@ const [customerData, setCustomerData] = useState<Record<string, string>>({
   pet_species: "",
 });
 
+const [pets, setPets] = useState<any[]>([]);
+const [selectedPetId, setSelectedPetId] = useState("");
   const [loadingPage, setLoadingPage] = useState(true);
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingStaff, setLoadingStaff] = useState(false);
@@ -358,6 +360,28 @@ const [customerData, setCustomerData] = useState<Record<string, string>>({
 
     loadInitial();
   }, [slug]);
+
+useEffect(() => {
+  const phone = customerData.phone?.trim();
+
+  if (!phone || phone.length < 6) {
+    setPets([]);
+    return;
+  }
+
+  const timeout = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/pets/${slug}?phone=${phone}`);
+      const data = await res.json();
+      setPets(data.pets || []);
+    } catch (error) {
+      console.error("Error cargando mascotas:", error);
+      setPets([]);
+    }
+  }, 400);
+
+  return () => clearTimeout(timeout);
+}, [customerData.phone, slug]);
 
   useEffect(() => {
     if (!slug || !selectedBranchId) return;
@@ -1073,6 +1097,31 @@ const [customerData, setCustomerData] = useState<Record<string, string>>({
   onChange={(e) => updateCustomerField("pet_species", e.target.value)}
   className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
 />
+
+{pets.length > 0 && (
+  <select
+    value={selectedPetId}
+    onChange={(e) => {
+      const petId = e.target.value;
+      setSelectedPetId(petId);
+
+      const pet = pets.find((p) => p.id === petId);
+      if (pet) {
+        updateCustomerField("pet_name", pet.name || "");
+        updateCustomerField("pet_species", pet.species || "");
+      }
+    }}
+    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+  >
+    <option value="">Seleccionar mascota existente</option>
+
+    {pets.map((pet) => (
+      <option key={pet.id} value={pet.id}>
+        🐶 {pet.name} · {pet.species}
+      </option>
+    ))}
+  </select>
+)}
 
                   {visibleBookingFields.map((field) => (
                     <input
