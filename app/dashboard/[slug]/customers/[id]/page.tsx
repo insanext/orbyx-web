@@ -7,6 +7,8 @@ import { Panel } from "../../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
+/* ================= TYPES ================= */
+
 type Customer = {
   id: string;
   name: string;
@@ -22,7 +24,27 @@ type Pet = {
   species_base: string;
   species_custom?: string;
   breed?: string;
+  sex?: string;
+  weight_kg?: number;
+  is_sterilized?: boolean;
 };
+
+type Appointment = {
+  id: string;
+  service_name_snapshot?: string;
+  start_at: string;
+};
+
+/* ================= HELPERS ================= */
+
+function formatDate(value?: string | null) {
+  if (!value) return "Sin información";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin información";
+  return date.toLocaleDateString("es-CL");
+}
+
+/* ================= PAGE ================= */
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -31,6 +53,7 @@ export default function CustomerDetailPage() {
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,25 +61,39 @@ export default function CustomerDetailPage() {
       try {
         setLoading(true);
 
-        // 🔹 CUSTOMER
-        const resCustomer = await fetch(
+        /* ===== CUSTOMER ===== */
+        const resCustomers = await fetch(
           `${BACKEND_URL}/customers/${slug}`
         );
-        const dataCustomer = await resCustomer.json();
+        const dataCustomers = await resCustomers.json();
 
-        const found = dataCustomer.customers?.find(
+        const found = dataCustomers.customers?.find(
           (c: any) => c.id === customerId
         );
 
         setCustomer(found || null);
 
-        // 🔹 PETS
-        const resPets = await fetch(
-          `${BACKEND_URL}/pets/${slug}?customer_id=${customerId}`
-        );
-        const dataPets = await resPets.json();
+        /* ===== PETS ===== */
+        try {
+          const resPets = await fetch(
+            `${BACKEND_URL}/pets/${slug}?customer_id=${customerId}`
+          );
+          const dataPets = await resPets.json();
+          setPets(dataPets.pets || []);
+        } catch {
+          setPets([]);
+        }
 
-        setPets(dataPets.pets || []);
+        /* ===== APPOINTMENTS (HISTORIAL) ===== */
+        try {
+          const resAppointments = await fetch(
+            `${BACKEND_URL}/appointments/${slug}?customer_id=${customerId}`
+          );
+          const dataAppointments = await resAppointments.json();
+          setAppointments(dataAppointments.appointments || []);
+        } catch {
+          setAppointments([]);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -74,10 +111,10 @@ export default function CustomerDetailPage() {
       <PageHeader
         eyebrow="Cliente"
         title={customer?.name || "Cliente"}
-        description="Ficha del cliente y sus mascotas"
+        description="Ficha completa del cliente y sus mascotas"
       />
 
-      {/* INFO CLIENTE */}
+      {/* ================= INFO CLIENTE ================= */}
       <Panel title="Información del cliente">
         {loading ? (
           <p>Cargando...</p>
@@ -107,17 +144,13 @@ export default function CustomerDetailPage() {
 
             <div>
               <p className="text-xs text-slate-500">Última visita</p>
-              <p>
-                {customer.last_visit_at
-                  ? new Date(customer.last_visit_at).toLocaleDateString()
-                  : "Sin visitas"}
-              </p>
+              <p>{formatDate(customer.last_visit_at)}</p>
             </div>
           </div>
         )}
       </Panel>
 
-      {/* MASCOTAS */}
+      {/* ================= MASCOTAS ================= */}
       <Panel title="Mascotas">
         {pets.length === 0 ? (
           <p className="text-sm text-slate-500">
@@ -132,41 +165,67 @@ export default function CustomerDetailPage() {
               >
                 <p className="font-semibold text-lg">{pet.name}</p>
 
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-sm text-slate-500">
                   {pet.species_base === "otro"
                     ? pet.species_custom
                     : pet.species_base}
                 </p>
 
                 {pet.breed && (
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-slate-400">
                     {pet.breed}
                   </p>
                 )}
+
+                <div className="mt-2 text-xs text-slate-500">
+                  {pet.sex && <span>Sexo: {pet.sex} · </span>}
+                  {pet.weight_kg && <span>{pet.weight_kg}kg · </span>}
+                  <span>
+                    {pet.is_sterilized ? "Esterilizado" : "No esterilizado"}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         )}
       </Panel>
 
-      {/* PLACEHOLDER HISTORIAL */}
-      <Panel title="Historial">
-        <p className="text-sm text-slate-500">
-          Próximamente: historial de visitas por mascota.
-        </p>
+      {/* ================= HISTORIAL ================= */}
+      <Panel title="Historial de visitas">
+        {appointments.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            Sin historial aún.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {appointments.slice(0, 10).map((a) => (
+              <div
+                key={a.id}
+                className="rounded-xl border p-3 bg-white"
+              >
+                <p className="text-sm font-medium">
+                  {a.service_name_snapshot || "Servicio"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {formatDate(a.start_at)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </Panel>
 
-      {/* PLACEHOLDER VACUNAS */}
+      {/* ================= VACUNAS (READY) ================= */}
       <Panel title="Vacunas">
         <p className="text-sm text-slate-500">
-          Próximamente: seguimiento de vacunas.
+          Próximamente: seguimiento de vacunas con alertas y recordatorios.
         </p>
       </Panel>
 
-      {/* PLACEHOLDER NOTAS */}
+      {/* ================= NOTAS (READY) ================= */}
       <Panel title="Notas">
         <p className="text-sm text-slate-500">
-          Próximamente: notas por mascota.
+          Próximamente: notas rápidas por mascota.
         </p>
       </Panel>
     </div>
