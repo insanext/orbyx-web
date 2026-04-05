@@ -251,7 +251,7 @@ setTimeout(() => {
 
       {/* ================= MASCOTAS ================= */}
       <Panel title="Mascotas" description="Crea mascotas y construye la ficha veterinaria del cliente.">
-        <form onSubmit={handleCreatePet} className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+        <form onSubmit={handleCreatePet} className="mb-6 rounded-2xl border border-slate-200 bg-white/60 p-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div>
               <label className="mb-2 block text-xs text-slate-500">Nombre</label>
@@ -261,7 +261,7 @@ setTimeout(() => {
                 onChange={(e) =>
                   setPetForm((prev) => ({ ...prev, name: e.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
                 placeholder="Ej: Luna"
                 required
               />
@@ -277,7 +277,7 @@ setTimeout(() => {
                     species_base: e.target.value as "perro" | "gato" | "otro",
                   }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
               >
                 <option value="perro">Perro</option>
                 <option value="gato">Gato</option>
@@ -297,7 +297,7 @@ setTimeout(() => {
                       species_custom: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                  className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
                   placeholder="Ej: conejo"
                   required
                 />
@@ -312,7 +312,7 @@ setTimeout(() => {
                 onChange={(e) =>
                   setPetForm((prev) => ({ ...prev, breed: e.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
                 placeholder="Ej: Labrador"
               />
             </div>
@@ -324,7 +324,7 @@ setTimeout(() => {
                 onChange={(e) =>
                   setPetForm((prev) => ({ ...prev, sex: e.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
               >
                 <option value="">Seleccionar</option>
                 <option value="macho">Macho</option>
@@ -342,7 +342,7 @@ setTimeout(() => {
                 onChange={(e) =>
                   setPetForm((prev) => ({ ...prev, weight_kg: e.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
                 placeholder="Ej: 12.5"
               />
             </div>
@@ -370,7 +370,7 @@ setTimeout(() => {
                 onChange={(e) =>
                   setPetForm((prev) => ({ ...prev, notes: e.target.value }))
                 }
-                className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
                 placeholder="Notas rápidas de la mascota"
               />
             </div>
@@ -409,7 +409,7 @@ setTimeout(() => {
             {pets.map((pet) => (
               <div
                 key={pet.id}
-                className="rounded-xl border p-4 bg-white dark:bg-slate-950"
+                className="rounded-xl border border-slate-200 bg-white/80 p-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900"
               >
                 <p className="font-semibold text-lg">{pet.name}</p>
 
