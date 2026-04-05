@@ -230,11 +230,13 @@ export default function Page() {
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
 
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
-  const [customerData, setCustomerData] = useState<Record<string, string>>({
-    name: "",
-    phone: "",
-    email: "",
-  });
+const [customerData, setCustomerData] = useState<Record<string, string>>({
+  name: "",
+  phone: "",
+  email: "",
+  pet_name: "",
+  pet_species: "",
+});
 
   const [loadingPage, setLoadingPage] = useState(true);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -560,14 +562,15 @@ export default function Page() {
         customer_name: customerData.name.trim(),
         customer_phone: customerData.phone.trim(),
         customer_email: customerData.email.trim(),
-        customer_data: visibleBookingFields.reduce<Record<string, string>>(
-          (acc, field) => {
-            const value = String(customerData[field.key] || "").trim();
-            if (value) acc[field.key] = value;
-            return acc;
-          },
-          {}
-        ),
+        customer_data: {
+  ...visibleBookingFields.reduce<Record<string, string>>((acc, field) => {
+    const value = String(customerData[field.key] || "").trim();
+    if (value) acc[field.key] = value;
+    return acc;
+  }, {}),
+  pet_name: String(customerData.pet_name || "").trim(),
+  pet_species: String(customerData.pet_species || "").trim(),
+},
       };
 
       const res = await fetch("/api/appointments/slot", {
@@ -1054,6 +1057,22 @@ export default function Page() {
                     }
                     className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
                   />
+
+
+{/* Mascota */}
+<input
+  placeholder="Nombre de la mascota"
+  value={customerData.pet_name || ""}
+  onChange={(e) => updateCustomerField("pet_name", e.target.value)}
+  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+/>
+
+<input
+  placeholder="Especie (perro, gato, etc)"
+  value={customerData.pet_species || ""}
+  onChange={(e) => updateCustomerField("pet_species", e.target.value)}
+  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+/>
 
                   {visibleBookingFields.map((field) => (
                     <input
