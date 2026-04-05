@@ -371,7 +371,7 @@ useEffect(() => {
 
   const timeout = setTimeout(async () => {
     try {
-      const res = await fetch(`https://agenda-oauth.onrender.com/api/pets/${slug}?phone=${phone}`);
+      const res = await fetch(`https://agenda-oauth.onrender.com/pets/${slug}?phone=${phone}`);
       const data = await res.json();
       setPets(data.pets || []);
     } catch (error) {
@@ -1108,7 +1108,7 @@ useEffect(() => {
       const pet = pets.find((p) => p.id === petId);
       if (pet) {
         updateCustomerField("pet_name", pet.name || "");
-        updateCustomerField("pet_species", pet.species || "");
+        updateCustomerField("pet_species", pet.species_base || "");
       }
     }}
     className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
@@ -1117,7 +1117,7 @@ useEffect(() => {
 
     {pets.map((pet) => (
       <option key={pet.id} value={pet.id}>
-        🐶 {pet.name} · {pet.species}
+        🐶 {pet.name} · {pet.species_base}
       </option>
     ))}
   </select>
