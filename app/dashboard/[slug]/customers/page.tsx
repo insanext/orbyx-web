@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 
@@ -125,6 +125,7 @@ function CustomerStatCard({
 
 export default function CustomersPage() {
   const params = useParams();
+  const router = useRouter();
   const slug =
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
@@ -399,7 +400,10 @@ export default function CustomersPage() {
                     return (
                       <tr
                         key={customer.id}
-                        className="border-t border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                        onClick={() =>
+                          router.push(`/dashboard/${slug}/customers/${customer.id}`)
+                        }
+                        className="cursor-pointer border-t border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
                       >
                         <td className="px-5 py-4 align-top">
                           <div>
