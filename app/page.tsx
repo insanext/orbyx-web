@@ -4,23 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
-  BellRing,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  HeartHandshake,
-  MessageCircleMore,
-  Scissors,
   Sparkles,
-  Stethoscope,
-  Users,
-  Wand2,
-  BrainCircuit,
-  ShieldCheck,
-  MessagesSquare,
-  BadgeCheck,
-  CircleDollarSign,
 } from "lucide-react";
 
 export default function OrbyxLandingPage() {
@@ -50,7 +34,6 @@ export default function OrbyxLandingPage() {
 
   return (
     <main className="min-h-screen bg-[#060816] text-white">
-
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
@@ -58,21 +41,20 @@ export default function OrbyxLandingPage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.20),transparent_26%)]" />
         </div>
 
-        <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-16 lg:px-10 lg:pb-18 lg:pt-20">
-          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1.02fr)_minmax(520px,760px)] xl:gap-8">
-
-            {/* TEXTO */}
-            <div className="max-w-4xl">
+        <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-16 lg:px-10 lg:pb-20 lg:pt-20">
+          <div className="grid items-center gap-8 lg:grid-cols-2 xl:gap-12">
+            {/* Texto */}
+            <div className="max-w-3xl z-10 relative">
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-blue-100"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-blue-100 mb-4"
               >
                 <Sparkles className="h-4 w-4" />
                 Automatiza reservas, atención y seguimiento por WhatsApp
               </motion.div>
 
-              <motion.h1 className="mt-8 text-5xl font-semibold leading-[1.02] sm:text-6xl xl:text-7xl">
+              <motion.h1 className="mt-4 text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.2]">
                 Orbyx trabaja por ti:
                 <br />
                 responde, agenda y
@@ -84,12 +66,13 @@ export default function OrbyxLandingPage() {
                 </span>
               </motion.h1>
 
-              <p className="mt-8 max-w-3xl text-lg text-slate-200">
+              <p className="mt-6 max-w-2xl text-lg text-slate-200">
                 Deja de perder clientes por no responder a tiempo o por
                 inasistencias. Orbyx automatiza la atención por WhatsApp.
               </p>
 
-              <div className="mt-8 flex gap-3 flex-wrap">
+              {/* Chips */}
+              <div className="mt-6 flex gap-3 flex-wrap">
                 {heroChips.map((chip) => (
                   <span key={chip} className="rounded-full bg-white/10 px-4 py-2 text-sm">
                     {chip}
@@ -97,7 +80,8 @@ export default function OrbyxLandingPage() {
                 ))}
               </div>
 
-              <div className="mt-10 flex gap-4">
+              {/* Botones */}
+              <div className="mt-8 flex gap-4 flex-wrap">
                 <Link href="/register" className="bg-emerald-500 px-6 py-3 rounded-xl">
                   Probar gratis
                 </Link>
@@ -107,28 +91,16 @@ export default function OrbyxLandingPage() {
               </div>
             </div>
 
-            {/* VISUAL DERECHO (IMAGEN FINAL ÚNICA) */}
-            <motion.div className="relative hidden lg:block">
-  <div className="relative min-h-[720px]">
-
-    {/* IMAGEN */}
-    <div className="absolute right-[-220px] top-0 z-20 w-[1400px] xl:right-[-260px] xl:w-[1600px]">
-      <Image
-        src="/images/hero-orbyx-final.png"
-        alt="Hero Orbyx"
-        width={1792}
-        height={1024}
-        className="w-full h-auto"
-        priority
-      />
-    </div>
-
-    {/* FADE IZQUIERDO (CLAVE) */}
-    <div className="pointer-events-none absolute left-0 top-0 z-30 h-full w-[55%] bg-gradient-to-r from-[#060816] via-[#060816]/90 to-transparent" />
-
-  </div>
-</motion.div>
-
+            {/* Imagen */}
+            <div className="relative hidden lg:block z-0">
+              <Image
+                src="/images/hero-orbyx-final.png"
+                alt="Hero Orbyx"
+                width={1200}
+                height={800}
+                className="w-full max-w-[600px] object-contain"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -150,7 +122,6 @@ export default function OrbyxLandingPage() {
           </div>
         </div>
       </section>
-
     </main>
   );
 }
