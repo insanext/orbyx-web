@@ -217,73 +217,72 @@ export default function OrbyxLandingPage() {
             </div>
 
             <motion.div
-              initial={{ opacity: 0, x: 18, y: 18 }}
-              animate={{ opacity: 1, x: 0, y: 0 }}
-              transition={{ duration: 0.7 }}
-              className="relative mx-auto hidden w-full max-w-[980px] lg:block"
-            >
-              <div className="relative min-h-[760px]">
-                <motion.div
-                  initial={{ opacity: 0, y: 16, rotate: -4 }}
-                  animate={{ opacity: 1, y: 0, rotate: -4 }}
-                  transition={{ duration: 0.75, delay: 0.1 }}
-                  className="absolute right-8 top-[40px] z-20 w-[980px] xl:right-0 xl:top-[32px] xl:w-[1040px]"
-                  style={{ transform: "perspective(1200px) rotateX(6deg)" }}
-                >
-                  <Image
-                    src="/images/mockup-dashboard.png"
-                    alt="Mockup dashboard Orbyx"
-                    width={1600}
-                    height={1100}
-                    className="h-auto w-full drop-shadow-[0_50px_120px_rgba(0,0,0,0.48)]"
-                    priority
-                  />
-                </motion.div>
+  initial={{ opacity: 0, x: 18, y: 18 }}
+  animate={{ opacity: 1, x: 0, y: 0 }}
+  transition={{ duration: 0.7 }}
+  className="relative mx-auto hidden w-full max-w-[980px] lg:block"
+>
+  <div className="relative min-h-[760px]">
+    <motion.div
+      initial={{ opacity: 0, y: 16, rotate: -4 }}
+      animate={{ opacity: 1, y: 0, rotate: -4 }}
+      transition={{ duration: 0.75, delay: 0.1 }}
+      className="absolute right-8 top-[70px] z-20 w-[860px] xl:right-0 xl:top-[52px] xl:w-[940px]"
+    >
+      <Image
+        src="/images/mockup-dashboard.png"
+        alt="Mockup dashboard Orbyx"
+        width={1600}
+        height={1100}
+        className="h-auto w-full drop-shadow-[0_50px_120px_rgba(0,0,0,0.48)]"
+        priority
+      />
+    </motion.div>
 
-                <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute right-2 top-[110px] z-30 w-[300px] xl:right-6 xl:top-[100px] xl:w-[330px]"
-                >
-                  <Image
-                    src="/images/chat-question.png"
-                    alt="Pregunta por WhatsApp"
-                    width={1200}
-                    height={300}
-                    className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
-                  />
-                </motion.div>
+    <motion.div
+      animate={{ y: [0, -8, 0] }}
+      transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute right-2 top-[150px] z-30 w-[300px] xl:right-6 xl:top-[135px] xl:w-[330px]"
+    >
+      <Image
+        src="/images/chat-question.png"
+        alt="Pregunta por WhatsApp"
+        width={1200}
+        height={300}
+        className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
+      />
+    </motion.div>
 
-                <motion.div
-                  animate={{ y: [0, 10, 0] }}
-                  transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-                  className="absolute left-[10px] top-[220px] z-30 w-[370px] xl:left-[40px] xl:top-[235px] xl:w-[430px]"
-                >
-                  <Image
-                    src="/images/chat-response.png"
-                    alt="Respuesta por WhatsApp"
-                    width={1400}
-                    height={320}
-                    className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
-                  />
-                </motion.div>
+    <motion.div
+      animate={{ y: [0, 10, 0] }}
+      transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+      className="absolute left-[10px] top-[300px] z-30 w-[370px] xl:left-[40px] xl:top-[315px] xl:w-[430px]"
+    >
+      <Image
+        src="/images/chat-response.png"
+        alt="Respuesta por WhatsApp"
+        width={1400}
+        height={320}
+        className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
+      />
+    </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.2 }}
-                  className="absolute bottom-[60px] right-[10px] z-10 w-[340px] xl:bottom-[48px] xl:right-[18px] xl:w-[400px]"
-                >
-                  <Image
-                    src="/images/persona-relajada.png"
-                    alt="Persona relajada usando Orbyx"
-                    width={1100}
-                    height={900}
-                    className="h-auto w-full drop-shadow-[0_28px_70px_rgba(0,0,0,0.38)]"
-                  />
-                </motion.div>
-              </div>
-            </motion.div>
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.2 }}
+      className="absolute bottom-[10px] right-[10px] z-10 w-[340px] xl:bottom-[0px] xl:right-[18px] xl:w-[400px]"
+    >
+      <Image
+        src="/images/persona-relajada.png"
+        alt="Persona relajada usando Orbyx"
+        width={1100}
+        height={900}
+        className="h-auto w-full drop-shadow-[0_28px_70px_rgba(0,0,0,0.38)]"
+      />
+    </motion.div>
+  </div>
+</motion.div>
           </div>
 
           {/* HERO MOBILE VISUAL */}
