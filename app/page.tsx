@@ -12,6 +12,13 @@ export default function OrbyxLandingPage() {
     "Prueba gratis por 7 días",
   ];
 
+  const navItems = [
+    { label: "Inicio", href: "/" },
+    { label: "Funcionalidades", href: "#funcionalidades" },
+    { label: "Soluciones", href: "#soluciones" },
+    { label: "Ver planes", href: "/planes" },
+  ];
+
   const resultCards = [
     {
       icon: CircleDollarSign,
@@ -43,12 +50,44 @@ export default function OrbyxLandingPage() {
           />
         </div>
 
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.96)_0%,rgba(5,8,22,0.90)_25%,rgba(5,8,22,0.55)_38%,rgba(5,8,22,0.15)_50%,rgba(5,8,22,0)_65%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.96)_0%,rgba(5,8,22,0.90)_24%,rgba(5,8,22,0.58)_38%,rgba(5,8,22,0.18)_50%,rgba(5,8,22,0.02)_65%,rgba(5,8,22,0)_76%)]" />
 
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.12),transparent_24%),radial-gradient(circle_at_82%_16%,rgba(168,85,247,0.12),transparent_28%)]" />
 
-        <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-16 lg:px-10 lg:pb-24 lg:pt-20">
-          <div className="min-h-[680px] lg:min-h-[760px] flex items-center">
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-[linear-gradient(180deg,rgba(5,8,22,0)_0%,rgba(5,8,22,0.50)_55%,#050816_100%)]" />
+
+        <div className="relative mx-auto max-w-[1680px] px-6 pt-6 lg:px-10 lg:pt-8">
+          <header className="flex items-center justify-between gap-6">
+            <Link
+              href="/"
+              className="text-2xl font-semibold tracking-[-0.03em] text-white transition hover:opacity-90"
+            >
+              Orbyx
+            </Link>
+
+            <nav className="hidden items-center gap-7 lg:flex">
+              {navItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="text-sm font-medium text-white/80 transition duration-200 hover:text-white"
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <Link
+                href="/login"
+                className="rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition duration-200 hover:border-white/30 hover:bg-white/10"
+              >
+                Iniciar sesión
+              </Link>
+            </nav>
+          </header>
+        </div>
+
+        <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-10 lg:px-10 lg:pb-24 lg:pt-16">
+          <div className="flex min-h-[680px] items-center lg:min-h-[760px]">
             <div className="relative z-20 max-w-[760px]">
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
@@ -95,7 +134,7 @@ export default function OrbyxLandingPage() {
                 {heroChips.map((chip) => (
                   <span
                     key={chip}
-                    className="rounded-full border border-white/8 bg-white/8 px-4 py-2 text-sm text-slate-100 backdrop-blur-sm"
+                    className="rounded-full border border-white/8 bg-white/8 px-4 py-2 text-sm text-slate-100 backdrop-blur-sm transition duration-200 hover:border-white/15 hover:bg-white/10"
                   >
                     {chip}
                   </span>
@@ -110,16 +149,20 @@ export default function OrbyxLandingPage() {
               >
                 <Link
                   href="/register"
-                  className="rounded-xl bg-emerald-500 px-6 py-3 font-medium text-white transition hover:bg-emerald-400"
+                  className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 px-7 py-3.5 font-medium text-white shadow-[0_10px_30px_rgba(16,185,129,0.22)] transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:from-emerald-300 hover:to-emerald-500"
                 >
-                  Probar gratis
+                  <span className="transition duration-200 group-hover:tracking-[0.01em]">
+                    Probar gratis
+                  </span>
                 </Link>
 
                 <Link
                   href="/planes"
-                  className="rounded-xl border border-white/30 px-6 py-3 font-medium text-white transition hover:bg-white/5"
+                  className="group inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/[0.06] px-7 py-3.5 font-medium text-white shadow-[0_10px_30px_rgba(15,23,42,0.18)] backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-white/35 hover:bg-white/[0.10]"
                 >
-                  Ver planes
+                  <span className="bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent transition duration-200 group-hover:from-white group-hover:to-white">
+                    Ver planes
+                  </span>
                 </Link>
               </motion.div>
             </div>
@@ -127,7 +170,12 @@ export default function OrbyxLandingPage() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section
+        id="funcionalidades"
+        className="relative py-20"
+      >
+        <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,rgba(9,13,34,0.35)_0%,rgba(5,8,22,0)_100%)]" />
+
         <div className="mx-auto max-w-[1300px] px-6">
           <div className="grid gap-6 md:grid-cols-3">
             {resultCards.map((item) => {
@@ -135,7 +183,7 @@ export default function OrbyxLandingPage() {
               return (
                 <div
                   key={item.title}
-                  className="rounded-2xl border border-white/6 bg-white/[0.04] p-6"
+                  className="rounded-2xl border border-white/6 bg-white/[0.04] p-6 transition duration-200 hover:-translate-y-1 hover:border-white/12 hover:bg-white/[0.06]"
                 >
                   <Icon className="mb-3 h-5 w-5 text-white" />
                   <h3 className="font-semibold">{item.title}</h3>
