@@ -131,36 +131,15 @@ export default function OrbyxLandingPage() {
 
   return (
     <main className="min-h-screen bg-[#060816] text-white">
-
-
-
-
-
-
-
-
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute right-[-10px] top-[118px] w-[640px] xl:right-[10px] xl:top-[118px] xl:w-[760px]">
-              <Image
-                src="/images/hero-orbyx-clean.png"
-                alt="Hero Orbyx"
-                width={1600}
-                height={1000}
-                priority
-                className="h-auto w-full object-contain opacity-95"
-              />
-            </div>
-          </div>
-
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,28,0.86)_0%,rgba(7,13,33,0.78)_30%,rgba(10,16,38,0.38)_60%,rgba(10,16,38,0.18)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.18),transparent_26%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,28,0.92)_0%,rgba(6,10,24,0.88)_28%,rgba(8,12,28,0.52)_58%,rgba(8,12,28,0.28)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.14),transparent_22%),radial-gradient(circle_at_82%_16%,rgba(168,85,247,0.16),transparent_26%)]" />
         </div>
 
-        <div className="relative mx-auto max-w-[1500px] px-6 pb-16 pt-14 lg:px-10 lg:pb-20 lg:pt-16">
-          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.98fr)_minmax(620px,760px)] xl:gap-8">
+        <div className="relative mx-auto max-w-[1450px] px-6 pb-14 pt-14 lg:px-10 lg:pb-16 lg:pt-16">
+          <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(560px,700px)] xl:gap-10">
             <div className="max-w-4xl">
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
@@ -176,20 +155,28 @@ export default function OrbyxLandingPage() {
                 initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55 }}
-                className="mt-8 text-5xl font-semibold leading-[1.04] text-white sm:text-6xl xl:text-[5.2rem]"
+                className="mt-8 text-[3.6rem] font-semibold leading-[0.98] text-white sm:text-[4.5rem] xl:text-[5.4rem]"
               >
-                Orbyx trabaja por ti:
+                Orbyx trabaja
                 <br />
-                responde, agenda y recupera
+                por ti:
                 <br />
-                clientes automáticamente
+                responde,
+                <br />
+                agenda y
+                <br />
+                recupera
+                <br />
+                clientes
+                <br />
+                automáticamente
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.62 }}
-                className="mt-7 max-w-2xl text-lg leading-8 text-slate-200 sm:text-[20px]"
+                className="mt-8 max-w-2xl text-lg leading-8 text-slate-200 sm:text-[20px]"
               >
                 Deja de perder clientes por no responder a tiempo o por
                 inasistencias. Orbyx automatiza la atención por WhatsApp,
@@ -231,12 +218,21 @@ export default function OrbyxLandingPage() {
             </div>
 
             <motion.div
-              initial={{ opacity: 0, x: 18, y: 18 }}
+              initial={{ opacity: 0, x: 16, y: 10 }}
               animate={{ opacity: 1, x: 0, y: 0 }}
               transition={{ duration: 0.7 }}
-              className="relative mx-auto hidden w-full max-w-[760px] lg:block"
+              className="relative mx-auto hidden w-full lg:block"
             >
-              <div className="relative min-h-[500px]">
+              <div className="relative mx-auto w-[560px] xl:w-[660px]">
+                <Image
+                  src="/images/hero-orbyx-clean.png"
+                  alt="Hero Orbyx"
+                  width={1600}
+                  height={1000}
+                  priority
+                  className="h-auto w-full object-contain"
+                />
+
                 <motion.div
                   animate={{ y: [0, -8, 0] }}
                   transition={{
@@ -244,7 +240,7 @@ export default function OrbyxLandingPage() {
                     repeat: Infinity,
                     ease: "easeInOut",
                   }}
-                  className="absolute right-[10px] top-[88px] z-30 w-[220px] xl:right-[20px] xl:top-[82px] xl:w-[245px]"
+                  className="absolute right-[-6px] top-[170px] z-30 w-[205px] xl:right-[-10px] xl:top-[200px] xl:w-[245px]"
                 >
                   <Image
                     src="/images/chat-question.png"
@@ -263,7 +259,7 @@ export default function OrbyxLandingPage() {
                     ease: "easeInOut",
                     delay: 0.4,
                   }}
-                  className="absolute left-[0px] top-[205px] z-30 w-[280px] xl:left-[10px] xl:top-[215px] xl:w-[320px]"
+                  className="absolute left-[-18px] top-[305px] z-30 w-[255px] xl:left-[-28px] xl:top-[360px] xl:w-[310px]"
                 >
                   <Image
                     src="/images/chat-response.png"
@@ -278,7 +274,7 @@ export default function OrbyxLandingPage() {
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
-                  className="absolute bottom-[-6px] right-[0px] z-10 w-[220px] xl:bottom-[-10px] xl:right-[6px] xl:w-[255px]"
+                  className="absolute bottom-[-12px] right-[14px] z-20 w-[155px] xl:bottom-[-18px] xl:right-[14px] xl:w-[190px]"
                 >
                   <Image
                     src="/images/persona-relajada.png"
@@ -292,19 +288,20 @@ export default function OrbyxLandingPage() {
             </motion.div>
           </div>
 
+          {/* HERO MOBILE VISUAL */}
           <div className="relative mt-14 lg:hidden">
             <div className="mx-auto max-w-[650px] rounded-[32px] border border-white/10 bg-white/6 p-4 shadow-[0_25px_80px_rgba(0,0,0,0.22)] backdrop-blur-md">
-              <div className="relative mx-auto flex max-w-[520px] flex-col items-center">
+              <div className="relative mx-auto max-w-[520px]">
                 <Image
-                  src="/images/mockup-dashboard.png"
-                  alt="Mockup dashboard Orbyx"
-                  width={1200}
-                  height={900}
-                  className="h-auto w-full"
+                  src="/images/hero-orbyx-clean.png"
+                  alt="Hero Orbyx"
+                  width={1600}
+                  height={1000}
+                  className="h-auto w-full object-contain"
                   priority
                 />
 
-                <div className="-mt-4 w-[78%] self-end">
+                <div className="absolute right-[-4px] top-[34%] w-[32%]">
                   <Image
                     src="/images/chat-question.png"
                     alt="Pregunta por WhatsApp"
@@ -314,7 +311,7 @@ export default function OrbyxLandingPage() {
                   />
                 </div>
 
-                <div className="-mt-1 w-[90%] self-start">
+                <div className="absolute left-[-4px] top-[56%] w-[42%]">
                   <Image
                     src="/images/chat-response.png"
                     alt="Respuesta por WhatsApp"
@@ -324,7 +321,7 @@ export default function OrbyxLandingPage() {
                   />
                 </div>
 
-                <div className="mt-2 w-[58%] self-end">
+                <div className="absolute bottom-[-6px] right-[6px] w-[28%]">
                   <Image
                     src="/images/persona-relajada.png"
                     alt="Persona relajada usando Orbyx"
