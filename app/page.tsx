@@ -134,15 +134,17 @@ export default function OrbyxLandingPage() {
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 flex justify-end">
-  <Image
-    src="/images/hero-orbyx-clean.png"
-    alt="Hero Orbyx"
-    width={1400}
-    height={900}
-    priority
-    className="h-full w-auto object-contain opacity-90"
-  />
+          <div className="absolute inset-0 pointer-events-none">
+  <div className="absolute right-[-40px] top-[120px] w-[900px] xl:right-[-20px] xl:top-[110px] xl:w-[980px]">
+    <Image
+      src="/images/hero-orbyx-clean.png"
+      alt="Hero Orbyx"
+      width={1600}
+      height={1000}
+      priority
+      className="h-auto w-full object-contain opacity-95"
+    />
+  </div>
 </div>
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,28,0.86)_0%,rgba(7,13,33,0.78)_30%,rgba(10,16,38,0.38)_60%,rgba(10,16,38,0.18)_100%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.18),transparent_26%)]" />
