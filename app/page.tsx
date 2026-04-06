@@ -107,55 +107,19 @@ export default function OrbyxLandingPage() {
               </div>
             </div>
 
-            {/* VISUAL DERECHO */}
+            {/* VISUAL DERECHO (IMAGEN FINAL ÚNICA) */}
             <motion.div className="relative hidden lg:block">
-  <div className="relative min-h-[700px]">
-
-    {/* BASE (LAPTOP + FONDO) */}
-    <div className="absolute right-[-40px] top-[8px] z-20 w-[860px] xl:right-[-70px] xl:top-[0px] xl:w-[980px]">
-      <Image
-        src="/images/hero-orbyx-clean.png"
-        alt="Hero Orbyx"
-        width={1400}
-        height={950}
-        className="w-full h-auto"
-        priority
-      />
-    </div>
-
-    {/* CHAT 1 */}
-    <div className="absolute right-[30px] top-[58px] z-30 w-[330px] xl:right-[30px] xl:top-[70px] xl:w-[360px]">
+              <div className="relative min-h-[700px]">
+                <div className="absolute right-[-40px] top-[8px] z-20 w-[860px] xl:right-[-70px] xl:top-[0px] xl:w-[980px]">
                   <Image
-                    src="/images/chat-question.png"
-                    alt=""
-                    width={1200}
-                    height={300}
-                    className="w-full"
+                    src="/images/hero-orbyx-final.png"
+                    alt="Hero Orbyx"
+                    width={1792}
+                    height={1024}
+                    className="w-full h-auto"
+                    priority
                   />
                 </div>
-
-                {/* CHAT 2 */}
-<div className="absolute left-[18px] top-[340px] z-30 w-[420px] xl:left-[10px] xl:top-[390px] xl:w-[470px]">
-                  <Image
-                    src="/images/chat-response.png"
-                    alt=""
-                    width={1400}
-                    height={320}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* PERSONA */}
-<div className="absolute bottom-[6px] right-[34px] z-10 w-[300px] xl:bottom-[8px] xl:right-[44px] xl:w-[340px]">
-                  <Image
-                    src="/images/persona-relajada.png"
-                    alt=""
-                    width={1100}
-                    height={900}
-                    className="w-full"
-                  />
-                </div>
-
               </div>
             </motion.div>
 
