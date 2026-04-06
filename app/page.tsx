@@ -37,8 +37,8 @@ export default function OrbyxLandingPage() {
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,28,0.88)_0%,rgba(7,13,33,0.82)_32%,rgba(10,16,38,0.45)_62%,rgba(10,16,38,0.25)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.20),transparent_26%)]" />
+          {/* Fondo sólido sin gradientes para evitar trasparencias */}
+          <div className="absolute inset-0 bg-[#060816]" />
         </div>
 
         <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-16 lg:px-10 lg:pb-20 lg:pt-20">
