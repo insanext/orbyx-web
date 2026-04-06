@@ -134,13 +134,16 @@ export default function OrbyxLandingPage() {
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
-          <Image
-            src="/images/bg-orbyx-hero.png"
-            alt="Fondo hero Orbyx"
-            fill
-            priority
-            className="object-cover object-center"
-          />
+          <div className="absolute inset-0 flex justify-end">
+  <Image
+    src="/images/hero-orbyx-clean.png"
+    alt="Hero Orbyx"
+    width={1400}
+    height={900}
+    priority
+    className="h-full w-auto object-contain opacity-90"
+  />
+</div>
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,28,0.86)_0%,rgba(7,13,33,0.78)_30%,rgba(10,16,38,0.38)_60%,rgba(10,16,38,0.18)_100%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.18),transparent_26%)]" />
         </div>
@@ -223,21 +226,6 @@ export default function OrbyxLandingPage() {
   className="relative mx-auto hidden w-full max-w-[980px] lg:block"
 >
   <div className="relative min-h-[760px]">
-    <motion.div
-      initial={{ opacity: 0, y: 16, rotate: -4 }}
-      animate={{ opacity: 1, y: 0, rotate: -4 }}
-      transition={{ duration: 0.75, delay: 0.1 }}
-      className="absolute right-8 top-[70px] z-20 w-[860px] xl:right-0 xl:top-[52px] xl:w-[940px]"
-    >
-      <Image
-        src="/images/mockup-dashboard.png"
-        alt="Mockup dashboard Orbyx"
-        width={1600}
-        height={1100}
-        className="h-auto w-full drop-shadow-[0_50px_120px_rgba(0,0,0,0.48)]"
-        priority
-      />
-    </motion.div>
 
     <motion.div
       animate={{ y: [0, -8, 0] }}
