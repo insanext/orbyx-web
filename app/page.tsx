@@ -110,7 +110,7 @@ export default function OrbyxLandingPage() {
             {/* VISUAL DERECHO (IMAGEN FINAL ÚNICA) */}
             <motion.div className="relative hidden lg:block">
               <div className="relative min-h-[700px]">
-                <div className="absolute right-[-40px] top-[8px] z-20 w-[860px] xl:right-[-70px] xl:top-[0px] xl:w-[980px]">
+                <div className="absolute right-[-120px] top-[0px] z-20 w-[1100px] xl:right-[-180px] xl:w-[1300px]">
                   <Image
                     src="/images/hero-orbyx-final.png"
                     alt="Hero Orbyx"
