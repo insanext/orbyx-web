@@ -111,12 +111,6 @@ export default function OrbyxLandingPage() {
     },
   ];
 
-  const trialItems = [
-    "Crea tu cuenta y pruébalo sin pagar.",
-    "Explora agenda, servicios, staff y automatizaciones.",
-    "Evalúa si encaja con tu negocio antes de contratar.",
-  ];
-
   const resultCards = [
     {
       icon: CircleDollarSign,
@@ -147,12 +141,12 @@ export default function OrbyxLandingPage() {
             priority
             className="object-cover object-center"
           />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,28,0.88)_0%,rgba(7,13,33,0.82)_32%,rgba(10,16,38,0.45)_62%,rgba(10,16,38,0.25)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.20),transparent_26%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,28,0.86)_0%,rgba(7,13,33,0.78)_30%,rgba(10,16,38,0.38)_60%,rgba(10,16,38,0.18)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.18),transparent_26%)]" />
         </div>
 
-        <div className="relative mx-auto max-w-[1600px] px-6 pb-24 pt-16 lg:px-10 lg:pb-28 lg:pt-20">
-          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1.02fr)_minmax(520px,760px)] xl:gap-8">
+        <div className="relative mx-auto max-w-[1700px] px-6 pb-24 pt-16 lg:px-10 lg:pb-32 lg:pt-20">
+          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,0.92fr)_minmax(760px,980px)] xl:gap-4">
             <div className="max-w-4xl">
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
@@ -172,13 +166,9 @@ export default function OrbyxLandingPage() {
               >
                 Orbyx trabaja por ti:
                 <br />
-                responde, agenda y
+                responde, agenda y recupera
                 <br />
-                recupera clientes
-                <br />
-                <span className="bg-[linear-gradient(90deg,#93c5fd_0%,#c4b5fd_50%,#f9a8d4_100%)] bg-clip-text text-transparent">
-                  automáticamente
-                </span>
+                clientes automáticamente
               </motion.h1>
 
               <motion.p
@@ -230,21 +220,22 @@ export default function OrbyxLandingPage() {
               initial={{ opacity: 0, x: 18, y: 18 }}
               animate={{ opacity: 1, x: 0, y: 0 }}
               transition={{ duration: 0.7 }}
-              className="relative mx-auto hidden w-full max-w-[760px] lg:block"
+              className="relative mx-auto hidden w-full max-w-[980px] lg:block"
             >
-              <div className="relative min-h-[620px]">
+              <div className="relative min-h-[760px]">
                 <motion.div
-                  initial={{ opacity: 0, y: 16, rotate: -3 }}
-                  animate={{ opacity: 1, y: 0, rotate: -3 }}
+                  initial={{ opacity: 0, y: 16, rotate: -4 }}
+                  animate={{ opacity: 1, y: 0, rotate: -4 }}
                   transition={{ duration: 0.75, delay: 0.1 }}
-                  className="absolute right-6 top-16 z-20 w-[640px] xl:w-[700px]"
+                  className="absolute right-8 top-[40px] z-20 w-[980px] xl:right-0 xl:top-[32px] xl:w-[1040px]"
+                  style={{ transform: "perspective(1200px) rotateX(6deg)" }}
                 >
                   <Image
                     src="/images/mockup-dashboard.png"
                     alt="Mockup dashboard Orbyx"
-                    width={1400}
-                    height={950}
-                    className="h-auto w-full drop-shadow-[0_35px_90px_rgba(0,0,0,0.45)]"
+                    width={1600}
+                    height={1100}
+                    className="h-auto w-full drop-shadow-[0_50px_120px_rgba(0,0,0,0.48)]"
                     priority
                   />
                 </motion.div>
@@ -252,28 +243,28 @@ export default function OrbyxLandingPage() {
                 <motion.div
                   animate={{ y: [0, -8, 0] }}
                   transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute right-0 top-8 z-30 w-[330px] xl:w-[360px]"
+                  className="absolute right-2 top-[110px] z-30 w-[300px] xl:right-6 xl:top-[100px] xl:w-[330px]"
                 >
                   <Image
                     src="/images/chat-question.png"
                     alt="Pregunta por WhatsApp"
                     width={1200}
                     height={300}
-                    className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.28)]"
+                    className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
                   />
                 </motion.div>
 
                 <motion.div
                   animate={{ y: [0, 10, 0] }}
                   transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-                  className="absolute left-6 top-[250px] z-30 w-[420px] xl:w-[470px]"
+                  className="absolute left-[10px] top-[220px] z-30 w-[370px] xl:left-[40px] xl:top-[235px] xl:w-[430px]"
                 >
                   <Image
                     src="/images/chat-response.png"
                     alt="Respuesta por WhatsApp"
                     width={1400}
                     height={320}
-                    className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.28)]"
+                    className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
                   />
                 </motion.div>
 
@@ -281,14 +272,14 @@ export default function OrbyxLandingPage() {
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
-                  className="absolute bottom-0 right-4 z-10 w-[300px] xl:w-[340px]"
+                  className="absolute bottom-[60px] right-[10px] z-10 w-[340px] xl:bottom-[48px] xl:right-[18px] xl:w-[400px]"
                 >
                   <Image
                     src="/images/persona-relajada.png"
                     alt="Persona relajada usando Orbyx"
                     width={1100}
                     height={900}
-                    className="h-auto w-full drop-shadow-[0_28px_70px_rgba(0,0,0,0.35)]"
+                    className="h-auto w-full drop-shadow-[0_28px_70px_rgba(0,0,0,0.38)]"
                   />
                 </motion.div>
               </div>
