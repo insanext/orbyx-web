@@ -131,22 +131,30 @@ export default function OrbyxLandingPage() {
 
   return (
     <main className="min-h-screen bg-[#060816] text-white">
+
+
+
+
+
+
+
+
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute inset-0 pointer-events-none">
-  <div className="absolute inset-0 pointer-events-none">
-  <div className="absolute right-[-10px] top-[118px] w-[640px] xl:right-[10px] xl:top-[118px] xl:w-[760px]">
-    <Image
-      src="/images/hero-orbyx-clean.png"
-      alt="Hero Orbyx"
-      width={1600}
-      height={1000}
-      priority
-      className="h-auto w-full object-contain opacity-95"
-    />
-  </div>
-</div>
+            <div className="absolute right-[-10px] top-[118px] w-[640px] xl:right-[10px] xl:top-[118px] xl:w-[760px]">
+              <Image
+                src="/images/hero-orbyx-clean.png"
+                alt="Hero Orbyx"
+                width={1600}
+                height={1000}
+                priority
+                className="h-auto w-full object-contain opacity-95"
+              />
+            </div>
+          </div>
+
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,28,0.86)_0%,rgba(7,13,33,0.78)_30%,rgba(10,16,38,0.38)_60%,rgba(10,16,38,0.18)_100%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.18),transparent_26%)]" />
         </div>
@@ -223,60 +231,67 @@ export default function OrbyxLandingPage() {
             </div>
 
             <motion.div
-  initial={{ opacity: 0, x: 18, y: 18 }}
-  animate={{ opacity: 1, x: 0, y: 0 }}
-  transition={{ duration: 0.7 }}
-  className="relative mx-auto hidden w-full max-w-[760px] lg:block"
->
-  <div className="relative min-h-[500px]">
+              initial={{ opacity: 0, x: 18, y: 18 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.7 }}
+              className="relative mx-auto hidden w-full max-w-[760px] lg:block"
+            >
+              <div className="relative min-h-[500px]">
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{
+                    duration: 4.2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="absolute right-[10px] top-[88px] z-30 w-[220px] xl:right-[20px] xl:top-[82px] xl:w-[245px]"
+                >
+                  <Image
+                    src="/images/chat-question.png"
+                    alt="Pregunta por WhatsApp"
+                    width={1200}
+                    height={300}
+                    className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
+                  />
+                </motion.div>
 
-    <motion.div
-      animate={{ y: [0, -8, 0] }}
-      transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
-      className="absolute right-[10px] top-[88px] z-30 w-[220px] xl:right-[20px] xl:top-[82px] xl:w-[245px]"
-    >
-      <Image
-        src="/images/chat-question.png"
-        alt="Pregunta por WhatsApp"
-        width={1200}
-        height={300}
-        className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
-      />
-    </motion.div>
+                <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{
+                    duration: 4.8,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.4,
+                  }}
+                  className="absolute left-[0px] top-[205px] z-30 w-[280px] xl:left-[10px] xl:top-[215px] xl:w-[320px]"
+                >
+                  <Image
+                    src="/images/chat-response.png"
+                    alt="Respuesta por WhatsApp"
+                    width={1400}
+                    height={320}
+                    className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
+                  />
+                </motion.div>
 
-    <motion.div
-      animate={{ y: [0, 10, 0] }}
-      transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-      className="absolute left-[0px] top-[205px] z-30 w-[280px] xl:left-[10px] xl:top-[215px] xl:w-[320px]"
-    >
-      <Image
-        src="/images/chat-response.png"
-        alt="Respuesta por WhatsApp"
-        width={1400}
-        height={320}
-        className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.30)]"
-      />
-    </motion.div>
-
-    <motion.div
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.2 }}
-      className="absolute bottom-[-6px] right-[0px] z-10 w-[220px] xl:bottom-[-10px] xl:right-[6px] xl:w-[255px]"
-    >
-      <Image
-        src="/images/persona-relajada.png"
-        alt="Persona relajada usando Orbyx"
-        width={1100}
-        height={900}
-        className="h-auto w-full drop-shadow-[0_28px_70px_rgba(0,0,0,0.38)]"
-      />
-    </motion.div>
-  </div>
-</motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="absolute bottom-[-6px] right-[0px] z-10 w-[220px] xl:bottom-[-10px] xl:right-[6px] xl:w-[255px]"
+                >
+                  <Image
+                    src="/images/persona-relajada.png"
+                    alt="Persona relajada usando Orbyx"
+                    width={1100}
+                    height={900}
+                    className="h-auto w-full drop-shadow-[0_28px_70px_rgba(0,0,0,0.38)]"
+                  />
+                </motion.div>
+              </div>
+            </motion.div>
           </div>
 
-          {/* HERO MOBILE VISUAL */}
           <div className="relative mt-14 lg:hidden">
             <div className="mx-auto max-w-[650px] rounded-[32px] border border-white/10 bg-white/6 p-4 shadow-[0_25px_80px_rgba(0,0,0,0.22)] backdrop-blur-md">
               <div className="relative mx-auto flex max-w-[520px] flex-col items-center">
