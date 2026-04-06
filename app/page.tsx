@@ -109,19 +109,25 @@ export default function OrbyxLandingPage() {
 
             {/* VISUAL DERECHO (IMAGEN FINAL ÚNICA) */}
             <motion.div className="relative hidden lg:block">
-              <div className="relative min-h-[700px]">
-                <div className="absolute right-[-120px] top-[0px] z-20 w-[1100px] xl:right-[-180px] xl:w-[1300px]">
-                  <Image
-                    src="/images/hero-orbyx-final.png"
-                    alt="Hero Orbyx"
-                    width={1792}
-                    height={1024}
-                    className="w-full h-auto"
-                    priority
-                  />
-                </div>
-              </div>
-            </motion.div>
+  <div className="relative min-h-[720px]">
+
+    {/* IMAGEN */}
+    <div className="absolute right-[-220px] top-0 z-20 w-[1400px] xl:right-[-260px] xl:w-[1600px]">
+      <Image
+        src="/images/hero-orbyx-final.png"
+        alt="Hero Orbyx"
+        width={1792}
+        height={1024}
+        className="w-full h-auto"
+        priority
+      />
+    </div>
+
+    {/* FADE IZQUIERDO (CLAVE) */}
+    <div className="pointer-events-none absolute left-0 top-0 z-30 h-full w-[55%] bg-gradient-to-r from-[#060816] via-[#060816]/90 to-transparent" />
+
+  </div>
+</motion.div>
 
           </div>
         </div>
