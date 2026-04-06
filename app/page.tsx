@@ -34,13 +34,20 @@ export default function OrbyxLandingPage() {
     <main className="min-h-screen bg-[#050816] text-white">
       <section className="relative overflow-hidden bg-[#050816]">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.98)_0%,rgba(5,9,24,0.94)_24%,rgba(7,10,28,0.62)_46%,rgba(7,10,28,0.20)_72%,rgba(7,10,28,0.08)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.12),transparent_24%),radial-gradient(circle_at_82%_16%,rgba(168,85,247,0.12),transparent_28%)]" />
+          <Image
+            src="/images/hero-orbyx-final.png"
+            alt="Hero Orbyx"
+            fill
+            priority
+            className="object-cover object-center"
+          />
         </div>
 
-        <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-16 lg:px-10 lg:pb-20 lg:pt-20">
-          <div className="grid items-center gap-4 lg:grid-cols-[minmax(700px,0.92fr)_minmax(980px,1.08fr)]">
-            {/* TEXTO */}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.96)_0%,rgba(5,8,22,0.88)_34%,rgba(5,8,22,0.54)_56%,rgba(5,8,22,0.22)_74%,rgba(5,8,22,0.10)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.12),transparent_24%),radial-gradient(circle_at_82%_16%,rgba(168,85,247,0.12),transparent_28%)]" />
+
+        <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-16 lg:px-10 lg:pb-24 lg:pt-20">
+          <div className="min-h-[680px] lg:min-h-[760px] flex items-center">
             <div className="relative z-20 max-w-[760px]">
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
@@ -115,34 +122,6 @@ export default function OrbyxLandingPage() {
                 </Link>
               </motion.div>
             </div>
-
-            {/* IMAGEN */}
-            <motion.div
-              initial={{ opacity: 0, x: 18 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.08 }}
-              className="relative hidden lg:block"
-            >
-              <div className="relative h-[650px] xl:h-[720px]">
-                {/* glow */}
-                <div className="absolute right-[8%] top-[10%] z-0 h-[72%] w-[72%] rounded-full bg-fuchsia-500/10 blur-3xl" />
-
-                {/* imagen principal */}
-                <div className="absolute inset-y-0 right-[-14%] z-10 flex items-center xl:right-[-16%]">
-                  <Image
-                    src="/images/hero-orbyx-final.png"
-                    alt="Hero Orbyx"
-                    width={1942}
-                    height={1027}
-                    priority
-                    className="h-auto w-[1280px] max-w-none xl:w-[1360px]"
-                  />
-                </div>
-
-                {/* fade izquierdo suave y corto */}
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-[12%] bg-[linear-gradient(90deg,#050816_0%,rgba(5,8,22,0.72)_45%,rgba(5,8,22,0.18)_78%,transparent_100%)]" />
-              </div>
-            </motion.div>
           </div>
         </div>
       </section>
