@@ -32,23 +32,16 @@ export default function OrbyxLandingPage() {
 
   return (
     <main className="min-h-screen bg-[#050816] text-white">
-
-      {/* HERO */}
       <section className="relative overflow-hidden bg-[#050816]">
-
-        {/* FONDO */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.98)_0%,rgba(5,9,24,0.94)_25%,rgba(7,10,28,0.65)_48%,rgba(7,10,28,0.25)_70%,rgba(7,10,28,0.08)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.98)_0%,rgba(5,9,24,0.94)_24%,rgba(7,10,28,0.62)_46%,rgba(7,10,28,0.20)_72%,rgba(7,10,28,0.08)_100%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.12),transparent_24%),radial-gradient(circle_at_82%_16%,rgba(168,85,247,0.12),transparent_28%)]" />
         </div>
 
         <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-16 lg:px-10 lg:pb-20 lg:pt-20">
-
-          <div className="grid items-center gap-6 lg:grid-cols-[minmax(700px,0.95fr)_minmax(900px,1.05fr)]">
-
+          <div className="grid items-center gap-4 lg:grid-cols-[minmax(700px,0.92fr)_minmax(980px,1.08fr)]">
             {/* TEXTO */}
             <div className="relative z-20 max-w-[760px]">
-
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -109,14 +102,14 @@ export default function OrbyxLandingPage() {
               >
                 <Link
                   href="/register"
-                  className="rounded-xl bg-emerald-500 px-6 py-3 font-medium text-white hover:bg-emerald-400"
+                  className="rounded-xl bg-emerald-500 px-6 py-3 font-medium text-white transition hover:bg-emerald-400"
                 >
                   Probar gratis
                 </Link>
 
                 <Link
                   href="/planes"
-                  className="rounded-xl border border-white/30 px-6 py-3 font-medium text-white hover:bg-white/5"
+                  className="rounded-xl border border-white/30 px-6 py-3 font-medium text-white transition hover:bg-white/5"
                 >
                   Ver planes
                 </Link>
@@ -130,34 +123,30 @@ export default function OrbyxLandingPage() {
               transition={{ delay: 0.08 }}
               className="relative hidden lg:block"
             >
-              <div className="relative h-[640px] xl:h-[700px]">
+              <div className="relative h-[650px] xl:h-[720px]">
+                {/* glow */}
+                <div className="absolute right-[8%] top-[10%] z-0 h-[72%] w-[72%] rounded-full bg-fuchsia-500/10 blur-3xl" />
 
-                {/* GLOW */}
-                <div className="absolute right-[5%] top-[10%] z-0 h-[70%] w-[70%] rounded-full bg-fuchsia-500/10 blur-3xl" />
-
-                {/* IMAGEN PRINCIPAL (CLAVE) */}
-                <div className="absolute inset-y-0 right-[-6%] z-10 flex items-center">
+                {/* imagen principal */}
+                <div className="absolute inset-y-0 right-[-14%] z-10 flex items-center xl:right-[-16%]">
                   <Image
                     src="/images/hero-orbyx-final.png"
                     alt="Hero Orbyx"
                     width={1942}
                     height={1027}
                     priority
-                    className="w-[1150px] max-w-none xl:w-[1250px]"
+                    className="h-auto w-[1280px] max-w-none xl:w-[1360px]"
                   />
                 </div>
 
-                {/* FADE IZQUIERDO SUAVE */}
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-[20%] bg-[linear-gradient(90deg,#050816_0%,rgba(5,8,22,0.85)_45%,rgba(5,8,22,0.35)_75%,transparent_100%)]" />
-
+                {/* fade izquierdo suave y corto */}
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-[12%] bg-[linear-gradient(90deg,#050816_0%,rgba(5,8,22,0.72)_45%,rgba(5,8,22,0.18)_78%,transparent_100%)]" />
               </div>
             </motion.div>
-
           </div>
         </div>
       </section>
 
-      {/* RESULTADOS */}
       <section className="py-20">
         <div className="mx-auto max-w-[1300px] px-6">
           <div className="grid gap-6 md:grid-cols-3">
@@ -177,7 +166,6 @@ export default function OrbyxLandingPage() {
           </div>
         </div>
       </section>
-
     </main>
   );
 }
