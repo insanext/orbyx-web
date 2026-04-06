@@ -58,7 +58,7 @@ export default function OrbyxLandingPage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.20),transparent_26%)]" />
         </div>
 
-        <div className="relative mx-auto max-w-[1600px] px-6 pb-24 pt-16 lg:px-10 lg:pb-28 lg:pt-20">
+        <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-16 lg:px-10 lg:pb-18 lg:pt-20">
           <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1.02fr)_minmax(520px,760px)] xl:gap-8">
 
             {/* TEXTO */}
@@ -109,22 +109,22 @@ export default function OrbyxLandingPage() {
 
             {/* VISUAL DERECHO */}
             <motion.div className="relative hidden lg:block">
-              <div className="relative min-h-[620px]">
+  <div className="relative min-h-[700px]">
 
-                {/* BASE (LAPTOP + FONDO) */}
-                <div className="absolute right-6 top-16 z-20 w-[640px] xl:w-[700px]">
-                  <Image
-                    src="/images/hero-orbyx-clean.png"
-                    alt="Hero Orbyx"
-                    width={1400}
-                    height={950}
-                    className="w-full h-auto"
-                    priority
-                  />
-                </div>
+    {/* BASE (LAPTOP + FONDO) */}
+    <div className="absolute right-[-40px] top-[8px] z-20 w-[860px] xl:right-[-70px] xl:top-[0px] xl:w-[980px]">
+      <Image
+        src="/images/hero-orbyx-clean.png"
+        alt="Hero Orbyx"
+        width={1400}
+        height={950}
+        className="w-full h-auto"
+        priority
+      />
+    </div>
 
-                {/* CHAT 1 */}
-                <div className="absolute right-0 top-8 z-30 w-[330px] xl:w-[360px]">
+    {/* CHAT 1 */}
+    <div className="absolute right-[30px] top-[58px] z-30 w-[330px] xl:right-[30px] xl:top-[70px] xl:w-[360px]">
                   <Image
                     src="/images/chat-question.png"
                     alt=""
@@ -135,7 +135,7 @@ export default function OrbyxLandingPage() {
                 </div>
 
                 {/* CHAT 2 */}
-                <div className="absolute left-6 top-[250px] z-30 w-[420px] xl:w-[470px]">
+<div className="absolute left-[18px] top-[340px] z-30 w-[420px] xl:left-[10px] xl:top-[390px] xl:w-[470px]">
                   <Image
                     src="/images/chat-response.png"
                     alt=""
@@ -146,7 +146,7 @@ export default function OrbyxLandingPage() {
                 </div>
 
                 {/* PERSONA */}
-                <div className="absolute bottom-0 right-4 z-10 w-[300px] xl:w-[340px]">
+<div className="absolute bottom-[6px] right-[34px] z-10 w-[300px] xl:bottom-[8px] xl:right-[44px] xl:w-[340px]">
                   <Image
                     src="/images/persona-relajada.png"
                     alt=""
