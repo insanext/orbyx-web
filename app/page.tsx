@@ -65,12 +65,12 @@ export default function OrbyxLandingPage() {
               Orbyx
             </Link>
 
-            <nav className="hidden items-center gap-7 lg:flex">
+            <nav className="hidden items-center gap-6 lg:flex lg:-ml-24">
               {navItems.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-sm font-medium text-white/80 transition duration-200 hover:text-white"
+                  className="text-sm font-semibold text-white/90 transition duration-200 hover:text-white"
                 >
                   {item.label}
                 </Link>
@@ -78,7 +78,7 @@ export default function OrbyxLandingPage() {
 
               <Link
                 href="/login"
-                className="rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition duration-200 hover:border-white/30 hover:bg-white/10"
+                className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition duration-200 hover:border-white/40 hover:bg-white/20"
               >
                 Iniciar sesión
               </Link>
@@ -149,7 +149,7 @@ export default function OrbyxLandingPage() {
               >
                 <Link
                   href="/register"
-                  className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 px-7 py-3.5 font-medium text-white shadow-[0_10px_30px_rgba(16,185,129,0.22)] transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:from-emerald-300 hover:to-emerald-500"
+                  className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-7 py-3.5 font-semibold text-white shadow-[0_10px_30px_rgba(16,185,129,0.22)] transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:from-emerald-400 hover:via-emerald-500 hover:to-emerald-700"
                 >
                   <span className="transition duration-200 group-hover:tracking-[0.01em]">
                     Probar gratis
@@ -158,11 +158,9 @@ export default function OrbyxLandingPage() {
 
                 <Link
                   href="/planes"
-                  className="group inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/[0.06] px-7 py-3.5 font-medium text-white shadow-[0_10px_30px_rgba(15,23,42,0.18)] backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-white/35 hover:bg-white/[0.10]"
+                  className="group inline-flex items-center justify-center rounded-2xl border border-white/30 bg-gradient-to-r from-white/10 via-white/5 to-white/10 px-7 py-3.5 font-semibold text-white backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.25)] transition duration-200 hover:-translate-y-0.5 hover:scale-[1.03] hover:border-white/60 hover:from-white/20 hover:to-white/10"
                 >
-                  <span className="bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent transition duration-200 group-hover:from-white group-hover:to-white">
-                    Ver planes
-                  </span>
+                  Ver planes
                 </Link>
               </motion.div>
             </div>
@@ -170,10 +168,7 @@ export default function OrbyxLandingPage() {
         </div>
       </section>
 
-      <section
-        id="funcionalidades"
-        className="relative py-20"
-      >
+      <section id="funcionalidades" className="relative py-20">
         <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,rgba(9,13,34,0.35)_0%,rgba(5,8,22,0)_100%)]" />
 
         <div className="mx-auto max-w-[1300px] px-6">
