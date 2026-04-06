@@ -135,7 +135,8 @@ export default function OrbyxLandingPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute inset-0 pointer-events-none">
-  <div className="absolute right-[-40px] top-[120px] w-[900px] xl:right-[-20px] xl:top-[110px] xl:w-[980px]">
+  <div className="absolute inset-0 pointer-events-none">
+  <div className="absolute right-[-10px] top-[118px] w-[640px] xl:right-[10px] xl:top-[118px] xl:w-[760px]">
     <Image
       src="/images/hero-orbyx-clean.png"
       alt="Hero Orbyx"
@@ -150,8 +151,8 @@ export default function OrbyxLandingPage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.16),transparent_22%),radial-gradient(circle_at_80%_14%,rgba(168,85,247,0.18),transparent_26%)]" />
         </div>
 
-        <div className="relative mx-auto max-w-[1700px] px-6 pb-24 pt-16 lg:px-10 lg:pb-32 lg:pt-20">
-          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,0.92fr)_minmax(760px,980px)] xl:gap-4">
+        <div className="relative mx-auto max-w-[1500px] px-6 pb-16 pt-14 lg:px-10 lg:pb-20 lg:pt-16">
+          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.98fr)_minmax(620px,760px)] xl:gap-8">
             <div className="max-w-4xl">
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
@@ -167,7 +168,7 @@ export default function OrbyxLandingPage() {
                 initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55 }}
-                className="mt-8 text-5xl font-semibold leading-[1.02] text-white sm:text-6xl xl:text-7xl"
+                className="mt-8 text-5xl font-semibold leading-[1.04] text-white sm:text-6xl xl:text-[5.2rem]"
               >
                 Orbyx trabaja por ti:
                 <br />
@@ -180,7 +181,7 @@ export default function OrbyxLandingPage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.62 }}
-                className="mt-8 max-w-3xl text-lg leading-8 text-slate-200 sm:text-[22px]"
+                className="mt-7 max-w-2xl text-lg leading-8 text-slate-200 sm:text-[20px]"
               >
                 Deja de perder clientes por no responder a tiempo o por
                 inasistencias. Orbyx automatiza la atención por WhatsApp,
@@ -225,14 +226,14 @@ export default function OrbyxLandingPage() {
   initial={{ opacity: 0, x: 18, y: 18 }}
   animate={{ opacity: 1, x: 0, y: 0 }}
   transition={{ duration: 0.7 }}
-  className="relative mx-auto hidden w-full max-w-[980px] lg:block"
+  className="relative mx-auto hidden w-full max-w-[760px] lg:block"
 >
-  <div className="relative min-h-[760px]">
+  <div className="relative min-h-[500px]">
 
     <motion.div
       animate={{ y: [0, -8, 0] }}
       transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
-      className="absolute right-2 top-[150px] z-30 w-[300px] xl:right-6 xl:top-[135px] xl:w-[330px]"
+      className="absolute right-[10px] top-[88px] z-30 w-[220px] xl:right-[20px] xl:top-[82px] xl:w-[245px]"
     >
       <Image
         src="/images/chat-question.png"
@@ -246,7 +247,7 @@ export default function OrbyxLandingPage() {
     <motion.div
       animate={{ y: [0, 10, 0] }}
       transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-      className="absolute left-[10px] top-[300px] z-30 w-[370px] xl:left-[40px] xl:top-[315px] xl:w-[430px]"
+      className="absolute left-[0px] top-[205px] z-30 w-[280px] xl:left-[10px] xl:top-[215px] xl:w-[320px]"
     >
       <Image
         src="/images/chat-response.png"
@@ -261,7 +262,7 @@ export default function OrbyxLandingPage() {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.2 }}
-      className="absolute bottom-[10px] right-[10px] z-10 w-[340px] xl:bottom-[0px] xl:right-[18px] xl:w-[400px]"
+      className="absolute bottom-[-6px] right-[0px] z-10 w-[220px] xl:bottom-[-10px] xl:right-[6px] xl:w-[255px]"
     >
       <Image
         src="/images/persona-relajada.png"
