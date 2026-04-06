@@ -43,7 +43,8 @@ export default function OrbyxLandingPage() {
           />
         </div>
 
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.96)_0%,rgba(5,8,22,0.88)_34%,rgba(5,8,22,0.54)_56%,rgba(5,8,22,0.22)_74%,rgba(5,8,22,0.10)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.96)_0%,rgba(5,8,22,0.90)_25%,rgba(5,8,22,0.55)_38%,rgba(5,8,22,0.15)_50%,rgba(5,8,22,0)_65%)]" />
+
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.12),transparent_24%),radial-gradient(circle_at_82%_16%,rgba(168,85,247,0.12),transparent_28%)]" />
 
         <div className="relative mx-auto max-w-[1680px] px-6 pb-16 pt-16 lg:px-10 lg:pb-24 lg:pt-20">
