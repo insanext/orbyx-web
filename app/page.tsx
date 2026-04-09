@@ -13,6 +13,13 @@ export default function OrbyxLandingPage() {
     { label: "Ver planes", href: "/planes" },
   ];
 
+  const floatTransition = {
+    duration: 4,
+    repeat: Infinity,
+    repeatType: "mirror" as const,
+    ease: "easeInOut" as const,
+  };
+
   return (
     <main className="min-h-screen bg-[#050816] text-white">
       <section className="relative overflow-hidden">
@@ -22,19 +29,19 @@ export default function OrbyxLandingPage() {
             alt="Hero"
             fill
             priority
-            className="object-cover object-right"
+            className="object-cover object-right-top"
           />
         </div>
 
-        <div className="absolute inset-0 bg-gradient-to-r from-[#050816] via-[#050816]/90 to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.96)_0%,rgba(5,8,22,0.92)_22%,rgba(5,8,22,0.68)_40%,rgba(5,8,22,0.24)_60%,rgba(5,8,22,0.06)_76%,rgba(5,8,22,0)_100%)]" />
 
         <div className="relative z-20 mx-auto max-w-[1400px] px-6 pt-6">
-          <header className="grid grid-cols-[auto_1fr_auto] items-center gap-6">
+          <header className="grid grid-cols-[auto_1fr_auto] items-center">
             <Link href="/" className="text-2xl font-semibold">
               Orbyx
             </Link>
 
-            <nav className="hidden lg:flex items-center justify-center gap-10">
+            <nav className="hidden lg:flex justify-center gap-10">
               {navItems.map((item) => (
                 <Link
                   key={item.label}
@@ -57,24 +64,15 @@ export default function OrbyxLandingPage() {
           </header>
         </div>
 
-        <div className="relative z-20 mx-auto max-w-[1400px] px-6 py-20">
-          <div className="flex min-h-[700px] items-center">
-            <div className="max-w-[650px]">
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm backdrop-blur-md"
-              >
+        <div className="relative z-20 mx-auto max-w-[1400px] px-6 pb-16 pt-8">
+          <div className="flex min-h-[760px] items-start">
+            <div className="max-w-[650px] pt-24">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm backdrop-blur">
                 <Sparkles className="h-4 w-4" />
                 Automatiza todo por WhatsApp
-              </motion.div>
+              </div>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.08 }}
-                className="mt-8 text-[60px] font-semibold leading-[1] tracking-[-0.03em]"
-              >
+              <h1 className="mt-8 text-[60px] font-semibold leading-[1] tracking-[-0.03em]">
                 Orbyx trabaja por ti:
                 <br />
                 responde, agenda y
@@ -84,47 +82,36 @@ export default function OrbyxLandingPage() {
                 <span className="bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">
                   automáticamente
                 </span>
-              </motion.h1>
+              </h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.14 }}
-                className="mt-6 max-w-[620px] text-lg leading-8 text-slate-300"
-              >
+              <p className="mt-6 max-w-[620px] text-lg text-slate-300">
                 Automatiza respuestas, agenda y seguimiento sin esfuerzo.
-              </motion.p>
+              </p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="mt-8 flex flex-wrap gap-4"
-              >
+              <div className="mt-8 flex gap-4">
                 <Link
                   href="/register"
-                  className="rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-600 px-6 py-3 font-semibold text-white shadow-[0_12px_30px_rgba(16,185,129,0.28)] transition hover:scale-105"
+                  className="rounded-xl bg-emerald-500 px-6 py-3 font-semibold transition hover:scale-105"
                 >
                   Probar gratis
                 </Link>
 
                 <Link
                   href="/planes"
-                  className="rounded-2xl border border-white/30 bg-white/10 px-6 py-3 font-semibold backdrop-blur-md transition hover:bg-white/15"
+                  className="rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold transition hover:bg-white/15"
                 >
                   Ver planes
                 </Link>
-              </motion.div>
+              </div>
             </div>
 
-            <div className="relative hidden h-[560px] flex-1 lg:block">
+            <div className="relative hidden h-[700px] flex-1 lg:block">
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="absolute right-10 top-8 flex gap-4"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ ...floatTransition, delay: 0 }}
+                className="absolute right-12 top-16 flex gap-4"
               >
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-md">
+                <div className="rounded-3xl border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-md shadow-[0_12px_40px_rgba(0,0,0,0.22)]">
                   <div className="text-3xl font-semibold leading-none">+24</div>
                   <div className="mt-1 text-sm text-white/80">
                     agendamientos
@@ -133,7 +120,7 @@ export default function OrbyxLandingPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-md">
+                <div className="rounded-3xl border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-md shadow-[0_12px_40px_rgba(0,0,0,0.22)]">
                   <div className="text-3xl font-semibold leading-none">+21</div>
                   <div className="mt-1 text-sm text-white/80">
                     clientes confirmaron
@@ -142,7 +129,7 @@ export default function OrbyxLandingPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-md">
+                <div className="rounded-3xl border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-md shadow-[0_12px_40px_rgba(0,0,0,0.22)]">
                   <div className="text-3xl font-semibold leading-none">+22</div>
                   <div className="mt-1 text-sm text-white/80">
                     volvieron a agendar
@@ -153,67 +140,83 @@ export default function OrbyxLandingPage() {
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, x: 20, y: 10 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="absolute right-32 top-40 max-w-[290px] rounded-2xl bg-emerald-500/90 px-4 py-3 text-sm text-[#06210f] shadow-xl backdrop-blur-md"
+                animate={{ y: [0, -12, 0], x: [0, 6, 0] }}
+                transition={{ ...floatTransition, delay: 0.2 }}
+                className="absolute right-24 top-44 flex justify-end"
               >
-                ¿Tienen horas disponibles mañana?
+                <div className="max-w-[290px] rounded-[22px] rounded-tr-md bg-[#25D366] px-4 py-3 text-sm text-[#06210f] shadow-[0_12px_30px_rgba(37,211,102,0.28)]">
+                  <div className="mb-1 text-[11px] font-semibold text-black/55">
+                    Cliente
+                  </div>
+                  ¿Tienen horas disponibles mañana?
+                </div>
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, x: 20, y: 10 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ delay: 0.7 }}
-                className="absolute right-52 top-56 max-w-[320px] rounded-2xl border border-white/10 bg-[#171b3a]/85 px-4 py-3 text-sm text-white shadow-xl backdrop-blur-md"
+                animate={{ y: [0, 10, 0], x: [0, -6, 0] }}
+                transition={{ ...floatTransition, delay: 0.6 }}
+                className="absolute right-44 top-[295px] flex justify-start"
               >
-                Sí, tengo disponibilidad. Te muestro 10:00 y 11:00.
+                <div className="max-w-[320px] rounded-[22px] rounded-tl-md border border-white/10 bg-[#1d2348]/90 px-4 py-3 text-sm text-white shadow-[0_12px_30px_rgba(0,0,0,0.28)] backdrop-blur-md">
+                  <div className="mb-1 text-[11px] font-semibold text-emerald-300/90">
+                    IA Orbyx
+                  </div>
+                  Sí, tengo disponibilidad. Tenemos a las 10:00 y 11:00.
+                </div>
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, x: 20, y: 10 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ delay: 1 }}
-                className="absolute right-20 top-[330px] max-w-[260px] rounded-2xl bg-emerald-500/90 px-4 py-3 text-sm text-[#06210f] shadow-xl backdrop-blur-md"
+                animate={{ y: [0, -8, 0], x: [0, 8, 0] }}
+                transition={{ ...floatTransition, delay: 1 }}
+                className="absolute right-8 top-[430px] flex justify-end"
               >
-                El de las 11:00, por favor.
+                <div className="max-w-[250px] rounded-[22px] rounded-tr-md bg-[#25D366] px-4 py-3 text-sm text-[#06210f] shadow-[0_12px_30px_rgba(37,211,102,0.28)]">
+                  <div className="mb-1 text-[11px] font-semibold text-black/55">
+                    Cliente
+                  </div>
+                  El de las 11:00, por favor.
+                </div>
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, x: 20, y: 10 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ delay: 1.3 }}
-                className="absolute right-44 top-[420px] max-w-[280px] rounded-2xl border border-white/10 bg-[#171b3a]/85 px-4 py-3 text-sm text-white shadow-xl backdrop-blur-md"
+                animate={{ y: [0, 10, 0], x: [0, -5, 0] }}
+                transition={{ ...floatTransition, delay: 1.4 }}
+                className="absolute right-34 top-[540px] flex justify-start"
               >
-                Listo ✅ Tu cita quedó confirmada.
+                <div className="max-w-[280px] rounded-[22px] rounded-tl-md border border-white/10 bg-[#1d2348]/90 px-4 py-3 text-sm text-white shadow-[0_12px_30px_rgba(0,0,0,0.28)] backdrop-blur-md">
+                  <div className="mb-1 text-[11px] font-semibold text-emerald-300/90">
+                    IA Orbyx
+                  </div>
+                  Listo ✅ Tu cita quedó confirmada.
+                </div>
               </motion.div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="funcionalidades" className="relative bg-[#050816] py-20">
-        <div className="mx-auto max-w-[1300px] px-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm">
-              <h3 className="font-semibold">Más reservas</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Más respuestas a tiempo y menos clientes perdidos.
-              </p>
+      <section className="py-20">
+        <div className="mx-auto max-w-[1100px] px-6 text-center">
+          <h2 className="text-3xl font-semibold">
+            Inteligencia artificial que trabaja por tu negocio
+          </h2>
+
+          <p className="mx-auto mt-6 max-w-[700px] text-slate-300">
+            Orbyx responde automáticamente a tus clientes, agenda citas y hace
+            seguimiento sin intervención manual. Todo adaptado a tu negocio.
+          </p>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+              Responde clientes automáticamente
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm">
-              <h3 className="font-semibold">Menos inasistencias</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Confirmaciones y recordatorios automáticos antes de cada cita.
-              </p>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+              Agenda sin intervención
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm">
-              <h3 className="font-semibold">Menos carga manual</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Agenda, seguimiento y atención desde un mismo sistema.
-              </p>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+              Recupera clientes perdidos
             </div>
           </div>
         </div>
