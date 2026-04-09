@@ -3,7 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, Bot, MessageCircleMore, CalendarCheck2, RefreshCcw } from "lucide-react";
+import {
+  Sparkles,
+  Bot,
+  MessageCircleMore,
+  CalendarCheck2,
+  RefreshCcw,
+  Zap,
+} from "lucide-react";
 
 export default function OrbyxLandingPage() {
   const navItems = [
@@ -19,6 +26,36 @@ export default function OrbyxLandingPage() {
     repeatType: "mirror" as const,
     ease: "easeInOut" as const,
   };
+
+  const statCards = [
+    {
+      value: "+24",
+      labelTop: "agendamientos",
+      labelBottom: "esta semana",
+      wrapper:
+        "from-[#0ea5e9] via-[#2563eb] to-[#1d4ed8] shadow-[0_0_35px_rgba(59,130,246,0.55)]",
+      ring: "ring-cyan-300/20",
+      pulse: "bg-cyan-300/30",
+    },
+    {
+      value: "+21",
+      labelTop: "clientes confirmaron",
+      labelBottom: "su asistencia",
+      wrapper:
+        "from-[#38bdf8] via-[#6366f1] to-[#4f46e5] shadow-[0_0_35px_rgba(99,102,241,0.55)]",
+      ring: "ring-blue-300/20",
+      pulse: "bg-blue-300/30",
+    },
+    {
+      value: "+22",
+      labelTop: "volvieron a agendar",
+      labelBottom: "automáticamente",
+      wrapper:
+        "from-[#22d3ee] via-[#3b82f6] to-[#1e40af] shadow-[0_0_35px_rgba(34,211,238,0.55)]",
+      ring: "ring-sky-300/20",
+      pulse: "bg-sky-300/30",
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-[#050816] text-white">
@@ -111,50 +148,71 @@ export default function OrbyxLandingPage() {
 
             <div className="relative hidden h-[700px] flex-1 lg:block">
               <motion.div
-                animate={{ y: [0, -10, 0] }}
+                animate={{ y: [0, -8, 0] }}
                 transition={{ ...floatTransition, delay: 0 }}
-                className="absolute right-8 top-14 flex gap-4"
+                className="absolute right-8 top-12 flex gap-5"
               >
-                <div className="rounded-[28px] border border-emerald-300/25 bg-[linear-gradient(180deg,rgba(255,255,255,0.24)_0%,rgba(255,255,255,0.09)_100%)] px-5 py-4 backdrop-blur-xl shadow-[0_18px_50px_rgba(34,197,94,0.18)] ring-1 ring-white/10">
-                  <div className="bg-gradient-to-r from-emerald-300 via-lime-300 to-emerald-400 bg-clip-text text-4xl font-bold leading-none text-transparent drop-shadow-[0_0_18px_rgba(74,222,128,0.55)]">
-                    +24
-                  </div>
-                  <div className="mt-2 text-sm text-white/90">
-                    agendamientos
-                    <br />
-                    esta semana
-                  </div>
-                </div>
+                {statCards.map((card, index) => (
+                  <motion.div
+                    key={card.value}
+                    whileHover={{ y: -6, scale: 1.03 }}
+                    transition={{ duration: 0.2 }}
+                    className={`group relative overflow-hidden rounded-[28px] bg-gradient-to-br ${card.wrapper} px-6 py-5 ring-1 ${card.ring}`}
+                  >
+                    <motion.div
+                      animate={{ opacity: [0.35, 0.9, 0.35], scale: [1, 1.15, 1] }}
+                      transition={{
+                        duration: 2.2 + index * 0.25,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className={`absolute -left-6 -top-6 h-24 w-24 rounded-full blur-2xl ${card.pulse}`}
+                    />
 
-                <div className="rounded-[28px] border border-emerald-300/25 bg-[linear-gradient(180deg,rgba(255,255,255,0.24)_0%,rgba(255,255,255,0.09)_100%)] px-5 py-4 backdrop-blur-xl shadow-[0_18px_50px_rgba(34,197,94,0.18)] ring-1 ring-white/10">
-                  <div className="bg-gradient-to-r from-emerald-300 via-lime-300 to-emerald-400 bg-clip-text text-4xl font-bold leading-none text-transparent drop-shadow-[0_0_18px_rgba(74,222,128,0.55)]">
-                    +21
-                  </div>
-                  <div className="mt-2 text-sm text-white/90">
-                    clientes confirmaron
-                    <br />
-                    su asistencia
-                  </div>
-                </div>
+                    <motion.div
+                      animate={{ x: [-120, 170] }}
+                      transition={{
+                        duration: 2.8 + index * 0.2,
+                        repeat: Infinity,
+                        ease: "linear",
+                        repeatDelay: 0.5,
+                      }}
+                      className="pointer-events-none absolute top-0 h-full w-10 rotate-12 bg-gradient-to-r from-transparent via-white/20 to-transparent blur-sm"
+                    />
 
-                <div className="rounded-[28px] border border-emerald-300/25 bg-[linear-gradient(180deg,rgba(255,255,255,0.24)_0%,rgba(255,255,255,0.09)_100%)] px-5 py-4 backdrop-blur-xl shadow-[0_18px_50px_rgba(34,197,94,0.18)] ring-1 ring-white/10">
-                  <div className="bg-gradient-to-r from-emerald-300 via-lime-300 to-emerald-400 bg-clip-text text-4xl font-bold leading-none text-transparent drop-shadow-[0_0_18px_rgba(74,222,128,0.55)]">
-                    +22
-                  </div>
-                  <div className="mt-2 text-sm text-white/90">
-                    volvieron a agendar
-                    <br />
-                    automáticamente
-                  </div>
-                </div>
+                    <motion.div
+                      animate={{ opacity: [0.5, 1, 0.5] }}
+                      transition={{
+                        duration: 1.6 + index * 0.2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="absolute right-3 top-3"
+                    >
+                      <Zap className="h-4 w-4 text-cyan-100/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]" />
+                    </motion.div>
+
+                    <div className="relative">
+                      <div className="bg-gradient-to-r from-cyan-100 via-white to-cyan-200 bg-clip-text text-4xl font-bold leading-none text-transparent drop-shadow-[0_0_18px_rgba(147,197,253,0.9)]">
+                        {card.value}
+                      </div>
+                      <div className="mt-2 text-sm text-blue-50">
+                        {card.labelTop}
+                        <br />
+                        {card.labelBottom}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </motion.div>
 
               <motion.div
-                animate={{ y: [0, -12, 0], x: [0, 6, 0] }}
+                animate={{ y: [0, -10, 0], x: [0, 5, 0] }}
                 transition={{ ...floatTransition, delay: 0.2 }}
-                className="absolute right-24 top-44 flex justify-end"
+                className="absolute right-20 top-215 flex justify-end"
+                style={{ top: 215 }}
               >
-                <div className="max-w-[300px] rounded-[22px] rounded-tr-md border border-emerald-200/20 bg-gradient-to-r from-[#20d665] to-[#38ef7d] px-4 py-3 text-sm text-[#06210f] shadow-[0_16px_40px_rgba(37,211,102,0.34)] ring-1 ring-emerald-100/20">
+                <div className="max-w-[295px] rounded-[22px] rounded-tr-md border border-emerald-200/20 bg-gradient-to-r from-[#20d665] to-[#38ef7d] px-4 py-3 text-sm text-[#06210f] shadow-[0_18px_42px_rgba(37,211,102,0.36)] ring-1 ring-emerald-100/20">
                   <div className="mb-1 text-[11px] font-semibold text-black/60">
                     Cliente
                   </div>
@@ -163,11 +221,11 @@ export default function OrbyxLandingPage() {
               </motion.div>
 
               <motion.div
-                animate={{ y: [0, 10, 0], x: [0, -6, 0] }}
+                animate={{ y: [0, 8, 0], x: [0, -5, 0] }}
                 transition={{ ...floatTransition, delay: 0.6 }}
-                className="absolute right-44 top-[295px] flex justify-start"
+                className="absolute right-48 top-[320px] flex justify-start"
               >
-                <div className="max-w-[340px] rounded-[22px] rounded-tl-md border border-cyan-300/10 bg-[linear-gradient(180deg,rgba(37,46,96,0.95)_0%,rgba(26,33,72,0.96)_100%)] px-4 py-3 text-sm text-white shadow-[0_18px_42px_rgba(46,81,255,0.22)] ring-1 ring-cyan-200/10 backdrop-blur-xl">
+                <div className="max-w-[330px] rounded-[22px] rounded-tl-md border border-cyan-300/12 bg-[linear-gradient(180deg,rgba(37,46,96,0.97)_0%,rgba(26,33,72,0.98)_100%)] px-4 py-3 text-sm text-white shadow-[0_20px_46px_rgba(46,81,255,0.24)] ring-1 ring-cyan-200/10 backdrop-blur-xl">
                   <div className="mb-1 text-[11px] font-semibold text-emerald-300">
                     IA Orbyx
                   </div>
@@ -176,11 +234,11 @@ export default function OrbyxLandingPage() {
               </motion.div>
 
               <motion.div
-                animate={{ y: [0, -8, 0], x: [0, 8, 0] }}
+                animate={{ y: [0, -8, 0], x: [0, 7, 0] }}
                 transition={{ ...floatTransition, delay: 1 }}
-                className="absolute right-4 top-[430px] flex justify-end"
+                className="absolute right-12 top-[422px] flex justify-end"
               >
-                <div className="max-w-[250px] rounded-[22px] rounded-tr-md border border-emerald-200/20 bg-gradient-to-r from-[#20d665] to-[#38ef7d] px-4 py-3 text-sm text-[#06210f] shadow-[0_16px_40px_rgba(37,211,102,0.34)] ring-1 ring-emerald-100/20">
+                <div className="max-w-[250px] rounded-[22px] rounded-tr-md border border-emerald-200/20 bg-gradient-to-r from-[#20d665] to-[#38ef7d] px-4 py-3 text-sm text-[#06210f] shadow-[0_18px_42px_rgba(37,211,102,0.36)] ring-1 ring-emerald-100/20">
                   <div className="mb-1 text-[11px] font-semibold text-black/60">
                     Cliente
                   </div>
@@ -189,11 +247,11 @@ export default function OrbyxLandingPage() {
               </motion.div>
 
               <motion.div
-                animate={{ y: [0, 10, 0], x: [0, -5, 0] }}
+                animate={{ y: [0, 8, 0], x: [0, -4, 0] }}
                 transition={{ ...floatTransition, delay: 1.4 }}
-                className="absolute right-40 top-[552px] flex justify-start"
+                className="absolute right-44 top-[515px] flex justify-start"
               >
-                <div className="max-w-[300px] rounded-[22px] rounded-tl-md border border-cyan-300/10 bg-[linear-gradient(180deg,rgba(37,46,96,0.95)_0%,rgba(26,33,72,0.96)_100%)] px-4 py-3 text-sm text-white shadow-[0_18px_42px_rgba(46,81,255,0.22)] ring-1 ring-cyan-200/10 backdrop-blur-xl">
+                <div className="max-w-[295px] rounded-[22px] rounded-tl-md border border-cyan-300/12 bg-[linear-gradient(180deg,rgba(37,46,96,0.97)_0%,rgba(26,33,72,0.98)_100%)] px-4 py-3 text-sm text-white shadow-[0_20px_46px_rgba(46,81,255,0.24)] ring-1 ring-cyan-200/10 backdrop-blur-xl">
                   <div className="mb-1 text-[11px] font-semibold text-emerald-300">
                     IA Orbyx
                   </div>
@@ -206,8 +264,8 @@ export default function OrbyxLandingPage() {
       </section>
 
       <section className="relative overflow-hidden bg-[#050816] py-24">
-        <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,rgba(213,102,255,0.10)_0%,rgba(5,8,22,0)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(168,85,247,0.12),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(34,211,238,0.08),transparent_24%),radial-gradient(circle_at_80%_70%,rgba(16,185,129,0.08),transparent_24%)]" />
+        <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(59,130,246,0.16)_0%,rgba(168,85,247,0.12)_35%,rgba(5,8,22,0)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(168,85,247,0.14),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(34,211,238,0.10),transparent_24%),radial-gradient(circle_at_80%_70%,rgba(16,185,129,0.10),transparent_24%)]" />
 
         <div className="relative mx-auto max-w-[1200px] px-6">
           <div className="mx-auto max-w-[900px] text-center">
@@ -277,7 +335,7 @@ export default function OrbyxLandingPage() {
                 <h3 className="mt-3 text-3xl font-semibold tracking-[-0.03em]">
                   Orbyx responde, agenda y hace seguimiento por ti
                 </h3>
-                <p className="mt-4 max-w-[620px] text-slate-300 leading-8">
+                <p className="mt-4 max-w-[620px] leading-8 text-slate-300">
                   No solo ordenas tu calendario. También automatizas conversaciones,
                   confirmaciones y recuperación de clientes con una experiencia
                   moderna, rápida y profesional.
