@@ -89,7 +89,17 @@ const isVeterinaria = businessCategory === "veterinaria";
     async function loadData() {
       try {
         setLoading(true);
+/* ===== BUSINESS CATEGORY ===== */
+try {
+  const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+  const businessData = await businessRes.json();
 
+  setBusinessCategory(
+    String(businessData?.business?.business_category || "")
+  );
+} catch {
+  setBusinessCategory("");
+}
         /* ===== CUSTOMER ===== */
         const resCustomers = await fetch(
           `${BACKEND_URL}/customers/${slug}`
@@ -131,18 +141,8 @@ const isVeterinaria = businessCategory === "veterinaria";
     }
 
     if (slug && customerId) {
-try {
-  const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
-  const businessData = await businessRes.json();
-
-  setBusinessCategory(
-    String(businessData?.business?.business_category || "")
-  );
-} catch {
-  setBusinessCategory("");
+  loadData();
 }
-      loadData();
-    }
   }, [slug, customerId]);
 
 
