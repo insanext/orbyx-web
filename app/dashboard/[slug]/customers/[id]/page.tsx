@@ -491,7 +491,6 @@ setTimeout(() => {
           Próximamente: seguimiento de vacunas con alertas y recordatorios.
         </p>
       </Panel>
-)}
 
       {/* ================= NOTAS (READY) ================= */}
       <Panel title="Notas">
