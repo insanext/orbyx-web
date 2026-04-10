@@ -458,6 +458,7 @@ setTimeout(() => {
           </div>
         )}
       </Panel>
+)}
 
       {/* ================= HISTORIAL ================= */}
       <Panel title="Historial de visitas">
