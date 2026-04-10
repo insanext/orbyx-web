@@ -198,30 +198,9 @@ setBusinessCategory(
           throw new Error(data?.error || "No se pudieron cargar los clientes");
         }
 
-        const baseCustomers = Array.isArray(data.customers) ? data.customers : [];
+const baseCustomers = Array.isArray(data.customers) ? data.customers : [];
 
-const customersWithPets = await Promise.all(
-  baseCustomers.map(async (customer) => {
-    try {
-      const petsRes = await fetch(
-        `${BACKEND_URL}/pets/${slug}?customer_id=${customer.id}`
-      );
-      const petsData = await petsRes.json();
-
-      return {
-        ...customer,
-        pets: Array.isArray(petsData?.pets) ? petsData.pets : [],
-      };
-    } catch {
-      return {
-        ...customer,
-        pets: [],
-      };
-    }
-  })
-);
-
-setCustomers(customersWithPets);
+setCustomers(baseCustomers);
         setSummary({
           total: Number(data.summary?.total || 0),
           nuevos: Number(data.summary?.nuevos || 0),
