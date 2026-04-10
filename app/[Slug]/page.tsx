@@ -56,6 +56,7 @@ type BusinessItem = {
   min_booking_notice_minutes?: number | null;
   max_booking_days_ahead?: number | null;
   booking_fields_config?: BookingField[];
+  business_category?: string; // 👈 NUEVO
 };
 
 type PublicServicesResponse = {
@@ -212,6 +213,7 @@ export default function Page() {
   const slug = slugFromParams || slugFromPathname;
 
   const [business, setBusiness] = useState<BusinessItem | null>(null);
+const isVeterinaria = business?.business_category === "veterinaria";
   const [calendarId, setCalendarId] = useState("");
 
   const [branches, setBranches] = useState<BranchItem[]>([]);

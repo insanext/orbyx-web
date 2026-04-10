@@ -64,6 +64,8 @@ export default function CustomerDetailPage() {
   const customerId = params?.id as string;
 
   const [customer, setCustomer] = useState<Customer | null>(null);
+const [businessCategory, setBusinessCategory] = useState("");
+const isVeterinaria = businessCategory === "veterinaria";
   const [pets, setPets] = useState<Pet[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,6 +131,16 @@ export default function CustomerDetailPage() {
     }
 
     if (slug && customerId) {
+try {
+  const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+  const businessData = await businessRes.json();
+
+  setBusinessCategory(
+    String(businessData?.business?.business_category || "")
+  );
+} catch {
+  setBusinessCategory("");
+}
       loadData();
     }
   }, [slug, customerId]);
@@ -250,7 +262,8 @@ setTimeout(() => {
       </Panel>
 
       {/* ================= MASCOTAS ================= */}
-      <Panel title="Mascotas" description="Crea mascotas y construye la ficha veterinaria del cliente.">
+      {isVeterinaria && (
+  <Panel title="Mascotas" description="Crea mascotas y construye la ficha veterinaria del cliente.">
         <form onSubmit={handleCreatePet} className="mb-6 rounded-2xl border border-slate-200 bg-white/60 p-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div>
@@ -477,6 +490,7 @@ setTimeout(() => {
           Próximamente: seguimiento de vacunas con alertas y recordatorios.
         </p>
       </Panel>
+)}
 
       {/* ================= NOTAS (READY) ================= */}
       <Panel title="Notas">

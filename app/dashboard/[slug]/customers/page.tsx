@@ -9,6 +9,13 @@ const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
 
+type Pet = {
+  id: string;
+  name: string;
+  species_base: string;
+  species_custom?: string | null;
+};
+
 type Customer = {
   id: string;
   tenant_id: string;
@@ -21,6 +28,7 @@ type Customer = {
   updated_at: string;
   segment?: CustomerSegment;
   is_inactive?: boolean;
+  pets?: Pet[];
 };
 
 type CustomersResponse = {
@@ -130,6 +138,8 @@ export default function CustomersPage() {
     ((params as any)?.slug as string) || ((params as any)?.Slug as string);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
+const [businessCategory, setBusinessCategory] = useState("");
+const isVeterinaria = businessCategory === "veterinaria";
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [segment, setSegment] = useState<"all" | CustomerSegment>("all");
@@ -157,6 +167,12 @@ export default function CustomersPage() {
       try {
         setLoading(true);
         setError("");
+const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+const businessData = await businessRes.json();
+
+setBusinessCategory(
+  String(businessData?.business?.business_category || "")
+);
 
         const params = new URLSearchParams();
 
@@ -182,7 +198,30 @@ export default function CustomersPage() {
           throw new Error(data?.error || "No se pudieron cargar los clientes");
         }
 
-        setCustomers(Array.isArray(data.customers) ? data.customers : []);
+        const baseCustomers = Array.isArray(data.customers) ? data.customers : [];
+
+const customersWithPets = await Promise.all(
+  baseCustomers.map(async (customer) => {
+    try {
+      const petsRes = await fetch(
+        `${BACKEND_URL}/pets/${slug}?customer_id=${customer.id}`
+      );
+      const petsData = await petsRes.json();
+
+      return {
+        ...customer,
+        pets: Array.isArray(petsData?.pets) ? petsData.pets : [],
+      };
+    } catch {
+      return {
+        ...customer,
+        pets: [],
+      };
+    }
+  })
+);
+
+setCustomers(customersWithPets);
         setSummary({
           total: Number(data.summary?.total || 0),
           nuevos: Number(data.summary?.nuevos || 0),
@@ -219,10 +258,14 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Clientes"
-        title="Base de clientes"
-        description="Gestiona segmentos, detecta inactivos y prepara la base para campañas por email y WhatsApp."
-      />
+  eyebrow={isVeterinaria ? "Tutores y mascotas" : "Clientes"}
+  title="Base de clientes"
+  description={
+    isVeterinaria
+      ? "Visualiza tutores, mascotas, visitas y deja preparada la base para seguimiento veterinario y campañas."
+      : "Gestiona segmentos, detecta inactivos y prepara la base para campañas por email y WhatsApp."
+  }
+/>
 
       {error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
@@ -334,9 +377,13 @@ export default function CustomersPage() {
       </Panel>
 
       <Panel
-        title="Listado de clientes"
-        description="Clientes listos para seguimiento, campañas y recuperación."
-      >
+  title={isVeterinaria ? "Listado de tutores" : "Listado de clientes"}
+  description={
+    isVeterinaria
+      ? "Revisa clientes, sus mascotas y el historial base para seguimiento y atención veterinaria."
+      : "Clientes listos para seguimiento, campañas y recuperación."
+  }
+>
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70">
           <div className="overflow-x-auto">
             <table className="min-w-full">
@@ -411,6 +458,22 @@ export default function CustomersPage() {
                               {customer.name || "Sin nombre"}
                             </p>
                             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+
+{isVeterinaria && customer.pets && customer.pets.length > 0 ? (
+  <div className="mt-2 flex flex-wrap gap-2">
+    {customer.pets.map((pet) => (
+      <span
+        key={pet.id}
+        className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+      >
+        {pet.name}
+        <span className="ml-1 opacity-70">
+          · {pet.species_base === "otro" ? pet.species_custom : pet.species_base}
+        </span>
+      </span>
+    ))}
+  </div>
+) : null}
                               ID cliente: {customer.id.slice(0, 8)}
                             </p>
                           </div>
