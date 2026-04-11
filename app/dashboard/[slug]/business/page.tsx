@@ -267,7 +267,6 @@ await loadSpecialDates(data.business.id, firstBranchId);
     try {
       const res = await fetch(
   `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}&branch_id=${currentBranchId}`
-);
       );
 
       const data = await res.json();
