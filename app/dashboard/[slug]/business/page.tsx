@@ -449,6 +449,8 @@ await loadSpecialDates(data.business.id, firstBranchId);
   async function saveBusinessHours() {
     try {
       setSavingHours(true);
+setSaveError("");
+setSaveOk("");
 
       const cleanedHours = businessHours.map((hour) => ({
         day_of_week: hour.day_of_week,
@@ -478,9 +480,9 @@ await loadSpecialDates(data.business.id, firstBranchId);
         throw new Error(data?.error || "Error guardando horarios");
       }
 
-      alert("Horarios guardados correctamente");
+      setSaveOk("Horarios guardados correctamente");
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Error guardando horarios");
+      setSaveError(err instanceof Error ? err.message : "Error guardando horarios");
     } finally {
       setSavingHours(false);
     }
