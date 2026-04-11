@@ -336,9 +336,49 @@ export default function BusinessPage() {
     );
   }
 
-  function removeSpecialDate(index: number) {
+async function removeSpecialDate(index: number) {
+  const item = specialDates[index];
+
+  if (!item) return;
+
+  const confirmed = window.confirm(
+    "¿Seguro que quieres quitar esta fecha especial?"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    setSavingSpecialDates(true);
+    setSpecialDatesError("");
+    setSpecialDatesOk("");
+
+    if (item.id) {
+      const res = await fetch(
+        `https://orbyx-backend.onrender.com/business-special-dates/${item.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error eliminando fecha especial");
+      }
+    }
+
     setSpecialDates((prev) => prev.filter((_, i) => i !== index));
+    setSpecialDatesOk("Fecha especial eliminada correctamente");
+  } catch (err: unknown) {
+    setSpecialDatesError(
+      err instanceof Error
+        ? err.message
+        : "No se pudo eliminar la fecha especial"
+    );
+  } finally {
+    setSavingSpecialDates(false);
   }
+}
 
   async function saveSpecialDates() {
     try {
