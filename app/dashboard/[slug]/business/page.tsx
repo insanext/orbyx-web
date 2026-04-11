@@ -66,6 +66,7 @@ export default function BusinessPage() {
     "";
 
   const [tenantId, setTenantId] = useState("");
+const [branchId, setBranchId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingHours, setSavingHours] = useState(false);
@@ -134,6 +135,26 @@ export default function BusinessPage() {
         }
 
         setTenantId(data.business.id);
+const branchesRes = await fetch(
+  `https://orbyx-backend.onrender.com/branches?tenant_id=${data.business.id}`
+);
+
+const branchesData = await branchesRes.json();
+
+if (!branchesRes.ok) {
+  throw new Error(branchesData?.error || "No se pudieron cargar las sucursales");
+}
+
+const firstBranchId =
+  Array.isArray(branchesData.branches) && branchesData.branches.length > 0
+    ? String(branchesData.branches[0].id)
+    : "";
+
+if (!firstBranchId) {
+  throw new Error("No se encontró una sucursal activa");
+}
+
+setBranchId(firstBranchId);
         setGoogleConnected(Boolean(data.google_connected));
 
         setForm({
@@ -153,8 +174,8 @@ export default function BusinessPage() {
           ),
         });
 
-        await loadBusinessHours(data.business.id);
-        await loadSpecialDates(data.business.id);
+        await loadBusinessHours(data.business.id, firstBranchId);
+await loadSpecialDates(data.business.id, firstBranchId);
         await loadBookingFields();
       } catch (error: unknown) {
         setLoadError(
@@ -242,10 +263,11 @@ export default function BusinessPage() {
     }
   }
 
-  async function loadBusinessHours(id: string) {
+  async function loadBusinessHours(id: string, currentBranchId: string) {
     try {
       const res = await fetch(
-        `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}`
+  `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}&branch_id=${currentBranchId}`
+);
       );
 
       const data = await res.json();
@@ -282,10 +304,11 @@ export default function BusinessPage() {
     }
   }
 
-  async function loadSpecialDates(id: string) {
+  async function loadSpecialDates(id: string, currentBranchId: string) {
     try {
       const res = await fetch(
-        `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}`
+  `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}&branch_id=${currentBranchId}`
+);
       );
 
       const data = await res.json();
@@ -364,14 +387,16 @@ export default function BusinessPage() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              date: item.date,
-              label: item.label,
-              is_closed: item.is_closed,
-              start_time: item.is_closed
-                ? item.start_time || null
-                : item.start_time,
-              end_time: item.is_closed ? item.end_time || null : item.end_time,
-            }),
+  tenant_id: tenantId,
+  branch_id: branchId,
+  date: item.date,
+  label: item.label,
+  is_closed: item.is_closed,
+  start_time: item.is_closed
+    ? item.start_time || null
+    : item.start_time,
+  end_time: item.is_closed ? item.end_time || null : item.end_time,
+}),
           }
         );
 
@@ -410,7 +435,7 @@ export default function BusinessPage() {
         }
       }
 
-      await loadSpecialDates(tenantId);
+      await loadSpecialDates(tenantId, branchId);
       alert("Fechas especiales guardadas correctamente");
     } catch (err: unknown) {
       alert(
@@ -442,9 +467,10 @@ export default function BusinessPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            tenant_id: tenantId,
-            hours: cleanedHours,
-          }),
+  tenant_id: tenantId,
+  branch_id: branchId,
+  hours: cleanedHours,
+}),
         }
       );
 
