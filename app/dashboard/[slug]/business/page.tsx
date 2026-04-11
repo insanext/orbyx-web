@@ -66,7 +66,7 @@ export default function BusinessPage() {
     "";
 
   const [tenantId, setTenantId] = useState("");
-const [branchId, setBranchId] = useState("");
+  const [branchId, setBranchId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingHours, setSavingHours] = useState(false);
@@ -76,6 +76,10 @@ const [branchId, setBranchId] = useState("");
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saveOk, setSaveOk] = useState("");
+  const [hoursError, setHoursError] = useState("");
+  const [hoursOk, setHoursOk] = useState("");
+  const [specialDatesError, setSpecialDatesError] = useState("");
+  const [specialDatesOk, setSpecialDatesOk] = useState("");
 
   const [googleConnected, setGoogleConnected] = useState(false);
   const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
@@ -97,7 +101,6 @@ const [branchId, setBranchId] = useState("");
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
 
-  const surfaceClass = "rounded-2xl border px-4 py-3 shadow-sm";
   const softCardClass = "rounded-2xl border p-4";
   const inputClass =
     "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
@@ -135,26 +138,29 @@ const [branchId, setBranchId] = useState("");
         }
 
         setTenantId(data.business.id);
-const branchesRes = await fetch(
-  `https://orbyx-backend.onrender.com/branches?tenant_id=${data.business.id}`
-);
 
-const branchesData = await branchesRes.json();
+        const branchesRes = await fetch(
+          `https://orbyx-backend.onrender.com/branches?tenant_id=${data.business.id}`
+        );
 
-if (!branchesRes.ok) {
-  throw new Error(branchesData?.error || "No se pudieron cargar las sucursales");
-}
+        const branchesData = await branchesRes.json();
 
-const firstBranchId =
-  Array.isArray(branchesData.branches) && branchesData.branches.length > 0
-    ? String(branchesData.branches[0].id)
-    : "";
+        if (!branchesRes.ok) {
+          throw new Error(
+            branchesData?.error || "No se pudieron cargar las sucursales"
+          );
+        }
 
-if (!firstBranchId) {
-  throw new Error("No se encontró una sucursal activa");
-}
+        const firstBranchId =
+          Array.isArray(branchesData.branches) && branchesData.branches.length > 0
+            ? String(branchesData.branches[0].id)
+            : "";
 
-setBranchId(firstBranchId);
+        if (!firstBranchId) {
+          throw new Error("No se encontró una sucursal activa");
+        }
+
+        setBranchId(firstBranchId);
         setGoogleConnected(Boolean(data.google_connected));
 
         setForm({
@@ -175,7 +181,7 @@ setBranchId(firstBranchId);
         });
 
         await loadBusinessHours(data.business.id, firstBranchId);
-await loadSpecialDates(data.business.id, firstBranchId);
+        await loadSpecialDates(data.business.id, firstBranchId);
         await loadBookingFields();
       } catch (error: unknown) {
         setLoadError(
@@ -195,48 +201,13 @@ await loadSpecialDates(data.business.id, firstBranchId);
 
   function getDefaultHours(): BusinessHour[] {
     return [
-      {
-        day_of_week: 0,
-        enabled: false,
-        start_time: "09:00",
-        end_time: "18:00",
-      },
-      {
-        day_of_week: 1,
-        enabled: true,
-        start_time: "09:00",
-        end_time: "18:00",
-      },
-      {
-        day_of_week: 2,
-        enabled: true,
-        start_time: "09:00",
-        end_time: "18:00",
-      },
-      {
-        day_of_week: 3,
-        enabled: true,
-        start_time: "09:00",
-        end_time: "18:00",
-      },
-      {
-        day_of_week: 4,
-        enabled: true,
-        start_time: "09:00",
-        end_time: "18:00",
-      },
-      {
-        day_of_week: 5,
-        enabled: true,
-        start_time: "09:00",
-        end_time: "18:00",
-      },
-      {
-        day_of_week: 6,
-        enabled: false,
-        start_time: "09:00",
-        end_time: "18:00",
-      },
+      { day_of_week: 0, enabled: false, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 1, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 2, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 3, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 4, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 5, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 6, enabled: false, start_time: "09:00", end_time: "18:00" },
     ];
   }
 
@@ -266,7 +237,7 @@ await loadSpecialDates(data.business.id, firstBranchId);
   async function loadBusinessHours(id: string, currentBranchId: string) {
     try {
       const res = await fetch(
-  `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}&branch_id=${currentBranchId}`
+        `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}&branch_id=${currentBranchId}`
       );
 
       const data = await res.json();
@@ -306,8 +277,8 @@ await loadSpecialDates(data.business.id, firstBranchId);
   async function loadSpecialDates(id: string, currentBranchId: string) {
     try {
       const res = await fetch(
-  `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}&branch_id=${currentBranchId}`
-);
+        `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}&branch_id=${currentBranchId}`
+      );
 
       const data = await res.json();
 
@@ -372,6 +343,8 @@ await loadSpecialDates(data.business.id, firstBranchId);
   async function saveSpecialDates() {
     try {
       setSavingSpecialDates(true);
+      setSpecialDatesError("");
+      setSpecialDatesOk("");
 
       const existingItems = specialDates.filter((item) => item.id);
       const newItems = specialDates.filter((item) => !item.id);
@@ -385,16 +358,14 @@ await loadSpecialDates(data.business.id, firstBranchId);
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-  tenant_id: tenantId,
-  branch_id: branchId,
-  date: item.date,
-  label: item.label,
-  is_closed: item.is_closed,
-  start_time: item.is_closed
-    ? item.start_time || null
-    : item.start_time,
-  end_time: item.is_closed ? item.end_time || null : item.end_time,
-}),
+              tenant_id: tenantId,
+              branch_id: branchId,
+              date: item.date,
+              label: item.label,
+              is_closed: item.is_closed,
+              start_time: item.is_closed ? item.start_time || null : item.start_time,
+              end_time: item.is_closed ? item.end_time || null : item.end_time,
+            }),
           }
         );
 
@@ -415,12 +386,11 @@ await loadSpecialDates(data.business.id, firstBranchId);
             },
             body: JSON.stringify({
               tenant_id: tenantId,
+              branch_id: branchId,
               date: item.date,
               label: item.label,
               is_closed: item.is_closed,
-              start_time: item.is_closed
-                ? item.start_time || null
-                : item.start_time,
+              start_time: item.is_closed ? item.start_time || null : item.start_time,
               end_time: item.is_closed ? item.end_time || null : item.end_time,
             }),
           }
@@ -434,9 +404,9 @@ await loadSpecialDates(data.business.id, firstBranchId);
       }
 
       await loadSpecialDates(tenantId, branchId);
-      alert("Fechas especiales guardadas correctamente");
+      setSpecialDatesOk("Fechas especiales guardadas correctamente");
     } catch (err: unknown) {
-      alert(
+      setSpecialDatesError(
         err instanceof Error
           ? err.message
           : "No se pudieron guardar las fechas especiales"
@@ -449,8 +419,8 @@ await loadSpecialDates(data.business.id, firstBranchId);
   async function saveBusinessHours() {
     try {
       setSavingHours(true);
-setSaveError("");
-setSaveOk("");
+      setHoursError("");
+      setHoursOk("");
 
       const cleanedHours = businessHours.map((hour) => ({
         day_of_week: hour.day_of_week,
@@ -467,10 +437,10 @@ setSaveOk("");
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-  tenant_id: tenantId,
-  branch_id: branchId,
-  hours: cleanedHours,
-}),
+            tenant_id: tenantId,
+            branch_id: branchId,
+            hours: cleanedHours,
+          }),
         }
       );
 
@@ -480,9 +450,11 @@ setSaveOk("");
         throw new Error(data?.error || "Error guardando horarios");
       }
 
-      setSaveOk("Horarios guardados correctamente");
+      setHoursOk("Horarios guardados correctamente");
     } catch (err: unknown) {
-      setSaveError(err instanceof Error ? err.message : "Error guardando horarios");
+      setHoursError(
+        err instanceof Error ? err.message : "Error guardando horarios"
+      );
     } finally {
       setSavingHours(false);
     }
@@ -597,112 +569,113 @@ setSaveOk("");
     return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
   }
 
-async function copyPublicUrl() {
-  try {
-    await navigator.clipboard.writeText(publicUrl);
-    alert("URL copiada");
-  } catch {
-    alert("No se pudo copiar la URL");
+  async function copyPublicUrl() {
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      alert("URL copiada");
+    } catch {
+      alert("No se pudo copiar la URL");
+    }
   }
-}
 
   return (
     <div className="space-y-6">
-<section
-  className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
-  style={{
-    borderColor: "rgba(59,130,246,0.25)",
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-  }}
->
-  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-    <div className="max-w-3xl">
-      <p
-        className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
-        style={{ color: "var(--text-muted)" }}
-      >
-        Negocio
-      </p>
-
-      <h1
-        className="text-3xl font-semibold tracking-tight sm:text-4xl"
-        style={{ color: "var(--text-main)" }}
-      >
-        Datos del negocio
-      </h1>
-
-      <p
-        className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
-        style={{ color: "var(--text-muted)" }}
-      >
-        Actualiza la información principal, horarios, fechas especiales y
-        campos que pedirás al cliente al reservar.
-      </p>
-    </div>
-
-    <div
-      className="grid gap-3 sm:grid-cols-2"
-      style={{ color: "var(--text-main)" }}
-    >
-      <div
-        className="rounded-2xl border px-4 py-3"
+      <section
+        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
         style={{
-          borderColor: "rgba(59,130,246,0.24)",
-          background: "rgba(255,255,255,0.08)",
+          borderColor: "rgba(59,130,246,0.25)",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
         }}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
             <p
-              className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
               style={{ color: "var(--text-muted)" }}
             >
-              URL pública
+              Negocio
             </p>
 
-            <p className="mt-2 break-all text-sm font-semibold">{publicUrl}</p>
+            <h1
+              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+              style={{ color: "var(--text-main)" }}
+            >
+              Datos del negocio
+            </h1>
+
+            <p
+              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Actualiza la información principal, horarios, fechas especiales y
+              campos que pedirás al cliente al reservar.
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={copyPublicUrl}
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl px-3 text-xs font-semibold transition"
-            style={{
-              background:
-                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-              color: "#ffffff",
-            }}
+          <div
+            className="grid gap-3 sm:grid-cols-2"
+            style={{ color: "var(--text-main)" }}
           >
-            Copiar
-          </button>
-        </div>
-      </div>
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    URL pública
+                  </p>
 
-      <div
-        className="rounded-2xl border px-4 py-3"
-        style={{
-          borderColor: "rgba(59,130,246,0.24)",
-          background: "rgba(255,255,255,0.08)",
-        }}
-      >
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Google Calendar
-        </p>
-        <p className="mt-2 text-sm font-semibold">
-          {loading
-            ? "Cargando..."
-            : googleConnected
-            ? "Conectado"
-            : "Pendiente"}
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
+                  <p className="mt-2 break-all text-sm font-semibold">{publicUrl}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={copyPublicUrl}
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl px-3 text-xs font-semibold transition"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                    color: "#ffffff",
+                  }}
+                >
+                  Copiar
+                </button>
+              </div>
+            </div>
+
+            <div
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "rgba(59,130,246,0.24)",
+                background: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Google Calendar
+              </p>
+              <p className="mt-2 text-sm font-semibold">
+                {loading
+                  ? "Cargando..."
+                  : googleConnected
+                  ? "Conectado"
+                  : "Pendiente"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {loadError ? (
         <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
           {loadError}
@@ -1338,6 +1311,18 @@ async function copyPublicUrl() {
               {savingHours ? "Guardando..." : "Guardar horarios"}
             </button>
           </div>
+
+          {hoursError ? (
+            <div className="mt-4 rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+              {hoursError}
+            </div>
+          ) : null}
+
+          {hoursOk ? (
+            <div className="mt-4 rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+              {hoursOk}
+            </div>
+          ) : null}
         </Panel>
       </section>
 
@@ -1495,11 +1480,7 @@ async function copyPublicUrl() {
                           type="time"
                           value={item.start_time}
                           onChange={(e) =>
-                            updateSpecialDate(
-                              index,
-                              "start_time",
-                              e.target.value
-                            )
+                            updateSpecialDate(index, "start_time", e.target.value)
                           }
                           className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
                           style={{
@@ -1552,6 +1533,18 @@ async function copyPublicUrl() {
               {savingSpecialDates ? "Guardando..." : "Guardar fechas especiales"}
             </button>
           </div>
+
+          {specialDatesError ? (
+            <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+              {specialDatesError}
+            </div>
+          ) : null}
+
+          {specialDatesOk ? (
+            <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+              {specialDatesOk}
+            </div>
+          ) : null}
         </div>
       </Panel>
     </div>
