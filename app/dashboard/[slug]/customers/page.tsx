@@ -447,7 +447,7 @@ setCustomers(baseCustomers);
                             {customer.name || "Sin nombre"}
                           </p>
 
-                          {isVeterinaria && customer.pets?.length > 0 && (
+                          {isVeterinaria && Array.isArray(customer.pets) && customer.pets.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
                               {customer.pets.map((pet) => (
                                 <span key={pet.id} className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
