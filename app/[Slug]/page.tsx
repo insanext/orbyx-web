@@ -213,7 +213,9 @@ export default function Page() {
   const slug = slugFromParams || slugFromPathname;
 
   const [business, setBusiness] = useState<BusinessItem | null>(null);
-const isVeterinaria = business?.business_category === "veterinaria";
+const isVeterinaria =
+  business?.business_category === "veterinaria" ||
+  business?.business_category === "vet";
   const [calendarId, setCalendarId] = useState("");
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
