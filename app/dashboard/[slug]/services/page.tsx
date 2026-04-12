@@ -1091,13 +1091,19 @@ export default function ServicesPage() {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">
-                      {service.name}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {service.description || "Sin descripción"}
-                    </p>
-                  </div>
+  <p
+    className="font-semibold"
+    style={{ color: "var(--text-main)" }}
+  >
+    {service.name}
+  </p>
+  <p
+    className="text-sm"
+    style={{ color: "var(--text-muted)" }}
+  >
+    {service.description || "Sin descripción"}
+  </p>
+</div>
 
                   <button
                     onClick={() => startEditing(service)}
@@ -1107,15 +1113,21 @@ export default function ServicesPage() {
                   </button>
                 </div>
 
-                <div className="mt-3 text-xs text-slate-500">
-                  {service.duration_minutes} min · {formatPrice(service.price)}
-                </div>
+               <div
+  className="mt-3 text-xs"
+  style={{ color: "var(--text-muted)" }}
+>
+  {service.duration_minutes} min · {formatPrice(service.price)}
+</div>
 
-                <div className="mt-2 text-xs text-slate-500">
-                  {assignedStaffNames.length > 0
-                    ? assignedStaffNames.join(", ")
-                    : "Sin staff"}
-                </div>
+<div
+  className="mt-2 text-xs"
+  style={{ color: "var(--text-muted)" }}
+>
+  {assignedStaffNames.length > 0
+    ? assignedStaffNames.join(", ")
+    : "Sin staff"}
+</div>
               </div>
             );
           })}
@@ -1131,45 +1143,65 @@ export default function ServicesPage() {
 
       <div className="space-y-4">
         <input
-          placeholder="Nombre del servicio"
-          value={form.name}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, name: e.target.value }))
-          }
-          className="w-full rounded-xl border px-4 py-2 text-sm"
-        />
+  placeholder="Nombre del servicio"
+  value={form.name}
+  onChange={(e) =>
+    setForm((prev) => ({ ...prev, name: e.target.value }))
+  }
+  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+  style={{
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+    color: "var(--text-main)",
+  }}
+/>
 
         <textarea
-          placeholder="Descripción"
-          value={form.description}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, description: e.target.value }))
-          }
-          className="w-full rounded-xl border px-4 py-2 text-sm"
-        />
+  placeholder="Descripción"
+  value={form.description}
+  onChange={(e) =>
+    setForm((prev) => ({ ...prev, description: e.target.value }))
+  }
+  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+  style={{
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+    color: "var(--text-main)",
+  }}
+/>
 
         <input
-          type="number"
-          placeholder="Duración"
-          value={form.duration_minutes}
-          onChange={(e) =>
-            setForm((prev) => ({
-              ...prev,
-              duration_minutes: e.target.value,
-            }))
-          }
-          className="w-full rounded-xl border px-4 py-2 text-sm"
-        />
+  type="number"
+  placeholder="Duración"
+  value={form.duration_minutes}
+  onChange={(e) =>
+    setForm((prev) => ({
+      ...prev,
+      duration_minutes: e.target.value,
+    }))
+  }
+  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+  style={{
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+    color: "var(--text-main)",
+  }}
+/>
 
         <input
-          type="number"
-          placeholder="Precio"
-          value={form.price}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, price: e.target.value }))
-          }
-          className="w-full rounded-xl border px-4 py-2 text-sm"
-        />
+  type="number"
+  placeholder="Precio"
+  value={form.price}
+  onChange={(e) =>
+    setForm((prev) => ({ ...prev, price: e.target.value }))
+  }
+  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+  style={{
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+    color: "var(--text-main)",
+  }}
+/>
 
         <button
           onClick={handleCreateService}
