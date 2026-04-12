@@ -2617,11 +2617,23 @@ export default function AgendaPage() {
                               Cliente
                             </p>
                             <p
-                              className="mt-1 text-sm font-medium"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {selectedAppointment.customer_name}
-                            </p>
+  className="mt-1 text-sm font-medium"
+  style={{ color: "var(--text-main)" }}
+>
+  {selectedAppointment.customer_name}
+</p>
+
+{selectedAppointment.customer_data?.pet_name ? (
+  <p
+    className="mt-1 text-sm font-medium"
+    style={{ color: "#10b981" }}
+  >
+    🐶 {selectedAppointment.customer_data.pet_name}
+    {selectedAppointment.customer_data.pet_species
+      ? ` (${selectedAppointment.customer_data.pet_species})`
+      : ""}
+  </p>
+) : null}
                           </div>
 
                           <div
@@ -2816,6 +2828,14 @@ export default function AgendaPage() {
                 <p className="mt-1 truncate text-xs text-slate-500">
                   {hoverCard.appointment.service_name_snapshot || "Reserva"}
                 </p>
+{hoverCard.appointment.customer_data?.pet_name ? (
+  <p className="mt-1 text-xs text-emerald-600 font-medium">
+    🐶 {hoverCard.appointment.customer_data.pet_name}
+    {hoverCard.appointment.customer_data.pet_species
+      ? ` (${hoverCard.appointment.customer_data.pet_species})`
+      : ""}
+  </p>
+) : null}
               </div>
 
               <span
