@@ -594,6 +594,7 @@ useEffect(() => {
     if (value) acc[field.key] = value;
     return acc;
   }, {}),
+  pet_id: selectedPetId || "",
   pet_name: String(customerData.pet_name || "").trim(),
   pet_species: String(customerData.pet_species || "").trim(),
 },
@@ -642,11 +643,16 @@ useEffect(() => {
       }, {});
 
       setCustomerData({
-        name: "",
-        phone: "",
-        email: "",
-        ...clearedExtraFields,
-      });
+  name: "",
+  phone: "",
+  email: "",
+  pet_name: "",
+  pet_species: "",
+  ...clearedExtraFields,
+});
+
+setSelectedPetId("");
+setPets([]);
 
       setSelectedDate(new Date(selectedDate));
     } catch (error: any) {
