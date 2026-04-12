@@ -1081,56 +1081,191 @@ export default function ServicesPage() {
             const assignedStaffNames = getStaffNamesForService(service.id);
 
             return (
-              <div
-                key={service.id}
-                className="rounded-2xl border p-4"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                }}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-  <p
-    className="font-semibold"
-    style={{ color: "var(--text-main)" }}
+  <div
+    key={service.id}
+    className="rounded-2xl border p-4"
+    style={{
+      borderColor:
+        editingId === service.id
+          ? "rgba(37,99,235,0.35)"
+          : "var(--border-color)",
+      background:
+        editingId === service.id
+          ? "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.05), var(--bg-soft))"
+          : "var(--bg-soft)",
+    }}
   >
-    {service.name}
-  </p>
-  <p
-    className="text-sm"
-    style={{ color: "var(--text-muted)" }}
-  >
-    {service.description || "Sin descripción"}
-  </p>
-</div>
+    {editingId === service.id ? (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p
+              className="font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Editando servicio
+            </p>
+            <p
+              className="text-sm"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Actualiza nombre, descripción, duración y precio.
+            </p>
+          </div>
+        </div>
 
-                  <button
-                    onClick={() => startEditing(service)}
-                    className="text-sm text-blue-500"
-                  >
-                    Editar
-                  </button>
-                </div>
+        <input
+          type="text"
+          value={editForm.name}
+          onChange={(e) =>
+            setEditForm((prev) => ({ ...prev, name: e.target.value }))
+          }
+          placeholder="Nombre del servicio"
+          className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+            color: "var(--text-main)",
+          }}
+        />
 
-               <div
-  className="mt-3 text-xs"
-  style={{ color: "var(--text-muted)" }}
->
-  {service.duration_minutes} min · {formatPrice(service.price)}
-</div>
+        <textarea
+          value={editForm.description}
+          onChange={(e) =>
+            setEditForm((prev) => ({
+              ...prev,
+              description: e.target.value,
+            }))
+          }
+          placeholder="Descripción"
+          className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+            color: "var(--text-main)",
+          }}
+        />
 
-<div
-  className="mt-2 text-xs"
-  style={{ color: "var(--text-muted)" }}
->
-  {assignedStaffNames.length > 0
-    ? assignedStaffNames.join(", ")
-    : "Sin staff"}
-</div>
-              </div>
-            );
-          })}
+        <div className="grid gap-3 md:grid-cols-2">
+          <input
+            type="number"
+            min="1"
+            value={editForm.duration_minutes}
+            onChange={(e) =>
+              setEditForm((prev) => ({
+                ...prev,
+                duration_minutes: e.target.value,
+              }))
+            }
+            placeholder="Duración"
+            className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+
+          <input
+            type="number"
+            min="0"
+            value={editForm.price}
+            onChange={(e) =>
+              setEditForm((prev) => ({
+                ...prev,
+                price: e.target.value,
+              }))
+            }
+            placeholder="Precio"
+            className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => handleSaveEdit(service.id)}
+            disabled={saving}
+            className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-medium text-white transition disabled:opacity-60"
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+            }}
+          >
+            {saving ? "Guardando..." : "Guardar cambios"}
+          </button>
+
+          <button
+            type="button"
+            onClick={cancelEditing}
+            disabled={saving}
+            className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:opacity-60"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    ) : (
+      <>
+        <div className="flex justify-between items-start">
+          <div>
+            <p
+              className="font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              {service.name}
+            </p>
+            <p
+              className="text-sm"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {service.description || "Sin descripción"}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => startEditing(service)}
+            className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+            style={{
+              borderColor: "rgba(37,99,235,0.22)",
+              background: "rgba(37,99,235,0.08)",
+              color: "rgb(37 99 235)",
+            }}
+          >
+            Editar
+          </button>
+        </div>
+
+        <div
+          className="mt-3 text-xs"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {service.duration_minutes} min · {formatPrice(service.price)}
+        </div>
+
+        <div
+          className="mt-2 text-xs"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {assignedStaffNames.length > 0
+            ? assignedStaffNames.join(", ")
+            : "Sin staff"}
+        </div>
+      </>
+    )}
+  </div>
+);          })}
         </div>
       )}
     </div>
@@ -1204,11 +1339,18 @@ export default function ServicesPage() {
 />
 
         <button
-          onClick={handleCreateService}
-          className="w-full rounded-xl bg-blue-600 text-white py-2 text-sm"
-        >
-          Crear servicio
-        </button>
+  type="button"
+  onClick={handleCreateService}
+  disabled={saving || loading || servicesLimitReached || hasExcess}
+  className="w-full rounded-xl py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+  style={{
+    background:
+      "linear-gradient(135deg, rgb(37 99 235), rgb(59 130 246), rgb(14 165 233))",
+    boxShadow: "0 14px 30px rgba(37,99,235,0.28)",
+  }}
+>
+  {saving ? "Guardando..." : "Crear servicio"}
+</button>
       </div>
     </div>
   </div>
