@@ -3045,11 +3045,11 @@ export default function CampaignsPage() {
                   style={{ borderColor: "var(--border-color)" }}
                 >
                   <p
-                    className="text-sm font-semibold"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Lista editable de destinatarios
-                  </p>
+  className="text-sm font-semibold"
+  style={{ color: "var(--text-main)" }}
+>
+  Selecciona quién recibirá la campaña
+</p>
 
                   <span
                     className="rounded-full border px-3 py-1 text-xs font-semibold"
@@ -3101,8 +3101,13 @@ export default function CampaignsPage() {
 
                         return (
                           <div
-                            key={item.id}
-                            className="flex flex-col gap-3 rounded-2xl border px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
+  key={item.id}
+  onClick={(e) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    toggleRecipientIncluded(item.id);
+  }}
+  style={{ cursor: "pointer" }}
+  className="flex flex-col gap-3 rounded-2xl border px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -3168,28 +3173,32 @@ export default function CampaignsPage() {
 
                             <div className="flex flex-wrap gap-2">
                               <button
-                                type="button"
-                                onClick={() => toggleRecipientIncluded(item.id)}
-                                className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-xs font-semibold transition"
-                                style={{
-                                  background: item.included
-                                    ? "rgba(16,185,129,0.14)"
-                                    : "rgba(244,63,94,0.12)",
-                                  border: item.included
-                                    ? "1px solid rgba(16,185,129,0.28)"
-                                    : "1px solid rgba(244,63,94,0.28)",
-                                  color: item.included
-                                    ? "rgb(16 185 129)"
-                                    : "rgb(244 63 94)",
-                                }}
-                              >
-                                {item.included ? "Incluido" : "Excluido"}
-                              </button>
+  type="button"
+  onClick={() => toggleRecipientIncluded(item.id)}
+  className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-xs font-semibold transition"
+  style={{
+    background: item.included
+      ? "rgba(16,185,129,0.14)"
+      : "rgba(244,63,94,0.12)",
+    border: item.included
+      ? "1px solid rgba(16,185,129,0.28)"
+      : "1px solid rgba(244,63,94,0.28)",
+    color: item.included
+      ? "rgb(16 185 129)"
+      : "rgb(244 63 94)",
+  }}
+>
+  {item.included ? "✓ Incluido" : "+ Incluir"}
+</button>
 
                               {isManual ? (
                                 <button
                                   type="button"
-                                  onClick={() => removeManualRecipient(item.id)}
+                                  onClick={() => {
+  if (confirm("¿Seguro que quieres quitar este destinatario?")) {
+    removeManualRecipient(item.id);
+  }
+}}
                                   className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-xs font-semibold transition"
                                   style={{
                                     background: "rgba(244,63,94,0.08)",
