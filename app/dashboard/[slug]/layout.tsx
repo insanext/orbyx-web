@@ -7,7 +7,7 @@ import {
   CalendarDays,
   BarChart3,
   Briefcase,
-  Scissors,
+  Layers3,
   Users,
   GitBranch,
   ChevronRight,
@@ -57,7 +57,8 @@ const navItems = [
   {
     label: "Servicios",
     href: "/services",
-    icon: Scissors,
+    icon: Layers3,
+    accent: true,
   },
   {
     label: "Staff",
@@ -365,6 +366,36 @@ export default function DashboardLayout({
                   const Icon = item.icon;
                   const fullHref = `/dashboard/${slug}${item.href}`;
                   const active = isItemActive(fullHref);
+                  const hasAccent = Boolean(item.accent);
+
+                  const itemBackground = active
+                    ? "var(--text-main)"
+                    : hasAccent
+                    ? "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(168,85,247,0.06))"
+                    : "transparent";
+
+                  const itemBorder = !active && hasAccent
+                    ? "1px solid rgba(37,99,235,0.14)"
+                    : "1px solid transparent";
+
+                  const itemColor = active ? "var(--bg-card)" : textMuted;
+
+                  const iconBackground = active
+                    ? "rgba(255,255,255,0.14)"
+                    : hasAccent
+                    ? "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(168,85,247,0.14))"
+                    : softBg;
+
+                  const iconColor = active
+                    ? "var(--bg-card)"
+                    : hasAccent
+                    ? "#2563eb"
+                    : textMuted;
+
+                  const iconShadow =
+                    !active && hasAccent
+                      ? "0 8px 18px rgba(37,99,235,0.12)"
+                      : "none";
 
                   return (
                     <Link
@@ -375,16 +406,22 @@ export default function DashboardLayout({
                         active ? "shadow-sm" : ""
                       )}
                       style={{
-                        background: active ? "var(--text-main)" : "transparent",
-                        color: active ? "var(--bg-card)" : textMuted,
+                        background: itemBackground,
+                        color: itemColor,
+                        border: itemBorder,
+                        boxShadow:
+                          !active && hasAccent
+                            ? "0 8px 24px rgba(37,99,235,0.04)"
+                            : "none",
                       }}
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className="flex h-9 w-9 items-center justify-center rounded-xl transition-all"
                           style={{
-                            background: active ? "rgba(255,255,255,0.12)" : softBg,
-                            color: active ? "var(--bg-card)" : textMuted,
+                            background: iconBackground,
+                            color: iconColor,
+                            boxShadow: iconShadow,
                           }}
                         >
                           <Icon size={18} />
