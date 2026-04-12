@@ -3106,13 +3106,13 @@ export default function CampaignsPage() {
     if ((e.target as HTMLElement).closest("button")) return;
     toggleRecipientIncluded(item.id);
   }}
-  style={{ cursor: "pointer" }}
   className="flex flex-col gap-3 rounded-2xl border px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-card)",
-                            }}
-                          >
+  style={{
+    cursor: "pointer",
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+  }}
+>
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <p
