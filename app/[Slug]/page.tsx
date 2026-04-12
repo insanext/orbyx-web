@@ -56,7 +56,7 @@ type BusinessItem = {
   min_booking_notice_minutes?: number | null;
   max_booking_days_ahead?: number | null;
   booking_fields_config?: BookingField[];
-  business_category?: string; // 👈 NUEVO
+  business_category?: string;
 };
 
 type PublicServicesResponse = {
@@ -166,7 +166,10 @@ function buildMapsUrl(address?: string) {
 }
 
 function formatGoogleCalendarDate(dateString: string) {
-  return new Date(dateString).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  return new Date(dateString)
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
 }
 
 function buildGoogleCalendarUrl({
@@ -185,7 +188,9 @@ function buildGoogleCalendarUrl({
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: title,
-    dates: `${formatGoogleCalendarDate(startIso)}/${formatGoogleCalendarDate(endIso)}`,
+    dates: `${formatGoogleCalendarDate(startIso)}/${formatGoogleCalendarDate(
+      endIso
+    )}`,
   });
 
   if (details) {
@@ -197,6 +202,23 @@ function buildGoogleCalendarUrl({
   }
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function SummaryChip({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
+    </div>
+  );
 }
 
 export default function Page() {
@@ -213,37 +235,35 @@ export default function Page() {
   const slug = slugFromParams || slugFromPathname;
 
   const [business, setBusiness] = useState<BusinessItem | null>(null);
-const isVeterinaria =
-  business?.business_category === "veterinaria" ||
-  business?.business_category === "vet";
-  const [calendarId, setCalendarId] = useState("");
+  const isVeterinaria =
+    business?.business_category === "veterinaria" ||
+    business?.business_category === "vet";
 
+  const [calendarId, setCalendarId] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
-
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(
     null
   );
-
   const [staffOptions, setStaffOptions] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
-
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
 
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
-const [customerData, setCustomerData] = useState<Record<string, string>>({
-  name: "",
-  phone: "",
-  email: "",
-  pet_name: "",
-  pet_species: "",
-});
+  const [customerData, setCustomerData] = useState<Record<string, string>>({
+    name: "",
+    phone: "",
+    email: "",
+    pet_name: "",
+    pet_species: "",
+  });
 
-const [pets, setPets] = useState<any[]>([]);
-const [selectedPetId, setSelectedPetId] = useState("");
+  const [pets, setPets] = useState<any[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState("");
+
   const [loadingPage, setLoadingPage] = useState(true);
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingStaff, setLoadingStaff] = useState(false);
@@ -296,6 +316,16 @@ const [selectedPetId, setSelectedPetId] = useState("");
     if (!customerData.name?.trim()) return "Debes ingresar nombre y apellido.";
     if (!customerData.phone?.trim()) return "Debes ingresar teléfono.";
     if (!customerData.email?.trim()) return "Debes ingresar email.";
+
+    if (isVeterinaria) {
+      if (!String(customerData.pet_name || "").trim()) {
+        return "Debes ingresar nombre de la mascota.";
+      }
+
+      if (!String(customerData.pet_species || "").trim()) {
+        return "Debes ingresar especie de la mascota.";
+      }
+    }
 
     for (const field of visibleBookingFields) {
       if (field.required && !String(customerData[field.key] || "").trim()) {
@@ -365,27 +395,29 @@ const [selectedPetId, setSelectedPetId] = useState("");
     loadInitial();
   }, [slug]);
 
-useEffect(() => {
-  const phone = customerData.phone?.trim();
+  useEffect(() => {
+    const phone = customerData.phone?.trim();
 
-  if (!phone || phone.length < 6) {
-    setPets([]);
-    return;
-  }
-
-  const timeout = setTimeout(async () => {
-    try {
-      const res = await fetch(`https://agenda-oauth.onrender.com/pets/${slug}?phone=${phone}`);
-      const data = await res.json();
-      setPets(data.pets || []);
-    } catch (error) {
-      console.error("Error cargando mascotas:", error);
+    if (!phone || phone.length < 6) {
       setPets([]);
+      return;
     }
-  }, 400);
 
-  return () => clearTimeout(timeout);
-}, [customerData.phone, slug]);
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://agenda-oauth.onrender.com/pets/${slug}?phone=${phone}`
+        );
+        const data = await res.json();
+        setPets(data.pets || []);
+      } catch (error) {
+        console.error("Error cargando mascotas:", error);
+        setPets([]);
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [customerData.phone, slug]);
 
   useEffect(() => {
     if (!slug || !selectedBranchId) return;
@@ -449,8 +481,8 @@ useEffect(() => {
         );
 
         const data = await res.json();
-
         const rows: StaffItem[] = Array.isArray(data.staff) ? data.staff : [];
+
         setStaffOptions(rows);
 
         setSelectedStaffId((prev) => {
@@ -591,15 +623,15 @@ useEffect(() => {
         customer_phone: customerData.phone.trim(),
         customer_email: customerData.email.trim(),
         customer_data: {
-  ...visibleBookingFields.reduce<Record<string, string>>((acc, field) => {
-    const value = String(customerData[field.key] || "").trim();
-    if (value) acc[field.key] = value;
-    return acc;
-  }, {}),
-  pet_id: selectedPetId || "",
-  pet_name: String(customerData.pet_name || "").trim(),
-  pet_species: String(customerData.pet_species || "").trim(),
-},
+          ...visibleBookingFields.reduce<Record<string, string>>((acc, field) => {
+            const value = String(customerData[field.key] || "").trim();
+            if (value) acc[field.key] = value;
+            return acc;
+          }, {}),
+          pet_id: selectedPetId || "",
+          pet_name: String(customerData.pet_name || "").trim(),
+          pet_species: String(customerData.pet_species || "").trim(),
+        },
       };
 
       const res = await fetch("/api/appointments/slot", {
@@ -622,7 +654,9 @@ useEffect(() => {
 
       const startDate = new Date(selectedSlot.slot_start);
       const durationMinutes = Number(selectedService.duration_minutes || 0);
-      const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+      const endDate = new Date(
+        startDate.getTime() + durationMinutes * 60 * 1000
+      );
 
       setBookingSuccess({
         serviceName: selectedService.name,
@@ -645,18 +679,16 @@ useEffect(() => {
       }, {});
 
       setCustomerData({
-  name: "",
-  phone: "",
-  email: "",
-  pet_name: "",
-  pet_species: "",
-  ...clearedExtraFields,
-});
+        name: "",
+        phone: "",
+        email: "",
+        pet_name: "",
+        pet_species: "",
+        ...clearedExtraFields,
+      });
 
-setSelectedPetId("");
-setPets([]);
-
-      setSelectedDate(new Date(selectedDate));
+      setSelectedPetId("");
+      setPets([]);
     } catch (error: any) {
       setSubmitError(error?.message || "No se pudo crear la reserva.");
     } finally {
@@ -713,47 +745,16 @@ setPets([]);
               </div>
 
               <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Servicio
-                  </p>
-                  <p className="mt-2 text-lg font-bold text-slate-900">
-                    {bookingSuccess.serviceName}
-                  </p>
-                </div>
-
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Fecha y hora
-                  </p>
-                  <p className="mt-2 text-lg font-bold text-slate-900">
-                    {bookingSuccess.time}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {bookingSuccess.date}
-                  </p>
-                </div>
-
+                <SummaryChip label="Servicio" value={bookingSuccess.serviceName} />
+                <SummaryChip
+                  label="Fecha y hora"
+                  value={`${bookingSuccess.time} · ${bookingSuccess.date}`}
+                />
                 {bookingSuccess.branchName ? (
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Sucursal
-                    </p>
-                    <p className="mt-2 text-lg font-bold text-slate-900">
-                      {bookingSuccess.branchName}
-                    </p>
-                  </div>
+                  <SummaryChip label="Sucursal" value={bookingSuccess.branchName} />
                 ) : null}
-
                 {bookingSuccess.staffName ? (
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Profesional
-                    </p>
-                    <p className="mt-2 text-lg font-bold text-slate-900">
-                      {bookingSuccess.staffName}
-                    </p>
-                  </div>
+                  <SummaryChip label="Profesional" value={bookingSuccess.staffName} />
                 ) : null}
               </div>
 
@@ -928,7 +929,7 @@ setPets([]);
             <div className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
               <div className="space-y-4">
                 {showBranchSelector ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
                       Sucursal
                     </label>
@@ -950,7 +951,7 @@ setPets([]);
                   </div>
                 ) : null}
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
                     Servicio
                   </label>
@@ -1006,7 +1007,7 @@ setPets([]);
                 ) : null}
 
                 {selectedService ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <div>
                     <div className="mb-3">
                       <p className="text-sm font-semibold text-slate-900">
                         Profesional
@@ -1076,9 +1077,7 @@ setPets([]);
                   <input
                     placeholder="Teléfono"
                     value={customerData.phone || ""}
-                    onChange={(e) =>
-                      updateCustomerField("phone", e.target.value)
-                    }
+                    onChange={(e) => updateCustomerField("phone", e.target.value)}
                     className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
                   />
 
@@ -1086,59 +1085,59 @@ setPets([]);
                     placeholder="Email"
                     type="email"
                     value={customerData.email || ""}
-                    onChange={(e) =>
-                      updateCustomerField("email", e.target.value)
-                    }
+                    onChange={(e) => updateCustomerField("email", e.target.value)}
                     className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
                   />
 
+                  {isVeterinaria && (
+                    <>
+                      {pets.length > 0 ? (
+                        <select
+                          value={selectedPetId}
+                          onChange={(e) => {
+                            const petId = e.target.value;
+                            setSelectedPetId(petId);
 
-{isVeterinaria && (
-  <>
-    {/* Mascota */}
+                            const pet = pets.find((p) => p.id === petId);
+                            if (pet) {
+                              updateCustomerField("pet_name", pet.name || "");
+                              updateCustomerField(
+                                "pet_species",
+                                pet.species_base || ""
+                              );
+                            }
+                          }}
+                          className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                        >
+                          <option value="">Seleccionar mascota</option>
 
-    {pets.length > 0 && (
-      <select
-        value={selectedPetId}
-        onChange={(e) => {
-          const petId = e.target.value;
-          setSelectedPetId(petId);
+                          {pets.map((pet) => (
+                            <option key={pet.id} value={pet.id}>
+                              🐶 {pet.name} · {pet.species_base}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
 
-          const pet = pets.find((p) => p.id === petId);
-          if (pet) {
-            updateCustomerField("pet_name", pet.name || "");
-            updateCustomerField("pet_species", pet.species_base || "");
-          }
-        }}
-        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-      >
-        <option value="">Seleccionar mascota</option>
+                      <input
+                        placeholder="Nombre de la mascota"
+                        value={customerData.pet_name || ""}
+                        onChange={(e) =>
+                          updateCustomerField("pet_name", e.target.value)
+                        }
+                        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                      />
 
-        {pets.map((pet) => (
-          <option key={pet.id} value={pet.id}>
-            🐶 {pet.name} · {pet.species_base}
-          </option>
-        ))}
-      </select>
-    )}
-
-    {/* Crear nueva mascota */}
-    <input
-      placeholder="Nombre de la mascota"
-      value={customerData.pet_name || ""}
-      onChange={(e) => updateCustomerField("pet_name", e.target.value)}
-      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-    />
-
-    <input
-      placeholder="Especie (perro, gato, etc)"
-      value={customerData.pet_species || ""}
-      onChange={(e) => updateCustomerField("pet_species", e.target.value)}
-      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-    />
-  </>
-)}
-
+                      <input
+                        placeholder="Especie (perro, gato, etc)"
+                        value={customerData.pet_species || ""}
+                        onChange={(e) =>
+                          updateCustomerField("pet_species", e.target.value)
+                        }
+                        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                      />
+                    </>
+                  )}
 
                   {visibleBookingFields.map((field) => (
                     <input
