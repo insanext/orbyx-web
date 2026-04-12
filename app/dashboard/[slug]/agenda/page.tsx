@@ -2058,27 +2058,16 @@ export default function AgendaPage() {
 ) : null}
 
 {appt.customer_data?.pet_name ? (
-  <div
-    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-      isSelected
-        ? "bg-white/10 text-white"
-        : "bg-emerald-100 text-emerald-700"
+  <p
+    className={`truncate text-[11px] ${
+      isSelected ? "text-slate-200" : "text-emerald-600"
     }`}
   >
-    🐾 Mascota
-  </div>
-) : null}
-
-{appt.customer_data?.pet_name ? (
-  <div
-    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-      isSelected
-        ? "bg-white/10 text-white"
-        : "bg-emerald-100 text-emerald-700"
-    }`}
-  >
-    🐾 Mascota
-  </div>
+    🐶 {appt.customer_data.pet_name}
+    {appt.customer_data.pet_species
+      ? ` (${appt.customer_data.pet_species})`
+      : ""}
+  </p>
 ) : null}
 
 
