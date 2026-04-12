@@ -1085,45 +1085,52 @@ useEffect(() => {
                   />
 
 
-{/* Mascota */}
-<input
-  placeholder="Nombre de la mascota"
-  value={customerData.pet_name || ""}
-  onChange={(e) => updateCustomerField("pet_name", e.target.value)}
-  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-/>
+{isVeterinaria && (
+  <>
+    {/* Mascota */}
 
-<input
-  placeholder="Especie (perro, gato, etc)"
-  value={customerData.pet_species || ""}
-  onChange={(e) => updateCustomerField("pet_species", e.target.value)}
-  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-/>
+    {pets.length > 0 && (
+      <select
+        value={selectedPetId}
+        onChange={(e) => {
+          const petId = e.target.value;
+          setSelectedPetId(petId);
 
-{pets.length > 0 && (
-  <select
-    value={selectedPetId}
-    onChange={(e) => {
-      const petId = e.target.value;
-      setSelectedPetId(petId);
+          const pet = pets.find((p) => p.id === petId);
+          if (pet) {
+            updateCustomerField("pet_name", pet.name || "");
+            updateCustomerField("pet_species", pet.species_base || "");
+          }
+        }}
+        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+      >
+        <option value="">Seleccionar mascota</option>
 
-      const pet = pets.find((p) => p.id === petId);
-      if (pet) {
-        updateCustomerField("pet_name", pet.name || "");
-        updateCustomerField("pet_species", pet.species_base || "");
-      }
-    }}
-    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-  >
-    <option value="">Seleccionar mascota existente</option>
+        {pets.map((pet) => (
+          <option key={pet.id} value={pet.id}>
+            🐶 {pet.name} · {pet.species_base}
+          </option>
+        ))}
+      </select>
+    )}
 
-    {pets.map((pet) => (
-      <option key={pet.id} value={pet.id}>
-        🐶 {pet.name} · {pet.species_base}
-      </option>
-    ))}
-  </select>
+    {/* Crear nueva mascota */}
+    <input
+      placeholder="Nombre de la mascota"
+      value={customerData.pet_name || ""}
+      onChange={(e) => updateCustomerField("pet_name", e.target.value)}
+      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+    />
+
+    <input
+      placeholder="Especie (perro, gato, etc)"
+      value={customerData.pet_species || ""}
+      onChange={(e) => updateCustomerField("pet_species", e.target.value)}
+      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+    />
+  </>
 )}
+
 
                   {visibleBookingFields.map((field) => (
                     <input
