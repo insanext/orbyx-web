@@ -216,7 +216,9 @@ export default function CustomersPage() {
 
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-4 py-2 text-left">Cliente</th>
+                <th className="px-4 py-2 text-left text-slate-700 dark:text-slate-300">
+  Cliente
+</th>
                 <th className="px-4 py-2 text-left">Contacto</th>
                 <th className="px-4 py-2 text-left">Visitas</th>
                 <th className="px-4 py-2 text-left">Segmento</th>
