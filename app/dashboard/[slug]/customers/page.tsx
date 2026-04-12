@@ -214,15 +214,16 @@ export default function CustomersPage() {
 
           <table className="w-full text-sm">
 
-            <thead className="bg-slate-50">
+            <thead className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <tr>
                 <th className="px-4 py-2 text-left text-slate-700 dark:text-slate-600">
   Cliente
 </th>
-                <th className="px-4 py-2 text-left">Contacto</th>
-                <th className="px-4 py-2 text-left">Visitas</th>
-                <th className="px-4 py-2 text-left">Segmento</th>
-                <th className="px-4 py-2 text-left">Última</th>
+    <th className="px-4 py-2 text-left text-xs font-semibold">Cliente</th>
+    <th className="px-4 py-2 text-left text-xs font-semibold">Contacto</th>
+    <th className="px-4 py-2 text-left text-xs font-semibold">Visitas</th>
+    <th className="px-4 py-2 text-left text-xs font-semibold">Segmento</th>
+    <th className="px-4 py-2 text-left text-xs font-semibold">Última</th>
               </tr>
             </thead>
 
