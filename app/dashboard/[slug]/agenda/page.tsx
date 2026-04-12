@@ -2,6 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 
 type Appointment = {
@@ -206,7 +207,10 @@ function Notice({
   const styles = getNoticeStyles(tone);
 
   return (
-    <div className="rounded-2xl border px-4 py-4 shadow-sm" style={styles.wrapper}>
+    <div
+      className="rounded-2xl border px-4 py-4 shadow-sm"
+      style={styles.wrapper}
+    >
       <p className="text-sm font-semibold" style={styles.title}>
         {title}
       </p>
@@ -218,6 +222,34 @@ function Notice({
       ) : null}
 
       {children ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+}: {
+  title: string;
+  value: string | number;
+}) {
+  return (
+    <div
+      className="rounded-xl border px-4 py-3"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+      }}
+    >
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        {title}
+      </p>
+      <p
+        className="mt-1 text-lg font-semibold"
+        style={{ color: "var(--text-main)" }}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -628,7 +660,9 @@ export default function AgendaPage() {
 
   function getStaffName(staffId?: string | null) {
     if (!staffId) return "Sin profesional";
-    return staffList.find((staff) => staff.id === staffId)?.name || "Profesional";
+    return (
+      staffList.find((staff) => staff.id === staffId)?.name || "Profesional"
+    );
   }
 
   function getWeekdayForAgenda(date: Date) {
@@ -990,7 +1024,9 @@ export default function AgendaPage() {
         throw new Error(data?.error || "No se pudieron cargar los horarios");
       }
 
-      const rows: BusinessHourItem[] = Array.isArray(data?.hours) ? data.hours : [];
+      const rows: BusinessHourItem[] = Array.isArray(data?.hours)
+        ? data.hours
+        : [];
       setBusinessHours(rows);
     } catch (err) {
       console.error("Error cargando business hours", err);
@@ -1006,7 +1042,9 @@ export default function AgendaPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "No se pudieron cargar los horarios del staff");
+        throw new Error(
+          data?.error || "No se pudieron cargar los horarios del staff"
+        );
       }
 
       const rows: StaffHourItem[] = Array.isArray(data?.hours) ? data.hours : [];
@@ -1026,7 +1064,8 @@ export default function AgendaPage() {
 
       if (!response.ok) {
         throw new Error(
-          data?.error || "No se pudieron cargar las fechas especiales del negocio"
+          data?.error ||
+            "No se pudieron cargar las fechas especiales del negocio"
         );
       }
 
@@ -1448,7 +1487,6 @@ export default function AgendaPage() {
   }, [appointments]);
 
   const pendingCloseCount = pendingCloseAppointments.length;
-  const canceledCount = canceledAppointments.length;
   const hasPendingClose = pendingCloseCount > 0;
 
   const counts = useMemo(() => {
@@ -1493,150 +1531,70 @@ export default function AgendaPage() {
     staffList.find((staff) => staff.id === selectedStaffId)?.name || "";
 
   return (
-    <div className="space-y-6 pb-6">
-      <section
-        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
-        style={{
-          borderColor: "rgba(59,130,246,0.25)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-        }}
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p
-              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Agenda
-            </p>
+    <div className="space-y-8 pb-6">
+      <PageHeader
+        eyebrow="Agenda"
+        title="Agenda semanal"
+        description={
+          selectedBranchName && selectedStaffName
+            ? `Vista filtrada por sucursal ${selectedBranchName} y profesional ${selectedStaffName}.`
+            : selectedBranchName
+            ? `Vista filtrada por sucursal ${selectedBranchName}.`
+            : selectedStaffName
+            ? `Vista filtrada por profesional ${selectedStaffName}.`
+            : `Gestiona las reservas de ${loading ? "tu negocio" : businessName}.`
+        }
+      />
 
-            <h1
-              className="text-3xl font-semibold tracking-tight sm:text-4xl"
-              style={{ color: "var(--text-main)" }}
-            >
-              Agenda semanal
-            </h1>
-
-            <p
-              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {selectedBranchName && selectedStaffName
-                ? `Vista filtrada por sucursal ${selectedBranchName} y profesional ${selectedStaffName}.`
-                : selectedBranchName
-                ? `Vista filtrada por sucursal ${selectedBranchName}.`
-                : selectedStaffName
-                ? `Vista filtrada por profesional ${selectedStaffName}.`
-                : `Gestiona las reservas de ${loading ? "tu negocio" : businessName}.`}
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Hoy
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : appointmentsToday.length}
-              </p>
-            </div>
-
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Semana
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading
-                  ? "..."
-                  : activeFilter === "active"
-                  ? counts.active
-                  : activeFilter === "pending_close"
-                  ? counts.pending_close
-                  : activeFilter === "booked"
-                  ? counts.booked
-                  : activeFilter === "completed"
-                  ? counts.completed
-                  : activeFilter === "no_show"
-                  ? counts.no_show
-                  : counts.canceled}
-              </p>
-            </div>
-
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Pendientes
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : pendingCloseCount}
-              </p>
-            </div>
-
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Próxima
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : nextAppointment ? formatHour(nextAppointment.start_at) : "--"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard
+          title="Hoy"
+          value={loading ? "..." : appointmentsToday.length}
+        />
+        <StatCard
+          title="Semana"
+          value={
+            loading
+              ? "..."
+              : activeFilter === "active"
+              ? counts.active
+              : activeFilter === "pending_close"
+              ? counts.pending_close
+              : activeFilter === "booked"
+              ? counts.booked
+              : activeFilter === "completed"
+              ? counts.completed
+              : activeFilter === "no_show"
+              ? counts.no_show
+              : counts.canceled
+          }
+        />
+        <StatCard
+          title="Pendientes"
+          value={loading ? "..." : pendingCloseCount}
+        />
+        <StatCard
+          title="Próxima"
+          value={
+            loading
+              ? "..."
+              : nextAppointment
+              ? formatHour(nextAppointment.start_at)
+              : "--"
+          }
+        />
+      </div>
 
       {loadingBranches && !selectedBranchId ? (
-        <div className="rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
-          <span style={{ color: "var(--text-muted)" }}>
-            Cargando sucursal activa...
-          </span>
+        <div
+          className="rounded-xl border px-4 py-3 text-sm"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+            color: "var(--text-muted)",
+          }}
+        >
+          Cargando sucursal activa...
         </div>
       ) : null}
 
@@ -1651,31 +1609,150 @@ export default function AgendaPage() {
       {hasPendingClose ? (
         <Notice
           tone="danger"
-          title={`Tienes ${pendingCloseCount} cita${pendingCloseCount === 1 ? "" : "s"} pendiente${pendingCloseCount === 1 ? "" : "s"} de cierre.`}
+          title={`Tienes ${pendingCloseCount} cita${
+            pendingCloseCount === 1 ? "" : "s"
+          } pendiente${pendingCloseCount === 1 ? "" : "s"} de cierre.`}
           description="Revísalas para mantener la agenda actualizada."
         />
       ) : null}
 
       {error ? <Notice tone="danger" title={error} /> : null}
 
-      <div className="grid gap-6 xl:grid-cols-[1.7fr_0.55fr]">
-        <div className="rounded-2xl border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
-          <Panel
-            title="Calendario semanal"
-            description={
-              activeFilter === "canceled"
-                ? selectedStaffName
-                  ? `Vista semanal de reservas canceladas de ${selectedStaffName}.`
-                  : "Vista semanal de reservas canceladas."
-                : selectedStaffName
-                ? `Vista semanal de ${selectedStaffName}.`
-                : "Vista semanal enfocada en reservas activas."
-            }
-            className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
-          >
+      <div className="grid gap-8 xl:grid-cols-[1.7fr_0.55fr]">
+        <section className="space-y-6">
+          <div>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2
+                className="text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Calendario semanal
+              </h2>
+
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {hasPendingClose ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveFilter("pending_close");
+                      if (pendingCloseAppointments[0]) {
+                        handleSelectAppointment(pendingCloseAppointments[0]);
+                      }
+                    }}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
+                  >
+                    Pendientes: {pendingCloseCount}
+                  </button>
+                ) : (
+                  <div className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-300/50 bg-emerald-500/10 px-3.5 text-sm font-semibold text-emerald-300">
+                    Sin pendientes
+                  </div>
+                )}
+
+                <div
+                  className="flex items-center rounded-xl border p-1"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={goPrevWeek}
+                    className="inline-flex h-10 items-center justify-center rounded-lg px-3.5 text-sm font-medium transition"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    ← Anterior
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={goToday}
+                    className="inline-flex h-10 items-center justify-center rounded-lg px-3.5 text-sm font-medium text-white transition"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                    }}
+                  >
+                    Hoy
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={goNextWeek}
+                    className="inline-flex h-10 items-center justify-center rounded-lg px-3.5 text-sm font-medium transition"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+
+                <div
+                  className="inline-flex h-10 items-center justify-center rounded-xl border px-3.5 text-sm font-semibold"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  {formatRangeTitle(weekStart, weekEnd)}
+                </div>
+
+                <input
+                  type="date"
+                  value={formatDateYYYYMMDD(weekBaseDate)}
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
+                    setSelectedAppointment(null);
+                    setIsEditingReservation(false);
+                    setHoverCard(null);
+                  }}
+                  className="h-10 rounded-xl border px-3.5 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="mb-4 flex flex-wrap gap-2">
+              {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
+                const count =
+                  filter === "active"
+                    ? counts.active
+                    : filter === "pending_close"
+                    ? counts.pending_close
+                    : filter === "booked"
+                    ? counts.booked
+                    : filter === "completed"
+                    ? counts.completed
+                    : filter === "no_show"
+                    ? counts.no_show
+                    : counts.canceled;
+
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setActiveFilter(filter)}
+                    className={getFilterButtonClasses(
+                      filter,
+                      activeFilter === filter,
+                      count
+                    )}
+                  >
+                    {filterLabels[filter]} ({count})
+                  </button>
+                );
+              })}
+            </div>
+
             {!selectedBranchId ? (
               <div
-                className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+                className="rounded-xl border border-dashed px-4 py-8 text-sm"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -1686,7 +1763,7 @@ export default function AgendaPage() {
               </div>
             ) : loading ? (
               <div
-                className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+                className="rounded-xl border border-dashed px-4 py-8 text-sm"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -1696,406 +1773,168 @@ export default function AgendaPage() {
                 Cargando agenda...
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap gap-2">
-                    {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
-                      const count =
-                        filter === "active"
-                          ? counts.active
-                          : filter === "pending_close"
-                          ? counts.pending_close
-                          : filter === "booked"
-                          ? counts.booked
-                          : filter === "completed"
-                          ? counts.completed
-                          : filter === "no_show"
-                          ? counts.no_show
-                          : counts.canceled;
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+                {weekDays.map((day) => {
+                  const dayKey = formatDateYYYYMMDD(day);
+                  const dayAppointments = appointmentsByDay[dayKey] || [];
+                  const isToday = dayKey === todayKey;
 
-                      return (
-                        <button
-                          key={filter}
-                          type="button"
-                          onClick={() => setActiveFilter(filter)}
-                          className={getFilterButtonClasses(
-                            filter,
-                            activeFilter === filter,
-                            count
-                          )}
-                        >
-                          {filterLabels[filter]} ({count})
-                        </button>
-                      );
-                    })}
-                  </div>
+                  const dayWindow = getSelectedStaffDayWindow(day);
+                  const dayPendingCount = appointments
+                    .filter(
+                      (appt) =>
+                        formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
+                    )
+                    .filter(isPastPendingClosure).length;
 
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    {hasPendingClose ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveFilter("pending_close");
-                          if (pendingCloseAppointments[0]) {
-                            handleSelectAppointment(pendingCloseAppointments[0]);
-                          }
-                        }}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
-                      >
-                        Pendientes: {pendingCloseCount}
-                      </button>
-                    ) : (
-                      <div className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-300/50 bg-emerald-500/10 px-3.5 text-sm font-semibold text-emerald-300">
-                        Sin pendientes
-                      </div>
-                    )}
+                  const dayCanceledCount = appointments
+                    .filter(
+                      (appt) =>
+                        formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
+                    )
+                    .filter(isCanceled).length;
 
+                  const closedLabel =
+                    dayWindow.closedLabel || getSelectedStaffClosedLabel(day);
+
+                  const showClosedBySchedule =
+                    !!selectedStaffId &&
+                    dayWindow.hasConfiguredHours &&
+                    dayWindow.fullyClosed &&
+                    dayAppointments.length === 0;
+
+                  const hasNoWorkingWindow =
+                    !!selectedStaffId &&
+                    dayWindow.hasConfiguredHours &&
+                    !dayWindow.fullyClosed &&
+                    dayWindow.startMinutes === null &&
+                    dayWindow.endMinutes === null &&
+                    dayAppointments.length === 0;
+
+                  const daySlots =
+                    showClosedBySchedule || hasNoWorkingWindow
+                      ? []
+                      : generateDaySlots(day, {
+                          startMinutes: dayWindow.startMinutes,
+                          endMinutes: dayWindow.endMinutes,
+                        });
+
+                  return (
                     <div
-                      className="flex items-center rounded-2xl border p-1 shadow-sm"
+                      key={dayKey}
+                      className="rounded-xl border p-2.5"
                       style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
+                        borderColor: dayPendingCount > 0
+                          ? "rgba(244,63,94,0.24)"
+                          : isToday
+                          ? "rgba(56,189,248,0.24)"
+                          : "var(--border-color)",
+                        background: dayPendingCount > 0
+                          ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
+                          : isToday
+                          ? "linear-gradient(180deg, rgba(56,189,248,0.08), var(--bg-card))"
+                          : "var(--bg-soft)",
                       }}
                     >
-                      <button
-                        type="button"
-                        onClick={goPrevWeek}
-                        className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium transition"
-                        style={{ color: "var(--text-main)" }}
-                      >
-                        ← Anterior
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={goToday}
-                        className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium text-white transition"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                        }}
-                      >
-                        Hoy
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={goNextWeek}
-                        className="inline-flex h-10 items-center justify-center rounded-xl px-3.5 text-sm font-medium transition"
-                        style={{ color: "var(--text-main)" }}
-                      >
-                        Siguiente →
-                      </button>
-                    </div>
-
-                    <div
-                      className="inline-flex h-10 items-center justify-center rounded-xl border px-3.5 text-sm font-semibold"
-                      style={{
-                        borderColor: "rgba(59,130,246,0.24)",
-                        background: "rgba(59,130,246,0.10)",
-                        color: "var(--text-main)",
-                      }}
-                    >
-                      {formatRangeTitle(weekStart, weekEnd)}
-                    </div>
-
-                    <input
-                      type="date"
-                      value={formatDateYYYYMMDD(weekBaseDate)}
-                      onChange={(e) => {
-                        if (!e.target.value) return;
-                        setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
-                        setSelectedAppointment(null);
-                        setIsEditingReservation(false);
-                        setHoverCard(null);
-                      }}
-                      className="h-10 rounded-xl border px-3.5 text-sm outline-none transition"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
-                        color: "var(--text-main)",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-                  {weekDays.map((day) => {
-                    const dayKey = formatDateYYYYMMDD(day);
-                    const dayAppointments = appointmentsByDay[dayKey] || [];
-                    const isToday = dayKey === todayKey;
-
-                    const dayWindow = getSelectedStaffDayWindow(day);
-                    const dayPendingCount = appointments
-                      .filter(
-                        (appt) =>
-                          formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
-                      )
-                      .filter(isPastPendingClosure).length;
-
-                    const dayCanceledCount = appointments
-                      .filter(
-                        (appt) =>
-                          formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
-                      )
-                      .filter(isCanceled).length;
-
-                    const closedLabel =
-                      dayWindow.closedLabel || getSelectedStaffClosedLabel(day);
-
-                    const showClosedBySchedule =
-                      !!selectedStaffId &&
-                      dayWindow.hasConfiguredHours &&
-                      dayWindow.fullyClosed &&
-                      dayAppointments.length === 0;
-
-                    const hasNoWorkingWindow =
-                      !!selectedStaffId &&
-                      dayWindow.hasConfiguredHours &&
-                      !dayWindow.fullyClosed &&
-                      dayWindow.startMinutes === null &&
-                      dayWindow.endMinutes === null &&
-                      dayAppointments.length === 0;
-
-                    const daySlots =
-                      showClosedBySchedule || hasNoWorkingWindow
-                        ? []
-                        : generateDaySlots(day, {
-                            startMinutes: dayWindow.startMinutes,
-                            endMinutes: dayWindow.endMinutes,
-                          });
-
-                    return (
                       <div
-                        key={dayKey}
-                        className="rounded-xl border p-2.5"
+                        className="mb-2.5 pb-2.5"
                         style={{
-                          borderColor: dayPendingCount > 0
-                            ? "rgba(244,63,94,0.24)"
-                            : isToday
-                            ? "rgba(56,189,248,0.24)"
-                            : "var(--border-color)",
-                          background: dayPendingCount > 0
-                            ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
-                            : isToday
-                            ? "linear-gradient(180deg, rgba(56,189,248,0.08), var(--bg-card))"
-                            : "var(--bg-soft)",
+                          borderBottom: `1px solid ${
+                            dayPendingCount > 0
+                              ? "rgba(244,63,94,0.24)"
+                              : isToday
+                              ? "rgba(56,189,248,0.24)"
+                              : "var(--border-color)"
+                          }`,
                         }}
                       >
-                        <div
-                          className="mb-2.5 pb-2.5"
-                          style={{
-                            borderBottom: `1px solid ${
-                              dayPendingCount > 0
-                                ? "rgba(244,63,94,0.24)"
-                                : isToday
-                                ? "rgba(56,189,248,0.24)"
-                                : "var(--border-color)"
-                            }`,
-                          }}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div
-                              className="text-sm font-semibold capitalize"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {day.toLocaleDateString("es-CL", {
-                                weekday: "long",
-                              })}
-                            </div>
-
-                            <div className="flex items-center gap-1.5">
-                              {dayCanceledCount > 0 ? (
-                                <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                  {dayCanceledCount} c
-                                </span>
-                              ) : null}
-
-                              {dayPendingCount > 0 ? (
-                                <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                  {dayPendingCount}
-                                </span>
-                              ) : null}
-
-                              {isToday ? (
-                                <span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                  Hoy
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-
+                        <div className="flex items-center justify-between gap-2">
                           <div
-                            className="mt-1 text-[11px]"
-                            style={{ color: "var(--text-muted)" }}
+                            className="text-sm font-semibold capitalize"
+                            style={{ color: "var(--text-main)" }}
                           >
                             {day.toLocaleDateString("es-CL", {
-                              day: "2-digit",
-                              month: "2-digit",
+                              weekday: "long",
                             })}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {dayCanceledCount > 0 ? (
+                              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                {dayCanceledCount} c
+                              </span>
+                            ) : null}
+
+                            {dayPendingCount > 0 ? (
+                              <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                {dayPendingCount}
+                              </span>
+                            ) : null}
+
+                            {isToday ? (
+                              <span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                Hoy
+                              </span>
+                            ) : null}
                           </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                          {showClosedBySchedule ? (
-                            <div
-                              className="rounded-lg border border-dashed px-2 py-3 text-center"
-                              style={{
-                                borderColor: "rgba(245,158,11,0.34)",
-                                background: "rgba(245,158,11,0.10)",
-                              }}
+                        <div
+                          className="mt-1 text-[11px]"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {day.toLocaleDateString("es-CL", {
+                            day: "2-digit",
+                            month: "2-digit",
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {showClosedBySchedule ? (
+                          <div
+                            className="rounded-lg border border-dashed px-2 py-3 text-center"
+                            style={{
+                              borderColor: "rgba(245,158,11,0.34)",
+                              background: "rgba(245,158,11,0.10)",
+                            }}
+                          >
+                            <span
+                              className="block text-[11px] font-semibold"
+                              style={{ color: "var(--text-main)" }}
                             >
-                              <span
-                                className="block text-[11px] font-semibold"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {closedLabel || "No disponible"}
-                              </span>
-                              <span
-                                className="mt-1 block text-[10px]"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                Profesional no disponible este día
-                              </span>
-                            </div>
-                          ) : hasNoWorkingWindow ? (
-                            <div
-                              className="rounded-lg border border-dashed px-2 py-3 text-center"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-card)",
-                              }}
+                              {closedLabel || "No disponible"}
+                            </span>
+                            <span
+                              className="mt-1 block text-[10px]"
+                              style={{ color: "var(--text-muted)" }}
                             >
-                              <span
-                                className="block text-[11px] font-semibold"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                Sin horario disponible
-                              </span>
-                              <span
-                                className="mt-1 block text-[10px]"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                No hay bloques configurados para este día
-                              </span>
-                            </div>
-                          ) : activeFilter === "canceled" ? (
-                            dayAppointments.length === 0 ? (
-                              <div
-                                className="rounded-lg border border-dashed px-2 py-3 text-center text-[11px]"
-                                style={{
-                                  borderColor: "var(--border-color)",
-                                  background: "var(--bg-card)",
-                                  color: "var(--text-muted)",
-                                }}
-                              >
-                                Sin canceladas
-                              </div>
-                            ) : (
-                              dayAppointments.map((appt) => {
-                                const isSelected =
-                                  selectedAppointment?.id === appt.id;
-
-                                return (
-                                  <button
-                                    key={appt.id}
-                                    type="button"
-                                    onClick={() => handleSelectAppointment(appt)}
-                                    onMouseEnter={(e) =>
-                                      handleAppointmentMouseEnter(e, appt)
-                                    }
-                                    onMouseLeave={handleAppointmentMouseLeave}
-                                    className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
-                                      appt,
-                                      isSelected
-                                    )}`}
-                                  >
-                                    <div className="space-y-1.5">
-                                      <div
-                                        className={`text-[11px] font-semibold ${
-                                          isSelected
-                                            ? "text-slate-200"
-                                            : "text-slate-600"
-                                        }`}
-                                      >
-                                        {formatHour(appt.start_at)} -{" "}
-                                        {formatHour(appt.end_at)}
-                                      </div>
-
-                                      <div>
-                                        <span
-                                          className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                                            isSelected
-                                              ? "border-white/20 bg-white/10 text-white"
-                                              : getStatusBadgeClass(appt)
-                                          }`}
-                                        >
-                                          {getCalendarBadgeLabel(appt)}
-                                        </span>
-                                      </div>
-
-                                      <p
-  className={`truncate text-sm font-semibold ${
-    isSelected
-      ? "text-white"
-      : "text-slate-900"
-  }`}
->
-  {appt.customer_name}
-</p>
-
-{appt.customer_data?.pet_name ? (
-  <p
-    className={`truncate text-[11px] ${
-      isSelected ? "text-slate-200" : "text-emerald-600"
-    }`}
-  >
-    🐶 {appt.customer_data.pet_name}
-    {appt.customer_data.pet_species
-      ? ` (${appt.customer_data.pet_species})`
-      : ""}
-  </p>
-) : null}
-
-{appt.customer_data?.pet_name ? (
-  <p
-    className={`truncate text-[11px] ${
-      isSelected ? "text-slate-200" : "text-emerald-600"
-    }`}
-  >
-    🐶 {appt.customer_data.pet_name}
-    {appt.customer_data.pet_species
-      ? ` (${appt.customer_data.pet_species})`
-      : ""}
-  </p>
-) : null}
-
-
-                                      <p
-                                        className={`truncate text-[11px] ${
-                                          isSelected
-                                            ? "text-slate-200"
-                                            : "text-slate-500"
-                                        }`}
-                                      >
-                                        {appt.service_name_snapshot || "Reserva"}
-                                      </p>
-
-                                      <p
-                                        className={`truncate text-[11px] ${
-                                          isSelected
-                                            ? "text-slate-200"
-                                            : "text-slate-500"
-                                        }`}
-                                      >
-                                        {getStaffName(appt.staff_id)}
-                                      </p>
-                                    </div>
-                                  </button>
-                                );
-                              })
-                            )
-                          ) : daySlots.length === 0 && dayAppointments.length === 0 ? (
+                              Profesional no disponible este día
+                            </span>
+                          </div>
+                        ) : hasNoWorkingWindow ? (
+                          <div
+                            className="rounded-lg border border-dashed px-2 py-3 text-center"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                            }}
+                          >
+                            <span
+                              className="block text-[11px] font-semibold"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              Sin horario disponible
+                            </span>
+                            <span
+                              className="mt-1 block text-[10px]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              No hay bloques configurados para este día
+                            </span>
+                          </div>
+                        ) : activeFilter === "canceled" ? (
+                          dayAppointments.length === 0 ? (
                             <div
                               className="rounded-lg border border-dashed px-2 py-3 text-center text-[11px]"
                               style={{
@@ -2104,42 +1943,10 @@ export default function AgendaPage() {
                                 color: "var(--text-muted)",
                               }}
                             >
-                              Sin bloques disponibles
+                              Sin canceladas
                             </div>
                           ) : (
-                            daySlots.map((slot, index) => {
-                              const appt = dayAppointments.find(
-                                (a) =>
-                                  new Date(a.start_at).getTime() ===
-                                  new Date(slot).getTime()
-                              );
-
-                              const isHourStart = index % 2 === 0;
-                              const isEvenBand = Math.floor(index / 2) % 2 === 0;
-
-                              if (!appt) {
-                                return (
-                                  <div
-                                    key={slot}
-                                    className="rounded-lg border px-2 py-2 text-center text-[11px]"
-                                    style={{
-                                      borderColor: isHourStart
-                                        ? "rgba(148,163,184,0.28)"
-                                        : "var(--border-color)",
-                                      background: isEvenBand
-                                        ? "var(--bg-soft)"
-                                        : "var(--bg-card)",
-                                      color: "var(--text-muted)",
-                                    }}
-                                  >
-                                    <span className="block font-medium">
-                                      {formatHour(slot)}
-                                    </span>
-                                    <span className="block">Libre</span>
-                                  </div>
-                                );
-                              }
-
+                            dayAppointments.map((appt) => {
                               const isSelected =
                                 selectedAppointment?.id === appt.id;
 
@@ -2191,6 +1998,21 @@ export default function AgendaPage() {
                                       {appt.customer_name}
                                     </p>
 
+                                    {appt.customer_data?.pet_name ? (
+                                      <p
+                                        className={`truncate text-[11px] ${
+                                          isSelected
+                                            ? "text-slate-200"
+                                            : "text-emerald-600"
+                                        }`}
+                                      >
+                                        🐶 {appt.customer_data.pet_name}
+                                        {appt.customer_data.pet_species
+                                          ? ` (${appt.customer_data.pet_species})`
+                                          : ""}
+                                      </p>
+                                    ) : null}
+
                                     <p
                                       className={`truncate text-[11px] ${
                                         isSelected
@@ -2206,232 +2028,391 @@ export default function AgendaPage() {
                                         isSelected
                                           ? "text-slate-200"
                                           : "text-slate-500"
-                                        }`}
+                                      }`}
                                     >
                                       {getStaffName(appt.staff_id)}
                                     </p>
-
-                                    {isPastPendingClosure(appt) ? (
-                                      <div
-                                        className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${
-                                          isSelected
-                                            ? "bg-white/10 text-white"
-                                            : "bg-rose-100 text-rose-700"
-                                        }`}
-                                      >
-                                        Requiere cierre
-                                      </div>
-                                    ) : null}
                                   </div>
                                 </button>
                               );
                             })
-                          )}
-                        </div>
+                          )
+                        ) : daySlots.length === 0 && dayAppointments.length === 0 ? (
+                          <div
+                            className="rounded-lg border border-dashed px-2 py-3 text-center text-[11px]"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            Sin bloques disponibles
+                          </div>
+                        ) : (
+                          daySlots.map((slot, index) => {
+                            const appt = dayAppointments.find(
+                              (a) =>
+                                new Date(a.start_at).getTime() ===
+                                new Date(slot).getTime()
+                            );
+
+                            const isHourStart = index % 2 === 0;
+                            const isEvenBand = Math.floor(index / 2) % 2 === 0;
+
+                            if (!appt) {
+                              return (
+                                <div
+                                  key={slot}
+                                  className="rounded-lg border px-2 py-2 text-center text-[11px]"
+                                  style={{
+                                    borderColor: isHourStart
+                                      ? "rgba(148,163,184,0.28)"
+                                      : "var(--border-color)",
+                                    background: isEvenBand
+                                      ? "var(--bg-soft)"
+                                      : "var(--bg-card)",
+                                    color: "var(--text-muted)",
+                                  }}
+                                >
+                                  <span className="block font-medium">
+                                    {formatHour(slot)}
+                                  </span>
+                                  <span className="block">Libre</span>
+                                </div>
+                              );
+                            }
+
+                            const isSelected =
+                              selectedAppointment?.id === appt.id;
+
+                            return (
+                              <button
+                                key={appt.id}
+                                type="button"
+                                onClick={() => handleSelectAppointment(appt)}
+                                onMouseEnter={(e) =>
+                                  handleAppointmentMouseEnter(e, appt)
+                                }
+                                onMouseLeave={handleAppointmentMouseLeave}
+                                className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
+                                  appt,
+                                  isSelected
+                                )}`}
+                              >
+                                <div className="space-y-1.5">
+                                  <div
+                                    className={`text-[11px] font-semibold ${
+                                      isSelected
+                                        ? "text-slate-200"
+                                        : "text-slate-600"
+                                    }`}
+                                  >
+                                    {formatHour(appt.start_at)} -{" "}
+                                    {formatHour(appt.end_at)}
+                                  </div>
+
+                                  <div>
+                                    <span
+                                      className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                        isSelected
+                                          ? "border-white/20 bg-white/10 text-white"
+                                          : getStatusBadgeClass(appt)
+                                      }`}
+                                    >
+                                      {getCalendarBadgeLabel(appt)}
+                                    </span>
+                                  </div>
+
+                                  <p
+                                    className={`truncate text-sm font-semibold ${
+                                      isSelected
+                                        ? "text-white"
+                                        : "text-slate-900"
+                                    }`}
+                                  >
+                                    {appt.customer_name}
+                                  </p>
+
+                                  {appt.customer_data?.pet_name ? (
+                                    <p
+                                      className={`truncate text-[11px] ${
+                                        isSelected
+                                          ? "text-slate-200"
+                                          : "text-emerald-600"
+                                      }`}
+                                    >
+                                      🐶 {appt.customer_data.pet_name}
+                                      {appt.customer_data.pet_species
+                                        ? ` (${appt.customer_data.pet_species})`
+                                        : ""}
+                                    </p>
+                                  ) : null}
+
+                                  <p
+                                    className={`truncate text-[11px] ${
+                                      isSelected
+                                        ? "text-slate-200"
+                                        : "text-slate-500"
+                                    }`}
+                                  >
+                                    {appt.service_name_snapshot || "Reserva"}
+                                  </p>
+
+                                  <p
+                                    className={`truncate text-[11px] ${
+                                      isSelected
+                                        ? "text-slate-200"
+                                        : "text-slate-500"
+                                    }`}
+                                  >
+                                    {getStaffName(appt.staff_id)}
+                                  </p>
+
+                                  {isPastPendingClosure(appt) ? (
+                                    <div
+                                      className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${
+                                        isSelected
+                                          ? "bg-white/10 text-white"
+                                          : "bg-rose-100 text-rose-700"
+                                      }`}
+                                    >
+                                      Requiere cierre
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
-          </Panel>
-        </div>
+          </div>
+        </section>
 
         <div ref={detailRef} className="self-start xl:sticky xl:top-6">
-          <div className="space-y-3">
-            <div className="rounded-2xl border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
-              <Panel
-                title="Buscar cliente o reserva"
-                description="Busca por nombre, email o teléfono."
-                className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
+          <div className="space-y-6">
+            <section>
+              <h2
+                className="mb-3 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
               >
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleSearchAppointments();
-                        }
-                      }}
-                      placeholder="Ej: Camilo, gmail.com, +569..."
-                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
-                        color: "var(--text-main)",
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSearchAppointments}
-                      disabled={searchLoading}
-                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl px-4 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                      }}
-                    >
-                      {searchLoading ? "Buscando..." : "Buscar"}
-                    </button>
-                  </div>
+                Buscar cliente o reserva
+              </h2>
 
-                  {searchError ? (
-                    <Notice tone="warning" title={searchError} />
-                  ) : null}
-
-                  {searchResults.length > 0 ? (
-                    <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
-                      {searchResults.map((appt) => {
-                        const isSelected = selectedAppointment?.id === appt.id;
-
-                        return (
-                          <button
-                            key={appt.id}
-                            type="button"
-                            onClick={() => handleSelectAppointment(appt)}
-                            className={`w-full rounded-xl border p-3 text-left transition ${
-                              isSelected
-                                ? "border-slate-900 bg-slate-900 text-white"
-                                : ""
-                            }`}
-                            style={
-                              isSelected
-                                ? undefined
-                                : {
-                                    borderColor: "var(--border-color)",
-                                    background: "var(--bg-soft)",
-                                  }
-                            }
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p
-                                  className={`truncate text-sm font-semibold ${
-                                    isSelected ? "text-white" : ""
-                                  }`}
-                                  style={
-                                    isSelected
-                                      ? undefined
-                                      : { color: "var(--text-main)" }
-                                  }
-                                >
-                                  {appt.customer_name}
-                                </p>
-                                <p
-                                  className={`mt-1 truncate text-xs ${
-                                    isSelected ? "text-slate-200" : ""
-                                  }`}
-                                  style={
-                                    isSelected
-                                      ? undefined
-                                      : { color: "var(--text-muted)" }
-                                  }
-                                >
-                                  {appt.service_name_snapshot || "Reserva"}
-                                </p>
-                                <p
-                                  className={`mt-1 truncate text-xs ${
-                                    isSelected ? "text-slate-200" : ""
-                                  }`}
-                                  style={
-                                    isSelected
-                                      ? undefined
-                                      : { color: "var(--text-muted)" }
-                                  }
-                                >
-                                  {getStaffName(appt.staff_id)}
-                                </p>
-                              </div>
-
-                              <span
-                                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                                  isSelected
-                                    ? "border-white/20 bg-white/10 text-white"
-                                    : getStatusBadgeClass(appt)
-                                }`}
-                              >
-                                {getStatusLabel(appt)}
-                              </span>
-                            </div>
-
-                            <p
-                              className={`mt-2 text-xs ${
-                                isSelected ? "text-slate-200" : ""
-                              }`}
-                              style={
-                                isSelected
-                                  ? undefined
-                                  : { color: "var(--text-muted)" }
-                              }
-                            >
-                              {formatCompactDateTime(appt.start_at)}
-                            </p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
-              </Panel>
-            </div>
-
-            <div className="rounded-2xl border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
-              <Panel
-                title="Profesional"
-                description="Filtra la agenda por profesional."
+              <div
+                className="space-y-3 rounded-xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
               >
-                <div className="space-y-3">
-                  <select
-                    value={selectedStaffId}
-                    onChange={(e) => {
-                      setSelectedStaffId(e.target.value);
-                      setSelectedAppointment(null);
-                      setIsEditingReservation(false);
-                      setHoverCard(null);
-                      setSearchResults([]);
-                      setSearchError("");
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleSearchAppointments();
+                      }
                     }}
-                    disabled={!selectedBranchId || loadingStaff}
-                    className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                    placeholder="Ej: Camilo, gmail.com, +569..."
+                    className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-card)",
                       color: "var(--text-main)",
                     }}
-                  >
-                    <option value="">Todos los profesionales</option>
-                    {staffList.map((staff) => (
-                      <option key={staff.id} value={staff.id}>
-                        {staff.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div
-                    className="rounded-xl border px-3 py-2 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSearchAppointments}
+                    disabled={searchLoading}
+                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl px-4 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                     style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-muted)",
+                      background:
+                        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
                     }}
                   >
-                    {loadingStaff
-                      ? "Cargando profesionales..."
-                      : selectedStaffName
-                      ? `Viendo agenda de ${selectedStaffName}.`
-                      : "Viendo todos los profesionales de la sucursal."}
-                  </div>
+                    {searchLoading ? "Buscando..." : "Buscar"}
+                  </button>
                 </div>
-              </Panel>
-            </div>
 
-            <div className="rounded-2xl border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
-              <Panel
-                title="Detalle de reserva"
-                description="Cliente, horario, estado y edición."
+                {searchError ? (
+                  <Notice tone="warning" title={searchError} />
+                ) : null}
+
+                {searchResults.length > 0 ? (
+                  <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                    {searchResults.map((appt) => {
+                      const isSelected = selectedAppointment?.id === appt.id;
+
+                      return (
+                        <button
+                          key={appt.id}
+                          type="button"
+                          onClick={() => handleSelectAppointment(appt)}
+                          className={`w-full rounded-xl border p-3 text-left transition ${
+                            isSelected
+                              ? "border-slate-900 bg-slate-900 text-white"
+                              : ""
+                          }`}
+                          style={
+                            isSelected
+                              ? undefined
+                              : {
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-soft)",
+                                }
+                          }
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p
+                                className={`truncate text-sm font-semibold ${
+                                  isSelected ? "text-white" : ""
+                                }`}
+                                style={
+                                  isSelected
+                                    ? undefined
+                                    : { color: "var(--text-main)" }
+                                }
+                              >
+                                {appt.customer_name}
+                              </p>
+                              <p
+                                className={`mt-1 truncate text-xs ${
+                                  isSelected ? "text-slate-200" : ""
+                                }`}
+                                style={
+                                  isSelected
+                                    ? undefined
+                                    : { color: "var(--text-muted)" }
+                                }
+                              >
+                                {appt.service_name_snapshot || "Reserva"}
+                              </p>
+                              <p
+                                className={`mt-1 truncate text-xs ${
+                                  isSelected ? "text-slate-200" : ""
+                                }`}
+                                style={
+                                  isSelected
+                                    ? undefined
+                                    : { color: "var(--text-muted)" }
+                                }
+                              >
+                                {getStaffName(appt.staff_id)}
+                              </p>
+                            </div>
+
+                            <span
+                              className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                isSelected
+                                  ? "border-white/20 bg-white/10 text-white"
+                                  : getStatusBadgeClass(appt)
+                              }`}
+                            >
+                              {getStatusLabel(appt)}
+                            </span>
+                          </div>
+
+                          <p
+                            className={`mt-2 text-xs ${
+                              isSelected ? "text-slate-200" : ""
+                            }`}
+                            style={
+                              isSelected
+                                ? undefined
+                                : { color: "var(--text-muted)" }
+                            }
+                          >
+                            {formatCompactDateTime(appt.start_at)}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <section>
+              <h2
+                className="mb-3 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Profesional
+              </h2>
+
+              <div
+                className="space-y-3 rounded-xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <select
+                  value={selectedStaffId}
+                  onChange={(e) => {
+                    setSelectedStaffId(e.target.value);
+                    setSelectedAppointment(null);
+                    setIsEditingReservation(false);
+                    setHoverCard(null);
+                    setSearchResults([]);
+                    setSearchError("");
+                  }}
+                  disabled={!selectedBranchId || loadingStaff}
+                  className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option value="">Todos los profesionales</option>
+                  {staffList.map((staff) => (
+                    <option key={staff.id} value={staff.id}>
+                      {staff.name}
+                    </option>
+                  ))}
+                </select>
+
+                <div
+                  className="rounded-xl border px-3 py-2 text-xs"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {loadingStaff
+                    ? "Cargando profesionales..."
+                    : selectedStaffName
+                    ? `Viendo agenda de ${selectedStaffName}.`
+                    : "Viendo todos los profesionales de la sucursal."}
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2
+                className="mb-3 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Detalle de reserva
+              </h2>
+
+              <div
+                className="rounded-xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
               >
                 {!selectedAppointment ? (
                   <div
@@ -2524,7 +2505,9 @@ export default function AgendaPage() {
                             disabled={statusSaving}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-500 px-4 text-sm font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            {statusSaving ? "Guardando..." : "Marcar no asistió"}
+                            {statusSaving
+                              ? "Guardando..."
+                              : "Marcar no asistió"}
                           </button>
                         </div>
                       </Notice>
@@ -2606,23 +2589,23 @@ export default function AgendaPage() {
                               Cliente
                             </p>
                             <p
-  className="mt-1 text-sm font-medium"
-  style={{ color: "var(--text-main)" }}
->
-  {selectedAppointment.customer_name}
-</p>
+                              className="mt-1 text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {selectedAppointment.customer_name}
+                            </p>
 
-{selectedAppointment.customer_data?.pet_name ? (
-  <p
-    className="mt-1 text-sm font-medium"
-    style={{ color: "#10b981" }}
-  >
-    🐶 {selectedAppointment.customer_data.pet_name}
-    {selectedAppointment.customer_data.pet_species
-      ? ` (${selectedAppointment.customer_data.pet_species})`
-      : ""}
-  </p>
-) : null}
+                            {selectedAppointment.customer_data?.pet_name ? (
+                              <p
+                                className="mt-1 text-sm font-medium"
+                                style={{ color: "#10b981" }}
+                              >
+                                🐶 {selectedAppointment.customer_data.pet_name}
+                                {selectedAppointment.customer_data.pet_species
+                                  ? ` (${selectedAppointment.customer_data.pet_species})`
+                                  : ""}
+                              </p>
+                            ) : null}
                           </div>
 
                           <div
@@ -2792,8 +2775,8 @@ export default function AgendaPage() {
                     </div>
                   </div>
                 )}
-              </Panel>
-            </div>
+              </div>
+            </section>
           </div>
         </div>
       </div>
@@ -2817,14 +2800,14 @@ export default function AgendaPage() {
                 <p className="mt-1 truncate text-xs text-slate-500">
                   {hoverCard.appointment.service_name_snapshot || "Reserva"}
                 </p>
-{hoverCard.appointment.customer_data?.pet_name ? (
-  <p className="mt-1 text-xs text-emerald-600 font-medium">
-    🐶 {hoverCard.appointment.customer_data.pet_name}
-    {hoverCard.appointment.customer_data.pet_species
-      ? ` (${hoverCard.appointment.customer_data.pet_species})`
-      : ""}
-  </p>
-) : null}
+                {hoverCard.appointment.customer_data?.pet_name ? (
+                  <p className="mt-1 text-xs font-medium text-emerald-600">
+                    🐶 {hoverCard.appointment.customer_data.pet_name}
+                    {hoverCard.appointment.customer_data.pet_species
+                      ? ` (${hoverCard.appointment.customer_data.pet_species})`
+                      : ""}
+                  </p>
+                ) : null}
               </div>
 
               <span
