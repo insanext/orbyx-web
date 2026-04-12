@@ -1034,806 +1034,155 @@ export default function ServicesPage() {
       {saveError ? <Notice tone="danger" title={saveError} /> : null}
       {saveOk ? <Notice tone="success" title={saveOk} /> : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-        <Panel
-          title="Servicios actuales"
-          description="Edita, activa o elimina los servicios de tu negocio."
-          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
-        >
-          {!selectedBranchId ? (
-            <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Selecciona una sucursal activa en el sidebar para ver los servicios.
-            </div>
-          ) : loading ? (
-            <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Cargando servicios...
-            </div>
-          ) : services.length === 0 ? (
-            <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Aún no tienes servicios creados.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {services.map((service) => {
-                const assignedStaffNames = getStaffNamesForService(service.id);
-                const isMarkedToKeep = selectedServicesToKeep.includes(service.id);
 
-                return (
-                  <div
-                    key={service.id}
-                    className="rounded-[24px] border p-5 transition"
-                    style={{
-                      borderColor:
-                        editingId === service.id
-                          ? "rgba(37,99,235,0.45)"
-                          : "var(--border-color)",
-                      background:
-                        editingId === service.id
-                          ? "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.10), var(--bg-card))"
-                          : "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
-                    }}
-                  >
-                    {editingId === service.id ? (
-                      <div className="space-y-5">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p
-                              className="text-base font-semibold"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              Editar servicio
-                            </p>
-                            <p
-                              className="mt-1 text-sm"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Actualiza nombre, descripción, duración, precio,
-                              estado y staff.
-                            </p>
-                          </div>
 
-                          <span
-                            className="rounded-full px-3 py-1 text-xs font-semibold"
-                            style={{
-                              background: "rgba(37,99,235,0.14)",
-                              color: "rgb(96 165 250)",
-                            }}
-                          >
-                            Modo edición
-                          </span>
-                        </div>
+{/* ===== SECCIÓN PRINCIPAL UNIFICADA ===== */}
+<section
+  className="rounded-3xl border p-6 space-y-6"
+  style={{
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+  }}
+>
+  {/* HEADER */}
+  <div>
+    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+      Gestión de servicios
+    </h2>
+    <p className="text-sm text-slate-600 dark:text-slate-400">
+      Administra los servicios disponibles y crea nuevos en un solo lugar.
+    </p>
+  </div>
 
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div className="md:col-span-2">
-                            <label
-                              className="mb-2 block text-sm font-medium"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              Nombre del servicio
-                            </label>
-                            <input
-                              type="text"
-                              value={editForm.name}
-                              onChange={(e) =>
-                                setEditForm((prev) => ({
-                                  ...prev,
-                                  name: e.target.value,
-                                }))
-                              }
-                              className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-card)",
-                                color: "var(--text-main)",
-                              }}
-                            />
-                          </div>
+  {/* GRID PRINCIPAL */}
+  <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+    
+    {/* IZQUIERDA → SERVICIOS */}
+    <div className="space-y-4">
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+        Servicios actuales
+      </h3>
 
-                          <div className="md:col-span-2">
-                            <label
-                              className="mb-2 block text-sm font-medium"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              Descripción del servicio
-                            </label>
-                            <textarea
-                              value={editForm.description}
-                              onChange={(e) =>
-                                setEditForm((prev) => ({
-                                  ...prev,
-                                  description: e.target.value,
-                                }))
-                              }
-                              placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
-                              className="min-h-[110px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-card)",
-                                color: "var(--text-main)",
-                              }}
-                            />
-                          </div>
+      {!selectedBranchId ? (
+        <div className="text-sm text-slate-500">
+          Selecciona una sucursal para ver servicios.
+        </div>
+      ) : loading ? (
+        <div className="text-sm text-slate-500">
+          Cargando servicios...
+        </div>
+      ) : services.length === 0 ? (
+        <div className="text-sm text-slate-500">
+          No tienes servicios aún.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {services.map((service) => {
+            const assignedStaffNames = getStaffNamesForService(service.id);
 
-                          <div>
-                            <label
-                              className="mb-2 block text-sm font-medium"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              Duración (minutos)
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={editForm.duration_minutes}
-                              onChange={(e) =>
-                                setEditForm((prev) => ({
-                                  ...prev,
-                                  duration_minutes: e.target.value,
-                                }))
-                              }
-                              className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-card)",
-                                color: "var(--text-main)",
-                              }}
-                            />
-                          </div>
-
-                          <div>
-                            <label
-                              className="mb-2 block text-sm font-medium"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              Precio
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={editForm.price}
-                              onChange={(e) =>
-                                setEditForm((prev) => ({
-                                  ...prev,
-                                  price: e.target.value,
-                                }))
-                              }
-                              className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-card)",
-                                color: "var(--text-main)",
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div>
-                            <p
-                              className="text-sm font-medium"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              Staff que puede realizar este servicio
-                            </p>
-                            <p
-                              className="mt-1 text-sm"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Selecciona las personas del equipo que pueden
-                              atender este servicio.
-                            </p>
-                          </div>
-
-                          {staff.length === 0 ? (
-                            <div
-                              className="rounded-2xl border border-dashed px-4 py-4 text-sm"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-soft)",
-                                color: "var(--text-muted)",
-                              }}
-                            >
-                              Aún no tienes staff activo. Primero crea staff en
-                              el módulo Staff.
-                            </div>
-                          ) : (
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              {staff.map((staffItem) => (
-                                <label
-                                  key={staffItem.id}
-                                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
-                                  style={{
-                                    borderColor: "var(--border-color)",
-                                    background: "var(--bg-soft)",
-                                    color: "var(--text-main)",
-                                  }}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={editForm.staff_ids.includes(
-                                      staffItem.id
-                                    )}
-                                    onChange={() => toggleEditStaff(staffItem.id)}
-                                    className="h-4 w-4 rounded"
-                                  />
-                                  <span className="flex items-center gap-2">
-                                    <span
-                                      className="h-3 w-3 rounded-full"
-                                      style={{
-                                        backgroundColor:
-                                          staffItem.color || "#0f172a",
-                                      }}
-                                    />
-                                    <span>
-                                      {staffItem.name}
-                                      {staffItem.role
-                                        ? ` · ${staffItem.role}`
-                                        : ""}
-                                    </span>
-                                  </span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <label
-                          className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={editForm.active}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                active: e.target.checked,
-                              }))
-                            }
-                            className="h-4 w-4 rounded"
-                          />
-                          Servicio activo
-                        </label>
-
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            type="button"
-                            onClick={() => handleSaveEdit(service.id)}
-                            disabled={saving}
-                            className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                            style={{
-                              background:
-                                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                            }}
-                          >
-                            {saving ? "Guardando..." : "Guardar cambios"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={cancelEditing}
-                            disabled={saving}
-                            className="inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-soft)",
-                              color: "var(--text-main)",
-                            }}
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-5">
-                        {hasExcess && service.active ? (
-                          <label
-                            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
-                            style={{
-                              borderColor: "rgba(249,115,22,0.34)",
-                              background: "rgba(249,115,22,0.10)",
-                              color: "rgb(249 115 22)",
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isMarkedToKeep}
-                              onChange={() => toggleServiceSelection(service.id)}
-                              className="h-4 w-4 rounded"
-                            />
-                            Mantener activo
-                          </label>
-                        ) : null}
-
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3
-                                className="text-lg font-semibold tracking-tight"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {service.name}
-                              </h3>
-
-                              <span
-                                className="rounded-full px-3 py-1 text-xs font-semibold"
-                                style={{
-                                  background: service.active
-                                    ? hasExcess
-                                      ? "rgba(249,115,22,0.14)"
-                                      : "rgba(16,185,129,0.14)"
-                                    : "rgba(148,163,184,0.16)",
-                                  color: service.active
-                                    ? hasExcess
-                                      ? "rgb(249 115 22)"
-                                      : "rgb(16 185 129)"
-                                    : "var(--text-muted)",
-                                }}
-                              >
-                                {service.active
-                                  ? hasExcess
-                                    ? "Exceso"
-                                    : "Activo"
-                                  : "Inactivo"}
-                              </span>
-                            </div>
-
-                            <p
-                              className="mt-2 text-sm"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              {service.description?.trim()
-                                ? service.description
-                                : "Agrega una descripción para explicar qué incluye este servicio."}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => startEditing(service)}
-                              className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-card)",
-                                color: "var(--text-main)",
-                              }}
-                            >
-                              Editar
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteService(service.id)}
-                              disabled={saving}
-                              className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-                              style={{
-                                borderColor: "rgba(244,63,94,0.34)",
-                                background: "rgba(244,63,94,0.10)",
-                                color: "rgb(244 63 94)",
-                              }}
-                            >
-                              Eliminar
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                          <div
-                            className="rounded-2xl border px-4 py-3"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-soft)",
-                            }}
-                          >
-                            <p
-                              className="text-xs font-semibold uppercase tracking-[0.16em]"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Duración
-                            </p>
-                            <p
-                              className="mt-2 text-sm font-semibold"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {service.duration_minutes} min
-                            </p>
-                          </div>
-
-                          <div
-                            className="rounded-2xl border px-4 py-3"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-soft)",
-                            }}
-                          >
-                            <p
-                              className="text-xs font-semibold uppercase tracking-[0.16em]"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Precio
-                            </p>
-                            <p
-                              className="mt-2 text-sm font-semibold"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {formatPrice(service.price)}
-                            </p>
-                          </div>
-
-                          <div
-                            className="rounded-2xl border px-4 py-3"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-soft)",
-                            }}
-                          >
-                            <p
-                              className="text-xs font-semibold uppercase tracking-[0.16em]"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Estado
-                            </p>
-                            <p
-                              className="mt-2 text-sm font-semibold"
-                              style={{
-                                color: service.active
-                                  ? hasExcess
-                                    ? "rgb(249 115 22)"
-                                    : "rgb(16 185 129)"
-                                  : "var(--text-muted)",
-                              }}
-                            >
-                              {service.active
-                                ? hasExcess
-                                  ? "Sobre límite"
-                                  : "Disponible"
-                                : "Oculto"}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div
-                          className="rounded-2xl border px-4 py-3"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                          }}
-                        >
-                          <p
-                            className="text-xs font-semibold uppercase tracking-[0.16em]"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            Staff asignado
-                          </p>
-                          <p
-                            className="mt-2 text-sm font-semibold"
-                            style={{ color: "var(--text-main)" }}
-                          >
-                            {assignedStaffNames.length > 0
-                              ? assignedStaffNames.join(", ")
-                              : "Sin staff asignado"}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Panel>
-
-        <Panel
-          title="Crear nuevo servicio"
-          description="Agrega un nuevo servicio para ofrecer más opciones de reserva."
-          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
-        >
-          {!selectedBranchId ? (
-            <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Selecciona una sucursal activa en el sidebar para crear servicios.
-            </div>
-          ) : (
-            <div className="space-y-5">
+            return (
               <div
+                key={service.id}
                 className="rounded-2xl border p-4"
                 style={{
                   borderColor: "var(--border-color)",
-                  background:
-                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+                  background: "var(--bg-soft)",
                 }}
               >
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Plan actual: <span className="capitalize">{plan}</span>
-                </p>
-                <p
-                  className="mt-1 text-sm"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Has creado {activeServicesCount} de {maxServices} servicios
-                  activos disponibles en tu plan.
-                </p>
-
-                {hasExcess ? (
-                  <div className="mt-4">
-                    <Notice
-                      tone="limit"
-                      title="Estás sobre el límite del plan."
-                      description={`Debes desactivar ${excessServices} servicio${
-                        excessServices === 1 ? "" : "s"
-                      } antes del próximo ciclo.`}
-                    >
-                      <div
-                        className="text-xs"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Seleccionados: {selectedServicesToKeep.length} /{" "}
-                        {maxServices}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={applyServicesAdjustment}
-                        disabled={saving}
-                        className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
-                        }}
-                      >
-                        {saving
-                          ? "Aplicando ajuste..."
-                          : "Aplicar ajuste al plan"}
-                      </button>
-                    </Notice>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold text-slate-900 dark:text-white">
+                      {service.name}
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      {service.description || "Sin descripción"}
+                    </p>
                   </div>
-                ) : null}
-              </div>
 
-              {servicesLimitReached && !hasExcess ? (
-                <Notice
-                  tone="limit"
-                  title="Límite de servicios alcanzado."
-                  description={`Ya usaste ${services.length} de ${maxServices} servicios disponibles en tu plan. Para agregar más servicios, debes subir de plan.`}
-                >
-                  <Link
-                    href={`/planes?current_plan=${plan}&from=services&slug=${slug}&tenant_id=${tenantId}`}
-                    className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-medium text-white transition"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
-                    }}
+                  <button
+                    onClick={() => startEditing(service)}
+                    className="text-sm text-blue-500"
                   >
-                    Ver planes
-                  </Link>
-                </Notice>
-              ) : null}
-
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Nombre del servicio
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder="Ej: Corte premium"
-                  disabled={servicesLimitReached || hasExcess}
-                  className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Descripción del servicio
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Ej: Incluye lavado, corte personalizado y peinado final."
-                  disabled={servicesLimitReached || hasExcess}
-                  className="min-h-[110px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Duración (minutos)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={form.duration_minutes}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      duration_minutes: e.target.value,
-                    }))
-                  }
-                  disabled={servicesLimitReached || hasExcess}
-                  className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Precio <span style={{ color: "var(--text-muted)" }}>(opcional)</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.price}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, price: e.target.value }))
-                  }
-                  placeholder="Ej: 10000"
-                  disabled={servicesLimitReached || hasExcess}
-                  className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <p
-                    className="text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Staff que puede realizar este servicio
-                  </p>
-                  <p
-                    className="mt-1 text-sm"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Selecciona las personas del equipo que podrán atender este
-                    servicio.
-                  </p>
+                    Editar
+                  </button>
                 </div>
 
-                {staff.length === 0 ? (
-                  <div
-                    className="rounded-2xl border border-dashed px-4 py-4 text-sm"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    Aún no tienes staff activo. Primero crea staff en el módulo
-                    Staff.
-                  </div>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {staff.map((staffItem) => (
-                      <label
-                        key={staffItem.id}
-                        className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-main)",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={form.staff_ids.includes(staffItem.id)}
-                          onChange={() => toggleCreateStaff(staffItem.id)}
-                          disabled={servicesLimitReached || hasExcess}
-                          className="h-4 w-4 rounded"
-                        />
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="h-3 w-3 rounded-full"
-                            style={{
-                              backgroundColor: staffItem.color || "#0f172a",
-                            }}
-                          />
-                          <span>
-                            {staffItem.name}
-                            {staffItem.role ? ` · ${staffItem.role}` : ""}
-                          </span>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
+                <div className="mt-3 text-xs text-slate-500">
+                  {service.duration_minutes} min · {formatPrice(service.price)}
+                </div>
+
+                <div className="mt-2 text-xs text-slate-500">
+                  {assignedStaffNames.length > 0
+                    ? assignedStaffNames.join(", ")
+                    : "Sin staff"}
+                </div>
               </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
 
-              <Notice
-                tone="info"
-                title="Consejo"
-                description="Describe qué incluye el servicio para que tus clientes entiendan mejor lo que están reservando y para que la IA pueda responder dudas."
-              />
+    {/* DERECHA → CREAR */}
+    <div className="space-y-4">
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+        Crear servicio
+      </h3>
 
-              <button
-                type="button"
-                onClick={handleCreateService}
-                disabled={saving || loading || servicesLimitReached || hasExcess}
-                className="inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                }}
-              >
-                {saving ? "Guardando..." : "Crear servicio"}
-              </button>
-            </div>
-          )}
-        </Panel>
-      </section>
+      <div className="space-y-4">
+        <input
+          placeholder="Nombre del servicio"
+          value={form.name}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, name: e.target.value }))
+          }
+          className="w-full rounded-xl border px-4 py-2 text-sm"
+        />
+
+        <textarea
+          placeholder="Descripción"
+          value={form.description}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, description: e.target.value }))
+          }
+          className="w-full rounded-xl border px-4 py-2 text-sm"
+        />
+
+        <input
+          type="number"
+          placeholder="Duración"
+          value={form.duration_minutes}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              duration_minutes: e.target.value,
+            }))
+          }
+          className="w-full rounded-xl border px-4 py-2 text-sm"
+        />
+
+        <input
+          type="number"
+          placeholder="Precio"
+          value={form.price}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, price: e.target.value }))
+          }
+          className="w-full rounded-xl border px-4 py-2 text-sm"
+        />
+
+        <button
+          onClick={handleCreateService}
+          className="w-full rounded-xl bg-blue-600 text-white py-2 text-sm"
+        >
+          Crear servicio
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
     </div>
   );
 }
