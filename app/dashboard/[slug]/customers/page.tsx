@@ -284,217 +284,184 @@ setCustomers(baseCustomers);
   title="Base de clientes"
   description="Gestión de clientes, filtros y listado en un solo lugar."
 >
-  <div className="space-y-6">
+  <div className="space-y-8">
 
-    {/* 🔹 SECCIÓN FILTROS */}
-    <div
-      className="rounded-2xl px-4 py-4"
-      style={{
-        background: "rgba(59,130,246,0.06)",
-        border: "1px solid rgba(59,130,246,0.18)"
-      }}
-    >
-      <p className="text-sm font-semibold mb-3">
+    {/* 🔹 FILTROS */}
+    <div>
+
+      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">
         Filtros de clientes
       </p>
 
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_1fr_220px]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_1fr_220px]">
 
-          {/* Buscar */}
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-            <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              Buscar cliente
-            </label>
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Buscar por nombre, email o teléfono"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
-            />
-          </div>
-
-          {/* Segmento */}
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-            <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              Segmento
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {SEGMENT_OPTIONS.map((option) => {
-                const active = segment === option.key;
-
-                return (
-                  <button
-                    key={option.key}
-                    type="button"
-                    onClick={() => setSegment(option.key)}
-                    className="rounded-2xl border px-4 py-2 text-sm font-medium transition"
-                    style={{
-                      background: active ? "var(--text-main)" : "transparent",
-                      color: active ? "var(--bg-card)" : "var(--text-main)",
-                      borderColor: "var(--border-color)",
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Inactivos */}
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-            <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              Inactivos en
-            </label>
-            <select
-              value={inactiveDays}
-              onChange={(e) => setInactiveDays(e.target.value)}
-              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-slate-500"
-            >
-              <option value="30">30 días</option>
-              <option value="60">60 días</option>
-              <option value="90">90 días</option>
-              <option value="120">120 días</option>
-            </select>
-          </div>
-
+        {/* Buscar */}
+        <div>
+          <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            Buscar cliente
+          </label>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Buscar por nombre, email o teléfono"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          />
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
-          Viendo: <span className="font-semibold">{activeSegmentLabel}</span>
-          {search ? (
-            <>
-              {" "}
-              · búsqueda: <span className="font-semibold">{search}</span>
-            </>
-          ) : null}
+        {/* Segmento */}
+        <div>
+          <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            Segmento
+          </label>
+
+          <div className="flex flex-wrap gap-2">
+            {SEGMENT_OPTIONS.map((option) => {
+              const active = segment === option.key;
+
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setSegment(option.key)}
+                  className="rounded-xl px-4 py-2 text-sm font-medium transition"
+                  style={{
+                    background: active ? "#0f172a" : "transparent",
+                    color: active ? "#fff" : "var(--text-main)",
+                    border: "1px solid var(--border-color)",
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        {/* Inactivos */}
+        <div>
+          <label className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            Inactivos en
+          </label>
+
+          <select
+            value={inactiveDays}
+            onChange={(e) => setInactiveDays(e.target.value)}
+            className="h-11 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          >
+            <option value="30">30 días</option>
+            <option value="60">60 días</option>
+            <option value="90">90 días</option>
+            <option value="120">120 días</option>
+          </select>
+        </div>
+
       </div>
+
+      {/* Estado */}
+      <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+        Viendo: <span className="font-semibold">{activeSegmentLabel}</span>
+        {search && (
+          <>
+            {" "}· búsqueda: <span className="font-semibold">{search}</span>
+          </>
+        )}
+      </div>
+
     </div>
 
-    {/* 🔸 SEPARADOR */}
-    <div className="h-px" style={{ background: "var(--border-color)" }} />
+    {/* 🔸 SEPARADOR REAL */}
+    <div className="h-px bg-slate-200 dark:bg-slate-700" />
 
-    {/* 🔹 SECCIÓN LISTADO */}
-    <div
-      className="rounded-2xl px-4 py-4"
-      style={{
-        background: "rgba(14,165,233,0.04)",
-        border: "1px solid rgba(14,165,233,0.18)"
-      }}
-    >
-      <p className="text-sm font-semibold mb-3">
+    {/* 🔹 LISTADO */}
+    <div>
+
+      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">
         {isVeterinaria ? "Listado de tutores" : "Listado de clientes"}
       </p>
 
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70">
+      <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+
         <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-slate-50 dark:bg-slate-800/80">
+          <table className="min-w-full text-sm">
+
+            <thead className="bg-slate-50 dark:bg-slate-800">
               <tr>
-                <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Cliente
-                </th>
-                <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Contacto
-                </th>
-                <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Visitas
-                </th>
-                <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Segmento
-                </th>
-                <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Última visita
-                </th>
+                <th className="px-5 py-3 text-left text-xs text-slate-500">Cliente</th>
+                <th className="px-5 py-3 text-left text-xs text-slate-500">Contacto</th>
+                <th className="px-5 py-3 text-left text-xs text-slate-500">Visitas</th>
+                <th className="px-5 py-3 text-left text-xs text-slate-500">Segmento</th>
+                <th className="px-5 py-3 text-left text-xs text-slate-500">Última visita</th>
               </tr>
             </thead>
 
             <tbody>
-              {loading ? (
-                Array.from({ length: 6 }).map((_, index) => (
-                  <tr key={index} className="border-t border-slate-200 dark:border-slate-700">
-                    <td className="px-5 py-4"><div className="h-4 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /></td>
-                    <td className="px-5 py-4"><div className="h-4 w-40 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /></td>
-                    <td className="px-5 py-4"><div className="h-4 w-16 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /></td>
-                    <td className="px-5 py-4"><div className="h-6 w-24 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" /></td>
-                    <td className="px-5 py-4"><div className="h-4 w-36 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /></td>
-                  </tr>
-                ))
-              ) : customers.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-sm text-slate-600 dark:text-slate-400">
-                    No hay clientes aún o no hubo resultados para este filtro.
-                  </td>
-                </tr>
-              ) : (
-                customers.map((customer) => {
-                  const segment = getCustomerSegmentStyles(customer.segment);
+              {customers.map((customer) => {
+                const segmentStyle = getCustomerSegmentStyles(customer.segment);
 
-                  return (
-                    <tr
-                      key={customer.id}
-                      onClick={() =>
-                        router.push(`/dashboard/${slug}/customers/${customer.id}`)
-                      }
-                      className="cursor-pointer border-t border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
-                    >
-                      <td className="px-5 py-4 align-top">
-                        <div>
-                          <p className="font-medium text-slate-900 dark:text-white">
-                            {customer.name || "Sin nombre"}
-                          </p>
+                return (
+                  <tr
+                    key={customer.id}
+                    onClick={() =>
+                      router.push(`/dashboard/${slug}/customers/${customer.id}`)
+                    }
+                    className="cursor-pointer border-t border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                  >
+                    <td className="px-5 py-4">
+                      <p className="font-medium text-slate-900 dark:text-white">
+                        {customer.name || "Sin nombre"}
+                      </p>
 
-                          {isVeterinaria && Array.isArray(customer.pets) && customer.pets.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {customer.pets.map((pet) => (
-                                <span key={pet.id} className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                                  {pet.name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            ID cliente: {customer.id.slice(0, 8)}
-                          </p>
+                      {isVeterinaria && Array.isArray(customer.pets) && customer.pets.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {customer.pets.map((pet) => (
+                            <span
+                              key={pet.id}
+                              className="text-xs text-emerald-600 dark:text-emerald-400"
+                            >
+                              {pet.name}
+                            </span>
+                          ))}
                         </div>
-                      </td>
+                      )}
 
-                      <td className="px-5 py-4 align-top text-sm text-slate-600 dark:text-slate-400">
-                        {customer.email || "Sin email"}<br />
-                        {customer.phone || "Sin teléfono"}
-                      </td>
+                      <p className="text-xs text-slate-400">
+                        ID: {customer.id.slice(0, 6)}
+                      </p>
+                    </td>
 
-                      <td className="px-5 py-4 align-top text-sm font-semibold text-slate-900 dark:text-white">
-                        {customer.total_visits || 0}
-                      </td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-400">
+                      {customer.email || "Sin email"} <br />
+                      {customer.phone || "Sin teléfono"}
+                    </td>
 
-                      <td className="px-5 py-4 align-top">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${segment.className}`}>
-                          {segment.label}
-                        </span>
-                      </td>
+                    <td className="px-5 py-4 font-semibold">
+                      {customer.total_visits || 0}
+                    </td>
 
-                      <td className="px-5 py-4 align-top text-sm text-slate-600 dark:text-slate-400">
-                        {formatDate(customer.last_visit_at)}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+                    <td className="px-5 py-4">
+                      <span className={`text-xs font-semibold ${segmentStyle.className}`}>
+                        {segmentStyle.label}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-400">
+                      {formatDate(customer.last_visit_at)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
+
           </table>
         </div>
+
       </div>
 
     </div>
 
   </div>
 </Panel>
-  
     </div>
   );
 }
