@@ -301,124 +301,113 @@ export default function DashboardHomePage() {
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-        <MetricCard
-          title="Plan actual"
-          value={loading ? "..." : planLabel}
-          description="La visibilidad de métricas avanzadas depende del plan activo."
-          tone="success"
-        />
-        <MetricCard
-          title="Estado del panel"
-          value={loading ? "..." : "Activo"}
-          description="Tu panel administrativo está operativo y listo para seguir creciendo."
-        />
-        <MetricCard
-          title="Módulos base"
-          value={loading ? "..." : "5"}
-          description="Agenda, staff, servicios, sucursales y facturación ya están integrados visualmente."
-        />
-        <MetricCard
-          title="Próximo enfoque"
-          value={loading ? "..." : "Métricas"}
-          description="El resumen fue reemplazado por una base de dashboard pensada como producto SaaS real."
-          tone="warning"
-        />
-      </section>
 
-      <Panel
-        title="Resumen ejecutivo"
-        description="Base del nuevo dashboard del negocio."
-      >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <MetricCard
-            title="Reservas de hoy"
-            value={formatMetricValue(metrics.reservas_hoy, loading)}
-            description="Aquí mostraremos las reservas creadas para el día actual."
-          />
-          <MetricCard
-            title="Reservas de la semana"
-            value={formatMetricValue(metrics.reservas_semana, loading)}
-            description="Bloque pensado para medir el movimiento semanal del negocio."
-          />
-          <MetricCard
-            title="Próximas reservas"
-            value={formatMetricValue(metrics.proximas_reservas, loading)}
-            description="Servirá para mostrar actividad inmediata y carga operativa."
-          />
-          <MetricCard
-            title="Atendidas"
-            value={formatMetricValue(metrics.atendidas, loading)}
-            description="Contador de citas completadas para seguimiento operacional."
-          />
-          <MetricCard
-            title="Canceladas"
-            value={formatMetricValue(metrics.canceladas, loading)}
-            description="Métrica clave para detectar fricción o pérdida de agenda."
-          />
-          <MetricCard
-            title="No show"
-            value={formatMetricValue(metrics.no_show, loading)}
-            description="Indicador importante para control de ausencias y optimización."
-          />
-        </div>
-      </Panel>
+{/* ===== MÉTRICAS COMPACTAS ===== */}
+<section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+  <MetricCard
+    title="Hoy"
+    value={formatMetricValue(metrics.reservas_hoy, loading)}
+    description="Reservas del día"
+  />
+  <MetricCard
+    title="Semana"
+    value={formatMetricValue(metrics.reservas_semana, loading)}
+    description="Actividad semanal"
+  />
+  <MetricCard
+    title="Próximas"
+    value={formatMetricValue(metrics.proximas_reservas, loading)}
+    description="Carga inmediata"
+  />
+  <MetricCard
+    title="Plan"
+    value={loading ? "..." : planLabel}
+    description="Plan activo"
+    tone="success"
+  />
+</section>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-        <Panel
-          title="Prioridades del dashboard"
-          description="Orden recomendado para seguir construyendo esta página."
-        >
-          <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Fase 1 · Operación
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                Conectar reservas de hoy, semana, atendidas, canceladas, no show
-                y próximas reservas desde agenda.
-              </p>
-            </div>
+{/* ===== SECCIÓN PRINCIPAL (NO TARJETA) ===== */}
+<section
+  className="rounded-3xl border p-6 space-y-6"
+  style={{
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+  }}
+>
+  {/* HEADER SECCIÓN */}
+  <div>
+    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+      Dashboard del negocio
+    </h2>
+    <p className="text-sm text-slate-600 dark:text-slate-400">
+      Vista general operativa y base para decisiones.
+    </p>
+  </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Fase 2 · Rendimiento
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                Agregar comparación semanal, horas más demandadas, rendimiento
-                por profesional y comportamiento por sucursal.
-              </p>
-            </div>
+  {/* MÉTRICAS OPERATIVAS */}
+  <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+    <MetricCard
+      title="Atendidas"
+      value={formatMetricValue(metrics.atendidas, loading)}
+      description="Citas completadas"
+      tone="success"
+    />
+    <MetricCard
+      title="Canceladas"
+      value={formatMetricValue(metrics.canceladas, loading)}
+      description="Cancelaciones"
+      tone="warning"
+    />
+    <MetricCard
+      title="No show"
+      value={formatMetricValue(metrics.no_show, loading)}
+      description="Ausencias"
+      tone="warning"
+    />
+  </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Fase 3 · Marketing y automatización
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                Incorporar impacto de campañas por email, campañas por WhatsApp,
-                recuperación de clientes y más adelante resultados de IA.
-              </p>
-            </div>
-          </div>
-        </Panel>
-
-        <Panel
-          title="Visión del producto"
-          description="Cómo debe crecer este panel."
-        >
-          <div className="space-y-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-              Dashboard = métricas y decisiones del negocio.
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-              Campañas = administración de envíos por email y WhatsApp.
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-              WhatsApp = bandeja, automatizaciones e IA más adelante.
-            </div>
-          </div>
-        </Panel>
+  {/* BLOQUES LATERALES */}
+  <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+    
+    {/* IZQUIERDA */}
+    <div className="space-y-4">
+      <div className="rounded-2xl border p-5 bg-slate-50 dark:bg-slate-800/70">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+          Prioridad actual
+        </h3>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Conectar métricas reales desde agenda y comenzar análisis de comportamiento.
+        </p>
       </div>
+
+      <div className="rounded-2xl border p-5 bg-slate-50 dark:bg-slate-800/70">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+          Siguiente paso
+        </h3>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Integrar campañas y medir impacto en reservas.
+        </p>
+      </div>
+    </div>
+
+    {/* DERECHA */}
+    <div className="space-y-4">
+      <div className="rounded-2xl border p-5 bg-slate-50 dark:bg-slate-800/70">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+          Visión Orbyx
+        </h3>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          No es agenda. Es automatización + seguimiento + recuperación.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
 
       <Panel
         title="Bloques avanzados por plan"
