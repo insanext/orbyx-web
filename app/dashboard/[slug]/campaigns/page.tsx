@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { Panel } from "../../../../components/dashboard/panel";
+import { PageHeader } from "../../../../components/dashboard/page-header";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -294,7 +294,6 @@ function normalizeEditorHtml(html?: string | null) {
   if (!html) return "";
 
   let value = String(html);
-
   value = value.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
   value = value.replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "");
   value = value.replace(/\son\w+="[^"]*"/gi, "");
@@ -689,29 +688,25 @@ function buildEmailPreviewHtml({
   `;
 }
 
-function SectionStat({
-  label,
+function StatCard({
+  title,
   value,
   helper,
 }: {
-  label: string;
+  title: string;
   value: string;
   helper: string;
 }) {
   return (
-<div
-  className="rounded-2xl border p-3"
+    <div
+      className="rounded-xl border px-4 py-3"
       style={{
         borderColor: "var(--border-color)",
-        background:
-          "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+        background: "var(--bg-card)",
       }}
     >
-      <p
-        className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-        style={{ color: "var(--text-muted)" }}
-      >
-        {label}
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        {title}
       </p>
       <p
         className="mt-1 text-lg font-semibold"
@@ -719,7 +714,7 @@ function SectionStat({
       >
         {value}
       </p>
-      <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+      <p className="mt-1 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
         {helper}
       </p>
     </div>
@@ -741,9 +736,10 @@ function SelectableRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-start gap-3 px-1 py-2 text-left transition"
+      className="flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition"
       style={{
-        background: "transparent",
+        borderColor: active ? "rgba(37,99,235,0.28)" : "var(--border-color)",
+        background: active ? "rgba(37,99,235,0.08)" : "var(--bg-card)",
       }}
     >
       <span
@@ -798,7 +794,9 @@ function SoftChip({
           ? "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))"
           : "var(--bg-soft)",
         color: active ? "#ffffff" : "var(--text-main)",
-        border: active ? "1px solid rgba(37,99,235,0.34)" : "1px solid var(--border-color)",
+        border: active
+          ? "1px solid rgba(37,99,235,0.34)"
+          : "1px solid var(--border-color)",
       }}
     >
       {label}
@@ -808,11 +806,11 @@ function SoftChip({
 
 function HistorySkeleton() {
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4">
       {Array.from({ length: 4 }).map((_, index) => (
         <div
           key={index}
-          className="rounded-2xl border p-4"
+          className="rounded-xl border p-4"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-card)",
@@ -947,7 +945,7 @@ function RichTextEditor({
       </label>
 
       <div
-        className="overflow-hidden rounded-[22px] border"
+        className="overflow-hidden rounded-2xl border"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
@@ -1059,7 +1057,8 @@ function RichTextEditor({
               className="h-6 w-6 rounded-full border"
               style={{
                 borderColor: "rgba(255,255,255,0.16)",
-                background: "linear-gradient(135deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6)",
+                background:
+                  "linear-gradient(135deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6)",
               }}
               title="Elegir color"
             />
@@ -1162,35 +1161,34 @@ export default function CampaignsPage() {
     )
   );
 
-// 👉 WHATSAPP STATE
-const isWhatsApp = channel === "whatsapp";
+  const isWhatsApp = channel === "whatsapp";
 
-const [whatsappMessage, setWhatsappMessage] = useState(
-  "Hola {{nombre}}, te escribimos desde {{negocio}}.\n\nAgenda aquí tu próxima hora:\n{{link_agenda}}"
-);
+  const [whatsappMessage, setWhatsappMessage] = useState(
+    "Hola {{nombre}}, te escribimos desde {{negocio}}.\n\nAgenda aquí tu próxima hora:\n{{link_agenda}}"
+  );
 
-const [whatsappCtaUrl, setWhatsappCtaUrl] = useState("");
+  const [whatsappCtaUrl, setWhatsappCtaUrl] = useState("");
 
-const whatsappDefaultLink = useMemo(() => {
-  if (!slug) return "";
-  return `https://www.orbyx.cl/${slug}`;
-}, [slug]);
+  const whatsappDefaultLink = useMemo(() => {
+    if (!slug) return "";
+    return `https://www.orbyx.cl/${slug}`;
+  }, [slug]);
 
-const whatsappLink = useMemo(() => {
-  return (whatsappCtaUrl || "").trim() || whatsappDefaultLink;
-}, [whatsappCtaUrl, whatsappDefaultLink]);
+  const whatsappLink = useMemo(() => {
+    return (whatsappCtaUrl || "").trim() || whatsappDefaultLink;
+  }, [whatsappCtaUrl, whatsappDefaultLink]);
 
-const whatsappPreviewText = useMemo(() => {
-  let text = (whatsappMessage || "").trim();
+  const whatsappPreviewText = useMemo(() => {
+    let text = (whatsappMessage || "").trim();
 
-  if (!text) return "Escribe tu mensaje de WhatsApp...";
+    if (!text) return "Escribe tu mensaje de WhatsApp...";
 
-  text = text.replace(/\{\{\s*nombre\s*\}\}/gi, "Camila");
-  text = text.replace(/\{\{\s*negocio\s*\}\}/gi, businessName || "Tu negocio");
-  text = text.replace(/\{\{\s*link_agenda\s*\}\}/gi, whatsappLink || "");
+    text = text.replace(/\{\{\s*nombre\s*\}\}/gi, "Camila");
+    text = text.replace(/\{\{\s*negocio\s*\}\}/gi, businessName || "Tu negocio");
+    text = text.replace(/\{\{\s*link_agenda\s*\}\}/gi, whatsappLink || "");
 
-  return text;
-}, [whatsappMessage, businessName, whatsappLink]);
+    return text;
+  }, [whatsappMessage, businessName, whatsappLink]);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [audienceSearch, setAudienceSearch] = useState("");
@@ -1216,10 +1214,10 @@ const whatsappPreviewText = useMemo(() => {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState("");
 
-const [selectedCampaign, setSelectedCampaign] = useState<CampaignHistoryItem | null>(null);
-const [campaignLogs, setCampaignLogs] = useState<any[]>([]);
-const [loadingLogs, setLoadingLogs] = useState(false);
-const [logsError, setLogsError] = useState("");
+  const [selectedCampaign, setSelectedCampaign] = useState<CampaignHistoryItem | null>(null);
+  const [campaignLogs, setCampaignLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsError, setLogsError] = useState("");
 
   const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>("30d");
   const [historyChannel, setHistoryChannel] = useState<"all" | CampaignChannel>("all");
@@ -1255,15 +1253,15 @@ const [logsError, setLogsError] = useState("");
   const [imagesLimitInfo, setImagesLimitInfo] = useState({ current: 0, max: 7 });
 
   const inputClass =
-    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+    "h-11 w-full rounded-xl border px-4 text-sm outline-none transition";
   const textareaClass =
-    "min-h-[120px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition";
+    "min-h-[120px] w-full rounded-xl border px-4 py-3 text-sm outline-none transition";
   const selectClass =
-    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+    "h-11 w-full rounded-xl border px-4 text-sm outline-none transition";
   const primaryButtonClass =
-    "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
   const secondaryButtonClass =
-    "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-11 items-center justify-center rounded-xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
   const planLimit = PLAN_EMAIL_LIMITS[plan];
   const planImageLimit = PLAN_IMAGE_LIMITS[plan];
@@ -1279,11 +1277,11 @@ const [logsError, setLogsError] = useState("");
     }
   }, [slug]);
 
-useEffect(() => {
-  if (slug && !whatsappCtaUrl.trim()) {
-    setWhatsappCtaUrl(`https://www.orbyx.cl/${slug}`);
-  }
-}, [slug, whatsappCtaUrl]);
+  useEffect(() => {
+    if (slug && !whatsappCtaUrl.trim()) {
+      setWhatsappCtaUrl(`https://www.orbyx.cl/${slug}`);
+    }
+  }, [slug, whatsappCtaUrl]);
 
   useEffect(() => {
     if (emailPreset === "minimal") {
@@ -1381,10 +1379,6 @@ useEffect(() => {
         }
 
         setCustomers(Array.isArray(data.customers) ? data.customers : []);
-console.log("slug", slug);
-console.log("segment", segment);
-console.log("channel", channel);
-console.log("customers api", data.customers);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Error cargando audiencia");
         setCustomers([]);
@@ -1405,6 +1399,7 @@ console.log("customers api", data.customers);
       setSelectedCampaign(null);
       setCampaignLogs([]);
       setLogsError("");
+
       const res = await fetch(`${BACKEND_URL}/campaigns/history/${currentSlug}`);
       const data: CampaignHistoryResponse = await res.json();
 
@@ -1421,26 +1416,26 @@ console.log("customers api", data.customers);
     }
   }
 
-async function loadCampaignLogs(campaignId: string) {
-  try {
-    setLoadingLogs(true);
-    setLogsError("");
+  async function loadCampaignLogs(campaignId: string) {
+    try {
+      setLoadingLogs(true);
+      setLogsError("");
 
-    const res = await fetch(`${BACKEND_URL}/campaigns/logs/${campaignId}`);
-    const data = await res.json();
+      const res = await fetch(`${BACKEND_URL}/campaigns/logs/${campaignId}`);
+      const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error(data?.error || "No se pudieron cargar los logs");
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudieron cargar los logs");
+      }
+
+      setCampaignLogs(Array.isArray(data.logs) ? data.logs : []);
+    } catch (err: unknown) {
+      setLogsError(err instanceof Error ? err.message : "Error cargando logs");
+      setCampaignLogs([]);
+    } finally {
+      setLoadingLogs(false);
     }
-
-    setCampaignLogs(Array.isArray(data.logs) ? data.logs : []);
-  } catch (err: unknown) {
-    setLogsError(err instanceof Error ? err.message : "Error cargando logs");
-    setCampaignLogs([]);
-  } finally {
-    setLoadingLogs(false);
   }
-}
 
   async function loadCampaignImages(currentSlug: string, keepMessage = false) {
     try {
@@ -1679,55 +1674,45 @@ async function loadCampaignLogs(campaignId: string) {
     }
   }, [slug]);
 
-const segmentRecipients = useMemo<AudienceRecipient[]>(() => {
-  return customers.map((customer) => ({
-    id: buildRecipientId("segment", customer.id),
-    source: "segment",
-    included: !excludedRecipientIds.includes(buildRecipientId("segment", customer.id)),
-    name: customer.name || "Sin nombre",
-    email: customer.email,
-    phone: customer.phone,
-    segment: customer.segment,
-    last_visit_at: customer.last_visit_at,
-    total_visits: customer.total_visits,
-  }));
-}, [customers, excludedRecipientIds]);
+  const segmentRecipients = useMemo<AudienceRecipient[]>(() => {
+    return customers.map((customer) => ({
+      id: buildRecipientId("segment", customer.id),
+      source: "segment",
+      included: !excludedRecipientIds.includes(buildRecipientId("segment", customer.id)),
+      name: customer.name || "Sin nombre",
+      email: customer.email,
+      phone: customer.phone,
+      segment: customer.segment,
+      last_visit_at: customer.last_visit_at,
+      total_visits: customer.total_visits,
+    }));
+  }, [customers, excludedRecipientIds]);
 
+  const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
+    const manualForChannel = manualRecipients.filter((item) =>
+      channel === "email" ? !!item.email : !!item.phone
+    );
 
+    const segmentForChannel = segmentRecipients.filter((item) => {
+      if (channel === "email") return !!item.email;
+      return !!item.phone;
+    });
 
-const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
-  const manualForChannel = manualRecipients.filter((item) =>
-    channel === "email" ? !!item.email : !!item.phone
-  );
+    const merged = [...manualForChannel, ...segmentForChannel].map((item) => ({
+      ...item,
+      included: !excludedRecipientIds.includes(item.id),
+    }));
 
-  const segmentForChannel = segmentRecipients.filter((item) => {
-  if (channel === "email") return !!item.email;
+    return merged;
+  }, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
 
-  // whatsapp
-  return !!item.phone;
-});
-
-  const merged = [...manualForChannel, ...segmentForChannel].map((item) => ({
-    ...item,
-    included: !excludedRecipientIds.includes(item.id),
-  }));
-
-  return merged;
-}, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
-
-const hasContactsForChannel = useMemo(() => {
-  return allAudienceRecipients.some((item) =>
-    channel === "email"
-      ? !!String(item.email || "").trim()
-      : !!String(item.phone || "").trim()
-  );
-}, [allAudienceRecipients, channel]);
-
-useEffect(() => {
-  console.log("🔥 customers state:", customers);
-  console.log("🔥 segmentRecipients:", segmentRecipients);
-  console.log("🔥 allAudienceRecipients:", allAudienceRecipients);
-}, [customers, segmentRecipients, allAudienceRecipients]);
+  const hasContactsForChannel = useMemo(() => {
+    return allAudienceRecipients.some((item) =>
+      channel === "email"
+        ? !!String(item.email || "").trim()
+        : !!String(item.phone || "").trim()
+    );
+  }, [allAudienceRecipients, channel]);
 
   const audienceSearchNormalized = audienceSearch.trim().toLowerCase();
 
@@ -1871,19 +1856,19 @@ useEffect(() => {
     };
   }, [filteredHistory]);
 
-const historySentLabel = useMemo(() => {
-  const channels = Array.from(new Set(filteredHistory.map((item) => item.channel)));
+  const historySentLabel = useMemo(() => {
+    const channels = Array.from(new Set(filteredHistory.map((item) => item.channel)));
 
-  if (channels.length === 1 && channels[0] === "whatsapp") {
-    return "Mensajes enviados";
-  }
+    if (channels.length === 1 && channels[0] === "whatsapp") {
+      return "Mensajes enviados";
+    }
 
-  if (channels.length === 1 && channels[0] === "email") {
-    return "Correos enviados";
-  }
+    if (channels.length === 1 && channels[0] === "email") {
+      return "Correos enviados";
+    }
 
-  return "Envíos realizados";
-}, [filteredHistory]);
+    return "Envíos realizados";
+  }, [filteredHistory]);
 
   const selectedSegmentLabel =
     SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Segmento";
@@ -1938,56 +1923,56 @@ const historySentLabel = useMemo(() => {
   }
 
   function handleOpenConfirm() {
-  setError("");
-  setResultMessage("");
-  setSendSummary(null);
+    setError("");
+    setResultMessage("");
+    setSendSummary(null);
 
-if (channel === "whatsapp") {
-  if (!whatsappMessage.trim()) {
-    setError("⚠️ Debes escribir un mensaje de WhatsApp antes de continuar.");
-    return;
+    if (channel === "whatsapp") {
+      if (!whatsappMessage.trim()) {
+        setError("⚠️ Debes escribir un mensaje de WhatsApp antes de continuar.");
+        return;
+      }
+
+      if (!hasContactsForChannel) {
+        setError("⚠️ No hay clientes con teléfono en este segmento.");
+        return;
+      }
+
+      if (limitedIncludedRecipients.length <= 0) {
+        setError("⚠️ No hay destinatarios incluidos para enviar.");
+        return;
+      }
+
+      setConfirmOpen(true);
+      return;
+    }
+
+    if (!subject.trim()) {
+      setError("⚠️ Debes ingresar un asunto antes de enviar.");
+      return;
+    }
+
+    if (!editorHtmlToPlainText(messageHtml).trim()) {
+      setError("⚠️ Debes escribir un mensaje antes de enviar.");
+      return;
+    }
+
+    if (!hasContactsForChannel) {
+      setError(
+        channel === "email"
+          ? "⚠️ No hay clientes con email en este segmento."
+          : "⚠️ No hay clientes con teléfono en este segmento."
+      );
+      return;
+    }
+
+    if (limitedIncludedRecipients.length <= 0) {
+      setError("⚠️ No hay destinatarios incluidos para enviar.");
+      return;
+    }
+
+    setConfirmOpen(true);
   }
-
-  if (!hasContactsForChannel) {
-    setError("⚠️ No hay clientes con teléfono en este segmento.");
-    return;
-  }
-
-  if (limitedIncludedRecipients.length <= 0) {
-    setError("⚠️ No hay destinatarios incluidos para enviar.");
-    return;
-  }
-
-  setConfirmOpen(true);
-  return;
-}
-
-  if (!subject.trim()) {
-    setError("⚠️ Debes ingresar un asunto antes de enviar.");
-    return;
-  }
-
-  if (!editorHtmlToPlainText(messageHtml).trim()) {
-    setError("⚠️ Debes escribir un mensaje antes de enviar.");
-    return;
-  }
-
-  if (!hasContactsForChannel) {
-    setError(
-      channel === "email"
-        ? "⚠️ No hay clientes con email en este segmento."
-        : "⚠️ No hay clientes con teléfono en este segmento."
-    );
-    return;
-  }
-
-  if (limitedIncludedRecipients.length <= 0) {
-    setError("⚠️ No hay destinatarios incluidos para enviar.");
-    return;
-  }
-
-  setConfirmOpen(true);
-}
 
   async function handleSendCampaignConfirmed() {
     try {
@@ -2005,84 +1990,81 @@ if (channel === "whatsapp") {
         phone: item.phone,
       }));
 
+      if (channel === "whatsapp") {
+        const recipientsWithPhone = finalRecipients.filter(
+          (item) => !!String(item.phone || "").trim()
+        );
 
+        const simulatedSent = recipientsWithPhone.length;
+        const simulatedFailed = Math.max(finalRecipients.length - simulatedSent, 0);
 
+        const res = await fetch(`${BACKEND_URL}/campaigns/save-whatsapp`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            slug,
+            channel: "whatsapp",
+            campaign_name: campaignName.trim() || null,
+            segment,
+            inactive_days: Number(inactiveDays),
+            subject: null,
+            message: whatsappMessage.trim(),
+            sort,
+            plan,
+            plan_limit: planLimit,
+            requested_limit: Number(sendLimit),
+            applied_limit: Math.min(Number(sendLimit), finalRecipients.length),
+            audience_total: includedAudienceRecipients.length,
+            recipients_with_contact: recipientsWithPhone.length,
+            sent_count: simulatedSent,
+            failed_count: simulatedFailed,
+            final_recipients: finalRecipients,
+          }),
+        });
 
-if (channel === "whatsapp") {
-  const recipientsWithPhone = finalRecipients.filter(
-    (item) => !!String(item.phone || "").trim()
-  );
+        const data = await res.json();
 
-  const simulatedSent = recipientsWithPhone.length;
-  const simulatedFailed = Math.max(finalRecipients.length - simulatedSent, 0);
+        if (!res.ok) {
+          throw new Error(data?.error || "No se pudo guardar la campaña de WhatsApp");
+        }
 
-  const res = await fetch(`${BACKEND_URL}/campaigns/save-whatsapp`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      slug,
-      channel: "whatsapp",
-      campaign_name: campaignName.trim() || null,
-      segment,
-      inactive_days: Number(inactiveDays),
-      subject: null,
-      message: whatsappMessage.trim(),
-      sort,
-      plan,
-      plan_limit: planLimit,
-      requested_limit: Number(sendLimit),
-      applied_limit: Math.min(Number(sendLimit), finalRecipients.length),
-      audience_total: includedAudienceRecipients.length,
-      recipients_with_contact: recipientsWithPhone.length,
-      sent_count: simulatedSent,
-      failed_count: simulatedFailed,
-      final_recipients: finalRecipients,
-    }),
-  });
+        const whatsappSummary: SendEmailResponse = {
+          ok: true,
+          campaign_name: campaignName.trim() || null,
+          channel: "whatsapp",
+          slug,
+          plan,
+          plan_limit: planLimit,
+          requested_limit: Number(sendLimit),
+          applied_limit: Math.min(Number(sendLimit), finalRecipients.length),
+          sort,
+          segment,
+          inactive_days: Number(inactiveDays),
+          audience_total: includedAudienceRecipients.length,
+          recipients_with_email: recipientsWithPhone.length,
+          sent: simulatedSent,
+          failed: simulatedFailed,
+        };
 
-  const data = await res.json();
+        setSendSummary(whatsappSummary);
 
-  if (!res.ok) {
-    throw new Error(data?.error || "No se pudo guardar la campaña de WhatsApp");
-  }
+        setResultMessage(
+          `Campaña WhatsApp guardada en historial. Mensajes enviados: ${simulatedSent}. Fallidos: ${simulatedFailed}.`
+        );
 
-  const whatsappSummary: SendEmailResponse = {
-    ok: true,
-    campaign_name: campaignName.trim() || null,
-    channel: "whatsapp",
-    slug,
-    plan,
-    plan_limit: planLimit,
-    requested_limit: Number(sendLimit),
-    applied_limit: Math.min(Number(sendLimit), finalRecipients.length),
-    sort,
-    segment,
-    inactive_days: Number(inactiveDays),
-    audience_total: includedAudienceRecipients.length,
-    recipients_with_email: recipientsWithPhone.length,
-    sent: simulatedSent,
-    failed: simulatedFailed,
-  };
+        setToast({
+          type: "success",
+          message: `Campaña WhatsApp guardada en historial. Enviados: ${simulatedSent}. Fallidos: ${simulatedFailed}.`,
+        });
 
-  setSendSummary(whatsappSummary);
+        if (slug) {
+          await loadCampaignHistory(slug);
+        }
 
-  setResultMessage(
-    `Campaña WhatsApp guardada en historial. Mensajes enviados: ${simulatedSent}. Fallidos: ${simulatedFailed}.`
-  );
-
-  setToast({
-    type: "success",
-    message: `Campaña WhatsApp guardada en historial. Enviados: ${simulatedSent}. Fallidos: ${simulatedFailed}.`,
-  });
-
-  if (slug) {
-    await loadCampaignHistory(slug);
-  }
-
-  return;
-}
+        return;
+      }
 
       const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
         method: "POST",
@@ -2127,103 +2109,68 @@ if (channel === "whatsapp") {
         throw new Error(data?.error || "No se pudo enviar la campaña");
       }
 
-setResultMessage(
-  `Campaña enviada. Correos enviados: ${data.sent || 0}. Fallidos: ${
-    data.failed || 0
-  }.`
-);
+      setSendSummary(data);
 
-setToast({
-  type: "success",
-  message: `Campaña enviada correctamente. Enviados: ${data.sent || 0}. Fallidos: ${
-    data.failed || 0
-  }.`,
-});
+      setResultMessage(
+        `Campaña enviada. Correos enviados: ${data.sent || 0}. Fallidos: ${
+          data.failed || 0
+        }.`
+      );
+
+      setToast({
+        type: "success",
+        message: `Campaña enviada correctamente. Enviados: ${data.sent || 0}. Fallidos: ${
+          data.failed || 0
+        }.`,
+      });
 
       if (slug) {
         await loadCampaignHistory(slug);
       }
     } catch (err: unknown) {
-  const message =
-    err instanceof Error ? err.message : "Error enviando campaña";
+      const message =
+        err instanceof Error ? err.message : "Error enviando campaña";
 
-  setError(message);
-  setToast({
-    type: "error",
-    message,
-  });
-} finally {
+      setError(message);
+      setToast({
+        type: "error",
+        message,
+      });
+    } finally {
       setSending(false);
     }
   }
 
   return (
     <div className="space-y-8">
-      <section
-        className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
-        style={{
-          borderColor: "rgba(59,130,246,0.25)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-        }}
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
+      <PageHeader
+        eyebrow="Campañas"
+        title="Campañas y recuperación"
+        description="Prepara campañas por email, organiza tu audiencia real y deja lista la base para recuperación automática y WhatsApp."
+      />
 
-            <h1
-              className="text-3xl font-semibold tracking-tight sm:text-4xl"
-              style={{ color: "var(--text-main)" }}
-            >
-              Campañas y recuperación
-            </h1>
-
-            <p
-              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Prepara campañas por email, organiza tu audiencia real y deja lista
-              la base para recuperación automática y WhatsApp.
-            </p>
-          </div>
-
-          <div
-            className="grid gap-3 sm:grid-cols-2"
-            style={{ color: "var(--text-main)" }}
-          >
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Plan actual
-              </p>
-              <p className="mt-2 text-sm font-semibold">{PLAN_LABELS[plan]}</p>
-            </div>
-
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Límite por campaña
-              </p>
-              <p className="mt-2 text-sm font-semibold">{planLimit} contactos</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard
+          title="Plan actual"
+          value={PLAN_LABELS[plan]}
+          helper="Plan activo del negocio."
+        />
+        <StatCard
+          title="Límite por campaña"
+          value={`${planLimit}`}
+          helper="Máximo de contactos por envío."
+        />
+        <StatCard
+          title="Incluidos"
+          value={loadingAudience ? "..." : String(audienceStats.included)}
+          helper="Destinatarios curados actualmente."
+        />
+        <StatCard
+          title="Tope real"
+          value={loadingAudience ? "..." : String(limitedAudienceCount)}
+          helper="Impacto máximo con la configuración actual."
+        />
+      </div>
 
       {toast ? (
         <div className="fixed right-5 top-5 z-[80] w-full max-w-md">
@@ -2269,14 +2216,16 @@ setToast({
         </div>
       ) : null}
 
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_520px] 2xl:grid-cols-[minmax(0,1fr)_960px]">
+        <div className="space-y-8">
+          <section>
+            <h2
+              className="mb-4 text-base font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Configuración de campaña
+            </h2>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_520px] 2xl:grid-cols-[minmax(0,1fr)_960px]">
-        <div className="space-y-6">
-          <Panel
-            title="Configuración de campaña"
-            description="Define canal, segmento, nivel de inactividad, prioridad y cantidad."
-            className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
-          >
             <div className="space-y-8">
               <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
                 <div>
@@ -2308,7 +2257,7 @@ setToast({
                     Segmento
                   </label>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {SEGMENT_OPTIONS.map((item) => (
                       <SelectableRow
                         key={item.key}
@@ -2324,32 +2273,32 @@ setToast({
 
               <div className="grid gap-4 md:grid-cols-3">
                 {segment === "inactive" && (
-  <div>
-    <label
-      className="mb-2 block text-sm font-medium"
-      style={{ color: "var(--text-main)" }}
-    >
-      Inactivos en
-    </label>
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Inactivos en
+                    </label>
 
-    <select
-      value={inactiveDays}
-      onChange={(e) => setInactiveDays(e.target.value)}
-      className={selectClass}
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-        color: "var(--text-main)",
-      }}
-    >
-      {INACTIVE_OPTIONS.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  </div>
-)}
+                    <select
+                      value={inactiveDays}
+                      onChange={(e) => setInactiveDays(e.target.value)}
+                      className={selectClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      {INACTIVE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label
@@ -2405,11 +2354,10 @@ setToast({
               </div>
 
               <div
-                className="rounded-2xl border p-4"
+                className="rounded-xl border p-4"
                 style={{
                   borderColor: "var(--border-color)",
-                  background:
-                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+                  background: "var(--bg-soft)",
                 }}
               >
                 <p
@@ -2455,14 +2403,17 @@ setToast({
                 </div>
               </div>
             </div>
-          </Panel>
+          </section>
 
           {channel === "email" ? (
-            <Panel
-              title="Email"
-              description="Contenido real del correo con rich text."
-              className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
-            >
+            <section>
+              <h2
+                className="mb-4 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Email
+              </h2>
+
               <div className="space-y-5">
                 <div>
                   <label
@@ -2519,119 +2470,123 @@ setToast({
                   subrayado, títulos, listas, alineación, links y color de texto.
                 </p>
               </div>
-            </Panel>
+            </section>
           ) : (
-            <Panel
-  title="WhatsApp"
-  description="Mensaje directo tipo conversación."
-  className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
->
-<div className="space-y-5">
-  <div>
-    <label
-      className="mb-2 block text-sm font-medium"
-      style={{ color: "var(--text-main)" }}
-    >
-      Nombre interno de campaña
-    </label>
-    <input
-      type="text"
-      value={campaignName}
-      onChange={(e) => setCampaignName(e.target.value)}
-      placeholder="Ej: Reactivación WhatsApp 120+ días"
-      className={inputClass}
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-        color: "var(--text-main)",
-      }}
-    />
-  </div>
+            <section>
+              <h2
+                className="mb-4 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                WhatsApp
+              </h2>
 
-  <div>
-    <label
-      className="mb-2 block text-sm font-medium"
-      style={{ color: "var(--text-main)" }}
-    >
-      Link de destino
-    </label>
+              <div className="space-y-5">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Nombre interno de campaña
+                  </label>
+                  <input
+                    type="text"
+                    value={campaignName}
+                    onChange={(e) => setCampaignName(e.target.value)}
+                    placeholder="Ej: Reactivación WhatsApp 120+ días"
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
 
-    <input
-      type="text"
-      value={whatsappCtaUrl}
-      onChange={(e) => setWhatsappCtaUrl(e.target.value)}
-      placeholder={`https://www.orbyx.cl/${slug}`}
-      className={inputClass}
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-        color: "var(--text-main)",
-      }}
-    />
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Link de destino
+                  </label>
 
-    <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-      Por defecto apunta a la agenda pública del negocio.
-    </p>
-  </div>
+                  <input
+                    type="text"
+                    value={whatsappCtaUrl}
+                    onChange={(e) => setWhatsappCtaUrl(e.target.value)}
+                    placeholder={`https://www.orbyx.cl/${slug}`}
+                    className={inputClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  />
 
-  <div
-    className="rounded-2xl border p-4"
-    style={{
-      borderColor: "var(--border-color)",
-      background:
-        "linear-gradient(135deg, rgba(16,185,129,0.10), var(--bg-soft))",
-    }}
-  >
-    <p
-      className="text-sm font-semibold"
-      style={{ color: "var(--text-main)" }}
-    >
-      Objetivo del mensaje
-    </p>
-    <p
-      className="mt-2 text-sm leading-6"
-      style={{ color: "var(--text-muted)" }}
-    >
-      Esta campaña está pensada para reactivar clientes y llevarlos directo a la
-      agenda pública mediante un link de reserva.
-    </p>
-  </div>
+                  <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                    Por defecto apunta a la agenda pública del negocio.
+                  </p>
+                </div>
 
-  <div>
-    <label
-      className="mb-2 block text-sm font-medium"
-      style={{ color: "var(--text-main)" }}
-    >
-      Mensaje
-    </label>
+                <div
+                  className="rounded-xl border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Objetivo del mensaje
+                  </p>
+                  <p
+                    className="mt-2 text-sm leading-6"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Esta campaña está pensada para reactivar clientes y llevarlos directo a la
+                    agenda pública mediante un link de reserva.
+                  </p>
+                </div>
 
-    <textarea
-      value={whatsappMessage}
-      onChange={(e) => setWhatsappMessage(e.target.value)}
-      placeholder="Escribe tu mensaje de WhatsApp..."
-      className={textareaClass}
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-        color: "var(--text-main)",
-      }}
-    />
-  </div>
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Mensaje
+                  </label>
 
-  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-    Puedes usar <strong>{"{{nombre}}"}</strong>, <strong>{"{{negocio}}"}</strong> y <strong>{"{{link_agenda}}"}</strong>.
-  </p>
-</div>
-</Panel>
+                  <textarea
+                    value={whatsappMessage}
+                    onChange={(e) => setWhatsappMessage(e.target.value)}
+                    placeholder="Escribe tu mensaje de WhatsApp..."
+                    className={textareaClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  Puedes usar <strong>{"{{nombre}}"}</strong>, <strong>{"{{negocio}}"}</strong> y <strong>{"{{link_agenda}}"}</strong>.
+                </p>
+              </div>
+            </section>
           )}
 
-<div className="mt-10">
           {channel === "email" ? (
-            <Panel
-              title="Estilo del email"
-              description="Branding visual, CTA, banner y nota final."
-              className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
-            >
+            <section>
+              <h2
+                className="mb-4 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Estilo del email
+              </h2>
+
               <div className="space-y-5">
                 <div>
                   <label
@@ -2701,7 +2656,7 @@ setToast({
                       Imagen principal
                     </label>
 
-                                        <div className="space-y-3">
+                    <div className="space-y-3">
                       <div className="flex flex-wrap gap-3">
                         <button
                           type="button"
@@ -2709,7 +2664,7 @@ setToast({
                             setImageLibraryOpen(true);
                             if (slug) loadCampaignImages(slug);
                           }}
-                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition"
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition"
                           style={{
                             background: "rgba(245, 158, 11, 0.14)",
                             border: "1px solid rgba(245, 158, 11, 0.38)",
@@ -2886,7 +2841,7 @@ setToast({
                 </div>
 
                 <label
-                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                  className="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -2910,15 +2865,12 @@ setToast({
                   minHeight={160}
                 />
               </div>
-            </Panel>
+            </section>
           ) : null}
-</div>
-                    <div
-            className="mt-12 pt-10 border-t"
-            style={{ borderColor: "var(--border-color)" }}
-          >
+
+          <section className="border-t pt-8" style={{ borderColor: "var(--border-color)" }}>
             <div
-              className="rounded-[26px] border p-4 shadow-sm"
+              className="rounded-2xl border p-4 shadow-sm"
               style={{
                 borderColor: "rgba(37,99,235,0.26)",
                 background:
@@ -2945,43 +2897,43 @@ setToast({
                   </p>
                 </div>
 
-<button
-  type="button"
-  onClick={handleOpenConfirm}
-  disabled={
-    sending ||
-    loadingAudience ||
-    !hasContactsForChannel ||
-    limitedIncludedRecipients.length === 0
-  }
-  className={`${primaryButtonClass} min-w-[220px] font-semibold shadow-lg flex items-center justify-center gap-2`}
-  style={{
-    background: sending
-      ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
-      : channel === "whatsapp"
-      ? "linear-gradient(135deg, #25D366, #128C7E)"
-      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-    boxShadow:
-      sending
-        ? "none"
-        : channel === "whatsapp"
-        ? "0 18px 40px rgba(16,185,129,0.28)"
-        : "0 18px 40px rgba(37,99,235,0.28)",
-    cursor: sending ? "not-allowed" : "pointer",
-  }}
->
-  {sending ? (
-    <>
-      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-      Enviando...
-    </>
-  ) : (
-    <>
-      {channel === "whatsapp" && "💬"}
-      {channel === "email" ? "Enviar campaña" : "Enviar WhatsApp"}
-    </>
-  )}
-</button>
+                <button
+                  type="button"
+                  onClick={handleOpenConfirm}
+                  disabled={
+                    sending ||
+                    loadingAudience ||
+                    !hasContactsForChannel ||
+                    limitedIncludedRecipients.length === 0
+                  }
+                  className={`${primaryButtonClass} min-w-[220px] font-semibold shadow-lg flex items-center justify-center gap-2`}
+                  style={{
+                    background: sending
+                      ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
+                      : channel === "whatsapp"
+                      ? "linear-gradient(135deg, #25D366, #128C7E)"
+                      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                    boxShadow:
+                      sending
+                        ? "none"
+                        : channel === "whatsapp"
+                        ? "0 18px 40px rgba(16,185,129,0.28)"
+                        : "0 18px 40px rgba(37,99,235,0.28)",
+                    cursor: sending ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {sending ? (
+                    <>
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      {channel === "whatsapp" && "💬"}
+                      {channel === "email" ? "Enviar campaña" : "Enviar WhatsApp"}
+                    </>
+                  )}
+                </button>
               </div>
 
               {!hasContactsForChannel && !loadingAudience ? (
@@ -2990,111 +2942,113 @@ setToast({
                 </p>
               ) : null}
             </div>
-          </div>
-
-
+          </section>
 
           {sendSummary ? (
-            <Panel
-              title="Resultado del envío"
-              description="Resumen del último envío realizado."
-              className="bg-[linear-gradient(180deg,rgba(16,185,129,0.05),transparent_35%)]"
-            >
+            <section>
+              <h2
+                className="mb-4 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Resultado del envío
+              </h2>
+
               <div className="grid gap-4 md:grid-cols-5">
-                <SectionStat
-                  label="Audiencia"
+                <StatCard
+                  title="Audiencia"
                   value={String(sendSummary.audience_total || 0)}
                   helper="Clientes encontrados."
                 />
-                <SectionStat
-                  label="Límite aplicado"
+                <StatCard
+                  title="Límite aplicado"
                   value={String(sendSummary.applied_limit || 0)}
                   helper="Tope real procesado."
                 />
-<SectionStat
-  label={channel === "email" ? "Con email" : "Con teléfono"}
-  value={String(sendSummary.recipients_with_email || 0)}
-  helper={
-    channel === "email"
-      ? "Correos válidos encontrados."
-      : "Teléfonos válidos encontrados."
-  }
-/>
-                <SectionStat
-  label={channel === "email" ? "Enviados" : "Mensajes enviados"}
-  value={String(sendSummary.sent || 0)}
-  helper={
-    channel === "email"
-      ? "Envíos exitosos."
-      : "Mensajes enviados correctamente."
-  }
-/>
-               <SectionStat
-  label="Fallidos"
-  value={String(sendSummary.failed || 0)}
-  helper={
-    channel === "email"
-      ? "Correos que fallaron."
-      : "Mensajes que fallaron."
-  }
-/>
+                <StatCard
+                  title={channel === "email" ? "Con email" : "Con teléfono"}
+                  value={String(sendSummary.recipients_with_email || 0)}
+                  helper={
+                    channel === "email"
+                      ? "Correos válidos encontrados."
+                      : "Teléfonos válidos encontrados."
+                  }
+                />
+                <StatCard
+                  title={channel === "email" ? "Enviados" : "Mensajes enviados"}
+                  value={String(sendSummary.sent || 0)}
+                  helper={
+                    channel === "email"
+                      ? "Envíos exitosos."
+                      : "Mensajes enviados correctamente."
+                  }
+                />
+                <StatCard
+                  title="Fallidos"
+                  value={String(sendSummary.failed || 0)}
+                  helper={
+                    channel === "email"
+                      ? "Correos que fallaron."
+                      : "Mensajes que fallaron."
+                  }
+                />
               </div>
-            </Panel>
+            </section>
           ) : null}
         </div>
 
-        <div className="space-y-6">
-          <Panel
-            title="Preview de audiencia"
-            description="Curación final de destinatarios antes de enviar."
-            className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
-          >
+        <div className="space-y-8">
+          <section>
+            <h2
+              className="mb-4 text-base font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Preview de audiencia
+            </h2>
+
             <div className="space-y-4">
+              {!hasContactsForChannel && !loadingAudience && (
+                <div
+                  className="rounded-xl border px-4 py-3 text-sm"
+                  style={{
+                    borderColor: "rgba(245,158,11,0.28)",
+                    background: "rgba(245,158,11,0.10)",
+                    color: "rgb(245 158 11)",
+                  }}
+                >
+                  {channel === "email"
+                    ? "No tienes clientes con email para este segmento."
+                    : "No tienes clientes con teléfono para este segmento."}
+                </div>
+              )}
 
-  {!hasContactsForChannel && !loadingAudience && (
-    <div
-      className="rounded-2xl border px-4 py-3 text-sm"
-      style={{
-        borderColor: "rgba(245,158,11,0.28)",
-        background: "rgba(245,158,11,0.10)",
-        color: "rgb(245 158 11)",
-      }}
-    >
-      {channel === "email"
-        ? "No tienes clientes con email para este segmento."
-        : "No tienes clientes con teléfono para este segmento."}
-    </div>
-  )}
-
-  <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
-                <SectionStat
-                  label="Total"
+              <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
+                <StatCard
+                  title="Total"
                   value={loadingAudience ? "..." : String(audienceStats.totalVisible)}
                   helper="Destinatarios visibles en este canal."
                 />
-                <SectionStat
-                  label="Incluidos"
+                <StatCard
+                  title="Incluidos"
                   value={loadingAudience ? "..." : String(audienceStats.included)}
                   helper="Entran a la lista final."
                 />
-                <SectionStat
-                  label="Excluidos"
+                <StatCard
+                  title="Excluidos"
                   value={loadingAudience ? "..." : String(audienceStats.excluded)}
                   helper="Quitados manualmente."
                 />
-                <SectionStat
-                  label="Manuales"
+                <StatCard
+                  title="Manuales"
                   value={loadingAudience ? "..." : String(audienceStats.manual)}
                   helper="Agregados fuera del segmento."
                 />
               </div>
 
               <div
-                className="rounded-2xl border p-4"
+                className="rounded-xl border p-4"
                 style={{
                   borderColor: "var(--border-color)",
-                  background:
-                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+                  background: "var(--bg-soft)",
                 }}
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -3159,7 +3113,7 @@ setToast({
               </div>
 
               <div
-                className="rounded-2xl border p-4"
+                className="rounded-xl border p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -3244,7 +3198,7 @@ setToast({
               </div>
 
               <div
-                className="overflow-hidden rounded-2xl border"
+                className="overflow-hidden rounded-xl border"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -3286,12 +3240,12 @@ setToast({
                 </div>
 
                 <div
-  className="divide-y overflow-y-auto"
-  style={{
-    borderColor: "var(--border-color)",
-    maxHeight: "420px",
-  }}
->
+                  className="divide-y overflow-y-auto"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    maxHeight: "420px",
+                  }}
+                >
                   {loadingAudience ? (
                     Array.from({ length: 6 }).map((_, index) => (
                       <div key={index} className="px-4 py-4">
@@ -3421,24 +3375,27 @@ setToast({
                 </div>
               </div>
             </div>
-          </Panel>
+          </section>
 
           {channel === "email" ? (
             <div className="xl:sticky xl:top-28">
-              <Panel
-                title="Preview del correo"
-                description="Render HTML real del email."
-                className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
-              >
+              <section>
+                <h2
+                  className="mb-4 text-base font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Preview del correo
+                </h2>
+
                 <div
-                  className="rounded-[28px] border p-4 mt-2"
+                  className="rounded-2xl border p-4"
                   style={{
                     borderColor: "rgba(148,163,184,0.25)",
                     background: "linear-gradient(180deg, #e2e8f0, #f8fafc)",
                   }}
                 >
                   <div
-                    className="overflow-hidden rounded-[24px] border bg-white shadow-xl"
+                    className="overflow-hidden rounded-2xl border bg-white shadow-xl"
                     style={{ borderColor: "var(--border-color)" }}
                   >
                     <iframe
@@ -3453,186 +3410,186 @@ setToast({
                     />
                   </div>
                 </div>
-              </Panel>
+              </section>
             </div>
           ) : (
-            <Panel
-  title="Preview de WhatsApp"
-  description="Simulación real del mensaje."
-  className="bg-[linear-gradient(180deg,rgba(16,185,129,0.06),transparent_35%)]"
->
-<div
-  className="rounded-[28px] border p-4"
-  style={{
-    borderColor: "rgba(148,163,184,0.25)",
-    background: "linear-gradient(180deg, #dcfce7, #bbf7d0)",
-  }}
->
-  <div
-    className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[34px] border shadow-2xl"
-    style={{
-      borderColor: "rgba(15,23,42,0.08)",
-      background: "#e5ddd5",
-    }}
-  >
-    {/* STATUS BAR */}
-    <div
-      className="flex items-center justify-between px-4 py-2 text-[11px] font-semibold"
-      style={{
-        background: "#075e54",
-        color: "#ffffff",
-      }}
-    >
-      <span>12:42</span>
-      <div className="flex items-center gap-2 opacity-90">
-        <span>◔</span>
-        <span>⌁</span>
-        <span>98%</span>
-      </div>
-    </div>
+            <section>
+              <h2
+                className="mb-4 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Preview de WhatsApp
+              </h2>
 
-    {/* HEADER CHAT */}
-    <div
-      className="flex items-center justify-between px-4 py-3"
-      style={{
-        background: "#075e54",
-        color: "#ffffff",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
-      }}
-    >
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          className="text-base font-semibold"
-          style={{ color: "#ffffff", background: "transparent" }}
-        >
-          ←
-        </button>
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "rgba(148,163,184,0.25)",
+                  background: "linear-gradient(180deg, #dcfce7, #bbf7d0)",
+                }}
+              >
+                <div
+                  className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[34px] border shadow-2xl"
+                  style={{
+                    borderColor: "rgba(15,23,42,0.08)",
+                    background: "#e5ddd5",
+                  }}
+                >
+                  <div
+                    className="flex items-center justify-between px-4 py-2 text-[11px] font-semibold"
+                    style={{
+                      background: "#075e54",
+                      color: "#ffffff",
+                    }}
+                  >
+                    <span>12:42</span>
+                    <div className="flex items-center gap-2 opacity-90">
+                      <span>◔</span>
+                      <span>⌁</span>
+                      <span>98%</span>
+                    </div>
+                  </div>
 
-        <div
-          className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold"
-          style={{
-            background: "linear-gradient(135deg, #f59e0b, #fb7185)",
-            color: "#ffffff",
-          }}
-        >
-          {String(businessName || "N").trim().charAt(0).toUpperCase()}
-        </div>
+                  <div
+                    className="flex items-center justify-between px-4 py-3"
+                    style={{
+                      background: "#075e54",
+                      color: "#ffffff",
+                      borderTop: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        className="text-base font-semibold"
+                        style={{ color: "#ffffff", background: "transparent" }}
+                      >
+                        ←
+                      </button>
 
-        <div>
-          <p className="text-sm font-semibold leading-none">{businessName || "Negocio"}</p>
-          <p className="mt-1 text-[11px] leading-none opacity-80">escribiendo...</p>
-        </div>
-      </div>
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold"
+                        style={{
+                          background: "linear-gradient(135deg, #f59e0b, #fb7185)",
+                          color: "#ffffff",
+                        }}
+                      >
+                        {String(businessName || "N").trim().charAt(0).toUpperCase()}
+                      </div>
 
-      <div className="flex items-center gap-3 text-sm opacity-95">
-        <span>📹</span>
-        <span>📞</span>
-        <span>⋮</span>
-      </div>
-    </div>
+                      <div>
+                        <p className="text-sm font-semibold leading-none">{businessName || "Negocio"}</p>
+                        <p className="mt-1 text-[11px] leading-none opacity-80">escribiendo...</p>
+                      </div>
+                    </div>
 
-    {/* BODY CHAT */}
-    <div
-      className="min-h-[360px] px-4 py-4"
-      style={{
-        background: "#e5ddd5",
-        backgroundImage:
-          "radial-gradient(rgba(255,255,255,0.22) 1px, transparent 1px)",
-        backgroundSize: "18px 18px",
-      }}
-    >
-      <div className="mb-4 flex justify-center">
-        <span
-          className="rounded-full px-3 py-1 text-[11px] font-medium"
-          style={{
-            background: "rgba(255,255,255,0.65)",
-            color: "rgba(15,23,42,0.60)",
-            border: "1px solid rgba(15,23,42,0.06)",
-          }}
-        >
-          Hoy
-        </span>
-      </div>
+                    <div className="flex items-center gap-3 text-sm opacity-95">
+                      <span>📹</span>
+                      <span>📞</span>
+                      <span>⋮</span>
+                    </div>
+                  </div>
 
-      <div className="flex justify-end">
-        <div
-          className="max-w-[82%] rounded-[16px] px-4 py-3 text-[14px] leading-6 shadow-sm"
-          style={{
-            background: "#dcf8c6",
-            color: "#111827",
-            boxShadow: "0 10px 24px rgba(15,23,42,0.10)",
-          }}
-        >
-          <p className="whitespace-pre-line break-words">
-            {whatsappPreviewText}
-          </p>
+                  <div
+                    className="min-h-[360px] px-4 py-4"
+                    style={{
+                      background: "#e5ddd5",
+                      backgroundImage:
+                        "radial-gradient(rgba(255,255,255,0.22) 1px, transparent 1px)",
+                      backgroundSize: "18px 18px",
+                    }}
+                  >
+                    <div className="mb-4 flex justify-center">
+                      <span
+                        className="rounded-full px-3 py-1 text-[11px] font-medium"
+                        style={{
+                          background: "rgba(255,255,255,0.65)",
+                          color: "rgba(15,23,42,0.60)",
+                          border: "1px solid rgba(15,23,42,0.06)",
+                        }}
+                      >
+                        Hoy
+                      </span>
+                    </div>
 
-          <div
-            className="mt-2 flex items-center justify-end gap-1 text-[10px]"
-            style={{ color: "rgba(15,23,42,0.45)" }}
-          >
-            <span>12:45</span>
-            <span>✓✓</span>
-          </div>
-        </div>
-      </div>
-    </div>
+                    <div className="flex justify-end">
+                      <div
+                        className="max-w-[82%] rounded-[16px] px-4 py-3 text-[14px] leading-6 shadow-sm"
+                        style={{
+                          background: "#dcf8c6",
+                          color: "#111827",
+                          boxShadow: "0 10px 24px rgba(15,23,42,0.10)",
+                        }}
+                      >
+                        <p className="whitespace-pre-line break-words">
+                          {whatsappPreviewText}
+                        </p>
 
-    {/* INPUT BAR */}
-    <div
-      className="flex items-center gap-3 px-4 py-3"
-      style={{
-        background: "#f0f2f5",
-        borderTop: "1px solid rgba(15,23,42,0.06)",
-      }}
-    >
-      <div
-        className="flex min-h-[42px] flex-1 items-center rounded-full px-4 text-sm"
-        style={{
-          background: "#ffffff",
-          color: "rgba(15,23,42,0.45)",
-          border: "1px solid rgba(15,23,42,0.06)",
-        }}
-      >
-        Escribir mensaje
-      </div>
+                        <div
+                          className="mt-2 flex items-center justify-end gap-1 text-[10px]"
+                          style={{ color: "rgba(15,23,42,0.45)" }}
+                        >
+                          <span>12:45</span>
+                          <span>✓✓</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-      <div
-        className="flex h-[42px] w-[42px] items-center justify-center rounded-full text-base"
-        style={{
-          background: "#00a884",
-          color: "#ffffff",
-        }}
-      >
-        🎤
-      </div>
-    </div>
-  </div>
-</div>
-</Panel>
+                  <div
+                    className="flex items-center gap-3 px-4 py-3"
+                    style={{
+                      background: "#f0f2f5",
+                      borderTop: "1px solid rgba(15,23,42,0.06)",
+                    }}
+                  >
+                    <div
+                      className="flex min-h-[42px] flex-1 items-center rounded-full px-4 text-sm"
+                      style={{
+                        background: "#ffffff",
+                        color: "rgba(15,23,42,0.45)",
+                        border: "1px solid rgba(15,23,42,0.06)",
+                      }}
+                    >
+                      Escribir mensaje
+                    </div>
+
+                    <div
+                      className="flex h-[42px] w-[42px] items-center justify-center rounded-full text-base"
+                      style={{
+                        background: "#00a884",
+                        color: "#ffffff",
+                      }}
+                    >
+                      🎤
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
           )}
         </div>
       </div>
+
       <section className="space-y-6">
         <div className="grid gap-4 xl:grid-cols-4">
-          <SectionStat
-            label="Campañas filtradas"
+          <StatCard
+            title="Campañas filtradas"
             value={loadingHistory ? "..." : String(historyStats.total)}
             helper="Resultado según filtros activos."
           />
-          <SectionStat
-  label={loadingHistory ? "Envíos realizados" : historySentLabel}
-  value={loadingHistory ? "..." : String(historyStats.totalSent)}
-  helper="Suma total en la vista actual."
-/>
-          <SectionStat
-            label="Tasa promedio"
+          <StatCard
+            title={loadingHistory ? "Envíos realizados" : historySentLabel}
+            value={loadingHistory ? "..." : String(historyStats.totalSent)}
+            helper="Suma total en la vista actual."
+          />
+          <StatCard
+            title="Tasa promedio"
             value={loadingHistory ? "..." : `${historyStats.avgSuccess}%`}
             helper="Éxito promedio según límite aplicado."
           />
-          <SectionStat
-            label="Último envío"
+          <StatCard
+            title="Último envío"
             value={
               loadingHistory
                 ? "..."
@@ -3644,558 +3601,562 @@ setToast({
           />
         </div>
 
-
-<div className="mt-14 pt-10 border-t" style={{ borderColor: "var(--border-color)" }}>
-        <Panel
-          title="Historial de campañas"
-          description="Filtros por canal, segmento, fecha, búsqueda y rendimiento."
-          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
-        >
-          {historyError ? (
-            <div
-              className="rounded-2xl border px-4 py-3 text-sm"
-              style={{
-                borderColor: "rgba(244,63,94,0.28)",
-                background: "rgba(244,63,94,0.10)",
-                color: "rgb(251 113 133)",
-              }}
+        <div className="border-t pt-8" style={{ borderColor: "var(--border-color)" }}>
+          <section>
+            <h2
+              className="mb-4 text-base font-semibold"
+              style={{ color: "var(--text-main)" }}
             >
-              {historyError}
-            </div>
-          ) : null}
+              Historial de campañas
+            </h2>
 
-          <div className="space-y-4">
-            <div
-              className="rounded-2xl border p-4"
-              style={{
-                borderColor: "var(--border-color)",
-                background:
-                  "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
-              }}
-            >
-              <div className="grid gap-4 xl:grid-cols-2">
-                <div className="space-y-3">
-                  <p
-                    className="text-xs font-medium uppercase tracking-[0.18em]"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Período
-                  </p>
-
-                  <div className="flex flex-wrap gap-2">
-                    <SoftChip
-                      active={historyPeriod === "all"}
-                      label="Todo"
-                      onClick={() => setHistoryPeriod("all")}
-                    />
-                    <SoftChip
-                      active={historyPeriod === "7d"}
-                      label="7 días"
-                      onClick={() => setHistoryPeriod("7d")}
-                    />
-                    <SoftChip
-                      active={historyPeriod === "30d"}
-                      label="30 días"
-                      onClick={() => setHistoryPeriod("30d")}
-                    />
-                    <SoftChip
-                      active={historyPeriod === "this_month"}
-                      label="Este mes"
-                      onClick={() => setHistoryPeriod("this_month")}
-                    />
-                    <SoftChip
-                      active={historyPeriod === "custom"}
-                      label="Personalizado"
-                      onClick={() => setHistoryPeriod("custom")}
-                    />
-                  </div>
-
-                  {historyPeriod === "custom" ? (
-                    <div className="space-y-2">
-                      <div>
-                        <label
-                          className="mb-2 block text-sm font-medium"
-                          style={{ color: "var(--text-main)" }}
-                        >
-                          Desde
-                        </label>
-                        <input
-                          type="date"
-                          value={customFrom}
-                          onChange={(e) => setCustomFrom(e.target.value)}
-                          className={inputClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          className="mb-2 block text-sm font-medium"
-                          style={{ color: "var(--text-main)" }}
-                        >
-                          Hasta
-                        </label>
-                        <input
-                          type="date"
-                          value={customTo}
-                          onChange={(e) => setCustomTo(e.target.value)}
-                          className={inputClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="space-y-3">
-                  <label
-                    className="block text-xs font-medium uppercase tracking-[0.18em]"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Búsqueda
-                  </label>
-
-                  <input
-                    type="text"
-                    value={historySearch}
-                    onChange={(e) => setHistorySearch(e.target.value)}
-                    placeholder="Buscar por nombre, asunto, mensaje, plan..."
-                    className={inputClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Canal
-                  </label>
-                  <select
-                    value={historyChannel}
-                    onChange={(e) =>
-                      setHistoryChannel(e.target.value as "all" | CampaignChannel)
-                    }
-                    className={selectClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    <option value="all">Todos</option>
-                    <option value="email">Email</option>
-                    <option value="whatsapp">WhatsApp</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Segmento
-                  </label>
-                  <select
-                    value={historySegment}
-                    onChange={(e) =>
-                      setHistorySegment(e.target.value as "all" | CustomerSegment)
-                    }
-                    className={selectClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    <option value="all">Todos</option>
-                    <option value="new">Nuevos</option>
-                    <option value="recurrent">Recurrentes</option>
-                    <option value="frequent">Frecuentes</option>
-                    <option value="inactive">Inactivos</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Rendimiento
-                  </label>
-                  <select
-                    value={historyPerformance}
-                    onChange={(e) =>
-                      setHistoryPerformance(e.target.value as HistoryPerformance)
-                    }
-                    className={selectClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    <option value="all">Todos</option>
-                    <option value="excellent">Excelente</option>
-                    <option value="good">Bueno</option>
-                    <option value="warning">Regular</option>
-                    <option value="failed">Fallido</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={resetHistoryFilters}
-                  className={secondaryButtonClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  Limpiar filtros
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => slug && loadCampaignHistory(slug)}
-                  className={secondaryButtonClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  Recargar historial
-                </button>
-              </div>
-            </div>
-
-            <div
-              className="overflow-hidden rounded-2xl border"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-card)",
-              }}
-            >
+            {historyError ? (
               <div
-                className="border-b px-4 py-3"
-                style={{ borderColor: "var(--border-color)" }}
+                className="mb-4 rounded-xl border px-4 py-3 text-sm"
+                style={{
+                  borderColor: "rgba(244,63,94,0.28)",
+                  background: "rgba(244,63,94,0.10)",
+                  color: "rgb(251 113 133)",
+                }}
               >
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Últimas campañas
-                </p>
+                {historyError}
               </div>
+            ) : null}
 
-              {loadingHistory ? (
-                <HistorySkeleton />
-              ) : filteredHistory.length === 0 ? (
-                <div
-                  className="px-4 py-10 text-sm"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  No hay campañas que coincidan con los filtros actuales.
-                </div>
-              ) : (
-                <div
-  className="space-y-4 p-4 overflow-y-auto"
-  style={{
-    maxHeight: "420px",
-  }}
->
-                  {filteredHistory.map((item) => {
-                    const channelMeta = getChannelMeta(item.channel);
-                    const segmentMeta = getCustomerSegmentMeta(item.segment);
-                    const successRate = getSuccessRate(item);
-                    const performanceMeta = getPerformanceMeta(
-                      successRate,
-                      item.failed_count
-                    );
+            <div className="space-y-4">
+              <div
+                className="rounded-xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                }}
+              >
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="space-y-3">
+                    <p
+                      className="text-xs font-medium uppercase tracking-[0.18em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Período
+                    </p>
 
-                    return (
-  <div
-    key={item.id}
-    onClick={() => {
-      setSelectedCampaign(item);
-      loadCampaignLogs(item.id);
-    }}
-    className="cursor-pointer rounded-2xl border p-4 shadow-sm transition"
-    style={{
-      borderColor: "var(--border-color)",
-      background:
-        "linear-gradient(135deg, rgba(37,99,235,0.04), var(--bg-card))",
-    }}
-  >
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p
-                                className="truncate text-base font-semibold"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {item.campaign_name?.trim() || "Campaña sin nombre"}
-                              </p>
+                    <div className="flex flex-wrap gap-2">
+                      <SoftChip
+                        active={historyPeriod === "all"}
+                        label="Todo"
+                        onClick={() => setHistoryPeriod("all")}
+                      />
+                      <SoftChip
+                        active={historyPeriod === "7d"}
+                        label="7 días"
+                        onClick={() => setHistoryPeriod("7d")}
+                      />
+                      <SoftChip
+                        active={historyPeriod === "30d"}
+                        label="30 días"
+                        onClick={() => setHistoryPeriod("30d")}
+                      />
+                      <SoftChip
+                        active={historyPeriod === "this_month"}
+                        label="Este mes"
+                        onClick={() => setHistoryPeriod("this_month")}
+                      />
+                      <SoftChip
+                        active={historyPeriod === "custom"}
+                        label="Personalizado"
+                        onClick={() => setHistoryPeriod("custom")}
+                      />
+                    </div>
 
-                              <span
-                                className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
-                                style={{
-                                  background: channelMeta.bg,
-                                  borderColor: channelMeta.border,
-                                  color: channelMeta.color,
-                                }}
-                              >
-                                {channelMeta.label}
-                              </span>
+                    {historyPeriod === "custom" ? (
+                      <div className="space-y-2">
+                        <div>
+                          <label
+                            className="mb-2 block text-sm font-medium"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            Desde
+                          </label>
+                          <input
+                            type="date"
+                            value={customFrom}
+                            onChange={(e) => setCustomFrom(e.target.value)}
+                            className={inputClass}
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                          />
+                        </div>
 
-                              <span
-                                className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
-                                style={{
-                                  background: segmentMeta.bg,
-                                  borderColor: segmentMeta.border,
-                                  color: segmentMeta.color,
-                                }}
-                              >
-                                {getSegmentLabel(item.segment)}
-                              </span>
-
-                              <span
-                                className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
-                                style={{
-                                  background: performanceMeta.bg,
-                                  borderColor: performanceMeta.border,
-                                  color: performanceMeta.color,
-                                }}
-                              >
-                                {performanceMeta.label}
-                              </span>
-                            </div>
-
-                            <p
-                              className="mt-2 text-sm"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              {formatDate(item.created_at)}
-                            </p>
-
-                            {item.subject ? (
-                              <p
-                                className="mt-3 text-sm font-medium"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                Asunto: {item.subject}
-                              </p>
-                            ) : null}
-
-                            {item.message ? (
-                              <p
-                                className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                {item.message}
-                              </p>
-                            ) : null}
-
-                            <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                              {[
-                                `Plan: ${getPlanLabel(item.plan_slug)}`,
-                                `Orden: ${getSortLabel(item.sort)}`,
-                                `Inactividad: ${item.inactive_days} días`,
-                                `Plan límite: ${item.plan_limit}`,
-                                `Pedido: ${item.requested_limit}`,
-                              ].map((label) => (
-                                <span
-                                  key={label}
-                                  className="rounded-full border px-3 py-1 font-medium"
-                                  style={{
-                                    borderColor: "var(--border-color)",
-                                    background: "var(--bg-soft)",
-                                    color: "var(--text-main)",
-                                  }}
-                                >
-                                  {label}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="grid min-w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-                            <SectionStat
-                              label="Audiencia"
-                              value={String(item.audience_total)}
-                              helper="Total encontrado."
-                            />
-                            <SectionStat
-                              label="Aplicado"
-                              value={String(item.applied_limit)}
-                              helper="Límite usado."
-                            />
-                           <SectionStat
-  label={item.channel === "email" ? "Con correo" : "Con teléfono"}
-  value={String(item.recipients_with_contact)}
-  helper={
-    item.channel === "email"
-      ? "Contactos válidos para email."
-      : "Contactos válidos para WhatsApp."
-  }
-/>
-<SectionStat
-  label={item.channel === "email" ? "Correos enviados" : "Mensajes enviados"}
-  value={String(item.sent_count)}
-  helper={
-    item.channel === "email"
-      ? "Envíos exitosos por correo."
-      : "Mensajes enviados correctamente."
-  }
-/>
-<SectionStat
-  label={item.channel === "email" ? "Correos fallidos" : "Mensajes fallidos"}
-  value={String(item.failed_count)}
-  helper={
-    item.channel === "email"
-      ? "Correos que fallaron."
-      : "Mensajes que fallaron."
-  }
-/>
-                            <SectionStat
-                              label="Éxito"
-                              value={`${successRate}%`}
-                              helper="Tasa de éxito."
-                            />
-                          </div>
+                        <div>
+                          <label
+                            className="mb-2 block text-sm font-medium"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            Hasta
+                          </label>
+                          <input
+                            type="date"
+                            value={customTo}
+                            onChange={(e) => setCustomTo(e.target.value)}
+                            className={inputClass}
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                          />
                         </div>
                       </div>
-                    );
-                  })}
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-3">
+                    <label
+                      className="block text-xs font-medium uppercase tracking-[0.18em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Búsqueda
+                    </label>
+
+                    <input
+                      type="text"
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      placeholder="Buscar por nombre, asunto, mensaje, plan..."
+                      className={inputClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
                 </div>
-              )}
+
+                <div className="mt-4 grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Canal
+                    </label>
+                    <select
+                      value={historyChannel}
+                      onChange={(e) =>
+                        setHistoryChannel(e.target.value as "all" | CampaignChannel)
+                      }
+                      className={selectClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <option value="all">Todos</option>
+                      <option value="email">Email</option>
+                      <option value="whatsapp">WhatsApp</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Segmento
+                    </label>
+                    <select
+                      value={historySegment}
+                      onChange={(e) =>
+                        setHistorySegment(e.target.value as "all" | CustomerSegment)
+                      }
+                      className={selectClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <option value="all">Todos</option>
+                      <option value="new">Nuevos</option>
+                      <option value="recurrent">Recurrentes</option>
+                      <option value="frequent">Frecuentes</option>
+                      <option value="inactive">Inactivos</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Rendimiento
+                    </label>
+                    <select
+                      value={historyPerformance}
+                      onChange={(e) =>
+                        setHistoryPerformance(e.target.value as HistoryPerformance)
+                      }
+                      className={selectClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <option value="all">Todos</option>
+                      <option value="excellent">Excelente</option>
+                      <option value="good">Bueno</option>
+                      <option value="warning">Regular</option>
+                      <option value="failed">Fallido</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={resetHistoryFilters}
+                    className={secondaryButtonClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    Limpiar filtros
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => slug && loadCampaignHistory(slug)}
+                    className={secondaryButtonClass}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    Recargar historial
+                  </button>
+                </div>
+              </div>
+
+              <div
+                className="overflow-hidden rounded-xl border"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <div
+                  className="border-b px-4 py-3"
+                  style={{ borderColor: "var(--border-color)" }}
+                >
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Últimas campañas
+                  </p>
+                </div>
+
+                {loadingHistory ? (
+                  <div className="p-4">
+                    <HistorySkeleton />
+                  </div>
+                ) : filteredHistory.length === 0 ? (
+                  <div
+                    className="px-4 py-10 text-sm"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    No hay campañas que coincidan con los filtros actuales.
+                  </div>
+                ) : (
+                  <div
+                    className="space-y-4 p-4 overflow-y-auto"
+                    style={{
+                      maxHeight: "420px",
+                    }}
+                  >
+                    {filteredHistory.map((item) => {
+                      const channelMeta = getChannelMeta(item.channel);
+                      const segmentMeta = getCustomerSegmentMeta(item.segment);
+                      const successRate = getSuccessRate(item);
+                      const performanceMeta = getPerformanceMeta(
+                        successRate,
+                        item.failed_count
+                      );
+
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedCampaign(item);
+                            loadCampaignLogs(item.id);
+                          }}
+                          className="cursor-pointer rounded-xl border p-4 shadow-sm transition"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background:
+                              "linear-gradient(135deg, rgba(37,99,235,0.04), var(--bg-card))",
+                          }}
+                        >
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p
+                                  className="truncate text-base font-semibold"
+                                  style={{ color: "var(--text-main)" }}
+                                >
+                                  {item.campaign_name?.trim() || "Campaña sin nombre"}
+                                </p>
+
+                                <span
+                                  className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                                  style={{
+                                    background: channelMeta.bg,
+                                    borderColor: channelMeta.border,
+                                    color: channelMeta.color,
+                                  }}
+                                >
+                                  {channelMeta.label}
+                                </span>
+
+                                <span
+                                  className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                                  style={{
+                                    background: segmentMeta.bg,
+                                    borderColor: segmentMeta.border,
+                                    color: segmentMeta.color,
+                                  }}
+                                >
+                                  {getSegmentLabel(item.segment)}
+                                </span>
+
+                                <span
+                                  className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                                  style={{
+                                    background: performanceMeta.bg,
+                                    borderColor: performanceMeta.border,
+                                    color: performanceMeta.color,
+                                  }}
+                                >
+                                  {performanceMeta.label}
+                                </span>
+                              </div>
+
+                              <p
+                                className="mt-2 text-sm"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                {formatDate(item.created_at)}
+                              </p>
+
+                              {item.subject ? (
+                                <p
+                                  className="mt-3 text-sm font-medium"
+                                  style={{ color: "var(--text-main)" }}
+                                >
+                                  Asunto: {item.subject}
+                                </p>
+                              ) : null}
+
+                              {item.message ? (
+                                <p
+                                  className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  {item.message}
+                                </p>
+                              ) : null}
+
+                              <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                                {[
+                                  `Plan: ${getPlanLabel(item.plan_slug)}`,
+                                  `Orden: ${getSortLabel(item.sort)}`,
+                                  `Inactividad: ${item.inactive_days} días`,
+                                  `Plan límite: ${item.plan_limit}`,
+                                  `Pedido: ${item.requested_limit}`,
+                                ].map((label) => (
+                                  <span
+                                    key={label}
+                                    className="rounded-full border px-3 py-1 font-medium"
+                                    style={{
+                                      borderColor: "var(--border-color)",
+                                      background: "var(--bg-soft)",
+                                      color: "var(--text-main)",
+                                    }}
+                                  >
+                                    {label}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="grid min-w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-w-[420px]">
+                              <StatCard
+                                title="Audiencia"
+                                value={String(item.audience_total)}
+                                helper="Total encontrado."
+                              />
+                              <StatCard
+                                title="Aplicado"
+                                value={String(item.applied_limit)}
+                                helper="Límite usado."
+                              />
+                              <StatCard
+                                title={item.channel === "email" ? "Con correo" : "Con teléfono"}
+                                value={String(item.recipients_with_contact)}
+                                helper={
+                                  item.channel === "email"
+                                    ? "Contactos válidos para email."
+                                    : "Contactos válidos para WhatsApp."
+                                }
+                              />
+                              <StatCard
+                                title={item.channel === "email" ? "Correos enviados" : "Mensajes enviados"}
+                                value={String(item.sent_count)}
+                                helper={
+                                  item.channel === "email"
+                                    ? "Envíos exitosos por correo."
+                                    : "Mensajes enviados correctamente."
+                                }
+                              />
+                              <StatCard
+                                title={item.channel === "email" ? "Correos fallidos" : "Mensajes fallidos"}
+                                value={String(item.failed_count)}
+                                helper={
+                                  item.channel === "email"
+                                    ? "Correos que fallaron."
+                                    : "Mensajes que fallaron."
+                                }
+                              />
+                              <StatCard
+                                title="Éxito"
+                                value={`${successRate}%`}
+                                helper="Tasa de éxito."
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </Panel>
-</div>
+          </section>
+        </div>
 
-{selectedCampaign && (
-  <Panel
-    title={`Logs de campaña: ${selectedCampaign.campaign_name || "Sin nombre"}`}
-    description="Detalle por cliente: enviados, fallidos y estado."
-    className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
-  >
-    {logsError ? (
-      <div
-        className="rounded-2xl border px-4 py-3 text-sm"
-        style={{
-          borderColor: "rgba(244,63,94,0.28)",
-          background: "rgba(244,63,94,0.10)",
-          color: "rgb(251 113 133)",
-        }}
-      >
-        {logsError}
-      </div>
-    ) : loadingLogs ? (
-      <div className="text-sm" style={{ color: "var(--text-muted)" }}>
-        Cargando logs...
-      </div>
-    ) : campaignLogs.length === 0 ? (
-      <div className="text-sm" style={{ color: "var(--text-muted)" }}>
-        No hay logs para esta campaña.
-      </div>
-    ) : (
-      <div
-        className="space-y-3 overflow-y-auto"
-        style={{ maxHeight: "420px" }}
-      >
-        {campaignLogs.map((log, idx) => (
-          <div
-            key={idx}
-            className="rounded-xl border p-3 flex justify-between items-center"
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-card)",
-            }}
-          >
-            <div className="flex items-start gap-3">
-  <div
-    className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
-    style={{
-      background: "rgba(37,99,235,0.12)",
-      color: "rgb(37 99 235)",
-    }}
-  >
-    {(log.customer_name || log.customer_email || log.customer_phone || "?")
-      .charAt(0)
-      .toUpperCase()}
-  </div>
+        {selectedCampaign ? (
+          <section>
+            <h2
+              className="mb-4 text-base font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Logs de campaña: {selectedCampaign.campaign_name || "Sin nombre"}
+            </h2>
 
-  <div>
-    <p style={{ color: "var(--text-main)", fontWeight: 600 }}>
-      {log.customer_name || "Sin nombre"}
-    </p>
+            {logsError ? (
+              <div
+                className="rounded-xl border px-4 py-3 text-sm"
+                style={{
+                  borderColor: "rgba(244,63,94,0.28)",
+                  background: "rgba(244,63,94,0.10)",
+                  color: "rgb(251 113 133)",
+                }}
+              >
+                {logsError}
+              </div>
+            ) : loadingLogs ? (
+              <div className="text-sm" style={{ color: "var(--text-muted)" }}>
+                Cargando logs...
+              </div>
+            ) : campaignLogs.length === 0 ? (
+              <div className="text-sm" style={{ color: "var(--text-muted)" }}>
+                No hay logs para esta campaña.
+              </div>
+            ) : (
+              <div
+                className="space-y-3 overflow-y-auto"
+                style={{ maxHeight: "420px" }}
+              >
+                {campaignLogs.map((log, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-xl border p-3 flex justify-between items-center"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
+                        style={{
+                          background: "rgba(37,99,235,0.12)",
+                          color: "rgb(37 99 235)",
+                        }}
+                      >
+                        {(log.customer_name || log.customer_email || log.customer_phone || "?")
+                          .charAt(0)
+                          .toUpperCase()}
+                      </div>
 
-    {log.error_message ? (
-      <p className="mt-1 text-xs" style={{ color: "rgb(244 63 94)" }}>
-        {log.error_message}
-      </p>
-    ) : null}
+                      <div>
+                        <p style={{ color: "var(--text-main)", fontWeight: 600 }}>
+                          {log.customer_name || "Sin nombre"}
+                        </p>
 
-    <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-      {selectedCampaign?.channel === "whatsapp"
-        ? log.customer_phone || "Sin contacto"
-        : log.customer_email || "Sin contacto"}
-    </p>
-  </div>
-</div>
+                        {log.error_message ? (
+                          <p className="mt-1 text-xs" style={{ color: "rgb(244 63 94)" }}>
+                            {log.error_message}
+                          </p>
+                        ) : null}
 
-            <span
-  className="text-xs font-semibold px-3 py-1 rounded-full"
-  style={{
-    background:
-      !log.customer_email && !log.customer_phone
-        ? "rgba(148,163,184,0.18)"
-        : log.status === "sent"
-        ? "rgba(16,185,129,0.14)"
-        : "rgba(244,63,94,0.14)",
-    color:
-      !log.customer_email && !log.customer_phone
-        ? "rgb(100 116 139)"
-        : log.status === "sent"
-        ? "rgb(16 185 129)"
-        : "rgb(244 63 94)",
-  }}
->
-  {!log.customer_email && !log.customer_phone
-    ? "Sin contacto"
-    : log.status === "sent"
-    ? "Enviado"
-    : "Fallido"}
-</span>
-          </div>
-        ))}
-      </div>
-    )}
-  </Panel>
-)}
+                        <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                          {selectedCampaign?.channel === "whatsapp"
+                            ? log.customer_phone || "Sin contacto"
+                            : log.customer_email || "Sin contacto"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span
+                      className="text-xs font-semibold px-3 py-1 rounded-full"
+                      style={{
+                        background:
+                          !log.customer_email && !log.customer_phone
+                            ? "rgba(148,163,184,0.18)"
+                            : log.status === "sent"
+                            ? "rgba(16,185,129,0.14)"
+                            : "rgba(244,63,94,0.14)",
+                        color:
+                          !log.customer_email && !log.customer_phone
+                            ? "rgb(100 116 139)"
+                            : log.status === "sent"
+                            ? "rgb(16 185 129)"
+                            : "rgb(244 63 94)",
+                      }}
+                    >
+                      {!log.customer_email && !log.customer_phone
+                        ? "Sin contacto"
+                        : log.status === "sent"
+                        ? "Enviado"
+                        : "Fallido"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
       </section>
-
-
 
       {imageLibraryOpen ? (
         <div
@@ -4235,7 +4196,7 @@ setToast({
               <div className="flex gap-3">
                 <button
                   onClick={() => slug && loadCampaignImages(slug)}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
+                  className="inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold transition"
                   style={{
                     background: "rgba(15,23,42,0.9)",
                     border: "1px solid rgba(148,163,184,0.24)",
@@ -4247,7 +4208,7 @@ setToast({
 
                 <button
                   onClick={() => setImageLibraryOpen(false)}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition"
+                  className="inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold transition"
                   style={{
                     background: "rgba(15,23,42,0.9)",
                     border: "1px solid rgba(148,163,184,0.24)",
@@ -4271,7 +4232,7 @@ setToast({
                   <p className="text-sm font-semibold text-white">Subir imagen</p>
 
                   <label
-                    className="mt-3 inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl px-4 text-sm font-semibold transition"
+                    className="mt-3 inline-flex h-11 cursor-pointer items-center justify-center rounded-xl px-4 text-sm font-semibold transition"
                     style={{
                       background: imageUploading
                         ? "rgba(71,85,105,0.5)"
@@ -4314,7 +4275,7 @@ setToast({
 
                 {imageLibraryError ? (
                   <div
-                    className="rounded-2xl border px-4 py-3 text-sm"
+                    className="rounded-xl border px-4 py-3 text-sm"
                     style={{
                       borderColor: "rgba(244,63,94,0.26)",
                       background: "rgba(127,29,29,0.26)",
@@ -4327,7 +4288,7 @@ setToast({
 
                 {imageLibraryMessage ? (
                   <div
-                    className="rounded-2xl border px-4 py-3 text-sm"
+                    className="rounded-xl border px-4 py-3 text-sm"
                     style={{
                       borderColor: "rgba(16,185,129,0.24)",
                       background: "rgba(6,78,59,0.22)",
@@ -4453,98 +4414,96 @@ setToast({
             </h3>
 
             <p
-  className="mt-3 text-sm leading-7"
-  style={{ color: "var(--text-muted)" }}
->
-  Estás a punto de procesar hasta{" "}
-  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-    {limitedAudienceCount}
-  </span>{" "}
-  {channel === "email" ? "correos" : "mensajes de WhatsApp"} de tu audiencia
-  curada manualmente del segmento{" "}
-  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-    {selectedSegmentLabel}
-  </span>
-  .
-</p>
+              className="mt-3 text-sm leading-7"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Estás a punto de procesar hasta{" "}
+              <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                {limitedAudienceCount}
+              </span>{" "}
+              {channel === "email" ? "correos" : "mensajes de WhatsApp"} de tu audiencia
+              curada manualmente del segmento{" "}
+              <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                {selectedSegmentLabel}
+              </span>
+              .
+            </p>
 
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div
+                className="rounded-xl border px-3 py-3 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                }}
+              >
+                <p style={{ color: "var(--text-muted)" }}>Incluidos</p>
+                <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                  {audienceStats.included}
+                </p>
+              </div>
 
-<div
-  className="mt-4 grid grid-cols-2 gap-3"
->
-  <div
-    className="rounded-xl border px-3 py-3 text-sm"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-soft)",
-    }}
-  >
-    <p style={{ color: "var(--text-muted)" }}>Incluidos</p>
-    <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
-      {audienceStats.included}
-    </p>
-  </div>
+              <div
+                className="rounded-xl border px-3 py-3 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                }}
+              >
+                <p style={{ color: "var(--text-muted)" }}>Excluidos</p>
+                <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                  {audienceStats.excluded}
+                </p>
+              </div>
 
-  <div
-    className="rounded-xl border px-3 py-3 text-sm"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-soft)",
-    }}
-  >
-    <p style={{ color: "var(--text-muted)" }}>Excluidos</p>
-    <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
-      {audienceStats.excluded}
-    </p>
-  </div>
+              <div
+                className="rounded-xl border px-3 py-3 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                }}
+              >
+                <p style={{ color: "var(--text-muted)" }}>Manuales</p>
+                <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                  {audienceStats.manual}
+                </p>
+              </div>
 
-  <div
-    className="rounded-xl border px-3 py-3 text-sm"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-soft)",
-    }}
-  >
-    <p style={{ color: "var(--text-muted)" }}>Manuales</p>
-    <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
-      {audienceStats.manual}
-    </p>
-  </div>
+              <div
+                className="rounded-xl border px-3 py-3 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                }}
+              >
+                <p style={{ color: "var(--text-muted)" }}>Límite aplicado</p>
+                <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                  {sendLimit}
+                </p>
+              </div>
+            </div>
 
-  <div
-    className="rounded-xl border px-3 py-3 text-sm"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-soft)",
-    }}
-  >
-    <p style={{ color: "var(--text-muted)" }}>Límite aplicado</p>
-    <p style={{ color: "var(--text-main)", fontWeight: 700 }}>
-      {sendLimit}
-    </p>
-  </div>
-</div>
             {channel === "email" ? (
-  <p
-    className="mt-2 text-sm leading-7"
-    style={{ color: "var(--text-muted)" }}
-  >
-    Asunto:{" "}
-    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-      {subject || "Sin asunto"}
-    </span>
-  </p>
-) : (
-  <p
-    className="mt-2 text-sm leading-7"
-    style={{ color: "var(--text-muted)" }}
-  >
-    Mensaje:{" "}
-    <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-      {whatsappPreviewText}
-    </span>
-  </p>
-)}
+              <p
+                className="mt-2 text-sm leading-7"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Asunto:{" "}
+                <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                  {subject || "Sin asunto"}
+                </span>
+              </p>
+            ) : (
+              <p
+                className="mt-2 text-sm leading-7"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Mensaje:{" "}
+                <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
+                  {whatsappPreviewText}
+                </span>
+              </p>
+            )}
 
             <div className="mt-6 flex flex-wrap gap-3">
               <button
@@ -4561,29 +4520,29 @@ setToast({
               </button>
 
               <button
-  type="button"
-  onClick={handleSendCampaignConfirmed}
-  disabled={sending}
-  className={`${primaryButtonClass} font-semibold flex items-center justify-center gap-2`}
-  style={{
-    background: sending
-      ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
-      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-    boxShadow: sending
-      ? "none"
-      : "0 18px 40px rgba(37,99,235,0.28)",
-    cursor: sending ? "not-allowed" : "pointer",
-  }}
->
-  {sending ? (
-  <>
-    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-    Enviando...
-  </>
-) : (
-  <>{channel === "email" ? "Enviar campaña" : "Enviar campaña WhatsApp"}</>
-)}
-</button>
+                type="button"
+                onClick={handleSendCampaignConfirmed}
+                disabled={sending}
+                className={`${primaryButtonClass} font-semibold flex items-center justify-center gap-2`}
+                style={{
+                  background: sending
+                    ? "linear-gradient(135deg, rgb(100 116 139), rgb(71 85 105))"
+                    : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                  boxShadow: sending
+                    ? "none"
+                    : "0 18px 40px rgba(37,99,235,0.28)",
+                  cursor: sending ? "not-allowed" : "pointer",
+                }}
+              >
+                {sending ? (
+                  <>
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>{channel === "email" ? "Enviar campaña" : "Enviar campaña WhatsApp"}</>
+                )}
+              </button>
             </div>
           </div>
         </div>
