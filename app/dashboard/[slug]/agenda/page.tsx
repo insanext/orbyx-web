@@ -15,6 +15,10 @@ type Appointment = {
   customer_email: string | null;
   service_name_snapshot: string | null;
   status: string;
+  customer_data?: {
+    pet_name?: string;
+    pet_species?: string;
+  } | null;
 };
 
 type BusinessResponse = {
@@ -2031,14 +2035,52 @@ export default function AgendaPage() {
                                       </div>
 
                                       <p
-                                        className={`truncate text-sm font-semibold ${
-                                          isSelected
-                                            ? "text-white"
-                                            : "text-slate-900"
-                                        }`}
-                                      >
-                                        {appt.customer_name}
-                                      </p>
+  className={`truncate text-sm font-semibold ${
+    isSelected
+      ? "text-white"
+      : "text-slate-900"
+  }`}
+>
+  {appt.customer_name}
+</p>
+
+{appt.customer_data?.pet_name ? (
+  <p
+    className={`truncate text-[11px] ${
+      isSelected ? "text-slate-200" : "text-emerald-600"
+    }`}
+  >
+    🐶 {appt.customer_data.pet_name}
+    {appt.customer_data.pet_species
+      ? ` (${appt.customer_data.pet_species})`
+      : ""}
+  </p>
+) : null}
+
+{appt.customer_data?.pet_name ? (
+  <div
+    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+      isSelected
+        ? "bg-white/10 text-white"
+        : "bg-emerald-100 text-emerald-700"
+    }`}
+  >
+    🐾 Mascota
+  </div>
+) : null}
+
+{appt.customer_data?.pet_name ? (
+  <div
+    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+      isSelected
+        ? "bg-white/10 text-white"
+        : "bg-emerald-100 text-emerald-700"
+    }`}
+  >
+    🐾 Mascota
+  </div>
+) : null}
+
 
                                       <p
                                         className={`truncate text-[11px] ${
