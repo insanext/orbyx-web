@@ -604,8 +604,77 @@ export default function CampaignsPage() {
     "h-12 w-full rounded-2xl border px-4 text-sm outline-none transition";
   const primaryButtonClass =
     "inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
-  const secondaryButtonClass =
+    const secondaryButtonClass =
     "inline-flex h-12 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+
+  function toggleRecipientIncluded(id: string) {
+    setExcludedRecipientIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  async function handleSendCampaignConfirmed() {
+    try {
+      setSending(true);
+      setError("");
+      setResultMessage("");
+
+      const finalRecipients = [
+        ...manualRecipients,
+        ...customers.map((c) => ({
+          id: buildRecipientId("segment", c.id),
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          included: !excludedRecipientIds.includes(buildRecipientId("segment", c.id)),
+          source: "segment" as const,
+        })),
+      ]
+        .filter((r) => r.included)
+        .slice(0, Number(sendLimit));
+
+      const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          slug,
+          channel,
+          campaign_name: campaignName,
+          subject,
+          message: channel === "email" ? message : whatsappMessage,
+          segment,
+          inactive_days: Number(inactiveDays),
+          limit: Number(sendLimit),
+          sort,
+          final_recipients: finalRecipients,
+        }),
+      });
+
+      const data: SendEmailResponse = await res.json();
+
+      if (!res.ok) {
+        throw new Error("Error enviando campaña");
+      }
+
+      setSendSummary(data);
+      setResultMessage(`Enviados: ${data.sent} - Fallidos: ${data.failed}`);
+      setToast({
+        type: "success",
+        message: "Campaña enviada correctamente",
+      });
+    } catch (err) {
+      setError("Error enviando campaña");
+      setToast({
+        type: "error",
+        message: "Error enviando campaña",
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <div className="space-y-6 p-6">
 
@@ -698,7 +767,17 @@ export default function CampaignsPage() {
           <div className="border rounded-2xl p-4 space-y-4">
             <p className="font-semibold">Audiencia</p>
 
-            {allRecipients.map((r) => (
+            {[
+  ...manualRecipients,
+  ...customers.map((c) => ({
+    id: buildRecipientId("segment", c.id),
+    name: c.name,
+    email: c.email,
+    phone: c.phone,
+    included: !excludedRecipientIds.includes(buildRecipientId("segment", c.id)),
+    source: "segment" as const,
+  })),
+].map((r) => (
               <div
                 key={r.id}
                 className="flex justify-between items-center border p-2 rounded-xl"
