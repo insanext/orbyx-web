@@ -1839,17 +1839,20 @@ export default function AgendaPage() {
                       key={dayKey}
                       className="rounded-xl border p-2.5"
                       style={{
-                        borderColor: dayPendingCount > 0
-                          ? "rgba(244,63,94,0.24)"
-                          : isToday
-                          ? "rgba(56,189,248,0.24)"
-                          : "var(--border-color)",
-                        background: dayPendingCount > 0
-                          ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
-                          : isToday
-                          ? "linear-gradient(180deg, rgba(56,189,248,0.08), var(--bg-card))"
-                          : "var(--bg-soft)",
-                      }}
+  borderColor: dayPendingCount > 0
+    ? "rgba(244,63,94,0.28)"
+    : isToday
+    ? "rgba(37,99,235,0.42)"
+    : "var(--border-color)",
+  background: dayPendingCount > 0
+    ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
+    : isToday
+    ? "linear-gradient(180deg, rgba(37,99,235,0.16), rgba(56,189,248,0.08), var(--bg-card))"
+    : "var(--bg-soft)",
+  boxShadow: isToday
+    ? "0 0 0 1px rgba(37,99,235,0.14), 0 10px 30px -18px rgba(37,99,235,0.45)"
+    : "none",
+}}
                     >
                       <div
   className="sticky z-20 -mx-2.5 mb-2.5 px-2.5 pb-2.5 pt-2"
@@ -1872,13 +1875,16 @@ export default function AgendaPage() {
 >
                         <div className="flex items-center justify-between gap-2">
                           <div
-                            className="text-sm font-semibold capitalize"
-                            style={{ color: "var(--text-main)" }}
-                          >
-                            {day.toLocaleDateString("es-CL", {
-                              weekday: "long",
-                            })}
-                          </div>
+  className="mt-1 text-[11px] font-medium"
+  style={{
+    color: isToday ? "#2563eb" : "var(--text-muted)",
+  }}
+>
+  {day.toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+  })}
+</div>
 
                           <div className="flex items-center gap-1.5">
                             {dayCanceledCount > 0 ? (
@@ -1894,9 +1900,15 @@ export default function AgendaPage() {
                             ) : null}
 
                             {isToday ? (
-                              <span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                Hoy
-                              </span>
+                              <span
+  className="rounded-full px-2.5 py-1 text-[10px] font-semibold text-white"
+  style={{
+    background: "linear-gradient(135deg, #2563eb, #38bdf8)",
+    boxShadow: "0 6px 16px -8px rgba(37,99,235,0.85)",
+  }}
+>
+  Hoy
+</span>
                             ) : null}
                           </div>
                         </div>
