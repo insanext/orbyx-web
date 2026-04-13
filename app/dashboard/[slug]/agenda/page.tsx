@@ -1854,7 +1854,7 @@ export default function AgendaPage() {
                       <div
   className="sticky z-20 -mx-2.5 mb-2.5 px-2.5 pb-2.5 pt-2"
   style={{
-    top: "80px",
+    top: "78px",
     borderBottom: `1px solid ${
       dayPendingCount > 0
         ? "rgba(244,63,94,0.24)"
