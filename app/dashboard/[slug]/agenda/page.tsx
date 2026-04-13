@@ -27,6 +27,7 @@ type BusinessResponse = {
     id: string;
     name: string;
     slug: string;
+    business_category?: string | null;
   };
   calendar_id?: string;
   google_connected?: boolean;
@@ -118,6 +119,26 @@ type NoticeTone =
   | "limit"
   | "danger"
   | "neutral";
+
+type VeterinaryNextControlMode =
+  | "none"
+  | "7_days"
+  | "15_days"
+  | "30_days"
+  | "2_months"
+  | "3_months"
+  | "6_months"
+  | "1_year"
+  | "custom";
+
+type VeterinaryCloseForm = {
+  control_type: string;
+  custom_control_type: string;
+  control_note: string;
+  next_control_mode: VeterinaryNextControlMode;
+  next_control_custom_value: string;
+  next_control_custom_unit: "days" | "months" | "years";
+};
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -260,8 +281,9 @@ export default function AgendaPage() {
     ((params as { slug?: string })?.slug as string) ||
     ((params as { Slug?: string })?.Slug as string);
 
-  const [tenantId, setTenantId] = useState("");
+    const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [businessCategory, setBusinessCategory] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -287,6 +309,17 @@ export default function AgendaPage() {
     useState<Appointment | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
   const [statusSaving, setStatusSaving] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closeSaving, setCloseSaving] = useState(false);
+  const [closeError, setCloseError] = useState("");
+  const [closeForm, setCloseForm] = useState<VeterinaryCloseForm>({
+    control_type: "Control general",
+    custom_control_type: "",
+    control_note: "",
+    next_control_mode: "none",
+    next_control_custom_value: "",
+    next_control_custom_unit: "days",
+  });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
@@ -308,6 +341,9 @@ export default function AgendaPage() {
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
   }, [slug]);
+
+  const isVeterinaria =
+    businessCategory === "veterinaria" || businessCategory === "vet";
 
   function startOfWeek(date: Date) {
     const d = new Date(date);
@@ -614,6 +650,37 @@ function getWeekdayLabel(date: Date) {
       customer_phone: appt?.customer_phone || "",
       customer_email: appt?.customer_email || "",
     });
+  }
+
+  function resetCloseForm() {
+    setCloseForm({
+      control_type: "Control general",
+      custom_control_type: "",
+      control_note: "",
+      next_control_mode: "none",
+      next_control_custom_value: "",
+      next_control_custom_unit: "days",
+    });
+    setCloseError("");
+  }
+
+  function openVeterinaryCloseModal() {
+    resetCloseForm();
+    setShowCloseModal(true);
+  }
+
+  function closeVeterinaryCloseModal() {
+    if (closeSaving) return;
+    setShowCloseModal(false);
+    resetCloseForm();
+  }
+
+  function getResolvedControlType() {
+    if (closeForm.control_type === "Otro") {
+      return closeForm.custom_control_type.trim();
+    }
+
+    return closeForm.control_type.trim();
   }
 
   function handleSelectAppointment(appt: Appointment) {
@@ -1208,6 +1275,7 @@ function getWeekdayLabel(date: Date) {
     }
   }
 
+
   async function handleUpdateStatus(
     appointmentId: string,
     newStatus: "completed" | "no_show"
@@ -1246,6 +1314,75 @@ function getWeekdayLabel(date: Date) {
       );
     } finally {
       setStatusSaving(false);
+    }
+  }
+
+  async function handleCloseVeterinaryAppointment() {
+    try {
+      if (!selectedAppointment) return;
+
+      const resolvedControlType = getResolvedControlType();
+
+      if (!resolvedControlType) {
+        setCloseError("Debes indicar el control realizado.");
+        return;
+      }
+
+      if (
+        closeForm.next_control_mode === "custom" &&
+        (!closeForm.next_control_custom_value ||
+          Number(closeForm.next_control_custom_value) < 1)
+      ) {
+        setCloseError("Debes indicar una cantidad válida para el próximo control.");
+        return;
+      }
+
+      setCloseSaving(true);
+      setCloseError("");
+      setError("");
+
+      const res = await fetch(
+        `${BACKEND_URL}/appointments/${selectedAppointment.id}/close`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            control_type: resolvedControlType,
+            control_note: closeForm.control_note.trim(),
+            next_control_mode: closeForm.next_control_mode,
+            next_control_custom_value:
+              closeForm.next_control_mode === "custom"
+                ? Number(closeForm.next_control_custom_value)
+                : null,
+            next_control_custom_unit:
+              closeForm.next_control_mode === "custom"
+                ? closeForm.next_control_custom_unit
+                : null,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cerrar la atención");
+      }
+
+      if (data?.appointment) {
+        applyAppointmentUpdate(data.appointment);
+      }
+
+      setShowCloseModal(false);
+      resetCloseForm();
+      await loadAppointments({ preserveSelected: true });
+    } catch (err: unknown) {
+      setCloseError(
+        err instanceof Error ? err.message : "Error cerrando atención"
+      );
+    } finally {
+      setCloseSaving(false);
     }
   }
 
@@ -1365,9 +1502,12 @@ function getWeekdayLabel(date: Date) {
           throw new Error("Respuesta inválida del backend");
         }
 
-        const currentTenantId = businessData.business.id;
+                const currentTenantId = businessData.business.id;
         setTenantId(currentTenantId);
         setBusinessName(businessData.business.name || slug || "");
+        setBusinessCategory(
+          String(businessData.business.business_category || "").trim().toLowerCase()
+        );
 
         await Promise.all([
           loadBranches(currentTenantId),
@@ -2528,21 +2668,32 @@ function getWeekdayLabel(date: Date) {
                       <Notice
                         tone="danger"
                         title="Esta cita ya terminó."
-                        description="Debes cerrar su estado para mantener la agenda al día."
+                        description={
+                          isVeterinaria
+                            ? "Debes cerrar su estado. En veterinaria, al marcar atendida tendrás que registrar el control realizado."
+                            : "Debes cerrar su estado para mantener la agenda al día."
+                        }
                       >
                         <div className="grid grid-cols-1 gap-2">
-                          <button
+                                                    <button
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
+                              if (isVeterinaria) {
+                                openVeterinaryCloseModal();
+                                return;
+                              }
+
                               handleUpdateStatus(
                                 selectedAppointment.id,
                                 "completed"
-                              )
-                            }
-                            disabled={statusSaving}
+                              );
+                            }}
+                            disabled={statusSaving || closeSaving}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            {statusSaving ? "Guardando..." : "Marcar atendida"}
+                            {statusSaving || closeSaving
+                              ? "Guardando..."
+                              : "Marcar atendida"}
                           </button>
 
                           <button
@@ -2831,6 +2982,281 @@ function getWeekdayLabel(date: Date) {
           </div>
         </div>
       </div>
+
+
+      {showCloseModal && selectedAppointment ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
+          <div
+            className="w-full max-w-xl rounded-3xl border p-5 shadow-2xl"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <div className="mb-4">
+              <h3
+                className="text-lg font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Cerrar atención veterinaria
+              </h3>
+              <p
+                className="mt-1 text-sm leading-6"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Registra el control realizado para marcar esta cita como atendida.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div
+                className="rounded-2xl border p-3"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                }}
+              >
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  {selectedAppointment.customer_name}
+                </p>
+
+                {selectedAppointment.customer_data?.pet_name ? (
+                  <p
+                    className="mt-1 text-sm font-medium"
+                    style={{ color: "#10b981" }}
+                  >
+                    🐶 {selectedAppointment.customer_data.pet_name}
+                    {selectedAppointment.customer_data.pet_species
+                      ? ` (${selectedAppointment.customer_data.pet_species})`
+                      : ""}
+                  </p>
+                ) : null}
+
+                <p
+                  className="mt-1 text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {selectedAppointment.service_name_snapshot || "Reserva"} ·{" "}
+                  {formatHour(selectedAppointment.start_at)}
+                </p>
+              </div>
+
+              <div>
+                <label
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Control realizado *
+                </label>
+
+                <select
+                  value={closeForm.control_type}
+                  onChange={(e) =>
+                    setCloseForm((prev) => ({
+                      ...prev,
+                      control_type: e.target.value,
+                    }))
+                  }
+                  className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option>Control general</option>
+                  <option>Vacuna</option>
+                  <option>Desparasitación</option>
+                  <option>Baño</option>
+                  <option>Corte de pelo</option>
+                  <option>Otro</option>
+                </select>
+              </div>
+
+              {closeForm.control_type === "Otro" ? (
+                <div>
+                  <label
+                    className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Especificar control *
+                  </label>
+
+                  <input
+                    type="text"
+                    value={closeForm.custom_control_type}
+                    onChange={(e) =>
+                      setCloseForm((prev) => ({
+                        ...prev,
+                        custom_control_type: e.target.value,
+                      }))
+                    }
+                    placeholder="Ej: Curación, control post operatorio..."
+                    className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+              ) : null}
+
+              <div>
+                <label
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Nota breve
+                </label>
+
+                <textarea
+                  value={closeForm.control_note}
+                  onChange={(e) =>
+                    setCloseForm((prev) => ({
+                      ...prev,
+                      control_note: e.target.value,
+                    }))
+                  }
+                  rows={3}
+                  placeholder="Opcional"
+                  className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                }}
+              >
+                <div className="mb-3">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Próximo control
+                  </p>
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    No es obligatorio, pero siempre debes revisarlo antes de cerrar.
+                  </p>
+                </div>
+
+                <select
+                  value={closeForm.next_control_mode}
+                  onChange={(e) =>
+                    setCloseForm((prev) => ({
+                      ...prev,
+                      next_control_mode: e.target.value as VeterinaryNextControlMode,
+                    }))
+                  }
+                  className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option value="none">Sin próximo control</option>
+                  <option value="7_days">7 días</option>
+                  <option value="15_days">15 días</option>
+                  <option value="30_days">30 días</option>
+                  <option value="2_months">2 meses</option>
+                  <option value="3_months">3 meses</option>
+                  <option value="6_months">6 meses</option>
+                  <option value="1_year">1 año</option>
+                  <option value="custom">Personalizado</option>
+                </select>
+
+                {closeForm.next_control_mode === "custom" ? (
+                  <div className="mt-3 grid grid-cols-[1fr_140px] gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={closeForm.next_control_custom_value}
+                      onChange={(e) =>
+                        setCloseForm((prev) => ({
+                          ...prev,
+                          next_control_custom_value: e.target.value,
+                        }))
+                      }
+                      placeholder="Cantidad"
+                      className="h-11 rounded-xl border px-3 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+
+                    <select
+                      value={closeForm.next_control_custom_unit}
+                      onChange={(e) =>
+                        setCloseForm((prev) => ({
+                          ...prev,
+                          next_control_custom_unit: e.target.value as
+                            | "days"
+                            | "months"
+                            | "years",
+                        }))
+                      }
+                      className="h-11 rounded-xl border px-3 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <option value="days">Días</option>
+                      <option value="months">Meses</option>
+                      <option value="years">Años</option>
+                    </select>
+                  </div>
+                ) : null}
+              </div>
+
+              {closeError ? <Notice tone="danger" title={closeError} /> : null}
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeVeterinaryCloseModal}
+                  disabled={closeSaving}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCloseVeterinaryAppointment}
+                  disabled={closeSaving}
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {closeSaving ? "Guardando..." : "Guardar y cerrar atención"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {hoverCard ? (
   <div
