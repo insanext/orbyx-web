@@ -350,6 +350,23 @@ export default function AgendaPage() {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
+function formatDayMonthLabel(date: Date) {
+  const text = date.toLocaleDateString("es-CL", {
+    day: "numeric",
+    month: "long",
+  });
+
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function getWeekdayLabel(date: Date) {
+  const text = date.toLocaleDateString("es-CL", {
+    weekday: "long",
+  });
+
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
   function formatRangeTitle(start: Date, end: Date) {
     const startText = start.toLocaleDateString("es-CL", {
       day: "numeric",
@@ -1874,17 +1891,25 @@ export default function AgendaPage() {
   }}
 >
                         <div className="flex items-center justify-between gap-2">
-                          <div
-  className="mt-1 text-[11px] font-medium"
-  style={{
-    color: isToday ? "#2563eb" : "var(--text-muted)",
-  }}
->
-  {day.toLocaleDateString("es-CL", {
-    day: "2-digit",
-    month: "2-digit",
-  })}
-</div>
+  <div className="flex flex-col">
+    <span
+      className="text-xs font-semibold"
+      style={{
+        color: isToday ? "#60a5fa" : "var(--text-main)",
+      }}
+    >
+      {getWeekdayLabel(day)}
+    </span>
+
+    <span
+      className="text-[11px]"
+      style={{
+        color: isToday ? "#38bdf8" : "var(--text-muted)",
+      }}
+    >
+      {formatDayMonthLabel(day)}
+    </span>
+  </div>
 
                           <div className="flex items-center gap-1.5">
                             {dayCanceledCount > 0 ? (
@@ -1913,15 +1938,7 @@ export default function AgendaPage() {
                           </div>
                         </div>
 
-                        <div
-                          className="mt-1 text-[11px]"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          {day.toLocaleDateString("es-CL", {
-                            day: "2-digit",
-                            month: "2-digit",
-                          })}
-                        </div>
+       
                       </div>
 
                       <div className="space-y-1.5">
