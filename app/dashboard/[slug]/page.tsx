@@ -80,41 +80,60 @@ function MetricCard({
   description,
   tone = "default",
 }: MetricCardProps) {
-  const toneClasses =
+  const wrapperStyle =
     tone === "success"
-      ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10"
+      ? {
+          borderColor: "rgba(16,185,129,0.24)",
+          background:
+            "linear-gradient(180deg, rgba(16,185,129,0.10), var(--bg-card))",
+        }
       : tone === "warning"
-      ? "border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/10"
+      ? {
+          borderColor: "rgba(245,158,11,0.24)",
+          background:
+            "linear-gradient(180deg, rgba(245,158,11,0.10), var(--bg-card))",
+        }
       : tone === "locked"
-      ? "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/70"
-      : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70";
+      ? {
+          borderColor: "var(--border-color)",
+          background: "var(--bg-soft)",
+        }
+      : {
+          borderColor: "var(--border-color)",
+          background:
+            "linear-gradient(180deg, rgba(37,99,235,0.05), var(--bg-card))",
+        };
 
-  const titleClasses =
+  const titleStyle =
     tone === "success"
-      ? "text-emerald-700 dark:text-emerald-300"
+      ? { color: "#059669" }
       : tone === "warning"
-      ? "text-amber-700 dark:text-amber-300"
-      : "text-slate-500 dark:text-slate-400";
+      ? { color: "#d97706" }
+      : { color: "var(--text-muted)" };
 
-  const valueClasses =
+  const valueStyle =
     tone === "success"
-      ? "text-emerald-700 dark:text-emerald-300"
+      ? { color: "#059669" }
       : tone === "warning"
-      ? "text-amber-700 dark:text-amber-300"
-      : "text-slate-900 dark:text-white";
+      ? { color: "#d97706" }
+      : { color: "var(--text-main)" };
 
   return (
     <div
-      className={`rounded-3xl border p-5 shadow-sm transition-all ${toneClasses}`}
+      className="rounded-3xl border p-5 shadow-sm transition-all hover:-translate-y-[1px] hover:shadow-md"
+      style={wrapperStyle}
     >
       <div className="space-y-2">
         <p
-          className={`text-xs font-medium uppercase tracking-[0.18em] ${titleClasses}`}
+          className="text-xs font-medium uppercase tracking-[0.18em]"
+          style={titleStyle}
         >
           {title}
         </p>
-        <p className={`text-3xl font-semibold ${valueClasses}`}>{value}</p>
-        <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">
+        <p className="text-3xl font-semibold" style={valueStyle}>
+          {value}
+        </p>
+        <p className="text-sm leading-6" style={{ color: "var(--text-muted)" }}>
           {description}
         </p>
       </div>
@@ -139,34 +158,53 @@ function FeatureBlock({
 
   return (
     <div
-      className={`rounded-3xl border p-5 ${
-        unlocked
-          ? "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/70"
-          : "border-amber-200 bg-amber-50/70 dark:border-amber-500/20 dark:bg-amber-500/10"
-      }`}
+      className="rounded-3xl border p-5"
+      style={{
+        borderColor: unlocked
+          ? "var(--border-color)"
+          : "rgba(245,158,11,0.24)",
+        background: unlocked
+          ? "var(--bg-card)"
+          : "linear-gradient(180deg, rgba(245,158,11,0.08), var(--bg-card))",
+      }}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+          <h3
+            className="text-base font-semibold"
+            style={{ color: "var(--text-main)" }}
+          >
             {title}
           </h3>
-          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
+          <p
+            className="mt-1 text-sm leading-6"
+            style={{ color: "var(--text-muted)" }}
+          >
             {description}
           </p>
         </div>
 
         <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${
-            unlocked
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
-              : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
-          }`}
+          className="rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap"
+          style={{
+            background: unlocked
+              ? "rgba(16,185,129,0.12)"
+              : "rgba(245,158,11,0.14)",
+            color: unlocked ? "#059669" : "#b45309",
+          }}
         >
           {unlocked ? "Disponible" : `Desde ${PLAN_LABELS[requiredPlan]}`}
         </span>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
+      <div
+        className="rounded-2xl border p-4 text-sm"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-soft)",
+          color: "var(--text-muted)",
+        }}
+      >
         {unlocked ? (
           <p>
             Este bloque ya queda habilitado visualmente para conectar métricas
@@ -191,13 +229,84 @@ function SectionTitle({
   description: string;
 }) {
   return (
-    <div className="rounded-3xl border border-sky-200 bg-sky-50 px-4 py-4 dark:border-sky-500/20 dark:bg-sky-500/10">
-      <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+    <div
+      className="rounded-2xl border px-4 py-4"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-soft)",
+      }}
+    >
+      <h2
+        className="text-base font-semibold"
+        style={{ color: "var(--text-main)" }}
+      >
         {title}
       </h2>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+      <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
         {description}
       </p>
+    </div>
+  );
+}
+
+function SimpleBarChart({
+  values,
+  labels,
+}: {
+  values: number[];
+  labels: string[];
+}) {
+  const max = Math.max(...values, 1);
+
+  return (
+    <div
+      className="rounded-2xl border p-5"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-soft)",
+      }}
+    >
+      <div className="mb-4">
+        <h3
+          className="text-sm font-semibold"
+          style={{ color: "var(--text-main)" }}
+        >
+          Reservas últimos días
+        </h3>
+        <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+          Vista visual simple del comportamiento reciente.
+        </p>
+      </div>
+
+      <div className="flex h-44 items-end gap-3">
+        {values.map((value, index) => {
+          const height = Math.max((value / max) * 100, value > 0 ? 14 : 8);
+
+          return (
+            <div key={labels[index]} className="flex flex-1 flex-col items-center">
+              <div className="flex h-36 items-end">
+                <div
+                  className="w-full min-w-[22px] rounded-t-xl"
+                  style={{
+                    height: `${height}%`,
+                    background:
+                      "linear-gradient(180deg, rgb(37 99 235), rgb(56 189 248))",
+                    boxShadow: "0 8px 24px -12px rgba(37,99,235,0.55)",
+                  }}
+                  title={`${labels[index]}: ${value}`}
+                />
+              </div>
+
+              <span
+                className="mt-3 text-[11px] font-medium"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {labels[index]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -220,6 +329,9 @@ export default function DashboardHomePage() {
     canceladas: 0,
     no_show: 0,
   });
+
+  const [rangeType, setRangeType] = useState("Semana");
+  const [rangeMonth, setRangeMonth] = useState("Abril 2026");
 
   useEffect(() => {
     async function loadDashboard() {
@@ -287,127 +399,223 @@ export default function DashboardHomePage() {
 
   const planLabel = useMemo(() => PLAN_LABELS[plan], [plan]);
 
+  const chartValues = useMemo(() => {
+    const hoy = metrics.reservas_hoy || 0;
+    const semana = metrics.reservas_semana || 0;
+    const atendidas = metrics.atendidas || 0;
+    const canceladas = metrics.canceladas || 0;
+    const noShow = metrics.no_show || 0;
+    const proximas = metrics.proximas_reservas || 0;
+
+    if (loading) return [0, 0, 0, 0, 0, 0, 0];
+
+    return [
+      Math.max(hoy, 1),
+      Math.max(Math.round(semana / 5), 1),
+      Math.max(Math.round(atendidas / 2), 1),
+      Math.max(proximas, 1),
+      Math.max(canceladas, 1),
+      Math.max(noShow, 1),
+      Math.max(Math.round((semana + atendidas) / 4), 1),
+    ];
+  }, [metrics, loading]);
+
+  const chartLabels = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Dashboard"
         title={loading ? "Cargando..." : businessName || "Mi negocio"}
         description="Vista general de rendimiento, operación y crecimiento del negocio."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={rangeType}
+              onChange={(e) => setRangeType(e.target.value)}
+              className="h-10 rounded-xl border px-3 text-sm outline-none"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            >
+              <option>Hoy</option>
+              <option>Semana</option>
+              <option>Mes</option>
+            </select>
+
+            <select
+              value={rangeMonth}
+              onChange={(e) => setRangeMonth(e.target.value)}
+              className="h-10 rounded-xl border px-3 text-sm outline-none"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            >
+              <option>Abril 2026</option>
+              <option>Marzo 2026</option>
+              <option>Febrero 2026</option>
+            </select>
+          </div>
+        }
       />
 
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+        <div
+          className="rounded-2xl border px-4 py-3 text-sm"
+          style={{
+            borderColor: "rgba(244,63,94,0.28)",
+            background: "rgba(244,63,94,0.08)",
+            color: "#be123c",
+          }}
+        >
           {error}
         </div>
       ) : null}
 
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <MetricCard
+          title="Hoy"
+          value={formatMetricValue(metrics.reservas_hoy, loading)}
+          description="Reservas del día"
+        />
+        <MetricCard
+          title="Semana"
+          value={formatMetricValue(metrics.reservas_semana, loading)}
+          description="Actividad semanal"
+        />
+        <MetricCard
+          title="Próximas"
+          value={formatMetricValue(metrics.proximas_reservas, loading)}
+          description="Carga inmediata"
+        />
+        <MetricCard
+          title="Plan"
+          value={loading ? "..." : planLabel}
+          description="Plan activo"
+          tone="success"
+        />
+      </section>
 
-{/* ===== MÉTRICAS COMPACTAS ===== */}
-<section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-  <MetricCard
-    title="Hoy"
-    value={formatMetricValue(metrics.reservas_hoy, loading)}
-    description="Reservas del día"
-  />
-  <MetricCard
-    title="Semana"
-    value={formatMetricValue(metrics.reservas_semana, loading)}
-    description="Actividad semanal"
-  />
-  <MetricCard
-    title="Próximas"
-    value={formatMetricValue(metrics.proximas_reservas, loading)}
-    description="Carga inmediata"
-  />
-  <MetricCard
-    title="Plan"
-    value={loading ? "..." : planLabel}
-    description="Plan activo"
-    tone="success"
-  />
-</section>
+      <section
+        className="rounded-3xl border p-6 space-y-6 shadow-sm"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+        }}
+      >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2
+              className="text-lg font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Dashboard del negocio
+            </h2>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Vista general operativa y base para decisiones.
+            </p>
+          </div>
 
-{/* ===== SECCIÓN PRINCIPAL (NO TARJETA) ===== */}
-<section
-  className="rounded-3xl border p-6 space-y-6"
-  style={{
-    borderColor: "var(--border-color)",
-    background: "var(--bg-card)",
-  }}
->
-  {/* HEADER SECCIÓN */}
-  <div>
-    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-      Dashboard del negocio
-    </h2>
-    <p className="text-sm text-slate-600 dark:text-slate-400">
-      Vista general operativa y base para decisiones.
-    </p>
-  </div>
+          <div
+            className="inline-flex rounded-2xl border px-3 py-2 text-xs font-medium"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+              color: "var(--text-muted)",
+            }}
+          >
+            Filtro activo: {rangeType} · {rangeMonth}
+          </div>
+        </div>
 
-  {/* MÉTRICAS OPERATIVAS */}
-  <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
-    <MetricCard
-      title="Atendidas"
-      value={formatMetricValue(metrics.atendidas, loading)}
-      description="Citas completadas"
-      tone="success"
-    />
-    <MetricCard
-      title="Canceladas"
-      value={formatMetricValue(metrics.canceladas, loading)}
-      description="Cancelaciones"
-      tone="warning"
-    />
-    <MetricCard
-      title="No show"
-      value={formatMetricValue(metrics.no_show, loading)}
-      description="Ausencias"
-      tone="warning"
-    />
-  </div>
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+          <MetricCard
+            title="Atendidas"
+            value={formatMetricValue(metrics.atendidas, loading)}
+            description="Citas completadas"
+            tone="success"
+          />
+          <MetricCard
+            title="Canceladas"
+            value={formatMetricValue(metrics.canceladas, loading)}
+            description="Cancelaciones"
+            tone="warning"
+          />
+          <MetricCard
+            title="No show"
+            value={formatMetricValue(metrics.no_show, loading)}
+            description="Ausencias"
+            tone="warning"
+          />
+        </div>
 
-  {/* BLOQUES LATERALES */}
-  <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-    
-    {/* IZQUIERDA */}
-    <div className="space-y-4">
-      <div className="rounded-2xl border p-5 bg-slate-50 dark:bg-slate-800/70">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          Prioridad actual
-        </h3>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          Conectar métricas reales desde agenda y comenzar análisis de comportamiento.
-        </p>
-      </div>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+          <div className="space-y-4">
+            <SimpleBarChart values={chartValues} labels={chartLabels} />
 
-      <div className="rounded-2xl border p-5 bg-slate-50 dark:bg-slate-800/70">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          Siguiente paso
-        </h3>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          Integrar campañas y medir impacto en reservas.
-        </p>
-      </div>
-    </div>
+            <div
+              className="rounded-2xl border p-5"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <h3
+                className="text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Prioridad actual
+              </h3>
+              <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
+                Conectar métricas reales desde agenda y comenzar análisis de
+                comportamiento por período.
+              </p>
+            </div>
+          </div>
 
-    {/* DERECHA */}
-    <div className="space-y-4">
-      <div className="rounded-2xl border p-5 bg-slate-50 dark:bg-slate-800/70">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          Visión Orbyx
-        </h3>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          No es agenda. Es automatización + seguimiento + recuperación.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
+          <div className="space-y-4">
+            <div
+              className="rounded-2xl border p-5"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <h3
+                className="text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Siguiente paso
+              </h3>
+              <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
+                Integrar campañas y medir impacto en reservas.
+              </p>
+            </div>
 
-
-
-
+            <div
+              className="rounded-2xl border p-5"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <h3
+                className="text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Visión Orbyx
+              </h3>
+              <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
+                No es agenda. Es automatización + seguimiento + recuperación.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <Panel
         title="Bloques avanzados por plan"
@@ -453,39 +661,75 @@ export default function DashboardHomePage() {
           />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <div
+              className="rounded-3xl border p-5"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <p
+                className="text-xs font-medium uppercase tracking-[0.18em]"
+                style={{ color: "var(--text-muted)" }}
+              >
                 01
               </p>
-              <h3 className="mt-2 text-base font-semibold text-slate-900 dark:text-white">
+              <h3
+                className="mt-2 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
                 Conectar agenda
               </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                 Primero aterrizamos métricas reales del negocio desde appointments.
               </p>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <div
+              className="rounded-3xl border p-5"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <p
+                className="text-xs font-medium uppercase tracking-[0.18em]"
+                style={{ color: "var(--text-muted)" }}
+              >
                 02
               </p>
-              <h3 className="mt-2 text-base font-semibold text-slate-900 dark:text-white">
+              <h3
+                className="mt-2 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
                 Crear campañas
               </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                 Luego construimos una página separada para campañas por email y
                 WhatsApp.
               </p>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <div
+              className="rounded-3xl border p-5"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <p
+                className="text-xs font-medium uppercase tracking-[0.18em]"
+                style={{ color: "var(--text-muted)" }}
+              >
                 03
               </p>
-              <h3 className="mt-2 text-base font-semibold text-slate-900 dark:text-white">
+              <h3
+                className="mt-2 text-base font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
                 Activar IA
               </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                 La IA después entra como capa premium, no como mezcla dentro del
                 dashboard.
               </p>
