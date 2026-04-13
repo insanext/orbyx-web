@@ -1115,94 +1115,107 @@ async function removeSpecialDate(index: number) {
 
       <section className="grid gap-6 xl:grid-cols-2">
         <Panel
-          title="Campos de reserva"
-          description="Define qué información solicitar al cliente al reservar."
-          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
+  title="Campos de reserva"
+  description="Define qué información solicitar al cliente al reservar."
+  className="flex h-full flex-col bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
+>
+          <div className="flex h-full flex-col">
+
+
+
+
+
+<div className="flex-1 space-y-4">
+  {bookingFields.length === 0 ? (
+    <div
+      className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-soft)",
+        color: "var(--text-muted)",
+      }}
+    >
+      No hay campos configurables cargados aún.
+    </div>
+  ) : (
+    bookingFields.map((field, index) => (
+      <div
+        key={field.key}
+        className="flex items-center justify-between rounded-2xl border p-4"
+        style={{
+          borderColor: "var(--border-color)",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+        }}
+      >
+        <div>
+          <p
+            className="text-sm font-semibold"
+            style={{ color: "var(--text-main)" }}
+          >
+            {field.label}
+          </p>
+          <p
+            className="text-xs"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {field.enabled
+              ? field.required
+                ? "Obligatorio"
+                : "Opcional"
+              : "Desactivado"}
+          </p>
+        </div>
+
+        <div
+          className="flex items-center gap-4 text-sm"
+          style={{ color: "var(--text-main)" }}
         >
-          <div className="space-y-4">
-            {bookingFields.length === 0 ? (
-              <div
-                className="rounded-2xl border border-dashed px-4 py-6 text-sm"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-muted)",
-                }}
-              >
-                No hay campos configurables cargados aún.
-              </div>
-            ) : (
-              bookingFields.map((field, index) => (
-                <div
-                  key={field.key}
-                  className="flex items-center justify-between rounded-2xl border p-4"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background:
-                      "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
-                  }}
-                >
-                  <div>
-                    <p
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--text-main)" }}
-                    >
-                      {field.label}
-                    </p>
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {field.enabled
-                        ? field.required
-                          ? "Obligatorio"
-                          : "Opcional"
-                        : "Desactivado"}
-                    </p>
-                  </div>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={field.enabled}
+              onChange={(e) =>
+                updateBookingField(index, "enabled", e.target.checked)
+              }
+            />
+            Activo
+          </label>
 
-                  <div
-                    className="flex items-center gap-4 text-sm"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={field.enabled}
-                        onChange={(e) =>
-                          updateBookingField(index, "enabled", e.target.checked)
-                        }
-                      />
-                      Activo
-                    </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={field.required}
+              disabled={!field.enabled}
+              onChange={(e) =>
+                updateBookingField(index, "required", e.target.checked)
+              }
+            />
+            Obligatorio
+          </label>
+        </div>
+      </div>
+    ))
+  )}
+</div>
 
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={field.required}
-                        disabled={!field.enabled}
-                        onChange={(e) =>
-                          updateBookingField(index, "required", e.target.checked)
-                        }
-                      />
-                      Obligatorio
-                    </label>
-                  </div>
-                </div>
-              ))
-            )}
+<div className="pt-4">
+  <button
+    onClick={saveBookingFields}
+    disabled={savingFields}
+    className={primaryButtonClass}
+    style={{
+      background:
+        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+    }}
+  >
+    {savingFields ? "Guardando..." : "Guardar campos"}
+  </button>
+</div>
 
-            <button
-              onClick={saveBookingFields}
-              disabled={savingFields}
-              className={primaryButtonClass}
-              style={{
-                background:
-                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-              }}
-            >
-              {savingFields ? "Guardando..." : "Guardar campos"}
-            </button>
+
+
+
           </div>
         </Panel>
 
