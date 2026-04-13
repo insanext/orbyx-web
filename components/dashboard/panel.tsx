@@ -23,11 +23,9 @@ export function Panel({
     >
       {title || description ? (
         <div
-          className="mb-5 rounded-2xl border px-4 py-4"
+          className="mb-5 border-b pb-4"
           style={{
-            borderColor: "rgba(59,130,246,0.22)",
-            background:
-              "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.08))",
+            borderColor: "var(--border-color)",
           }}
         >
           {title ? (
