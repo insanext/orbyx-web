@@ -613,17 +613,32 @@ export default function AgendaPage() {
   }
 
   function handleAppointmentMouseEnter(
-    event: React.MouseEvent<HTMLButtonElement>,
-    appt: Appointment
-  ) {
-    const rect = event.currentTarget.getBoundingClientRect();
+  event: React.MouseEvent<HTMLButtonElement>,
+  appt: Appointment
+) {
+  const rect = event.currentTarget.getBoundingClientRect();
 
-    setHoverCard({
-      appointment: appt,
-      x: rect.right + 12,
-      y: rect.top + window.scrollY,
-    });
-  }
+  const hoverCardWidth = 290;
+  const hoverCardHeight = 360;
+  const gap = 12;
+  const viewportPadding = 16;
+
+  const nextX = Math.min(
+    rect.right + gap,
+    window.innerWidth - hoverCardWidth - viewportPadding
+  );
+
+  const nextY = Math.min(
+    Math.max(viewportPadding, rect.top),
+    window.innerHeight - hoverCardHeight - viewportPadding
+  );
+
+  setHoverCard({
+    appointment: appt,
+    x: nextX,
+    y: nextY,
+  });
+}
 
   function handleAppointmentMouseLeave() {
     setHoverCard(null);
@@ -1837,17 +1852,23 @@ export default function AgendaPage() {
                       }}
                     >
                       <div
-                        className="mb-2.5 pb-2.5"
-                        style={{
-                          borderBottom: `1px solid ${
-                            dayPendingCount > 0
-                              ? "rgba(244,63,94,0.24)"
-                              : isToday
-                              ? "rgba(56,189,248,0.24)"
-                              : "var(--border-color)"
-                          }`,
-                        }}
-                      >
+  className="sticky top-2 z-20 -mx-2.5 mb-2.5 px-2.5 pb-2.5 pt-2"
+  style={{
+    borderBottom: `1px solid ${
+      dayPendingCount > 0
+        ? "rgba(244,63,94,0.24)"
+        : isToday
+        ? "rgba(56,189,248,0.24)"
+        : "var(--border-color)"
+    }`,
+    background: dayPendingCount > 0
+      ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
+      : isToday
+      ? "linear-gradient(180deg, rgba(56,189,248,0.08), var(--bg-card))"
+      : "var(--bg-soft)",
+    backdropFilter: "blur(8px)",
+  }}
+>
                         <div className="flex items-center justify-between gap-2">
                           <div
                             className="text-sm font-semibold capitalize"
@@ -2782,15 +2803,15 @@ export default function AgendaPage() {
       </div>
 
       {hoverCard ? (
-        <div
-          className="pointer-events-none fixed z-[80] hidden w-[290px] rounded-2xl border p-4 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35)] backdrop-blur xl:block"
-          style={{
-            borderColor: "var(--border-color)",
-            background: "rgba(255,255,255,0.95)",
-            left: Math.min(hoverCard.x, window.innerWidth - 320),
-            top: Math.max(16, hoverCard.y - window.scrollY),
-          }}
-        >
+  <div
+    className="pointer-events-none fixed z-[80] hidden w-[290px] rounded-2xl border p-4 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35)] backdrop-blur xl:block"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "rgba(255,255,255,0.95)",
+      left: hoverCard.x,
+      top: hoverCard.y,
+    }}
+  >
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
