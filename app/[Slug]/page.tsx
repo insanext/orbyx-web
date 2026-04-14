@@ -35,6 +35,14 @@ type SlotItem = {
   staff_id?: string | null;
 };
 
+type PetItem = {
+  id: string;
+  customer_id?: string | null;
+  name?: string | null;
+  species_base?: string | null;
+  species_custom?: string | null;
+};
+
 type BookingField = {
   key: string;
   label: string;
@@ -79,6 +87,9 @@ type BookingSuccessData = {
   startIso: string;
   endIso: string;
 };
+
+const BACKEND_URL = "https://orbyx-backend.onrender.com";
+
 
 function formatDate(date: Date) {
   const local = new Date(date);
@@ -151,6 +162,14 @@ function dedupeSlots(slots: SlotItem[]) {
   return Array.from(map.values()).sort((a, b) =>
     a.slot_start.localeCompare(b.slot_start)
   );
+}
+
+function normalizeEmail(value?: string | null) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizePhoneDigits(value?: string | null) {
+  return String(value || "").replace(/\D/g, "");
 }
 
 function normalizeWhatsappNumber(value?: string | null) {
@@ -261,8 +280,11 @@ export default function Page() {
     pet_species: "",
   });
 
-  const [pets, setPets] = useState<any[]>([]);
+  const [pets, setPets] = useState<PetItem[]>([]);
   const [selectedPetId, setSelectedPetId] = useState("");
+  const [petMode, setPetMode] = useState<"new" | "existing">("new");
+  const [loadingPets, setLoadingPets] = useState(false);
+  const [existingCustomerFound, setExistingCustomerFound] = useState(false);
 
   const [loadingPage, setLoadingPage] = useState(true);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -293,6 +315,33 @@ export default function Page() {
     }));
   }
 
+  function resetPetSelection() {
+    setSelectedPetId("");
+    setPetMode("new");
+    setPets([]);
+    setExistingCustomerFound(false);
+
+    setCustomerData((prev) => ({
+      ...prev,
+      pet_name: "",
+      pet_species: "",
+    }));
+  }
+
+  function applyPetToForm(pet: PetItem | null) {
+    if (!pet) return;
+
+    const resolvedSpecies =
+      String(pet.species_custom || "").trim() ||
+      String(pet.species_base || "").trim();
+
+    setCustomerData((prev) => ({
+      ...prev,
+      pet_name: String(pet.name || "").trim(),
+      pet_species: resolvedSpecies,
+    }));
+  }
+
   function resetAfterBranchChange() {
     setSelectedService(null);
     setStaffOptions([]);
@@ -317,15 +366,19 @@ export default function Page() {
     if (!customerData.phone?.trim()) return "Debes ingresar teléfono.";
     if (!customerData.email?.trim()) return "Debes ingresar email.";
 
-    if (isVeterinaria) {
-      if (!String(customerData.pet_name || "").trim()) {
-        return "Debes ingresar nombre de la mascota.";
-      }
+      if (isVeterinaria) {
+        if (petMode === "existing" && pets.length > 0 && !selectedPetId) {
+          return "Debes seleccionar una mascota.";
+        }
 
-      if (!String(customerData.pet_species || "").trim()) {
-        return "Debes ingresar especie de la mascota.";
+        if (!String(customerData.pet_name || "").trim()) {
+          return "Debes ingresar nombre de la mascota.";
+        }
+
+        if (!String(customerData.pet_species || "").trim()) {
+          return "Debes ingresar especie de la mascota.";
+        }
       }
-    }
 
     for (const field of visibleBookingFields) {
       if (field.required && !String(customerData[field.key] || "").trim()) {
@@ -396,28 +449,88 @@ export default function Page() {
   }, [slug]);
 
   useEffect(() => {
-    const phone = customerData.phone?.trim();
+    const normalizedPhone = normalizePhoneDigits(customerData.phone);
+    const normalizedEmail = normalizeEmail(customerData.email);
 
-    if (!phone || phone.length < 6) {
+    if ((!normalizedPhone || normalizedPhone.length < 6) && !normalizedEmail) {
       setPets([]);
+      setSelectedPetId("");
+      setPetMode("new");
+      setExistingCustomerFound(false);
+      setLoadingPets(false);
       return;
     }
 
     const timeout = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `https://agenda-oauth.onrender.com/pets/${slug}?phone=${phone}`
-        );
+        setLoadingPets(true);
+
+        const query = new URLSearchParams();
+
+        if (normalizedPhone && normalizedPhone.length >= 6) {
+          query.set("phone", normalizedPhone);
+        }
+
+        if (normalizedEmail) {
+          query.set("email", normalizedEmail);
+        }
+
+        const res = await fetch(`${BACKEND_URL}/pets/${slug}?${query.toString()}`, {
+          cache: "no-store",
+        });
+
         const data = await res.json();
-        setPets(data.pets || []);
+
+        const nextPets: PetItem[] = Array.isArray(data?.pets) ? data.pets : [];
+        const customerFound = Boolean(data?.customer_found);
+
+        setPets(nextPets);
+        setExistingCustomerFound(customerFound);
+
+        if (nextPets.length > 0) {
+          setPetMode((prev) => (prev === "existing" ? prev : "existing"));
+
+          setSelectedPetId((prevSelected) => {
+            const stillExists = nextPets.some((pet) => pet.id === prevSelected);
+
+            if (stillExists) {
+              const selectedPet =
+                nextPets.find((pet) => pet.id === prevSelected) || null;
+              applyPetToForm(selectedPet);
+              return prevSelected;
+            }
+
+            const firstPet = nextPets[0];
+            if (firstPet?.id) {
+              applyPetToForm(firstPet);
+              return firstPet.id;
+            }
+
+            return "";
+          });
+        } else {
+          setSelectedPetId("");
+          setPetMode("new");
+
+          setCustomerData((prev) => ({
+            ...prev,
+            pet_name: "",
+            pet_species: "",
+          }));
+        }
       } catch (error) {
         console.error("Error cargando mascotas:", error);
         setPets([]);
+        setSelectedPetId("");
+        setPetMode("new");
+        setExistingCustomerFound(false);
+      } finally {
+        setLoadingPets(false);
       }
     }, 400);
 
     return () => clearTimeout(timeout);
-  }, [customerData.phone, slug]);
+  }, [customerData.phone, customerData.email, slug]);
 
   useEffect(() => {
     if (!slug || !selectedBranchId) return;
@@ -622,13 +735,13 @@ export default function Page() {
         customer_name: customerData.name.trim(),
         customer_phone: customerData.phone.trim(),
         customer_email: customerData.email.trim(),
-        customer_data: {
+                customer_data: {
           ...visibleBookingFields.reduce<Record<string, string>>((acc, field) => {
             const value = String(customerData[field.key] || "").trim();
             if (value) acc[field.key] = value;
             return acc;
           }, {}),
-          pet_id: selectedPetId || "",
+          pet_id: petMode === "existing" ? selectedPetId || "" : "",
           pet_name: String(customerData.pet_name || "").trim(),
           pet_species: String(customerData.pet_species || "").trim(),
         },
@@ -686,6 +799,11 @@ export default function Page() {
         pet_species: "",
         ...clearedExtraFields,
       });
+
+      setSelectedPetId("");
+      setPets([]);
+      setPetMode("new");
+      setExistingCustomerFound(false);
 
       setSelectedPetId("");
       setPets([]);
@@ -1089,35 +1207,105 @@ export default function Page() {
                     className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
                   />
 
+                  
                   {isVeterinaria && (
                     <>
-                      {pets.length > 0 ? (
-                        <select
-                          value={selectedPetId}
-                          onChange={(e) => {
-                            const petId = e.target.value;
-                            setSelectedPetId(petId);
+                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                        <p className="text-sm font-semibold text-emerald-900">
+                          Datos de la mascota
+                        </p>
 
-                            const pet = pets.find((p) => p.id === petId);
-                            if (pet) {
-                              updateCustomerField("pet_name", pet.name || "");
-                              updateCustomerField(
-                                "pet_species",
-                                pet.species_base || ""
-                              );
-                            }
-                          }}
-                          className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-                        >
-                          <option value="">Seleccionar mascota</option>
+                        {loadingPets ? (
+                          <p className="mt-2 text-xs text-emerald-700">
+                            Buscando mascotas registradas...
+                          </p>
+                        ) : existingCustomerFound ? (
+                          <p className="mt-2 text-xs text-emerald-700">
+                            Detectamos un cliente existente con este email o teléfono.
+                          </p>
+                        ) : (
+                          <p className="mt-2 text-xs text-slate-500">
+                            Ingresa los datos de la mascota para continuar.
+                          </p>
+                        )}
 
-                          {pets.map((pet) => (
-                            <option key={pet.id} value={pet.id}>
-                              🐶 {pet.name} · {pet.species_base}
-                            </option>
-                          ))}
-                        </select>
-                      ) : null}
+                        {pets.length > 0 ? (
+                          <div className="mt-4 space-y-3">
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPetMode("existing");
+
+                                  const selected =
+                                    pets.find((pet) => pet.id === selectedPetId) ||
+                                    pets[0] ||
+                                    null;
+
+                                  if (selected?.id) {
+                                    setSelectedPetId(selected.id);
+                                    applyPetToForm(selected);
+                                  }
+                                }}
+                                className={`h-11 rounded-2xl border px-4 text-sm font-medium transition ${
+                                  petMode === "existing"
+                                    ? "border-emerald-600 bg-emerald-600 text-white"
+                                    : "border-slate-300 bg-white text-slate-700 hover:border-emerald-300"
+                                }`}
+                              >
+                                Usar mascota existente
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPetMode("new");
+                                  setSelectedPetId("");
+                                  updateCustomerField("pet_name", "");
+                                  updateCustomerField("pet_species", "");
+                                }}
+                                className={`h-11 rounded-2xl border px-4 text-sm font-medium transition ${
+                                  petMode === "new"
+                                    ? "border-slate-900 bg-slate-900 text-white"
+                                    : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                                }`}
+                              >
+                                Crear mascota nueva
+                              </button>
+                            </div>
+
+                            {petMode === "existing" ? (
+                              <select
+                                value={selectedPetId}
+                                onChange={(e) => {
+                                  const petId = e.target.value;
+                                  setSelectedPetId(petId);
+
+                                  const pet =
+                                    pets.find((item) => item.id === petId) || null;
+
+                                  applyPetToForm(pet);
+                                }}
+                                className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                              >
+                                <option value="">Seleccionar mascota</option>
+
+                                {pets.map((pet) => {
+                                  const species =
+                                    String(pet.species_custom || "").trim() ||
+                                    String(pet.species_base || "").trim();
+
+                                  return (
+                                    <option key={pet.id} value={pet.id}>
+                                      🐶 {pet.name} · {species}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
 
                       <input
                         placeholder="Nombre de la mascota"
@@ -1125,7 +1313,8 @@ export default function Page() {
                         onChange={(e) =>
                           updateCustomerField("pet_name", e.target.value)
                         }
-                        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                        disabled={petMode === "existing" && pets.length > 0}
+                        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400"
                       />
 
                       <input
@@ -1134,7 +1323,8 @@ export default function Page() {
                         onChange={(e) =>
                           updateCustomerField("pet_species", e.target.value)
                         }
-                        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                        disabled={petMode === "existing" && pets.length > 0}
+                        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400"
                       />
                     </>
                   )}
