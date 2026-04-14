@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader } from "../../../../../components/dashboard/page-header";
 import { Panel } from "../../../../../components/dashboard/panel";
@@ -47,6 +47,12 @@ type Appointment = {
   start_at: string;
 };
 
+type BusinessResponse = {
+  business?: {
+    business_category?: string | null;
+  };
+};
+
 /* ================= HELPERS ================= */
 
 function formatDate(value?: string | null) {
@@ -54,6 +60,104 @@ function formatDate(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Sin información";
   return date.toLocaleDateString("es-CL");
+}
+
+function formatDateLong(value?: string | null) {
+  if (!value) return "Sin información";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin información";
+
+  const text = date.toLocaleDateString("es-CL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function getPetSpeciesLabel(pet: Pet) {
+  if (pet.species_base === "otro") {
+    return pet.species_custom || "Otro";
+  }
+
+  return pet.species_base || "Sin tipo";
+}
+
+function SummaryCard({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+}) {
+  return (
+    <div
+      className="rounded-2xl border p-4"
+      style={{
+        borderColor: "var(--border-color)",
+        background:
+          "linear-gradient(180deg, rgba(37,99,235,0.05), var(--bg-card))",
+      }}
+    >
+      <p
+        className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {label}
+      </p>
+
+      <p
+        className="mt-2 text-2xl font-semibold"
+        style={{ color: "var(--text-main)" }}
+      >
+        {value}
+      </p>
+
+      {hint ? (
+        <p
+          className="mt-2 text-sm leading-6"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {hint}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function EmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div
+      className="rounded-2xl border border-dashed px-4 py-5"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-soft)",
+      }}
+    >
+      <p
+        className="text-sm font-semibold"
+        style={{ color: "var(--text-main)" }}
+      >
+        {title}
+      </p>
+      <p
+        className="mt-1 text-sm leading-6"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {description}
+      </p>
+    </div>
+  );
 }
 
 /* ================= PAGE ================= */
@@ -64,8 +168,10 @@ export default function CustomerDetailPage() {
   const customerId = params?.id as string;
 
   const [customer, setCustomer] = useState<Customer | null>(null);
-const [businessCategory, setBusinessCategory] = useState("");
-const isVeterinaria = businessCategory === "veterinaria";
+  const [businessCategory, setBusinessCategory] = useState("");
+  const isVeterinaria =
+    businessCategory === "veterinaria" || businessCategory === "vet";
+
   const [pets, setPets] = useState<Pet[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,30 +195,29 @@ const isVeterinaria = businessCategory === "veterinaria";
     async function loadData() {
       try {
         setLoading(true);
-/* ===== BUSINESS CATEGORY ===== */
-try {
-  const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
-  const businessData = await businessRes.json();
 
-  setBusinessCategory(
-    String(businessData?.business?.business_category || "")
-  );
-} catch {
-  setBusinessCategory("");
-}
-        /* ===== CUSTOMER ===== */
-        const resCustomers = await fetch(
-          `${BACKEND_URL}/customers/${slug}`
-        );
+        try {
+          const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+          const businessData: BusinessResponse = await businessRes.json();
+
+          setBusinessCategory(
+            String(businessData?.business?.business_category || "")
+              .trim()
+              .toLowerCase()
+          );
+        } catch {
+          setBusinessCategory("");
+        }
+
+        const resCustomers = await fetch(`${BACKEND_URL}/customers/${slug}`);
         const dataCustomers = await resCustomers.json();
 
         const found = dataCustomers.customers?.find(
-          (c: any) => c.id === customerId
+          (c: Customer) => c.id === customerId
         );
 
         setCustomer(found || null);
 
-        /* ===== PETS ===== */
         try {
           const resPets = await fetch(
             `${BACKEND_URL}/pets/${slug}?customer_id=${customerId}`
@@ -123,7 +228,6 @@ try {
           setPets([]);
         }
 
-        /* ===== APPOINTMENTS (HISTORIAL) ===== */
         try {
           const resAppointments = await fetch(
             `${BACKEND_URL}/appointments/customer-history/${slug}?customer_id=${customerId}`
@@ -141,25 +245,24 @@ try {
     }
 
     if (slug && customerId) {
-  loadData();
-}
+      loadData();
+    }
   }, [slug, customerId]);
-
 
   async function handleCreatePet(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-if (!petForm.name.trim()) {
-  setPetError("El nombre de la mascota es obligatorio");
-  return;
-}
+    if (!petForm.name.trim()) {
+      setPetError("El nombre de la mascota es obligatorio");
+      return;
+    }
 
-if (petForm.species_base === "otro" && !petForm.species_custom.trim()) {
-  setPetError("Debes especificar el tipo de mascota");
-  return;
-}
+    if (petForm.species_base === "otro" && !petForm.species_custom.trim()) {
+      setPetError("Debes especificar el tipo de mascota");
+      return;
+    }
 
-try {
+    try {
       setSavingPet(true);
       setPetError("");
       setPetSuccess("");
@@ -207,9 +310,9 @@ try {
 
       setPetSuccess("Mascota creada correctamente.");
 
-setTimeout(() => {
-  setPetSuccess("");
-}, 2500);
+      setTimeout(() => {
+        setPetSuccess("");
+      }, 2500);
     } catch (err: any) {
       setPetError(err?.message || "Error creando mascota");
     } finally {
@@ -217,287 +320,714 @@ setTimeout(() => {
     }
   }
 
+  const latestAppointments = useMemo(() => {
+    return [...appointments].slice(0, 10);
+  }, [appointments]);
+
+  const latestPets = useMemo(() => {
+    return [...pets].slice(0, 4);
+  }, [pets]);
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Cliente"
         title={customer?.name || "Cliente"}
-        description="Ficha completa del cliente y sus mascotas"
+        description={
+          isVeterinaria
+            ? "Ficha del cliente, sus mascotas, visitas y próximos seguimientos."
+            : "Ficha del cliente, historial de visitas y datos de contacto."
+        }
       />
 
-      {/* ================= INFO CLIENTE ================= */}
-      <Panel title="Información del cliente">
-        {loading ? (
-          <p>Cargando...</p>
-        ) : !customer ? (
-          <p>No encontrado</p>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <p className="text-xs text-slate-500">Nombre</p>
-              <p className="font-semibold">{customer.name}</p>
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-500">Email</p>
-              <p>{customer.email || "Sin email"}</p>
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-500">Teléfono</p>
-              <p>{customer.phone || "Sin teléfono"}</p>
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-500">Visitas</p>
-              <p>{customer.total_visits}</p>
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-500">Última visita</p>
-              <p>{formatDate(customer.last_visit_at)}</p>
-            </div>
-          </div>
-        )}
-      </Panel>
-
-      {/* ================= MASCOTAS ================= */}
-      {isVeterinaria && (
-  <Panel title="Mascotas" description="Crea mascotas y construye la ficha veterinaria del cliente.">
-        <form onSubmit={handleCreatePet} className="mb-6 rounded-2xl border border-slate-200 bg-white/60 p-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div>
-              <label className="mb-2 block text-xs text-slate-500">Nombre</label>
-              <input
-                type="text"
-                value={petForm.name}
-                onChange={(e) =>
-                  setPetForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
-                placeholder="Ej: Luna"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs text-slate-500">Tipo</label>
-              <select
-                value={petForm.species_base}
-                onChange={(e) =>
-                  setPetForm((prev) => ({
-                    ...prev,
-                    species_base: e.target.value as "perro" | "gato" | "otro",
-                  }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
-              >
-                <option value="perro">Perro</option>
-                <option value="gato">Gato</option>
-                <option value="otro">Otro</option>
-              </select>
-            </div>
-
-            {petForm.species_base === "otro" ? (
-              <div>
-                <label className="mb-2 block text-xs text-slate-500">Especificar tipo</label>
-                <input
-                  type="text"
-                  value={petForm.species_custom}
-                  onChange={(e) =>
-                    setPetForm((prev) => ({
-                      ...prev,
-                      species_custom: e.target.value,
-                    }))
-                  }
-                  className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
-                  placeholder="Ej: conejo"
-                  required
-                />
-              </div>
-            ) : null}
-
-            <div>
-              <label className="mb-2 block text-xs text-slate-500">Raza</label>
-              <input
-                type="text"
-                value={petForm.breed}
-                onChange={(e) =>
-                  setPetForm((prev) => ({ ...prev, breed: e.target.value }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
-                placeholder="Ej: Labrador"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs text-slate-500">Sexo</label>
-              <select
-                value={petForm.sex}
-                onChange={(e) =>
-                  setPetForm((prev) => ({ ...prev, sex: e.target.value }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
-              >
-                <option value="">Seleccionar</option>
-                <option value="macho">Macho</option>
-                <option value="hembra">Hembra</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs text-slate-500">Peso (kg)</label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                value={petForm.weight_kg}
-                onChange={(e) =>
-                  setPetForm((prev) => ({ ...prev, weight_kg: e.target.value }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
-                placeholder="Ej: 12.5"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
-            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-slate-700 dark:bg-slate-950">
-              <input
-                type="checkbox"
-                checked={petForm.is_sterilized}
-                onChange={(e) =>
-                  setPetForm((prev) => ({
-                    ...prev,
-                    is_sterilized: e.target.checked,
-                  }))
-                }
-              />
-              Esterilizado
-            </label>
-
-            <div>
-              <label className="mb-2 block text-xs text-slate-500">Notas</label>
-              <textarea
-                value={petForm.notes}
-                onChange={(e) =>
-                  setPetForm((prev) => ({ ...prev, notes: e.target.value }))
-                }
-                className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm backdrop-blur border-slate-300 dark:border-slate-600 dark:bg-slate-900"
-                placeholder="Notas rápidas de la mascota"
-              />
-            </div>
-          </div>
-
-          {petError ? (
-            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
-              {petError}
-            </div>
-          ) : null}
-
-          {petSuccess ? (
-            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-              {petSuccess}
-            </div>
-          ) : null}
-
-          <div className="mt-4">
-            <button
-              type="submit"
-              disabled={savingPet}
-              className="rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-              style={{ background: "var(--text-main)" }}
+      {loading ? (
+        <Panel title="Cargando ficha">
+          <p style={{ color: "var(--text-muted)" }}>Cargando...</p>
+        </Panel>
+      ) : !customer ? (
+        <Panel title="Cliente">
+          <p style={{ color: "var(--text-muted)" }}>No encontrado</p>
+        </Panel>
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-[1.45fr_0.8fr]">
+          <div className="space-y-6">
+            <Panel
+              title="Información del cliente"
+              description="Resumen principal del cliente para revisar rápidamente su contexto."
             >
-              {savingPet ? "Guardando..." : "Agregar mascota"}
-            </button>
-          </div>
-        </form>
-
-        {pets.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            Este cliente no tiene mascotas aún.
-          </p>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {pets.map((pet) => (
-              <div
-                key={pet.id}
-                className="rounded-xl border border-slate-200 bg-white/80 p-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900"
-              >
-                <p className="font-semibold text-lg">{pet.name}</p>
-
-                <p className="text-sm text-slate-500">
-                  {pet.species_base === "otro"
-                    ? pet.species_custom
-                    : pet.species_base}
-                </p>
-
-                {pet.breed && (
-                  <p className="text-xs text-slate-400">
-                    {pet.breed}
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div
+                  className="rounded-2xl border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Nombre
                   </p>
-                )}
-
-                <div className="mt-2 text-xs text-slate-500">
-                  {pet.sex && <span>Sexo: {pet.sex} · </span>}
-                  {pet.weight_kg !== null && pet.weight_kg !== undefined && (
-                    <span>{pet.weight_kg}kg · </span>
-                  )}
-                  <span>
-                    {pet.is_sterilized ? "Esterilizado" : "No esterilizado"}
-                  </span>
+                  <p
+                    className="mt-2 text-base font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {customer.name}
+                  </p>
                 </div>
 
-                {pet.notes ? (
-                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                    {pet.notes}
+                <div
+                  className="rounded-2xl border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Email
                   </p>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
-)}
+                  <p
+                    className="mt-2 break-all text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {customer.email || "Sin email"}
+                  </p>
+                </div>
 
-      {/* ================= HISTORIAL ================= */}
-      <Panel title="Historial de visitas">
-        {appointments.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            Sin historial aún.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {appointments.slice(0, 10).map((a) => (
-              <div
-                key={a.id}
-                className="rounded-xl border p-3 bg-white"
+                <div
+                  className="rounded-2xl border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Teléfono
+                  </p>
+                  <p
+                    className="mt-2 text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {customer.phone || "Sin teléfono"}
+                  </p>
+                </div>
+
+                <div
+                  className="rounded-2xl border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Visitas
+                  </p>
+                  <p
+                    className="mt-2 text-base font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {customer.total_visits}
+                  </p>
+                </div>
+
+                <div
+                  className="rounded-2xl border p-4 md:col-span-2"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Última visita
+                  </p>
+                  <p
+                    className="mt-2 text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {formatDateLong(customer.last_visit_at)}
+                  </p>
+                </div>
+              </div>
+            </Panel>
+
+            {isVeterinaria ? (
+              <Panel
+                title="Mascotas"
+                description="Agrega mascotas del cliente y construye una ficha veterinaria liviana."
               >
-                <p className="text-sm font-medium">
-                  {a.service_name_snapshot || "Servicio"}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {formatDate(a.start_at)}
-                </p>
-              </div>
-            ))}
+                <form
+                  onSubmit={handleCreatePet}
+                  className="mb-6 rounded-2xl border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background:
+                      "linear-gradient(180deg, rgba(37,99,235,0.05), var(--bg-soft))",
+                  }}
+                >
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div>
+                      <label
+                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Nombre
+                      </label>
+                      <input
+                        type="text"
+                        value={petForm.name}
+                        onChange={(e) =>
+                          setPetForm((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                        placeholder="Ej: Luna"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Tipo
+                      </label>
+                      <select
+                        value={petForm.species_base}
+                        onChange={(e) =>
+                          setPetForm((prev) => ({
+                            ...prev,
+                            species_base: e.target.value as
+                              | "perro"
+                              | "gato"
+                              | "otro",
+                          }))
+                        }
+                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        <option value="perro">Perro</option>
+                        <option value="gato">Gato</option>
+                        <option value="otro">Otro</option>
+                      </select>
+                    </div>
+
+                    {petForm.species_base === "otro" ? (
+                      <div>
+                        <label
+                          className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Especificar tipo
+                        </label>
+                        <input
+                          type="text"
+                          value={petForm.species_custom}
+                          onChange={(e) =>
+                            setPetForm((prev) => ({
+                              ...prev,
+                              species_custom: e.target.value,
+                            }))
+                          }
+                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                          placeholder="Ej: conejo"
+                          required
+                        />
+                      </div>
+                    ) : null}
+
+                    <div>
+                      <label
+                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Raza
+                      </label>
+                      <input
+                        type="text"
+                        value={petForm.breed}
+                        onChange={(e) =>
+                          setPetForm((prev) => ({
+                            ...prev,
+                            breed: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                        placeholder="Ej: Labrador"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Sexo
+                      </label>
+                      <select
+                        value={petForm.sex}
+                        onChange={(e) =>
+                          setPetForm((prev) => ({
+                            ...prev,
+                            sex: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        <option value="">Seleccionar</option>
+                        <option value="macho">Macho</option>
+                        <option value="hembra">Hembra</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Peso (kg)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={petForm.weight_kg}
+                        onChange={(e) =>
+                          setPetForm((prev) => ({
+                            ...prev,
+                            weight_kg: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                        placeholder="Ej: 12.5"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
+                    <label
+                      className="flex items-center gap-3 rounded-xl border px-3 py-3 text-sm"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={petForm.is_sterilized}
+                        onChange={(e) =>
+                          setPetForm((prev) => ({
+                            ...prev,
+                            is_sterilized: e.target.checked,
+                          }))
+                        }
+                      />
+                      Esterilizado
+                    </label>
+
+                    <div>
+                      <label
+                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Notas
+                      </label>
+                      <textarea
+                        value={petForm.notes}
+                        onChange={(e) =>
+                          setPetForm((prev) => ({
+                            ...prev,
+                            notes: e.target.value,
+                          }))
+                        }
+                        className="min-h-[110px] w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                        placeholder="Notas rápidas de la mascota"
+                      />
+                    </div>
+                  </div>
+
+                  {petError ? (
+                    <div
+                      className="mt-4 rounded-xl border px-3 py-2 text-sm"
+                      style={{
+                        borderColor: "rgba(244,63,94,0.28)",
+                        background: "rgba(244,63,94,0.08)",
+                        color: "#be123c",
+                      }}
+                    >
+                      {petError}
+                    </div>
+                  ) : null}
+
+                  {petSuccess ? (
+                    <div
+                      className="mt-4 rounded-xl border px-3 py-2 text-sm"
+                      style={{
+                        borderColor: "rgba(16,185,129,0.28)",
+                        background: "rgba(16,185,129,0.08)",
+                        color: "#047857",
+                      }}
+                    >
+                      {petSuccess}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4">
+                    <button
+                      type="submit"
+                      disabled={savingPet}
+                      className="rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                      }}
+                    >
+                      {savingPet ? "Guardando..." : "Agregar mascota"}
+                    </button>
+                  </div>
+                </form>
+
+                {pets.length === 0 ? (
+                  <EmptyState
+                    title="Sin mascotas todavía"
+                    description="Agrega la primera mascota del cliente para construir la ficha veterinaria."
+                  />
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {pets.map((pet) => (
+                      <div
+                        key={pet.id}
+                        className="rounded-2xl border p-4"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background:
+                            "linear-gradient(180deg, rgba(16,185,129,0.05), var(--bg-card))",
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p
+                              className="text-lg font-semibold"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {pet.name}
+                            </p>
+                            <p
+                              className="mt-1 text-sm font-medium"
+                              style={{ color: "#10b981" }}
+                            >
+                              {getPetSpeciesLabel(pet)}
+                            </p>
+                          </div>
+
+                          <span
+                            className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                            style={{
+                              background: "rgba(16,185,129,0.12)",
+                              color: "#047857",
+                            }}
+                          >
+                            Mascota
+                          </span>
+                        </div>
+
+                        {pet.breed ? (
+                          <p
+                            className="mt-2 text-sm"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Raza: {pet.breed}
+                          </p>
+                        ) : null}
+
+                        <div
+                          className="mt-3 flex flex-wrap gap-2 text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {pet.sex ? (
+                            <span
+                              className="rounded-full border px-2.5 py-1"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-soft)",
+                              }}
+                            >
+                              Sexo: {pet.sex}
+                            </span>
+                          ) : null}
+
+                          {pet.weight_kg !== null && pet.weight_kg !== undefined ? (
+                            <span
+                              className="rounded-full border px-2.5 py-1"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-soft)",
+                              }}
+                            >
+                              {pet.weight_kg} kg
+                            </span>
+                          ) : null}
+
+                          <span
+                            className="rounded-full border px-2.5 py-1"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            {pet.is_sterilized
+                              ? "Esterilizado"
+                              : "No esterilizado"}
+                          </span>
+                        </div>
+
+                        {pet.notes ? (
+                          <div
+                            className="mt-4 rounded-2xl border p-3"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                            }}
+                          >
+                            <p
+                              className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Nota
+                            </p>
+                            <p
+                              className="mt-2 text-sm leading-6"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {pet.notes}
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Panel>
+            ) : null}
+
+            <Panel
+              title="Historial de visitas"
+              description="Últimas visitas registradas del cliente para contexto rápido."
+            >
+              {latestAppointments.length === 0 ? (
+                <EmptyState
+                  title="Sin historial todavía"
+                  description="Cuando el cliente tenga citas registradas, aparecerán aquí."
+                />
+              ) : (
+                <div className="space-y-3">
+                  {latestAppointments.map((appointment, index) => (
+                    <div
+                      key={appointment.id}
+                      className="rounded-2xl border p-4"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background:
+                          index === 0
+                            ? "linear-gradient(180deg, rgba(37,99,235,0.07), var(--bg-card))"
+                            : "var(--bg-card)",
+                      }}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p
+                            className="text-sm font-semibold"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            {appointment.service_name_snapshot || "Servicio"}
+                          </p>
+                          <p
+                            className="mt-1 text-sm"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            {formatDateLong(appointment.start_at)}
+                          </p>
+                        </div>
+
+                        <span
+                          className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                          style={{
+                            background: "rgba(37,99,235,0.10)",
+                            color: "#1d4ed8",
+                          }}
+                        >
+                          Visita
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
           </div>
-        )}
-      </Panel>
 
-      {/* ================= VACUNAS (READY) ================= */}
-      <Panel title="Vacunas">
-        <p className="text-sm text-slate-500">
-          Próximamente: seguimiento de vacunas con alertas y recordatorios.
-        </p>
-      </Panel>
+          <div className="space-y-6">
+            <Panel
+              title="Resumen rápido"
+              description="Lectura rápida del cliente para operación diaria."
+            >
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <SummaryCard
+                  label="Cliente"
+                  value={customer.name}
+                  hint="Ficha principal del cliente."
+                />
 
-      {/* ================= NOTAS (READY) ================= */}
-      <Panel title="Notas">
-        <p className="text-sm text-slate-500">
-          Próximamente: notas rápidas por mascota.
-        </p>
-      </Panel>
+                <SummaryCard
+                  label="Visitas"
+                  value={customer.total_visits}
+                  hint="Cantidad total de atenciones registradas."
+                />
+
+                <SummaryCard
+                  label="Mascotas"
+                  value={isVeterinaria ? pets.length : "-"}
+                  hint={
+                    isVeterinaria
+                      ? "Mascotas vinculadas a este cliente."
+                      : "Disponible para negocios veterinaria."
+                  }
+                />
+
+                <SummaryCard
+                  label="Última visita"
+                  value={formatDate(customer.last_visit_at)}
+                  hint="Última fecha registrada del cliente."
+                />
+              </div>
+            </Panel>
+
+            {isVeterinaria ? (
+              <Panel
+                title="Próximos controles"
+                description="Este bloque quedará conectado a los seguimientos registrados desde Agenda."
+              >
+                <EmptyState
+                  title="Próximamente conectado"
+                  description="Aquí mostraremos los próximos controles y seguimientos de las mascotas usando pet_followups."
+                />
+              </Panel>
+            ) : (
+              <Panel
+                title="Seguimiento"
+                description="Espacio preparado para futuras acciones del cliente."
+              >
+                <EmptyState
+                  title="Sin seguimiento adicional"
+                  description="Este bloque puede evolucionar después según el rubro del negocio."
+                />
+              </Panel>
+            )}
+
+            <Panel
+              title="Notas rápidas"
+              description="Espacio preparado para observaciones rápidas por cliente o por mascota."
+            >
+              {isVeterinaria && latestPets.length > 0 ? (
+                <div className="space-y-3">
+                  {latestPets.map((pet) => (
+                    <div
+                      key={pet.id}
+                      className="rounded-2xl border p-3"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--text-main)" }}
+                        >
+                          {pet.name}
+                        </p>
+                        <span
+                          className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                          style={{
+                            background: "rgba(16,185,129,0.10)",
+                            color: "#047857",
+                          }}
+                        >
+                          {getPetSpeciesLabel(pet)}
+                        </span>
+                      </div>
+
+                      <p
+                        className="mt-2 text-sm leading-6"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {pet.notes?.trim()
+                          ? pet.notes
+                          : "Sin nota rápida todavía."}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Notas aún no conectadas"
+                  description="Más adelante aquí podremos mostrar notas rápidas por mascota y resúmenes recientes."
+                />
+              )}
+            </Panel>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
