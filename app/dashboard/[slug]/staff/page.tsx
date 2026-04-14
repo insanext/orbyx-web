@@ -30,6 +30,7 @@ type StaffItem = {
   email?: string | null;
   phone?: string | null;
   color?: string | null;
+photo_url?: string | null;
   is_active: boolean;
   sort_order: number;
   use_business_hours?: boolean;
@@ -240,6 +241,7 @@ export default function StaffPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [form, setForm] = useState(emptyForm);
+const [photoUrl, setPhotoUrl] = useState("");
   const [staffHours, setStaffHours] = useState<StaffHourItem[]>(defaultHours);
   const [staffSpecialDates, setStaffSpecialDates] = useState<
     StaffSpecialDateItem[]
@@ -289,9 +291,28 @@ export default function StaffPage() {
   const inputClass =
     "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
   const primaryButtonClass =
-    "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
-  const secondaryButtonClass =
-    "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+
+const secondaryButtonClass =
+  "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+
+async function uploadStaffImage(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/upload-staff-photo", {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Error subiendo imagen");
+  }
+
+  return data.public_url;
+}
 
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
@@ -662,6 +683,7 @@ export default function StaffPage() {
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
+setPhotoUrl("");
     setStaffHours(defaultHours);
     setStaffSpecialDates([]);
     setSelectedServiceIds([]);
@@ -687,6 +709,7 @@ export default function StaffPage() {
             ? true
             : Boolean(item.use_business_hours),
       });
+setPhotoUrl(item.photo_url || "");
       setSaveError("");
       setSaveOk("");
       resetSpecialDateForm();
@@ -831,6 +854,7 @@ export default function StaffPage() {
         is_active: form.is_active,
         sort_order: Number(form.sort_order || 0),
         use_business_hours: form.use_business_hours,
+photo_url: photoUrl || null,
       };
 
       const url = editingId
@@ -1269,6 +1293,56 @@ export default function StaffPage() {
               </div>
 
               <div>
+
+<div
+  className="rounded-2xl border p-4"
+  style={{
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+  }}
+>
+  <p
+    className="text-sm font-semibold mb-3"
+    style={{ color: "var(--text-main)" }}
+  >
+    Foto del profesional
+  </p>
+
+  <div className="flex items-center gap-4">
+    <div className="h-20 w-20 rounded-full bg-slate-200 overflow-hidden">
+      {photoUrl ? (
+        <img
+          src={photoUrl}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-slate-400 text-xl">
+          👤
+        </div>
+      )}
+    </div>
+
+    <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
+      Subir foto
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+
+          try {
+            const url = await uploadStaffImage(file);
+            setPhotoUrl(url);
+          } catch (err: any) {
+            alert(err.message);
+          }
+        }}
+      />
+    </label>
+  </div>
+</div>
                 <label
                   className="mb-2 block text-sm font-medium"
                   style={{ color: "var(--text-main)" }}
@@ -2127,10 +2201,18 @@ export default function StaffPage() {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-3">
-                          <span
-                            className="h-3.5 w-3.5 rounded-full"
-                            style={{ backgroundColor: item.color || "#0f172a" }}
-                          />
+                          <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-200">
+  {item.photo_url ? (
+    <img
+      src={item.photo_url}
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    <div className="flex h-full w-full items-center justify-center text-slate-400 text-sm">
+      👤
+    </div>
+  )}
+</div>
 
                           <p
                             className="text-base font-semibold"
