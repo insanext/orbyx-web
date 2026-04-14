@@ -53,6 +53,20 @@ type BusinessResponse = {
   };
 };
 
+type PetFollowup = {
+  id: string;
+  control_type: string;
+  control_note?: string | null;
+  next_control_at?: string | null;
+  next_control_label?: string | null;
+  pets?: {
+    id?: string;
+    name?: string;
+    species_base?: string | null;
+    species_custom?: string | null;
+  } | null;
+};
+
 /* ================= HELPERS ================= */
 
 function formatDate(value?: string | null) {
@@ -174,6 +188,7 @@ export default function CustomerDetailPage() {
 
   const [pets, setPets] = useState<Pet[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [followups, setFollowups] = useState<PetFollowup[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [savingPet, setSavingPet] = useState(false);
@@ -236,6 +251,16 @@ export default function CustomerDetailPage() {
           setAppointments(dataAppointments.appointments || []);
         } catch {
           setAppointments([]);
+        }
+
+        try {
+          const resFollowups = await fetch(
+            `${BACKEND_URL}/pet-followups/${slug}?customer_id=${customerId}`
+          );
+          const dataFollowups = await resFollowups.json();
+          setFollowups(dataFollowups.followups || []);
+        } catch {
+          setFollowups([]);
         }
       } catch (err) {
         console.error(err);
@@ -955,12 +980,100 @@ export default function CustomerDetailPage() {
             {isVeterinaria ? (
               <Panel
                 title="Próximos controles"
-                description="Este bloque quedará conectado a los seguimientos registrados desde Agenda."
+                description="Seguimientos registrados desde Agenda para este cliente."
               >
-                <EmptyState
-                  title="Próximamente conectado"
-                  description="Aquí mostraremos los próximos controles y seguimientos de las mascotas usando pet_followups."
-                />
+                {followups.length === 0 ? (
+                  <EmptyState
+                    title="Sin próximos controles"
+                    description="Cuando registres controles desde Agenda, aparecerán aquí."
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    {followups.map((followup) => {
+                      const date = followup.next_control_at
+                        ? new Date(followup.next_control_at)
+                        : null;
+
+                      const now = new Date();
+
+                      let statusColor = "#64748b";
+
+                      if (date) {
+                        if (date < now) {
+                          statusColor = "#ef4444";
+                        } else if (
+                          date.getTime() - now.getTime() <
+                          1000 * 60 * 60 * 24 * 3
+                        ) {
+                          statusColor = "#f59e0b";
+                        } else {
+                          statusColor = "#10b981";
+                        }
+                      }
+
+                      return (
+                        <div
+                          key={followup.id}
+                          className="rounded-2xl border p-4"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p
+                                className="text-sm font-semibold"
+                                style={{ color: "var(--text-main)" }}
+                              >
+                                {followup.control_type}
+                              </p>
+
+                              {followup.pets?.name ? (
+                                <p
+                                  className="mt-1 text-xs"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  🐾 {followup.pets.name}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            {followup.next_control_label ? (
+                              <span
+                                className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                style={{
+                                  background: `${statusColor}20`,
+                                  color: statusColor,
+                                }}
+                              >
+                                {followup.next_control_label}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {followup.next_control_at ? (
+                            <p
+                              className="mt-2 text-sm"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              {formatDateLong(followup.next_control_at)}
+                            </p>
+                          ) : null}
+
+                          {followup.control_note ? (
+                            <p
+                              className="mt-2 text-sm"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              {followup.control_note}
+                            </p>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Panel>
             ) : (
               <Panel
