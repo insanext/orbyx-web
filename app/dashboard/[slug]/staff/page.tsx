@@ -1308,69 +1308,65 @@ photo_url: photoUrl || null,
     Foto del profesional
   </p>
 
-  <div className="flex items-center gap-4">
-    <div className="h-20 w-20 rounded-full bg-slate-200 overflow-hidden">
-      {photoUrl ? (
-        <img
-          src={photoUrl}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-slate-400 text-xl">
-          👤
-        </div>
-      )}
-    </div>
+  <div className="flex items-center justify-between gap-6">
+    <div className="flex items-center gap-4">
+      <div className="h-24 w-24 overflow-hidden rounded-2xl bg-slate-200 border">
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-slate-400 text-xl">
+            👤
+          </div>
+        )}
+      </div>
 
 
-    {editingId ? (
-      <div className="flex items-center gap-3">
-        <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
-          Subir foto
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
+    <div className="flex items-center gap-3">
+      <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
+        Subir foto
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
 
-              try {
+            try {
+              if (editingId) {
                 const url = await uploadStaffImage(file, editingId);
                 setPhotoUrl(url);
-              } catch (err: any) {
-                alert(err.message);
+              } else {
+                const localUrl = URL.createObjectURL(file);
+                setPhotoUrl(localUrl);
               }
-            }}
-          />
-        </label>
+            } catch (err: any) {
+              alert(err.message);
+            }
+          }}
+        />
+      </label>
 
-        {photoUrl ? (
-          <button
-            type="button"
-            onClick={() => setPhotoUrl("")}
-            className="rounded-xl border px-3 py-2 text-sm"
-            style={{
-              borderColor: "rgba(244,63,94,0.28)",
-              background: "rgba(244,63,94,0.08)",
-              color: "#be123c",
-            }}
-          >
-            Quitar foto
-          </button>
-        ) : null}
-      </div>
-    ) : (
-      <p
-        className="text-sm"
-        style={{ color: "var(--text-muted)" }}
-      >
-        Guarda el staff primero para poder subir una foto.
-      </p>
-    )}
-
+      {photoUrl ? (
+        <button
+          type="button"
+          onClick={() => setPhotoUrl("")}
+          className="rounded-xl border px-3 py-2 text-sm"
+          style={{
+            borderColor: "rgba(244,63,94,0.28)",
+            background: "rgba(244,63,94,0.08)",
+            color: "#be123c",
+          }}
+        >
+          Quitar foto
+        </button>
+      ) : null}
+    </div>
+  
   </div>
-</div>
                 <label
                   className="mb-2 block text-sm font-medium"
                   style={{ color: "var(--text-main)" }}
@@ -2169,44 +2165,6 @@ photo_url: photoUrl || null,
           )}
         </Panel>
 
-<Panel
-  title="Vista previa"
-  description="Así se verá este profesional en la página pública."
->
-  <div
-    className="rounded-2xl border p-4 flex items-center gap-4"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-card)",
-    }}
-  >
-    <div className="h-16 w-16 rounded-full overflow-hidden bg-slate-200">
-      {photoUrl ? (
-        <img src={photoUrl} className="h-full w-full object-cover" />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-slate-400">
-          👤
-        </div>
-      )}
-    </div>
-
-    <div>
-      <p
-        className="text-sm font-semibold"
-        style={{ color: "var(--text-main)" }}
-      >
-        {form.name?.trim() || "Nombre del profesional"}
-      </p>
-
-      <p
-        className="text-xs"
-        style={{ color: "var(--text-muted)" }}
-      >
-        {form.role?.trim() || "Rol / especialidad"}
-      </p>
-    </div>
-  </div>
-</Panel>
 
         <Panel
           title="Equipo actual"
