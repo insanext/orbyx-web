@@ -1207,7 +1207,7 @@ photo_url: photoUrl || null,
         <Notice tone="danger" title={loadError} />
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
+      <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
         <Panel
           title={editingId ? "Editar staff" : "Nuevo staff"}
           description="Agrega personas del equipo y deja su información base lista."
@@ -2274,52 +2274,34 @@ photo_url: photoUrl || null,
                           </div>
                         ) : null}
 
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          {[
-                            { label: "Rol", value: item.role || "No definido" },
-                            {
-                              label: "Orden",
-                              value: String(item.sort_order ?? 0),
-                            },
-                            {
-                              label: "Correo",
-                              value: item.email || "No definido",
-                            },
-                            {
-                              label: "Teléfono",
-                              value: item.phone || "No definido",
-                            },
-                            {
-                              label: "Horario",
-                              value: item.use_business_hours
-                                ? "Usa horario del negocio"
-                                : "Horario propio",
-                              wide: true,
-                            },
-                          ].map((block) => (
-                            <div
-                              key={`${item.id}-${block.label}`}
-                              className={`rounded-2xl border px-3 py-2.5 ${
-                                block.wide ? "sm:col-span-2" : ""
-                              }`}
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-soft)",
-                              }}
-                            >
-                              <p
-                                className="text-[11px] font-semibold uppercase tracking-[0.14em]"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                {block.label}
-                              </p>
-                              <p
-                                className="mt-1 break-all text-sm"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {block.value}
-                              </p>
-                            </div>
+                                                <div className="mt-4 space-y-1 text-sm">
+                          <p style={{ color: "var(--text-main)" }}>
+                            <span className="font-medium">Rol / cargo:</span>{" "}
+                            {item.role || "No definido"}
+                          </p>
+
+                          <p style={{ color: "var(--text-main)" }}>
+                            <span className="font-medium">Correo:</span>{" "}
+                            {item.email || "No definido"}
+                          </p>
+
+                          <p style={{ color: "var(--text-main)" }}>
+                            <span className="font-medium">Teléfono:</span>{" "}
+                            {item.phone || "No definido"}
+                          </p>
+
+                          <p style={{ color: "var(--text-main)" }}>
+                            <span className="font-medium">Horario:</span>{" "}
+                            {item.use_business_hours
+                              ? "Usa horario del negocio"
+                              : "Horario propio"}
+                          </p>
+
+                          <p style={{ color: "var(--text-main)" }}>
+                            <span className="font-medium">Orden:</span>{" "}
+                            {String(item.sort_order ?? 0)}
+                          </p>
+                        </div>
                           ))}
                         </div>
                       </div>
