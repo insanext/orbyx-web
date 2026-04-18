@@ -1322,42 +1322,53 @@ photo_url: photoUrl || null,
       )}
     </div>
 
-    <div className="flex items-center gap-3">
-      <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
-        Subir foto
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
 
-            try {
-              const url = await uploadStaffImage(file, form.id);
-              setPhotoUrl(url);
-            } catch (err: any) {
-              alert(err.message);
-            }
-          }}
-        />
-      </label>
+    {editingId ? (
+      <div className="flex items-center gap-3">
+        <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
+          Subir foto
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
 
-      {photoUrl ? (
-        <button
-          type="button"
-          onClick={() => setPhotoUrl("")}
-          className="rounded-xl border px-3 py-2 text-sm"
-          style={{
-            borderColor: "rgba(244,63,94,0.28)",
-            background: "rgba(244,63,94,0.08)",
-            color: "#be123c",
-          }}
-        >
-          Quitar foto
-        </button>
-      ) : null}
-    </div>
+              try {
+                const url = await uploadStaffImage(file, editingId);
+                setPhotoUrl(url);
+              } catch (err: any) {
+                alert(err.message);
+              }
+            }}
+          />
+        </label>
+
+        {photoUrl ? (
+          <button
+            type="button"
+            onClick={() => setPhotoUrl("")}
+            className="rounded-xl border px-3 py-2 text-sm"
+            style={{
+              borderColor: "rgba(244,63,94,0.28)",
+              background: "rgba(244,63,94,0.08)",
+              color: "#be123c",
+            }}
+          >
+            Quitar foto
+          </button>
+        ) : null}
+      </div>
+    ) : (
+      <p
+        className="text-sm"
+        style={{ color: "var(--text-muted)" }}
+      >
+        Guarda el staff primero para poder subir una foto.
+      </p>
+    )}
+
   </div>
 </div>
                 <label
@@ -2157,6 +2168,45 @@ photo_url: photoUrl || null,
             </div>
           )}
         </Panel>
+
+<Panel
+  title="Vista previa"
+  description="Así se verá este profesional en la página pública."
+>
+  <div
+    className="rounded-2xl border p-4 flex items-center gap-4"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-card)",
+    }}
+  >
+    <div className="h-16 w-16 rounded-full overflow-hidden bg-slate-200">
+      {photoUrl ? (
+        <img src={photoUrl} className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-slate-400">
+          👤
+        </div>
+      )}
+    </div>
+
+    <div>
+      <p
+        className="text-sm font-semibold"
+        style={{ color: "var(--text-main)" }}
+      >
+        {form.name?.trim() || "Nombre del profesional"}
+      </p>
+
+      <p
+        className="text-xs"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {form.role?.trim() || "Rol / especialidad"}
+      </p>
+    </div>
+  </div>
+</Panel>
 
         <Panel
           title="Equipo actual"
