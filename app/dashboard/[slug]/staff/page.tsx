@@ -1259,13 +1259,13 @@ photo_url: photoUrl || null,
       className="text-sm font-medium"
       style={{ color: "var(--text-main)" }}
     >
-      Plan actual: {planLabel}
+      Plan actual: <span className="capitalize">{plan}</span>
     </p>
     <p
       className="text-xs"
       style={{ color: "var(--text-muted)" }}
     >
-      Has creado {staff.length} de {staffLimit} staff disponibles en tu plan.
+      Has creado {activeCount} de {caps.max_staff} staff disponibles en tu plan.
     </p>
   </div>
 
