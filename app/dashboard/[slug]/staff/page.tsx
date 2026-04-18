@@ -1236,142 +1236,117 @@ photo_url: photoUrl || null,
               Cargando...
             </div>
           ) : (
+
+
+
+
+
+
             <div className="space-y-5">
-              <div
-                className="rounded-2xl border p-4"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background:
-                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
-                }}
-              >
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Plan actual: <span className="capitalize">{plan}</span>
-                </p>
+              
 
-                <p
-                  className="mt-1 text-sm"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Has creado {activeCount} de {caps.max_staff} staff disponibles
-                  en tu plan.
-                </p>
+<div className="space-y-5">
 
-                {hasExcess ? (
-                  <div className="mt-4">
-                    <Notice
-                      tone="limit"
-                      title={`Estás sobre el límite del plan.`}
-                      description={`Debes desactivar ${excessStaff} profesional${
-                        excessStaff === 1 ? "" : "es"
-                      } antes del próximo ciclo.`}
-                    >
-                      <div
-                        className="text-xs"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Seleccionados: {selectedStaffToKeep.length} /{" "}
-                        {caps.max_staff}
-                      </div>
-
-                      <button
-                        onClick={applyStaffAdjustment}
-                        className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-semibold text-white transition"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
-                        }}
-                      >
-                        Aplicar ajuste al plan
-                      </button>
-                    </Notice>
-                  </div>
-                ) : null}
-              </div>
-
-              <div>
-
-<div
-  className="rounded-2xl border p-4"
-  style={{
-    borderColor: "var(--border-color)",
-    background: "var(--bg-card)",
-  }}
->
-  <p
-    className="text-sm font-semibold mb-3"
-    style={{ color: "var(--text-main)" }}
+  <div
+    className="rounded-2xl border p-4"
+    style={{
+      borderColor: "var(--border-color)",
+      background:
+        "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
+    }}
   >
-    Foto del profesional
-  </p>
+    <p
+      className="text-sm font-medium"
+      style={{ color: "var(--text-main)" }}
+    >
+      Plan actual: {planLabel}
+    </p>
+    <p
+      className="text-xs"
+      style={{ color: "var(--text-muted)" }}
+    >
+      Has creado {staff.length} de {staffLimit} staff disponibles en tu plan.
+    </p>
+  </div>
 
-  <div className="flex items-center justify-between gap-6">
+  <div
+    className="rounded-2xl border p-4"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-card)",
+    }}
+  >
+    <p
+      className="mb-3 text-sm font-semibold"
+      style={{ color: "var(--text-main)" }}
+    >
+      Foto del profesional
+    </p>
+
     <div className="flex items-center gap-4">
-      <div className="h-24 w-24 overflow-hidden rounded-2xl bg-slate-200 border">
+      <div className="h-24 w-24 overflow-hidden rounded-2xl border bg-slate-200">
         {photoUrl ? (
-          <img
-            src={photoUrl}
-            className="h-full w-full object-cover"
-          />
+          <img src={photoUrl} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-slate-400 text-xl">
+          <div className="flex h-full w-full items-center justify-center text-xl text-slate-400">
             👤
           </div>
         )}
       </div>
 
+      <div className="flex items-center gap-3">
+        <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
+          Subir foto
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
 
-    <div className="flex items-center gap-3">
-      <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
-        Subir foto
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            try {
-              if (editingId) {
-                const url = await uploadStaffImage(file, editingId);
-                setPhotoUrl(url);
-              } else {
-                const localUrl = URL.createObjectURL(file);
-                setPhotoUrl(localUrl);
+              try {
+                if (editingId) {
+                  const url = await uploadStaffImage(file, editingId);
+                  setPhotoUrl(url);
+                } else {
+                  const localUrl = URL.createObjectURL(file);
+                  setPhotoUrl(localUrl);
+                }
+              } catch (err: any) {
+                alert(err.message);
               }
-            } catch (err: any) {
-              alert(err.message);
-            }
-          }}
-        />
-      </label>
+            }}
+          />
+        </label>
 
-      {photoUrl ? (
-        <button
-          type="button"
-          onClick={() => setPhotoUrl("")}
-          className="rounded-xl border px-3 py-2 text-sm"
-          style={{
-            borderColor: "rgba(244,63,94,0.28)",
-            background: "rgba(244,63,94,0.08)",
-            color: "#be123c",
-          }}
-        >
-          Quitar foto
-        </button>
-      ) : null}
+        {photoUrl ? (
+          <button
+            type="button"
+            onClick={() => setPhotoUrl("")}
+            className="rounded-xl border px-3 py-2 text-sm"
+            style={{
+              borderColor: "rgba(244,63,94,0.28)",
+              background: "rgba(244,63,94,0.08)",
+              color: "#be123c",
+            }}
+          >
+            Quitar foto
+          </button>
+        ) : null}
+      </div>
     </div>
-  
   </div>
+
+
                 <label
                   className="mb-2 block text-sm font-medium"
                   style={{ color: "var(--text-main)" }}
                 >
                   Nombre
+
+
+
                 </label>
                 <input
                   type="text"
@@ -1590,7 +1565,9 @@ photo_url: photoUrl || null,
                   description="El editor de horarios propios queda oculto para evitar configuraciones duplicadas."
                 />
               ) : (
-                <div
+                
+
+<div
                   className="rounded-2xl border p-4"
                   style={{
                     borderColor: "var(--border-color)",
