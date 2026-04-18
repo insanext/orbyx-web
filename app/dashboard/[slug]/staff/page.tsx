@@ -296,9 +296,10 @@ const [photoUrl, setPhotoUrl] = useState("");
 const secondaryButtonClass =
   "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
-async function uploadStaffImage(file: File) {
+async function uploadStaffImage(file: File, staffId: string) {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("staff_id", staffId);
 
   const res = await fetch("/api/upload-staff-photo", {
     method: "POST",
@@ -313,7 +314,6 @@ async function uploadStaffImage(file: File) {
 
   return data.public_url;
 }
-
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
     return localStorage.getItem(branchStorageKey) || "";
@@ -1322,25 +1322,42 @@ photo_url: photoUrl || null,
       )}
     </div>
 
-    <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
-      Subir foto
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
+    <div className="flex items-center gap-3">
+      <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
+        Subir foto
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
 
-          try {
-            const url = await uploadStaffImage(file);
-            setPhotoUrl(url);
-          } catch (err: any) {
-            alert(err.message);
-          }
-        }}
-      />
-    </label>
+            try {
+              const url = await uploadStaffImage(file, form.id);
+              setPhotoUrl(url);
+            } catch (err: any) {
+              alert(err.message);
+            }
+          }}
+        />
+      </label>
+
+      {photoUrl ? (
+        <button
+          type="button"
+          onClick={() => setPhotoUrl("")}
+          className="rounded-xl border px-3 py-2 text-sm"
+          style={{
+            borderColor: "rgba(244,63,94,0.28)",
+            background: "rgba(244,63,94,0.08)",
+            color: "#be123c",
+          }}
+        >
+          Quitar foto
+        </button>
+      ) : null}
+    </div>
   </div>
 </div>
                 <label

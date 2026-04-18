@@ -19,19 +19,26 @@ export async function POST(req: Request) {
     }
 
     const fileExt = file.name.split(".").pop() || "jpg";
-    const fileName = `staff-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}.${fileExt}`;
+const staffId = formData.get("staff_id");
+
+if (!staffId) {
+  return NextResponse.json(
+    { error: "staff_id es obligatorio" },
+    { status: 400 }
+  );
+}
+
+const fileName = `staff/${staffId}.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     const { error: uploadError } = await supabase.storage
       .from("staff-photos")
-      .upload(fileName, buffer, {
-        contentType: file.type || "image/jpeg",
-        upsert: false,
-      });
+.upload(fileName, buffer, {
+  contentType: file.type || "image/jpeg",
+  upsert: true,
+});
 
     if (uploadError) {
       throw uploadError;
