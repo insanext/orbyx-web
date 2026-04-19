@@ -1077,7 +1077,19 @@ export default function Page() {
                   </div>
                 ) : null}
 
-                                <div ref={serviceSectionRef}>
+                                <div
+                  ref={serviceSectionRef}
+                  className="relative"
+                >
+                  {!selectedService ? (
+                    <div className="absolute -top-14 left-0 z-20 flex animate-bounce items-center gap-2">
+                      <div className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white shadow-lg">
+                        Selecciona un servicio aquí
+                      </div>
+                      <div className="h-0 w-0 border-b-[10px] border-l-[10px] border-t-[10px] border-b-transparent border-l-amber-500 border-t-transparent" />
+                    </div>
+                  ) : null}
+
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
                     Servicio
                   </label>
@@ -1240,189 +1252,6 @@ export default function Page() {
               </div>
             </div>
 
-            {selectedSlot ? (
-              <div
-                ref={formRef}
-                className="rounded-[30px] border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-[0_20px_60px_-35px_rgba(16,185,129,0.35)]"
-              >
-                <p className="text-sm font-semibold text-emerald-800">
-                  Hora seleccionada: {formatHour(selectedSlot.slot_start)}
-                </p>
-
-                <div className="mt-5 space-y-3">
-                  <input
-                    placeholder="Nombre y apellido"
-                    value={customerData.name || ""}
-                    onChange={(e) => updateCustomerField("name", e.target.value)}
-                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-                  />
-
-                  <input
-                    placeholder="Teléfono"
-                    value={customerData.phone || ""}
-                    onChange={(e) => updateCustomerField("phone", e.target.value)}
-                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-                  />
-
-                  <input
-                    placeholder="Email"
-                    type="email"
-                    value={customerData.email || ""}
-                    onChange={(e) => updateCustomerField("email", e.target.value)}
-                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-                  />
-
-                  
-                  {isVeterinaria && (
-                    <>
-                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
-                        <p className="text-sm font-semibold text-emerald-900">
-                          Datos de la mascota
-                        </p>
-
-                        {loadingPets ? (
-                          <p className="mt-2 text-xs text-emerald-700">
-                            Buscando mascotas registradas...
-                          </p>
-                        ) : existingCustomerFound ? (
-                          <p className="mt-2 text-xs text-emerald-700">
-                            Detectamos un cliente existente con este email o teléfono.
-                          </p>
-                        ) : (
-                          <p className="mt-2 text-xs text-slate-500">
-                            Ingresa los datos de la mascota para continuar.
-                          </p>
-                        )}
-
-                        {pets.length > 0 ? (
-                          <div className="mt-4 space-y-3">
-                            <div className="grid gap-2 sm:grid-cols-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPetMode("existing");
-
-                                  const selected =
-                                    pets.find((pet) => pet.id === selectedPetId) ||
-                                    pets[0] ||
-                                    null;
-
-                                  if (selected?.id) {
-                                    setSelectedPetId(selected.id);
-                                    applyPetToForm(selected);
-                                  }
-                                }}
-                                className={`h-11 rounded-2xl border px-4 text-sm font-medium transition ${
-                                  petMode === "existing"
-                                    ? "border-emerald-600 bg-emerald-600 text-white"
-                                    : "border-slate-300 bg-white text-slate-700 hover:border-emerald-300"
-                                }`}
-                              >
-                                Usar mascota existente
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPetMode("new");
-                                  setSelectedPetId("");
-                                  updateCustomerField("pet_name", "");
-                                  updateCustomerField("pet_species", "");
-                                }}
-                                className={`h-11 rounded-2xl border px-4 text-sm font-medium transition ${
-                                  petMode === "new"
-                                    ? "border-slate-900 bg-slate-900 text-white"
-                                    : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
-                                }`}
-                              >
-                                Crear mascota nueva
-                              </button>
-                            </div>
-
-                            {petMode === "existing" ? (
-                              <select
-                                value={selectedPetId}
-                                onChange={(e) => {
-                                  const petId = e.target.value;
-                                  setSelectedPetId(petId);
-
-                                  const pet =
-                                    pets.find((item) => item.id === petId) || null;
-
-                                  applyPetToForm(pet);
-                                }}
-                                className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-                              >
-                                <option value="">Seleccionar mascota</option>
-
-                                {pets.map((pet) => {
-                                  const species =
-                                    String(pet.species_custom || "").trim() ||
-                                    String(pet.species_base || "").trim();
-
-                                  return (
-                                    <option key={pet.id} value={pet.id}>
-                                      🐶 {pet.name} · {species}
-                                    </option>
-                                  );
-                                })}
-                              </select>
-                            ) : null}
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <input
-                        placeholder="Nombre de la mascota"
-                        value={customerData.pet_name || ""}
-                        onChange={(e) =>
-                          updateCustomerField("pet_name", e.target.value)
-                        }
-                        disabled={petMode === "existing" && pets.length > 0}
-                        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400"
-                      />
-
-                      <input
-                        placeholder="Especie (perro, gato, etc)"
-                        value={customerData.pet_species || ""}
-                        onChange={(e) =>
-                          updateCustomerField("pet_species", e.target.value)
-                        }
-                        disabled={petMode === "existing" && pets.length > 0}
-                        className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400"
-                      />
-                    </>
-                  )}
-
-                  {visibleBookingFields.map((field) => (
-                    <input
-                      key={field.key}
-                      placeholder={field.label}
-                      value={customerData[field.key] || ""}
-                      onChange={(e) =>
-                        updateCustomerField(field.key, e.target.value)
-                      }
-                      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-                    />
-                  ))}
-
-                  {submitError ? (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                      {submitError}
-                    </div>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={handleSubmitBooking}
-                    disabled={submitting}
-                    className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-5 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {submitting ? "Confirmando..." : "Confirmar reserva"}
-                  </button>
-                </div>
-              </div>
-            ) : null}
           </div>
 
           <div className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
@@ -1682,4 +1511,242 @@ export default function Page() {
       </div>
     </div>
   );
+
+            {selectedSlot ? (
+              <div
+                ref={formRef}
+                className="mt-6 overflow-hidden rounded-[30px] border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 shadow-[0_30px_80px_-45px_rgba(79,70,229,0.5)]"
+              >
+                <div className="h-1.5 bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500" />
+
+                <div className="p-6">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-indigo-500">
+                        Reserva en curso
+                      </p>
+                      <h3 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                        Completa tus datos
+                      </h3>
+                      <p className="mt-2 text-sm text-slate-600">
+                        Ya seleccionaste una hora. Completa tus datos para confirmar la reserva.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          Hora
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                          {formatHour(selectedSlot.slot_start)}
+                        </p>
+                      </div>
+
+                      {selectedService ? (
+                        <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Servicio
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-slate-900">
+                            {selectedService.name}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      {selectedStaffId ? (
+                        <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Profesional
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-slate-900">
+                            {staffOptions.find((staff) => staff.id === selectedStaffId)?.name || "Profesional"}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid gap-3 md:grid-cols-2">
+                    <input
+                      placeholder="Nombre y apellido"
+                      value={customerData.name || ""}
+                      onChange={(e) => updateCustomerField("name", e.target.value)}
+                      className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400"
+                    />
+
+                    <input
+                      placeholder="Teléfono"
+                      value={customerData.phone || ""}
+                      onChange={(e) => updateCustomerField("phone", e.target.value)}
+                      className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400"
+                    />
+
+                    <input
+                      placeholder="Email"
+                      type="email"
+                      value={customerData.email || ""}
+                      onChange={(e) => updateCustomerField("email", e.target.value)}
+                      className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400 md:col-span-2"
+                    />
+
+                    {isVeterinaria && (
+                      <div className="md:col-span-2 space-y-3">
+                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
+                          <p className="text-sm font-semibold text-emerald-900">
+                            Datos de la mascota
+                          </p>
+
+                          {loadingPets ? (
+                            <p className="mt-2 text-xs text-emerald-700">
+                              Buscando mascotas registradas...
+                            </p>
+                          ) : existingCustomerFound ? (
+                            <p className="mt-2 text-xs text-emerald-700">
+                              Detectamos un cliente existente con este email o teléfono.
+                            </p>
+                          ) : (
+                            <p className="mt-2 text-xs text-slate-500">
+                              Ingresa los datos de la mascota para continuar.
+                            </p>
+                          )}
+
+                          {pets.length > 0 ? (
+                            <div className="mt-4 space-y-3">
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPetMode("existing");
+
+                                    const selected =
+                                      pets.find((pet) => pet.id === selectedPetId) ||
+                                      pets[0] ||
+                                      null;
+
+                                    if (selected?.id) {
+                                      setSelectedPetId(selected.id);
+                                      applyPetToForm(selected);
+                                    }
+                                  }}
+                                  className={`h-11 rounded-2xl border px-4 text-sm font-medium transition ${
+                                    petMode === "existing"
+                                      ? "border-emerald-600 bg-emerald-600 text-white"
+                                      : "border-slate-300 bg-white text-slate-700 hover:border-emerald-300"
+                                  }`}
+                                >
+                                  Usar mascota existente
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPetMode("new");
+                                    setSelectedPetId("");
+                                    updateCustomerField("pet_name", "");
+                                    updateCustomerField("pet_species", "");
+                                  }}
+                                  className={`h-11 rounded-2xl border px-4 text-sm font-medium transition ${
+                                    petMode === "new"
+                                      ? "border-slate-900 bg-slate-900 text-white"
+                                      : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                                  }`}
+                                >
+                                  Crear mascota nueva
+                                </button>
+                              </div>
+
+                              {petMode === "existing" ? (
+                                <select
+                                  value={selectedPetId}
+                                  onChange={(e) => {
+                                    const petId = e.target.value;
+                                    setSelectedPetId(petId);
+
+                                    const pet =
+                                      pets.find((item) => item.id === petId) || null;
+
+                                    applyPetToForm(pet);
+                                  }}
+                                  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
+                                >
+                                  <option value="">Seleccionar mascota</option>
+
+                                  {pets.map((pet) => {
+                                    const species =
+                                      String(pet.species_custom || "").trim() ||
+                                      String(pet.species_base || "").trim();
+
+                                    return (
+                                      <option key={pet.id} value={pet.id}>
+                                        🐶 {pet.name} · {species}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <input
+                            placeholder="Nombre de la mascota"
+                            value={customerData.pet_name || ""}
+                            onChange={(e) =>
+                              updateCustomerField("pet_name", e.target.value)
+                            }
+                            disabled={petMode === "existing" && pets.length > 0}
+                            className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400"
+                          />
+
+                          <input
+                            placeholder="Especie (perro, gato, etc)"
+                            value={customerData.pet_species || ""}
+                            onChange={(e) =>
+                              updateCustomerField("pet_species", e.target.value)
+                            }
+                            disabled={petMode === "existing" && pets.length > 0}
+                            className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {visibleBookingFields.map((field) => (
+                      <input
+                        key={field.key}
+                        placeholder={field.label}
+                        value={customerData[field.key] || ""}
+                        onChange={(e) =>
+                          updateCustomerField(field.key, e.target.value)
+                        }
+                        className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400 md:col-span-2"
+                      />
+                    ))}
+                  </div>
+
+                  {submitError ? (
+                    <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                      {submitError}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <p className="text-sm text-slate-500">
+                      Revisa bien tus datos antes de confirmar.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={handleSubmitBooking}
+                      disabled={submitting}
+                      className="inline-flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {submitting ? "Confirmando..." : "Confirmar reserva"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 }
