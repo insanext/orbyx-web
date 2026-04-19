@@ -2181,158 +2181,93 @@ photo_url: photoUrl || null,
             >
               Aún no has creado staff.
             </div>
-          ) : (
-            <div className="space-y-3">
+                    ) : (
+            <div className="space-y-2">
               {staff.map((item) => {
                 const isSelected = editingId === item.id;
 
                 return (
                   <div
                     key={item.id}
-                    className="rounded-[24px] border p-4 transition"
+                    className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
                     style={{
                       borderColor: isSelected
                         ? "rgba(37,99,235,0.45)"
                         : "var(--border-color)",
                       background: isSelected
-                        ? "linear-gradient(135deg, rgba(37,99,235,0.22), rgba(14,165,233,0.12), var(--bg-card))"
-                        : "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
-                      color: "var(--text-main)",
+                        ? "rgba(37,99,235,0.08)"
+                        : "var(--bg-card)",
                     }}
                   >
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <div className="h-10 w-10 overflow-hidden rounded-xl bg-slate-200">
-                            {item.photo_url ? (
-                              <img
-                                src={item.photo_url}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
-                                👤
-                              </div>
-                            )}
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="h-9 w-9 overflow-hidden rounded-lg bg-slate-200">
+                        {item.photo_url ? (
+                          <img
+                            src={item.photo_url}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                            👤
                           </div>
-
-                          <p
-                            className="text-base font-semibold"
-                            style={{ color: "var(--text-main)" }}
-                          >
-                            {item.name}
-                          </p>
-
-                          <span
-                            className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                            style={{
-                              background: item.is_active
-                                ? hasExcess
-                                  ? "rgba(249,115,22,0.14)"
-                                  : "rgba(16,185,129,0.14)"
-                                : "rgba(148,163,184,0.16)",
-                              color: item.is_active
-                                ? hasExcess
-                                  ? "rgb(249 115 22)"
-                                  : "rgb(16 185 129)"
-                                : "var(--text-muted)",
-                            }}
-                          >
-                            {item.is_active
-                              ? hasExcess
-                                ? "Exceso"
-                                : "Activo"
-                              : "Inactivo"}
-                          </span>
-
-                          {isSelected ? (
-                            <span
-                              className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                              style={{
-                                background: "rgba(37,99,235,0.14)",
-                                color: "rgb(96 165 250)",
-                              }}
-                            >
-                              Editando
-                            </span>
-                          ) : null}
-                        </div>
-
-                        {hasExcess && item.is_active ? (
-                          <div className="mt-3">
-                            <label
-                              className="flex items-center gap-2 text-xs"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedStaffToKeep.includes(item.id)}
-                                onChange={() => toggleStaffSelection(item.id)}
-                              />
-                              Mantener activo
-                            </label>
-                          </div>
-                        ) : null}
-
-                        <div className="mt-4 space-y-1 text-sm">
-                          <p style={{ color: "var(--text-main)" }}>
-                            <span className="font-medium">Rol / cargo:</span>{" "}
-                            {item.role || "No definido"}
-                          </p>
-
-                          <p style={{ color: "var(--text-main)" }}>
-                            <span className="font-medium">Correo:</span>{" "}
-                            {item.email || "No definido"}
-                          </p>
-
-                          <p style={{ color: "var(--text-main)" }}>
-                            <span className="font-medium">Teléfono:</span>{" "}
-                            {item.phone || "No definido"}
-                          </p>
-
-                          <p style={{ color: "var(--text-main)" }}>
-                            <span className="font-medium">Horario:</span>{" "}
-                            {item.use_business_hours
-                              ? "Usa horario del negocio"
-                              : "Horario propio"}
-                          </p>
-
-                          <p style={{ color: "var(--text-main)" }}>
-                            <span className="font-medium">Orden:</span>{" "}
-                            {String(item.sort_order ?? 0)}
-                          </p>
-                        </div>
+                        )}
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(item)}
-                          className={secondaryButtonClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                          }}
+                      <div className="min-w-0">
+                        <p
+                          className="truncate text-sm font-semibold"
+                          style={{ color: "var(--text-main)" }}
                         >
-                          Editar
-                        </button>
+                          {item.name}
+                        </p>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(item.id)}
-                          className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
+                        <p
+                          className="truncate text-xs"
+                          style={{ color: "var(--text-muted)" }}
                         >
-                          Eliminar
-                        </button>
+                          {item.role || "Sin rol"}
+                        </p>
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                        style={{
+                          background: item.is_active
+                            ? "rgba(16,185,129,0.14)"
+                            : "rgba(148,163,184,0.16)",
+                          color: item.is_active
+                            ? "rgb(16 185 129)"
+                            : "var(--text-muted)",
+                        }}
+                      >
+                        {item.is_active ? "Activo" : "Inactivo"}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => startEdit(item)}
+                        className="text-xs underline"
+                        style={{ color: "var(--text-main)" }}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        className="text-xs underline"
+                        style={{ color: "rgb(244 63 94)" }}
+                      >
+                        Eliminar
+                      </button>
                     </div>
                   </div>
                 );
               })}
             </div>
-          )}
-        </Panel>
+          )}        </Panel>
 
       </section>
     </div>
