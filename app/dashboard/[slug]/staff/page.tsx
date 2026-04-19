@@ -2274,7 +2274,8 @@ photo_url: photoUrl || null,
                           </div>
                         ) : null}
 
-                                                <div className="mt-4 space-y-1 text-sm">
+                                                
+                        <div className="mt-4 space-y-1 text-sm">
                           <p style={{ color: "var(--text-main)" }}>
                             <span className="font-medium">Rol / cargo:</span>{" "}
                             {item.role || "No definido"}
@@ -2302,11 +2303,10 @@ photo_url: photoUrl || null,
                             {String(item.sort_order ?? 0)}
                           </p>
                         </div>
-                          
-                        </div>
-                      </div>
+                      
 
                       <div className="flex flex-wrap gap-2">
+
                         <button
                           type="button"
                           onClick={() => startEdit(item)}
