@@ -2302,7 +2302,7 @@ photo_url: photoUrl || null,
                             {String(item.sort_order ?? 0)}
                           </p>
                         </div>
-                          ))}
+                          
                         </div>
                       </div>
 
