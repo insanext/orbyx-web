@@ -1458,7 +1458,7 @@ export default function Page() {
                           : "border-slate-200 bg-slate-50/60"
                       }`}
                     >
-                      <div className="mb-3 border-b border-slate-200 pb-2">
+                      <div className="sticky top-0 z-20 -mx-3 mb-3 border-b border-slate-200 bg-white/90 px-3 pb-2 backdrop-blur supports-[backdrop-filter]:bg-white/70">
                         <p className="text-sm font-bold text-slate-900">
                           {getWeekdayLabel(dateObj)}
                         </p>
