@@ -1207,9 +1207,10 @@ photo_url: photoUrl || null,
         <Notice tone="danger" title={loadError} />
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr] overflow-hidden">
+      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <Panel
-          title={editingId ? "Editar staff" : "Nuevo staff"}
+  title={editingId ? "Editar staff" : "Nuevo staff"}
+  className="min-w-0"
           description="Agrega personas del equipo y deja su información base lista."
           className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
         >
