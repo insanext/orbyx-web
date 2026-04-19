@@ -1210,10 +1210,9 @@ photo_url: photoUrl || null,
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <Panel
   title={editingId ? "Editar staff" : "Nuevo staff"}
-  className="min-w-0"
-          description="Agrega personas del equipo y deja su información base lista."
-          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
-        >
+  description="Agrega personas del equipo y deja su información base lista."
+  className="min-w-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
+>
           {!selectedBranchId ? (
             <div
               className="rounded-2xl border border-dashed px-4 py-8 text-sm"
