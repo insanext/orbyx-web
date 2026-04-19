@@ -1442,8 +1442,8 @@ export default function Page() {
               ) : null}
             </div>
 
-            <div className="overflow-x-auto">
-              <div className="grid min-w-[980px] grid-cols-7 gap-3">
+            <div className="max-h-[calc(100vh-180px)] overflow-auto">
+              <div className="grid min-w-[980px] grid-cols-7 gap-3 items-start">
                 {weekDates.map((dateObj) => {
                   const dateKey = formatDate(dateObj);
                   const slots = weekSlots[dateKey] || [];
@@ -1458,7 +1458,7 @@ export default function Page() {
                           : "border-slate-200 bg-slate-50/60"
                       }`}
                     >
-                      <div className="sticky top-0 z-20 -mx-3 mb-3 border-b border-slate-200 bg-white/90 px-3 pb-2 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+                      <div className="sticky top-0 z-30 -mx-3 mb-3 border-b border-slate-200 bg-white px-3 pb-2 pt-1">
                         <p className="text-sm font-bold text-slate-900">
                           {getWeekdayLabel(dateObj)}
                         </p>
