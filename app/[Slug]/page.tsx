@@ -304,6 +304,7 @@ export default function Page() {
     useState<BookingSuccessData | null>(null);
 
   const formRef = useRef<HTMLDivElement | null>(null);
+  const serviceSectionRef = useRef<HTMLDivElement | null>(null);
 
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
   const showBranchSelector = branches.length > 1;
@@ -1076,7 +1077,7 @@ export default function Page() {
                   </div>
                 ) : null}
 
-                <div>
+                                <div ref={serviceSectionRef}>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
                     Servicio
                   </label>
@@ -1442,6 +1443,112 @@ export default function Page() {
               ) : null}
             </div>
 
+                        </div>
+
+            {!selectedService ? (
+            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-amber-900">
+                    Primero debes seleccionar un servicio
+                  </p>
+                  <p className="mt-1 text-sm text-amber-800">
+                    Los horarios aparecerán aquí cuando elijas un servicio en el panel izquierdo.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    serviceSectionRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
+                  }}
+                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
+                >
+                  ← Ir a seleccionar servicio
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+
+            <div className="max-h-[calc(100vh-180px)] overflow-auto">
+              <div className="grid min-w-[980px] grid-cols-7 gap-3 items-start">
+                {weekDates.map((dateObj) => {
+                  const dateKey = formatDate(dateObj);
+                  const slots = weekSlots[dateKey] || [];
+                  const isSelectedDay = formatDate(selectedDate) === dateKey;
+
+                  return (
+                    <div
+                      key={dateKey}
+                      className={`rounded-2xl border p-3 transition ${
+                        isSelectedDay
+                          ? "border-sky-300 bg-gradient-to-b from-sky-50 to-white shadow-sm"
+                          : "border-slate-200 bg-slate-50/60"
+                      }`}
+                    >
+                      <div className="sticky top-0 z-30 -mx-3 mb-3 border-b border-slate-200 bg-white px-3 pb-2 pt-1">
+                        <p className="text-sm font-bold text-slate-900">
+                          {getWeekdayLabel(dateObj)}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {dateObj.getDate()}/{dateObj.getMonth() + 1}
+                        </p>
+                      </div>
+
+                      {loadingSlots ? (
+                        <p className="text-xs text-slate-500">Cargando...</p>
+                      ) : !selectedService ? (
+                        <p className="text-xs text-slate-500">
+                          Selecciona un servicio.
+                        </p>
+                      ) : slots.length === 0 ? (
+                        <p className="text-xs text-slate-500">Sin horarios.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {slots.map((slot, index) => (
+                            <button
+                              key={`${slot.slot_start}-${index}`}
+                              type="button"
+                              onClick={() => {
+                                setSelectedDate(new Date(dateObj));
+                                setSelectedSlot(slot);
+                                setTimeout(() => {
+                                  formRef.current?.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                }, 100);
+                              }}
+                              className={`flex min-h-[40px] w-full flex-col items-center justify-center rounded-xl border px-2 py-1 text-center transition ${
+                                selectedSlot?.slot_start === slot.slot_start
+                                  ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
+                                  : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                              }`}
+                            >
+                              <span className="text-[12px] font-semibold leading-none">
+                                {formatHour(slot.slot_start)}
+                              </span>
+                              <span
+                                className={`mt-1 text-[9px] leading-none ${
+                                  selectedSlot?.slot_start === slot.slot_start
+                                    ? "text-indigo-100"
+                                    : "text-slate-400"
+                                }`}
+                              >
+                                Libre
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="mt-5 grid gap-3 lg:grid-cols-4">
