@@ -10,6 +10,7 @@ type StaffItem = {
   name: string;
   role?: string | null;
   color?: string | null;
+  photo_url?: string | null;
 };
 
 type ServiceItem = {
@@ -221,6 +222,12 @@ function buildGoogleCalendarUrl({
   }
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function getStaffInitial(name?: string | null) {
+  const safeName = String(name || "").trim();
+  if (!safeName) return "?";
+  return safeName.charAt(0).toUpperCase();
 }
 
 function SummaryChip({
@@ -1124,7 +1131,7 @@ export default function Page() {
                   </div>
                 ) : null}
 
-                {selectedService ? (
+                                {selectedService ? (
                   <div>
                     <div className="mb-3">
                       <p className="text-sm font-semibold text-slate-900">
@@ -1135,28 +1142,85 @@ export default function Page() {
                       </p>
                     </div>
 
-                    <select
-                      value={selectedStaffId}
-                      disabled={loadingStaff}
-                      onChange={(e) => {
-                        setSelectedStaffId(e.target.value);
-                        setSelectedSlot(null);
-                      }}
-                      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-800 outline-none transition disabled:bg-slate-100 focus:border-indigo-400"
-                    >
-                      <option value="">
-                        {loadingStaff
-                          ? "Cargando profesionales..."
-                          : "Cualquiera disponible"}
-                      </option>
+                    {loadingStaff ? (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                        Cargando profesionales...
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedStaffId("");
+                            setSelectedSlot(null);
+                          }}
+                          className={`w-full rounded-2xl border p-4 text-left transition ${
+                            selectedStaffId === ""
+                              ? "border-indigo-500 bg-indigo-50 shadow-sm"
+                              : "border-slate-200 bg-white hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700">
+                              *
+                            </div>
 
-                      {staffOptions.map((staff) => (
-                        <option key={staff.id} value={staff.id}>
-                          {staff.name}
-                          {staff.role ? ` · ${staff.role}` : ""}
-                        </option>
-                      ))}
-                    </select>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-slate-900">
+                                Cualquiera disponible
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                Orbyx asignará un profesional con horario disponible
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+
+                        {staffOptions.map((staff) => (
+                          <button
+                            key={staff.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedStaffId(staff.id);
+                              setSelectedSlot(null);
+                            }}
+                            className={`w-full rounded-2xl border p-4 text-left transition ${
+                              selectedStaffId === staff.id
+                                ? "border-indigo-500 bg-indigo-50 shadow-sm"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-4">
+                              {staff.photo_url ? (
+                                <img
+                                  src={staff.photo_url}
+                                  alt={staff.name}
+                                  className="h-16 w-16 rounded-2xl object-cover border border-slate-200 bg-slate-100"
+                                />
+                              ) : (
+                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700">
+                                  {getStaffInitial(staff.name)}
+                                </div>
+                              )}
+
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900">
+                                  {staff.name}
+                                </p>
+
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Especialidad / Cargo
+                                </p>
+
+                                <p className="mt-1 truncate text-sm text-slate-700">
+                                  {staff.role?.trim() || "Profesional"}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : null}
 
