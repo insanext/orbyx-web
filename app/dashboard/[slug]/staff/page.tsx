@@ -1207,7 +1207,7 @@ photo_url: photoUrl || null,
         <Notice tone="danger" title={loadError} />
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Panel
           title={editingId ? "Editar staff" : "Nuevo staff"}
           description="Agrega personas del equipo y deja su información base lista."
