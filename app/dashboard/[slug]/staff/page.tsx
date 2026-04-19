@@ -97,7 +97,6 @@ const emptyForm = {
   role: "",
   email: "",
   phone: "",
-  color: "#0f172a",
   is_active: true,
   sort_order: 0,
   use_business_hours: true,
@@ -655,7 +654,6 @@ async function uploadStaffImage(file: File, staffId: string) {
             role: staffItem.role || "",
             email: staffItem.email || "",
             phone: staffItem.phone || "",
-            color: staffItem.color || "#0f172a",
             is_active: false,
             sort_order: Number(staffItem.sort_order || 0),
             use_business_hours:
@@ -663,6 +661,7 @@ async function uploadStaffImage(file: File, staffId: string) {
                 ? true
                 : Boolean(staffItem.use_business_hours),
           }),
+
         });
 
         const data = await res.json();
@@ -701,7 +700,6 @@ setPhotoUrl("");
         role: item.role || "",
         email: item.email || "",
         phone: item.phone || "",
-        color: item.color || "#0f172a",
         is_active: Boolean(item.is_active),
         sort_order: Number(item.sort_order || 0),
         use_business_hours:
@@ -850,11 +848,10 @@ setPhotoUrl(item.photo_url || "");
         role: form.role.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
-        color: form.color,
         is_active: form.is_active,
         sort_order: Number(form.sort_order || 0),
         use_business_hours: form.use_business_hours,
-photo_url: photoUrl || null,
+        photo_url: photoUrl || null,
       };
 
       const url = editingId
@@ -1462,51 +1459,28 @@ photo_url: photoUrl || null,
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Color
-                  </label>
+                            <div className="flex items-end">
+                <label
+                  className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
                   <input
-                    type="color"
-                    value={form.color}
+                    type="checkbox"
+                    checked={form.is_active}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, color: e.target.value }))
+                      setForm((prev) => ({
+                        ...prev,
+                        is_active: e.target.checked,
+                      }))
                     }
-                    className="h-11 w-full rounded-2xl border px-2"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                    }}
+                    className="h-4 w-4 rounded"
                   />
-                </div>
-
-                <div className="flex items-end">
-                  <label
-                    className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={form.is_active}
-                      onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          is_active: e.target.checked,
-                        }))
-                      }
-                      className="h-4 w-4 rounded"
-                    />
-                    Staff activo
-                  </label>
-                </div>
+                  Staff activo
+                </label>
               </div>
 
               <div
