@@ -2203,18 +2203,18 @@ photo_url: photoUrl || null,
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-3">
-                          <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-200">
-  {item.photo_url ? (
-    <img
-      src={item.photo_url}
-      className="h-full w-full object-cover"
-    />
-  ) : (
-    <div className="flex h-full w-full items-center justify-center text-slate-400 text-sm">
-      👤
-    </div>
-  )}
-</div>
+                          <div className="h-10 w-10 overflow-hidden rounded-xl bg-slate-200">
+                            {item.photo_url ? (
+                              <img
+                                src={item.photo_url}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+                                👤
+                              </div>
+                            )}
+                          </div>
 
                           <p
                             className="text-base font-semibold"
@@ -2274,7 +2274,6 @@ photo_url: photoUrl || null,
                           </div>
                         ) : null}
 
-                                                
                         <div className="mt-4 space-y-1 text-sm">
                           <p style={{ color: "var(--text-main)" }}>
                             <span className="font-medium">Rol / cargo:</span>{" "}
@@ -2303,10 +2302,9 @@ photo_url: photoUrl || null,
                             {String(item.sort_order ?? 0)}
                           </p>
                         </div>
-                      
+                      </div>
 
                       <div className="flex flex-wrap gap-2">
-
                         <button
                           type="button"
                           onClick={() => startEdit(item)}
@@ -2335,6 +2333,7 @@ photo_url: photoUrl || null,
             </div>
           )}
         </Panel>
+
       </section>
     </div>
   );
