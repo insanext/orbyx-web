@@ -1823,7 +1823,7 @@ photo_url: photoUrl || null,
                   />
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid gap-3 md:grid-cols-[1fr_1.5fr_0.9fr_1fr_1fr_auto_auto]">
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                       <div>
                         <label
                           className="mb-2 block text-xs font-semibold uppercase tracking-wide"
