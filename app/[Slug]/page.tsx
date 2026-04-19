@@ -1442,89 +1442,134 @@ export default function Page() {
               ) : null}
             </div>
 
-            <div className="max-h-[calc(100vh-180px)] overflow-auto">
-              <div className="grid min-w-[980px] grid-cols-7 gap-3 items-start">
-                {weekDates.map((dateObj) => {
-                  const dateKey = formatDate(dateObj);
-                  const slots = weekSlots[dateKey] || [];
-                  const isSelectedDay = formatDate(selectedDate) === dateKey;
+            </div>
 
-                  return (
-                    <div
-                      key={dateKey}
-                      className={`rounded-2xl border p-3 transition ${
-                        isSelectedDay
-                          ? "border-sky-300 bg-gradient-to-b from-sky-50 to-white shadow-sm"
-                          : "border-slate-200 bg-slate-50/60"
-                      }`}
+            <div className="mt-5 grid gap-3 lg:grid-cols-4">
+              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5"
                     >
-                      <div className="sticky top-0 z-30 -mx-3 mb-3 border-b border-slate-200 bg-white px-3 pb-2 pt-1">
-                        <p className="text-sm font-bold text-slate-900">
-                          {getWeekdayLabel(dateObj)}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {dateObj.getDate()}/{dateObj.getMonth() + 1}
-                        </p>
-                      </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 3l7 4v5c0 4.5-2.8 7.7-7 9-4.2-1.3-7-4.5-7-9V7l7-4z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.5 12l1.7 1.7 3.3-3.4"
+                      />
+                    </svg>
+                  </div>
 
-                      {loadingSlots ? (
-                        <p className="text-xs text-slate-500">Cargando...</p>
-                      ) : !selectedService ? (
-                        <p className="text-xs text-slate-500">
-                          Selecciona un servicio.
-                        </p>
-                      ) : slots.length === 0 ? (
-                        <p className="text-xs text-slate-500">Sin horarios.</p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {slots.map((slot, index) => (
-                            <button
-                              key={`${slot.slot_start}-${index}`}
-                              type="button"
-                              onClick={() => {
-                                setSelectedDate(new Date(dateObj));
-                                setSelectedSlot(slot);
-                                setTimeout(() => {
-                                  formRef.current?.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "start",
-                                  });
-                                }, 100);
-                              }}
-                              className={`flex min-h-[40px] w-full flex-col items-center justify-center rounded-xl border px-2 py-1 text-center transition ${
-                                selectedSlot?.slot_start === slot.slot_start
-                                  ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
-                                  : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
-                              }`}
-                            >
-                              <span className="text-[12px] font-semibold leading-none">
-                                {formatHour(slot.slot_start)}
-                              </span>
-                              <span
-                                className={`mt-1 text-[9px] leading-none ${
-                                  selectedSlot?.slot_start === slot.slot_start
-                                    ? "text-indigo-100"
-                                    : "text-slate-400"
-                                }`}
-                              >
-                                Libre
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Reserva segura
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Tus datos están protegidos y tu reserva queda registrada al instante.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-100 bg-violet-50 text-violet-600 shadow-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 6v6l4 2"
+                      />
+                      <circle cx="12" cy="12" r="9" />
+                    </svg>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Confirmación inmediata
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Recibirás el detalle de tu reserva apenas confirmes la hora.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 10h8M8 14h5"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M21 12c0 4.97-4.03 9-9 9a8.96 8.96 0 0 1-4.24-1.06L3 21l1.19-4.01A8.96 8.96 0 0 1 3 12c0-4.97 4.03-9 9-9s9 4.03 9 9z"
+                      />
+                    </svg>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      ¿Necesitas ayuda?
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Puedes escribirnos por WhatsApp si tienes dudas antes de reservar.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="h-5 w-5"
+                    >
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.966-.273-.099-.471-.148-.67.15-.198.297-.768.966-.94 1.164-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.787-1.48-1.759-1.653-2.056-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.793.372-.273.297-1.04 1.016-1.04 2.479s1.065 2.875 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.174-1.413-.075-.124-.273-.198-.57-.347z" />
+                      <path d="M20.52 3.449A11.94 11.94 0 0 0 12.043 0C5.495 0 .161 5.334.161 11.882c0 2.094.547 4.139 1.587 5.945L0 24l6.356-1.667a11.86 11.86 0 0 0 5.687 1.448h.005c6.548 0 11.882-5.334 11.882-11.882a11.8 11.8 0 0 0-3.41-8.45zm-8.477 18.32h-.004a9.86 9.86 0 0 1-5.026-1.378l-.361-.214-3.772.99 1.007-3.676-.235-.377a9.86 9.86 0 0 1-1.52-5.232c.003-5.44 4.43-9.867 9.875-9.867 2.637 0 5.114 1.027 6.978 2.893a9.82 9.82 0 0 1 2.889 6.983c-.003 5.443-4.43 9.878-9.87 9.878z" />
+                    </svg>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {business?.whatsapp || visiblePhone || "WhatsApp disponible"}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Responderemos lo antes posible.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        {loadingPage ? (
-          <div className="mt-6 text-sm text-slate-500">Cargando...</div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
