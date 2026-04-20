@@ -1089,14 +1089,14 @@ export default function Page() {
                   ref={serviceSectionRef}
                   className="relative"
                 >
-                                     {!selectedService ? (
-                    <div className="pointer-events-none absolute -top-3 left-14 z-20 flex flex-col items-start">
-                      <div className="animate-pulse rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 px-4 py-1.5 text-xs font-semibold text-white shadow-[0_10px_30px_-12px_rgba(245,158,11,0.9)]">
-                        Selecciona un servicio aquí
-                      </div>
-                      <div className="ml-8 h-0 w-0 border-l-[9px] border-r-[9px] border-t-[12px] border-l-transparent border-r-transparent border-t-amber-500" />
-                    </div>
-                  ) : null}
+{!selectedService ? (
+  <div className="pointer-events-none absolute -top-3 left-14 z-20 flex animate-bounce flex-col items-start">
+    <div className="animate-pulse rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 px-4 py-1.5 text-xs font-semibold text-white shadow-[0_10px_30px_-12px_rgba(245,158,11,0.9)]">
+      Selecciona un servicio aquí
+    </div>
+    <div className="ml-8 h-0 w-0 border-l-[9px] border-r-[9px] border-t-[12px] border-l-transparent border-r-transparent border-t-amber-500" />
+  </div>
+) : null}
 
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
                     Servicio
