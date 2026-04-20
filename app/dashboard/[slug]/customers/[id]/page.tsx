@@ -355,9 +355,7 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Cliente"
-        title={customer?.name || "Cliente"}
+      <div className="hidden" />
         description={
           isVeterinaria
             ? "Ficha del cliente, sus mascotas, visitas y próximos seguimientos."
@@ -426,7 +424,7 @@ export default function CustomerDetailPage() {
               >
                 <form
                   onSubmit={handleCreatePet}
-                  className="mb-6 rounded-2xl border p-4"
+                  className="hidden mb-6 rounded-2xl border p-4"
                   style={{
                     borderColor: "var(--border-color)",
                     background:
@@ -693,126 +691,73 @@ export default function CustomerDetailPage() {
                   </div>
                 </form>
 
-                {pets.length === 0 ? (
-                  <EmptyState
-                    title="Sin mascotas todavía"
-                    description="Agrega la primera mascota del cliente para construir la ficha veterinaria."
-                  />
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {pets.map((pet) => (
-                      <div
-                        key={pet.id}
-                        className="rounded-2xl border p-4"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background:
-                            "linear-gradient(180deg, rgba(16,185,129,0.05), var(--bg-card))",
-                        }}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p
-                              className="text-lg font-semibold"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {pet.name}
-                            </p>
-                            <p
-                              className="mt-1 text-sm font-medium"
-                              style={{ color: "#10b981" }}
-                            >
-                              {getPetSpeciesLabel(pet)}
-                            </p>
-                          </div>
 
-                          <span
-                            className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                            style={{
-                              background: "rgba(16,185,129,0.12)",
-                              color: "#047857",
-                            }}
-                          >
-                            Mascota
-                          </span>
-                        </div>
 
-                        {pet.breed ? (
-                          <p
-                            className="mt-2 text-sm"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            Raza: {pet.breed}
-                          </p>
-                        ) : null}
 
-                        <div
-                          className="mt-3 flex flex-wrap gap-2 text-xs"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          {pet.sex ? (
-                            <span
-                              className="rounded-full border px-2.5 py-1"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-soft)",
-                              }}
-                            >
-                              Sexo: {pet.sex}
-                            </span>
-                          ) : null}
+{pets.length === 0 ? (
+  <EmptyState
+    title="Sin mascotas todavía"
+    description="Agrega la primera mascota del cliente."
+  />
+) : (
+  <div className="space-y-4">
+    {pets.map((pet) => (
+      <div
+        key={pet.id}
+        className="rounded-2xl border p-4 flex items-center gap-4"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+        }}
+      >
+        <div className="h-16 w-16 rounded-full bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
+          🐾
+        </div>
 
-                          {pet.weight_kg !== null && pet.weight_kg !== undefined ? (
-                            <span
-                              className="rounded-full border px-2.5 py-1"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-soft)",
-                              }}
-                            >
-                              {pet.weight_kg} kg
-                            </span>
-                          ) : null}
+        <div className="flex-1">
+          <p
+            className="text-lg font-semibold"
+            style={{ color: "var(--text-main)" }}
+          >
+            {pet.name}
+          </p>
 
-                          <span
-                            className="rounded-full border px-2.5 py-1"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-soft)",
-                            }}
-                          >
-                            {pet.is_sterilized
-                              ? "Esterilizado"
-                              : "No esterilizado"}
-                          </span>
-                        </div>
+          <p
+            className="text-sm"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {getPetSpeciesLabel(pet)}
+            {pet.breed ? ` · ${pet.breed}` : ""}
+            {pet.weight_kg ? ` · ${pet.weight_kg} kg` : ""}
+          </p>
 
-                        {pet.notes ? (
-                          <div
-                            className="mt-4 rounded-2xl border p-3"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-soft)",
-                            }}
-                          >
-                            <p
-                              className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Nota
-                            </p>
-                            <p
-                              className="mt-2 text-sm leading-6"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {pet.notes}
-                            </p>
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                )}
+          <p
+            className="mt-1 text-xs"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {pet.is_sterilized ? "Esterilizado" : "No esterilizado"}
+          </p>
+
+          {pet.notes ? (
+            <p
+              className="mt-2 text-xs italic"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {pet.notes}
+            </p>
+          ) : null}
+        </div>
+
+        <button
+          className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
+        >
+          Editar
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+
               </Panel>
             ) : null}
 
@@ -878,26 +823,11 @@ export default function CustomerDetailPage() {
               description="Lectura rápida del cliente para operación diaria."
             >
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <SummaryCard
-                  label="Cliente"
-                  value={customer.name}
-                  hint="Ficha principal del cliente."
-                />
 
                 <SummaryCard
                   label="Visitas"
                   value={customer.total_visits}
                   hint="Cantidad total de atenciones registradas."
-                />
-
-                <SummaryCard
-                  label="Mascotas"
-                  value={isVeterinaria ? pets.length : "-"}
-                  hint={
-                    isVeterinaria
-                      ? "Mascotas vinculadas a este cliente."
-                      : "Disponible para negocios veterinaria."
-                  }
                 />
 
                 <SummaryCard
