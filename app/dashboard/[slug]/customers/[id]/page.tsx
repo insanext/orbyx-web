@@ -762,7 +762,6 @@ export default function CustomerDetailPage() {
             ) : null}
 
 
-
 <Panel
   title="Historial clínico"
   description="Registro clínico organizado por mascota."
@@ -790,12 +789,9 @@ export default function CustomerDetailPage() {
               background: "var(--bg-card)",
             }}
           >
-            {/* HEADER MASCOTA */}
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3 flex items-center justify-between">
               <div>
-                <p className="text-base font-semibold">
-                  🐾 {pet.name}
-                </p>
+                <p className="text-base font-semibold">🐾 {pet.name}</p>
                 <p
                   className="text-xs"
                   style={{ color: "var(--text-muted)" }}
@@ -813,7 +809,6 @@ export default function CustomerDetailPage() {
               </button>
             </div>
 
-            {/* HISTORIAL */}
             {petAppointments.length === 0 ? (
               <p
                 className="text-xs"
@@ -823,71 +818,74 @@ export default function CustomerDetailPage() {
               </p>
             ) : (
               <div className="space-y-2">
+                {petAppointments.map((appt) => (
+                  <div
+                    key={appt.id}
+                    className="rounded-xl border p-3"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                    }}
+                  >
+                    <div className="flex justify-between items-start gap-3">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {appt.service_name_snapshot || "Atención"}
+                        </p>
 
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {formatDateLong(appt.start_at)}
+                        </p>
+                      </div>
+                    </div>
 
+                    <div className="mt-3 grid gap-2">
+                      <input
+                        type="text"
+                        placeholder="Motivo (ej: control, vacuna...)"
+                        defaultValue={appt.reason || ""}
+                        className="w-full rounded-lg border px-2 py-1 text-xs"
+                      />
 
-{petAppointments.map((appt) => (
-  <div
-    key={appt.id}
-    className="rounded-xl border p-3"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-soft)",
-    }}
-  >
-    <div className="flex justify-between items-start gap-3">
-      <div>
-        <p className="text-sm font-medium">
-          {appt.service_name_snapshot || "Atención"}
-        </p>
+                      <textarea
+                        placeholder="Notas clínicas"
+                        defaultValue={appt.notes || ""}
+                        className="w-full rounded-lg border px-2 py-1 text-xs"
+                      />
 
-        <p
-          className="text-xs"
-          style={{ color: "var(--text-muted)" }}
-        >
-          {formatDateLong(appt.start_at)}
-        </p>
-      </div>
-    </div>
+                      <input
+                        type="date"
+                        defaultValue={
+                          appt.next_control_at
+                            ? new Date(appt.next_control_at)
+                                .toISOString()
+                                .split("T")[0]
+                            : ""
+                        }
+                        className="w-full rounded-lg border px-2 py-1 text-xs"
+                      />
 
-    {/* INPUT CLÍNICO */}
-    <div className="mt-3 grid gap-2">
-      <input
-        type="text"
-        placeholder="Motivo (ej: control, vacuna...)"
-        defaultValue={appt.reason || ""}
-        className="w-full rounded-lg border px-2 py-1 text-xs"
-      />
-
-      <textarea
-        placeholder="Notas clínicas"
-        defaultValue={appt.notes || ""}
-        className="w-full rounded-lg border px-2 py-1 text-xs"
-      />
-
-      <input
-        type="date"
-        defaultValue={
-          appt.next_control_at
-            ? new Date(appt.next_control_at).toISOString().split("T")[0]
-            : ""
-        }
-        className="w-full rounded-lg border px-2 py-1 text-xs"
-      />
-
-      <button
-        onClick={() => alert("Guardar clínico (siguiente paso)")}
-        className="mt-1 rounded-lg bg-blue-600 text-white text-xs px-2 py-1 hover:bg-blue-700"
-      >
-        Guardar
-      </button>
-    </div>
-  </div>
-))}
-
+                      <button
+                        onClick={() => alert("Guardar clínico (siguiente paso)")}
+                        className="mt-1 rounded-lg bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
+                      >
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   )}
 </Panel>
+
 
           </div>
 
