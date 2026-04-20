@@ -1269,7 +1269,7 @@ export default function Page() {
                   Horarios disponibles
                 </p>
                 <h2 className="mt-1 text-xl font-bold text-slate-950">
-                  Agenda semanal
+                  Agenda semanal {selectedDate.getFullYear()}
                 </h2>
               </div>
 
@@ -1312,7 +1312,10 @@ export default function Page() {
                         {getWeekdayLabel(dateObj)}
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
-                        {dateObj.getDate()}/{dateObj.getMonth() + 1}
+                        {dateObj.toLocaleDateString("es-CL", {
+  day: "numeric",
+  month: "long",
+})}
                       </p>
                     </div>
 
