@@ -355,13 +355,6 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="hidden" />
-        description={
-          isVeterinaria
-            ? "Ficha del cliente, sus mascotas, visitas y próximos seguimientos."
-            : "Ficha del cliente, historial de visitas y datos de contacto."
-        }
-      />
 
       {loading ? (
         <Panel title="Cargando ficha">
