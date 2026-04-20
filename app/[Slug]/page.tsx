@@ -1339,15 +1339,15 @@ export default function Page() {
                             key={`${slot.slot_start}-${index}`}
                             type="button"
                             onClick={() => {
-                              setSelectedDate(new Date(dateObj));
-                              setSelectedSlot(slot);
-                              setTimeout(() => {
-                                formRef.current?.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "start",
-                                });
-                              }, 100);
-                            }}
+  setSelectedSlot(slot);
+
+  setTimeout(() => {
+    formRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 120);
+}}
                             className={`flex min-h-[40px] w-full flex-col items-center justify-center rounded-xl border px-2 py-1 text-center transition ${
                               selectedSlot?.slot_start === slot.slot_start
                                 ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
@@ -1396,28 +1396,37 @@ export default function Page() {
                       </p>
                     </div>
 
-                    <div className="grid gap-2 sm:grid-cols-3">
-                      <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          Hora
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">
-                          {formatHour(selectedSlot!.slot_start)}
-                        </p>
-                      </div>
+                    <div className="grid gap-2 sm:grid-cols-4">
+  <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+      Fecha
+    </p>
+    <p className="mt-1 text-sm font-semibold text-slate-900">
+      {formatFullDate(selectedSlot!.slot_start)}
+    </p>
+  </div>
 
-                      {selectedService ? (
-                        <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                            Servicio
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-slate-900">
-                            {selectedService!.name}
-                          </p>
-                        </div>
-                      ) : null}
+  <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+      Hora
+    </p>
+    <p className="mt-1 text-sm font-semibold text-slate-900">
+      {formatHour(selectedSlot!.slot_start)}
+    </p>
+  </div>
 
-                      {selectedStaffId ? (
+  {selectedService ? (
+    <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        Servicio
+      </p>
+      <p className="mt-1 text-sm font-semibold text-slate-900">
+        {selectedService!.name}
+      </p>
+    </div>
+  ) : null}
+
+  {selectedStaffId ? (
                         <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                             Profesional
