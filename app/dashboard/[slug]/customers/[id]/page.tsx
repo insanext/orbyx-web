@@ -754,60 +754,115 @@ export default function CustomerDetailPage() {
               </Panel>
             ) : null}
 
-            <Panel
-              title="Historial de visitas"
-              description="Últimas visitas registradas del cliente para contexto rápido."
-            >
-              {latestAppointments.length === 0 ? (
-                <EmptyState
-                  title="Sin historial todavía"
-                  description="Cuando el cliente tenga citas registradas, aparecerán aquí."
-                />
-              ) : (
-                <div className="space-y-3">
-                  {latestAppointments.map((appointment, index) => (
-                    <div
-                      key={appointment.id}
-                      className="rounded-2xl border p-4"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background:
-                          index === 0
-                            ? "linear-gradient(180deg, rgba(37,99,235,0.07), var(--bg-card))"
-                            : "var(--bg-card)",
-                      }}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p
-                            className="text-sm font-semibold"
-                            style={{ color: "var(--text-main)" }}
-                          >
-                            {appointment.service_name_snapshot || "Servicio"}
-                          </p>
-                          <p
-                            className="mt-1 text-sm"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            {formatDateLong(appointment.start_at)}
-                          </p>
-                        </div>
 
-                        <span
-                          className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                          style={{
-                            background: "rgba(37,99,235,0.10)",
-                            color: "#1d4ed8",
-                          }}
-                        >
-                          Visita
-                        </span>
-                      </div>
+
+<Panel
+  title="Historial clínico"
+  description="Registro clínico organizado por mascota."
+>
+  {pets.length === 0 ? (
+    <EmptyState
+      title="Sin mascotas"
+      description="Agrega mascotas para construir el historial clínico."
+    />
+  ) : (
+    <div className="space-y-6">
+      {pets.map((pet) => {
+        const petAppointments = appointments.filter(
+          (appt) =>
+            appt?.pet_id === pet.id ||
+            appt?.customer_data?.pet_name === pet.name
+        );
+
+        return (
+          <div
+            key={pet.id}
+            className="rounded-2xl border p-4"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            {/* HEADER MASCOTA */}
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-base font-semibold">
+                  🐾 {pet.name}
+                </p>
+                <p
+                  className="text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {getPetSpeciesLabel(pet)}
+                  {pet.breed ? ` · ${pet.breed}` : ""}
+                </p>
+              </div>
+
+              <button
+                onClick={() => alert(`Editar mascota ${pet.name}`)}
+                className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
+              >
+                Editar
+              </button>
+            </div>
+
+            {/* HISTORIAL */}
+            {petAppointments.length === 0 ? (
+              <p
+                className="text-xs"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Sin registros clínicos.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {petAppointments.map((appt) => (
+                  <div
+                    key={appt.id}
+                    className="rounded-xl border px-3 py-2 flex justify-between items-center"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                    }}
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {appt.service_name_snapshot || "Atención"}
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {formatDateLong(appt.start_at)}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </Panel>
+
+                    <span
+                      className="text-[11px] font-semibold"
+                      style={{ color: "#2563eb" }}
+                    >
+                      Ficha
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  )}
+</Panel>
+
+
+
+
+
+
+
+
+
+
           </div>
 
           <div className="space-y-6">
