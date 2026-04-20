@@ -703,7 +703,6 @@ export default function Page() {
     selectedBranchId,
     selectedStaffId,
     weekDates,
-    selectedSlot,
   ]);
 
   async function handleSubmitBooking() {
@@ -1036,23 +1035,32 @@ export default function Page() {
                   </p>
                 ) : null}
 
-                <div className="mt-5 flex flex-wrap gap-2 text-sm text-slate-600">
-                  {visiblePhone ? (
-                    <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-sky-700">
-                      {visiblePhone}
-                    </span>
-                  ) : null}
-
+                 <div className="mt-5 flex flex-wrap gap-2 text-sm text-slate-600">
                   {visibleAddress ? (
-                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-slate-700">
-                      {visibleAddress}
+                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-slate-700">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="h-4 w-4 text-slate-500"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 21s7-4.35 7-11a7 7 0 10-14 0c0 6.65 7 11 7 11z"
+                        />
+                        <circle cx="12" cy="10" r="2.5" />
+                      </svg>
+                      <span>{visibleAddress}</span>
                     </span>
                   ) : null}
                 </div>
               </div>
             </div>
 
-            <div className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+            <div className="flex min-h-[980px] flex-col rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
               <div className="space-y-4">
                 {showBranchSelector ? (
                   <div>
@@ -1081,12 +1089,12 @@ export default function Page() {
                   ref={serviceSectionRef}
                   className="relative"
                 >
-                                    {!selectedService ? (
-                    <div className="pointer-events-none absolute -top-2 left-6 z-20 flex flex-col items-start animate-bounce">
-                      <div className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white shadow-lg">
+                                     {!selectedService ? (
+                    <div className="pointer-events-none absolute -top-3 left-14 z-20 flex flex-col items-start">
+                      <div className="animate-pulse rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 px-4 py-1.5 text-xs font-semibold text-white shadow-[0_10px_30px_-12px_rgba(245,158,11,0.9)]">
                         Selecciona un servicio aquí
                       </div>
-                      <div className="ml-6 h-0 w-0 border-l-[8px] border-r-[8px] border-t-[10px] border-l-transparent border-r-transparent border-t-amber-500" />
+                      <div className="ml-8 h-0 w-0 border-l-[9px] border-r-[9px] border-t-[12px] border-l-transparent border-r-transparent border-t-amber-500" />
                     </div>
                   ) : null}
 
@@ -1254,7 +1262,7 @@ export default function Page() {
 
           </div>
 
-          <div className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+          <div className="flex min-h-[980px] flex-col rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
@@ -1274,32 +1282,16 @@ export default function Page() {
 
             {!selectedService ? (
               <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-amber-900">
-                      Primero debes seleccionar un servicio
-                    </p>
-                    <p className="mt-1 text-sm text-amber-800">
-                      Los horarios aparecerán aquí cuando elijas un servicio en el panel izquierdo.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      serviceSectionRef.current?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center",
-                      });
-                    }}
-                    className="inline-flex h-11 items-center justify-center rounded-2xl border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
-                  >
-                    ← Ir a seleccionar servicio
-                  </button>
+                <div>
+                  <p className="text-sm font-semibold text-amber-900">
+                    Primero debes seleccionar un servicio
+                  </p>
+                  <p className="mt-1 text-sm text-amber-800">
+                    Los horarios aparecerán aquí cuando elijas un servicio en el panel izquierdo.
+                  </p>
                 </div>
               </div>
             ) : null}
-
             <div className="grid min-w-[980px] grid-cols-7 gap-3 items-start">
               {weekDates.map((dateObj) => {
                 const dateKey = formatDate(dateObj);
@@ -1427,15 +1419,26 @@ export default function Page() {
   ) : null}
 
   {selectedStaffId ? (
-                        <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                            Profesional
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-slate-900">
-                            {staffOptions.find((staff) => staff.id === selectedStaffId)?.name || "Profesional"}
-                          </p>
-                        </div>
-                      ) : null}
+  <>
+    <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        Fecha
+      </p>
+      <p className="mt-1 text-sm font-semibold text-slate-900">
+        {formatFullDate(selectedSlot!.slot_start)}
+      </p>
+    </div>
+
+    <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        Hora
+      </p>
+      <p className="mt-1 text-sm font-semibold text-slate-900">
+        {formatHour(selectedSlot!.slot_start)}
+      </p>
+    </div>
+  </>
+) : null}
                     </div>
                   </div>
 
@@ -1623,7 +1626,7 @@ export default function Page() {
             ) : null}
 
 
-            <div className="mt-5 grid gap-3 lg:grid-cols-4">
+            <div className="mt-auto grid gap-3 pt-6 lg:grid-cols-4">
               <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
                 <div className="flex items-start gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm">
