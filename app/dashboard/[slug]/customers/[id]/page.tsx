@@ -374,119 +374,50 @@ export default function CustomerDetailPage() {
           <p style={{ color: "var(--text-muted)" }}>No encontrado</p>
         </Panel>
       ) : (
+
+
+
         <div className="grid gap-6 xl:grid-cols-[1.45fr_0.8fr]">
           <div className="space-y-6">
-            <Panel
-              title="Información del cliente"
-              description="Resumen principal del cliente para revisar rápidamente su contexto."
-            >
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <div
-                  className="rounded-2xl border p-4"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                  }}
-                >
-                  <p
-                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Nombre
-                  </p>
-                  <p
-                    className="mt-2 text-base font-semibold"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    {customer.name}
-                  </p>
-                </div>
+            
 
-                <div
-                  className="rounded-2xl border p-4"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                  }}
-                >
-                  <p
-                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Email
-                  </p>
-                  <p
-                    className="mt-2 break-all text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    {customer.email || "Sin email"}
-                  </p>
-                </div>
 
-                <div
-                  className="rounded-2xl border p-4"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                  }}
-                >
-                  <p
-                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Teléfono
-                  </p>
-                  <p
-                    className="mt-2 text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    {customer.phone || "Sin teléfono"}
-                  </p>
-                </div>
+<div
+  className="rounded-3xl p-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
+  style={{
+    background:
+      "linear-gradient(135deg, rgba(15,23,42,1), rgba(30,41,59,1))",
+    color: "white",
+  }}
+>
+  <div>
+    <h1 className="text-3xl font-bold">
+      {customer.name}
+    </h1>
 
-                <div
-                  className="rounded-2xl border p-4"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                  }}
-                >
-                  <p
-                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Visitas
-                  </p>
-                  <p
-                    className="mt-2 text-base font-semibold"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    {customer.total_visits}
-                  </p>
-                </div>
+    <p className="mt-2 text-sm text-slate-300">
+      📞 {customer.phone || "Sin teléfono"} · ✉️ {customer.email || "Sin email"}
+    </p>
 
-                <div
-                  className="rounded-2xl border p-4 md:col-span-2"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                  }}
-                >
-                  <p
-                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Última visita
-                  </p>
-                  <p
-                    className="mt-2 text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    {formatDateLong(customer.last_visit_at)}
-                  </p>
-                </div>
-              </div>
-            </Panel>
+    <p className="mt-3 text-sm text-slate-400">
+      🐶 {pets.length} mascotas · 🩺 {customer.total_visits} visitas
+    </p>
+
+    <p className="mt-2 text-xs text-slate-400">
+      Última visita: {formatDateLong(customer.last_visit_at)}
+    </p>
+  </div>
+
+  <button
+    onClick={() => window.print()}
+    className="mt-4 md:mt-0 rounded-xl border border-white/30 px-4 py-2 text-sm hover:bg-white/10"
+  >
+    🖨️ Imprimir ficha
+  </button>
+</div>
+
+
+
 
             {isVeterinaria ? (
               <Panel
