@@ -762,129 +762,97 @@ export default function CustomerDetailPage() {
             ) : null}
 
 
+
 <Panel
-  title="Historial clínico"
-  description="Registro clínico organizado por mascota."
+  title="Atenciones clínicas recientes"
+  description="Registro clínico reciente del cliente, sin repetir mascotas."
 >
-  {pets.length === 0 ? (
+  {latestAppointments.length === 0 ? (
     <EmptyState
-      title="Sin mascotas"
-      description="Agrega mascotas para construir el historial clínico."
+      title="Sin atenciones todavía"
+      description="Cuando existan atenciones registradas, aparecerán aquí."
     />
   ) : (
-    <div className="space-y-6">
-      {pets.map((pet) => {
-        const petAppointments = appointments.filter(
-          (appt) =>
-            appt?.pet_id === pet.id ||
-            appt?.customer_data?.pet_name === pet.name
-        );
+    <div className="space-y-3">
+      {latestAppointments.map((appt) => {
+        const petName =
+          pets.find((pet) => pet.id === appt.pet_id)?.name ||
+          appt?.customer_data?.pet_name ||
+          "Sin mascota";
 
         return (
           <div
-            key={pet.id}
+            key={appt.id}
             className="rounded-2xl border p-4"
             style={{
               borderColor: "var(--border-color)",
               background: "var(--bg-card)",
             }}
           >
-            <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-base font-semibold">🐾 {pet.name}</p>
                 <p
-                  className="text-xs"
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  {appt.service_name_snapshot || "Atención"}
+                </p>
+
+                <p
+                  className="mt-1 text-xs"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  {getPetSpeciesLabel(pet)}
-                  {pet.breed ? ` · ${pet.breed}` : ""}
+                  {formatDateLong(appt.start_at)}
+                </p>
+
+                <p
+                  className="mt-2 text-xs font-medium"
+                  style={{ color: "#2563eb" }}
+                >
+                  🐾 {petName}
                 </p>
               </div>
-
-              <button
-                onClick={() => alert(`Editar mascota ${pet.name}`)}
-                className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
-              >
-                Editar
-              </button>
             </div>
 
-            {petAppointments.length === 0 ? (
-              <p
-                className="text-xs"
-                style={{ color: "var(--text-muted)" }}
+            <div className="mt-3 grid gap-2">
+              <input
+                type="text"
+                placeholder="Motivo (ej: control, vacuna...)"
+                defaultValue={appt.reason || ""}
+                className="w-full rounded-lg border px-2 py-1 text-xs"
+              />
+
+              <textarea
+                placeholder="Notas clínicas"
+                defaultValue={appt.notes || ""}
+                className="w-full rounded-lg border px-2 py-1 text-xs"
+              />
+
+              <input
+                type="date"
+                defaultValue={
+                  appt.next_control_at
+                    ? new Date(appt.next_control_at).toISOString().split("T")[0]
+                    : ""
+                }
+                className="w-full rounded-lg border px-2 py-1 text-xs"
+              />
+
+              <button
+                onClick={() => alert("Guardar clínico (siguiente paso)")}
+                className="mt-1 rounded-lg bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
               >
-                Sin registros clínicos.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {petAppointments.map((appt) => (
-                  <div
-                    key={appt.id}
-                    className="rounded-xl border p-3"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                    }}
-                  >
-                    <div className="flex justify-between items-start gap-3">
-                      <div>
-                        <p className="text-sm font-medium">
-                          {appt.service_name_snapshot || "Atención"}
-                        </p>
-
-                        <p
-                          className="text-xs"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          {formatDateLong(appt.start_at)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid gap-2">
-                      <input
-                        type="text"
-                        placeholder="Motivo (ej: control, vacuna...)"
-                        defaultValue={appt.reason || ""}
-                        className="w-full rounded-lg border px-2 py-1 text-xs"
-                      />
-
-                      <textarea
-                        placeholder="Notas clínicas"
-                        defaultValue={appt.notes || ""}
-                        className="w-full rounded-lg border px-2 py-1 text-xs"
-                      />
-
-                      <input
-                        type="date"
-                        defaultValue={
-                          appt.next_control_at
-                            ? new Date(appt.next_control_at)
-                                .toISOString()
-                                .split("T")[0]
-                            : ""
-                        }
-                        className="w-full rounded-lg border px-2 py-1 text-xs"
-                      />
-
-                      <button
-                        onClick={() => alert("Guardar clínico (siguiente paso)")}
-                        className="mt-1 rounded-lg bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
-                      >
-                        Guardar
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                Guardar
+              </button>
+            </div>
           </div>
         );
       })}
     </div>
   )}
 </Panel>
+
+
 
 
           </div>
