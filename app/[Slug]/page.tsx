@@ -743,15 +743,24 @@ export default function Page() {
         customer_phone: customerData.phone.trim(),
         customer_email: customerData.email.trim(),
                 customer_data: {
-          ...visibleBookingFields.reduce<Record<string, string>>((acc, field) => {
-            const value = String(customerData[field.key] || "").trim();
-            if (value) acc[field.key] = value;
-            return acc;
-          }, {}),
-          pet_id: petMode === "existing" ? selectedPetId || "" : "",
-          pet_name: String(customerData.pet_name || "").trim(),
-          pet_species: String(customerData.pet_species || "").trim(),
-        },
+  ...visibleBookingFields.reduce<Record<string, string>>((acc, field) => {
+    const value = String(customerData[field.key] || "").trim();
+    if (value) acc[field.key] = value;
+    return acc;
+  }, {}),
+  pet_id:
+    petMode === "existing" && selectedPetId
+      ? selectedPetId
+      : null,
+  pet_name:
+    petMode === "new"
+      ? String(customerData.pet_name || "").trim()
+      : null,
+  pet_species:
+    petMode === "new"
+      ? String(customerData.pet_species || "").trim()
+      : null,
+},
       };
 
       const res = await fetch("/api/appointments/slot", {
