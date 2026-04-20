@@ -1392,47 +1392,48 @@ export default function Page() {
                     </div>
 
                     <div className="grid gap-2 sm:grid-cols-4">
-  <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
-    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-      Fecha
-    </p>
-    <p className="mt-1 text-sm font-semibold text-slate-900">
-      {formatFullDate(selectedSlot!.slot_start)}
-    </p>
-  </div>
+                      <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          Fecha
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                          {formatFullDate(selectedSlot!.slot_start)}
+                        </p>
+                      </div>
 
-  <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
-    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-      Hora
-    </p>
-    <p className="mt-1 text-sm font-semibold text-slate-900">
-      {formatHour(selectedSlot!.slot_start)}
-    </p>
-  </div>
+                      <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          Hora
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                          {formatHour(selectedSlot!.slot_start)}
+                        </p>
+                      </div>
 
-  {selectedService ? (
-    <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-        Servicio
-      </p>
-      <p className="mt-1 text-sm font-semibold text-slate-900">
-        {selectedService!.name}
-      </p>
-    </div>
-  ) : null}
+                      {selectedService ? (
+                        <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Servicio
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-slate-900">
+                            {selectedService.name}
+                          </p>
+                        </div>
+                      ) : null}
 
-{selectedStaffId ? (
-  <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
-    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-      Profesional
-    </p>
-    <p className="mt-1 text-sm font-semibold text-slate-900">
-      {staffOptions.find((staff) => staff.id === selectedStaffId)?.name || "Profesional"}
-    </p>
-  </div>
-) : null}
+                      {selectedStaffId ? (
+                        <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Profesional
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-slate-900">
+                            {staffOptions.find((staff) => staff.id === selectedStaffId)?.name || "Profesional"}
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
+
 
                   <div className="mt-6 grid gap-3 md:grid-cols-2">
                     <input
