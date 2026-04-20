@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "../../../../../components/dashboard/page-header";
 import { Panel } from "../../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -201,6 +200,8 @@ export default function CustomerDetailPage() {
   const [savingPet, setSavingPet] = useState(false);
   const [petError, setPetError] = useState("");
   const [petSuccess, setPetSuccess] = useState("");
+  const [savingClinicalId, setSavingClinicalId] = useState<string | null>(null);
+  const [clinicalMessage, setClinicalMessage] = useState("");
 
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
@@ -359,6 +360,59 @@ export default function CustomerDetailPage() {
   const latestPets = useMemo(() => {
     return [...pets].slice(0, 4);
   }, [pets]);
+
+  async function handleSaveClinical(
+    appointmentId: string,
+    reason: string,
+    notes: string
+  ) {
+    try {
+      setSavingClinicalId(appointmentId);
+      setClinicalMessage("");
+
+      const res = await fetch(
+        `${BACKEND_URL}/appointments/${appointmentId}/clinical`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            reason,
+            notes,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo guardar.");
+      }
+
+      setAppointments((prev) =>
+        prev.map((appt) =>
+          appt.id === appointmentId
+            ? {
+                ...appt,
+                reason: data?.appointment?.reason ?? null,
+                notes: data?.appointment?.notes ?? null,
+              }
+            : appt
+        )
+      );
+
+      setClinicalMessage("Ficha clínica guardada correctamente.");
+
+      setTimeout(() => {
+        setClinicalMessage("");
+      }, 2500);
+    } catch (err: any) {
+      setClinicalMessage(err?.message || "No se pudo guardar la ficha clínica.");
+    } finally {
+      setSavingClinicalId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -767,6 +821,18 @@ export default function CustomerDetailPage() {
   title="Atenciones clínicas recientes"
   description="Registro clínico reciente del cliente, sin repetir mascotas."
 >
+  {clinicalMessage ? (
+    <div
+      className="mb-4 rounded-xl border px-3 py-2 text-sm"
+      style={{
+        borderColor: "rgba(37,99,235,0.18)",
+        background: "rgba(37,99,235,0.06)",
+        color: "var(--text-main)",
+      }}
+    >
+      {clinicalMessage}
+    </div>
+  ) : null}
   {latestAppointments.length === 0 ? (
     <EmptyState
       title="Sin atenciones todavía"
@@ -802,34 +868,54 @@ export default function CustomerDetailPage() {
       </p>
     </div>
 
-    <span className="text-xs text-blue-600 font-medium">
+    <span className="text-xs font-medium text-blue-600">
       🐾 {petName}
     </span>
   </div>
 
-  {/* NOTA CLÍNICA */}
   <div className="mt-3 space-y-2">
     <input
       type="text"
       placeholder="Motivo"
       defaultValue={appt.reason || ""}
-      className="w-full text-xs bg-transparent border-b outline-none"
+      id={`reason-${appt.id}`}
+      className="w-full border-b bg-transparent text-xs outline-none"
     />
 
     <textarea
       placeholder="Notas clínicas..."
       defaultValue={appt.notes || ""}
-      className="w-full text-xs bg-transparent border-b outline-none resize-none"
+      id={`notes-${appt.id}`}
+      className="w-full resize-none border-b bg-transparent text-xs outline-none"
     />
   </div>
 
-  <button
-    onClick={() => alert("Guardar clínico (siguiente paso)")}
-    className="mt-3 text-xs text-blue-600 hover:underline"
-  >
-    Guardar cambios
-  </button>
+  <div className="mt-3 flex items-center justify-between gap-3">
+    <button
+      type="button"
+      onClick={() => {
+        const reasonInput = document.getElementById(
+          `reason-${appt.id}`
+        ) as HTMLInputElement | null;
+
+        const notesInput = document.getElementById(
+          `notes-${appt.id}`
+        ) as HTMLTextAreaElement | null;
+
+        handleSaveClinical(
+          appt.id,
+          reasonInput?.value || "",
+          notesInput?.value || ""
+        );
+      }}
+      disabled={savingClinicalId === appt.id}
+      className="text-xs text-blue-600 hover:underline disabled:opacity-60"
+    >
+      {savingClinicalId === appt.id ? "Guardando..." : "Guardar cambios"}
+    </button>
+  </div>
 </div>
+
         );
       })}
     </div>
