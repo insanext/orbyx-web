@@ -45,6 +45,8 @@ type Appointment = {
   id: string;
   service_name_snapshot?: string;
   start_at: string;
+  pet_id?: string | null;
+  customer_data?: any;
 };
 
 type BusinessResponse = {
