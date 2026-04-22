@@ -362,10 +362,13 @@ export default function CustomerDetailPage() {
   }, [pets]);
 
   async function handleSaveClinical(
-    appointmentId: string,
-    reason: string,
-    notes: string
-  ) {
+  appointmentId: string,
+  reason: string,
+  notes: string,
+  control_type?: string,
+  control_note?: string,
+  next_control_at?: string | null
+) {
     try {
       setSavingClinicalId(appointmentId);
       setClinicalMessage("");
@@ -378,9 +381,12 @@ export default function CustomerDetailPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            reason,
-            notes,
-          }),
+  reason,
+  notes,
+  control_type,
+  control_note,
+  next_control_at,
+}),
         }
       );
 
@@ -874,21 +880,55 @@ export default function CustomerDetailPage() {
   </div>
 
   <div className="mt-3 space-y-2">
+
+  {/* MOTIVO */}
+  <input
+    type="text"
+    placeholder="Motivo"
+    defaultValue={appt.reason || ""}
+    id={`reason-${appt.id}`}
+    className="w-full border-b bg-transparent text-xs outline-none"
+  />
+
+  {/* NOTAS */}
+  <textarea
+    placeholder="Notas clínicas..."
+    defaultValue={appt.notes || ""}
+    id={`notes-${appt.id}`}
+    className="w-full resize-none border-b bg-transparent text-xs outline-none"
+  />
+
+  {/* FOLLOWUP */}
+  <div className="mt-2 grid grid-cols-3 gap-2">
+
+    <select
+      id={`control-type-${appt.id}`}
+      defaultValue=""
+      className="text-xs border-b bg-transparent outline-none"
+    >
+      <option value="">Tipo</option>
+      <option value="Vacuna">Vacuna</option>
+      <option value="Control">Control</option>
+      <option value="Revisión">Revisión</option>
+    </select>
+
     <input
-      type="text"
-      placeholder="Motivo"
-      defaultValue={appt.reason || ""}
-      id={`reason-${appt.id}`}
-      className="w-full border-b bg-transparent text-xs outline-none"
+      type="date"
+      id={`control-date-${appt.id}`}
+      className="text-xs border-b bg-transparent outline-none"
     />
 
-    <textarea
-      placeholder="Notas clínicas..."
-      defaultValue={appt.notes || ""}
-      id={`notes-${appt.id}`}
-      className="w-full resize-none border-b bg-transparent text-xs outline-none"
+    <input
+      type="text"
+      placeholder="Nota control"
+      id={`control-note-${appt.id}`}
+      className="text-xs border-b bg-transparent outline-none"
     />
+
   </div>
+
+</div>
+
 
   <div className="mt-3 flex items-center justify-between gap-3">
     <button
@@ -902,11 +942,28 @@ export default function CustomerDetailPage() {
           `notes-${appt.id}`
         ) as HTMLTextAreaElement | null;
 
-        handleSaveClinical(
-          appt.id,
-          reasonInput?.value || "",
-          notesInput?.value || ""
-        );
+const controlTypeInput = document.getElementById(
+  `control-type-${appt.id}`
+) as HTMLSelectElement | null;
+
+const controlDateInput = document.getElementById(
+  `control-date-${appt.id}`
+) as HTMLInputElement | null;
+
+const controlNoteInput = document.getElementById(
+  `control-note-${appt.id}`
+) as HTMLInputElement | null;
+
+handleSaveClinical(
+  appt.id,
+  reasonInput?.value || "",
+  notesInput?.value || "",
+  controlTypeInput?.value || "",
+  controlNoteInput?.value || "",
+  controlDateInput?.value || null
+);
+
+
       }}
       disabled={savingClinicalId === appt.id}
       className="text-xs text-blue-600 hover:underline disabled:opacity-60"
