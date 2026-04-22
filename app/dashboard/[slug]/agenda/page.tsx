@@ -940,7 +940,13 @@ function getWeekdayLabel(date: Date) {
 
     const weekday = getWeekdayForAgenda(day);
 
-    if (selectedStaff.use_business_hours) {
+    const hasStaffHours = staffHours.some(
+  (item) =>
+    item.staff_id === selectedStaffId &&
+    (!item.branch_id || item.branch_id === selectedBranchId)
+);
+
+if (selectedStaff.use_business_hours || !hasStaffHours) {
       const row = businessHours.find((item) => {
         const sameBranch =
           !item.branch_id || item.branch_id === selectedBranchId;
