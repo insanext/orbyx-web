@@ -1118,26 +1118,29 @@ if (selectedStaff.use_business_hours || !hasStaffHours) {
     }
   }
 
-  async function loadBusinessHours(currentTenantId: string) {
-    try {
-      const response = await fetch(
-        `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}`
-      );
-      const data = await response.json();
+  async function loadBusinessHours(
+  currentTenantId: string,
+  currentBranchId: string
+) {
+  try {
+    const response = await fetch(
+      `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+    );
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data?.error || "No se pudieron cargar los horarios");
-      }
-
-      const rows: BusinessHourItem[] = Array.isArray(data?.hours)
-        ? data.hours
-        : [];
-      setBusinessHours(rows);
-    } catch (err) {
-      console.error("Error cargando business hours", err);
-      setBusinessHours([]);
+    if (!response.ok) {
+      throw new Error(data?.error || "No se pudieron cargar los horarios");
     }
+
+    const rows: BusinessHourItem[] = Array.isArray(data?.hours)
+      ? data.hours
+      : [];
+    setBusinessHours(rows);
+  } catch (err) {
+    console.error("Error cargando business hours", err);
+    setBusinessHours([]);
   }
+}
 
   async function loadStaffHours(currentTenantId: string) {
     try {
@@ -1160,30 +1163,33 @@ if (selectedStaff.use_business_hours || !hasStaffHours) {
     }
   }
 
-  async function loadBusinessSpecialDates(currentTenantId: string) {
-    try {
-      const response = await fetch(
-        `${BACKEND_URL}/business-special-dates?tenant_id=${currentTenantId}`
+  async function loadBusinessSpecialDates(
+  currentTenantId: string,
+  currentBranchId: string
+) {
+  try {
+    const response = await fetch(
+      `${BACKEND_URL}/business-special-dates?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+    );
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+          "No se pudieron cargar las fechas especiales del negocio"
       );
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error ||
-            "No se pudieron cargar las fechas especiales del negocio"
-        );
-      }
-
-      const rows: BusinessSpecialDateItem[] = Array.isArray(data?.special_dates)
-        ? data.special_dates
-        : [];
-
-      setBusinessSpecialDates(rows);
-    } catch (err) {
-      console.error("Error cargando business special dates", err);
-      setBusinessSpecialDates([]);
     }
+
+    const rows: BusinessSpecialDateItem[] = Array.isArray(data?.special_dates)
+      ? data.special_dates
+      : [];
+
+    setBusinessSpecialDates(rows);
+  } catch (err) {
+    console.error("Error cargando business special dates", err);
+    setBusinessSpecialDates([]);
   }
+}
 
   async function loadStaffSpecialDates(currentTenantId: string) {
     try {
@@ -1516,12 +1522,10 @@ if (selectedStaff.use_business_hours || !hasStaffHours) {
         );
 
         await Promise.all([
-          loadBranches(currentTenantId),
-          loadBusinessHours(currentTenantId),
-          loadStaffHours(currentTenantId),
-          loadBusinessSpecialDates(currentTenantId),
-          loadStaffSpecialDates(currentTenantId),
-        ]);
+  loadBranches(currentTenantId),
+  loadStaffHours(currentTenantId),
+  loadStaffSpecialDates(currentTenantId),
+]);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "No se pudo cargar agenda");
       }
@@ -1531,14 +1535,18 @@ if (selectedStaff.use_business_hours || !hasStaffHours) {
   }, [slug]);
 
   useEffect(() => {
-    if (!tenantId || !selectedBranchId) {
-      setStaffList([]);
-      setSelectedStaffId("");
-      return;
-    }
+  if (!tenantId || !selectedBranchId) {
+    setStaffList([]);
+    setSelectedStaffId("");
+    setBusinessHours([]);
+    setBusinessSpecialDates([]);
+    return;
+  }
 
-    loadStaff(tenantId, selectedBranchId);
-  }, [tenantId, selectedBranchId]);
+  loadStaff(tenantId, selectedBranchId);
+  loadBusinessHours(tenantId, selectedBranchId);
+  loadBusinessSpecialDates(tenantId, selectedBranchId);
+}, [tenantId, selectedBranchId]);
 
   useEffect(() => {
     if (!slug) return;
