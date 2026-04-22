@@ -732,6 +732,12 @@ export default function Page() {
 
       setSubmitting(true);
 
+
+const detectedCustomerId =
+  existingCustomerFound && pets.length > 0
+    ? pets[0].customer_id
+    : null;
+
       const payload = {
         calendar_id: calendarId,
         branch_id: selectedBranchId || null,
@@ -739,6 +745,7 @@ export default function Page() {
         staff_id: selectedStaffId || selectedSlot?.staff_id || null,
         date: formatDate(new Date(selectedSlot.slot_start)),
         slot_start: selectedSlot.slot_start,
+	customer_id: detectedCustomerId,
         customer_name: customerData.name.trim(),
         customer_phone: customerData.phone.trim(),
         customer_email: customerData.email.trim(),
