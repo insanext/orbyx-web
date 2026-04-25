@@ -1541,34 +1541,47 @@ const detectedCustomerId =
                               </div>
 
                               {petMode === "existing" ? (
-                                <select
-                                  value={selectedPetId}
-                                  onChange={(e) => {
-                                    const petId = e.target.value;
-                                    setSelectedPetId(petId);
+  <div className="grid gap-2">
+    {pets.map((pet) => {
+      const species =
+        String(pet.species_custom || "").trim() ||
+        String(pet.species_base || "").trim();
 
-                                    const pet =
-                                      pets.find((item) => item.id === petId) || null;
+      const isSelected = selectedPetId === pet.id;
 
-                                    applyPetToForm(pet);
-                                  }}
-                                  className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-emerald-400"
-                                >
-                                  <option value="">Seleccionar mascota</option>
+      return (
+        <button
+          key={pet.id}
+          type="button"
+          onClick={() => {
+            setSelectedPetId(pet.id);
+            applyPetToForm(pet);
+          }}
+          className={`w-full rounded-2xl border p-3 text-left transition ${
+            isSelected
+              ? "border-emerald-600 bg-emerald-50 shadow-sm"
+              : "border-slate-200 bg-white hover:border-emerald-300"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="text-lg">
+              {species.toLowerCase().includes("gato") ? "🐱" : "🐶"}
+            </div>
 
-                                  {pets.map((pet) => {
-                                    const species =
-                                      String(pet.species_custom || "").trim() ||
-                                      String(pet.species_base || "").trim();
-
-                                    return (
-                                      <option key={pet.id} value={pet.id}>
-                                        🐶 {pet.name} · {species}
-                                      </option>
-                                    );
-                                  })}
-                                </select>
-                              ) : null}
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                {pet.name}
+              </p>
+              <p className="text-xs text-slate-500">
+                {species}
+              </p>
+            </div>
+          </div>
+        </button>
+      );
+    })}
+  </div>
+) : null}
                             </div>
                           ) : null}
                         </div>
