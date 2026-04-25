@@ -825,7 +825,7 @@ export default function CustomerDetailPage() {
 
 <Panel
   title="Historial clínico"
-  description="Registro clínico reciente del cliente, sin repetir mascotas."
+  description="Registro clínico único del cliente. Se alimenta desde el cierre de atención en Agenda y también puede corregirse aquí."
 >
   {clinicalMessage ? (
     <div
@@ -839,13 +839,14 @@ export default function CustomerDetailPage() {
       {clinicalMessage}
     </div>
   ) : null}
+
   {latestAppointments.length === 0 ? (
     <EmptyState
-      title="Sin atenciones todavía"
-      description="Cuando existan atenciones registradas, aparecerán aquí."
+      title="Sin historial clínico"
+      description="Cuando cierres atenciones desde Agenda, aparecerán aquí."
     />
   ) : (
-    <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+    <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
       {latestAppointments.map((appt) => {
         const petName =
           pets.find((pet) => pet.id === appt.pet_id)?.name ||
@@ -853,120 +854,147 @@ export default function CustomerDetailPage() {
           "Sin mascota";
 
         return (
-          
+          <div
+            key={appt.id}
+            className="rounded-2xl border p-4"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+            }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold">
+                  {appt.service_name_snapshot || "Atención"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {formatDateLong(appt.start_at)}
+                </p>
+              </div>
 
+              <span className="text-xs font-medium text-blue-600">
+                🐾 {petName}
+              </span>
+            </div>
 
-<div
-  key={appt.id}
-  className="rounded-2xl border p-3"
-  style={{
-    borderColor: "var(--border-color)",
-    background: "var(--bg-soft)",
-  }}
->
-  <div className="flex items-center justify-between gap-2">
-    <div>
-      <p className="text-sm font-semibold">
-        {appt.service_name_snapshot || "Atención"}
-      </p>
-      <p className="text-xs text-slate-500">
-        {formatDateLong(appt.start_at)}
-      </p>
-    </div>
+            <div className="mt-4 space-y-3">
+              <input
+                type="text"
+                placeholder="Motivo / control realizado"
+                defaultValue={appt.reason || ""}
+                id={`reason-${appt.id}`}
+                className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              />
 
-    <span className="text-xs font-medium text-blue-600">
-      🐾 {petName}
-    </span>
-  </div>
+              <textarea
+                placeholder="Notas clínicas..."
+                defaultValue={appt.notes || ""}
+                id={`notes-${appt.id}`}
+                className="min-h-[90px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              />
 
-  <div className="mt-3 space-y-2">
+              <div className="grid gap-2 md:grid-cols-3">
+                <select
+                  id={`control-type-${appt.id}`}
+                  defaultValue=""
+                  className="rounded-xl border px-3 py-2 text-sm outline-none"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option value="">Sin próximo control</option>
+                  <option value="Vacuna">Vacuna</option>
+                  <option value="Control">Control</option>
+                  <option value="Revisión">Revisión</option>
+                </select>
 
+                <input
+                  type="date"
+                  id={`control-date-${appt.id}`}
+                  defaultValue={
+                    appt.next_control_at
+                      ? new Date(appt.next_control_at).toISOString().slice(0, 10)
+                      : ""
+                  }
+                  className="rounded-xl border px-3 py-2 text-sm outline-none"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
 
+                <input
+                  type="text"
+                  placeholder="Nota próximo control"
+                  id={`control-note-${appt.id}`}
+                  className="rounded-xl border px-3 py-2 text-sm outline-none"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+            </div>
 
-  {/* MOTIVO */}
-  <input
-    type="text"
-    placeholder="Motivo"
-    defaultValue={appt.reason || ""}
-    id={`reason-${appt.id}`}
-    className="w-full border-b bg-transparent text-xs outline-none"
-  />
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  const reasonInput = document.getElementById(
+                    `reason-${appt.id}`
+                  ) as HTMLInputElement | null;
 
-<div className="mt-3 space-y-2">
+                  const notesInput = document.getElementById(
+                    `notes-${appt.id}`
+                  ) as HTMLTextAreaElement | null;
 
-  {appt.reason ? (
-    <p className="text-xs text-slate-700">
-      <strong>Motivo:</strong> {appt.reason}
-    </p>
-  ) : null}
+                  const controlTypeInput = document.getElementById(
+                    `control-type-${appt.id}`
+                  ) as HTMLSelectElement | null;
 
-  {appt.notes ? (
-    <p className="text-xs text-slate-600">
-      <strong>Notas:</strong> {appt.notes}
-    </p>
-  ) : null}
+                  const controlDateInput = document.getElementById(
+                    `control-date-${appt.id}`
+                  ) as HTMLInputElement | null;
 
-  {appt.next_control_at ? (
-    <p className="text-xs text-emerald-600">
-      <strong>Próximo control:</strong>{" "}
-      {formatDateLong(appt.next_control_at)}
-    </p>
-  ) : null}
+                  const controlNoteInput = document.getElementById(
+                    `control-note-${appt.id}`
+                  ) as HTMLInputElement | null;
 
-</div>
-
-</div>
-
-
-  <div className="mt-3 flex items-center justify-between gap-3">
-    <button
-      type="button"
-      onClick={() => {
-        const reasonInput = document.getElementById(
-          `reason-${appt.id}`
-        ) as HTMLInputElement | null;
-
-        const notesInput = document.getElementById(
-          `notes-${appt.id}`
-        ) as HTMLTextAreaElement | null;
-
-const controlTypeInput = document.getElementById(
-  `control-type-${appt.id}`
-) as HTMLSelectElement | null;
-
-const controlDateInput = document.getElementById(
-  `control-date-${appt.id}`
-) as HTMLInputElement | null;
-
-const controlNoteInput = document.getElementById(
-  `control-note-${appt.id}`
-) as HTMLInputElement | null;
-
-handleSaveClinical(
-  appt.id,
-  reasonInput?.value || "",
-  notesInput?.value || "",
-  controlTypeInput?.value || "",
-  controlNoteInput?.value || "",
-  controlDateInput?.value || null
-);
-
-
-      }}
-      disabled={savingClinicalId === appt.id}
-      className="text-xs text-blue-600 hover:underline disabled:opacity-60"
-    >
-      {savingClinicalId === appt.id ? "Guardando..." : "Guardar cambios"}
-    </button>
-  </div>
-</div>
-
+                  handleSaveClinical(
+                    appt.id,
+                    reasonInput?.value || "",
+                    notesInput?.value || "",
+                    controlTypeInput?.value || "",
+                    controlNoteInput?.value || "",
+                    controlDateInput?.value || null
+                  );
+                }}
+                disabled={savingClinicalId === appt.id}
+                className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              >
+                {savingClinicalId === appt.id ? "Guardando..." : "Guardar historial"}
+              </button>
+            </div>
+          </div>
         );
       })}
     </div>
   )}
 </Panel>
-
 
 
 
