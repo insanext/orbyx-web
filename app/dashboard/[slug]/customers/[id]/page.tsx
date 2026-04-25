@@ -824,7 +824,7 @@ export default function CustomerDetailPage() {
 
 
 <Panel
-  title="Atenciones clínicas recientes"
+  title="Historial clínico"
   description="Registro clínico reciente del cliente, sin repetir mascotas."
 >
   {clinicalMessage ? (
@@ -881,6 +881,8 @@ export default function CustomerDetailPage() {
 
   <div className="mt-3 space-y-2">
 
+
+
   {/* MOTIVO */}
   <input
     type="text"
@@ -890,42 +892,28 @@ export default function CustomerDetailPage() {
     className="w-full border-b bg-transparent text-xs outline-none"
   />
 
-  {/* NOTAS */}
-  <textarea
-    placeholder="Notas clínicas..."
-    defaultValue={appt.notes || ""}
-    id={`notes-${appt.id}`}
-    className="w-full resize-none border-b bg-transparent text-xs outline-none"
-  />
+<div className="mt-3 space-y-2">
 
-  {/* FOLLOWUP */}
-  <div className="mt-2 grid grid-cols-3 gap-2">
+  {appt.reason ? (
+    <p className="text-xs text-slate-700">
+      <strong>Motivo:</strong> {appt.reason}
+    </p>
+  ) : null}
 
-    <select
-      id={`control-type-${appt.id}`}
-      defaultValue=""
-      className="text-xs border-b bg-transparent outline-none"
-    >
-      <option value="">Tipo</option>
-      <option value="Vacuna">Vacuna</option>
-      <option value="Control">Control</option>
-      <option value="Revisión">Revisión</option>
-    </select>
+  {appt.notes ? (
+    <p className="text-xs text-slate-600">
+      <strong>Notas:</strong> {appt.notes}
+    </p>
+  ) : null}
 
-    <input
-      type="date"
-      id={`control-date-${appt.id}`}
-      className="text-xs border-b bg-transparent outline-none"
-    />
+  {appt.next_control_at ? (
+    <p className="text-xs text-emerald-600">
+      <strong>Próximo control:</strong>{" "}
+      {formatDateLong(appt.next_control_at)}
+    </p>
+  ) : null}
 
-    <input
-      type="text"
-      placeholder="Nota control"
-      id={`control-note-${appt.id}`}
-      className="text-xs border-b bg-transparent outline-none"
-    />
-
-  </div>
+</div>
 
 </div>
 
