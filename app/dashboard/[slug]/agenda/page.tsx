@@ -916,15 +916,43 @@ function getWeekdayLabel(date: Date) {
   function getSelectedStaffDayWindow(day: Date) {
     const dayKey = formatDateYYYYMMDD(day);
 
-    if (!selectedStaffId) {
-      return {
-        startMinutes: 9 * 60,
-        endMinutes: 18 * 60,
-        hasConfiguredHours: false,
-        fullyClosed: false,
-        closedLabel: "",
-      };
-    }
+if (!selectedStaffId) {
+  const weekday = getWeekdayForAgenda(day);
+
+  const row = businessHours.find((item) => {
+    const sameBranch =
+      !item.branch_id || item.branch_id === selectedBranchId;
+
+    return sameBranch && Number(item.day_of_week) === weekday;
+  });
+
+  let baseWindow = {
+    startMinutes: null as number | null,
+    endMinutes: null as number | null,
+    hasConfiguredHours: true,
+    fullyClosed: false,
+    closedLabel: "",
+  };
+
+  if (row?.enabled) {
+    baseWindow = {
+      startMinutes: timeStringToMinutes(row.start_time),
+      endMinutes: timeStringToMinutes(row.end_time),
+      hasConfiguredHours: true,
+      fullyClosed: false,
+      closedLabel: "",
+    };
+  }
+
+  const businessRows = businessSpecialDates.filter((item) => {
+    const sameBranch =
+      !item.branch_id || item.branch_id === selectedBranchId;
+
+    return sameBranch && item.date === dayKey;
+  });
+
+  return applySpecialDateRulesToWindow(baseWindow, businessRows);
+}
 
     const selectedStaff = staffList.find((staff) => staff.id === selectedStaffId);
 

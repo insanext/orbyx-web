@@ -1105,14 +1105,7 @@ export default function CustomerDetailPage() {
                             </p>
                           ) : null}
 
-                          {followup.control_note ? (
-                            <p
-                              className="mt-2 text-sm"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              {followup.control_note}
-                            </p>
-                          ) : null}
+                      
                         </div>
                       );
                     })}
