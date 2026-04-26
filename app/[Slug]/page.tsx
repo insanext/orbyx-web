@@ -1496,9 +1496,11 @@ const detectedCustomerId =
       </p>
     )}
 
-    <p className="mt-1 text-sm text-slate-600">
-      Tenemos estas fechas y horarios más próximos disponibles.
-    </p>
+{!loadingNextSlots && (
+  <p className="mt-1 text-sm text-slate-600">
+    Tenemos estas fechas y horarios más próximos disponibles.
+  </p>
+)}
 
     <div className="mt-4 grid gap-4 md:grid-cols-2">
       {nextAvailableDays.map((day) => (
