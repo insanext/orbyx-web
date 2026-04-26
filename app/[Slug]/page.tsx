@@ -276,6 +276,7 @@ export default function Page() {
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
+const [nextAvailableSlots, setNextAvailableSlots] = useState<SlotItem[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
 
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
@@ -307,6 +308,12 @@ export default function Page() {
   const serviceSectionRef = useRef<HTMLDivElement | null>(null);
 
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
+const noSlotsThisWeek = useMemo(() => {
+  return weekDates.every((dateObj) => {
+    const key = formatDate(dateObj);
+    return (weekSlots[key] || []).length === 0;
+  });
+}, [weekSlots, weekDates]);
   const showBranchSelector = branches.length > 1;
   const visibleBookingFields = bookingFields.filter((field) => field.enabled);
 
@@ -695,7 +702,55 @@ export default function Page() {
       }
     }
 
+async function loadNextAvailableSlots() {
+  try {
+    if (!slug || !selectedService?.id) {
+      setNextAvailableSlots([]);
+      return;
+    }
+
+    const today = new Date();
+    const results: SlotItem[] = [];
+
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+
+      const query = new URLSearchParams();
+      query.set("date", formatDate(date));
+
+      if (selectedBranchId) {
+        query.set("branch_id", selectedBranchId);
+      }
+
+      if (selectedStaffId) {
+        query.set("staff_id", selectedStaffId);
+      }
+
+      const res = await fetch(
+        `/api/public-slots/${slug}/${selectedService.id}?${query.toString()}`,
+        { cache: "no-store" }
+      );
+
+      const data = await res.json();
+      const slots: SlotItem[] = Array.isArray(data.slots) ? data.slots : [];
+
+      if (slots.length > 0) {
+        results.push(...slots);
+
+        if (results.length >= 8) break;
+      }
+    }
+
+    setNextAvailableSlots(results.slice(0, 6));
+  } catch (err) {
+    console.error("Error buscando próximos slots", err);
+    setNextAvailableSlots([]);
+  }
+}
+
     loadWeekSlots();
+loadNextAvailableSlots();
   }, [
     slug,
     selectedService?.id,
@@ -1309,7 +1364,7 @@ const detectedCustomerId =
               </div>
             ) : null}
             <div className="grid min-w-[980px] grid-cols-7 gap-3 items-start">
-              {weekDates.map((dateObj) => {
+              {weekDates.map((dateObj, index) => {
                 const dateKey = formatDate(dateObj);
                 const slots = weekSlots[dateKey] || [];
                 const isSelectedDay = formatDate(selectedDate) === dateKey;
@@ -1342,7 +1397,45 @@ const detectedCustomerId =
                         Selecciona un servicio.
                       </p>
                     ) : slots.length === 0 ? (
-                      <p className="text-xs text-slate-500">Sin horarios.</p>
+                      <>
+  <p className="text-xs text-slate-500">Sin horarios.</p>
+
+  {noSlotsThisWeek && nextAvailableSlots.length > 0 && index === 0 && (
+    <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-3 space-y-2">
+      <p className="text-xs font-semibold text-indigo-900">
+        Próximas horas disponibles:
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {nextAvailableSlots.map((slot, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => {
+              setSelectedDate(new Date(slot.slot_start));
+              setSelectedSlot(slot);
+            }}
+            className="rounded-lg border border-indigo-300 bg-white px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+          >
+            {formatHour(slot.slot_start)}
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          if (nextAvailableSlots[0]) {
+            setSelectedDate(new Date(nextAvailableSlots[0].slot_start));
+          }
+        }}
+        className="text-xs font-semibold text-indigo-700 underline"
+      >
+        Ir a semana con disponibilidad
+      </button>
+    </div>
+  )}
+</>
                     ) : (
                       <div className="space-y-1.5">
                         {slots.map((slot, index) => (
