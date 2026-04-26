@@ -773,7 +773,16 @@ async function loadNextAvailableSlots() {
 }
 
 
-
+    loadWeekSlots();
+    loadNextAvailableSlots();
+  }, [
+    slug,
+    selectedService?.id,
+    selectedDate,
+    selectedBranchId,
+    selectedStaffId,
+    weekDates,
+  ]);
 
 
   async function handleSubmitBooking() {
