@@ -1480,11 +1480,18 @@ const detectedCustomerId =
 })}
 </div>
 
-{selectedService && noSlotsThisWeek && nextAvailableDays.length > 0 ? (
+{selectedService && noSlotsThisWeek ? (
   <div className="mt-6 rounded-[26px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-5 shadow-sm">
-    <p className="text-sm font-semibold text-slate-950">
-      Sin disponibilidad durante la semana seleccionada.
-    </p>
+
+    {loadingNextSlots ? (
+      <p className="text-sm font-semibold text-slate-950">
+        Sin disponibilidad durante la semana seleccionada. Buscando los horarios más próximos...
+      </p>
+    ) : (
+      <p className="text-sm font-semibold text-slate-950">
+        Sin disponibilidad durante la semana seleccionada.
+      </p>
+    )}
 
     <p className="mt-1 text-sm text-slate-600">
       Tenemos estas fechas y horarios más próximos disponibles.
