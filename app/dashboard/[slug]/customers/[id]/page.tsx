@@ -479,7 +479,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
       {isVeterinaria ? (
   <>🐶 {pets.length} mascotas · 🩺 {customer.total_visits} visitas</>
 ) : (
-  <>🗓️ {customer.total_visits} visitas</>
+  <>🗓️ {latestAppointments.filter((a: any) => a.status !== "cancelled").length} visitas</>
 )}
     </p>
 
@@ -1123,7 +1123,9 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                   />
                 ) : (
                   <div className="space-y-3">
-                    {latestAppointments.map((appt) => (
+                    {latestAppointments
+  .filter((appt) => appt.status !== "cancelled")
+  .map((appt) => (
                       <div
                         key={appt.id}
                         className="rounded-2xl border p-4"
