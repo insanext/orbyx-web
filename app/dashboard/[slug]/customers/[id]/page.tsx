@@ -406,13 +406,16 @@ const latestAppointments = useMemo(() => {
             ? {
                 ...appt,
                 reason: data?.appointment?.reason ?? null,
-                notes: data?.appointment?.notes ?? null,
+notes: data?.appointment?.notes ?? null,
+next_control_at: data?.appointment?.next_control_at ?? null,
               }
             : appt
         )
       );
 
       setClinicalMessage("Ficha clínica guardada correctamente.");
+	setEditingPetId(null);
+
 
       setTimeout(() => {
         setClinicalMessage("");
@@ -425,7 +428,18 @@ const latestAppointments = useMemo(() => {
   }
 
   return (
-    <div className="space-y-6">
+  <div className="space-y-6">
+    {clinicalMessage ? (
+      <div
+        className="fixed right-6 top-6 z-50 rounded-xl px-4 py-3 text-sm font-medium shadow-lg"
+        style={{
+          background: "rgba(22,163,74,0.95)",
+          color: "white",
+        }}
+      >
+        {clinicalMessage}
+      </div>
+    ) : null}
 
       {loading ? (
         <Panel title="Cargando ficha">
