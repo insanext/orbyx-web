@@ -1111,10 +1111,6 @@ next_control_at: data?.appointment?.next_control_at ?? null,
               </Panel>
             ) : null}
 
-
-              </Panel>
-            ) : null}
-
             {!isVeterinaria ? (
               <Panel
                 title="Historial de visitas"
