@@ -1484,10 +1484,13 @@ const detectedCustomerId =
   <div className="mt-6 rounded-[26px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-5 shadow-sm">
 
     {loadingNextSlots ? (
-      <p className="text-sm font-semibold text-slate-950">
-        Sin disponibilidad durante la semana seleccionada. Buscando los horarios más próximos...
-      </p>
-    ) : (
+  <div className="flex items-center gap-2 animate-pulse">
+    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-ping"></span>
+    <p className="text-sm font-semibold text-slate-950">
+      Buscando horarios disponibles...
+    </p>
+  </div>
+) : (
       <p className="text-sm font-semibold text-slate-950">
         Sin disponibilidad durante la semana seleccionada.
       </p>
