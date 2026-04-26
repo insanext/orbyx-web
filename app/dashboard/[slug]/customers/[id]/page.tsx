@@ -202,6 +202,8 @@ export default function CustomerDetailPage() {
   const [petSuccess, setPetSuccess] = useState("");
   const [savingClinicalId, setSavingClinicalId] = useState<string | null>(null);
   const [clinicalMessage, setClinicalMessage] = useState("");
+const [editingPetId, setEditingPetId] = useState<string | null>(null);
+const [expandedAppointmentId, setExpandedAppointmentId] = useState<string | null>(null);
 
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
@@ -353,9 +355,11 @@ export default function CustomerDetailPage() {
     }
   }
 
-  const latestAppointments = useMemo(() => {
-    return [...appointments].slice(0, 10);
-  }, [appointments]);
+const latestAppointments = useMemo(() => {
+  return [...appointments].sort(
+    (a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime()
+  );
+}, [appointments]);
 
   const latestPets = useMemo(() => {
     return [...pets].slice(0, 4);
@@ -808,193 +812,184 @@ export default function CustomerDetailPage() {
           ) : null}
         </div>
 
-        <button
-          className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
-        >
-          Editar
-        </button>
-      </div>
-    ))}
-  </div>
-)}
-
-              </Panel>
-            ) : null}
-
-
-
-<Panel
-  title="Historial clínico"
-  description="Registro clínico único del cliente. Se alimenta desde el cierre de atención en Agenda y también puede corregirse aquí."
+<button
+  type="button"
+  onClick={() =>
+    setEditingPetId((prev) => (prev === pet.id ? null : pet.id))
+  }
+  className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
 >
-  {clinicalMessage ? (
-    <div
-      className="mb-4 rounded-xl border px-3 py-2 text-sm"
-      style={{
-        borderColor: "rgba(37,99,235,0.18)",
-        background: "rgba(37,99,235,0.06)",
-        color: "var(--text-main)",
-      }}
-    >
-      {clinicalMessage}
-    </div>
-  ) : null}
-
-  {latestAppointments.length === 0 ? (
-    <EmptyState
-      title="Sin historial clínico"
-      description="Cuando cierres atenciones desde Agenda, aparecerán aquí."
-    />
-  ) : (
-    <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-      {latestAppointments.map((appt) => {
-        const petName =
-          pets.find((pet) => pet.id === appt.pet_id)?.name ||
-          appt?.customer_data?.pet_name ||
-          "Sin mascota";
-
-        return (
+  {editingPetId === pet.id ? "Cerrar" : "Editar"}
+</button>
+        {editingPetId === pet.id ? (
           <div
-            key={appt.id}
-            className="rounded-2xl border p-4"
+            className="mt-4 rounded-2xl border p-4"
             style={{
               borderColor: "var(--border-color)",
               background: "var(--bg-soft)",
             }}
           >
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-semibold">
-                  {appt.service_name_snapshot || "Atención"}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {formatDateLong(appt.start_at)}
-                </p>
-              </div>
+            <p
+              className="text-sm font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Ficha clínica de {pet.name}
+            </p>
 
-              <span className="text-xs font-medium text-blue-600">
-                🐾 {petName}
-              </span>
-            </div>
+            <p
+              className="mt-1 text-xs"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Historial alimentado desde Agenda.
+            </p>
 
             <div className="mt-4 space-y-3">
-              <input
-                type="text"
-                placeholder="Motivo / control realizado"
-                defaultValue={appt.reason || ""}
-                id={`reason-${appt.id}`}
-                className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-card)",
-                  color: "var(--text-main)",
-                }}
-              />
-
-              <textarea
-                placeholder="Notas clínicas..."
-                defaultValue={appt.notes || ""}
-                id={`notes-${appt.id}`}
-                className="min-h-[90px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-card)",
-                  color: "var(--text-main)",
-                }}
-              />
-
-              <div className="grid gap-2 md:grid-cols-3">
-                <select
-                  id={`control-type-${appt.id}`}
-                  defaultValue=""
-                  className="rounded-xl border px-3 py-2 text-sm outline-none"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  <option value="">Sin próximo control</option>
-                  <option value="Vacuna">Vacuna</option>
-                  <option value="Control">Control</option>
-                  <option value="Revisión">Revisión</option>
-                </select>
-
-                <input
-                  type="date"
-                  id={`control-date-${appt.id}`}
-                  defaultValue={
-                    appt.next_control_at
-                      ? new Date(appt.next_control_at).toISOString().slice(0, 10)
-                      : ""
-                  }
-                  className="rounded-xl border px-3 py-2 text-sm outline-none"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
+              {latestAppointments.filter((appt) => appt.pet_id === pet.id).length === 0 ? (
+                <EmptyState
+                  title="Sin atenciones registradas"
+                  description="Cuando cierres una atención desde Agenda para esta mascota, aparecerá aquí."
                 />
+              ) : (
+                latestAppointments
+                  .filter((appt) => appt.pet_id === pet.id)
+                  .map((appt) => {
+  const isExpanded = expandedAppointmentId === appt.id;
 
-                <input
-                  type="text"
-                  placeholder="Nota próximo control"
-                  id={`control-note-${appt.id}`}
-                  className="rounded-xl border px-3 py-2 text-sm outline-none"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
-            </div>
+  return (
+                    <div
+                      key={appt.id}
+                      className="rounded-xl border p-3"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p
+                            className="text-sm font-semibold"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            {appt.service_name_snapshot || "Atención"}
+                          </p>
 
-            <div className="mt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  const reasonInput = document.getElementById(
-                    `reason-${appt.id}`
-                  ) as HTMLInputElement | null;
+                          <p
+                            className="text-xs"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            {formatDateLong(appt.start_at)}
+                          </p>
+                        </div>
+                      </div>
 
-                  const notesInput = document.getElementById(
-                    `notes-${appt.id}`
-                  ) as HTMLTextAreaElement | null;
+                      <button
+  type="button"
+  onClick={() =>
+    setExpandedAppointmentId((prev) =>
+      prev === appt.id ? null : appt.id
+    )
+  }
+  className="mt-3 rounded-xl border px-3 py-1 text-xs"
+>
+  {isExpanded ? "Ocultar" : "Ver / editar"}
+</button>
 
-                  const controlTypeInput = document.getElementById(
-                    `control-type-${appt.id}`
-                  ) as HTMLSelectElement | null;
+{isExpanded ? (
+<div className="mt-3 space-y-3">
+                        <input
+                          type="text"
+                          placeholder="Control realizado / motivo"
+                          defaultValue={appt.reason || ""}
+                          id={`pet-reason-${appt.id}`}
+                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        />
 
-                  const controlDateInput = document.getElementById(
-                    `control-date-${appt.id}`
-                  ) as HTMLInputElement | null;
+                        <textarea
+                          placeholder="Notas clínicas..."
+                          defaultValue={appt.notes || ""}
+                          id={`pet-notes-${appt.id}`}
+                          className="min-h-[90px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        />
 
-                  const controlNoteInput = document.getElementById(
-                    `control-note-${appt.id}`
-                  ) as HTMLInputElement | null;
+                        <input
+                          type="date"
+                          defaultValue={
+                            appt.next_control_at
+                              ? new Date(appt.next_control_at).toISOString().slice(0, 10)
+                              : ""
+                          }
+                          id={`pet-control-date-${appt.id}`}
+                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        />
+                      </div>
+			) : null}
+                      <div className="mt-4 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedAppointmentId(null)}
+                          className="rounded-xl border px-4 py-2 text-xs font-medium"
+                        >
+                          Cancelar
+                        </button>
 
-                  handleSaveClinical(
-                    appt.id,
-                    reasonInput?.value || "",
-                    notesInput?.value || "",
-                    controlTypeInput?.value || "",
-                    controlNoteInput?.value || "",
-                    controlDateInput?.value || null
-                  );
-                }}
-                disabled={savingClinicalId === appt.id}
-                className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-              >
-                {savingClinicalId === appt.id ? "Guardando..." : "Guardar historial"}
-              </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const reasonInput = document.getElementById(
+                              `pet-reason-${appt.id}`
+                            ) as HTMLInputElement | null;
+
+                            const notesInput = document.getElementById(
+                              `pet-notes-${appt.id}`
+                            ) as HTMLTextAreaElement | null;
+
+                            const controlDateInput = document.getElementById(
+                              `pet-control-date-${appt.id}`
+                            ) as HTMLInputElement | null;
+
+                            handleSaveClinical(
+                              appt.id,
+                              reasonInput?.value || "",
+                              notesInput?.value || "",
+                              reasonInput?.value || "",
+                              notesInput?.value || "",
+                              controlDateInput?.value || null
+                            );
+                          }}
+                          disabled={savingClinicalId === appt.id}
+                          className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                        >
+                          {savingClinicalId === appt.id ? "Guardando..." : "Guardar"}
+                        </button>
+                      </div>
+                                        </div>
+  );
+})
+              )}
             </div>
           </div>
-        );
-      })}
-    </div>
-  )}
-</Panel>
+        ) : null}
+      </div>
+    ))}
+  </div>
+)}
+              </Panel>
+            ) : null}
 
 
 
