@@ -954,7 +954,6 @@ const latestAppointments = useMemo(() => {
   />
 </div>
 </div>
-                      </div>
 
                       <div className="mt-4 flex justify-end gap-2">
                         <button
