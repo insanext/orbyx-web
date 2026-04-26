@@ -1213,58 +1213,7 @@ const latestAppointments = useMemo(() => {
               </Panel>
             )}
 
-            <Panel
-              title="Notas rápidas"
-              description="Espacio preparado para observaciones rápidas por cliente o por mascota."
-            >
-              {isVeterinaria && latestPets.length > 0 ? (
-                <div className="space-y-3">
-                  {latestPets.map((pet) => (
-                    <div
-                      key={pet.id}
-                      className="rounded-2xl border p-3"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-soft)",
-                      }}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p
-                          className="text-sm font-semibold"
-                          style={{ color: "var(--text-main)" }}
-                        >
-                          {pet.name}
-                        </p>
-                        <span
-                          className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                          style={{
-                            background: "rgba(16,185,129,0.10)",
-                            color: "#047857",
-                          }}
-                        >
-                          {getPetSpeciesLabel(pet)}
-                        </span>
                       </div>
-
-                      <p
-                        className="mt-2 text-sm leading-6"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        {pet.notes?.trim()
-                          ? pet.notes
-                          : "Sin nota rápida todavía."}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  title="Notas aún no conectadas"
-                  description="Más adelante aquí podremos mostrar notas rápidas por mascota y resúmenes recientes."
-                />
-              )}
-            </Panel>
-          </div>
         </div>
       )}
     </div>
