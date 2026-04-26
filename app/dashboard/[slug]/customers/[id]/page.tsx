@@ -1116,7 +1116,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                 title="Historial de visitas"
                 description="Registro simple de atenciones realizadas por este cliente."
               >
-                {latestAppointments.length === 0 ? (
+                {true ? (
                   <EmptyState
                     title="Sin visitas registradas"
                     description="Cuando el cliente tenga atenciones cerradas, aparecerán aquí."
