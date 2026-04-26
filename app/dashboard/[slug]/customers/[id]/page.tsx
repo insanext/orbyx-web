@@ -1000,6 +1000,7 @@ const latestAppointments = useMemo(() => {
               )}
             </div>
           </div>
+        ) : null}
       </div>
     ))}
   </div>
