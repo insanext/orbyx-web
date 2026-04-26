@@ -476,7 +476,11 @@ next_control_at: data?.appointment?.next_control_at ?? null,
     </p>
 
     <p className="mt-3 text-sm text-slate-400">
-      🐶 {pets.length} mascotas · 🩺 {customer.total_visits} visitas
+      {isVeterinaria ? (
+  <>🐶 {pets.length} mascotas · 🩺 {customer.total_visits} visitas</>
+) : (
+  <>🗓️ {customer.total_visits} visitas</>
+)}
     </p>
 
     <p className="mt-2 text-xs text-slate-400">
@@ -589,6 +593,8 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                         />
                       </div>
                     ) : null}
+
+
 
                     <div>
                       <label
@@ -1105,6 +1111,54 @@ next_control_at: data?.appointment?.next_control_at ?? null,
               </Panel>
             ) : null}
 
+
+              </Panel>
+            ) : null}
+
+            {!isVeterinaria ? (
+              <Panel
+                title="Historial de visitas"
+                description="Registro simple de atenciones realizadas por este cliente."
+              >
+                {latestAppointments.length === 0 ? (
+                  <EmptyState
+                    title="Sin visitas registradas"
+                    description="Cuando el cliente tenga atenciones cerradas, aparecerán aquí."
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    {latestAppointments.map((appt) => (
+                      <div
+                        key={appt.id}
+                        className="rounded-2xl border p-4"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                        }}
+                      >
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--text-main)" }}
+                        >
+                          {appt.service_name_snapshot || "Atención"}
+                        </p>
+
+                        <p
+                          className="mt-1 text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {formatDateLong(appt.start_at)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Panel>
+            ) : null}
+
+          </div>
+
+          <div className="space-y-6">
 
 
           </div>
