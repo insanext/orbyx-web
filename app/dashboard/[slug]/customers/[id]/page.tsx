@@ -362,11 +362,11 @@ const latestAppointments = useMemo(() => {
   );
 }, [appointments]);
 const validAppointments = useMemo(() => {
-  return latestAppointments.filter((appt) => appt.status !== "cancelled");
+  return latestAppointments.filter((appt) => !["canceled", "cancelled"].includes(String(appt.status || "").toLowerCase()));
 }, [latestAppointments]);
 
 const cancelledAppointments = useMemo(() => {
-  return latestAppointments.filter((appt) => appt.status === "cancelled");
+  return latestAppointments.filter((appt) => ["canceled", "cancelled"].includes(String(appt.status || "").toLowerCase()));
 }, [latestAppointments]);
 
 const lastValidAppointment = validAppointments[0] || null;
@@ -1138,7 +1138,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                 ) : (
                   <div className="space-y-3">
                     {latestAppointments
-  .filter((appt) => appt.status !== "cancelled")
+  .filter((appt) => !["canceled", "cancelled"].includes(String(appt.status || "").toLowerCase()))
   .map((appt) => (
                       <div
                         key={appt.id}
