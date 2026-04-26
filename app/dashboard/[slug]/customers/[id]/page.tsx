@@ -361,6 +361,16 @@ const latestAppointments = useMemo(() => {
     (a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime()
   );
 }, [appointments]);
+const validAppointments = useMemo(() => {
+  return latestAppointments.filter((appt) => appt.status !== "cancelled");
+}, [latestAppointments]);
+
+const cancelledAppointments = useMemo(() => {
+  return latestAppointments.filter((appt) => appt.status === "cancelled");
+}, [latestAppointments]);
+
+const lastValidAppointment = validAppointments[0] || null;
+
 
   const latestPets = useMemo(() => {
     return [...pets].slice(0, 4);
@@ -484,9 +494,12 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 )}
     </p>
 
-    <p className="mt-2 text-xs text-slate-400">
-      Última visita: {formatDateLong(customer.last_visit_at)}
-    </p>
+<p className="mt-2 text-xs text-slate-400">
+  Última visita:{" "}
+  {isVeterinaria
+    ? formatDateLong(customer.last_visit_at)
+    : formatDateLong(lastValidAppointment?.start_at)}
+</p>
   </div>
 </div>
 
@@ -1169,17 +1182,37 @@ next_control_at: data?.appointment?.next_control_at ?? null,
             >
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
 
-                <SummaryCard
-                  label="Visitas"
-                  value={customer.total_visits}
-                  hint="Cantidad total de atenciones registradas."
-                />
+<SummaryCard
+  label={isVeterinaria ? "Visitas" : "Visitas válidas"}
+  value={isVeterinaria ? customer.total_visits : validAppointments.length}
+  hint={
+    isVeterinaria
+      ? "Cantidad total de atenciones registradas."
+      : "Atenciones no canceladas registradas para este cliente."
+  }
+/>
 
-                <SummaryCard
-                  label="Última visita"
-                  value={formatDate(customer.last_visit_at)}
-                  hint="Última fecha registrada del cliente."
-                />
+{!isVeterinaria ? (
+  <SummaryCard
+    label="Canceladas"
+    value={cancelledAppointments.length}
+    hint="Reservas canceladas asociadas a este cliente."
+  />
+) : null}
+
+<SummaryCard
+  label="Última visita"
+  value={
+    isVeterinaria
+      ? formatDate(customer.last_visit_at)
+      : formatDate(lastValidAppointment?.start_at)
+  }
+  hint={
+    isVeterinaria
+      ? "Última fecha registrada del cliente."
+      : "Última atención no cancelada registrada."
+  }
+/>
               </div>
             </Panel>
 
