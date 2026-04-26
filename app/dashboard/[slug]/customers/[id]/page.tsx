@@ -490,7 +490,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
       {isVeterinaria ? (
   <>🐶 {pets.length} mascotas · 🩺 {customer.total_visits} visitas</>
 ) : (
-  <>🗓️ {latestAppointments.filter((a: any) => a.status !== "cancelled").length} visitas</>
+  <>🗓️ {latestAppointments.length} registros</>
 )}
     </p>
 
