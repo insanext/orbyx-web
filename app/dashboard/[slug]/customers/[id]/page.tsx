@@ -203,7 +203,7 @@ export default function CustomerDetailPage() {
   const [savingClinicalId, setSavingClinicalId] = useState<string | null>(null);
   const [clinicalMessage, setClinicalMessage] = useState("");
 const [editingPetId, setEditingPetId] = useState<string | null>(null);
-const [expandedAppointmentId, setExpandedAppointmentId] = useState<string | null>(null);
+
 
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
@@ -853,12 +853,11 @@ const latestAppointments = useMemo(() => {
                 latestAppointments
                   .filter((appt) => appt.pet_id === pet.id)
                   .map((appt) => {
-  const isExpanded = expandedAppointmentId === appt.id;
 
   return (
                     <div
                       key={appt.id}
-                      className="rounded-xl border p-3"
+                      className="rounded-2xl border p-4 space-y-3"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-card)",
@@ -882,19 +881,7 @@ const latestAppointments = useMemo(() => {
                         </div>
                       </div>
 
-                      <button
-  type="button"
-  onClick={() =>
-    setExpandedAppointmentId((prev) =>
-      prev === appt.id ? null : appt.id
-    )
-  }
-  className="mt-3 rounded-xl border px-3 py-1 text-xs"
->
-  {isExpanded ? "Ocultar" : "Ver / editar"}
-</button>
-
-{isExpanded ? (
+                      
 <div className="mt-3 space-y-3">
                         <input
                           type="text"
@@ -921,31 +908,62 @@ const latestAppointments = useMemo(() => {
                           }}
                         />
 
-                        <input
-                          type="date"
-                          defaultValue={
-                            appt.next_control_at
-                              ? new Date(appt.next_control_at).toISOString().slice(0, 10)
-                              : ""
-                          }
-                          id={`pet-control-date-${appt.id}`}
-                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                          }}
-                        />
+                        <div className="grid gap-2">
+  <p className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+    Próximo control
+  </p>
+
+  <div className="flex flex-wrap gap-2">
+    {[7, 15, 30, 60].map((days) => (
+      <button
+        key={days}
+        type="button"
+        onClick={() => {
+          const date = new Date();
+          date.setDate(date.getDate() + days);
+
+          const input = document.getElementById(
+            `pet-control-date-${appt.id}`
+          ) as HTMLInputElement | null;
+
+          if (input) {
+            input.value = date.toISOString().slice(0, 10);
+          }
+        }}
+        className="rounded-full border px-3 py-1 text-xs hover:bg-slate-100"
+      >
+        {days} días
+      </button>
+    ))}
+  </div>
+
+  <input
+    type="date"
+    defaultValue={
+      appt.next_control_at
+        ? new Date(appt.next_control_at).toISOString().slice(0, 10)
+        : ""
+    }
+    id={`pet-control-date-${appt.id}`}
+    className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-card)",
+      color: "var(--text-main)",
+    }}
+  />
+</div>
+</div>
                       </div>
-			) : null}
+
                       <div className="mt-4 flex justify-end gap-2">
                         <button
-                          type="button"
-                          onClick={() => setExpandedAppointmentId(null)}
-                          className="rounded-xl border px-4 py-2 text-xs font-medium"
-                        >
-                          Cancelar
-                        </button>
+  type="button"
+  onClick={() => setEditingPetId(null)}
+  className="rounded-xl border px-4 py-2 text-xs font-medium"
+>
+  Cancelar
+</button>
 
                         <button
                           type="button"
@@ -983,7 +1001,6 @@ const latestAppointments = useMemo(() => {
               )}
             </div>
           </div>
-        ) : null}
       </div>
     ))}
   </div>
