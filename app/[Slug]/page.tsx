@@ -314,6 +314,28 @@ const noSlotsThisWeek = useMemo(() => {
     return (weekSlots[key] || []).length === 0;
   });
 }, [weekSlots, weekDates]);
+
+const nextAvailableDays = useMemo(() => {
+  const grouped = new Map<string, SlotItem[]>();
+
+  for (const slot of nextAvailableSlots) {
+    const key = formatDate(new Date(slot.slot_start));
+
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+
+    grouped.get(key)?.push(slot);
+  }
+
+  return Array.from(grouped.entries())
+    .slice(0, 2)
+    .map(([date, slots]) => ({
+      date,
+      slots,
+    }));
+}, [nextAvailableSlots]);
+
   const showBranchSelector = branches.length > 1;
   const visibleBookingFields = bookingFields.filter((field) => field.enabled);
 
@@ -702,6 +724,8 @@ const noSlotsThisWeek = useMemo(() => {
       }
     }
 
+
+
 async function loadNextAvailableSlots() {
   try {
     if (!slug || !selectedService?.id) {
@@ -711,21 +735,17 @@ async function loadNextAvailableSlots() {
 
     const today = new Date();
     const results: SlotItem[] = [];
+    let daysWithSlots = 0;
 
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 45; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
 
       const query = new URLSearchParams();
       query.set("date", formatDate(date));
 
-      if (selectedBranchId) {
-        query.set("branch_id", selectedBranchId);
-      }
-
-      if (selectedStaffId) {
-        query.set("staff_id", selectedStaffId);
-      }
+      if (selectedBranchId) query.set("branch_id", selectedBranchId);
+      if (selectedStaffId) query.set("staff_id", selectedStaffId);
 
       const res = await fetch(
         `/api/public-slots/${slug}/${selectedService.id}?${query.toString()}`,
@@ -733,32 +753,28 @@ async function loadNextAvailableSlots() {
       );
 
       const data = await res.json();
-      const slots: SlotItem[] = Array.isArray(data.slots) ? data.slots : [];
+      const slots: SlotItem[] = Array.isArray(data.slots)
+        ? dedupeSlots(data.slots)
+        : [];
 
       if (slots.length > 0) {
-        results.push(...slots);
+        results.push(...slots.slice(0, 4));
+        daysWithSlots++;
 
-        if (results.length >= 8) break;
+        if (daysWithSlots >= 2) break;
       }
     }
 
-    setNextAvailableSlots(results.slice(0, 6));
+    setNextAvailableSlots(results);
   } catch (err) {
     console.error("Error buscando próximos slots", err);
     setNextAvailableSlots([]);
   }
 }
 
-    loadWeekSlots();
-loadNextAvailableSlots();
-  }, [
-    slug,
-    selectedService?.id,
-    selectedDate,
-    selectedBranchId,
-    selectedStaffId,
-    weekDates,
-  ]);
+
+
+
 
   async function handleSubmitBooking() {
     try {
@@ -1391,36 +1407,14 @@ const detectedCustomerId =
                     </div>
 
                     {loadingSlots ? (
-                      <p className="text-xs text-slate-500">Cargando...</p>
-                    ) : !selectedService ? (
-                      <p className="text-xs text-slate-500">
-                        Selecciona un servicio.
-                      </p>
-                    ) : slots.length === 0 ? (
-                      <>
+  <p className="text-xs text-slate-500">Cargando...</p>
+) : !selectedService ? (
+  <p className="text-xs text-slate-500">
+    Selecciona un servicio.
+  </p>
+) : slots.length === 0 ? (
   <p className="text-xs text-slate-500">Sin horarios.</p>
-
-  {noSlotsThisWeek && nextAvailableSlots.length > 0 && index === 0 && (
-    <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-3 space-y-2">
-      <p className="text-xs font-semibold text-indigo-900">
-        Próximas horas disponibles:
-      </p>
-
-      <div className="flex flex-wrap gap-2">
-        {nextAvailableSlots.map((slot, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => {
-              setSelectedDate(new Date(slot.slot_start));
-              setSelectedSlot(slot);
-            }}
-            className="rounded-lg border border-indigo-300 bg-white px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
-          >
-            {formatHour(slot.slot_start)}
-          </button>
-        ))}
-      </div>
+) : (
 
       <button
         type="button"
@@ -1475,6 +1469,69 @@ const detectedCustomerId =
                       </div>
                     )}
                   </div>
+
+            {selectedService && noSlotsThisWeek && nextAvailableDays.length > 0 ? (
+              <div className="mt-6 rounded-[26px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-5 shadow-sm">
+                <p className="text-sm font-semibold text-slate-950">
+                  Sin disponibilidad durante la semana seleccionada.
+                </p>
+
+                <p className="mt-1 text-sm text-slate-600">
+                  Estas son las fechas y horarios más próximos disponibles.
+                </p>
+
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {nextAvailableDays.map((day) => (
+                    <div
+                      key={day.date}
+                      className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm"
+                    >
+                      <p className="text-sm font-semibold text-slate-900">
+                        {formatFullDate(day.slots[0].slot_start)}
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {day.slots.map((slot) => (
+                          <button
+                            key={slot.slot_start}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDate(new Date(slot.slot_start));
+                              setSelectedSlot(slot);
+
+                              setTimeout(() => {
+                                formRef.current?.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "start",
+                                });
+                              }, 120);
+                            }}
+                            className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50"
+                          >
+                            {formatHour(slot.slot_start)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstSlot = nextAvailableSlots[0];
+                    if (!firstSlot) return;
+
+                    setSelectedDate(new Date(firstSlot.slot_start));
+                    setSelectedSlot(null);
+                  }}
+                  className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90"
+                >
+                  Ir a semana con disponibilidad
+                </button>
+              </div>
+            ) : null}
+
                 );
               })}
             </div>
