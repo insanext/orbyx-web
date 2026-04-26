@@ -826,15 +826,28 @@ next_control_at: data?.appointment?.next_control_at ?? null,
           ) : null}
         </div>
 
-<button
-  type="button"
-  onClick={() =>
-    setEditingPetId((prev) => (prev === pet.id ? null : pet.id))
-  }
-  className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
->
-  {editingPetId === pet.id ? "Cerrar" : "Editar"}
-</button>
+<div className="flex items-center gap-2">
+  <button
+    type="button"
+    onClick={() =>
+      setEditingPetId((prev) => (prev === pet.id ? null : pet.id))
+    }
+    className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
+  >
+    {editingPetId === pet.id ? "Cerrar" : "Editar"}
+  </button>
+
+  <a
+    href={`${BACKEND_URL}/pets/${pet.id}/clinical-pdf?slug=${slug}`}
+    target="_blank"
+    rel="noreferrer"
+    className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
+  >
+    PDF
+  </a>
+</div>
+
+
         {editingPetId === pet.id ? (
           <div
             className="mt-4 rounded-2xl border p-4"
