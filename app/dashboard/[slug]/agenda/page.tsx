@@ -305,6 +305,7 @@ export default function AgendaPage() {
 
   const [weekBaseDate, setWeekBaseDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedAppointment, setSelectedAppointment] =
@@ -1255,6 +1256,10 @@ if (selectedStaff.use_business_hours || !hasStaffHours) {
   );
   const weekEnd = weekDays[6];
 
+
+
+
+
   async function loadAppointments(options?: { preserveSelected?: boolean }) {
     try {
       setLoading(true);
@@ -1319,6 +1324,41 @@ if (selectedStaff.use_business_hours || !hasStaffHours) {
       setLoading(false);
     }
   }
+
+
+async function loadPendingCloseAppointments() {
+  try {
+    if (!slug || !selectedBranchId) {
+      setPendingCloseAllAppointments([]);
+      return;
+    }
+
+    const query = new URLSearchParams({
+      branch_id: selectedBranchId,
+    });
+
+    if (selectedStaffId) {
+      query.set("staff_id", selectedStaffId);
+    }
+
+    const res = await fetch(
+      `${BACKEND_URL}/appointments/pending-close/${slug}?${query.toString()}`
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudieron cargar los pendientes");
+    }
+
+    setPendingCloseAllAppointments(
+      Array.isArray(data.appointments) ? data.appointments : []
+    );
+  } catch (err) {
+    console.error("Error cargando pendientes globales", err);
+    setPendingCloseAllAppointments([]);
+  }
+}
 
 
   async function handleUpdateStatus(
@@ -1595,6 +1635,7 @@ next_control_custom_value:
     }
 
     loadAppointments();
+loadPendingCloseAppointments();
   }, [slug, weekStart.getTime(), selectedBranchId, selectedStaffId]);
 
   useEffect(() => {
@@ -1709,8 +1750,8 @@ next_control_custom_value:
       );
   }, [appointments]);
 
-  const pendingCloseCount = pendingCloseAppointments.length;
-  const hasPendingClose = pendingCloseCount > 0;
+const pendingCloseCount = pendingCloseAllAppointments.length;
+const hasPendingClose = pendingCloseCount > 0;
 
   const counts = useMemo(() => {
     return {
@@ -1861,12 +1902,12 @@ next_control_custom_value:
       </div>
 
       <div className="mt-4 space-y-3 max-h-[80vh] overflow-y-auto">
-        {pendingCloseAppointments.length === 0 ? (
+        {pendingCloseAllAppointments.length === 0 ? (
           <p className="text-sm text-slate-500">
             No hay pendientes.
           </p>
         ) : (
-          pendingCloseAppointments.map((appt) => (
+          pendingCloseAllAppointments.map((appt) => (
             <div
               key={appt.id}
               className="rounded-xl border p-3"
