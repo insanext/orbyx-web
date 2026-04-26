@@ -277,6 +277,7 @@ export default function Page() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
 const [nextAvailableSlots, setNextAvailableSlots] = useState<SlotItem[]>([]);
+const [loadingNextSlots, setLoadingNextSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
 
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
@@ -728,6 +729,7 @@ const nextAvailableDays = useMemo(() => {
 
 async function loadNextAvailableSlots() {
   try {
+setLoadingNextSlots(true);
     if (!slug || !selectedService?.id) {
       setNextAvailableSlots([]);
       return;
@@ -770,6 +772,8 @@ async function loadNextAvailableSlots() {
     console.error("Error buscando próximos slots", err);
     setNextAvailableSlots([]);
   }
+finally {
+  setLoadingNextSlots(false);
 }
 
 
