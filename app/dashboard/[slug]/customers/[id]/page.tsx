@@ -868,18 +868,20 @@ const latestAppointments = useMemo(() => {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p
-                              className="text-sm font-semibold"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {formatDateLong(appt.start_at)}
+                            
+<p
+  className="text-sm font-semibold"
+  style={{ color: "var(--text-main)" }}
+>
+  {formatDateLong(appt.start_at)}
+</p>
+
 <p
   className="text-xs"
   style={{ color: "var(--text-muted)" }}
 >
   {appt.service_name_snapshot || "Atención"}
 </p>
-                            </p>
 
                             <p
                               className="mt-1 text-xs"
@@ -1067,8 +1069,9 @@ const latestAppointments = useMemo(() => {
                         >
                           {savingClinicalId === appt.id ? "Guardando..." : "Guardar"}
                         </button>
-                      </div>
-                                        </div>
+                                            </div>
+                    </div>
+                  )
   );
 })
               )}
