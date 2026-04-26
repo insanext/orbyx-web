@@ -1172,11 +1172,11 @@ const detectedCustomerId =
                   <div>
                     <div className="mb-3">
                       <p className="text-sm font-semibold text-slate-900">
-                        Profesional
-                      </p>
+  Profesional preferente (opcional)
+</p>
                       <p className="text-xs text-slate-500">
-                        Selecciona uno o deja cualquiera disponible.
-                      </p>
+  Puedes elegir uno específico o dejar que asignemos cualquiera disponible.
+</p>
                     </div>
 
                     {loadingStaff ? (
@@ -1319,7 +1319,7 @@ const detectedCustomerId =
                     key={dateKey}
                     className={`rounded-2xl border p-3 transition ${
                       isSelectedDay
-                        ? "border-sky-300 bg-gradient-to-b from-sky-50 to-white shadow-sm"
+  ? "border-sky-500 bg-sky-100 shadow-md"
                         : "border-slate-200 bg-slate-50/60"
                     }`}
                   >
@@ -1375,7 +1375,7 @@ const detectedCustomerId =
                                   : "text-slate-400"
                               }`}
                             >
-                              Libre
+                              Disponible
                             </span>
                           </button>
                         ))}
@@ -1640,7 +1640,7 @@ const detectedCustomerId =
                       disabled={submitting}
                       className="inline-flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {submitting ? "Confirmando..." : "Confirmar reserva"}
+                      {submitting ? "Confirmando..." : "Confirmar hora"}
                     </button>
                   </div>
                 </div>
