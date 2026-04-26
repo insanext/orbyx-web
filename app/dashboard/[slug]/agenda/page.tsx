@@ -129,6 +129,7 @@ type VeterinaryNextControlMode =
   | "3_months"
   | "6_months"
   | "1_year"
+  | "exact_date"
   | "custom";
 
 type VeterinaryCloseForm = {
@@ -136,6 +137,7 @@ type VeterinaryCloseForm = {
   custom_control_type: string;
   control_note: string;
   next_control_mode: VeterinaryNextControlMode;
+  next_control_exact_date: string;
   next_control_custom_value: string;
   next_control_custom_unit: "days" | "months" | "years";
 };
@@ -316,9 +318,10 @@ export default function AgendaPage() {
     control_type: "Control general",
     custom_control_type: "",
     control_note: "",
-    next_control_mode: "none",
-    next_control_custom_value: "",
-    next_control_custom_unit: "days",
+next_control_mode: "none",
+next_control_exact_date: "",
+next_control_custom_value: "",
+next_control_custom_unit: "days",
   });
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -657,9 +660,10 @@ function getWeekdayLabel(date: Date) {
       control_type: "Control general",
       custom_control_type: "",
       control_note: "",
-      next_control_mode: "none",
-      next_control_custom_value: "",
-      next_control_custom_unit: "days",
+next_control_mode: "none",
+next_control_exact_date: "",
+next_control_custom_value: "",
+next_control_custom_unit: "days",
     });
     setCloseError("");
   }
@@ -1391,8 +1395,12 @@ if (selectedStaff.use_business_hours || !hasStaffHours) {
           body: JSON.stringify({
             control_type: resolvedControlType,
             control_note: closeForm.control_note.trim(),
-            next_control_mode: closeForm.next_control_mode,
-            next_control_custom_value:
+next_control_mode: closeForm.next_control_mode,
+next_control_exact_date:
+  closeForm.next_control_mode === "exact_date"
+    ? closeForm.next_control_exact_date
+    : null,
+next_control_custom_value:
               closeForm.next_control_mode === "custom"
                 ? Number(closeForm.next_control_custom_value)
                 : null,
@@ -3218,9 +3226,31 @@ if (selectedStaff.use_business_hours || !hasStaffHours) {
                   <option value="2_months">2 meses</option>
                   <option value="3_months">3 meses</option>
                   <option value="6_months">6 meses</option>
-                  <option value="1_year">1 año</option>
-                  <option value="custom">Personalizado</option>
+<option value="1_year">1 año</option>
+<option value="exact_date">Fecha exacta</option>
+<option value="custom">Personalizado</option>
                 </select>
+
+{closeForm.next_control_mode === "exact_date" ? (
+  <div className="mt-3">
+    <input
+      type="date"
+      value={closeForm.next_control_exact_date}
+      onChange={(e) =>
+        setCloseForm((prev) => ({
+          ...prev,
+          next_control_exact_date: e.target.value,
+        }))
+      }
+      className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    />
+  </div>
+) : null}
 
                 {closeForm.next_control_mode === "custom" ? (
                   <div className="mt-3 grid grid-cols-[1fr_140px] gap-2">
