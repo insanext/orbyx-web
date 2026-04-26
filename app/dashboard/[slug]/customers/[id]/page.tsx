@@ -483,13 +483,6 @@ next_control_at: data?.appointment?.next_control_at ?? null,
       Última visita: {formatDateLong(customer.last_visit_at)}
     </p>
   </div>
-
-  <button
-    onClick={() => window.print()}
-    className="mt-4 md:mt-0 rounded-xl border border-white/30 px-4 py-2 text-sm hover:bg-white/10"
-  >
-    🖨️ Imprimir ficha
-  </button>
 </div>
 
 

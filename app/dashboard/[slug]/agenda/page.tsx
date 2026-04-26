@@ -310,6 +310,7 @@ export default function AgendaPage() {
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
+const [showPendingPanel, setShowPendingPanel] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closeSaving, setCloseSaving] = useState(false);
@@ -1840,6 +1841,82 @@ next_control_custom_value:
 
       {error ? <Notice tone="danger" title={error} /> : null}
 
+{showPendingPanel ? (
+  <div
+    className="fixed inset-0 z-50 flex items-start justify-end bg-black/40"
+    onClick={() => setShowPendingPanel(false)}
+  >
+    <div
+      className="h-full w-full max-w-md bg-white p-5 shadow-xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Pendientes de cierre</h3>
+        <button
+          onClick={() => setShowPendingPanel(false)}
+          className="text-sm"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-3 max-h-[80vh] overflow-y-auto">
+        {pendingCloseAppointments.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            No hay pendientes.
+          </p>
+        ) : (
+          pendingCloseAppointments.map((appt) => (
+            <div
+              key={appt.id}
+              className="rounded-xl border p-3"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <p className="text-sm font-semibold">
+                {appt.customer_name}
+              </p>
+
+              {appt.customer_data?.pet_name ? (
+                <p className="text-xs text-emerald-600">
+                  🐶 {appt.customer_data.pet_name}
+                </p>
+              ) : null}
+
+              <p className="text-xs text-slate-500 mt-1">
+                {formatLongDate(appt.start_at)} ·{" "}
+                {formatHour(appt.start_at)}
+              </p>
+
+              <p className="text-xs text-slate-500">
+                {getStaffName(appt.staff_id)}
+              </p>
+
+              <button
+                onClick={() => {
+                  setShowPendingPanel(false);
+
+                  const date = new Date(appt.start_at);
+                  setWeekBaseDate(date);
+
+                  setTimeout(() => {
+                    handleSelectAppointment(appt);
+                  }, 100);
+                }}
+                className="mt-2 w-full rounded-lg bg-slate-900 px-3 py-1.5 text-xs text-white"
+              >
+                Ir a atención
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  </div>
+) : null}
+
       <div className="grid gap-8 xl:grid-cols-[1.7fr_0.55fr]">
         <section className="space-y-6">
           <div>
@@ -1855,12 +1932,9 @@ next_control_custom_value:
                 {hasPendingClose ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveFilter("pending_close");
-                      if (pendingCloseAppointments[0]) {
-                        handleSelectAppointment(pendingCloseAppointments[0]);
-                      }
-                    }}
+onClick={() => {
+  setShowPendingPanel(true);
+}}
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700"
                   >
                     Pendientes: {pendingCloseCount}
