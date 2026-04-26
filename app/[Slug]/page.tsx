@@ -775,7 +775,7 @@ setLoadingNextSlots(true);
 finally {
   setLoadingNextSlots(false);
 }
-
+}
 
     loadWeekSlots();
     loadNextAvailableSlots();
