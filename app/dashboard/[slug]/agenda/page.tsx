@@ -1935,7 +1935,9 @@ next_control_custom_value:
 onClick={() => {
   setShowPendingPanel(true);
 }}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse transition hover:animate-none hover:scale-105 hover:bg-rose-700"
+                    className={`inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-[0_0_12px_rgba(244,63,94,0.6)] transition hover:scale-105 hover:bg-rose-700 ${
+  pendingCloseCount > 0 ? "animate-pulse" : ""
+}`}
                   >
                     Pendientes: {pendingCloseCount}
                   </button>
