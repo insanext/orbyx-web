@@ -1406,7 +1406,17 @@ const detectedCustomerId =
                       </p>
                     </div>
 
-                    {loadingSlots ? (
+
+
+
+
+
+
+
+
+
+
+{loadingSlots ? (
   <p className="text-xs text-slate-500">Cargando...</p>
 ) : !selectedService ? (
   <p className="text-xs text-slate-500">
@@ -1415,126 +1425,116 @@ const detectedCustomerId =
 ) : slots.length === 0 ? (
   <p className="text-xs text-slate-500">Sin horarios.</p>
 ) : (
-
+  <div className="space-y-1.5">
+    {slots.map((slot, index) => (
       <button
+        key={`${slot.slot_start}-${index}`}
         type="button"
         onClick={() => {
-          if (nextAvailableSlots[0]) {
-            setSelectedDate(new Date(nextAvailableSlots[0].slot_start));
-          }
+          setSelectedSlot(slot);
+
+          setTimeout(() => {
+            formRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }, 120);
         }}
-        className="text-xs font-semibold text-indigo-700 underline"
+        className={`flex min-h-[40px] w-full flex-col items-center justify-center rounded-xl border px-2 py-1 text-center transition ${
+          selectedSlot?.slot_start === slot.slot_start
+            ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
+            : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+        }`}
       >
-        Ir a semana con disponibilidad
+        <span className="text-[12px] font-semibold leading-none">
+          {formatHour(slot.slot_start)}
+        </span>
+        <span
+          className={`mt-1 text-[9px] leading-none ${
+            selectedSlot?.slot_start === slot.slot_start
+              ? "text-indigo-100"
+              : "text-slate-400"
+          }`}
+        >
+          Disponible
+        </span>
       </button>
+    ))}
+  </div>
+)}
+</div>
+);
+})}
+</div>
+
+{selectedService && noSlotsThisWeek && nextAvailableDays.length > 0 ? (
+  <div className="mt-6 rounded-[26px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-5 shadow-sm">
+    <p className="text-sm font-semibold text-slate-950">
+      Sin disponibilidad durante la semana seleccionada.
+    </p>
+
+    <p className="mt-1 text-sm text-slate-600">
+      Tenemos estas fechas y horarios más próximos disponibles.
+    </p>
+
+    <div className="mt-4 grid gap-4 md:grid-cols-2">
+      {nextAvailableDays.map((day) => (
+        <div
+          key={day.date}
+          className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm"
+        >
+          <p className="text-sm font-semibold text-slate-900">
+            {formatFullDate(day.slots[0].slot_start)}
+          </p>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {day.slots.map((slot) => (
+              <button
+                key={slot.slot_start}
+                type="button"
+                onClick={() => {
+                  setSelectedDate(new Date(slot.slot_start));
+                  setSelectedSlot(slot);
+
+                  setTimeout(() => {
+                    formRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }, 120);
+                }}
+                className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50"
+              >
+                {formatHour(slot.slot_start)}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
-  )}
-</>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {slots.map((slot, index) => (
-                          <button
-                            key={`${slot.slot_start}-${index}`}
-                            type="button"
-                            onClick={() => {
-  setSelectedSlot(slot);
 
-  setTimeout(() => {
-    formRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }, 120);
-}}
-                            className={`flex min-h-[40px] w-full flex-col items-center justify-center rounded-xl border px-2 py-1 text-center transition ${
-                              selectedSlot?.slot_start === slot.slot_start
-                                ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
-                                : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
-                            }`}
-                          >
-                            <span className="text-[12px] font-semibold leading-none">
-                              {formatHour(slot.slot_start)}
-                            </span>
-                            <span
-                              className={`mt-1 text-[9px] leading-none ${
-                                selectedSlot?.slot_start === slot.slot_start
-                                  ? "text-indigo-100"
-                                  : "text-slate-400"
-                              }`}
-                            >
-                              Disponible
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+    <button
+      type="button"
+      onClick={() => {
+        const firstSlot = nextAvailableSlots[0];
+        if (!firstSlot) return;
 
-            {selectedService && noSlotsThisWeek && nextAvailableDays.length > 0 ? (
-              <div className="mt-6 rounded-[26px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-5 shadow-sm">
-                <p className="text-sm font-semibold text-slate-950">
-                  Sin disponibilidad durante la semana seleccionada.
-                </p>
+        setSelectedDate(new Date(firstSlot.slot_start));
+        setSelectedSlot(null);
+      }}
+      className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90"
+    >
+      Ir a semana con disponibilidad
+    </button>
+  </div>
+) : null}
 
-                <p className="mt-1 text-sm text-slate-600">
-                  Estas son las fechas y horarios más próximos disponibles.
-                </p>
 
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  {nextAvailableDays.map((day) => (
-                    <div
-                      key={day.date}
-                      className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm"
-                    >
-                      <p className="text-sm font-semibold text-slate-900">
-                        {formatFullDate(day.slots[0].slot_start)}
-                      </p>
 
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {day.slots.map((slot) => (
-                          <button
-                            key={slot.slot_start}
-                            type="button"
-                            onClick={() => {
-                              setSelectedDate(new Date(slot.slot_start));
-                              setSelectedSlot(slot);
 
-                              setTimeout(() => {
-                                formRef.current?.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "start",
-                                });
-                              }, 120);
-                            }}
-                            className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50"
-                          >
-                            {formatHour(slot.slot_start)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const firstSlot = nextAvailableSlots[0];
-                    if (!firstSlot) return;
 
-                    setSelectedDate(new Date(firstSlot.slot_start));
-                    setSelectedSlot(null);
-                  }}
-                  className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90"
-                >
-                  Ir a semana con disponibilidad
-                </button>
-              </div>
-            ) : null}
 
-                );
-              })}
-            </div>
 
             {selectedSlot ? (
               <div
