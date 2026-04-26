@@ -1538,20 +1538,20 @@ const detectedCustomerId =
       ))}
     </div>
 
-    <button
-      type="button"
-      onClick={() => {
-        const firstSlot = nextAvailableSlots[0];
-        if (!firstSlot) return;
+{!loadingNextSlots && nextAvailableSlots.length > 0 ? (
+  <button
+    type="button"
+    onClick={() => {
+      const firstSlot = nextAvailableSlots[0];
+      if (!firstSlot) return;
 
-        setSelectedDate(new Date(firstSlot.slot_start));
-        setSelectedSlot(null);
-      }}
-      className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90"
-    >
-      Ir a semana con disponibilidad
-    </button>
-  </div>
+      setSelectedDate(new Date(firstSlot.slot_start));
+      setSelectedSlot(null);
+    }}
+    className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90"
+  >
+    Ir a semana con disponibilidad
+  </button>
 ) : null}
 
 
