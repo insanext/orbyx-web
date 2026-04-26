@@ -818,8 +818,8 @@ finally {
 
 
 const detectedCustomerId =
-  existingCustomerFound && pets.length > 0
-    ? pets[0].customer_id
+  existingCustomerFound && selectedPetId
+    ? pets.find((p) => p.id === selectedPetId)?.customer_id || null
     : null;
 
       const payload = {
