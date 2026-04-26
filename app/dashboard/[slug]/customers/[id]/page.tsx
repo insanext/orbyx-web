@@ -203,7 +203,7 @@ export default function CustomerDetailPage() {
   const [savingClinicalId, setSavingClinicalId] = useState<string | null>(null);
   const [clinicalMessage, setClinicalMessage] = useState("");
 const [editingPetId, setEditingPetId] = useState<string | null>(null);
-
+const [viewingClinicalId, setViewingClinicalId] = useState<string | null>(null);
 
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
@@ -852,9 +852,83 @@ const latestAppointments = useMemo(() => {
               ) : (
                 latestAppointments
                   .filter((appt) => appt.pet_id === pet.id)
-                  .map((appt) => {
+                  .map((appt, index) => {
+  const isLatest = index === 0;
+  const isViewing = viewingClinicalId === appt.id;
 
   return (
+                    !isLatest ? (
+                      <div
+                        key={appt.id}
+                        className="rounded-xl border px-4 py-3"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p
+                              className="text-sm font-semibold"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {formatDateLong(appt.start_at)}
+<p
+  className="text-xs"
+  style={{ color: "var(--text-muted)" }}
+>
+  {appt.service_name_snapshot || "Atención"}
+</p>
+                            </p>
+
+                            <p
+                              className="mt-1 text-xs"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              {appt.reason || "Sin motivo registrado"}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setViewingClinicalId((prev) =>
+                                prev === appt.id ? null : appt.id
+                              )
+                            }
+                            className="rounded-xl border px-3 py-1 text-xs"
+                          >
+                            {isViewing ? "Ocultar" : "Ver detalles"}
+                          </button>
+                        </div>
+
+                        {isViewing ? (
+                          <div
+                            className="mt-3 rounded-xl border p-3 text-sm"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            <p>
+                              <strong>Notas:</strong>{" "}
+                              {appt.notes || "Sin notas clínicas."}
+                            </p>
+
+                            <p className="mt-2">
+                              <strong>Próximo control:</strong>{" "}
+{appt.next_control_at
+  ? formatDateLong(appt.next_control_at)
+  : "No definido"}{" "}
+                              {appt.next_control_at
+                                ? formatDateLong(appt.next_control_at)
+                                : "Sin próximo control."}
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
                     <div
                       key={appt.id}
                       className="rounded-2xl border p-4 space-y-3"
