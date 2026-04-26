@@ -1553,12 +1553,8 @@ const detectedCustomerId =
     Ir a semana con disponibilidad
   </button>
 ) : null}
-
-
-
-
-
-
+  </div>
+) : null}
 
 
             {selectedSlot ? (
