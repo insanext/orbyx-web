@@ -773,7 +773,7 @@ function StatCard({
 }) {
   return (
     <div
-      className="rounded-[22px] border p-5"
+      className="rounded-[18px] border p-3"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
@@ -781,23 +781,23 @@ function StatCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             {title}
           </p>
           <p
-            className="mt-2 text-[32px] font-semibold tracking-tight"
+            className="mt-1 text-2xl font-semibold tracking-tight"
             style={{ color: "var(--text-main)" }}
           >
             {value}
           </p>
-          <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+          <p className="mt-1 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
             {helper}
           </p>
         </div>
 
         {icon ? (
           <div
-            className="flex h-11 w-11 items-center justify-center rounded-2xl"
+            className="flex h-9 w-9 items-center justify-center rounded-xl"
             style={{
               background:
                 "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.12))",
@@ -2595,15 +2595,15 @@ export default function CampaignsPage() {
 
   return (
     <div className="space-y-8 pb-8">
-      <section
-        className="overflow-hidden rounded-[34px] border p-6 shadow-sm"
+<section
+  className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
         style={{
           borderColor: "rgba(59,130,246,0.18)",
           background:
             "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.06) 28%, var(--bg-card) 72%)",
         }}
       >
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_420px] xl:items-center">
+<div className="grid gap-4">
           <div>
             <p
               className="text-xs font-semibold uppercase tracking-[0.22em]"
@@ -2612,15 +2612,12 @@ export default function CampaignsPage() {
               Campañas
             </p>
 
-            <h1
-              className="mt-3 text-4xl font-semibold tracking-tight"
-              style={{ color: "var(--text-main)" }}
-            >
-              Campañas y recuperación
-            </h1>
+<h1 className="text-xl font-semibold tracking-tight text-white">
+  Campañas y recuperación
+</h1>
 
-            <p
-              className="mt-4 max-w-2xl text-[15px] leading-7"
+<p
+  className="mt-2 max-w-xl text-sm leading-6"
               style={{ color: "var(--text-muted)" }}
             >
               Planifica campañas automatizadas por email y WhatsApp para reactivar
@@ -2628,7 +2625,7 @@ export default function CampaignsPage() {
               toda la pantalla.
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-2">
               <div
                 className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
                 style={{
@@ -2651,104 +2648,6 @@ export default function CampaignsPage() {
               >
                 <Users size={16} />
                 Audiencia curada manualmente
-              </div>
-            </div>
-          </div>
-
-          <div className="hidden xl:block">
-            <div
-              className="rounded-[30px] border p-5"
-              style={{
-                borderColor: "rgba(59,130,246,0.16)",
-                background:
-                  "linear-gradient(135deg, rgba(255,255,255,0.70), rgba(255,255,255,0.30))",
-              }}
-            >
-              <div
-                className="rounded-[26px] border p-5"
-                style={{
-                  borderColor: "rgba(59,130,246,0.12)",
-                  background: "rgba(255,255,255,0.74)",
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <div
-                      className="h-3 w-24 rounded-full"
-                      style={{ background: "rgba(148,163,184,0.24)" }}
-                    />
-                    <div
-                      className="h-3 w-40 rounded-full"
-                      style={{ background: "rgba(148,163,184,0.16)" }}
-                    />
-                  </div>
-
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, rgba(16,185,129,0.18), rgba(14,165,233,0.18))",
-                      color: "#0f766e",
-                    }}
-                  >
-                    {channel === "email" ? <Mail size={22} /> : <MessageCircle size={22} />}
-                  </div>
-                </div>
-
-                <div className="mt-6 grid gap-3">
-                  <div
-                    className="rounded-2xl border p-4"
-                    style={{
-                      borderColor: "rgba(59,130,246,0.12)",
-                      background: "rgba(248,250,252,0.95)",
-                    }}
-                  >
-                    <p
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--text-main)" }}
-                    >
-                      {channel === "email" ? "Email listo para enviar" : "WhatsApp listo para enviar"}
-                    </p>
-                    <p
-                      className="mt-2 text-sm leading-6"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {selectedChannelLabel} · {selectedSegmentLabel} · {limitedAudienceCount} destinatarios
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div
-                      className="rounded-2xl border p-4"
-                      style={{
-                        borderColor: "rgba(59,130,246,0.10)",
-                        background: "rgba(255,255,255,0.92)",
-                      }}
-                    >
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        Plan
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold" style={{ color: "var(--text-main)" }}>
-                        {PLAN_LABELS[plan]}
-                      </p>
-                    </div>
-
-                    <div
-                      className="rounded-2xl border p-4"
-                      style={{
-                        borderColor: "rgba(59,130,246,0.10)",
-                        background: "rgba(255,255,255,0.92)",
-                      }}
-                    >
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        Tope real
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold" style={{ color: "var(--text-main)" }}>
-                        {limitedAudienceCount}
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
