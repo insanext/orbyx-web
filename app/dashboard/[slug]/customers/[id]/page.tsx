@@ -488,7 +488,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
     <p className="mt-3 text-sm text-slate-400">
       {isVeterinaria ? (
-  <>🐶 {pets.length} mascotas · 🩺 {customer.total_visits} visitas</>
+  <>🐶 {pets.length} mascotas · 🩺 {validAppointments.length} visitas</>
 ) : (
   <>🗓️ {latestAppointments.length} registros</>
 )}
@@ -884,14 +884,14 @@ next_control_at: data?.appointment?.next_control_at ?? null,
             </p>
 
             <div className="mt-4 space-y-3">
-              {latestAppointments.filter((appt) => appt.pet_id === pet.id).length === 0 ? (
+              {validAppointments.filter((appt) => appt.pet_id === pet.id).length === 0 ? (
                 <EmptyState
                   title="Sin atenciones registradas"
                   description="Cuando cierres una atención desde Agenda para esta mascota, aparecerá aquí."
                 />
               ) : (
-                latestAppointments
-                  .filter((appt) => appt.pet_id === pet.id)
+                validAppointments
+  .filter((appt) => appt.pet_id === pet.id)
                   .map((appt, index) => {
   const isLatest = index === 0;
   const isViewing = viewingClinicalId === appt.id;
@@ -962,10 +962,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                               <strong>Próximo control:</strong>{" "}
 {appt.next_control_at
   ? formatDateLong(appt.next_control_at)
-  : "No definido"}{" "}
-                              {appt.next_control_at
-                                ? formatDateLong(appt.next_control_at)
-                                : "Sin próximo control."}
+  : "Sin próximo control."}
                             </p>
                           </div>
                         ) : null}
@@ -1184,7 +1181,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
 <SummaryCard
   label={isVeterinaria ? "Visitas" : "Visitas válidas"}
-  value={isVeterinaria ? customer.total_visits : validAppointments.length}
+  value={validAppointments.length}
   hint={
     isVeterinaria
       ? "Cantidad total de atenciones registradas."
