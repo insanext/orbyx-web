@@ -19,6 +19,8 @@ type ServiceItem = {
   description?: string | null;
   duration_minutes?: number | null;
   price?: number | null;
+  is_group?: boolean | null;
+  capacity?: number | null;
 };
 
 type BranchItem = {
@@ -34,6 +36,10 @@ type BranchItem = {
 type SlotItem = {
   slot_start: string;
   staff_id?: string | null;
+  is_group?: boolean | null;
+  capacity?: number | null;
+  booked_count?: number | null;
+  available_spots?: number | null;
 };
 
 type PetItem = {
@@ -264,6 +270,12 @@ export default function Page() {
   const isVeterinaria =
     business?.business_category === "veterinaria" ||
     business?.business_category === "vet";
+const isGroupBookingBusiness =
+  business?.business_category === "fitness" ||
+  business?.business_category === "clases" ||
+  business?.business_category === "talleres" ||
+  business?.business_category === "eventos" ||
+  business?.business_category === "group_booking";
 
   const [calendarId, setCalendarId] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
@@ -1463,14 +1475,30 @@ const detectedCustomerId =
           {formatHour(slot.slot_start)}
         </span>
         <span
-          className={`mt-1 text-[9px] leading-none ${
-            selectedSlot?.slot_start === slot.slot_start
-              ? "text-indigo-100"
-              : "text-slate-400"
-          }`}
-        >
-          Disponible
-        </span>
+  className={`mt-1 text-[9px] leading-none ${
+    selectedSlot?.slot_start === slot.slot_start
+      ? "text-indigo-100"
+      : slot.is_group && isGroupBookingBusiness
+      ? "text-emerald-600"
+      : "text-slate-400"
+  }`}
+>
+{slot.is_group && isGroupBookingBusiness ? (
+  <span
+    className={`px-1.5 py-[1px] rounded-full ${
+      (slot.available_spots || 0) <= 1
+        ? "bg-rose-100 text-rose-600"
+        : (slot.available_spots || 0) <= 3
+        ? "bg-amber-100 text-amber-600"
+        : "bg-emerald-100 text-emerald-600"
+    }`}
+  >
+    {slot.available_spots || 0} cupos
+  </span>
+) : (
+  "Disponible"
+)}
+</span>
       </button>
     ))}
   </div>
