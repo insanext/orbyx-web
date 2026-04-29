@@ -667,7 +667,7 @@ async function saveSlotMinutes() {
   return (
     <div className="space-y-6">
       <section
-        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+        className="overflow-hidden rounded-2xl border p-4 shadow-sm"
         style={{
           borderColor: "rgba(59,130,246,0.25)",
           background:
@@ -676,12 +676,11 @@ async function saveSlotMinutes() {
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <p
-              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Negocio
-            </p>
+
+
+<h1 className="text-xl font-semibold">
+  Configura tu negocio aquí
+</h1>
 
             <h1
               className="text-3xl font-semibold tracking-tight sm:text-4xl"
@@ -690,10 +689,7 @@ async function saveSlotMinutes() {
               Datos del negocio
             </h1>
 
-            <p
-              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
-              style={{ color: "var(--text-muted)" }}
-            >
+            <p className="mt-2 text-xs">
               Actualiza la información principal, horarios, fechas especiales y
               campos que pedirás al cliente al reservar.
             </p>
@@ -1266,112 +1262,126 @@ async function saveSlotMinutes() {
         </Panel>
 
 
-	<div className="mb-5 space-y-3">
 
-  <div>
-    <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-      Intervalo de horarios
-    </p>
-    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-      Define cada cuántos minutos se mostrarán los horarios a tus clientes.
-    </p>
-  </div>
 
-  <div className="flex flex-wrap gap-2">
-    {[15, 30, 45, 60].map((val) => (
-      <button
-        key={val}
-        type="button"
-        onClick={() => setSlotMinutes(val)}
-        className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
-          slotMinutes === val
-            ? "bg-indigo-600 text-white border-indigo-600"
-            : "bg-white text-slate-700 border-slate-300 hover:border-indigo-300"
-        }`}
-      >
-        {val} min
-      </button>
-    ))}
 
-    <button
-      type="button"
-      onClick={() => setSlotMinutes(customSlotMinutes)}
-      className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
-        ![15, 30, 45, 60].includes(slotMinutes)
-          ? "bg-indigo-600 text-white border-indigo-600"
-          : "bg-white text-slate-700 border-slate-300 hover:border-indigo-300"
-      }`}
-    >
-      Personalizado
-    </button>
-  </div>
 
-  {![15, 30, 45, 60].includes(slotMinutes) && (
-    <input
-      type="number"
-      min={5}
-      step={5}
-      value={customSlotMinutes}
-      onChange={(e) => {
-        const val = Number(e.target.value);
-        setCustomSlotMinutes(val);
-        setSlotMinutes(val);
-      }}
-      className="h-11 w-32 rounded-xl border px-3 text-sm"
-    />
-  )}
-
-</div>
-
-<div className="mb-6 rounded-2xl border p-4 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-  <p className="text-xs mb-2 text-slate-500">
-    Vista previa de horarios
-  </p>
-
-  <div className="flex flex-wrap gap-2">
-    {Array.from({ length: 8 }).map((_, i) => {
-      const base = 9 * 60; // 09:00
-      const minutes = base + i * slotMinutes;
-
-      const hour = Math.floor(minutes / 60);
-      const min = minutes % 60;
-
-      const label = `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-
-      return (
-        <div
-          key={i}
-          className="px-3 py-2 text-xs rounded-xl border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200"
+        <Panel
+          title="Intervalo de horarios"
+          description="Define cada cuántos minutos se mostrarán los horarios a tus clientes."
+          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
         >
-          {label}
-        </div>
-      );
-    })}
-  </div>
-</div>
+          <div className="space-y-5">
+            <div className="flex flex-wrap gap-2">
+              {[15, 30, 45, 60].map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setSlotMinutes(val)}
+                  className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                    slotMinutes === val
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
+                  }`}
+                >
+                  {val} min
+                </button>
+              ))}
 
-<div className="mt-6 mb-8 flex flex-wrap items-center gap-3">
-  <button
-    type="button"
-    onClick={saveSlotMinutes}
-    disabled={savingSlotMinutes || !calendarId}
-    className={primaryButtonClass}
-    style={{
-      background:
-        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-    }}
-  >
-    {savingSlotMinutes ? "Guardando..." : "Guardar intervalo"}
-  </button>
+              <button
+                type="button"
+                onClick={() => setSlotMinutes(customSlotMinutes)}
+                className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                  ![15, 30, 45, 60].includes(slotMinutes)
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
+                }`}
+              >
+                Personalizado
+              </button>
+            </div>
 
-  {slotMinutesOk ? (
-    <span className="text-sm text-emerald-400">{slotMinutesOk}</span>
-  ) : null}
+            {![15, 30, 45, 60].includes(slotMinutes) ? (
+              <input
+                type="number"
+                min={5}
+                step={5}
+                value={customSlotMinutes}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setCustomSlotMinutes(val);
+                  setSlotMinutes(val);
+                }}
+                className="h-11 w-32 rounded-xl border px-3 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              />
+            ) : null}
 
-  {slotMinutesError ? (
-    <span className="text-sm text-rose-400">{slotMinutesError}</span>
-  ) : null}
-</div>
+            <div
+              className="rounded-2xl border p-4"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <p className="mb-3 text-xs" style={{ color: "var(--text-muted)" }}>
+                Vista previa de horarios
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 8 }).map((_, i) => {
+                  const base = 9 * 60;
+                  const minutes = base + i * slotMinutes;
+                  const hour = Math.floor(minutes / 60);
+                  const min = minutes % 60;
+                  const label = `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+
+                  return (
+                    <div
+                      key={i}
+                      className="rounded-xl border px-3 py-2 text-xs"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={saveSlotMinutes}
+                disabled={savingSlotMinutes || !calendarId}
+                className={primaryButtonClass}
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                }}
+              >
+                {savingSlotMinutes ? "Guardando..." : "Guardar intervalo"}
+              </button>
+
+              {slotMinutesOk ? (
+                <span className="text-sm text-emerald-400">{slotMinutesOk}</span>
+              ) : null}
+
+              {slotMinutesError ? (
+                <span className="text-sm text-rose-400">{slotMinutesError}</span>
+              ) : null}
+            </div>
+          </div>
+        </Panel>
+
 
 
         <Panel
@@ -1380,10 +1390,6 @@ async function saveSlotMinutes() {
           className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
         >
 	
-
-
-
-
 
           <div
             className="overflow-hidden rounded-2xl border"
