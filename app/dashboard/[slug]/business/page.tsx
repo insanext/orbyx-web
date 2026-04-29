@@ -682,12 +682,6 @@ async function saveSlotMinutes() {
   Configura tu negocio aquí
 </h1>
 
-            <h1
-              className="text-3xl font-semibold tracking-tight sm:text-4xl"
-              style={{ color: "var(--text-main)" }}
-            >
-              Datos del negocio
-            </h1>
 
             <p className="mt-2 text-xs">
               Actualiza la información principal, horarios, fechas especiales y
@@ -1086,86 +1080,79 @@ async function saveSlotMinutes() {
           )}
         </Panel>
 
-        <Panel
-          title="Vista rápida"
-          description="Resumen visual del perfil actual de tu negocio."
-          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
-        >
-          <div className="space-y-4">
-            {[
-              {
-                label: "Nombre",
-                value: loading ? "Cargando..." : form.name || "No definido",
-              },
-              {
-                label: "Contacto",
-                value: loading
-                  ? "Cargando..."
-                  : form.phone || form.whatsapp || "No definido",
-              },
-              {
-                label: "Correo",
-                value: loading ? "Cargando..." : form.email || "No definido",
-              },
-              {
-                label: "Redes sociales",
-                value: loading
-                  ? "Cargando..."
-                  : form.instagram_url || form.facebook_url
-                  ? "Configuradas"
-                  : "No configuradas",
-              },
-              {
-                label: "URL pública",
-                value: publicUrl,
-              },
-              {
-                label: "Google Calendar",
-                value: loading
-                  ? "Cargando..."
-                  : googleConnected
-                  ? "Conectado"
-                  : "Pendiente",
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className={softCardClass}
-                style={{
-                  borderColor: "var(--border-color)",
-                  background:
-                    "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
-                }}
+        <div className="space-y-6">
+          <div
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2"
+          >
+          {[
+            {
+              label: "Nombre",
+              value: loading ? "Cargando..." : form.name || "No definido",
+            },
+            {
+              label: "Contacto",
+              value: loading
+                ? "Cargando..."
+                : form.phone || form.whatsapp || "No definido",
+            },
+            {
+              label: "Correo",
+              value: loading ? "Cargando..." : form.email || "No definido",
+            },
+            {
+              label: "Redes",
+              value: loading
+                ? "Cargando..."
+                : form.instagram_url || form.facebook_url
+                ? "Configuradas"
+                : "No configuradas",
+            },
+            {
+              label: "URL pública",
+              value: publicUrl,
+            },
+            {
+              label: "Google Calendar",
+              value: loading
+                ? "Cargando..."
+                : googleConnected
+                ? "Conectado"
+                : "Pendiente",
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: "var(--border-color)",
+                background:
+                  "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+              }}
+            >
+              <p
+                className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "var(--text-muted)" }}
               >
-                <p
-                  className="text-xs font-semibold uppercase tracking-[0.16em]"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {item.label}
-                </p>
-                <p
-                  className="mt-2 break-all text-sm font-semibold"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  {item.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </section>
+                {item.label}
+              </p>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+              <p
+                className="mt-1 truncate text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+                title={item.value}
+              >
+                {item.value}
+              </p>
+            </div>
+          ))}
+                </div>
+
         <Panel
   title="Campos de reserva"
   description="Define qué información solicitar al cliente al reservar."
   className="flex h-full flex-col bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
 >
           <div className="flex h-full flex-col">
-
-
-
-
 
 <div className="flex-1 space-y-4">
   {bookingFields.length === 0 ? (
@@ -1260,10 +1247,6 @@ async function saveSlotMinutes() {
 
           </div>
         </Panel>
-
-
-
-
 
 
         <Panel
@@ -1381,170 +1364,10 @@ async function saveSlotMinutes() {
             </div>
           </div>
         </Panel>
-
-
-
-        <Panel
-          title="Horarios de atención"
-          description="Define cuándo tu negocio está disponible para recibir reservas."
-          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
-        >
-	
-
-          <div
-            className="overflow-hidden rounded-2xl border"
-            style={{ borderColor: "var(--border-color)" }}
-          >
-            <div
-              className="grid grid-cols-[120px_80px_1fr_30px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
-              style={{
-                borderColor: "var(--border-color)",
-                background:
-                  "linear-gradient(135deg, rgba(37,99,235,0.12), var(--bg-soft))",
-                color: "var(--text-muted)",
-              }}
-            >
-              <div>Día</div>
-              <div>Activo</div>
-              <div>Inicio</div>
-              <div></div>
-              <div>Fin</div>
-            </div>
-
-            <div
-              className="divide-y"
-              style={{ borderColor: "var(--border-color)" }}
-            >
-              {displayOrder.map((dayIndex) => {
-                const h =
-                  businessHours.find((d) => d.day_of_week === dayIndex) || {
-                    day_of_week: dayIndex,
-                    enabled: false,
-                    start_time: "09:00",
-                    end_time: "18:00",
-                  };
-
-                const startValid = isValidTime(h.start_time);
-                const endValid = isValidTime(h.end_time);
-
-                return (
-                  <div
-                    key={dayIndex}
-                    className="grid grid-cols-[120px_80px_1fr_30px_1fr] items-center gap-3 px-4 py-3"
-                    style={{ background: "var(--bg-card)" }}
-                  >
-                    <div
-                      className="text-sm font-medium"
-                      style={{ color: "var(--text-main)" }}
-                    >
-                      {days[dayIndex]}
-                    </div>
-
-                    <div>
-                      <input
-                        type="checkbox"
-                        checked={h.enabled}
-                        onChange={(e) =>
-                          updateHour(dayIndex, "enabled", e.target.checked)
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="09:00"
-                        value={h.start_time}
-                        onChange={(e) =>
-                          updateHour(
-                            dayIndex,
-                            "start_time",
-                            normalizeTimeInput(e.target.value)
-                          )
-                        }
-                        disabled={!h.enabled}
-                        className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                        style={{
-                          borderColor: !h.enabled
-                            ? "var(--border-color)"
-                            : startValid
-                            ? "var(--border-color)"
-                            : "rgb(253 164 175)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-main)",
-                          opacity: !h.enabled ? 0.6 : 1,
-                        }}
-                      />
-                    </div>
-
-                    <div
-                      className="text-center"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      —
-                    </div>
-
-                    <div>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="18:00"
-                        value={h.end_time}
-                        onChange={(e) =>
-                          updateHour(
-                            dayIndex,
-                            "end_time",
-                            normalizeTimeInput(e.target.value)
-                          )
-                        }
-                        disabled={!h.enabled}
-                        className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                        style={{
-                          borderColor: !h.enabled
-                            ? "var(--border-color)"
-                            : endValid
-                            ? "var(--border-color)"
-                            : "rgb(253 164 175)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-main)",
-                          opacity: !h.enabled ? 0.6 : 1,
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              onClick={saveBusinessHours}
-              disabled={savingHours}
-              className={primaryButtonClass}
-              style={{
-                background:
-                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-              }}
-            >
-              {savingHours ? "Guardando..." : "Guardar horarios"}
-            </button>
-          </div>
-
-          {hoursError ? (
-            <div className="mt-4 rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-              {hoursError}
-            </div>
-          ) : null}
-
-          {hoursOk ? (
-            <div className="mt-4 rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-              {hoursOk}
-            </div>
-          ) : null}
-        </Panel>
+        </div>
       </section>
+
+      <section className="grid gap-6 xl:grid-cols-2">
 
       <Panel
         title="Fechas especiales"
@@ -1767,6 +1590,174 @@ async function saveSlotMinutes() {
           ) : null}
         </div>
       </Panel>
+
+
+
+
+
+        <Panel
+          title="Horarios de atención"
+          description="Define cuándo tu negocio está disponible para recibir reservas."
+          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+        >
+	
+
+          <div
+            className="overflow-hidden rounded-2xl border"
+            style={{ borderColor: "var(--border-color)" }}
+          >
+            <div
+              className="grid grid-cols-[120px_80px_1fr_30px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
+              style={{
+                borderColor: "var(--border-color)",
+                background:
+                  "linear-gradient(135deg, rgba(37,99,235,0.12), var(--bg-soft))",
+                color: "var(--text-muted)",
+              }}
+            >
+              <div>Día</div>
+              <div>Activo</div>
+              <div>Inicio</div>
+              <div></div>
+              <div>Fin</div>
+            </div>
+
+            <div
+              className="divide-y"
+              style={{ borderColor: "var(--border-color)" }}
+            >
+              {displayOrder.map((dayIndex) => {
+                const h =
+                  businessHours.find((d) => d.day_of_week === dayIndex) || {
+                    day_of_week: dayIndex,
+                    enabled: false,
+                    start_time: "09:00",
+                    end_time: "18:00",
+                  };
+
+                const startValid = isValidTime(h.start_time);
+                const endValid = isValidTime(h.end_time);
+
+                return (
+                  <div
+                    key={dayIndex}
+                    className="grid grid-cols-[120px_80px_1fr_30px_1fr] items-center gap-3 px-4 py-3"
+                    style={{ background: "var(--bg-card)" }}
+                  >
+                    <div
+                      className="text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {days[dayIndex]}
+                    </div>
+
+                    <div>
+                      <input
+                        type="checkbox"
+                        checked={h.enabled}
+                        onChange={(e) =>
+                          updateHour(dayIndex, "enabled", e.target.checked)
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="09:00"
+                        value={h.start_time}
+                        onChange={(e) =>
+                          updateHour(
+                            dayIndex,
+                            "start_time",
+                            normalizeTimeInput(e.target.value)
+                          )
+                        }
+                        disabled={!h.enabled}
+                        className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                        style={{
+                          borderColor: !h.enabled
+                            ? "var(--border-color)"
+                            : startValid
+                            ? "var(--border-color)"
+                            : "rgb(253 164 175)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                          opacity: !h.enabled ? 0.6 : 1,
+                        }}
+                      />
+                    </div>
+
+                    <div
+                      className="text-center"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      —
+                    </div>
+
+                    <div>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="18:00"
+                        value={h.end_time}
+                        onChange={(e) =>
+                          updateHour(
+                            dayIndex,
+                            "end_time",
+                            normalizeTimeInput(e.target.value)
+                          )
+                        }
+                        disabled={!h.enabled}
+                        className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                        style={{
+                          borderColor: !h.enabled
+                            ? "var(--border-color)"
+                            : endValid
+                            ? "var(--border-color)"
+                            : "rgb(253 164 175)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                          opacity: !h.enabled ? 0.6 : 1,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              onClick={saveBusinessHours}
+              disabled={savingHours}
+              className={primaryButtonClass}
+              style={{
+                background:
+                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+              }}
+            >
+              {savingHours ? "Guardando..." : "Guardar horarios"}
+            </button>
+          </div>
+
+          {hoursError ? (
+            <div className="mt-4 rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+              {hoursError}
+            </div>
+          ) : null}
+
+          {hoursOk ? (
+            <div className="mt-4 rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+              {hoursOk}
+            </div>
+          ) : null}
+        </Panel>
+      </section>
+
+
     </div>
   );
 }
