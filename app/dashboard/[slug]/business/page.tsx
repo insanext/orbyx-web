@@ -85,6 +85,8 @@ export default function BusinessPage() {
   const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
   const [specialDates, setSpecialDates] = useState<SpecialDate[]>([]);
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
+const [slotMinutes, setSlotMinutes] = useState(30);
+const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
 
   const [form, setForm] = useState({
     name: "",
@@ -1224,6 +1226,93 @@ async function removeSpecialDate(index: number) {
           description="Define cuándo tu negocio está disponible para recibir reservas."
           className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
         >
+	
+	<div className="mb-5 space-y-3">
+
+  <div>
+    <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+      Intervalo de horarios
+    </p>
+    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+      Define cada cuántos minutos se mostrarán los horarios a tus clientes.
+    </p>
+  </div>
+
+  <div className="flex flex-wrap gap-2">
+    {[15, 30, 45, 60].map((val) => (
+      <button
+        key={val}
+        type="button"
+        onClick={() => setSlotMinutes(val)}
+        className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+          slotMinutes === val
+            ? "bg-indigo-600 text-white border-indigo-600"
+            : "bg-white text-slate-700 border-slate-300 hover:border-indigo-300"
+        }`}
+      >
+        {val} min
+      </button>
+    ))}
+
+    <button
+      type="button"
+      onClick={() => setSlotMinutes(customSlotMinutes)}
+      className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+        ![15, 30, 45, 60].includes(slotMinutes)
+          ? "bg-indigo-600 text-white border-indigo-600"
+          : "bg-white text-slate-700 border-slate-300 hover:border-indigo-300"
+      }`}
+    >
+      Personalizado
+    </button>
+  </div>
+
+  {![15, 30, 45, 60].includes(slotMinutes) && (
+    <input
+      type="number"
+      min={5}
+      step={5}
+      value={customSlotMinutes}
+      onChange={(e) => {
+        const val = Number(e.target.value);
+        setCustomSlotMinutes(val);
+        setSlotMinutes(val);
+      }}
+      className="h-11 w-32 rounded-xl border px-3 text-sm"
+    />
+  )}
+
+</div>
+
+<div className="mb-6 rounded-2xl border p-4 bg-slate-50">
+  <p className="text-xs mb-2 text-slate-500">
+    Vista previa de horarios
+  </p>
+
+  <div className="flex flex-wrap gap-2">
+    {Array.from({ length: 8 }).map((_, i) => {
+      const base = 9 * 60; // 09:00
+      const minutes = base + i * slotMinutes;
+
+      const hour = Math.floor(minutes / 60);
+      const min = minutes % 60;
+
+      const label = `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+
+      return (
+        <div
+          key={i}
+          className="px-3 py-2 text-xs rounded-xl border bg-white"
+        >
+          {label}
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+
+
           <div
             className="overflow-hidden rounded-2xl border"
             style={{ borderColor: "var(--border-color)" }}
