@@ -27,6 +27,7 @@ type BusinessResponse = {
     max_booking_days_ahead?: number | null;
   };
   calendar_id: string;
+slot_minutes?: number | null;
   google_connected?: boolean;
 };
 
@@ -67,9 +68,13 @@ export default function BusinessPage() {
 
   const [tenantId, setTenantId] = useState("");
   const [branchId, setBranchId] = useState("");
+const [calendarId, setCalendarId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingHours, setSavingHours] = useState(false);
+const [savingSlotMinutes, setSavingSlotMinutes] = useState(false);
+const [slotMinutesOk, setSlotMinutesOk] = useState("");
+const [slotMinutesError, setSlotMinutesError] = useState("");
   const [savingFields, setSavingFields] = useState(false);
   const [savingSpecialDates, setSavingSpecialDates] = useState(false);
 
@@ -140,6 +145,7 @@ const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
         }
 
         setTenantId(data.business.id);
+	setCalendarId(data.calendar_id);
 
         const branchesRes = await fetch(
           `https://orbyx-backend.onrender.com/branches?tenant_id=${data.business.id}`
@@ -164,6 +170,8 @@ const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
 
         setBranchId(firstBranchId);
         setGoogleConnected(Boolean(data.google_connected));
+setSlotMinutes(Number(data.slot_minutes || 30));
+setCustomSlotMinutes(Number(data.slot_minutes || 30));
 
         setForm({
           name: data.business.name || "",
@@ -534,6 +542,42 @@ async function removeSpecialDate(index: number) {
       setSavingFields(false);
     }
   }
+
+async function saveSlotMinutes() {
+  try {
+    setSavingSlotMinutes(true);
+    setSlotMinutesOk("");
+    setSlotMinutesError("");
+
+    const value = Number(slotMinutes || 30);
+
+    const res = await fetch(
+      `https://orbyx-backend.onrender.com/calendars/${calendarId}/slot-minutes`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slot_minutes: value,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudo guardar el intervalo");
+    }
+
+    setSlotMinutesOk("Intervalo guardado correctamente.");
+  } catch (err: unknown) {
+    setSlotMinutesError(
+      err instanceof Error ? err.message : "No se pudo guardar el intervalo"
+    );
+  } finally {
+    setSavingSlotMinutes(false);
+  }
+}
+
 
   async function handleSave() {
     try {
@@ -1311,7 +1355,28 @@ async function removeSpecialDate(index: number) {
   </div>
 </div>
 
+<div className="mt-4 flex flex-wrap items-center gap-3">
+  <button
+    type="button"
+    onClick={saveSlotMinutes}
+    disabled={savingSlotMinutes || !calendarId}
+    className={primaryButtonClass}
+    style={{
+      background:
+        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+    }}
+  >
+    {savingSlotMinutes ? "Guardando..." : "Guardar intervalo"}
+  </button>
 
+  {slotMinutesOk ? (
+    <span className="text-sm text-emerald-400">{slotMinutesOk}</span>
+  ) : null}
+
+  {slotMinutesError ? (
+    <span className="text-sm text-rose-400">{slotMinutesError}</span>
+  ) : null}
+</div>
 
           <div
             className="overflow-hidden rounded-2xl border"
