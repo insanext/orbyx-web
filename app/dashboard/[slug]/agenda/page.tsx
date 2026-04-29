@@ -284,6 +284,7 @@ export default function AgendaPage() {
     ((params as { Slug?: string })?.Slug as string);
 
     const [tenantId, setTenantId] = useState("");
+const [slotMinutes, setSlotMinutes] = useState(30);
   const [businessName, setBusinessName] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
@@ -476,7 +477,7 @@ function getWeekdayLabel(date: Date) {
 
     while (cursor < end) {
       slots.push(cursor.toISOString());
-      cursor.setMinutes(cursor.getMinutes() + 30);
+      cursor.setMinutes(cursor.getMinutes() + slotMinutes);
     }
 
     return slots;
@@ -1592,6 +1593,7 @@ next_control_custom_value:
         }
 
                 const currentTenantId = businessData.business.id;
+setSlotMinutes(Number((businessData as any).slot_minutes || 30));
         setTenantId(currentTenantId);
         setBusinessName(businessData.business.name || slug || "");
         setBusinessCategory(
