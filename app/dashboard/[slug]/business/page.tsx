@@ -1265,12 +1265,7 @@ async function saveSlotMinutes() {
           </div>
         </Panel>
 
-        <Panel
-          title="Horarios de atención"
-          description="Define cuándo tu negocio está disponible para recibir reservas."
-          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
-        >
-	
+
 	<div className="mb-5 space-y-3">
 
   <div>
@@ -1328,7 +1323,7 @@ async function saveSlotMinutes() {
 
 </div>
 
-<div className="mb-6 rounded-2xl border p-4 bg-slate-50">
+<div className="mb-6 rounded-2xl border p-4 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
   <p className="text-xs mb-2 text-slate-500">
     Vista previa de horarios
   </p>
@@ -1346,7 +1341,7 @@ async function saveSlotMinutes() {
       return (
         <div
           key={i}
-          className="px-3 py-2 text-xs rounded-xl border bg-white"
+          className="px-3 py-2 text-xs rounded-xl border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200"
         >
           {label}
         </div>
@@ -1355,7 +1350,7 @@ async function saveSlotMinutes() {
   </div>
 </div>
 
-<div className="mt-4 flex flex-wrap items-center gap-3">
+<div className="mt-6 mb-8 flex flex-wrap items-center gap-3">
   <button
     type="button"
     onClick={saveSlotMinutes}
@@ -1377,6 +1372,18 @@ async function saveSlotMinutes() {
     <span className="text-sm text-rose-400">{slotMinutesError}</span>
   ) : null}
 </div>
+
+
+        <Panel
+          title="Horarios de atención"
+          description="Define cuándo tu negocio está disponible para recibir reservas."
+          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+        >
+	
+
+
+
+
 
           <div
             className="overflow-hidden rounded-2xl border"
