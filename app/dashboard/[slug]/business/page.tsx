@@ -758,654 +758,409 @@ async function saveSlotMinutes() {
         </div>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel
-          title="Información principal"
-          description="Edita los datos que verán tus clientes y que también podrá usar la IA."
-          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
-        >
-          {loading ? (
-            <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Cargando datos...
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Nombre del negocio
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  className={inputClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Teléfono
-                  </label>
-                  <input
-                    type="text"
-                    value={form.phone}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, phone: e.target.value }))
-                    }
-                    placeholder="Ej: +56 9 1234 5678"
-                    className={inputClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
 
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    WhatsApp
-                  </label>
-                  <input
-                    type="text"
-                    value={form.whatsapp}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, whatsapp: e.target.value }))
-                    }
-                    placeholder="Ej: +56 9 1234 5678"
-                    className={inputClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Correo de contacto
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, email: e.target.value }))
-                  }
-                  placeholder="Ej: contacto@tunegocio.cl"
-                  className={inputClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
 
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Dirección
-                </label>
-                <input
-                  type="text"
-                  value={form.address}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, address: e.target.value }))
-                  }
-                  placeholder="Ej: Avenida Principal 123, Concepción"
-                  className={inputClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Instagram
-                  </label>
-                  <input
-                    type="text"
-                    value={form.instagram_url}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        instagram_url: e.target.value,
-                      }))
-                    }
-                    placeholder="Ej: https://instagram.com/tu_negocio"
-                    className={inputClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
 
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Facebook
-                  </label>
-                  <input
-                    type="text"
-                    value={form.facebook_url}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        facebook_url: e.target.value,
-                      }))
-                    }
-                    placeholder="Ej: https://facebook.com/tu_negocio"
-                    className={inputClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Descripción del negocio
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Describe tu negocio, especialidad, estilo de atención y lo que te diferencia."
-                  className={textareaClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
-              </div>
 
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Tiempo mínimo antes de reservar
-                </label>
 
-                <select
-                  value={form.min_booking_notice_minutes}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      min_booking_notice_minutes: Number(e.target.value),
-                    }))
-                  }
-                  className={selectClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  <option value={0}>Sin restricción</option>
-                  <option value={15}>15 minutos</option>
-                  <option value={30}>30 minutos</option>
-                  <option value={60}>1 hora</option>
-                  <option value={120}>2 horas</option>
-                </select>
 
-                <p
-                  className="mt-2 text-xs"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes
-                  solo podrán reservar con al menos 60 minutos de anticipación.
-                </p>
-              </div>
 
-              <div>
-                <label
-                  className="mb-2 block text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Máximo días hacia adelante
-                </label>
 
-                <select
-                  value={form.max_booking_days_ahead}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      max_booking_days_ahead: Number(e.target.value),
-                    }))
-                  }
-                  className={selectClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  <option value={7}>7 días</option>
-                  <option value={14}>14 días</option>
-                  <option value={30}>30 días</option>
-                  <option value={60}>60 días</option>
-                  <option value={90}>90 días</option>
-                </select>
 
-                <p
-                  className="mt-2 text-xs"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Limita cuántos días hacia el futuro pueden agendar los
-                  clientes.
-                </p>
-              </div>
 
-              {saveError ? (
-                <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-                  {saveError}
-                </div>
-              ) : null}
 
-              {saveOk ? (
-                <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-                  {saveOk}
-                </div>
-              ) : null}
 
-              <div className="flex flex-wrap gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className={primaryButtonClass}
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                  }}
-                >
-                  {saving ? "Guardando..." : "Guardar cambios"}
-                </button>
-              </div>
-            </div>
-          )}
-        </Panel>
 
-        <div className="space-y-6">
-          <div
-            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2"
-          >
-          {[
-            {
-              label: "Nombre",
-              value: loading ? "Cargando..." : form.name || "No definido",
-            },
-            {
-              label: "Contacto",
-              value: loading
-                ? "Cargando..."
-                : form.phone || form.whatsapp || "No definido",
-            },
-            {
-              label: "Correo",
-              value: loading ? "Cargando..." : form.email || "No definido",
-            },
-            {
-              label: "Redes",
-              value: loading
-                ? "Cargando..."
-                : form.instagram_url || form.facebook_url
-                ? "Configuradas"
-                : "No configuradas",
-            },
-            {
-              label: "URL pública",
-              value: publicUrl,
-            },
-            {
-              label: "Google Calendar",
-              value: loading
-                ? "Cargando..."
-                : googleConnected
-                ? "Conectado"
-                : "Pendiente",
-            },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "var(--border-color)",
-                background:
-                  "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
-              }}
-            >
-              <p
-                className="text-[10px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {item.label}
-              </p>
 
-              <p
-                className="mt-1 truncate text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-                title={item.value}
-              >
-                {item.value}
-              </p>
-            </div>
-          ))}
-                </div>
 
-        <Panel
-  title="Campos de reserva"
-  description="Define qué información solicitar al cliente al reservar."
-  className="flex h-full flex-col bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
->
-          <div className="flex h-full flex-col">
-
-<div className="flex-1 space-y-4">
-  {bookingFields.length === 0 ? (
-    <div
-      className="rounded-2xl border border-dashed px-4 py-6 text-sm"
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-soft)",
-        color: "var(--text-muted)",
-      }}
-    >
-      No hay campos configurables cargados aún.
-    </div>
-  ) : (
-    bookingFields.map((field, index) => (
+<section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+  <Panel
+    title="Información principal"
+    description="Edita los datos que verán tus clientes y que también podrá usar la IA."
+    className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
+  >
+    {loading ? (
       <div
-        key={field.key}
-        className="flex items-center justify-between rounded-2xl border p-4"
+        className="rounded-2xl border border-dashed px-4 py-8 text-sm"
         style={{
           borderColor: "var(--border-color)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+          background: "var(--bg-soft)",
+          color: "var(--text-muted)",
         }}
       >
+        Cargando datos...
+      </div>
+    ) : (
+      <div className="space-y-5">
         <div>
-          <p
-            className="text-sm font-semibold"
+          <label
+            className="mb-2 block text-sm font-medium"
             style={{ color: "var(--text-main)" }}
           >
-            {field.label}
-          </p>
-          <p
-            className="text-xs"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {field.enabled
-              ? field.required
-                ? "Obligatorio"
-                : "Opcional"
-              : "Desactivado"}
-          </p>
+            Nombre del negocio
+          </label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, name: e.target.value }))
+            }
+            className={inputClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
         </div>
 
-        <div
-          className="flex items-center gap-4 text-sm"
-          style={{ color: "var(--text-main)" }}
-        >
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={field.enabled}
-              onChange={(e) =>
-                updateBookingField(index, "enabled", e.target.checked)
-              }
-            />
-            Activo
-          </label>
-
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={field.required}
-              disabled={!field.enabled}
-              onChange={(e) =>
-                updateBookingField(index, "required", e.target.checked)
-              }
-            />
-            Obligatorio
-          </label>
-        </div>
-      </div>
-    ))
-  )}
-</div>
-
-<div className="pt-4">
-  <button
-    onClick={saveBookingFields}
-    disabled={savingFields}
-    className={primaryButtonClass}
-    style={{
-      background:
-        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-    }}
-  >
-    {savingFields ? "Guardando..." : "Guardar campos"}
-  </button>
-</div>
-
-
-
-
-          </div>
-        </Panel>
-
-
-        <Panel
-          title="Intervalo de horarios"
-          description="Define cada cuántos minutos se mostrarán los horarios a tus clientes."
-          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
-        >
-          <div className="space-y-5">
-            <div className="flex flex-wrap gap-2">
-              {[15, 30, 45, 60].map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setSlotMinutes(val)}
-                  className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
-                    slotMinutes === val
-                      ? "bg-indigo-600 text-white border-indigo-600"
-                      : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
-                  }`}
-                >
-                  {val} min
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => setSlotMinutes(customSlotMinutes)}
-                className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
-                  ![15, 30, 45, 60].includes(slotMinutes)
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
-                }`}
-              >
-                Personalizado
-              </button>
-            </div>
-
-            {![15, 30, 45, 60].includes(slotMinutes) ? (
-              <input
-                type="number"
-                min={5}
-                step={5}
-                value={customSlotMinutes}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setCustomSlotMinutes(val);
-                  setSlotMinutes(val);
-                }}
-                className="h-11 w-32 rounded-xl border px-3 text-sm"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-card)",
-                  color: "var(--text-main)",
-                }}
-              />
-            ) : null}
-
-            <div
-              className="rounded-2xl border p-4"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-              }}
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label
+              className="mb-2 block text-sm font-medium"
+              style={{ color: "var(--text-main)" }}
             >
-              <p className="mb-3 text-xs" style={{ color: "var(--text-muted)" }}>
-                Vista previa de horarios
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                {Array.from({ length: 8 }).map((_, i) => {
-                  const base = 9 * 60;
-                  const minutes = base + i * slotMinutes;
-                  const hour = Math.floor(minutes / 60);
-                  const min = minutes % 60;
-                  const label = `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-
-                  return (
-                    <div
-                      key={i}
-                      className="rounded-xl border px-3 py-2 text-xs"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
-                        color: "var(--text-main)",
-                      }}
-                    >
-                      {label}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={saveSlotMinutes}
-                disabled={savingSlotMinutes || !calendarId}
-                className={primaryButtonClass}
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                }}
-              >
-                {savingSlotMinutes ? "Guardando..." : "Guardar intervalo"}
-              </button>
-
-              {slotMinutesOk ? (
-                <span className="text-sm text-emerald-400">{slotMinutesOk}</span>
-              ) : null}
-
-              {slotMinutesError ? (
-                <span className="text-sm text-rose-400">{slotMinutesError}</span>
-              ) : null}
-            </div>
-          </div>
-        </Panel>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-2">
-
-      <Panel
-        title="Fechas especiales"
-        description="Configura feriados, vísperas, vacaciones, cierres y horarios especiales por fecha."
-        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
-      >
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p
-                className="text-sm font-medium"
-                style={{ color: "var(--text-main)" }}
-              >
-                Excepciones del calendario
-              </p>
-              <p
-                className="text-sm"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Ejemplos: 18 septiembre cerrado, 24 diciembre 09:00 a 13:00.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={addSpecialDate}
-              className={secondaryButtonClass}
+              Teléfono
+            </label>
+            <input
+              type="text"
+              value={form.phone}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, phone: e.target.value }))
+              }
+              placeholder="Ej: +56 9 1234 5678"
+              className={inputClass}
               style={{
                 borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
+                background: "var(--bg-card)",
                 color: "var(--text-main)",
               }}
-            >
-              Agregar fecha especial
-            </button>
+            />
           </div>
 
-          {specialDates.length === 0 ? (
+          <div>
+            <label
+              className="mb-2 block text-sm font-medium"
+              style={{ color: "var(--text-main)" }}
+            >
+              WhatsApp
+            </label>
+            <input
+              type="text"
+              value={form.whatsapp}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, whatsapp: e.target.value }))
+              }
+              placeholder="Ej: +56 9 1234 5678"
+              className={inputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Correo de contacto
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, email: e.target.value }))
+            }
+            placeholder="Ej: contacto@tunegocio.cl"
+            className={inputClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+        </div>
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Dirección
+          </label>
+          <input
+            type="text"
+            value={form.address}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, address: e.target.value }))
+            }
+            placeholder="Ej: Avenida Principal 123, Concepción"
+            className={inputClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label
+              className="mb-2 block text-sm font-medium"
+              style={{ color: "var(--text-main)" }}
+            >
+              Instagram
+            </label>
+            <input
+              type="text"
+              value={form.instagram_url}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  instagram_url: e.target.value,
+                }))
+              }
+              placeholder="Ej: https://instagram.com/tu_negocio"
+              className={inputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            />
+          </div>
+
+          <div>
+            <label
+              className="mb-2 block text-sm font-medium"
+              style={{ color: "var(--text-main)" }}
+            >
+              Facebook
+            </label>
+            <input
+              type="text"
+              value={form.facebook_url}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  facebook_url: e.target.value,
+                }))
+              }
+              placeholder="Ej: https://facebook.com/tu_negocio"
+              className={inputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Descripción del negocio
+          </label>
+          <textarea
+            value={form.description}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                description: e.target.value,
+              }))
+            }
+            placeholder="Describe tu negocio, especialidad, estilo de atención y lo que te diferencia."
+            className={textareaClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+        </div>
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Tiempo mínimo antes de reservar
+          </label>
+
+          <select
+            value={form.min_booking_notice_minutes}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                min_booking_notice_minutes: Number(e.target.value),
+              }))
+            }
+            className={selectClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value={0}>Sin restricción</option>
+            <option value={15}>15 minutos</option>
+            <option value={30}>30 minutos</option>
+            <option value={60}>1 hora</option>
+            <option value={120}>2 horas</option>
+          </select>
+
+          <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes solo
+            podrán reservar con al menos 60 minutos de anticipación.
+          </p>
+        </div>
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Máximo días hacia adelante
+          </label>
+
+          <select
+            value={form.max_booking_days_ahead}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                max_booking_days_ahead: Number(e.target.value),
+              }))
+            }
+            className={selectClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value={7}>7 días</option>
+            <option value={14}>14 días</option>
+            <option value={30}>30 días</option>
+            <option value={60}>60 días</option>
+            <option value={90}>90 días</option>
+          </select>
+
+          <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            Limita cuántos días hacia el futuro pueden agendar los clientes.
+          </p>
+        </div>
+
+        {saveError ? (
+          <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+            {saveError}
+          </div>
+        ) : null}
+
+        {saveOk ? (
+          <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+            {saveOk}
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap gap-3 pt-2">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className={primaryButtonClass}
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+            }}
+          >
+            {saving ? "Guardando..." : "Guardar cambios"}
+          </button>
+        </div>
+      </div>
+    )}
+  </Panel>
+
+  <div className="space-y-6">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
+      {[
+        {
+          label: "Nombre",
+          value: loading ? "Cargando..." : form.name || "No definido",
+        },
+        {
+          label: "Contacto",
+          value: loading
+            ? "Cargando..."
+            : form.phone || form.whatsapp || "No definido",
+        },
+        {
+          label: "Correo",
+          value: loading ? "Cargando..." : form.email || "No definido",
+        },
+        {
+          label: "Redes",
+          value: loading
+            ? "Cargando..."
+            : form.instagram_url || form.facebook_url
+            ? "Configuradas"
+            : "No configuradas",
+        },
+        {
+          label: "URL pública",
+          value: publicUrl,
+        },
+        {
+          label: "Google Calendar",
+          value: loading ? "Cargando..." : googleConnected ? "Conectado" : "Pendiente",
+        },
+      ].map((item) => (
+        <div
+          key={item.label}
+          className="rounded-2xl border px-4 py-3"
+          style={{
+            borderColor: "var(--border-color)",
+            background:
+              "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+          }}
+        >
+          <p
+            className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {item.label}
+          </p>
+
+          <p
+            className="mt-1 truncate text-sm font-semibold"
+            style={{ color: "var(--text-main)" }}
+            title={item.value}
+          >
+            {item.value}
+          </p>
+        </div>
+      ))}
+    </div>
+
+    <Panel
+      title="Campos de reserva"
+      description="Define qué información solicitar al cliente al reservar."
+      className="flex flex-col bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
+    >
+      <div className="flex flex-col">
+        <div className="space-y-4">
+          {bookingFields.length === 0 ? (
             <div
               className="rounded-2xl border border-dashed px-4 py-6 text-sm"
               style={{
@@ -1414,349 +1169,569 @@ async function saveSlotMinutes() {
                 color: "var(--text-muted)",
               }}
             >
-              Aún no has agregado fechas especiales.
+              No hay campos configurables cargados aún.
             </div>
           ) : (
-            <div className="space-y-4">
-              {specialDates.map((item, index) => (
+            bookingFields.map((field, index) => (
+              <div
+                key={field.key}
+                className="flex items-center justify-between gap-4 rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                }}
+              >
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {field.label}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    {field.enabled
+                      ? field.required
+                        ? "Obligatorio"
+                        : "Opcional"
+                      : "Desactivado"}
+                  </p>
+                </div>
+
                 <div
-                  key={item.id || `new-${index}`}
-                  className="rounded-2xl border p-4 shadow-sm"
+                  className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:gap-4"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={field.enabled}
+                      onChange={(e) =>
+                        updateBookingField(index, "enabled", e.target.checked)
+                      }
+                    />
+                    Activo
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={field.required}
+                      disabled={!field.enabled}
+                      onChange={(e) =>
+                        updateBookingField(index, "required", e.target.checked)
+                      }
+                    />
+                    Obligatorio
+                  </label>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="pt-4">
+          <button
+            onClick={saveBookingFields}
+            disabled={savingFields}
+            className={primaryButtonClass}
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+            }}
+          >
+            {savingFields ? "Guardando..." : "Guardar campos"}
+          </button>
+        </div>
+      </div>
+    </Panel>
+
+    <Panel
+      title="Intervalo de horarios"
+      description="Define cada cuántos minutos se mostrarán los horarios a tus clientes."
+      className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+    >
+      <div className="space-y-5">
+        <div className="flex flex-wrap gap-2">
+          {[15, 30, 45, 60].map((val) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => setSlotMinutes(val)}
+              className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                slotMinutes === val
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
+              }`}
+            >
+              {val} min
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => setSlotMinutes(customSlotMinutes)}
+            className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+              ![15, 30, 45, 60].includes(slotMinutes)
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
+            }`}
+          >
+            Personalizado
+          </button>
+        </div>
+
+        {![15, 30, 45, 60].includes(slotMinutes) ? (
+          <input
+            type="number"
+            min={5}
+            step={5}
+            value={customSlotMinutes}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              setCustomSlotMinutes(val);
+              setSlotMinutes(val);
+            }}
+            className="h-11 w-32 rounded-xl border px-3 text-sm"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+        ) : null}
+
+        <div
+          className="rounded-2xl border p-4"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+          }}
+        >
+          <p className="mb-3 text-xs" style={{ color: "var(--text-muted)" }}>
+            Vista previa de horarios
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 8 }).map((_, i) => {
+              const base = 9 * 60;
+              const minutes = base + i * slotMinutes;
+              const hour = Math.floor(minutes / 60);
+              const min = minutes % 60;
+              const label = `${String(hour).padStart(2, "0")}:${String(
+                min
+              ).padStart(2, "0")}`;
+
+              return (
+                <div
+                  key={i}
+                  className="rounded-xl border px-3 py-2 text-xs"
                   style={{
                     borderColor: "var(--border-color)",
-                    background:
-                      "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
                   }}
                 >
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                    <div>
-                      <label
-                        className="mb-2 block text-sm font-medium"
-                        style={{ color: "var(--text-main)" }}
-                      >
-                        Fecha
-                      </label>
-                      <input
-                        type="date"
-                        value={item.date}
-                        onChange={(e) =>
-                          updateSpecialDate(index, "date", e.target.value)
-                        }
-                        className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-main)",
-                        }}
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label
-                        className="mb-2 block text-sm font-medium"
-                        style={{ color: "var(--text-main)" }}
-                      >
-                        Motivo o etiqueta
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Ej: Feriado, Navidad, Vacaciones"
-                        value={item.label}
-                        onChange={(e) =>
-                          updateSpecialDate(index, "label", e.target.value)
-                        }
-                        className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-main)",
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex items-end">
-                      <label
-                        className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-main)",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={item.is_closed}
-                          onChange={(e) =>
-                            updateSpecialDate(
-                              index,
-                              "is_closed",
-                              e.target.checked
-                            )
-                          }
-                          className="h-4 w-4 rounded"
-                        />
-                        Cerrado todo el día
-                      </label>
-                    </div>
-
-                    <div className="flex items-end">
-                      <button
-                        type="button"
-                        onClick={() => removeSpecialDate(index)}
-                        className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
-                      >
-                        Quitar
-                      </button>
-                    </div>
-                  </div>
-
-                  {!item.is_closed ? (
-                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <label
-                          className="mb-2 block text-sm font-medium"
-                          style={{ color: "var(--text-main)" }}
-                        >
-                          Hora inicio
-                        </label>
-                        <input
-                          type="time"
-                          value={item.start_time}
-                          onChange={(e) =>
-                            updateSpecialDate(index, "start_time", e.target.value)
-                          }
-                          className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          className="mb-2 block text-sm font-medium"
-                          style={{ color: "var(--text-main)" }}
-                        >
-                          Hora fin
-                        </label>
-                        <input
-                          type="time"
-                          value={item.end_time}
-                          onChange={(e) =>
-                            updateSpecialDate(index, "end_time", e.target.value)
-                          }
-                          className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
+                  {label}
                 </div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-3 pt-2">
-            <button
-              type="button"
-              onClick={saveSpecialDates}
-              disabled={savingSpecialDates}
-              className={primaryButtonClass}
-              style={{
-                background:
-                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-              }}
-            >
-              {savingSpecialDates ? "Guardando..." : "Guardar fechas especiales"}
-            </button>
+              );
+            })}
           </div>
+        </div>
 
-          {specialDatesError ? (
-            <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-              {specialDatesError}
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={saveSlotMinutes}
+            disabled={savingSlotMinutes || !calendarId}
+            className={primaryButtonClass}
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+            }}
+          >
+            {savingSlotMinutes ? "Guardando..." : "Guardar intervalo"}
+          </button>
+
+          {slotMinutesOk ? (
+            <span className="text-sm text-emerald-400">{slotMinutesOk}</span>
           ) : null}
 
-          {specialDatesOk ? (
-            <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-              {specialDatesOk}
-            </div>
+          {slotMinutesError ? (
+            <span className="text-sm text-rose-400">{slotMinutesError}</span>
           ) : null}
         </div>
-      </Panel>
+      </div>
+    </Panel>
+  </div>
+</section>
 
-
-
-
-
-        <Panel
-          title="Horarios de atención"
-          description="Define cuándo tu negocio está disponible para recibir reservas."
-          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+<section className="grid gap-6 xl:grid-cols-2">
+  <Panel
+    title="Horarios de atención"
+    description="Define cuándo tu negocio está disponible para recibir reservas."
+    className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+  >
+    <div
+      className="overflow-x-auto rounded-2xl border"
+      style={{ borderColor: "var(--border-color)" }}
+    >
+      <div className="min-w-[560px]">
+        <div
+          className="grid grid-cols-[120px_80px_1fr_30px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
+          style={{
+            borderColor: "var(--border-color)",
+            background:
+              "linear-gradient(135deg, rgba(37,99,235,0.12), var(--bg-soft))",
+            color: "var(--text-muted)",
+          }}
         >
-	
+          <div>Día</div>
+          <div>Activo</div>
+          <div>Inicio</div>
+          <div></div>
+          <div>Fin</div>
+        </div>
 
-          <div
-            className="overflow-hidden rounded-2xl border"
-            style={{ borderColor: "var(--border-color)" }}
-          >
+        <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
+          {displayOrder.map((dayIndex) => {
+            const h =
+              businessHours.find((d) => d.day_of_week === dayIndex) || {
+                day_of_week: dayIndex,
+                enabled: false,
+                start_time: "09:00",
+                end_time: "18:00",
+              };
+
+            const startValid = isValidTime(h.start_time);
+            const endValid = isValidTime(h.end_time);
+
+            return (
+              <div
+                key={dayIndex}
+                className="grid grid-cols-[120px_80px_1fr_30px_1fr] items-center gap-3 px-4 py-3"
+                style={{ background: "var(--bg-card)" }}
+              >
+                <div
+                  className="text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  {days[dayIndex]}
+                </div>
+
+                <div>
+                  <input
+                    type="checkbox"
+                    checked={h.enabled}
+                    onChange={(e) =>
+                      updateHour(dayIndex, "enabled", e.target.checked)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="09:00"
+                    value={h.start_time}
+                    onChange={(e) =>
+                      updateHour(
+                        dayIndex,
+                        "start_time",
+                        normalizeTimeInput(e.target.value)
+                      )
+                    }
+                    disabled={!h.enabled}
+                    className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                    style={{
+                      borderColor: !h.enabled
+                        ? "var(--border-color)"
+                        : startValid
+                        ? "var(--border-color)"
+                        : "rgb(253 164 175)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                      opacity: !h.enabled ? 0.6 : 1,
+                    }}
+                  />
+                </div>
+
+                <div className="text-center" style={{ color: "var(--text-muted)" }}>
+                  —
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="18:00"
+                    value={h.end_time}
+                    onChange={(e) =>
+                      updateHour(
+                        dayIndex,
+                        "end_time",
+                        normalizeTimeInput(e.target.value)
+                      )
+                    }
+                    disabled={!h.enabled}
+                    className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                    style={{
+                      borderColor: !h.enabled
+                        ? "var(--border-color)"
+                        : endValid
+                        ? "var(--border-color)"
+                        : "rgb(253 164 175)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                      opacity: !h.enabled ? 0.6 : 1,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+
+    <div className="mt-4 flex flex-wrap gap-3">
+      <button
+        onClick={saveBusinessHours}
+        disabled={savingHours}
+        className={primaryButtonClass}
+        style={{
+          background:
+            "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+        }}
+      >
+        {savingHours ? "Guardando..." : "Guardar horarios"}
+      </button>
+    </div>
+
+    {hoursError ? (
+      <div className="mt-4 rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+        {hoursError}
+      </div>
+    ) : null}
+
+    {hoursOk ? (
+      <div className="mt-4 rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+        {hoursOk}
+      </div>
+    ) : null}
+  </Panel>
+
+  <Panel
+    title="Fechas especiales"
+    description="Configura feriados, vísperas, vacaciones, cierres y horarios especiales por fecha."
+    className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+  >
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
+            Excepciones del calendario
+          </p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Ejemplos: 18 septiembre cerrado, 24 diciembre 09:00 a 13:00.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={addSpecialDate}
+          className={secondaryButtonClass}
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+            color: "var(--text-main)",
+          }}
+        >
+          Agregar fecha especial
+        </button>
+      </div>
+
+      {specialDates.length === 0 ? (
+        <div
+          className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+            color: "var(--text-muted)",
+          }}
+        >
+          Aún no has agregado fechas especiales.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {specialDates.map((item, index) => (
             <div
-              className="grid grid-cols-[120px_80px_1fr_30px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
+              key={item.id || `new-${index}`}
+              className="rounded-2xl border p-4 shadow-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background:
-                  "linear-gradient(135deg, rgba(37,99,235,0.12), var(--bg-soft))",
-                color: "var(--text-muted)",
+                  "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
               }}
             >
-              <div>Día</div>
-              <div>Activo</div>
-              <div>Inicio</div>
-              <div></div>
-              <div>Fin</div>
-            </div>
-
-            <div
-              className="divide-y"
-              style={{ borderColor: "var(--border-color)" }}
-            >
-              {displayOrder.map((dayIndex) => {
-                const h =
-                  businessHours.find((d) => d.day_of_week === dayIndex) || {
-                    day_of_week: dayIndex,
-                    enabled: false,
-                    start_time: "09:00",
-                    end_time: "18:00",
-                  };
-
-                const startValid = isValidTime(h.start_time);
-                const endValid = isValidTime(h.end_time);
-
-                return (
-                  <div
-                    key={dayIndex}
-                    className="grid grid-cols-[120px_80px_1fr_30px_1fr] items-center gap-3 px-4 py-3"
-                    style={{ background: "var(--bg-card)" }}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
                   >
-                    <div
-                      className="text-sm font-medium"
+                    Fecha
+                  </label>
+                  <input
+                    type="date"
+                    value={item.date}
+                    onChange={(e) =>
+                      updateSpecialDate(index, "date", e.target.value)
+                    }
+                    className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Motivo o etiqueta
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Feriado, Navidad, Vacaciones"
+                    value={item.label}
+                    onChange={(e) =>
+                      updateSpecialDate(index, "label", e.target.value)
+                    }
+                    className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label
+                  className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={item.is_closed}
+                    onChange={(e) =>
+                      updateSpecialDate(index, "is_closed", e.target.checked)
+                    }
+                    className="h-4 w-4 rounded"
+                  />
+                  Cerrado todo el día
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => removeSpecialDate(index)}
+                  className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
+                >
+                  Quitar
+                </button>
+              </div>
+
+              {!item.is_closed ? (
+                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
                       style={{ color: "var(--text-main)" }}
                     >
-                      {days[dayIndex]}
-                    </div>
-
-                    <div>
-                      <input
-                        type="checkbox"
-                        checked={h.enabled}
-                        onChange={(e) =>
-                          updateHour(dayIndex, "enabled", e.target.checked)
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="09:00"
-                        value={h.start_time}
-                        onChange={(e) =>
-                          updateHour(
-                            dayIndex,
-                            "start_time",
-                            normalizeTimeInput(e.target.value)
-                          )
-                        }
-                        disabled={!h.enabled}
-                        className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                        style={{
-                          borderColor: !h.enabled
-                            ? "var(--border-color)"
-                            : startValid
-                            ? "var(--border-color)"
-                            : "rgb(253 164 175)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-main)",
-                          opacity: !h.enabled ? 0.6 : 1,
-                        }}
-                      />
-                    </div>
-
-                    <div
-                      className="text-center"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      —
-                    </div>
-
-                    <div>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="18:00"
-                        value={h.end_time}
-                        onChange={(e) =>
-                          updateHour(
-                            dayIndex,
-                            "end_time",
-                            normalizeTimeInput(e.target.value)
-                          )
-                        }
-                        disabled={!h.enabled}
-                        className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                        style={{
-                          borderColor: !h.enabled
-                            ? "var(--border-color)"
-                            : endValid
-                            ? "var(--border-color)"
-                            : "rgb(253 164 175)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-main)",
-                          opacity: !h.enabled ? 0.6 : 1,
-                        }}
-                      />
-                    </div>
+                      Hora inicio
+                    </label>
+                    <input
+                      type="time"
+                      value={item.start_time}
+                      onChange={(e) =>
+                        updateSpecialDate(index, "start_time", e.target.value)
+                      }
+                      className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    />
                   </div>
-                );
-              })}
+
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Hora fin
+                    </label>
+                    <input
+                      type="time"
+                      value={item.end_time}
+                      onChange={(e) =>
+                        updateSpecialDate(index, "end_time", e.target.value)
+                      }
+                      className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
-          </div>
+          ))}
+        </div>
+      )}
 
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              onClick={saveBusinessHours}
-              disabled={savingHours}
-              className={primaryButtonClass}
-              style={{
-                background:
-                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-              }}
-            >
-              {savingHours ? "Guardando..." : "Guardar horarios"}
-            </button>
-          </div>
+      <div className="flex flex-wrap gap-3 pt-2">
+        <button
+          type="button"
+          onClick={saveSpecialDates}
+          disabled={savingSpecialDates}
+          className={primaryButtonClass}
+          style={{
+            background:
+              "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+          }}
+        >
+          {savingSpecialDates ? "Guardando..." : "Guardar fechas especiales"}
+        </button>
+      </div>
 
-          {hoursError ? (
-            <div className="mt-4 rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-              {hoursError}
-            </div>
-          ) : null}
+      {specialDatesError ? (
+        <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          {specialDatesError}
+        </div>
+      ) : null}
 
-          {hoursOk ? (
-            <div className="mt-4 rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-              {hoursOk}
-            </div>
-          ) : null}
-        </Panel>
-      </section>
-
+      {specialDatesOk ? (
+        <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          {specialDatesOk}
+        </div>
+      ) : null}
+    </div>
+  </Panel>
+</section>
 
     </div>
   );
