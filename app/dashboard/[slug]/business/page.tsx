@@ -1038,25 +1038,31 @@ async function saveSlotMinutes() {
 </select>
 
 {minNoticeMode === "custom" ? (
-  <input
-    type="number"
-    min={0}
-    step={5}
-    value={form.min_booking_notice_minutes}
-    onChange={(e) =>
-      setForm((prev) => ({
-        ...prev,
-        min_booking_notice_minutes: Number(e.target.value),
-      }))
-    }
-    placeholder="Ej: 180"
-    className="mt-3 h-11 w-40 rounded-2xl border px-4 text-sm"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-card)",
-      color: "var(--text-main)",
-    }}
-  />
+  <div className="mt-3 flex items-center gap-2">
+    <input
+      type="number"
+      min={0}
+      step={5}
+      value={form.min_booking_notice_minutes}
+      onChange={(e) =>
+        setForm((prev) => ({
+          ...prev,
+          min_booking_notice_minutes: Number(e.target.value),
+        }))
+      }
+      placeholder="Ej: 180"
+      className="h-11 w-28 rounded-2xl border px-4 text-sm"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    />
+
+    <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+      minutos
+    </span>
+  </div>
 ) : null}
 
 
