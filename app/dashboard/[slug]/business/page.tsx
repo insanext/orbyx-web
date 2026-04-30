@@ -999,27 +999,61 @@ async function saveSlotMinutes() {
             Tiempo mínimo antes de reservar
           </label>
 
-          <select
-            value={form.min_booking_notice_minutes}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                min_booking_notice_minutes: Number(e.target.value),
-              }))
-            }
-            className={selectClass}
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-card)",
-              color: "var(--text-main)",
-            }}
-          >
-            <option value={0}>Sin restricción</option>
-            <option value={15}>15 minutos</option>
-            <option value={30}>30 minutos</option>
-            <option value={60}>1 hora</option>
-            <option value={120}>2 horas</option>
-          </select>
+<select
+  value={form.min_booking_notice_minutes}
+  onChange={(e) => {
+    const val = e.target.value;
+
+    if (val === "custom") {
+      setForm((prev) => ({
+        ...prev,
+        min_booking_notice_minutes: prev.min_booking_notice_minutes || 0,
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        min_booking_notice_minutes: Number(val),
+      }));
+    }
+  }}
+  className={selectClass}
+  style={{
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+    color: "var(--text-main)",
+  }}
+>
+  <option value={0}>Sin restricción</option>
+  <option value={15}>15 minutos</option>
+  <option value={30}>30 minutos</option>
+  <option value={60}>1 hora</option>
+  <option value={120}>2 horas</option>
+  <option value="custom">Personalizado</option>
+</select>
+
+{![0, 15, 30, 60, 120].includes(form.min_booking_notice_minutes) && (
+  <input
+    type="number"
+    min={0}
+    step={5}
+    value={form.min_booking_notice_minutes}
+    onChange={(e) =>
+      setForm((prev) => ({
+        ...prev,
+        min_booking_notice_minutes: Number(e.target.value),
+      }))
+    }
+    className="mt-3 h-11 w-40 rounded-2xl border px-4 text-sm"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-card)",
+      color: "var(--text-main)",
+    }}
+  />
+)}
+
+
+
 
           <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
             Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes solo
