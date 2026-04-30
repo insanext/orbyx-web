@@ -1063,7 +1063,7 @@ setPhotoUrl(item.photo_url || "");
   return (
     <div className="space-y-6 pb-6">
       <section
-        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+  className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
         style={{
           borderColor: "rgba(59,130,246,0.25)",
           background:
@@ -1080,7 +1080,7 @@ setPhotoUrl(item.photo_url || "");
             </p>
 
             <h1
-              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+  className="text-2xl font-semibold tracking-tight sm:text-3xl"
               style={{ color: "var(--text-main)" }}
             >
               Staff
@@ -2163,7 +2163,7 @@ setPhotoUrl(item.photo_url || "");
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
+                    className="flex items-center justify-between gap-4 rounded-2xl border px-4 py-4"
                     style={{
                       borderColor: isSelected
                         ? "rgba(37,99,235,0.45)"
@@ -2174,7 +2174,7 @@ setPhotoUrl(item.photo_url || "");
                     }}
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="h-9 w-9 overflow-hidden rounded-lg bg-slate-200">
+                      <div className="h-16 w-16 overflow-hidden rounded-2xl bg-slate-200">
                         {item.photo_url ? (
                           <img
                             src={item.photo_url}
@@ -2189,7 +2189,7 @@ setPhotoUrl(item.photo_url || "");
 
                       <div className="min-w-0">
                         <p
-                          className="truncate text-sm font-semibold"
+                          className="truncate text-base font-semibold"
                           style={{ color: "var(--text-main)" }}
                         >
                           {item.name}
