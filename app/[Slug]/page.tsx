@@ -1328,6 +1328,7 @@ const detectedCustomerId =
 
 
 <div className="relative group">
+  {/* FOTO BASE */}
   <div className="h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
     {staff.photo_url ? (
       <img
@@ -1336,7 +1337,11 @@ const detectedCustomerId =
         className="h-full w-full object-cover"
       />
     ) : (
-        </div>
+      <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-700">
+        {getStaffInitial(staff.name)}
+      </div>
+    )}
+  </div>
 
   {/* HOVER GRANDE */}
   <div className="pointer-events-none absolute left-full top-1/2 z-30 ml-5 -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100">
@@ -1344,16 +1349,12 @@ const detectedCustomerId =
       <div className="flex flex-col items-center gap-4">
         <div className="h-[390px] w-[390px] overflow-hidden rounded-2xl bg-slate-200">
           {staff.photo_url ? (
-  <img
-    src={staff.photo_url}
-    alt={staff.name}
-    className="h-full w-full object-cover"
-  />
-) : (
-  <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-700">
-    {getStaffInitial(staff.name)}
-  </div>
-)}
+            <img
+              src={staff.photo_url}
+              alt={staff.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
             <div className="flex h-full w-full items-center justify-center text-3xl text-slate-400">
               👤
             </div>
@@ -1367,11 +1368,6 @@ const detectedCustomerId =
     </div>
   </div>
 </div>
-
-
-                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700">
-                                  {getStaffInitial(staff.name)}
-                                </div>
                               )}
 
                               <div className="min-w-0">
