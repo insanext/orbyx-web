@@ -1344,11 +1344,16 @@ const detectedCustomerId =
       <div className="flex flex-col items-center gap-4">
         <div className="h-[390px] w-[390px] overflow-hidden rounded-2xl bg-slate-200">
           {staff.photo_url ? (
-            <img
-              src={staff.photo_url}
-              className="h-full w-full object-cover"
-            />
-          ) : (
+  <img
+    src={staff.photo_url}
+    alt={staff.name}
+    className="h-full w-full object-cover"
+  />
+) : (
+  <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-700">
+    {getStaffInitial(staff.name)}
+  </div>
+)}
             <div className="flex h-full w-full items-center justify-center text-3xl text-slate-400">
               👤
             </div>
