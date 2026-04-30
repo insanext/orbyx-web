@@ -2180,56 +2180,45 @@ setPhotoUrl(item.photo_url || "");
 
 
 
-<div className="relative group">
-  <div className="h-16 w-16 overflow-hidden rounded-2xl bg-slate-200">
-    {item.photo_url ? (
-      <img
-        src={item.photo_url}
-        className="h-full w-full object-cover"
-      />
-    ) : (
-      <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
-        👤
+<div className="pointer-events-none absolute left-full top-1/2 z-20 ml-4 -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100">
+  <div
+    className="w-56 rounded-2xl border p-4 shadow-xl"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-card)",
+    }}
+  >
+    <div className="flex flex-col items-center gap-3">
+      
+      {/* FOTO GRANDE */}
+      <div className="h-28 w-28 overflow-hidden rounded-2xl bg-slate-200">
+        {item.photo_url ? (
+          <img
+            src={item.photo_url}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-2xl text-slate-400">
+            👤
+          </div>
+        )}
       </div>
-    )}
-  </div>
 
-  <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-3 w-48 -translate-x-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100">
-    <div
-      className="rounded-2xl border p-3 shadow-xl"
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-      }}
-    >
-      <div className="flex flex-col items-center gap-2">
-        <div className="h-20 w-20 overflow-hidden rounded-2xl bg-slate-200">
-          {item.photo_url ? (
-            <img
-              src={item.photo_url}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-lg text-slate-400">
-              👤
-            </div>
-          )}
-        </div>
+      {/* NOMBRE */}
+      <p
+        className="text-base font-semibold text-center"
+        style={{ color: "var(--text-main)" }}
+      >
+        {item.name}
+      </p>
 
-        <p
-          className="text-sm font-semibold text-center"
-          style={{ color: "var(--text-main)" }}
-        >
-          {item.name}
-        </p>
-
-        <p
-          className="text-xs text-center"
-          style={{ color: "var(--text-muted)" }}
-        >
-          {item.role || "Sin rol"}
-        </p>
-      </div>
+      {/* ROL */}
+      <p
+        className="text-sm text-center"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {item.role || "Sin rol"}
+      </p>
     </div>
   </div>
 </div>
