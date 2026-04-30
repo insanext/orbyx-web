@@ -93,6 +93,7 @@ const [slotMinutesError, setSlotMinutesError] = useState("");
 const [slotMinutes, setSlotMinutes] = useState(30);
 const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
 const [minNoticeMode, setMinNoticeMode] = useState<"preset" | "custom">("preset");
+const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
 
   const [form, setForm] = useState({
     name: "",
@@ -1107,26 +1108,67 @@ async function saveSlotMinutes() {
           </label>
 
           <select
-            value={form.max_booking_days_ahead}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                max_booking_days_ahead: Number(e.target.value),
-              }))
-            }
-            className={selectClass}
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-card)",
-              color: "var(--text-main)",
-            }}
-          >
-            <option value={7}>7 días</option>
-            <option value={14}>14 días</option>
-            <option value={30}>30 días</option>
-            <option value={60}>60 días</option>
-            <option value={90}>90 días</option>
-          </select>
+  value={maxDaysMode === "custom" ? "custom" : form.max_booking_days_ahead}
+  onChange={(e) => {
+    const val = e.target.value;
+
+    if (val === "custom") {
+      setMaxDaysMode("custom");
+      setForm((prev) => ({
+        ...prev,
+        max_booking_days_ahead: prev.max_booking_days_ahead || 120,
+      }));
+      return;
+    }
+
+    setMaxDaysMode("preset");
+    setForm((prev) => ({
+      ...prev,
+      max_booking_days_ahead: Number(val),
+    }));
+  }}
+  className={selectClass}
+  style={{
+    borderColor: "var(--border-color)",
+    background: "var(--bg-card)",
+    color: "var(--text-main)",
+  }}
+>
+  <option value={7}>7 días</option>
+  <option value={14}>14 días</option>
+  <option value={30}>30 días</option>
+  <option value={60}>60 días</option>
+  <option value={90}>90 días</option>
+  <option value="custom">Personalizado</option>
+</select>
+
+{maxDaysMode === "custom" ? (
+  <div className="mt-3 flex items-center gap-2">
+    <input
+      type="number"
+      min={1}
+      step={1}
+      value={form.max_booking_days_ahead}
+      onChange={(e) =>
+        setForm((prev) => ({
+          ...prev,
+          max_booking_days_ahead: Number(e.target.value),
+        }))
+      }
+      placeholder="Ej: 120"
+      className="h-11 w-28 rounded-2xl border px-4 text-sm"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    />
+
+    <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+      días
+    </span>
+  </div>
+) : null}
 
           <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
             Limita cuántos días hacia el futuro pueden agendar los clientes.
