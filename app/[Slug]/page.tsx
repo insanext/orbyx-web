@@ -1368,7 +1368,6 @@ const detectedCustomerId =
     </div>
   </div>
 </div>
-                              )}
 
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-slate-900">
