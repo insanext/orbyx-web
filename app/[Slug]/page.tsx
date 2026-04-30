@@ -1336,11 +1336,7 @@ const detectedCustomerId =
         className="h-full w-full object-cover"
       />
     ) : (
-      <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-700">
-        {getStaffInitial(staff.name)}
-      </div>
-    )}
-  </div>
+        </div>
 
   {/* HOVER GRANDE */}
   <div className="pointer-events-none absolute left-full top-1/2 z-30 ml-5 -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100">
