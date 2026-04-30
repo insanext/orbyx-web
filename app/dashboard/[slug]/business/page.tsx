@@ -92,6 +92,7 @@ const [slotMinutesError, setSlotMinutesError] = useState("");
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
 const [slotMinutes, setSlotMinutes] = useState(30);
 const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
+const [slotMinutesMode, setSlotMinutesMode] = useState<"preset" | "custom">("preset");
 const [minNoticeMode, setMinNoticeMode] = useState<"preset" | "custom">("preset");
 const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
 
@@ -1065,32 +1066,6 @@ async function saveSlotMinutes() {
     </span>
   </div>
 ) : null}
-
-
-
-
-{![0, 15, 30, 60, 120].includes(form.min_booking_notice_minutes) && (
-  <input
-    type="number"
-    min={0}
-    step={5}
-    value={form.min_booking_notice_minutes}
-    onChange={(e) =>
-      setForm((prev) => ({
-        ...prev,
-        min_booking_notice_minutes: Number(e.target.value),
-      }))
-    }
-    className="mt-3 h-11 w-40 rounded-2xl border px-4 text-sm"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-card)",
-      color: "var(--text-main)",
-    }}
-  />
-)}
-
-
 
 
           <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
