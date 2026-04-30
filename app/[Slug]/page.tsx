@@ -1288,14 +1288,10 @@ const detectedCustomerId =
                             setSelectedSlot(null);
                           }}
                           className={`w-full rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer ${
-  selectedStaffId === staff.id
+  selectedStaffId === ""
     ? "border-indigo-600 bg-indigo-50 shadow-md scale-[1.01]"
     : "border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm hover:scale-[1.01]"
 }`}
-                            selectedStaffId === ""
-                              ? "border-indigo-500 bg-indigo-50 shadow-sm"
-                              : "border-slate-200 bg-white hover:border-slate-300"
-                          }`}
                         >
                           <div className="flex items-center gap-4">
                             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700">
@@ -1328,7 +1324,10 @@ const detectedCustomerId =
                             }`}
                           >
                             <div className="flex items-center gap-4">
-                              <div className="relative group">
+
+
+
+<div className="relative group">
   <div className="h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
     {staff.photo_url ? (
       <img
@@ -1345,13 +1344,7 @@ const detectedCustomerId =
 
   {/* HOVER GRANDE */}
   <div className="pointer-events-none absolute left-full top-1/2 z-30 ml-5 -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100">
-    <div
-      className="w-[500px] rounded-3xl border p-6 shadow-2xl"
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-      }}
-    >
+    <div className="w-[500px] rounded-3xl border p-6 shadow-2xl bg-white">
       <div className="flex flex-col items-center gap-4">
         <div className="h-[390px] w-[390px] overflow-hidden rounded-2xl bg-slate-200">
           {staff.photo_url ? (
@@ -1373,6 +1366,8 @@ const detectedCustomerId =
     </div>
   </div>
 </div>
+
+
                                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700">
                                   {getStaffInitial(staff.name)}
                                 </div>
