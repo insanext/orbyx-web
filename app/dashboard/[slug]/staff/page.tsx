@@ -2194,14 +2194,14 @@ setPhotoUrl(item.photo_url || "");
   {/* HOVER CARD */}
   <div className="pointer-events-none absolute left-full top-1/2 z-20 ml-4 -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100">
     <div
-      className="w-56 rounded-2xl border p-4 shadow-xl"
+      className="w-[380px] rounded-3xl border p-6 shadow-2xl"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
       }}
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="h-28 w-28 overflow-hidden rounded-2xl bg-slate-200">
+        <div className="h-[260px] w-[260px] overflow-hidden rounded-2xl bg-slate-200">
           {item.photo_url ? (
             <img
               src={item.photo_url}
@@ -2221,13 +2221,7 @@ setPhotoUrl(item.photo_url || "");
           {item.name}
         </p>
 
-        <p
-          className="text-sm text-center"
-          style={{ color: "var(--text-muted)" }}
-        >
-          {item.role || "Sin rol"}
-        </p>
-      </div>
+       </div>
     </div>
   </div>
 </div>
