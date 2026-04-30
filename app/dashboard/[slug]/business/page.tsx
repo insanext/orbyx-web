@@ -92,6 +92,7 @@ const [slotMinutesError, setSlotMinutesError] = useState("");
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
 const [slotMinutes, setSlotMinutes] = useState(30);
 const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
+const [minNoticeMode, setMinNoticeMode] = useState<"preset" | "custom">("preset");
 
   const [form, setForm] = useState({
     name: "",
@@ -999,22 +1000,27 @@ async function saveSlotMinutes() {
             Tiempo mínimo antes de reservar
           </label>
 
+
+
 <select
-  value={form.min_booking_notice_minutes}
+  value={minNoticeMode === "custom" ? "custom" : form.min_booking_notice_minutes}
   onChange={(e) => {
     const val = e.target.value;
 
     if (val === "custom") {
+      setMinNoticeMode("custom");
       setForm((prev) => ({
         ...prev,
-        min_booking_notice_minutes: prev.min_booking_notice_minutes || 0,
+        min_booking_notice_minutes: prev.min_booking_notice_minutes || 180,
       }));
-    } else {
-      setForm((prev) => ({
-        ...prev,
-        min_booking_notice_minutes: Number(val),
-      }));
+      return;
     }
+
+    setMinNoticeMode("preset");
+    setForm((prev) => ({
+      ...prev,
+      min_booking_notice_minutes: Number(val),
+    }));
   }}
   className={selectClass}
   style={{
@@ -1030,6 +1036,31 @@ async function saveSlotMinutes() {
   <option value={120}>2 horas</option>
   <option value="custom">Personalizado</option>
 </select>
+
+{minNoticeMode === "custom" ? (
+  <input
+    type="number"
+    min={0}
+    step={5}
+    value={form.min_booking_notice_minutes}
+    onChange={(e) =>
+      setForm((prev) => ({
+        ...prev,
+        min_booking_notice_minutes: Number(e.target.value),
+      }))
+    }
+    placeholder="Ej: 180"
+    className="mt-3 h-11 w-40 rounded-2xl border px-4 text-sm"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-card)",
+      color: "var(--text-main)",
+    }}
+  />
+) : null}
+
+
+
 
 {![0, 15, 30, 60, 120].includes(form.min_booking_notice_minutes) && (
   <input
