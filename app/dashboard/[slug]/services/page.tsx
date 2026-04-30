@@ -182,8 +182,9 @@ export default function ServicesPage() {
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
 
-  const [businessName, setBusinessName] = useState("");
-  const [plan, setPlan] = useState("pro");
+const [businessName, setBusinessName] = useState("");
+const [googleConnected, setGoogleConnected] = useState(false);
+const [plan, setPlan] = useState("pro");
   const [services, setServices] = useState<Service[]>([]);
   const [staff, setStaff] = useState<StaffItem[]>([]);
   const [staffServices, setStaffServices] = useState<StaffServiceRow[]>([]);
@@ -511,9 +512,10 @@ export default function ServicesPage() {
 
       const currentTenantId = businessData.business.id;
 
-      setTenantId(currentTenantId);
-      setBusinessName(businessData.business.name || slug || "");
-      setPlan(normalizePlanSlug(businessData.business.plan_slug));
+setTenantId(currentTenantId);
+setBusinessName(businessData.business.name || slug || "");
+setGoogleConnected(Boolean(businessData.google_connected));
+setPlan(normalizePlanSlug(businessData.business.plan_slug));
 
       await loadBranches(currentTenantId);
     } catch (error: unknown) {
@@ -1030,9 +1032,18 @@ export default function ServicesPage() {
         />
       ) : null}
 
-      {loadError ? <Notice tone="danger" title={loadError} /> : null}
-      {saveError ? <Notice tone="danger" title={saveError} /> : null}
-      {saveOk ? <Notice tone="success" title={saveOk} /> : null}
+{loadError ? <Notice tone="danger" title={loadError} /> : null}
+
+{!loading && !googleConnected ? (
+  <Notice
+    tone="danger"
+    title="Google Calendar no está conectado"
+    description="Conecta Google Calendar para evitar problemas de sincronización y asegurar que las reservas se gestionen correctamente."
+  />
+) : null}
+
+{saveError ? <Notice tone="danger" title={saveError} /> : null}
+{saveOk ? <Notice tone="success" title={saveOk} /> : null}
 
       <section
         className="space-y-6 rounded-3xl border p-6"
