@@ -2827,7 +2827,7 @@ export default function CampaignsPage() {
                 <div>
   <select
     value={segment}
-    onChange={(e) => setSegment(e.target.value)}
+    onChange={(e) => setSegment(e.target.value as CustomerSegment)}
     className={selectClass}
     style={{
       borderColor: "var(--border-color)",
