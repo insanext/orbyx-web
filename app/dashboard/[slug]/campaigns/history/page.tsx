@@ -23,7 +23,7 @@ export default function CampaignHistoryPage() {
           `${BACKEND_URL}/campaigns/history/${slug}`
         );
         const data = await res.json();
-        setCampaigns(data || []);
+setCampaigns(Array.isArray(data?.campaigns) ? data.campaigns : []);
       } catch (err) {
         console.error("Error cargando historial", err);
       } finally {
@@ -75,7 +75,7 @@ export default function CampaignHistoryPage() {
         </p>
       ) : (
         <div className="space-y-3">
-          {campaigns.map((item) => (
+          {Array.isArray(campaigns) && campaigns.map((item) => (
             <div
               key={item.id}
               className="rounded-2xl border p-4"
