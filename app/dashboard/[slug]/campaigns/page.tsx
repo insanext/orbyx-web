@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowRight,
   BarChart3,
@@ -1402,6 +1402,7 @@ function RichTextEditor({
 }
 
 export default function CampaignsPage() {
+  const router = useRouter();
   const params = useParams();
   const slug =
     ((params as { slug?: string })?.slug as string) ||
