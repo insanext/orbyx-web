@@ -2617,16 +2617,28 @@ export default function CampaignsPage() {
   return (
     <div className="space-y-8 pb-8">
 <section
-  className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
-        style={{
-  borderColor: "var(--border-color)",
-  background: "var(--bg-card)",
-}}
-      >
+  className="relative overflow-hidden rounded-[24px] border p-5 shadow-sm"
+  style={{
+    borderColor: "rgba(59,130,246,0.22)",
+    background:
+      "linear-gradient(135deg, var(--bg-card) 0%, rgba(37,99,235,0.08) 35%, rgba(14,165,233,0.10) 65%, var(--bg-card) 100%)",
+  }}
+>
+  <div
+    className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full blur-3xl"
+    style={{ background: "rgba(37,99,235,0.20)" }}
+  />
+  <div
+    className="pointer-events-none absolute -bottom-20 left-16 h-40 w-40 rounded-full blur-3xl"
+    style={{ background: "rgba(14,165,233,0.18)" }}
+  />
 <div className="grid gap-4">
           <div>
 
-<h1 className="text-xl font-semibold tracking-tight text-white">
+<h1
+  className="relative text-lg font-semibold tracking-tight"
+  style={{ color: "var(--text-main)" }}
+>
   Campañas y recuperación
 </h1>
 
@@ -2636,32 +2648,7 @@ export default function CampaignsPage() {
 >
   Planifica campañas automatizadas por email y WhatsApp para reactivar tu audiencia.
 </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <div
-                className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
-                style={{
-                  borderColor: "rgba(37,99,235,0.18)",
-                  background: "rgba(37,99,235,0.08)",
-                  color: "rgb(37 99 235)",
-                }}
-              >
-                <Sparkles size={16} />
-                Reactivación más clara
-              </div>
-
-              <div
-                className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-card)",
-                  color: "var(--text-main)",
-                }}
-              >
-                <Users size={16} />
-                Audiencia curada manualmente
-              </div>
-            </div>
-          </div>
+           </div>
         </div>
       </section>
 
