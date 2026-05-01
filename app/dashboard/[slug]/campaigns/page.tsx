@@ -2935,8 +2935,6 @@ export default function CampaignsPage() {
               </div>
                           </div>
               </div>
-            </div>
-          </div>
                     <>
                       <div className="flex items-center gap-2">
   <Clock3 size={16} />
