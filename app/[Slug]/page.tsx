@@ -1488,6 +1488,7 @@ const detectedCustomerId =
       <button
         key={`${slot.slot_start}-${index}`}
         type="button"
+	disabled={slot.is_group && (slot.available_spots || 0) === 0}
         onClick={() => {
           setSelectedSlot(slot);
 
@@ -1498,11 +1499,13 @@ const detectedCustomerId =
             });
           }, 120);
         }}
-        className={`flex min-h-[40px] w-full flex-col items-center justify-center rounded-xl border px-2 py-1 text-center transition ${
-          selectedSlot?.slot_start === slot.slot_start
-            ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
-            : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
-        }`}
+className={`flex min-h-[40px] w-full flex-col items-center justify-center rounded-xl border px-2 py-1 text-center transition ${
+  selectedSlot?.slot_start === slot.slot_start
+    ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
+    : slot.is_group && (slot.available_spots || 0) === 0
+    ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
+    : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+}`}
       >
         <span className="text-[12px] font-semibold leading-none">
           {formatHour(slot.slot_start)}
@@ -1519,14 +1522,20 @@ const detectedCustomerId =
 {slot.is_group && isGroupBookingBusiness ? (
   <span
     className={`px-1.5 py-[1px] rounded-full ${
-      (slot.available_spots || 0) <= 1
+      (slot.available_spots || 0) === 0
+        ? "bg-slate-200 text-slate-500"
+        : (slot.available_spots || 0) === 1
         ? "bg-rose-100 text-rose-600"
         : (slot.available_spots || 0) <= 3
         ? "bg-amber-100 text-amber-600"
         : "bg-emerald-100 text-emerald-600"
     }`}
   >
-    {slot.available_spots || 0} cupos
+    {(slot.available_spots || 0) === 0
+      ? "Completo"
+      : (slot.available_spots || 0) === 1
+      ? "Último cupo"
+      : `${slot.available_spots} de ${slot.capacity || 0} cupos`}
   </span>
 ) : (
   "Disponible"
