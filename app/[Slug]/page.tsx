@@ -1535,7 +1535,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
       ? "Completo"
       : (slot.available_spots || 0) === 1
       ? "Último cupo"
-      : `${slot.available_spots} de ${slot.capacity || 0} cupos`}
+      : `${slot.available_spots} cupos disponibles`}
   </span>
 ) : (
   "Disponible"
