@@ -44,33 +44,83 @@ export default function ConnectCalendarPage() {
           las reservas cuando un cliente agenda una cita.
         </p>
 
-        {/* 🔴 WARNING */}
-        <div
-          className="mt-6 rounded-xl border p-4"
-          style={{
-            borderColor: "#fecaca",
-            background: "#fff1f2",
-          }}
-        >
-          <p className="text-sm font-semibold text-red-700">
-            Importante antes de continuar
-          </p>
+        {/* 🧠 GUÍA VISUAL GOOGLE WARNING */}
+<div
+  className="mt-6 rounded-2xl border p-5"
+  style={{
+    borderColor: "#e2e8f0",
+    background: "#f8fafc",
+  }}
+>
+  <p className="text-sm font-semibold text-slate-800">
+    Si Google muestra una advertencia, es normal
+  </p>
 
-          <p className="mt-2 text-sm text-red-800">
-            Google puede mostrar una advertencia indicando que la app aún no
-            está verificada. Esto es normal mientras Orbyx está en fase de
-            pruebas.
-          </p>
+  <p className="mt-1 text-sm text-slate-600">
+    Nuestra app aún está en proceso de verificación por Google.
+  </p>
 
-          <p className="mt-2 text-sm text-red-800">
-            Cuando aparezca, presiona:
-          </p>
+  <div className="mt-4 space-y-4">
 
-          <ul className="mt-2 list-disc pl-5 text-sm text-red-800">
-            <li>Configuración avanzada</li>
-            <li>Ir a orbyx-backend.onrender.com</li>
-          </ul>
-        </div>
+    {/* PASO 1 */}
+    <div className="flex gap-3">
+      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+        1
+      </div>
+      <div>
+        <p className="text-sm font-medium text-slate-800">
+          Haz clic en "Configuración avanzada"
+        </p>
+        <p className="text-xs text-slate-500">
+          Está debajo del mensaje principal de Google
+        </p>
+      </div>
+    </div>
+
+    {/* PASO 2 */}
+    <div className="flex gap-3">
+      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+        2
+      </div>
+      <div>
+        <p className="text-sm font-medium text-slate-800">
+          Luego haz clic en "Ir a orbyx-backend.onrender.com"
+        </p>
+        <p className="text-xs text-slate-500">
+          Está al final de la página
+        </p>
+      </div>
+    </div>
+
+    {/* PASO 3 */}
+    <div className="flex gap-3">
+      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+        3
+      </div>
+      <div>
+        <p className="text-sm font-medium text-slate-800">
+          Autoriza el acceso
+        </p>
+        <p className="text-xs text-slate-500">
+          Serás redirigido automáticamente a Orbyx
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  {/* INFO */}
+  <div
+    className="mt-5 rounded-xl p-3 text-sm"
+    style={{
+      background: "#eef2ff",
+      color: "#3730a3",
+    }}
+  >
+    🔒 Tranquilo, es seguro.  
+    Tus datos están protegidos y solo se usará tu calendario para crear reservas.
+  </div>
+</div>
 
         {/* 🧠 PASOS */}
         <div className="mt-6 space-y-3 text-sm" style={{ color: "var(--text-muted)" }}>
