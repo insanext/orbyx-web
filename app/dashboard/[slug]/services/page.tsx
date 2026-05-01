@@ -547,13 +547,16 @@ setPlan(normalizePlanSlug(businessData.business.plan_slug));
 
       setSelectedBranchId(branchId);
       setEditingId(null);
-      setForm({
-        name: "",
-        description: "",
-        duration_minutes: "30",
-        price: "",
-        staff_ids: [],
-      });
+
+setForm({
+  name: "",
+  description: "",
+  duration_minutes: "30",
+  price: "",
+  staff_ids: [],
+  is_group: false,
+  capacity: "1",
+});
       setSaveError("");
       setSaveOk("");
     }
@@ -741,13 +744,15 @@ body: JSON.stringify({
       await saveServiceStaffRelations(createdServiceId, form.staff_ids);
       await fetchBranchData(tenantId, selectedBranchId);
 
-      setForm({
-        name: "",
-        description: "",
-        duration_minutes: "30",
-        price: "",
-        staff_ids: [],
-      });
+setForm({
+  name: "",
+  description: "",
+  duration_minutes: "30",
+  price: "",
+  staff_ids: [],
+  is_group: false,
+  capacity: "1",
+});
 
       setSaveOk("Servicio creado correctamente.");
     } catch (error: unknown) {
