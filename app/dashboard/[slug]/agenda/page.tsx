@@ -1802,19 +1802,56 @@ const hasPendingClose = pendingCloseCount > 0;
 
   return (
     <div className="space-y-8 pb-6">
-      <PageHeader
-        eyebrow="Agenda"
-        title="Agenda semanal"
-        description={
-          selectedBranchName && selectedStaffName
-            ? `Vista filtrada por sucursal ${selectedBranchName} y profesional ${selectedStaffName}.`
-            : selectedBranchName
-            ? `Vista filtrada por sucursal ${selectedBranchName}.`
-            : selectedStaffName
-            ? `Vista filtrada por profesional ${selectedStaffName}.`
-            : `Gestiona las reservas de ${loading ? "tu negocio" : businessName}.`
-        }
-      />
+<div
+  className="flex flex-col gap-4 rounded-2xl border px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+  style={{
+    borderColor: "var(--border-color)",
+    background:
+      "linear-gradient(135deg, rgba(37,99,235,0.06), rgba(14,165,233,0.05), var(--bg-card))",
+  }}
+>
+  <div>
+    <p
+      className="text-[11px] font-semibold uppercase tracking-[0.24em]"
+      style={{ color: "var(--text-muted)" }}
+    >
+      Agenda
+    </p>
+
+    <h1
+      className="mt-1 text-xl font-semibold"
+      style={{ color: "var(--text-main)" }}
+    >
+      Agenda semanal
+    </h1>
+
+    <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+      {selectedBranchName && selectedStaffName
+        ? `Vista filtrada por sucursal ${selectedBranchName} y profesional ${selectedStaffName}.`
+        : selectedBranchName
+        ? `Vista filtrada por sucursal ${selectedBranchName}.`
+        : selectedStaffName
+        ? `Vista filtrada por profesional ${selectedStaffName}.`
+        : `Gestiona las reservas de ${loading ? "tu negocio" : businessName}.`}
+    </p>
+  </div>
+
+  <button
+    type="button"
+    disabled={!calendarId}
+    onClick={() => {
+      if (!calendarId) return;
+      window.location.href = `${BACKEND_URL}/auth?calendar_id=${calendarId}`;
+    }}
+    className={`inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+      googleConnected
+        ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+        : "border border-rose-200 bg-rose-50 text-rose-700 shadow-[0_0_10px_rgba(244,63,94,0.35)] hover:bg-rose-100 animate-pulse"
+    }`}
+  >
+    {googleConnected ? "Google Calendar conectado" : "Conectar Google Calendar"}
+  </button>
+</div>
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard
@@ -1887,19 +1924,6 @@ const hasPendingClose = pendingCloseCount > 0;
       ) : null}
 
       {error ? <Notice tone="danger" title={error} /> : null}
-{!googleConnected ? (
-  <Notice
-    tone="danger"
-    title="Google Calendar no está conectado"
-    description="Conecta Google Calendar para evitar errores al confirmar reservas y sincronizar la agenda."
-  >
-    <button
-      type="button"
-      disabled={!calendarId}
-      onClick={() => {
-        if (!calendarId) return;
-        window.location.href = `${BACKEND_URL}/auth?calendar_id=${calendarId}`;
-      }}
       className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white shadow-[0_0_14px_rgba(244,63,94,0.45)] transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 animate-pulse"
     >
       Conectar Google Calendar
