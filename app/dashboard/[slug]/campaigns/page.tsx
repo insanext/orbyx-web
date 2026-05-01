@@ -2772,7 +2772,7 @@ export default function CampaignsPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <SectionCard
           title="Configurar campaña"
           description="Selecciona el canal, el segmento y el criterio de envío. Todo el bloque quedó concentrado en una sola zona clara."
@@ -2824,7 +2824,7 @@ export default function CampaignsPage() {
                   Segmento
                 </p>
 
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 2xl:grid-cols-2">
                   {SEGMENT_OPTIONS.map((item) => (
                     <SegmentCard
                       key={item.key}
@@ -2935,10 +2935,7 @@ export default function CampaignsPage() {
               </div>
             </div>
 
-                          <div className="mt-5">
-                <button
-                  type="button"
-                  onClick={handleOpenConfirm}
+                  
                   disabled={
                     sending ||
                     loadingAudience ||
