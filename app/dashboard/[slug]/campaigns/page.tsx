@@ -2933,7 +2933,7 @@ export default function CampaignsPage() {
                   ))}
                 </select>
               </div>
-            </div>
+                          </div>
 
                   
                   disabled={
@@ -2950,6 +2950,20 @@ export default function CampaignsPage() {
                   }}
                 >
                   {sending ? (
+                    <>
+                      <Clock3 size={16} />
+                      Enviando campaña...
+                    </>
+                  ) : (
+                    <>
+                      Iniciar campaña
+                      <ArrowRight size={16} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
                     <>
                       <Clock3 size={16} />
                       Enviando campaña...
