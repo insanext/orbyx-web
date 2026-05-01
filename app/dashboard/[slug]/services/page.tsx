@@ -10,8 +10,8 @@ type BusinessResponse = {
     id: string;
     name: string;
     slug: string;
-    plan_slug?: string | null;
 plan_slug?: string | null;
+business_category?: string | null;
   };
   calendar_id: string;
   google_connected?: boolean;
@@ -1232,14 +1232,6 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                               />
                             </div>
                           </div>
-
-                          {isGroupBookingBusiness ? (
-  
-
-
-
-
-
 {isGroupBookingBusiness ? (
   <div className="space-y-2">
     <label className="flex items-center gap-2 text-sm font-medium">
@@ -1459,49 +1451,54 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                 />
               </div>
 
-<div className="space-y-2">
-  <label className="flex items-center gap-2 text-sm font-medium">
-    <input
-      type="checkbox"
-      checked={form.is_group}
-      onChange={(e) =>
-        setForm((prev) => ({
-          ...prev,
-          is_group: e.target.checked,
-        }))
-      }
-    />
-    Servicio grupal (clases, talleres, etc.)
-  </label>
 
-  {form.is_group && (
-    <div className="space-y-1">
-      <label
-        className="text-xs font-medium"
-        style={{ color: "var(--text-muted)" }}
-      >
-        Capacidad máxima
-      </label>
+
+
+{isGroupBookingBusiness ? (
+  <div className="space-y-2">
+    <label className="flex items-center gap-2 text-sm font-medium">
       <input
-        type="number"
-        min="1"
-        value={form.capacity}
+        type="checkbox"
+        checked={form.is_group}
         onChange={(e) =>
           setForm((prev) => ({
             ...prev,
-            capacity: e.target.value,
+            is_group: e.target.checked,
           }))
         }
-        className="w-full rounded-xl border px-4 py-2 text-sm"
-        style={{
-          borderColor: "var(--border-color)",
-          background: "var(--bg-card)",
-          color: "var(--text-main)",
-        }}
       />
-    </div>
-  )}
-</div>
+      Servicio grupal (clases, talleres, etc.)
+    </label>
+
+    {form.is_group && (
+      <div className="space-y-1">
+        <label
+          className="text-xs font-medium"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Capacidad máxima
+        </label>
+        <input
+          type="number"
+          min="1"
+          value={form.capacity}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              capacity: e.target.value,
+            }))
+          }
+          className="w-full rounded-xl border px-4 py-2 text-sm"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+            color: "var(--text-main)",
+          }}
+        />
+      </div>
+    )}
+  </div>
+) : null}
 
 
               <button
