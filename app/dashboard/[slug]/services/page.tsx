@@ -11,6 +11,7 @@ type BusinessResponse = {
     name: string;
     slug: string;
     plan_slug?: string | null;
+plan_slug?: string | null;
   };
   calendar_id: string;
   google_connected?: boolean;
@@ -187,6 +188,7 @@ export default function ServicesPage() {
 const [businessName, setBusinessName] = useState("");
 const [googleConnected, setGoogleConnected] = useState(false);
 const [plan, setPlan] = useState("pro");
+const [businessCategory, setBusinessCategory] = useState("");
   const [services, setServices] = useState<Service[]>([]);
   const [staff, setStaff] = useState<StaffItem[]>([]);
   const [staffServices, setStaffServices] = useState<StaffServiceRow[]>([]);
@@ -240,6 +242,7 @@ const [editForm, setEditForm] = useState({
 
   const servicesLimitReached = services.length >= maxServices;
   const servicesRemainingCount = Math.max(0, maxServices - services.length);
+const isGroupBookingBusiness = businessCategory === "group_booking";
 
   const activeServicesCount = services.filter((service) => service.active).length;
   const servicesWithDescriptionCount = services.filter(
@@ -522,6 +525,9 @@ setTenantId(currentTenantId);
 setBusinessName(businessData.business.name || slug || "");
 setGoogleConnected(Boolean(businessData.google_connected));
 setPlan(normalizePlanSlug(businessData.business.plan_slug));
+setBusinessCategory(
+  String(businessData.business.business_category || "").trim().toLowerCase()
+);
 
       await loadBranches(currentTenantId);
     } catch (error: unknown) {
@@ -728,8 +734,8 @@ body: JSON.stringify({
   price: Number(form.price || 0),
   active: true,
 
-  is_group: form.is_group,
-  capacity: Number(form.capacity || 1),
+is_group: isGroupBookingBusiness ? form.is_group : false,
+capacity: isGroupBookingBusiness ? Number(form.capacity || 1) : 1,
 }),
       });
 
@@ -825,8 +831,8 @@ body: JSON.stringify({
   buffer_before_minutes: 0,
   buffer_after_minutes: 0,
   active: editForm.active,
-  is_group: editForm.is_group,
-  capacity: Number(editForm.capacity || 1),
+is_group: isGroupBookingBusiness ? editForm.is_group : false,
+capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
 }),
       });
 
@@ -1227,49 +1233,60 @@ body: JSON.stringify({
                             </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm font-medium">
-                              <input
-                                type="checkbox"
-                                checked={editForm.is_group}
-                                onChange={(e) =>
-                                  setEditForm((prev) => ({
-                                    ...prev,
-                                    is_group: e.target.checked,
-                                  }))
-                                }
-                              />
-                              Servicio grupal (clases, talleres, etc.)
-                            </label>
+                          {isGroupBookingBusiness ? (
+  
 
-                            {editForm.is_group && (
-                              <div className="space-y-1">
-                                <label
-                                  className="text-xs font-medium"
-                                  style={{ color: "var(--text-muted)" }}
-                                >
-                                  Capacidad máxima
-                                </label>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={editForm.capacity}
-                                  onChange={(e) =>
-                                    setEditForm((prev) => ({
-                                      ...prev,
-                                      capacity: e.target.value,
-                                    }))
-                                  }
-                                  className="w-full rounded-xl border px-4 py-2 text-sm"
-                                  style={{
-                                    borderColor: "var(--border-color)",
-                                    background: "var(--bg-card)",
-                                    color: "var(--text-main)",
-                                  }}
-                                />
-                              </div>
-                            )}
-                          </div>
+
+
+
+
+{isGroupBookingBusiness ? (
+  <div className="space-y-2">
+    <label className="flex items-center gap-2 text-sm font-medium">
+      <input
+        type="checkbox"
+        checked={editForm.is_group}
+        onChange={(e) =>
+          setEditForm((prev) => ({
+            ...prev,
+            is_group: e.target.checked,
+          }))
+        }
+      />
+      Servicio grupal (clases, talleres, etc.)
+    </label>
+
+    {editForm.is_group ? (
+      <div className="space-y-1">
+        <label
+          className="text-xs font-medium"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Capacidad máxima
+        </label>
+        <input
+          type="number"
+          min="1"
+          value={editForm.capacity}
+          onChange={(e) =>
+            setEditForm((prev) => ({
+              ...prev,
+              capacity: e.target.value,
+            }))
+          }
+          className="w-full rounded-xl border px-4 py-2 text-sm"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+            color: "var(--text-main)",
+          }}
+        />
+      </div>
+    ) : null}
+  </div>
+) : null}
+
+
 
                           <div className="flex flex-wrap gap-3">
                             <button
