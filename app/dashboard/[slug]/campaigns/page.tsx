@@ -2938,20 +2938,13 @@ export default function CampaignsPage() {
             </div>
           </div>
                     <>
-                      <Clock3 size={16} />
-                      Enviando campaña...
+                      <div className="flex items-center gap-2">
+  <Clock3 size={16} />
+  <span>Enviando campaña...</span>
+</div>
                     </>
                   ) : (
-                    <>
-                      Iniciar campaña
-                      <ArrowRight size={16} />
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </SectionCard>
+               </SectionCard>
 
         <div className="space-y-6">
           <SectionCard
