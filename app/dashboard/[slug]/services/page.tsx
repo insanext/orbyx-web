@@ -23,6 +23,8 @@ type Service = {
   duration_minutes: number;
   price: number | null;
   active: boolean;
+  is_group?: boolean | null;
+  capacity?: number | null;
 };
 
 type StaffItem = {
@@ -209,14 +211,16 @@ const [form, setForm] = useState({
   capacity: "1",
 });
 
-  const [editForm, setEditForm] = useState({
-    name: "",
-    description: "",
-    duration_minutes: "30",
-    price: "",
-    active: true,
-    staff_ids: [] as string[],
-  });
+const [editForm, setEditForm] = useState({
+  name: "",
+  description: "",
+  duration_minutes: "30",
+  price: "",
+  active: true,
+  staff_ids: [] as string[],
+  is_group: false,
+  capacity: "1",
+});
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
 
@@ -764,19 +768,21 @@ setForm({
     }
   }
 
-  function startEditing(service: Service) {
-    setSaveError("");
-    setSaveOk("");
-    setEditingId(service.id);
-    setEditForm({
-      name: service.name || "",
-      description: service.description || "",
-      duration_minutes: String(service.duration_minutes || 30),
-      price: service.price ? String(service.price) : "",
-      active: Boolean(service.active),
-      staff_ids: getSelectedStaffIdsForService(service.id),
-    });
-  }
+function startEditing(service: Service) {
+  setSaveError("");
+  setSaveOk("");
+  setEditingId(service.id);
+  setEditForm({
+    name: service.name || "",
+    description: service.description || "",
+    duration_minutes: String(service.duration_minutes || 30),
+    price: service.price ? String(service.price) : "",
+    active: Boolean(service.active),
+    staff_ids: getSelectedStaffIdsForService(service.id),
+    is_group: Boolean(service.is_group),
+    capacity: String(service.capacity || 1),
+  });
+}
 
   function cancelEditing() {
     setEditingId(null);
@@ -809,17 +815,19 @@ setForm({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          branch_id: selectedBranchId,
-          name: editForm.name.trim(),
-          description: editForm.description.trim(),
-          duration_minutes: Number(editForm.duration_minutes || 30),
-          price: Number(editForm.price || 0),
-          buffer_before_minutes: 0,
-          buffer_after_minutes: 0,
-          active: editForm.active,
-        }),
+body: JSON.stringify({
+  tenant_id: tenantId,
+  branch_id: selectedBranchId,
+  name: editForm.name.trim(),
+  description: editForm.description.trim(),
+  duration_minutes: Number(editForm.duration_minutes || 30),
+  price: Number(editForm.price || 0),
+  buffer_before_minutes: 0,
+  buffer_after_minutes: 0,
+  active: editForm.active,
+  is_group: editForm.is_group,
+  capacity: Number(editForm.capacity || 1),
+}),
       });
 
       const data = await response.json();
@@ -1216,6 +1224,50 @@ setForm({
                                 }}
                               />
                             </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium">
+                              <input
+                                type="checkbox"
+                                checked={editForm.is_group}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({
+                                    ...prev,
+                                    is_group: e.target.checked,
+                                  }))
+                                }
+                              />
+                              Servicio grupal (clases, talleres, etc.)
+                            </label>
+
+                            {editForm.is_group && (
+                              <div className="space-y-1">
+                                <label
+                                  className="text-xs font-medium"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  Capacidad máxima
+                                </label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={editForm.capacity}
+                                  onChange={(e) =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      capacity: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full rounded-xl border px-4 py-2 text-sm"
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-card)",
+                                    color: "var(--text-main)",
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex flex-wrap gap-3">
