@@ -2660,7 +2660,7 @@ export default function CampaignsPage() {
       color: "var(--text-muted)",
     }}
   >
-    Ver historial
+    Ver historial Campañas
   </button>
 </div>
       </section>
