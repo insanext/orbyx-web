@@ -2767,7 +2767,7 @@ export default function CampaignsPage() {
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <SectionCard
           title="Configurar campaña"
-          description="Selecciona el canal, el segmento y el criterio de envío. Todo el bloque quedó concentrado en una sola zona clara."
+          description="Selecciona el canal, el segmento y el criterio de envío."
           rightSlot={
             <div className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
               style={{
