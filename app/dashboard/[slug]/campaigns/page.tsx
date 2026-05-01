@@ -2934,33 +2934,6 @@ export default function CampaignsPage() {
                 </select>
               </div>
                           </div>
-
-                  
-                  disabled={
-                    sending ||
-                    loadingAudience ||
-                    !hasContactsForChannel ||
-                    limitedIncludedRecipients.length === 0
-                  }
-                  className={`${primaryButtonClass} w-full gap-2 font-semibold`}
-                  style={{
-                    background: sending
-                      ? "rgba(37,99,235,0.5)"
-                      : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                  }}
-                >
-                  {sending ? (
-                    <>
-                      <Clock3 size={16} />
-                      Enviando campaña...
-                    </>
-                  ) : (
-                    <>
-                      Iniciar campaña
-                      <ArrowRight size={16} />
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           </div>
