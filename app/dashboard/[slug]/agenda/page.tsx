@@ -2410,11 +2410,14 @@ onClick={() => {
                           </div>
                         ) : (
                           daySlots.map((slot, index) => {
-                            const appt = dayAppointments.find(
-                              (a) =>
-                                new Date(a.start_at).getTime() ===
-                                new Date(slot).getTime()
-                            );
+const slotAppointments = dayAppointments.filter(
+  (a) =>
+    new Date(a.start_at).getTime() ===
+    new Date(slot).getTime()
+);
+
+const appt = slotAppointments[0];
+const isGroupSlot = slotAppointments.length > 1;
 
                             const isHourStart = index % 2 === 0;
                             const isEvenBand = Math.floor(index / 2) % 2 === 0;
@@ -2490,7 +2493,9 @@ onClick={() => {
                                         : "text-slate-900"
                                     }`}
                                   >
-                                    {appt.customer_name}
+                                    {isGroupSlot
+  ? `${appt.service_name_snapshot || "Clase"}`
+  : appt.customer_name}
                                   </p>
 
                                   {appt.customer_data?.pet_name ? (
@@ -2509,14 +2514,16 @@ onClick={() => {
                                   ) : null}
 
                                   <p
-                                    className={`truncate text-[11px] ${
-                                      isSelected
-                                        ? "text-slate-200"
-                                        : "text-slate-500"
-                                    }`}
-                                  >
-                                    {appt.service_name_snapshot || "Reserva"}
-                                  </p>
+  className={`truncate text-[11px] ${
+    isSelected
+      ? "text-slate-200"
+      : "text-slate-500"
+  }`}
+>
+  {isGroupSlot
+    ? `${slotAppointments.length} inscritos`
+    : appt.service_name_snapshot || "Reserva"}
+</p>
 
                                   <p
                                     className={`truncate text-[11px] ${
