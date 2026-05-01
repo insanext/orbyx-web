@@ -198,22 +198,30 @@ export default function CampaignHistoryPage() {
 
   return (
     <div className="space-y-6 pb-8">
+<section
+  className="relative overflow-hidden rounded-[28px] border p-5 shadow-sm"
+  style={{
+    borderColor: "rgba(59,130,246,0.22)",
+    background:
+      "linear-gradient(135deg, var(--bg-card) 0%, rgba(37,99,235,0.08) 42%, rgba(14,165,233,0.10) 72%, var(--bg-card) 100%)",
+  }}
+>
 
-      <section
-<div className="flex justify-end">
-  <button
-    type="button"
-    onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
-    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-card)",
-      color: "var(--text-main)",
-    }}
-  >
-    Ver historial de campañas
-  </button>
-</div>
+  <div className="flex justify-end mb-2">
+    <button
+      type="button"
+      onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
+      className="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium transition"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-muted)",
+      }}
+    >
+      Ver historial
+    </button>
+  </div>
+
 
         className="relative overflow-hidden rounded-[28px] border p-5 shadow-sm"
         style={{
