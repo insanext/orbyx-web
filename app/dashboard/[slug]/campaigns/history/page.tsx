@@ -198,7 +198,23 @@ export default function CampaignHistoryPage() {
 
   return (
     <div className="space-y-6 pb-8">
+
       <section
+<div className="flex justify-end">
+  <button
+    type="button"
+    onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
+    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-card)",
+      color: "var(--text-main)",
+    }}
+  >
+    Ver historial de campañas
+  </button>
+</div>
+
         className="relative overflow-hidden rounded-[28px] border p-5 shadow-sm"
         style={{
           borderColor: "rgba(59,130,246,0.22)",
