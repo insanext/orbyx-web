@@ -2434,6 +2434,27 @@ export default function CampaignsPage() {
               }}
             />
           </div>
+<div className="mt-4">
+  <button
+    type="button"
+    onClick={handleOpenConfirm}
+    disabled={
+      sending ||
+      loadingAudience ||
+      !hasContactsForChannel ||
+      limitedIncludedRecipients.length === 0
+    }
+    className={`${primaryButtonClass} w-full gap-2 font-semibold`}
+    style={{
+      background: sending
+        ? "rgba(37,99,235,0.5)"
+        : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+    }}
+  >
+    {sending ? "Enviando campaña..." : "Iniciar campaña"}
+  </button>
+</div>
+
         </div>
       </SectionCard>
     ) : (
@@ -2914,54 +2935,7 @@ export default function CampaignsPage() {
               </div>
             </div>
 
-            <div
-              className="rounded-[22px] border p-5"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-              }}
-            >
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                Regla actual del envío
-              </p>
-
-              <div
-                className="mt-3 space-y-2 text-sm leading-7"
-                style={{ color: "var(--text-muted)" }}
-              >
-                <p>
-                  Tu plan{" "}
-                  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-                    {PLAN_LABELS[plan]}
-                  </span>{" "}
-                  permite hasta{" "}
-                  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-                    {planLimit}
-                  </span>{" "}
-                  contactos por campaña.
-                </p>
-                <p>
-                  El sistema intentará enviar hasta{" "}
-                  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-                    {sendLimit}
-                  </span>{" "}
-                  destinatarios, ordenados por{" "}
-                  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-                    {selectedSortLabel}
-                  </span>.
-                </p>
-                <p>
-                  Con la audiencia curada actual, el alcance real sería de{" "}
-                  <span style={{ color: "var(--text-main)", fontWeight: 700 }}>
-                    {limitedAudienceCount}
-                  </span>{" "}
-                  contactos por este canal.
-                </p>
-              </div>
-              <div className="mt-5">
+                          <div className="mt-5">
                 <button
                   type="button"
                   onClick={handleOpenConfirm}
