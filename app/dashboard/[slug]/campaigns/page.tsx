@@ -2619,33 +2619,23 @@ export default function CampaignsPage() {
 <section
   className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
         style={{
-          borderColor: "rgba(59,130,246,0.18)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.06) 28%, var(--bg-card) 72%)",
-        }}
+  borderColor: "var(--border-color)",
+  background: "var(--bg-card)",
+}}
       >
 <div className="grid gap-4">
           <div>
-            <p
-              className="text-xs font-semibold uppercase tracking-[0.22em]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Campañas
-            </p>
 
 <h1 className="text-xl font-semibold tracking-tight text-white">
   Campañas y recuperación
 </h1>
 
 <p
-  className="mt-2 max-w-xl text-sm leading-6"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Planifica campañas automatizadas por email y WhatsApp para reactivar
-              tu audiencia, preparar el mensaje y medir el resultado sin mezclar
-              toda la pantalla.
-            </p>
-
+  className="mt-1 max-w-lg text-xs leading-5"
+  style={{ color: "var(--text-muted)" }}
+>
+  Planifica campañas automatizadas por email y WhatsApp para reactivar tu audiencia.
+</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <div
                 className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
@@ -2675,7 +2665,7 @@ export default function CampaignsPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <StatCard
           title="Plan actual"
           value={PLAN_LABELS[plan]}
@@ -2688,19 +2678,21 @@ export default function CampaignsPage() {
           helper="Máximo de contactos por envío."
           icon={<Send size={20} />}
         />
-        <StatCard
-          title="Incluidos"
-          value={loadingAudience ? "..." : String(audienceStats.included)}
-          helper="Destinatarios curados actualmente."
-          icon={<Users size={20} />}
-        />
-        <StatCard
+                <StatCard
           title="Tope real"
           value={loadingAudience ? "..." : String(limitedAudienceCount)}
           helper="Impacto máximo con la configuración actual."
           icon={<CheckCircle2 size={20} />}
         />
       </div>
+
+
+<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <TinyMetric label="Total audiencia" value={audienceStats.totalVisible} />
+  <TinyMetric label="Incluidos" value={audienceStats.included} />
+  <TinyMetric label="Excluidos" value={audienceStats.excluded} />
+  <TinyMetric label="Manuales" value={audienceStats.manual} />
+</div>
 
       {toast ? (
         <div className="fixed right-5 top-5 z-[80] w-full max-w-md">
@@ -2956,12 +2948,6 @@ export default function CampaignsPage() {
             description="Visualiza y ajusta quién recibirá la campaña."
           >
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-3">
-                <TinyMetric label="Total" value={audienceStats.totalVisible} />
-                <TinyMetric label="Incluidos" value={audienceStats.included} />
-                <TinyMetric label="Excluidos" value={audienceStats.excluded} />
-                <TinyMetric label="Manuales" value={audienceStats.manual} />
-              </div>
 
               <div className="relative">
                 <Search
