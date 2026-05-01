@@ -287,6 +287,8 @@ export default function AgendaPage() {
 const [slotMinutes, setSlotMinutes] = useState(30);
   const [businessName, setBusinessName] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
+const [calendarId, setCalendarId] = useState("");
+const [googleConnected, setGoogleConnected] = useState(false);
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -1594,11 +1596,13 @@ next_control_custom_value:
 
                 const currentTenantId = businessData.business.id;
 setSlotMinutes(Number((businessData as any).slot_minutes || 30));
-        setTenantId(currentTenantId);
-        setBusinessName(businessData.business.name || slug || "");
-        setBusinessCategory(
-          String(businessData.business.business_category || "").trim().toLowerCase()
-        );
+setCalendarId(businessData.calendar_id || "");
+setGoogleConnected(Boolean(businessData.google_connected));
+setTenantId(currentTenantId);
+setBusinessName(businessData.business.name || slug || "");
+setBusinessCategory(
+  String(businessData.business.business_category || "").trim().toLowerCase()
+);
 
         await Promise.all([
   loadBranches(currentTenantId),
@@ -1883,6 +1887,48 @@ const hasPendingClose = pendingCloseCount > 0;
       ) : null}
 
       {error ? <Notice tone="danger" title={error} /> : null}
+{!googleConnected ? (
+  <Notice
+    tone="danger"
+    title="Google Calendar no está conectado"
+    description="Conecta Google Calendar para evitar errores al confirmar reservas y sincronizar la agenda."
+  >
+    <button
+      type="button"
+      disabled={!calendarId}
+      onClick={() => {
+        if (!calendarId) return;
+        window.location.href = `${BACKEND_URL}/auth?calendar_id=${calendarId}`;
+      }}
+      className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white shadow-[0_0_14px_rgba(244,63,94,0.45)] transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 animate-pulse"
+    >
+      Conectar Google Calendar
+    </button>
+  </Notice>
+) : (
+  <Notice
+    tone="success"
+    title="Google Calendar conectado"
+    description="Las reservas se sincronizan correctamente con Google Calendar."
+  >
+    <button
+      type="button"
+      disabled={!calendarId}
+      onClick={() => {
+        if (!calendarId) return;
+        window.location.href = `${BACKEND_URL}/auth?calendar_id=${calendarId}`;
+      }}
+      className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    >
+      Cambiar cuenta
+    </button>
+  </Notice>
+)}
 
 {showPendingPanel ? (
   <div
