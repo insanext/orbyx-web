@@ -2850,7 +2850,6 @@ export default function CampaignsPage() {
 </div>
                 </div>
               </div>
-            </div>
 
             <div className="grid gap-4 md:grid-cols-3">
               {segment === "inactive" ? (
