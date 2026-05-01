@@ -1924,35 +1924,8 @@ const hasPendingClose = pendingCloseCount > 0;
       ) : null}
 
       {error ? <Notice tone="danger" title={error} /> : null}
-      className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white shadow-[0_0_14px_rgba(244,63,94,0.45)] transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 animate-pulse"
-    >
-      Conectar Google Calendar
-    </button>
-  </Notice>
-) : (
-  <Notice
-    tone="success"
-    title="Google Calendar conectado"
-    description="Las reservas se sincronizan correctamente con Google Calendar."
-  >
-    <button
-      type="button"
-      disabled={!calendarId}
-      onClick={() => {
-        if (!calendarId) return;
-        window.location.href = `${BACKEND_URL}/auth?calendar_id=${calendarId}`;
-      }}
-      className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-        color: "var(--text-main)",
-      }}
-    >
-      Cambiar cuenta
-    </button>
-  </Notice>
-)}
+
+
 
 {showPendingPanel ? (
   <div
