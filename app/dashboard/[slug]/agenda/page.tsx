@@ -1841,7 +1841,7 @@ const hasPendingClose = pendingCloseCount > 0;
     disabled={!calendarId}
     onClick={() => {
       if (!calendarId) return;
-      window.location.href = `${BACKEND_URL}/auth?calendar_id=${calendarId}`;
+      window.location.href = `/dashboard/${slug}/connect-calendar?calendar_id=${calendarId}`;
     }}
     className={`inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
       googleConnected
