@@ -1488,7 +1488,7 @@ const detectedCustomerId =
       <button
         key={`${slot.slot_start}-${index}`}
         type="button"
-	disabled={slot.is_group && (slot.available_spots || 0) === 0}
+	disabled={Boolean(slot.is_group) && (slot.available_spots || 0) === 0}
         onClick={() => {
           setSelectedSlot(slot);
 
