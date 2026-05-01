@@ -2451,7 +2451,7 @@ export default function CampaignsPage() {
         : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
     }}
   >
-    {sending ? "Enviando campaña..." : "Iniciar campaña"}
+    {sending ? "Enviando..." : "Iniciar campaña"}
   </button>
 </div>
 
@@ -2824,16 +2824,30 @@ export default function CampaignsPage() {
                   Segmento
                 </p>
 
-                <div className="grid gap-3 2xl:grid-cols-2">
-                  {SEGMENT_OPTIONS.map((item) => (
-                    <SegmentCard
-                      key={item.key}
-                      active={segment === item.key}
-                      title={item.label}
-                      description={item.description}
-                      onClick={() => setSegment(item.key)}
-                    />
-                  ))}
+                <div>
+  <select
+    value={segment}
+    onChange={(e) => setSegment(e.target.value)}
+    className={selectClass}
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-card)",
+      color: "var(--text-main)",
+    }}
+  >
+    {SEGMENT_OPTIONS.map((item) => (
+      <option key={item.key} value={item.key}>
+        {item.label}
+      </option>
+    ))}
+  </select>
+
+  <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
+    {
+      SEGMENT_OPTIONS.find((s) => s.key === segment)?.description
+    }
+  </p>
+</div>
                 </div>
               </div>
             </div>
@@ -2935,14 +2949,7 @@ export default function CampaignsPage() {
               </div>
                           </div>
               </div>
-                    <>
-                      <div className="flex items-center gap-2">
-  <Clock3 size={16} />
-  <span>Enviando campaña...</span>
-</div>
-                    </>
-                  ) : (
-               </SectionCard>
+                               </SectionCard>
 
         <div className="space-y-6">
           <SectionCard
