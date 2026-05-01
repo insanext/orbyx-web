@@ -2633,24 +2633,36 @@ export default function CampaignsPage() {
     className="pointer-events-none absolute -bottom-20 left-16 h-40 w-40 rounded-full blur-3xl"
     style={{ background: "rgba(14,165,233,0.18)" }}
   />
-<div className="grid gap-4">
-          <div>
+<div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+  <div>
+    <h1
+      className="relative text-lg font-semibold tracking-tight"
+      style={{ color: "var(--text-main)" }}
+    >
+      Campañas y recuperación
+    </h1>
 
-<h1
-  className="relative text-lg font-semibold tracking-tight"
-  style={{ color: "var(--text-main)" }}
->
-  Campañas y recuperación
-</h1>
+    <p
+      className="mt-1 max-w-lg text-xs leading-5"
+      style={{ color: "var(--text-muted)" }}
+    >
+      Planifica campañas automatizadas por email y WhatsApp para reactivar tu audiencia.
+    </p>
+  </div>
 
-<p
-  className="mt-1 max-w-lg text-xs leading-5"
-  style={{ color: "var(--text-muted)" }}
->
-  Planifica campañas automatizadas por email y WhatsApp para reactivar tu audiencia.
-</p>
-           </div>
-        </div>
+  <button
+    type="button"
+    onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
+    className="inline-flex items-center justify-center rounded-xl border px-3 py-1.5 text-xs font-medium transition"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-card)",
+      color: "var(--text-muted)",
+    }}
+  >
+    Ver historial
+  </button>
+</div>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -3724,22 +3736,6 @@ export default function CampaignsPage() {
 
 
 
-
-
-<div className="flex justify-end">
-  <button
-    type="button"
-    onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
-    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-card)",
-      color: "var(--text-main)",
-    }}
-  >
-    Ver historial de campañas
-  </button>
-</div>
 
 
 
