@@ -898,14 +898,14 @@ body: JSON.stringify({
   return (
     <div className="space-y-6 pb-6">
       <section
-        className="overflow-hidden rounded-[30px] border p-6 shadow-sm"
+        className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
         style={{
           borderColor: "rgba(59,130,246,0.25)",
           background:
             "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
         }}
       >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-3xl">
             <p
               className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
@@ -915,7 +915,7 @@ body: JSON.stringify({
             </p>
 
             <h1
-              className="text-3xl font-semibold tracking-tight sm:text-4xl"
+  className="text-2xl font-semibold tracking-tight sm:text-3xl"
               style={{ color: "var(--text-main)" }}
             >
               Servicios del negocio
@@ -936,7 +936,7 @@ body: JSON.stringify({
               <Link
                 href={publicUrl}
                 target="_blank"
-                className="inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition"
+                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
                 style={{
                   borderColor: "rgba(59,130,246,0.24)",
                   background: "rgba(255,255,255,0.08)",
@@ -950,7 +950,8 @@ body: JSON.stringify({
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-xl border px-3 py-2"
+
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
                 background: "rgba(255,255,255,0.08)",
@@ -971,7 +972,7 @@ body: JSON.stringify({
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-xl border px-3 py-2"
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
                 background: "rgba(255,255,255,0.08)",
@@ -992,7 +993,7 @@ body: JSON.stringify({
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-2xl border px-3 py-2"
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
                 background: "rgba(255,255,255,0.08)",
@@ -1013,7 +1014,7 @@ body: JSON.stringify({
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-2xl border px-3 py-2"
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
                 background: "rgba(255,255,255,0.08)",
