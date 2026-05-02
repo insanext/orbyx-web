@@ -1538,9 +1538,6 @@ function updateHourByIndex(
 
   const enabled = dayBlocks.some((b) => b.enabled);
 
-            const startValid = isValidTime(h.start_time);
-            const endValid = isValidTime(h.end_time);
-
             return (
               <div
                 key={dayIndex}
