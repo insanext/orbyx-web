@@ -2529,17 +2529,39 @@ const isGroupSlot = slotAppointments.length > 1;
                                     </span>
                                   </div>
 
-                                  <p
-                                    className={`truncate text-sm font-semibold ${
-                                      isSelected
-                                        ? "text-white"
-                                        : "text-slate-900"
-                                    }`}
-                                  >
-                                    {isGroupSlot
-  ? `${appt.service_name_snapshot || "Clase"}`
-  : appt.customer_name}
-                                  </p>
+                                  
+				{isGroupSlot ? (
+  <div>
+    <p
+      className={`text-sm font-semibold ${
+        isSelected ? "text-white" : "text-slate-900"
+      }`}
+    >
+      {appt.service_name_snapshot || "Clase"}
+    </p>
+
+    <div className="mt-1 space-y-0.5">
+      {slotAppointments.map((a) => (
+        <p
+          key={a.id}
+          className={`truncate text-[11px] ${
+            isSelected ? "text-slate-200" : "text-slate-600"
+          }`}
+        >
+          • {a.customer_name}
+        </p>
+      ))}
+    </div>
+  </div>
+) : (
+  <p
+    className={`truncate text-sm font-semibold ${
+      isSelected ? "text-white" : "text-slate-900"
+    }`}
+  >
+    {appt.customer_name}
+  </p>
+)}
 
                                   {appt.customer_data?.pet_name ? (
                                     <p
