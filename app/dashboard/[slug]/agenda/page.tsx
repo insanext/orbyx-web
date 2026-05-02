@@ -2540,18 +2540,21 @@ const isGroupSlot = slotAppointments.length > 1;
       {appt.service_name_snapshot || "Clase"}
     </p>
 
-    <div className="mt-1 space-y-0.5">
-      {slotAppointments.map((a) => (
-        <p
-          key={a.id}
-          className={`truncate text-[11px] ${
-            isSelected ? "text-slate-200" : "text-slate-600"
-          }`}
-        >
-          • {a.customer_name}
-        </p>
-      ))}
-    </div>
+    <p
+      className={`mt-1 text-[11px] ${
+        isSelected ? "text-slate-200" : "text-slate-600"
+      }`}
+    >
+      {slotAppointments.length} inscritos
+    </p>
+
+    <p
+      className={`text-[11px] underline cursor-pointer ${
+        isSelected ? "text-slate-200" : "text-slate-500"
+      }`}
+    >
+      Ver inscritos
+    </p>
   </div>
 ) : (
   <p
