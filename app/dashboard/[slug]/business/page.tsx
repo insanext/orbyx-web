@@ -257,8 +257,37 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
 
       if (res.ok) {
         if (data.hours?.length) {
-          const normalized = getDefaultHours().map((fallback) => {
-            const existing = data.hours.find(
+          const grouped: Record<number, BusinessHour[]> = {};
+
+for (const item of data.hours) {
+  const day = Number(item.day_of_week);
+
+  if (!grouped[day]) grouped[day] = [];
+
+  grouped[day].push({
+    day_of_week: day,
+    enabled: Boolean(item.enabled),
+    start_time: String(item.start_time || "").slice(0, 5),
+    end_time: String(item.end_time || "").slice(0, 5),
+  });
+}
+
+const result: BusinessHour[] = [];
+
+for (const day of displayOrder) {
+  if (grouped[day] && grouped[day].length > 0) {
+    result.push(...grouped[day]);
+  } else {
+    result.push({
+      day_of_week: day,
+      enabled: false,
+      start_time: "09:00",
+      end_time: "18:00",
+    });
+  }
+}
+
+setBusinessHours(result);
               (item: { day_of_week: number }) =>
                 item.day_of_week === fallback.day_of_week
             );
