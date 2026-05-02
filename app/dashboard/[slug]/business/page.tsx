@@ -662,13 +662,6 @@ function updateHourByIndex(
     )
   );
 }
- {
-    setBusinessHours((prev) =>
-      prev.map((item) =>
-        item.day_of_week === dayOfWeek ? { ...item, [field]: value } : item
-      )
-    );
-  }
 
   function updateBookingField(
     index: number,
@@ -1544,11 +1537,6 @@ function updateHourByIndex(
   );
 
   const enabled = dayBlocks.some((b) => b.enabled);
-                day_of_week: dayIndex,
-                enabled: false,
-                start_time: "09:00",
-                end_time: "18:00",
-              };
 
             const startValid = isValidTime(h.start_time);
             const endValid = isValidTime(h.end_time);
