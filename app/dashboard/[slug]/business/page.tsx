@@ -288,24 +288,8 @@ for (const day of displayOrder) {
 }
 
 setBusinessHours(result);
-              (item: { day_of_week: number }) =>
-                item.day_of_week === fallback.day_of_week
-            );
+              
 
-            return {
-              day_of_week: fallback.day_of_week,
-              enabled: existing?.enabled ?? fallback.enabled,
-              start_time: String(
-                existing?.start_time || fallback.start_time
-              ).slice(0, 5),
-              end_time: String(existing?.end_time || fallback.end_time).slice(
-                0,
-                5
-              ),
-            };
-          });
-
-          setBusinessHours(normalized);
         } else {
           setBusinessHours(getDefaultHours());
         }
