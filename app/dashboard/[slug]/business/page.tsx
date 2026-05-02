@@ -488,12 +488,33 @@ async function removeSpecialDate(index: number) {
       setHoursError("");
       setHoursOk("");
 
-      const cleanedHours = businessHours.map((hour) => ({
-        day_of_week: hour.day_of_week,
-        enabled: hour.enabled,
-        start_time: hour.start_time,
-        end_time: hour.end_time,
-      }));
+const grouped: Record<
+  number,
+  {
+    day_of_week: number;
+    enabled: boolean;
+    blocks: { start_time: string; end_time: string }[];
+  }
+> = {};
+
+for (const h of businessHours) {
+  if (!grouped[h.day_of_week]) {
+    grouped[h.day_of_week] = {
+      day_of_week: h.day_of_week,
+      enabled: h.enabled,
+      blocks: [],
+    };
+  }
+
+  if (h.enabled && h.start_time && h.end_time) {
+    grouped[h.day_of_week].blocks.push({
+      start_time: h.start_time,
+      end_time: h.end_time,
+    });
+  }
+}
+
+const cleanedHours = Object.values(grouped);
 
       const res = await fetch(
         "https://orbyx-backend.onrender.com/business-hours",
@@ -630,11 +651,18 @@ async function saveSlotMinutes() {
     }
   }
 
-  function updateHour(
-    dayOfWeek: number,
-    field: keyof BusinessHour,
-    value: string | boolean | number
-  ) {
+function updateHourByIndex(
+  index: number,
+  field: keyof BusinessHour,
+  value: string | boolean | number
+) {
+  setBusinessHours((prev) =>
+    prev.map((item, i) =>
+      i === index ? { ...item, [field]: value } : item
+    )
+  );
+}
+ {
     setBusinessHours((prev) =>
       prev.map((item) =>
         item.day_of_week === dayOfWeek ? { ...item, [field]: value } : item
@@ -1511,8 +1539,11 @@ async function saveSlotMinutes() {
 
         <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
           {displayOrder.map((dayIndex) => {
-            const h =
-              businessHours.find((d) => d.day_of_week === dayIndex) || {
+  const dayBlocks = businessHours.filter(
+    (d) => d.day_of_week === dayIndex
+  );
+
+  const enabled = dayBlocks.some((b) => b.enabled);
                 day_of_week: dayIndex,
                 enabled: false,
                 start_time: "09:00",
@@ -1545,65 +1576,91 @@ async function saveSlotMinutes() {
                   />
                 </div>
 
-                <div>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="09:00"
-                    value={h.start_time}
-                    onChange={(e) =>
-                      updateHour(
-                        dayIndex,
-                        "start_time",
-                        normalizeTimeInput(e.target.value)
-                      )
-                    }
-                    disabled={!h.enabled}
-                    className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                    style={{
-                      borderColor: !h.enabled
-                        ? "var(--border-color)"
-                        : startValid
-                        ? "var(--border-color)"
-                        : "rgb(253 164 175)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-main)",
-                      opacity: !h.enabled ? 0.6 : 1,
-                    }}
-                  />
-                </div>
 
-                <div className="text-center" style={{ color: "var(--text-muted)" }}>
-                  —
-                </div>
 
-                <div>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="18:00"
-                    value={h.end_time}
-                    onChange={(e) =>
-                      updateHour(
-                        dayIndex,
-                        "end_time",
-                        normalizeTimeInput(e.target.value)
-                      )
-                    }
-                    disabled={!h.enabled}
-                    className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
-                    style={{
-                      borderColor: !h.enabled
-                        ? "var(--border-color)"
-                        : endValid
-                        ? "var(--border-color)"
-                        : "rgb(253 164 175)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-main)",
-                      opacity: !h.enabled ? 0.6 : 1,
-                    }}
-                  />
-                </div>
+
+<div className="flex flex-col gap-2 col-span-3">
+  {dayBlocks.map((block, i) => (
+    <div key={i} className="flex items-center gap-2">
+      <input
+        type="text"
+        value={block.start_time}
+        onChange={(e) =>
+updateHourByIndex(
+  businessHours.findIndex(
+    (x) =>
+      x.day_of_week === dayIndex &&
+      x.start_time === block.start_time &&
+      x.end_time === block.end_time
+  ),
+  "start_time",
+            normalizeTimeInput(e.target.value)
+          )
+        }
+        className="h-10 w-28 rounded-xl border px-3 text-sm"
+      />
+
+      <span>—</span>
+
+      <input
+        type="text"
+        value={block.end_time}
+
+onChange={(e) =>
+  updateHourByIndex(
+    businessHours.findIndex(
+      (x) =>
+        x.day_of_week === dayIndex &&
+        x.start_time === block.start_time &&
+        x.end_time === block.end_time
+    ),
+    "end_time",
+    normalizeTimeInput(e.target.value)
+  )
+}
+
+        className="h-10 w-28 rounded-xl border px-3 text-sm"
+      />
+
+      <button
+        type="button"
+        onClick={() => {
+          setBusinessHours((prev) =>
+            prev.filter(
+              (_, idx) =>
+                !(
+                  prev[idx].day_of_week === dayIndex &&
+                  prev[idx].start_time === block.start_time &&
+                  prev[idx].end_time === block.end_time
+                )
+            )
+          );
+        }}
+        className="text-xs text-red-500"
+      >
+        ✕
+      </button>
+    </div>
+  ))}
+
+  <button
+    type="button"
+    onClick={() => {
+      setBusinessHours((prev) => [
+        ...prev,
+        {
+          day_of_week: dayIndex,
+          enabled: true,
+          start_time: "09:00",
+          end_time: "18:00",
+        },
+      ]);
+    }}
+    className="text-xs text-blue-500"
+  >
+    + Agregar bloque
+  </button>
+</div>
               </div>
             );
           })}
