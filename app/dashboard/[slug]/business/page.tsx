@@ -1552,13 +1552,21 @@ function updateHourByIndex(
                 </div>
 
                 <div>
-                  <input
-                    type="checkbox"
-                    checked={h.enabled}
-                    onChange={(e) =>
-                      updateHour(dayIndex, "enabled", e.target.checked)
-                    }
-                  />
+<input
+  type="checkbox"
+  checked={enabled}
+  onChange={(e) => {
+    const newValue = e.target.checked;
+
+    setBusinessHours((prev) =>
+      prev.map((item) =>
+        item.day_of_week === dayIndex
+          ? { ...item, enabled: newValue }
+          : item
+      )
+    );
+  }}
+/>
                 </div>
 
 
