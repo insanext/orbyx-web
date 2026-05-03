@@ -954,10 +954,16 @@ if (windows.length === 0) {
     closedLabel: "",
   };
 }
-      hasConfiguredHours: true,
-      fullyClosed: false,
-      closedLabel: "",
-    };
+
+windows.sort((a, b) => a.start - b.start);
+
+return {
+  startMinutes: windows[0].start,
+  endMinutes: windows[windows.length - 1].end,
+  hasConfiguredHours: true,
+  fullyClosed: false,
+  closedLabel: "",
+};
   }
 
   const businessRows = businessSpecialDates.filter((item) => {
