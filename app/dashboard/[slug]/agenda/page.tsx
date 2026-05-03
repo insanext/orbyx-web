@@ -922,146 +922,26 @@ next_control_custom_unit: "days",
     return (matchedRow.label || "").trim() || "No disponible";
   }
 
-  function getSelectedStaffDayWindow(day: Date) {
-    const dayKey = formatDateYYYYMMDD(day);
 
-if (!selectedStaffId) {
+function getSelectedStaffDayWindow(day: Date) {
+  const dayKey = formatDateYYYYMMDD(day);
   const weekday = getWeekdayForAgenda(day);
 
-const rows = businessHours.filter((item) => {
-  const sameBranch =
-    !item.branch_id || item.branch_id === selectedBranchId;
-
-  return sameBranch && Number(item.day_of_week) === weekday && item.enabled;
-});
-
- let windows: { start: number; end: number }[] = rows
-  .map((r) => ({
-    start: timeStringToMinutes(r.start_time),
-    end: timeStringToMinutes(r.end_time),
-  }))
-  .filter((w) => w.start !== null && w.end !== null && w.end > w.start) as {
-  start: number;
-  end: number;
-}[];
-
-if (windows.length === 0) {
-  return {
-    startMinutes: null,
-    endMinutes: null,
+  const getFallbackWindow = () => ({
+    startMinutes: null as number | null,
+    endMinutes: null as number | null,
     hasConfiguredHours: true,
     fullyClosed: false,
     closedLabel: "",
-  };
-}
-
-windows.sort((a, b) => a.start - b.start);
-
-return {
-  windows,
-  hasConfiguredHours: true,
-  fullyClosed: false,
-  closedLabel: "",
-};
-  }
-
-  const businessRows = businessSpecialDates.filter((item) => {
-    const sameBranch =
-      !item.branch_id || item.branch_id === selectedBranchId;
-
-    return sameBranch && item.date === dayKey;
   });
 
-  return applySpecialDateRulesToWindow(baseWindow, businessRows);
-}
-
-    const selectedStaff = staffList.find((staff) => staff.id === selectedStaffId);
-
-    if (!selectedStaff) {
-      return {
-        startMinutes: 9 * 60,
-        endMinutes: 18 * 60,
-        hasConfiguredHours: false,
-        fullyClosed: false,
-        closedLabel: "",
-      };
-    }
-
-    const weekday = getWeekdayForAgenda(day);
-
-    const hasStaffHours = staffHours.some(
-  (item) =>
-    item.staff_id === selectedStaffId &&
-    (!item.branch_id || item.branch_id === selectedBranchId)
-);
-
-if (selectedStaff.use_business_hours || !hasStaffHours) {
-      const row = businessHours.find((item) => {
-        const sameBranch =
-          !item.branch_id || item.branch_id === selectedBranchId;
-        return sameBranch && Number(item.day_of_week) === weekday;
-      });
-
-      let baseWindow = {
-        startMinutes: null as number | null,
-        endMinutes: null as number | null,
-        hasConfiguredHours: true,
-        fullyClosed: false,
-        closedLabel: "",
-      };
-
-      if (row?.enabled) {
-        baseWindow = {
-          startMinutes: timeStringToMinutes(row.start_time),
-          endMinutes: timeStringToMinutes(row.end_time),
-          hasConfiguredHours: true,
-          fullyClosed: false,
-          closedLabel: "",
-        };
-      }
-
-      const businessRows = businessSpecialDates.filter((item) => {
-        const sameBranch =
-          !item.branch_id || item.branch_id === selectedBranchId;
-
-        return sameBranch && item.date === dayKey;
-      });
-
-      const withBusinessRules = applySpecialDateRulesToWindow(
-        baseWindow,
-        businessRows
-      );
-
-      const staffRows = staffSpecialDates.filter((item) => {
-        const sameBranch =
-          !item.branch_id || item.branch_id === selectedBranchId;
-
-        return (
-          sameBranch &&
-          item.staff_id === selectedStaffId &&
-          item.date === dayKey
-        );
-      });
-
-      return applySpecialDateRulesToWindow(withBusinessRules, staffRows);
-    }
-
-    const row = staffHours.find((item) => {
+  if (!selectedStaffId) {
+    const row = businessHours.find((item) => {
       const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
-      return (
-        sameBranch &&
-        item.staff_id === selectedStaffId &&
-        Number(item.day_of_week) === weekday
-      );
+      return sameBranch && Number(item.day_of_week) === weekday;
     });
 
-    let baseWindow = {
-      startMinutes: null as number | null,
-      endMinutes: null as number | null,
-      hasConfiguredHours: true,
-      fullyClosed: false,
-      closedLabel: "",
-    };
+    let baseWindow = getFallbackWindow();
 
     if (row?.enabled) {
       baseWindow = {
@@ -1073,18 +953,97 @@ if (selectedStaff.use_business_hours || !hasStaffHours) {
       };
     }
 
-    const specialRows = staffSpecialDates.filter((item) => {
+    const businessRows = businessSpecialDates.filter((item) => {
       const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
-
-      return (
-        sameBranch &&
-        item.staff_id === selectedStaffId &&
-        item.date === dayKey
-      );
+      return sameBranch && item.date === dayKey;
     });
 
-    return applySpecialDateRulesToWindow(baseWindow, specialRows);
+    return applySpecialDateRulesToWindow(baseWindow, businessRows);
   }
+
+  const selectedStaff = staffList.find((staff) => staff.id === selectedStaffId);
+
+  if (!selectedStaff) {
+    return {
+      startMinutes: 9 * 60,
+      endMinutes: 18 * 60,
+      hasConfiguredHours: false,
+      fullyClosed: false,
+      closedLabel: "",
+    };
+  }
+
+  const hasStaffHours = staffHours.some(
+    (item) =>
+      item.staff_id === selectedStaffId &&
+      (!item.branch_id || item.branch_id === selectedBranchId)
+  );
+
+  if (selectedStaff.use_business_hours || !hasStaffHours) {
+    const row = businessHours.find((item) => {
+      const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
+      return sameBranch && Number(item.day_of_week) === weekday;
+    });
+
+    let baseWindow = getFallbackWindow();
+
+    if (row?.enabled) {
+      baseWindow = {
+        startMinutes: timeStringToMinutes(row.start_time),
+        endMinutes: timeStringToMinutes(row.end_time),
+        hasConfiguredHours: true,
+        fullyClosed: false,
+        closedLabel: "",
+      };
+    }
+
+    const businessRows = businessSpecialDates.filter((item) => {
+      const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
+      return sameBranch && item.date === dayKey;
+    });
+
+    const withBusinessRules = applySpecialDateRulesToWindow(
+      baseWindow,
+      businessRows
+    );
+
+    const staffRows = staffSpecialDates.filter((item) => {
+      const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
+      return sameBranch && item.staff_id === selectedStaffId && item.date === dayKey;
+    });
+
+    return applySpecialDateRulesToWindow(withBusinessRules, staffRows);
+  }
+
+  const row = staffHours.find((item) => {
+    const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
+    return (
+      sameBranch &&
+      item.staff_id === selectedStaffId &&
+      Number(item.day_of_week) === weekday
+    );
+  });
+
+  let baseWindow = getFallbackWindow();
+
+  if (row?.enabled) {
+    baseWindow = {
+      startMinutes: timeStringToMinutes(row.start_time),
+      endMinutes: timeStringToMinutes(row.end_time),
+      hasConfiguredHours: true,
+      fullyClosed: false,
+      closedLabel: "",
+    };
+  }
+
+  const specialRows = staffSpecialDates.filter((item) => {
+    const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
+    return sameBranch && item.staff_id === selectedStaffId && item.date === dayKey;
+  });
+
+  return applySpecialDateRulesToWindow(baseWindow, specialRows);
+}
+
 
   async function loadBranches(currentTenantId: string) {
     try {
