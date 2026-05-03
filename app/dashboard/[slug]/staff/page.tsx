@@ -1771,8 +1771,7 @@ return (
     </div>
   </div>
 );
-
-                  </div>
+})}
 
                   {!editingId ? (
                     <div className="mt-4">
