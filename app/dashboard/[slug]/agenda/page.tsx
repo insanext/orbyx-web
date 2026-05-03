@@ -947,31 +947,32 @@ function getSelectedStaffDayWindow(day: Date) {
     closedLabel: "",
   });
 
-  if (!selectedStaffId) {
-    const row = businessHours.find((item) => {
-      const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
-      return sameBranch && Number(item.day_of_week) === weekday;
-    });
+ if (!selectedStaffId) {
+  const rows = businessHours.filter((item) => {
+    const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
+    return sameBranch && Number(item.day_of_week) === weekday && item.enabled;
+  });
 
-    let baseWindow = getFallbackWindow();
+  const windows = rows
+    .map((row) => ({
+      start: timeStringToMinutes(row.start_time),
+      end: timeStringToMinutes(row.end_time),
+    }))
+    .filter(
+      (w) => w.start !== null && w.end !== null && w.end > w.start
+    ) as { start: number; end: number }[];
 
-    if (row?.enabled) {
-      baseWindow = {
-        startMinutes: timeStringToMinutes(row.start_time),
-        endMinutes: timeStringToMinutes(row.end_time),
-        hasConfiguredHours: true,
-        fullyClosed: false,
-        closedLabel: "",
-      };
-    }
-
-    const businessRows = businessSpecialDates.filter((item) => {
-      const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
-      return sameBranch && item.date === dayKey;
-    });
-
-    return applySpecialDateRulesToWindow(baseWindow, businessRows);
+  if (windows.length > 0) {
+    return {
+      windows,
+      hasConfiguredHours: true,
+      fullyClosed: false,
+      closedLabel: "",
+    };
   }
+
+  return getFallbackWindow();
+}
 
   const selectedStaff = staffList.find((staff) => staff.id === selectedStaffId);
 
