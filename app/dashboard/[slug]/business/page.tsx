@@ -1617,18 +1617,23 @@ onChange={(e) =>
 
       <button
         type="button"
-        onClick={() => {
-          setBusinessHours((prev) =>
-            prev.filter(
-              (_, idx) =>
-                !(
-                  prev[idx].day_of_week === dayIndex &&
-                  prev[idx].start_time === block.start_time &&
-                  prev[idx].end_time === block.end_time
-                )
-            )
-          );
-        }}
+onClick={() => {
+  const realIndex = businessHours.findIndex(
+    (x, idx) =>
+      idx ===
+      businessHours.findIndex(
+        (y) =>
+          y.day_of_week === dayIndex &&
+          y.start_time === block.start_time &&
+          y.end_time === block.end_time
+      )
+  );
+
+  setBusinessHours((prev) =>
+    prev.filter((_, idx) => idx !== realIndex)
+  );
+}}
+
         className="text-xs text-red-500"
       >
         ✕
