@@ -2171,13 +2171,14 @@ onClick={() => {
                     dayWindow.fullyClosed &&
                     dayAppointments.length === 0;
 
-                  const hasNoWorkingWindow =
-                    !!selectedStaffId &&
-                    dayWindow.hasConfiguredHours &&
-                    !dayWindow.fullyClosed &&
-                    dayWindow.startMinutes === null &&
-                    dayWindow.endMinutes === null &&
-                    dayAppointments.length === 0;
+ const hasNoWorkingWindow =
+  !!selectedStaffId &&
+  dayWindow.hasConfiguredHours &&
+  !dayWindow.fullyClosed &&
+  !("windows" in dayWindow) &&
+  dayWindow.startMinutes === null &&
+  dayWindow.endMinutes === null &&
+  dayAppointments.length === 0;
 
                   const daySlots =
   showClosedBySchedule || hasNoWorkingWindow
