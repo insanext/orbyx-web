@@ -40,6 +40,7 @@ photo_url?: string | null;
 
 type StaffHourItem = {
   day_of_week: number;
+  block_order: number;
   enabled: boolean;
   start_time: string | null;
   end_time: string | null;
@@ -87,6 +88,7 @@ const days = [
 
 const defaultHours: StaffHourItem[] = days.map((day) => ({
   day_of_week: day.value,
+  block_order: 1,
   enabled: false,
   start_time: "09:00",
   end_time: "18:00",
@@ -450,35 +452,65 @@ async function uploadStaffImage(file: File, staffId: string) {
     setStaff(Array.isArray(data.staff) ? data.staff : []);
   }
 
-  async function loadStaffHours(id: string, staffId: string) {
-    const res = await fetch(
-      `${BACKEND_URL}/staff-hours?tenant_id=${id}&staff_id=${staffId}`
-    );
 
-    const data = await res.json();
+async function loadStaffHours(id: string, staffId: string) {
+  const res = await fetch(
+    `${BACKEND_URL}/staff-hours?tenant_id=${id}&staff_id=${staffId}`
+  );
 
-    if (!res.ok) {
-      throw new Error(data?.error || "No se pudo cargar staff_hours");
-    }
+  const data = await res.json();
 
-    const rows = Array.isArray(data?.hours) ? data.hours : [];
+  if (!res.ok) {
+    throw new Error(data?.error || "No se pudo cargar staff_hours");
+  }
 
-    const merged = days.map((day) => {
-      const found = rows.find(
+  const rows = Array.isArray(data?.hours) ? data.hours : [];
+
+  const merged = days.flatMap((day) => {
+    const foundRows = rows
+      .filter(
         (row: { day_of_week: number }) =>
           Number(row.day_of_week) === Number(day.value)
+      )
+      .sort(
+        (a: { block_order?: number }, b: { block_order?: number }) =>
+          Number(a.block_order || 1) - Number(b.block_order || 1)
       );
 
-      return {
-        day_of_week: day.value,
-        enabled: found ? Boolean(found.enabled) : false,
-        start_time: found?.start_time || "09:00",
-        end_time: found?.end_time || "18:00",
-      };
-    });
+    if (foundRows.length === 0) {
+      return [
+        {
+          day_of_week: day.value,
+          block_order: 1,
+          enabled: false,
+          start_time: "09:00",
+          end_time: "18:00",
+        },
+      ];
+    }
 
-    setStaffHours(merged);
-  }
+    return foundRows.map(
+      (
+        row: {
+          enabled?: boolean;
+          start_time?: string | null;
+          end_time?: string | null;
+          block_order?: number;
+        },
+        index: number
+      ) => ({
+        day_of_week: day.value,
+        block_order: Number(row.block_order || index + 1),
+        enabled: Boolean(row.enabled),
+        start_time: row.start_time || "09:00",
+        end_time: row.end_time || "18:00",
+      })
+    );
+  });
+
+  setStaffHours(merged);
+}
+
 
   async function loadStaffSpecialDates(id: string, staffId: string) {
     const res = await fetch(
@@ -728,62 +760,90 @@ setPhotoUrl(item.photo_url || "");
     }
   }
 
-  function updateHour(
-    dayOfWeek: number,
-    field: "enabled" | "start_time" | "end_time",
-    value: boolean | string
-  ) {
-    setStaffHours((prev) =>
-      prev.map((item) =>
-        item.day_of_week === dayOfWeek ? { ...item, [field]: value } : item
-      )
-    );
+
+function updateHour(
+  dayOfWeek: number,
+  blockOrder: number,
+  field: "enabled" | "start_time" | "end_time",
+  value: boolean | string
+) {
+  setStaffHours((prev) =>
+    prev.map((item) =>
+      item.day_of_week === dayOfWeek && item.block_order === blockOrder
+        ? { ...item, [field]: value }
+        : item
+    )
+  );
+}
+
+
+async function saveStaffHours(staffId: string) {
+  const payload = {
+    tenant_id: tenantId,
+    staff_id: staffId,
+    hours: staffHours.map((item) => ({
+      day_of_week: item.day_of_week,
+      block_order: item.block_order,
+      enabled: item.enabled,
+      start_time: item.enabled ? item.start_time || null : null,
+      end_time: item.enabled ? item.end_time || null : null,
+    })),
+  };
+
+  const res = await fetch(`${BACKEND_URL}/staff-hours`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "No se pudo guardar staff_hours");
   }
+}
 
-  async function saveStaffHours(staffId: string) {
-    const payload = {
-      tenant_id: tenantId,
-      staff_id: staffId,
-      hours: staffHours.map((item) => ({
-        day_of_week: item.day_of_week,
-        enabled: item.enabled,
-        start_time: item.enabled ? item.start_time || null : null,
-        end_time: item.enabled ? item.end_time || null : null,
-      })),
-    };
 
-    const res = await fetch(`${BACKEND_URL}/staff-hours`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+function validateStaffHours() {
+  const enabledBlocks = staffHours.filter((item) => item.enabled);
 
-    const data = await res.json();
+  for (const item of enabledBlocks) {
+    if (!item.start_time || !item.end_time) {
+      throw new Error("Cada bloque activo debe tener hora de inicio y fin");
+    }
 
-    if (!res.ok) {
-      throw new Error(data?.error || "No se pudo guardar staff_hours");
+    if (item.start_time >= item.end_time) {
+      const dayLabel =
+        days.find((day) => day.value === item.day_of_week)?.label || "Día";
+
+      throw new Error(
+        `La hora fin debe ser mayor a la hora inicio en ${dayLabel}`
+      );
     }
   }
 
-  function validateStaffHours() {
-    for (const item of staffHours) {
-      if (!item.enabled) continue;
+  for (const day of days) {
+    const blocks = enabledBlocks
+      .filter((item) => item.day_of_week === day.value)
+      .sort((a, b) => String(a.start_time).localeCompare(String(b.start_time)));
 
-      if (!item.start_time || !item.end_time) {
-        throw new Error("Cada día activo debe tener hora de inicio y fin");
-      }
+    for (let i = 1; i < blocks.length; i++) {
+      const previous = blocks[i - 1];
+      const current = blocks[i];
 
-      if (item.start_time >= item.end_time) {
-        const dayLabel =
-          days.find((day) => day.value === item.day_of_week)?.label || "Día";
+      if ((current.start_time || "") < (previous.end_time || "")) {
         throw new Error(
-          `La hora fin debe ser mayor a la hora inicio en ${dayLabel}`
+          `Hay bloques superpuestos en ${day.label}. Revisa los horarios.`
         );
       }
     }
   }
+}
+
+
+
 
   function validateSpecialDate() {
     if (!specialDateForm.date) {
@@ -1579,95 +1639,139 @@ setPhotoUrl(item.photo_url || "");
                     </div>
 
                     {days.map((day) => {
-                      const hour =
-                        staffHours.find(
-                          (item) => item.day_of_week === day.value
-                        ) ||
-                        defaultHours.find(
-                          (item) => item.day_of_week === day.value
-                        )!;
+                      
 
-                      return (
-                        <div
-                          key={day.value}
-                          className="rounded-2xl border p-3"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                          }}
-                        >
-                          <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr_1fr_1fr] md:items-center">
-                            <div>
-                              <p
-                                className="text-sm font-medium"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {day.label}
-                              </p>
-                            </div>
 
-                            <label
-                              className="inline-flex items-center gap-2 text-sm"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={hour.enabled}
-                                onChange={(e) =>
-                                  updateHour(
-                                    day.value,
-                                    "enabled",
-                                    e.target.checked
-                                  )
-                                }
-                                className="h-4 w-4 rounded"
-                              />
-                              Activo
-                            </label>
+const dayBlocks = staffHours
+  .filter((item) => item.day_of_week === day.value)
+  .sort((a, b) => a.block_order - b.block_order);
 
-                            <div>
-                              <input
-                                type="time"
-                                value={hour.start_time || "09:00"}
-                                disabled={!hour.enabled}
-                                onChange={(e) =>
-                                  updateHour(
-                                    day.value,
-                                    "start_time",
-                                    e.target.value
-                                  )
-                                }
-                                className={inputClass}
-                                style={{
-                                  borderColor: "var(--border-color)",
-                                  background: "var(--bg-card)",
-                                  color: "var(--text-main)",
-                                  opacity: !hour.enabled ? 0.6 : 1,
-                                }}
-                              />
-                            </div>
+return (
+  <div
+    key={day.value}
+    className="rounded-2xl border p-3"
+    style={{
+      borderColor: "var(--border-color)",
+      background: "var(--bg-soft)",
+    }}
+  >
+    <div className="mb-2">
+      <p
+        className="text-sm font-medium"
+        style={{ color: "var(--text-main)" }}
+      >
+        {day.label}
+      </p>
+    </div>
 
-                            <div>
-                              <input
-                                type="time"
-                                value={hour.end_time || "18:00"}
-                                disabled={!hour.enabled}
-                                onChange={(e) =>
-                                  updateHour(day.value, "end_time", e.target.value)
-                                }
-                                className={inputClass}
-                                style={{
-                                  borderColor: "var(--border-color)",
-                                  background: "var(--bg-card)",
-                                  color: "var(--text-main)",
-                                  opacity: !hour.enabled ? 0.6 : 1,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+    <div className="space-y-2">
+      {dayBlocks.map((block) => (
+        <div
+          key={block.block_order}
+          className="grid gap-3 md:grid-cols-[0.8fr_1fr_1fr_auto] md:items-center"
+        >
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={block.enabled}
+              onChange={(e) =>
+                updateHour(
+                  day.value,
+                  block.block_order,
+                  "enabled",
+                  e.target.checked
+                )
+              }
+              className="h-4 w-4 rounded"
+            />
+            Activo
+          </label>
+
+          <input
+            type="time"
+            value={block.start_time || "09:00"}
+            disabled={!block.enabled}
+            onChange={(e) =>
+              updateHour(
+                day.value,
+                block.block_order,
+                "start_time",
+                e.target.value
+              )
+            }
+            className={inputClass}
+          />
+
+          <input
+            type="time"
+            value={block.end_time || "18:00"}
+            disabled={!block.enabled}
+            onChange={(e) =>
+              updateHour(
+                day.value,
+                block.block_order,
+                "end_time",
+                e.target.value
+              )
+            }
+            className={inputClass}
+          />
+
+          <button
+            type="button"
+            onClick={() => {
+              setStaffHours((prev) =>
+                prev.filter(
+                  (item) =>
+                    !(
+                      item.day_of_week === day.value &&
+                      item.block_order === block.block_order
+                    )
+                )
+              );
+            }}
+            className="text-xs text-red-500"
+          >
+            Eliminar
+          </button>
+        </div>
+      ))}
+    </div>
+
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => {
+          setStaffHours((prev) => {
+            const blocks = prev.filter(
+              (item) => item.day_of_week === day.value
+            );
+
+            const nextOrder =
+              blocks.length > 0
+                ? Math.max(...blocks.map((b) => b.block_order)) + 1
+                : 1;
+
+            return [
+              ...prev,
+              {
+                day_of_week: day.value,
+                block_order: nextOrder,
+                enabled: true,
+                start_time: "09:00",
+                end_time: "13:00",
+              },
+            ];
+          });
+        }}
+        className="text-sm text-blue-500"
+      >
+        + Agregar bloque
+      </button>
+    </div>
+  </div>
+);
+
                   </div>
 
                   {!editingId ? (
