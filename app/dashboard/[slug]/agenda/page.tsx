@@ -2185,7 +2185,7 @@ onClick={() => {
 if (!showClosedBySchedule && !hasNoWorkingWindow) {
   if ("windows" in dayWindow && Array.isArray(dayWindow.windows)) {
     daySlots = generateSlotsFromWindows(day, dayWindow.windows);
-  } else {
+    } else if ("startMinutes" in dayWindow && "endMinutes" in dayWindow) {
     daySlots = generateDaySlots(day, {
       startMinutes: dayWindow.startMinutes,
       endMinutes: dayWindow.endMinutes,
