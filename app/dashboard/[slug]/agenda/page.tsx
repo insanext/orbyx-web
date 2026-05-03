@@ -485,6 +485,18 @@ function getWeekdayLabel(date: Date) {
     return slots;
   }
 
+function generateSlotsFromWindows(
+  day: Date,
+  windows: { start: number; end: number }[]
+) {
+  return windows.flatMap((window) =>
+    generateDaySlots(day, {
+      startMinutes: window.start,
+      endMinutes: window.end,
+    })
+  );
+}
+
   function isPastPendingClosure(appt: Appointment) {
     return (
       appt.status === "booked" &&
