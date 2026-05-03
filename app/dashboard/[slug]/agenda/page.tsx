@@ -928,25 +928,32 @@ next_control_custom_unit: "days",
 if (!selectedStaffId) {
   const weekday = getWeekdayForAgenda(day);
 
-  const row = businessHours.find((item) => {
-    const sameBranch =
-      !item.branch_id || item.branch_id === selectedBranchId;
+const rows = businessHours.filter((item) => {
+  const sameBranch =
+    !item.branch_id || item.branch_id === selectedBranchId;
 
-    return sameBranch && Number(item.day_of_week) === weekday;
-  });
+  return sameBranch && Number(item.day_of_week) === weekday && item.enabled;
+});
 
-  let baseWindow = {
-    startMinutes: null as number | null,
-    endMinutes: null as number | null,
+ let windows: { start: number; end: number }[] = rows
+  .map((r) => ({
+    start: timeStringToMinutes(r.start_time),
+    end: timeStringToMinutes(r.end_time),
+  }))
+  .filter((w) => w.start !== null && w.end !== null && w.end > w.start) as {
+  start: number;
+  end: number;
+}[];
+
+if (windows.length === 0) {
+  return {
+    startMinutes: null,
+    endMinutes: null,
     hasConfiguredHours: true,
     fullyClosed: false,
     closedLabel: "",
   };
-
-  if (row?.enabled) {
-    baseWindow = {
-      startMinutes: timeStringToMinutes(row.start_time),
-      endMinutes: timeStringToMinutes(row.end_time),
+}
       hasConfiguredHours: true,
       fullyClosed: false,
       closedLabel: "",
