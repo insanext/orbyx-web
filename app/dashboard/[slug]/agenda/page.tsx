@@ -958,8 +958,7 @@ if (windows.length === 0) {
 windows.sort((a, b) => a.start - b.start);
 
 return {
-  startMinutes: windows[0].start,
-  endMinutes: windows[windows.length - 1].end,
+  windows,
   hasConfiguredHours: true,
   fullyClosed: false,
   closedLabel: "",
@@ -2209,12 +2208,14 @@ onClick={() => {
                     dayAppointments.length === 0;
 
                   const daySlots =
-                    showClosedBySchedule || hasNoWorkingWindow
-                      ? []
-                      : generateDaySlots(day, {
-                          startMinutes: dayWindow.startMinutes,
-                          endMinutes: dayWindow.endMinutes,
-                        });
+  showClosedBySchedule || hasNoWorkingWindow
+    ? []
+    : "windows" in dayWindow && Array.isArray(dayWindow.windows)
+    ? generateSlotsFromWindows(day, dayWindow.windows)
+    : generateDaySlots(day, {
+        startMinutes: dayWindow.startMinutes,
+        endMinutes: dayWindow.endMinutes,
+      });
 
                   return (
                     <div
