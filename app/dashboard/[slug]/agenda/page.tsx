@@ -2180,15 +2180,18 @@ onClick={() => {
   dayWindow.endMinutes === null &&
   dayAppointments.length === 0;
 
-                  const daySlots =
-  showClosedBySchedule || hasNoWorkingWindow
-    ? []
-    : "windows" in dayWindow && Array.isArray(dayWindow.windows)
-    ? generateSlotsFromWindows(day, dayWindow.windows)
-    : generateDaySlots(day, {
-        startMinutes: dayWindow.startMinutes,
-        endMinutes: dayWindow.endMinutes,
-      });
+                  let daySlots: string[] = [];
+
+if (!showClosedBySchedule && !hasNoWorkingWindow) {
+  if ("windows" in dayWindow && Array.isArray(dayWindow.windows)) {
+    daySlots = generateSlotsFromWindows(day, dayWindow.windows);
+  } else {
+    daySlots = generateDaySlots(day, {
+      startMinutes: dayWindow.startMinutes,
+      endMinutes: dayWindow.endMinutes,
+    });
+  }
+}
 
                   return (
                     <div
