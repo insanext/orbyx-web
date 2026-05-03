@@ -1592,201 +1592,156 @@ function validateStaffHours() {
                 </div>
               </div>
 
-              {form.use_business_hours ? (
-                <Notice
-                  tone="info"
-                  title="Este staff usará el horario general del negocio."
-                  description="El editor de horarios propios queda oculto para evitar configuraciones duplicadas."
-                />
-              ) : (
-                
-
-<div
-                  className="rounded-2xl border p-4"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                  }}
-                >
-                  <div className="mb-4">
-                    <p
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--text-main)" }}
-                    >
-                      Horarios del staff
-                    </p>
-                    <p
-                      className="mt-1 text-sm"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      Configura el horario semanal propio de este profesional.
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div
-                      className="hidden gap-3 px-3 md:grid md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      <div></div>
-                      <div></div>
-                      <div className="text-xs font-semibold uppercase tracking-wide">
-                        Inicio
-                      </div>
-                      <div className="text-xs font-semibold uppercase tracking-wide">
-                        Fin
-                      </div>
-                    </div>
-
-                    {days.map((day) => {
-                      
 
 
-const dayBlocks = staffHours
-  .filter((item) => item.day_of_week === day.value)
-  .sort((a, b) => a.block_order - b.block_order);
 
-return (
+
+{form.use_business_hours ? (
+  <Notice
+    tone="info"
+    title="Este staff usará el horario general del negocio."
+    description="El editor de horarios propios queda oculto para evitar configuraciones duplicadas."
+  />
+) : (
   <div
-    key={day.value}
-    className="rounded-2xl border p-3"
+    className="rounded-2xl border p-4"
     style={{
       borderColor: "var(--border-color)",
-      background: "var(--bg-soft)",
+      background: "var(--bg-card)",
     }}
   >
-    <div className="mb-2">
-      <p
-        className="text-sm font-medium"
-        style={{ color: "var(--text-main)" }}
-      >
-        {day.label}
+    <div className="mb-4">
+      <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+        Horarios del staff
+      </p>
+      <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+        Configura el horario semanal propio de este profesional.
       </p>
     </div>
 
-    <div className="space-y-2">
-      {dayBlocks.map((block) => (
-        <div
-          key={block.block_order}
-          className="grid gap-3 md:grid-cols-[0.8fr_1fr_1fr_auto] md:items-center"
-        >
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={block.enabled}
-              onChange={(e) =>
-                updateHour(
-                  day.value,
-                  block.block_order,
-                  "enabled",
-                  e.target.checked
-                )
-              }
-              className="h-4 w-4 rounded"
-            />
-            Activo
-          </label>
+    <div className="space-y-3">
+      {days.map((day) => {
+        const dayBlocks = staffHours
+          .filter((item) => item.day_of_week === day.value)
+          .sort((a, b) => a.block_order - b.block_order);
 
-          <input
-            type="time"
-            value={block.start_time || "09:00"}
-            disabled={!block.enabled}
-            onChange={(e) =>
-              updateHour(
-                day.value,
-                block.block_order,
-                "start_time",
-                e.target.value
-              )
-            }
-            className={inputClass}
-          />
-
-          <input
-            type="time"
-            value={block.end_time || "18:00"}
-            disabled={!block.enabled}
-            onChange={(e) =>
-              updateHour(
-                day.value,
-                block.block_order,
-                "end_time",
-                e.target.value
-              )
-            }
-            className={inputClass}
-          />
-
-          <button
-            type="button"
-            onClick={() => {
-              setStaffHours((prev) =>
-                prev.filter(
-                  (item) =>
-                    !(
-                      item.day_of_week === day.value &&
-                      item.block_order === block.block_order
-                    )
-                )
-              );
+        return (
+          <div
+            key={day.value}
+            className="rounded-2xl border p-3"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
             }}
-            className="text-xs text-red-500"
           >
-            Eliminar
-          </button>
-        </div>
-      ))}
-    </div>
+            <p className="mb-2 text-sm font-medium" style={{ color: "var(--text-main)" }}>
+              {day.label}
+            </p>
 
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => {
-          setStaffHours((prev) => {
-            const blocks = prev.filter(
-              (item) => item.day_of_week === day.value
-            );
+            <div className="space-y-2">
+              {dayBlocks.map((block) => (
+                <div
+                  key={block.block_order}
+                  className="grid gap-3 md:grid-cols-[0.8fr_1fr_1fr_auto] md:items-center"
+                >
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={block.enabled}
+                      onChange={(e) =>
+                        updateHour(day.value, block.block_order, "enabled", e.target.checked)
+                      }
+                      className="h-4 w-4 rounded"
+                    />
+                    Activo
+                  </label>
 
-            const nextOrder =
-              blocks.length > 0
-                ? Math.max(...blocks.map((b) => b.block_order)) + 1
-                : 1;
+                  <input
+                    type="time"
+                    value={block.start_time || "09:00"}
+                    disabled={!block.enabled}
+                    onChange={(e) =>
+                      updateHour(day.value, block.block_order, "start_time", e.target.value)
+                    }
+                    className={inputClass}
+                  />
 
-            return [
-              ...prev,
-              {
-                day_of_week: day.value,
-                block_order: nextOrder,
-                enabled: true,
-                start_time: "09:00",
-                end_time: "13:00",
-              },
-            ];
-          });
-        }}
-        className="text-sm text-blue-500"
-      >
-        + Agregar bloque
-      </button>
-    </div>
-  </div>
-);
-})}
+                  <input
+                    type="time"
+                    value={block.end_time || "18:00"}
+                    disabled={!block.enabled}
+                    onChange={(e) =>
+                      updateHour(day.value, block.block_order, "end_time", e.target.value)
+                    }
+                    className={inputClass}
+                  />
 
-                  {!editingId ? (
-                    <div className="mt-4">
-                      <Notice
-                        tone="warning"
-                        title="Puedes dejar estos horarios listos ahora."
-                        description="Al crear el staff, se guardarán automáticamente."
-                      />
-                    </div>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStaffHours((prev) =>
+                        prev.filter(
+                          (item) =>
+                            !(
+                              item.day_of_week === day.value &&
+                              item.block_order === block.block_order
+                            )
+                        )
+                      );
+                    }}
+                    className="text-xs text-red-500"
+                  >
+                    Eliminar
+                  </button>
                 </div>
-              )}
+              ))}
+            </div>
 
-              <div
-                className="rounded-2xl border p-4"
+            <button
+              type="button"
+              onClick={() => {
+                setStaffHours((prev) => {
+                  const blocks = prev.filter((item) => item.day_of_week === day.value);
+                  const nextOrder =
+                    blocks.length > 0
+                      ? Math.max(...blocks.map((b) => b.block_order)) + 1
+                      : 1;
+
+                  return [
+                    ...prev,
+                    {
+                      day_of_week: day.value,
+                      block_order: nextOrder,
+                      enabled: true,
+                      start_time: "09:00",
+                      end_time: "13:00",
+                    },
+                  ];
+                });
+              }}
+              className="mt-3 text-sm text-blue-500"
+            >
+              + Agregar bloque
+            </button>
+          </div>
+        );
+      })}
+    </div>
+
+    {!editingId ? (
+      <div className="mt-4">
+        <Notice
+          tone="warning"
+          title="Puedes dejar estos horarios listos ahora."
+          description="Al crear el staff, se guardarán automáticamente."
+        />
+      </div>
+    ) : null}
+  </div>
+)}
+
+<div
+  className="rounded-2xl border p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
