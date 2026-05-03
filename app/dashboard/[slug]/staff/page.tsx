@@ -1772,6 +1772,7 @@ return (
   </div>
 );
 })}
+)}
 
                   {!editingId ? (
                     <div className="mt-4">
