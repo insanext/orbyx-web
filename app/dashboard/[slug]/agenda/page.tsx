@@ -8,6 +8,7 @@ import { Panel } from "../../../../components/dashboard/panel";
 type Appointment = {
   id: string;
   branch_id?: string | null;
+  service_id?: string | null;
   staff_id?: string | null;
   start_at: string;
   end_at: string;
@@ -614,6 +615,41 @@ function generateSlotsFromWindows(
     }
 
     return "border-slate-200 bg-white text-slate-900 hover:border-sky-300 hover:bg-sky-50";
+  }
+
+  function getAppointmentGroupKey(appt: Appointment) {
+    return [
+      new Date(appt.start_at).toISOString(),
+      appt.service_id || "no_service",
+      appt.staff_id || "no_staff",
+      appt.branch_id || "no_branch",
+    ].join("|");
+  }
+
+  function groupAppointmentsByBlock(items: Appointment[]) {
+    const map = new Map<string, Appointment[]>();
+
+    for (const appt of items) {
+      const key = getAppointmentGroupKey(appt);
+      const current = map.get(key) || [];
+      current.push(appt);
+      map.set(key, current);
+    }
+
+    return Array.from(map.values())
+      .map((group) =>
+        [...group].sort((a, b) =>
+          String(a.customer_name || "").localeCompare(
+            String(b.customer_name || ""),
+            "es"
+          )
+        )
+      )
+      .sort(
+        (a, b) =>
+          new Date(a[0]?.start_at || 0).getTime() -
+          new Date(b[0]?.start_at || 0).getTime()
+      );
   }
 
   function matchesFilter(appt: Appointment, filter: FilterValue) {
@@ -1708,6 +1744,23 @@ loadPendingCloseAppointments();
   const todayKey = formatDateYYYYMMDD(new Date());
   const appointmentsToday = appointmentsByDay[todayKey] || [];
 
+  const selectedGroupAppointments = useMemo(() => {
+    if (!selectedAppointment) return [];
+
+    const selectedKey = getAppointmentGroupKey(selectedAppointment);
+
+    return appointments
+      .filter((appt) => getAppointmentGroupKey(appt) === selectedKey)
+      .sort((a, b) =>
+        String(a.customer_name || "").localeCompare(
+          String(b.customer_name || ""),
+          "es"
+        )
+      );
+  }, [appointments, selectedAppointment]);
+
+  const isSelectedGroupAppointment = selectedGroupAppointments.length > 1;
+
   const nextAppointment = useMemo(() => {
     const now = Date.now();
 
@@ -2449,13 +2502,13 @@ const slotAppointments = dayAppointments.filter(
     new Date(slot).getTime()
 );
 
-const appt = slotAppointments[0];
-const isGroupSlot = slotAppointments.length > 1;
+const slotGroups = groupAppointmentsByBlock(slotAppointments);
+const appt = slotGroups[0]?.[0];
 
                             const isHourStart = index % 2 === 0;
                             const isEvenBand = Math.floor(index / 2) % 2 === 0;
 
-                            if (!appt) {
+                            if (!appt || slotGroups.length === 0) {
                               return (
                                 <div
                                   key={slot}
@@ -2478,12 +2531,22 @@ const isGroupSlot = slotAppointments.length > 1;
                               );
                             }
 
-                            const isSelected =
-                              selectedAppointment?.id === appt.id;
-
                             return (
+                              <div key={slot} className="space-y-1.5">
+                                {slotGroups.map((group) => {
+                                  const appt = group[0];
+                                  const isGroupSlot = group.length > 1;
+                                  const selectedKey = selectedAppointment
+                                    ? getAppointmentGroupKey(selectedAppointment)
+                                    : "";
+                                  const isSelected = Boolean(
+                                    selectedKey &&
+                                      selectedKey === getAppointmentGroupKey(appt)
+                                  );
+
+                                  return (
                               <button
-                                key={appt.id}
+                                key={getAppointmentGroupKey(appt)}
                                 type="button"
                                 onClick={() => handleSelectAppointment(appt)}
                                 onMouseEnter={(e) =>
@@ -2535,7 +2598,7 @@ const isGroupSlot = slotAppointments.length > 1;
         isSelected ? "text-slate-200" : "text-slate-600"
       }`}
     >
-      {slotAppointments.length} inscritos
+      {group.length} inscritos
     </p>
 
     <p
@@ -2579,7 +2642,7 @@ const isGroupSlot = slotAppointments.length > 1;
   }`}
 >
   {isGroupSlot
-    ? `${slotAppointments.length} inscritos`
+    ? `${group.length} inscritos`
     : appt.service_name_snapshot || "Reserva"}
 </p>
 
@@ -2606,6 +2669,9 @@ const isGroupSlot = slotAppointments.length > 1;
                                   ) : null}
                                 </div>
                               </button>
+                                  );
+                                })}
+                              </div>
                             );
                           })
                         )}
@@ -2898,7 +2964,113 @@ const isGroupSlot = slotAppointments.length > 1;
                       </p>
                     </div>
 
-                    {isPastPendingClosure(selectedAppointment) ? (
+                    {isSelectedGroupAppointment ? (
+                      <div
+                        className="rounded-xl border p-3"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                        }}
+                      >
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <p
+                            className="text-sm font-semibold"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            Inscritos
+                          </p>
+                          <span
+                            className="rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {selectedGroupAppointments.length} personas
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          {selectedGroupAppointments.map((attendee) => {
+                            const isCanceled = attendee.status === "canceled";
+                            const isCompleted = attendee.status === "completed";
+                            const isNoShow = attendee.status === "no_show";
+
+                            return (
+                              <div
+                                key={attendee.id}
+                                className="rounded-xl border p-3"
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-soft)",
+                                }}
+                              >
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                  <div className="min-w-0">
+                                    <p
+                                      className="truncate text-sm font-semibold"
+                                      style={{ color: "var(--text-main)" }}
+                                    >
+                                      {attendee.customer_name}
+                                    </p>
+                                    <p
+                                      className="mt-1 text-xs"
+                                      style={{ color: "var(--text-muted)" }}
+                                    >
+                                      {attendee.customer_email || "Email no disponible"}
+                                    </p>
+                                    <p
+                                      className="mt-0.5 text-xs"
+                                      style={{ color: "var(--text-muted)" }}
+                                    >
+                                      {attendee.customer_phone || "Telefono no disponible"}
+                                    </p>
+                                  </div>
+
+                                  <span
+                                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(
+                                      attendee
+                                    )}`}
+                                  >
+                                    {getStatusLabel(attendee)}
+                                  </span>
+                                </div>
+
+                                {!isCanceled ? (
+                                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateStatus(attendee.id, "completed")
+                                      }
+                                      disabled={statusSaving || isCompleted}
+                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-3 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      {isCompleted ? "Asistio" : "Marcar asistio"}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateStatus(attendee.id, "no_show")
+                                      }
+                                      disabled={statusSaving || isNoShow}
+                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-amber-500 px-3 text-xs font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      {isNoShow
+                                        ? "No asistio"
+                                        : "Marcar no asistio"}
+                                    </button>
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {!isSelectedGroupAppointment && isPastPendingClosure(selectedAppointment) ? (
                       <Notice
                         tone="danger"
                         title="Esta cita ya terminó."
