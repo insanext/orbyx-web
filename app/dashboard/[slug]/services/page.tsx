@@ -289,7 +289,9 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
       fetch(
         `${BACKEND_URL}/staff?tenant_id=${currentTenantId}&branch_id=${currentBranchId}&active=true`
       ),
-      fetch(`${BACKEND_URL}/staff-services?tenant_id=${currentTenantId}`),
+      fetch(
+        `${BACKEND_URL}/staff-services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+      ),
     ]);
 
     const servicesData: { services?: Service[]; error?: string } =
@@ -677,6 +679,7 @@ setForm({
         },
         body: JSON.stringify({
           tenant_id: tenantId,
+          branch_id: selectedBranchId,
           staff_id: staffId,
           service_ids: uniqueServiceIds,
         }),

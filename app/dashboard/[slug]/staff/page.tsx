@@ -596,9 +596,16 @@ async function loadStaffHours(id: string, staffId: string) {
   }
 
   async function loadStaffServices(id: string, staffId: string) {
-    const res = await fetch(
-      `${BACKEND_URL}/staff-services?tenant_id=${id}&staff_id=${staffId}`
-    );
+    const params = new URLSearchParams({
+      tenant_id: id,
+      staff_id: staffId,
+    });
+
+    if (selectedBranchId) {
+      params.set("branch_id", selectedBranchId);
+    }
+
+    const res = await fetch(`${BACKEND_URL}/staff-services?${params}`);
 
     const data = await res.json();
 
@@ -618,6 +625,7 @@ async function loadStaffHours(id: string, staffId: string) {
   async function saveStaffServices(staffId: string) {
     const payload = {
       tenant_id: tenantId,
+      branch_id: selectedBranchId,
       staff_id: staffId,
       service_ids: selectedServiceIds,
     };
