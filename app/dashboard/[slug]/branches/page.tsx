@@ -20,6 +20,7 @@ type BranchItem = {
   id: string;
   tenant_id?: string;
   name: string;
+  slug?: string | null;
   address?: string | null;
   phone?: string | null;
   is_active?: boolean;
@@ -185,10 +186,19 @@ export default function BranchesPage() {
   const [saveError, setSaveError] = useState("");
   const [saveOk, setSaveOk] = useState("");
   const [copiedId, setCopiedId] = useState("");
+  const [editingBranchId, setEditingBranchId] = useState("");
+  const [editForm, setEditForm] = useState({
+    name: "",
+    slug: "",
+  });
 
   const [form, setForm] = useState({
     name: "",
   });
+
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
 
   async function loadBranches(currentTenantId: string) {
     const response = await fetch(
@@ -208,6 +218,36 @@ export default function BranchesPage() {
       "branches" in data && Array.isArray(data.branches) ? data.branches : [];
 
     setBranches(rows);
+    return rows;
+  }
+
+  function syncStoredActiveBranch(rows: BranchItem[]) {
+    if (typeof window === "undefined" || !branchStorageKey) return;
+
+    const activeBranches = rows.filter((branch) => branch.is_active !== false);
+    const storedBranchId = localStorage.getItem(branchStorageKey) || "";
+    const storedIsActive = activeBranches.some(
+      (branch) => branch.id === storedBranchId
+    );
+
+    if (storedIsActive) return;
+
+    const nextBranchId = activeBranches[0]?.id || "";
+
+    if (nextBranchId) {
+      localStorage.setItem(branchStorageKey, nextBranchId);
+    } else {
+      localStorage.removeItem(branchStorageKey);
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("orbyx-branch-changed", {
+        detail: {
+          slug,
+          branchId: nextBranchId,
+        },
+      })
+    );
   }
 
   async function loadAll() {
@@ -315,10 +355,120 @@ export default function BranchesPage() {
 
       setForm({ name: "" });
       setSaveOk("Sucursal creada correctamente.");
-      await loadBranches(tenantId);
+      const rows = await loadBranches(tenantId);
+      syncStoredActiveBranch(rows);
     } catch (error: unknown) {
       setSaveError(
         error instanceof Error ? error.message : "No se pudo crear la sucursal"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function beginEditBranch(branch: BranchItem) {
+    setEditingBranchId(branch.id);
+    setEditForm({
+      name: branch.name || "",
+      slug: branch.slug || "",
+    });
+    setSaveError("");
+    setSaveOk("");
+  }
+
+  function cancelEditBranch() {
+    setEditingBranchId("");
+    setEditForm({ name: "", slug: "" });
+  }
+
+  async function handleUpdateBranch(branchId: string) {
+    try {
+      setSaving(true);
+      setSaveError("");
+      setSaveOk("");
+
+      if (!tenantId) {
+        throw new Error("No se encontro el negocio");
+      }
+
+      const response = await fetch(`${BACKEND_URL}/branches/${branchId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          name: editForm.name,
+          slug: editForm.slug,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo actualizar la sucursal");
+      }
+
+      cancelEditBranch();
+      const rows = await loadBranches(tenantId);
+      syncStoredActiveBranch(rows);
+      setSaveOk("Sucursal actualizada correctamente.");
+    } catch (error: unknown) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar la sucursal"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleBranchActive(branch: BranchItem) {
+    try {
+      setSaving(true);
+      setSaveError("");
+      setSaveOk("");
+
+      if (!tenantId) {
+        throw new Error("No se encontro el negocio");
+      }
+
+      const nextActive = branch.is_active === false;
+
+      if (nextActive && reachedLimit) {
+        throw new Error("Ya alcanzaste el limite de sucursales de tu plan");
+      }
+
+      const response = await fetch(`${BACKEND_URL}/branches/${branch.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          is_active: nextActive,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo actualizar la sucursal");
+      }
+
+      const rows = await loadBranches(tenantId);
+      syncStoredActiveBranch(rows);
+      setSaveOk(
+        nextActive
+          ? "Sucursal activada correctamente."
+          : "Sucursal desactivada correctamente."
+      );
+    } catch (error: unknown) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar la sucursal"
       );
     } finally {
       setSaving(false);
@@ -378,7 +528,8 @@ export default function BranchesPage() {
         }
       }
 
-      await loadBranches(tenantId);
+      const rows = await loadBranches(tenantId);
+      syncStoredActiveBranch(rows);
       setSaveOk("Ajuste aplicado correctamente.");
     } catch (error: unknown) {
       setSaveError(
@@ -543,13 +694,15 @@ export default function BranchesPage() {
             type="button"
             onClick={() => {
               if (!tenantId) return;
-              loadBranches(tenantId).catch((error: unknown) => {
-                setLoadError(
-                  error instanceof Error
-                    ? error.message
-                    : "No se pudieron recargar las sucursales"
-                );
-              });
+              loadBranches(tenantId)
+                .then(syncStoredActiveBranch)
+                .catch((error: unknown) => {
+                  setLoadError(
+                    error instanceof Error
+                      ? error.message
+                      : "No se pudieron recargar las sucursales"
+                  );
+                });
             }}
             className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
             style={{
@@ -627,6 +780,7 @@ export default function BranchesPage() {
               {branches.map((branch) => {
                 const isActive = branch.is_active !== false;
                 const isMarkedToKeep = selectedBranchesToKeep.includes(branch.id);
+                const isEditing = editingBranchId === branch.id;
 
                 return (
                   <div
@@ -662,14 +816,68 @@ export default function BranchesPage() {
                     ) : null}
 
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3
-                            className="text-lg font-semibold tracking-tight"
-                            style={{ color: "var(--text-main)" }}
-                          >
-                            {branch.name}
-                          </h3>
+                          {isEditing ? (
+                            <div className="grid w-full gap-3 sm:grid-cols-2">
+                              <div>
+                                <label
+                                  className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  Nombre
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editForm.name}
+                                  onChange={(e) =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      name: e.target.value,
+                                    }))
+                                  }
+                                  className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-card)",
+                                    color: "var(--text-main)",
+                                  }}
+                                />
+                              </div>
+
+                              <div>
+                                <label
+                                  className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  Slug
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editForm.slug}
+                                  onChange={(e) =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      slug: e.target.value,
+                                    }))
+                                  }
+                                  className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-card)",
+                                    color: "var(--text-main)",
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <h3
+                              className="text-lg font-semibold tracking-tight"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {branch.name}
+                            </h3>
+                          )}
 
                           <span
                             className="rounded-full px-3 py-1 text-xs font-semibold"
@@ -704,6 +912,71 @@ export default function BranchesPage() {
                       </div>
 
                       <div className="flex flex-wrap gap-2">
+                        {isEditing ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateBranch(branch.id)}
+                              disabled={saving}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))",
+                              }}
+                            >
+                              Guardar
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={cancelEditBranch}
+                              disabled={saving}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => beginEditBranch(branch)}
+                              disabled={saving}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
+                            >
+                              Editar
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleBranchActive(branch)}
+                              disabled={saving || (branch.is_active === false && reachedLimit)}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                borderColor: isActive
+                                  ? "rgba(244,63,94,0.34)"
+                                  : "rgba(16,185,129,0.34)",
+                                background: "var(--bg-card)",
+                                color: isActive
+                                  ? "rgb(244 63 94)"
+                                  : "rgb(16 185 129)",
+                              }}
+                            >
+                              {isActive ? "Desactivar" : "Activar"}
+                            </button>
+                          </>
+                        )}
+
                         <Link
                           href={`/dashboard/${slug}/services`}
                           className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition"
@@ -730,7 +1003,7 @@ export default function BranchesPage() {
                       </div>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
                       <div
                         className="rounded-2xl border px-4 py-3"
                         style={{
@@ -749,6 +1022,27 @@ export default function BranchesPage() {
                           style={{ color: "var(--text-main)" }}
                         >
                           {branch.id}
+                        </p>
+                      </div>
+
+                      <div
+                        className="rounded-2xl border px-4 py-3"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                        }}
+                      >
+                        <p
+                          className="text-xs font-semibold uppercase tracking-[0.16em]"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Slug
+                        </p>
+                        <p
+                          className="mt-2 break-all text-sm font-semibold"
+                          style={{ color: "var(--text-main)" }}
+                        >
+                          {branch.slug || "No disponible"}
                         </p>
                       </div>
 

@@ -31,6 +31,7 @@ type BranchItem = {
   id: string;
   tenant_id?: string;
   name: string;
+  is_active?: boolean;
 };
 
 const navItems = [
@@ -176,10 +177,11 @@ export default function DashboardLayout({
         const rows: BranchItem[] = Array.isArray(branchesData?.branches)
           ? branchesData.branches
           : [];
+        const activeRows = rows.filter((branch) => branch.is_active !== false);
 
-        setBranches(rows);
+        setBranches(activeRows);
 
-        if (rows.length === 0) {
+        if (activeRows.length === 0) {
           setSelectedBranchId("");
           if (typeof window !== "undefined" && branchStorageKey) {
             localStorage.removeItem(branchStorageKey);
@@ -193,13 +195,16 @@ export default function DashboardLayout({
             : "";
 
         const storedExists = rows.some((branch) => branch.id === storedBranchId);
+        const activeStoredExists = activeRows.some(
+          (branch) => branch.id === storedBranchId
+        );
 
-        if (storedExists) {
+        if (storedExists && activeStoredExists) {
           setSelectedBranchId(storedBranchId);
           return;
         }
 
-        const defaultBranchId = rows[0].id;
+        const defaultBranchId = activeRows[0].id;
         setSelectedBranchId(defaultBranchId);
 
         if (typeof window !== "undefined" && branchStorageKey) {
