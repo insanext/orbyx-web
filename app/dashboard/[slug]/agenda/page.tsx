@@ -39,6 +39,7 @@ type BranchItem = {
   id: string;
   tenant_id?: string;
   name: string;
+  is_active?: boolean;
 };
 
 type StaffItem = {
@@ -1110,23 +1111,27 @@ function getSelectedStaffDayWindow(day: Date) {
       const rows: BranchItem[] = Array.isArray(data?.branches)
         ? data.branches
         : [];
+      const activeRows = rows.filter((branch) => branch.is_active !== false);
 
-      setBranches(rows);
+      setBranches(activeRows);
 
-      if (rows.length === 0) {
+      if (activeRows.length === 0) {
         setSelectedBranchId("");
+        if (typeof window !== "undefined" && branchStorageKey) {
+          localStorage.removeItem(branchStorageKey);
+        }
         return;
       }
 
       const storedBranchId = readStoredBranchId();
-      const storedExists = rows.some((branch) => branch.id === storedBranchId);
+      const storedExists = activeRows.some((branch) => branch.id === storedBranchId);
 
       if (storedExists) {
         setSelectedBranchId(storedBranchId);
         return;
       }
 
-      const fallbackBranchId = rows[0].id;
+      const fallbackBranchId = activeRows[0].id;
       setSelectedBranchId(fallbackBranchId);
 
       if (typeof window !== "undefined" && branchStorageKey) {
