@@ -47,6 +47,12 @@ type SpecialDate = {
   end_time: string;
 };
 
+type BranchItem = {
+  id: string;
+  name: string;
+  is_active?: boolean;
+};
+
 const days = [
   "Domingo",
   "Lunes",
@@ -67,7 +73,7 @@ export default function BusinessPage() {
     "";
 
   const [tenantId, setTenantId] = useState("");
-  const [branchId, setBranchId] = useState("");
+  const [selectedBranchId, setSelectedBranchId] = useState("");
 const [calendarId, setCalendarId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -110,6 +116,9 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
   });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
 
   const softCardClass = "rounded-2xl border p-4";
   const inputClass =
@@ -122,6 +131,23 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
   const secondaryButtonClass =
     "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+
+  function readStoredBranchId() {
+    if (typeof window === "undefined" || !branchStorageKey) return "";
+    return localStorage.getItem(branchStorageKey) || "";
+  }
+
+  function persistSelectedBranchId(branchId: string) {
+    setSelectedBranchId(branchId);
+
+    if (typeof window !== "undefined" && branchStorageKey) {
+      if (branchId) {
+        localStorage.setItem(branchStorageKey, branchId);
+      } else {
+        localStorage.removeItem(branchStorageKey);
+      }
+    }
+  }
 
   useEffect(() => {
     async function loadBusiness() {
@@ -162,16 +188,25 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
           );
         }
 
-        const firstBranchId =
-          Array.isArray(branchesData.branches) && branchesData.branches.length > 0
-            ? String(branchesData.branches[0].id)
-            : "";
+        const activeBranches: BranchItem[] = Array.isArray(branchesData.branches)
+          ? branchesData.branches.filter(
+              (branch: BranchItem) => branch.is_active !== false
+            )
+          : [];
 
-        if (!firstBranchId) {
+        const storedBranchId = readStoredBranchId();
+        const storedBranchExists = activeBranches.some(
+          (branch) => branch.id === storedBranchId
+        );
+        const activeBranchId = storedBranchExists
+          ? storedBranchId
+          : activeBranches[0]?.id || "";
+
+        if (!activeBranchId) {
           throw new Error("No se encontró una sucursal activa");
         }
 
-        setBranchId(firstBranchId);
+        persistSelectedBranchId(activeBranchId);
         setGoogleConnected(Boolean(data.google_connected));
 setSlotMinutes(Number(data.slot_minutes || 30));
 setCustomSlotMinutes(Number(data.slot_minutes || 30));
@@ -193,8 +228,6 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
           ),
         });
 
-        await loadBusinessHours(data.business.id, firstBranchId);
-        await loadSpecialDates(data.business.id, firstBranchId);
         await loadBookingFields();
       } catch (error: unknown) {
         setLoadError(
@@ -211,6 +244,54 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
       loadBusiness();
     }
   }, [slug]);
+
+  useEffect(() => {
+    function handleBranchChanged(event: Event) {
+      const customEvent = event as CustomEvent<{
+        slug?: string;
+        branchId?: string;
+      }>;
+
+      if (customEvent.detail?.slug !== slug) return;
+
+      setSelectedBranchId(customEvent.detail?.branchId || "");
+      setHoursError("");
+      setHoursOk("");
+      setSpecialDatesError("");
+      setSpecialDatesOk("");
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== branchStorageKey) return;
+
+      setSelectedBranchId(event.newValue || "");
+      setHoursError("");
+      setHoursOk("");
+      setSpecialDatesError("");
+      setSpecialDatesOk("");
+    }
+
+    window.addEventListener(
+      "orbyx-branch-changed",
+      handleBranchChanged as EventListener
+    );
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        "orbyx-branch-changed",
+        handleBranchChanged as EventListener
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [slug, branchStorageKey]);
+
+  useEffect(() => {
+    if (!tenantId || !selectedBranchId) return;
+
+    loadBusinessHours(tenantId, selectedBranchId);
+    loadSpecialDates(tenantId, selectedBranchId);
+  }, [tenantId, selectedBranchId]);
 
   function getDefaultHours(): BusinessHour[] {
     return [
@@ -412,6 +493,10 @@ async function removeSpecialDate(index: number) {
       setSpecialDatesError("");
       setSpecialDatesOk("");
 
+      if (!selectedBranchId) {
+        throw new Error("No hay sucursal activa seleccionada");
+      }
+
       const existingItems = specialDates.filter((item) => item.id);
       const newItems = specialDates.filter((item) => !item.id);
 
@@ -425,7 +510,7 @@ async function removeSpecialDate(index: number) {
             },
             body: JSON.stringify({
               tenant_id: tenantId,
-              branch_id: branchId,
+              branch_id: selectedBranchId,
               date: item.date,
               label: item.label,
               is_closed: item.is_closed,
@@ -452,7 +537,7 @@ async function removeSpecialDate(index: number) {
             },
             body: JSON.stringify({
               tenant_id: tenantId,
-              branch_id: branchId,
+              branch_id: selectedBranchId,
               date: item.date,
               label: item.label,
               is_closed: item.is_closed,
@@ -469,7 +554,7 @@ async function removeSpecialDate(index: number) {
         }
       }
 
-      await loadSpecialDates(tenantId, branchId);
+      await loadSpecialDates(tenantId, selectedBranchId);
       setSpecialDatesOk("Fechas especiales guardadas correctamente");
     } catch (err: unknown) {
       setSpecialDatesError(
@@ -487,6 +572,10 @@ async function removeSpecialDate(index: number) {
       setSavingHours(true);
       setHoursError("");
       setHoursOk("");
+
+if (!selectedBranchId) {
+  throw new Error("No hay sucursal activa seleccionada");
+}
 
 const grouped: Record<
   number,
@@ -525,7 +614,7 @@ const cleanedHours = Object.values(grouped);
           },
           body: JSON.stringify({
             tenant_id: tenantId,
-            branch_id: branchId,
+            branch_id: selectedBranchId,
             hours: cleanedHours,
           }),
         }
