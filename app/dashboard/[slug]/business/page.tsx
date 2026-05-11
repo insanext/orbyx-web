@@ -897,11 +897,11 @@ function updateHourByIndex(
       ) : null}
 
       <nav
-        className="-mx-1 overflow-x-auto px-1 py-1"
+        className="-mx-1 overflow-x-auto px-1"
         aria-label="Secciones de configuración de negocio"
       >
         <div
-          className="flex min-w-max gap-2 rounded-2xl border p-1 shadow-sm backdrop-blur"
+          className="flex min-w-max gap-2 rounded-[20px] border p-1.5 shadow-sm backdrop-blur"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-card)",
@@ -916,15 +916,15 @@ function updateHourByIndex(
                 type="button"
                 onClick={() => setActiveSection(item.id)}
                 aria-current={active ? "page" : undefined}
-                className="cursor-pointer whitespace-nowrap rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.10)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="cursor-pointer whitespace-nowrap rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 style={{
                   borderColor: active ? "rgba(37,99,235,0.36)" : "transparent",
                   background: active
-                    ? "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.10))"
+                    ? "linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.07))"
                     : "transparent",
                   color: active ? "var(--text-main)" : "var(--text-muted)",
                   boxShadow: active
-                    ? "inset 0 0 0 1px rgba(37,99,235,0.26)"
+                    ? "inset 0 0 0 1px rgba(37,99,235,0.22)"
                     : "none",
                 }}
               >
@@ -1696,9 +1696,9 @@ function updateHourByIndex(
       className="overflow-x-auto rounded-2xl border"
       style={{ borderColor: "var(--border-color)" }}
     >
-      <div className="min-w-[560px]">
+      <div className="min-w-[520px]">
         <div
-          className="grid grid-cols-[120px_80px_1fr_30px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
+          className="grid grid-cols-[110px_70px_112px_24px_112px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
           style={{
             borderColor: "var(--border-color)",
             background:
@@ -1711,6 +1711,7 @@ function updateHourByIndex(
           <div>Inicio</div>
           <div></div>
           <div>Fin</div>
+          <div></div>
         </div>
 
         <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
@@ -1724,7 +1725,7 @@ function updateHourByIndex(
             return (
               <div
                 key={dayIndex}
-                className="grid grid-cols-[120px_80px_1fr_30px_1fr] items-center gap-3 px-4 py-3"
+                className="grid grid-cols-[110px_70px_112px_24px_112px_1fr] items-center gap-3 px-4 py-3"
                 style={{ background: "var(--bg-card)" }}
               >
                 <div
@@ -1755,9 +1756,9 @@ function updateHourByIndex(
 
 
 
-<div className="flex flex-col gap-2 col-span-3">
+<div className="col-span-4 flex flex-col gap-2">
   {dayBlocks.map((block, i) => (
-    <div key={i} className="flex items-center gap-2">
+    <div key={i} className="grid grid-cols-[112px_24px_112px_1fr] items-center gap-3">
       <input
         type="text"
         value={block.start_time}

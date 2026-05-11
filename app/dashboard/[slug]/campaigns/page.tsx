@@ -3066,9 +3066,6 @@ export default function CampaignsPage() {
                     ))
                   )}
                 </select>
-                <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-                  {channelLimitInfo.value}
-                </p>
               </div>
 
               <div>
