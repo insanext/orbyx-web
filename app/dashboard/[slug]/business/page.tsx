@@ -128,9 +128,9 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
   const selectClass =
     "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
   const primaryButtonClass =
-    "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
   const secondaryButtonClass =
-    "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-11 w-full items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
 
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
@@ -791,16 +791,16 @@ function updateHourByIndex(
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-6">
       <section
-        className="overflow-hidden rounded-2xl border p-4 shadow-sm"
+        className="overflow-hidden rounded-2xl border p-4 shadow-sm sm:p-5"
         style={{
           borderColor: "rgba(59,130,246,0.25)",
           background:
             "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
         }}
       >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-3xl">
 
 
@@ -809,9 +809,8 @@ function updateHourByIndex(
 </h1>
 
 
-            <p className="mt-2 text-xs">
-              Actualiza la información principal, horarios, fechas especiales y
-              campos que pedirás al cliente al reservar.
+            <p className="mt-1 text-sm leading-6">
+              Administra la configuración global, reservas, horarios por sucursal y excepciones del calendario.
             </p>
           </div>
 
@@ -820,7 +819,7 @@ function updateHourByIndex(
             style={{ color: "var(--text-main)" }}
           >
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-2xl border px-3 py-2.5"
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
                 background: "rgba(255,255,255,0.08)",
@@ -835,7 +834,7 @@ function updateHourByIndex(
                     URL pública
                   </p>
 
-                  <p className="mt-2 break-all text-sm font-semibold">{publicUrl}</p>
+                  <p className="mt-1 break-all text-xs font-semibold sm:text-sm">{publicUrl}</p>
                 </div>
 
                 <button
@@ -854,7 +853,7 @@ function updateHourByIndex(
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-2xl border px-3 py-2.5"
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
                 background: "rgba(255,255,255,0.08)",
@@ -866,7 +865,7 @@ function updateHourByIndex(
               >
                 Google Calendar
               </p>
-              <p className="mt-2 text-sm font-semibold">
+              <p className="mt-1 text-sm font-semibold">
                 {loading
                   ? "Cargando..."
                   : googleConnected
@@ -903,7 +902,17 @@ function updateHourByIndex(
 
 
 
-<section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+<section className="space-y-3">
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+      1. Configuración global
+    </p>
+    <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+      Datos del negocio
+    </h2>
+  </div>
+
+<div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
   <Panel
     title="Información principal"
     description="Edita los datos que verán tus clientes y que también podrá usar la IA."
@@ -1117,162 +1126,6 @@ function updateHourByIndex(
           />
         </div>
 
-        <div>
-          <label
-            className="mb-2 block text-sm font-medium"
-            style={{ color: "var(--text-main)" }}
-          >
-            Tiempo mínimo antes de reservar
-          </label>
-
-
-
-<select
-  value={minNoticeMode === "custom" ? "custom" : form.min_booking_notice_minutes}
-  onChange={(e) => {
-    const val = e.target.value;
-
-    if (val === "custom") {
-      setMinNoticeMode("custom");
-      setForm((prev) => ({
-        ...prev,
-        min_booking_notice_minutes: prev.min_booking_notice_minutes || 180,
-      }));
-      return;
-    }
-
-    setMinNoticeMode("preset");
-    setForm((prev) => ({
-      ...prev,
-      min_booking_notice_minutes: Number(val),
-    }));
-  }}
-  className={selectClass}
-  style={{
-    borderColor: "var(--border-color)",
-    background: "var(--bg-card)",
-    color: "var(--text-main)",
-  }}
->
-  <option value={0}>Sin restricción</option>
-  <option value={15}>15 minutos</option>
-  <option value={30}>30 minutos</option>
-  <option value={60}>1 hora</option>
-  <option value={120}>2 horas</option>
-  <option value="custom">Personalizado</option>
-</select>
-
-{minNoticeMode === "custom" ? (
-  <div className="mt-3 flex items-center gap-2">
-    <input
-      type="number"
-      min={0}
-      step={5}
-      value={form.min_booking_notice_minutes}
-      onChange={(e) =>
-        setForm((prev) => ({
-          ...prev,
-          min_booking_notice_minutes: Number(e.target.value),
-        }))
-      }
-      placeholder="Ej: 180"
-      className="h-11 w-28 rounded-2xl border px-4 text-sm"
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-        color: "var(--text-main)",
-      }}
-    />
-
-    <span className="text-sm" style={{ color: "var(--text-muted)" }}>
-      minutos
-    </span>
-  </div>
-) : null}
-
-
-          <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-            Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes solo
-            podrán reservar con al menos 60 minutos de anticipación.
-          </p>
-        </div>
-
-        <div>
-          <label
-            className="mb-2 block text-sm font-medium"
-            style={{ color: "var(--text-main)" }}
-          >
-            Máximo días hacia adelante
-          </label>
-
-          <select
-  value={maxDaysMode === "custom" ? "custom" : form.max_booking_days_ahead}
-  onChange={(e) => {
-    const val = e.target.value;
-
-    if (val === "custom") {
-      setMaxDaysMode("custom");
-      setForm((prev) => ({
-        ...prev,
-        max_booking_days_ahead: prev.max_booking_days_ahead || 120,
-      }));
-      return;
-    }
-
-    setMaxDaysMode("preset");
-    setForm((prev) => ({
-      ...prev,
-      max_booking_days_ahead: Number(val),
-    }));
-  }}
-  className={selectClass}
-  style={{
-    borderColor: "var(--border-color)",
-    background: "var(--bg-card)",
-    color: "var(--text-main)",
-  }}
->
-  <option value={7}>7 días</option>
-  <option value={14}>14 días</option>
-  <option value={30}>30 días</option>
-  <option value={60}>60 días</option>
-  <option value={90}>90 días</option>
-  <option value="custom">Personalizado</option>
-</select>
-
-{maxDaysMode === "custom" ? (
-  <div className="mt-3 flex items-center gap-2">
-    <input
-      type="number"
-      min={1}
-      step={1}
-      value={form.max_booking_days_ahead}
-      onChange={(e) =>
-        setForm((prev) => ({
-          ...prev,
-          max_booking_days_ahead: Number(e.target.value),
-        }))
-      }
-      placeholder="Ej: 120"
-      className="h-11 w-28 rounded-2xl border px-4 text-sm"
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-        color: "var(--text-main)",
-      }}
-    />
-
-    <span className="text-sm" style={{ color: "var(--text-muted)" }}>
-      días
-    </span>
-  </div>
-) : null}
-
-          <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-            Limita cuántos días hacia el futuro pueden agendar los clientes.
-          </p>
-        </div>
-
         {saveError ? (
           <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
             {saveError}
@@ -1303,7 +1156,7 @@ function updateHourByIndex(
     )}
   </Panel>
 
-  <div className="space-y-6">
+  <div className="space-y-4">
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
       {[
         {
@@ -1363,6 +1216,181 @@ function updateHourByIndex(
         </div>
       ))}
     </div>
+
+</div>
+</div>
+</section>
+
+<section className="space-y-3">
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+      2. Configuración de reservas
+    </p>
+    <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+      Reglas y campos de la reserva pública
+    </h2>
+  </div>
+
+  <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+    <Panel
+      title="Reglas de reserva"
+      description="Define anticipación mínima y ventana máxima para reservar."
+      className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+    >
+      <div className="space-y-5">
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Tiempo mínimo antes de reservar
+          </label>
+
+          <select
+            value={minNoticeMode === "custom" ? "custom" : form.min_booking_notice_minutes}
+            onChange={(e) => {
+              const val = e.target.value;
+
+              if (val === "custom") {
+                setMinNoticeMode("custom");
+                setForm((prev) => ({
+                  ...prev,
+                  min_booking_notice_minutes: prev.min_booking_notice_minutes || 180,
+                }));
+                return;
+              }
+
+              setMinNoticeMode("preset");
+              setForm((prev) => ({
+                ...prev,
+                min_booking_notice_minutes: Number(val),
+              }));
+            }}
+            className={selectClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value={0}>Sin restricción</option>
+            <option value={15}>15 minutos</option>
+            <option value={30}>30 minutos</option>
+            <option value={60}>1 hora</option>
+            <option value={120}>2 horas</option>
+            <option value="custom">Personalizado</option>
+          </select>
+
+          {minNoticeMode === "custom" ? (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                step={5}
+                value={form.min_booking_notice_minutes}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    min_booking_notice_minutes: Number(e.target.value),
+                  }))
+                }
+                placeholder="Ej: 180"
+                className="h-11 w-full rounded-2xl border px-4 text-sm sm:w-28"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              />
+
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                minutos
+              </span>
+            </div>
+          ) : null}
+
+          <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes solo podrán reservar con al menos 60 minutos de anticipación.
+          </p>
+        </div>
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Máximo días hacia adelante
+          </label>
+
+          <select
+            value={maxDaysMode === "custom" ? "custom" : form.max_booking_days_ahead}
+            onChange={(e) => {
+              const val = e.target.value;
+
+              if (val === "custom") {
+                setMaxDaysMode("custom");
+                setForm((prev) => ({
+                  ...prev,
+                  max_booking_days_ahead: prev.max_booking_days_ahead || 120,
+                }));
+                return;
+              }
+
+              setMaxDaysMode("preset");
+              setForm((prev) => ({
+                ...prev,
+                max_booking_days_ahead: Number(val),
+              }));
+            }}
+            className={selectClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value={7}>7 días</option>
+            <option value={14}>14 días</option>
+            <option value={30}>30 días</option>
+            <option value={60}>60 días</option>
+            <option value={90}>90 días</option>
+            <option value="custom">Personalizado</option>
+          </select>
+
+          {maxDaysMode === "custom" ? (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={form.max_booking_days_ahead}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    max_booking_days_ahead: Number(e.target.value),
+                  }))
+                }
+                placeholder="Ej: 120"
+                className="h-11 w-full rounded-2xl border px-4 text-sm sm:w-28"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              />
+
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                días
+              </span>
+            </div>
+          ) : null}
+
+          <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            Limita cuántos días hacia el futuro pueden agendar los clientes.
+          </p>
+        </div>
+      </div>
+    </Panel>
 
     <Panel
       title="Campos de reserva"
@@ -1512,7 +1540,7 @@ function updateHourByIndex(
         setCustomSlotMinutes(val);
         setSlotMinutes(val);
       }}
-      className="h-11 w-28 rounded-xl border px-3 text-sm"
+      className="h-11 w-full rounded-xl border px-3 text-sm sm:w-28"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
@@ -1592,10 +1620,19 @@ function updateHourByIndex(
   </div>
 </section>
 
-<section className="grid gap-6 xl:grid-cols-2">
+<section className="space-y-3">
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+      3. Horarios por sucursal
+    </p>
+    <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+      Disponibilidad semanal
+    </h2>
+  </div>
+
   <Panel
     title="Horarios de atención"
-    description="Define cuándo tu negocio está disponible para recibir reservas."
+    description="Define cuándo tu negocio está disponible para recibir reservas en la sucursal activa."
     className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
   >
     <div
@@ -1781,6 +1818,18 @@ onClick={() => {
       </div>
     ) : null}
   </Panel>
+
+</section>
+
+<section className="space-y-3">
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+      4. Fechas especiales
+    </p>
+    <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+      Excepciones del calendario
+    </h2>
+  </div>
 
   <Panel
     title="Fechas especiales"
