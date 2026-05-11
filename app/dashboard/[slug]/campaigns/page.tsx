@@ -720,7 +720,7 @@ function SectionCard({
 }) {
   return (
     <section
-      className={`rounded-[28px] border p-6 shadow-sm ${className}`}
+      className={`rounded-[20px] border p-4 shadow-sm sm:p-5 ${className}`}
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
@@ -729,14 +729,14 @@ function SectionCard({
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2
-            className="text-[28px] font-semibold tracking-tight"
+            className="text-lg font-semibold tracking-tight"
             style={{ color: "var(--text-main)" }}
           >
             {title}
           </h2>
           {description ? (
             <p
-              className="mt-2 max-w-2xl text-sm leading-6"
+              className="mt-1 max-w-2xl text-sm leading-6"
               style={{ color: "var(--text-muted)" }}
             >
               {description}
@@ -864,7 +864,7 @@ function ChannelCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-[20px] border p-4 text-left transition"
+      className="w-full rounded-2xl border p-3 text-left transition sm:p-4"
       style={{
         borderColor: active ? "rgba(37,99,235,0.28)" : "var(--border-color)",
         background: active
@@ -875,7 +875,7 @@ function ChannelCard({
     >
       <div className="flex items-start gap-3">
         <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
           style={{
             background: active ? "rgb(37 99 235)" : "var(--bg-soft)",
             color: active ? "#ffffff" : "var(--text-muted)",
@@ -887,7 +887,7 @@ function ChannelCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span
-              className="text-base font-semibold"
+              className="text-sm font-semibold"
               style={{ color: "var(--text-main)" }}
             >
               {title}
@@ -908,7 +908,7 @@ function ChannelCard({
           </div>
 
           <p
-            className="mt-2 text-sm leading-6"
+            className="mt-1 text-sm leading-5"
             style={{ color: "var(--text-muted)" }}
           >
             {description}
@@ -1015,7 +1015,7 @@ function TinyMetric({
 }) {
   return (
     <div
-      className="rounded-[18px] border px-4 py-3"
+      className="rounded-2xl border px-4 py-3"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
@@ -1025,7 +1025,7 @@ function TinyMetric({
         {label}
       </p>
       <p
-        className="mt-1 text-2xl font-semibold"
+        className="mt-1 text-xl font-semibold"
         style={{ color: "var(--text-main)" }}
       >
         {value}
@@ -2414,7 +2414,7 @@ export default function CampaignsPage() {
         description="Así verá el cliente tu campaña antes de enviarla."
       >
         <div
-          className="rounded-[24px] border p-4"
+          className="rounded-2xl border p-3 sm:p-4"
           style={{
             borderColor: "rgba(148,163,184,0.25)",
             background: "linear-gradient(180deg, #e2e8f0, #f8fafc)",
@@ -2429,7 +2429,7 @@ export default function CampaignsPage() {
               srcDoc={previewHtml}
               className="w-full"
               style={{
-                height: "720px",
+                height: "min(620px, 70vh)",
                 border: "0",
                 background: "#ffffff",
               }}
@@ -2464,14 +2464,14 @@ export default function CampaignsPage() {
         description="Vista rápida del mensaje antes de guardarlo o enviarlo."
       >
         <div
-          className="rounded-[24px] border p-4"
+          className="rounded-2xl border p-3 sm:p-4"
           style={{
             borderColor: "rgba(148,163,184,0.25)",
             background: "linear-gradient(180deg, #dcfce7, #bbf7d0)",
           }}
         >
           <div
-            className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[34px] border shadow-2xl"
+            className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[28px] border shadow-2xl"
             style={{
               borderColor: "rgba(15,23,42,0.08)",
               background: "#e5ddd5",
@@ -2537,7 +2537,7 @@ export default function CampaignsPage() {
             </div>
 
             <div
-              className="min-h-[360px] px-4 py-4"
+              className="min-h-[300px] px-4 py-4"
               style={{
                 background: "#e5ddd5",
                 backgroundImage:
@@ -2616,34 +2616,26 @@ export default function CampaignsPage() {
     );
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-5 pb-6">
 <section
-  className="relative overflow-hidden rounded-[24px] border p-5 shadow-sm"
+  className="relative overflow-hidden rounded-[20px] border p-4 shadow-sm sm:p-5"
   style={{
     borderColor: "rgba(59,130,246,0.22)",
     background:
       "linear-gradient(135deg, var(--bg-card) 0%, rgba(37,99,235,0.08) 35%, rgba(14,165,233,0.10) 65%, var(--bg-card) 100%)",
   }}
 >
-  <div
-    className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full blur-3xl"
-    style={{ background: "rgba(37,99,235,0.20)" }}
-  />
-  <div
-    className="pointer-events-none absolute -bottom-20 left-16 h-40 w-40 rounded-full blur-3xl"
-    style={{ background: "rgba(14,165,233,0.18)" }}
-  />
 <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
   <div>
     <h1
-      className="relative text-lg font-semibold tracking-tight"
+      className="relative text-xl font-semibold tracking-tight"
       style={{ color: "var(--text-main)" }}
     >
       Campañas y recuperación
     </h1>
 
     <p
-      className="mt-1 max-w-lg text-xs leading-5"
+      className="mt-1 max-w-2xl text-sm leading-6"
       style={{ color: "var(--text-muted)" }}
     >
       Planifica campañas automatizadas por email y WhatsApp para reactivar tu audiencia.
@@ -2653,7 +2645,7 @@ export default function CampaignsPage() {
   <button
     type="button"
     onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
-    className="inline-flex items-center justify-center rounded-xl border px-3 py-1.5 text-xs font-medium transition"
+    className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
     style={{
       borderColor: "var(--border-color)",
       background: "var(--bg-card)",
@@ -2665,7 +2657,7 @@ export default function CampaignsPage() {
 </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         <StatCard
           title="Plan actual"
           value={PLAN_LABELS[plan]}
@@ -2764,7 +2756,76 @@ export default function CampaignsPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      <section
+        className="overflow-hidden rounded-[20px] border"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+        }}
+      >
+        <div className="grid gap-0 md:grid-cols-3">
+          {[
+            {
+              number: "1",
+              title: "Configuracion",
+              description: "Canal, segmento y audiencia",
+              active: true,
+            },
+            {
+              number: "2",
+              title: "Mensaje",
+              description: "Contenido y vista previa",
+              active: false,
+            },
+            {
+              number: "3",
+              title: "Envio",
+              description: "Revision y resultado",
+              active: false,
+            },
+          ].map((step, index) => (
+            <div
+              key={step.number}
+              className="flex items-center gap-3 border-b px-4 py-4 md:border-b-0 md:border-r last:border-r-0"
+              style={{
+                borderColor: "var(--border-color)",
+                background: step.active
+                  ? "linear-gradient(135deg, rgba(37,99,235,0.12), transparent)"
+                  : "transparent",
+              }}
+            >
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                style={{
+                  background: step.active
+                    ? "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))"
+                    : "var(--bg-soft)",
+                  color: step.active ? "#ffffff" : "var(--text-muted)",
+                }}
+              >
+                {step.number}
+              </span>
+
+              <div className="min-w-0">
+                <p
+                  className="truncate text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  {step.title}
+                </p>
+                <p
+                  className="mt-0.5 truncate text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {step.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.88fr)] 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <SectionCard
           title="Configurar campaña"
           description="Selecciona el canal, el segmento y el criterio de envío."
@@ -2781,8 +2842,8 @@ export default function CampaignsPage() {
             </div>
           }
         >
-          <div className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-5">
+            <div className="grid gap-5 lg:grid-cols-2">
               <div>
                 <p
                   className="mb-3 text-sm font-semibold"
@@ -2843,7 +2904,7 @@ export default function CampaignsPage() {
                 </div>
               </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               {segment === "inactive" ? (
                 <div>
                   <label
@@ -2872,7 +2933,7 @@ export default function CampaignsPage() {
                 </div>
               ) : (
                 <div
-                  className="rounded-2xl border p-4"
+                  className="rounded-2xl border p-3 sm:p-4"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -2942,12 +3003,12 @@ export default function CampaignsPage() {
               </div>
                                </SectionCard>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <SectionCard
             title="Audiencia objetivo"
             description="Visualiza y ajusta quién recibirá la campaña."
           >
-            <div className="space-y-6">
+            <div className="space-y-5">
 
               <div className="relative">
                 <Search
@@ -2973,7 +3034,7 @@ export default function CampaignsPage() {
               </div>
 
               <div
-                className="rounded-2xl border p-4"
+                className="rounded-2xl border p-3 sm:p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -2986,7 +3047,7 @@ export default function CampaignsPage() {
                   Agregar destinatario manual
                 </p>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
                   <input
                     type="text"
                     value={manualRecipientForm.name}
@@ -3046,7 +3107,7 @@ export default function CampaignsPage() {
                   <button
                     type="button"
                     onClick={handleAddManualRecipient}
-                    className={primaryButtonClass}
+                    className={`${primaryButtonClass} w-full lg:w-auto`}
                     style={{
                       background:
                         "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
@@ -3090,9 +3151,9 @@ export default function CampaignsPage() {
                   </span>
                 </div>
 
-                <div className="max-h-[320px] overflow-y-auto">
+                <div className="max-h-[360px] overflow-y-auto">
                   {loadingAudience ? (
-                    <div className="space-y-3 p-4">
+                    <div className="space-y-3 p-3 sm:p-4">
                       {Array.from({ length: 5 }).map((_, index) => (
                         <div
                           key={index}
@@ -3133,7 +3194,7 @@ export default function CampaignsPage() {
     if ((e.target as HTMLElement).closest("button")) return;
     toggleRecipientIncluded(item.id);
   }}
-  className="flex flex-col gap-3 rounded-2xl border px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
+  className="flex flex-col gap-3 rounded-2xl border px-3 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between"
   style={{
     cursor: "pointer",
     borderColor: "var(--border-color)",
@@ -3253,12 +3314,12 @@ export default function CampaignsPage() {
         </div>
       </div>
 
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)] xl:items-start">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)] xl:items-start">
         <SectionCard
           title="3. Construcción del mensaje"
           description="Aquí editas el contenido real del email o WhatsApp con una estructura más clara."
         >
-        <div className="space-y-8">
+        <div className="space-y-6">
           {channel === "email" ? (
             <>
               <div className="grid gap-4 md:grid-cols-2">
