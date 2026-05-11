@@ -1411,6 +1411,7 @@ export default function CampaignsPage() {
 
   const [businessName, setBusinessName] = useState("Orbyx");
   const [plan, setPlan] = useState<PlanSlug>("starter");
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [segment, setSegment] = useState<CustomerSegment>("inactive");
   const [inactiveDays, setInactiveDays] = useState("120");
@@ -2435,6 +2436,7 @@ export default function CampaignsPage() {
               }}
             />
           </div>
+{false ? (
 <div className="mt-4">
   <button
     type="button"
@@ -2455,6 +2457,7 @@ export default function CampaignsPage() {
     {sending ? "Enviando..." : "Iniciar campaña"}
   </button>
 </div>
+) : null}
 
         </div>
       </SectionCard>
@@ -2767,29 +2770,31 @@ export default function CampaignsPage() {
           {[
             {
               number: "1",
+              step: 1 as const,
               title: "Configuracion",
               description: "Canal, segmento y audiencia",
-              active: true,
             },
             {
               number: "2",
+              step: 2 as const,
               title: "Mensaje",
               description: "Contenido y vista previa",
-              active: false,
             },
             {
               number: "3",
+              step: 3 as const,
               title: "Envio",
               description: "Revision y resultado",
-              active: false,
             },
           ].map((step, index) => (
-            <div
+            <button
+              type="button"
               key={step.number}
-              className="flex items-center gap-3 border-b px-4 py-4 md:border-b-0 md:border-r last:border-r-0"
+              onClick={() => setActiveStep(step.step)}
+              className="flex items-center gap-3 border-b px-4 py-4 text-left transition md:border-b-0 md:border-r last:border-r-0"
               style={{
                 borderColor: "var(--border-color)",
-                background: step.active
+                background: activeStep === step.step
                   ? "linear-gradient(135deg, rgba(37,99,235,0.12), transparent)"
                   : "transparent",
               }}
@@ -2797,10 +2802,10 @@ export default function CampaignsPage() {
               <span
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
                 style={{
-                  background: step.active
+                  background: activeStep === step.step
                     ? "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))"
                     : "var(--bg-soft)",
-                  color: step.active ? "#ffffff" : "var(--text-muted)",
+                  color: activeStep === step.step ? "#ffffff" : "var(--text-muted)",
                 }}
               >
                 {step.number}
@@ -2820,11 +2825,12 @@ export default function CampaignsPage() {
                   {step.description}
                 </p>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </section>
 
+      {activeStep === 1 ? (<>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.88fr)] 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <SectionCard
           title="Configurar campaña"
@@ -3313,7 +3319,22 @@ export default function CampaignsPage() {
 
         </div>
       </div>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setActiveStep(2)}
+          className={`${primaryButtonClass} w-full sm:w-auto`}
+          style={{
+            background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+          }}
+        >
+          Continuar a mensaje
+        </button>
+      </div>
+      </>
+      ) : null}
 
+      {activeStep === 2 ? (<>
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)] xl:items-start">
         <SectionCard
           title="3. Construcción del mensaje"
@@ -3751,6 +3772,103 @@ export default function CampaignsPage() {
           {previewPanel}
         </div>
       </div>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+        <button
+          type="button"
+          onClick={() => setActiveStep(1)}
+          className={secondaryButtonClass}
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+            color: "var(--text-main)",
+          }}
+        >
+          Volver
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveStep(3)}
+          className={`${primaryButtonClass} w-full sm:w-auto`}
+          style={{
+            background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+          }}
+        >
+          Continuar a envio
+        </button>
+      </div>
+      </>
+      ) : null}
+
+      {activeStep === 3 ? (
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,0.8fr)_minmax(360px,1fr)]">
+          <SectionCard
+            title="Resumen de campaña"
+            description="Confirma los datos antes de iniciar el envío."
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniStat
+                title="Canal"
+                value={selectedChannelLabel}
+                helper="Canal configurado."
+              />
+              <MiniStat
+                title="Segmento"
+                value={selectedSegmentLabel}
+                helper="Audiencia seleccionada."
+              />
+              <MiniStat
+                title="Incluidos"
+                value={String(audienceStats.included)}
+                helper="Contactos marcados para recibir."
+              />
+              <MiniStat
+                title="Límite aplicado"
+                value={String(limitedIncludedRecipients.length)}
+                helper="Contactos que se procesarán."
+              />
+            </div>
+
+            <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+              <button
+                type="button"
+                onClick={() => setActiveStep(2)}
+                className={secondaryButtonClass}
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Volver
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenConfirm}
+                disabled={
+                  sending ||
+                  loadingAudience ||
+                  !hasContactsForChannel ||
+                  limitedIncludedRecipients.length === 0
+                }
+                className={`${primaryButtonClass} w-full gap-2 font-semibold sm:w-auto`}
+                style={{
+                  background: sending
+                    ? "rgba(37,99,235,0.5)"
+                    : "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                }}
+              >
+                {sending ? "Enviando..." : "Iniciar campaña"}
+              </button>
+            </div>
+          </SectionCard>
+
+          <div className="xl:sticky xl:top-6">
+            {previewPanel}
+          </div>
+        </div>
+      ) : null}
 
       {sendSummary ? (
         <SectionCard
