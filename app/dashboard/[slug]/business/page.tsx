@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Panel } from "../../../../components/dashboard/panel";
 
@@ -52,6 +52,8 @@ type BranchItem = {
   name: string;
   is_active?: boolean;
 };
+
+type BusinessSectionId = "general" | "reservas" | "horarios" | "fechas";
 
 const days = [
   "Domingo",
@@ -119,6 +121,23 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
   }, [slug]);
+  const generalSectionRef = useRef<HTMLElement | null>(null);
+  const reservasSectionRef = useRef<HTMLElement | null>(null);
+  const horariosSectionRef = useRef<HTMLElement | null>(null);
+  const fechasSectionRef = useRef<HTMLElement | null>(null);
+  const [activeBusinessSection, setActiveBusinessSection] =
+    useState<BusinessSectionId>("general");
+
+  const businessSectionTabs: Array<{
+    id: BusinessSectionId;
+    label: string;
+    ref: { current: HTMLElement | null };
+  }> = [
+    { id: "general", label: "General", ref: generalSectionRef },
+    { id: "reservas", label: "Reservas", ref: reservasSectionRef },
+    { id: "horarios", label: "Horarios", ref: horariosSectionRef },
+    { id: "fechas", label: "Fechas especiales", ref: fechasSectionRef },
+  ];
 
   const softCardClass = "rounded-2xl border p-4";
   const inputClass =
@@ -292,6 +311,49 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
     loadBusinessHours(tenantId, selectedBranchId);
     loadSpecialDates(tenantId, selectedBranchId);
   }, [tenantId, selectedBranchId]);
+
+  useEffect(() => {
+    const sectionEntries: Array<{
+      id: BusinessSectionId;
+      element: HTMLElement | null;
+    }> = [
+      { id: "general", element: generalSectionRef.current },
+      { id: "reservas", element: reservasSectionRef.current },
+      { id: "horarios", element: horariosSectionRef.current },
+      { id: "fechas", element: fechasSectionRef.current },
+    ];
+
+    const visibleSections = sectionEntries.filter((item) => item.element);
+    if (visibleSections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntry = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        if (!visibleEntry) return;
+
+        const matched = visibleSections.find(
+          (item) => item.element === visibleEntry.target
+        );
+
+        if (matched) {
+          setActiveBusinessSection(matched.id);
+        }
+      },
+      {
+        rootMargin: "-120px 0px -55% 0px",
+        threshold: [0.15, 0.35, 0.6],
+      }
+    );
+
+    visibleSections.forEach((item) => {
+      if (item.element) observer.observe(item.element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   function getDefaultHours(): BusinessHour[] {
     return [
@@ -790,6 +852,18 @@ function updateHourByIndex(
     }
   }
 
+  function scrollToBusinessSection(sectionId: BusinessSectionId) {
+    const section = businessSectionTabs.find((item) => item.id === sectionId);
+
+    if (!section?.ref.current) return;
+
+    setActiveBusinessSection(sectionId);
+    section.ref.current.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   return (
     <div className="space-y-4 pb-6">
       <section
@@ -883,6 +957,43 @@ function updateHourByIndex(
         </div>
       ) : null}
 
+      <nav
+        className="sticky top-3 z-20 -mx-1 overflow-x-auto px-1 py-1"
+        aria-label="Secciones de configuración de negocio"
+      >
+        <div
+          className="flex min-w-max gap-2 rounded-2xl border p-1 shadow-sm backdrop-blur"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+          }}
+        >
+          {businessSectionTabs.map((item) => {
+            const active = activeBusinessSection === item.id;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => scrollToBusinessSection(item.id)}
+                aria-current={active ? "page" : undefined}
+                className="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 hover:bg-[rgba(37,99,235,0.10)]"
+                style={{
+                  background: active
+                    ? "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.10))"
+                    : "transparent",
+                  color: active ? "var(--text-main)" : "var(--text-muted)",
+                  boxShadow: active
+                    ? "inset 0 0 0 1px rgba(37,99,235,0.26)"
+                    : "none",
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
 
 
@@ -902,7 +1013,12 @@ function updateHourByIndex(
 
 
 
-<section className="space-y-3">
+
+<section
+  ref={generalSectionRef}
+  id="business-general"
+  className="scroll-mt-28 space-y-3"
+>
   <div>
     <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
       1. Configuración global
@@ -1221,7 +1337,11 @@ function updateHourByIndex(
 </div>
 </section>
 
-<section className="space-y-3">
+<section
+  ref={reservasSectionRef}
+  id="business-reservas"
+  className="scroll-mt-28 space-y-3"
+>
   <div>
     <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
       2. Configuración de reservas
@@ -1620,7 +1740,11 @@ function updateHourByIndex(
   </div>
 </section>
 
-<section className="space-y-3">
+<section
+  ref={horariosSectionRef}
+  id="business-horarios"
+  className="scroll-mt-28 space-y-3"
+>
   <div>
     <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
       3. Horarios por sucursal
@@ -1821,7 +1945,11 @@ onClick={() => {
 
 </section>
 
-<section className="space-y-3">
+<section
+  ref={fechasSectionRef}
+  id="business-fechas"
+  className="scroll-mt-28 space-y-3"
+>
   <div>
     <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
       4. Fechas especiales
