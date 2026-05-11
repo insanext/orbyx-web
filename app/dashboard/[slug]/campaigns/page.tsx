@@ -4,8 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowRight,
-  BarChart3,
-  CheckCircle2,
   ChevronRight,
   Clock3,
   Image as ImageIcon,
@@ -2711,64 +2709,50 @@ export default function CampaignsPage() {
 </div>
       </section>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <StatCard
-          title="Plan actual"
-          value={PLAN_LABELS[plan]}
-          helper="Plan activo del negocio."
-          icon={<BarChart3 size={20} />}
-        />
-        <StatCard
-          title={channelLimitInfo.title}
-          value={channelLimitInfo.value}
-          helper={channelLimitInfo.helper}
-          icon={<Send size={20} />}
-        />
-                <StatCard
-          title="Tope real"
-          value={loadingAudience ? "..." : String(limitedAudienceCount)}
-          helper="Impacto máximo con la configuración actual."
-          icon={<CheckCircle2 size={20} />}
-        />
-      </div>
-
       <div
-        className="inline-flex w-full flex-col gap-2 rounded-2xl border px-4 py-3 text-sm sm:w-auto sm:flex-row sm:items-center"
+        className="overflow-x-auto rounded-2xl border p-2"
         style={{
-          borderColor: channelLimitInfo.available
-            ? "rgba(37,99,235,0.24)"
-            : "rgba(245,158,11,0.28)",
-          background: channelLimitInfo.available
-            ? "rgba(37,99,235,0.08)"
-            : "rgba(245,158,11,0.10)",
-          color: "var(--text-main)",
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
         }}
       >
-        <span
-          className="inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold"
-          style={{
-            background: channelLimitInfo.available
-              ? "rgba(37,99,235,0.16)"
-              : "rgba(245,158,11,0.16)",
-            color: channelLimitInfo.available ? "rgb(37 99 235)" : "rgb(217 119 6)",
-          }}
-        >
-          {channelLimitInfo.badge}
-        </span>
-        <span style={{ color: "var(--text-muted)" }}>
-          {channel === "whatsapp"
-            ? "El panel refleja el límite visual de WhatsApp según el plan."
-            : "El panel refleja el límite visual de Email según el plan."}
-        </span>
+        <div className="grid min-w-[760px] grid-cols-6 gap-2 sm:min-w-0 sm:grid-cols-2 lg:grid-cols-6">
+          {[
+            { label: "Plan", value: PLAN_LABELS[plan] },
+            { label: channelLimitInfo.title, value: channelLimitInfo.value },
+            {
+              label: "Audiencia",
+              value: loadingAudience ? "..." : audienceStats.totalVisible,
+            },
+            { label: "Incluidos", value: audienceStats.included },
+            { label: "Excluidos", value: audienceStats.excluded },
+            { label: "Manuales", value: audienceStats.manual },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="rounded-xl border px-3 py-2"
+              style={{
+                borderColor: "rgba(148,163,184,0.18)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <p
+                className="text-[10px] font-semibold uppercase tracking-[0.12em]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {item.label}
+              </p>
+              <p
+                className="mt-1 truncate text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+                title={String(item.value)}
+              >
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
-
-
-<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-  <TinyMetric label="Total audiencia" value={audienceStats.totalVisible} />
-  <TinyMetric label="Incluidos" value={audienceStats.included} />
-  <TinyMetric label="Excluidos" value={audienceStats.excluded} />
-  <TinyMetric label="Manuales" value={audienceStats.manual} />
-</div>
 
       {toast ? (
         <div className="fixed right-5 top-5 z-[80] w-full max-w-md">
