@@ -162,11 +162,19 @@ const PLAN_LABELS: Record<PlanSlug, string> = {
 };
 
 const PLAN_EMAIL_LIMITS: Record<PlanSlug, number> = {
-  starter: 50,
-  pro: 50,
-  premium: 150,
+  starter: 0,
+  pro: 0,
+  premium: 0,
   vip: 400,
   platinum: 1000,
+};
+
+const PLAN_WHATSAPP_LIMITS: Record<PlanSlug, number> = {
+  starter: 0,
+  pro: 0,
+  premium: 0,
+  vip: 200,
+  platinum: 800,
 };
 
 const PLAN_IMAGE_LIMITS: Record<PlanSlug, number> = {
@@ -176,6 +184,38 @@ const PLAN_IMAGE_LIMITS: Record<PlanSlug, number> = {
   vip: 30,
   platinum: 100,
 };
+
+function getCampaignChannelLimit(plan: PlanSlug, channel: CampaignChannel) {
+  if (channel === "whatsapp") {
+    const limit = PLAN_WHATSAPP_LIMITS[plan] ?? 0;
+
+    return {
+      title: "LÃ­mite WhatsApp",
+      value: limit > 0 ? `${limit} / mes` : "No disponible",
+      helper:
+        limit > 0
+          ? "MÃ¡ximo visual mensual para WhatsApp."
+          : "WhatsApp no estÃ¡ incluido en tu plan.",
+      badge: limit > 0 ? "Incluido" : "Disponible en VIP",
+      available: limit > 0,
+      limit,
+    };
+  }
+
+  const limit = PLAN_EMAIL_LIMITS[plan] ?? 0;
+
+  return {
+    title: "LÃ­mite Email",
+    value: limit > 0 ? String(limit) : "No incluido",
+    helper:
+      limit > 0
+        ? "MÃ¡ximo de contactos por campaÃ±a email."
+        : "CampaÃ±as email disponibles desde VIP.",
+    badge: limit > 0 ? "Incluido" : "Disponible en VIP",
+    available: limit > 0,
+    limit,
+  };
+}
 
 const SEGMENT_OPTIONS: Array<{
   key: CustomerSegment;
@@ -1530,10 +1570,14 @@ export default function CampaignsPage() {
   const secondaryButtonClass =
     "inline-flex h-12 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
-  const planLimit = PLAN_EMAIL_LIMITS[plan];
+  const channelLimitInfo = useMemo(
+    () => getCampaignChannelLimit(plan, channel),
+    [plan, channel]
+  );
+  const planLimit = channelLimitInfo.limit;
   const planImageLimit = PLAN_IMAGE_LIMITS[plan];
 
-  const availableLimitOptions = ["10", "25", "50", "100", "150", "400", "1000"]
+  const availableLimitOptions = ["10", "25", "50", "100", "150", "200", "400", "800", "1000"]
     .map(Number)
     .filter((value) => value <= planLimit)
     .map(String);
@@ -1618,8 +1662,15 @@ export default function CampaignsPage() {
   }, [slug]);
 
   useEffect(() => {
+    if (availableLimitOptions.length === 0) {
+      if (sendLimit !== "0") {
+        setSendLimit("0");
+      }
+      return;
+    }
+
     if (!availableLimitOptions.includes(sendLimit)) {
-      setSendLimit(String(planLimit));
+      setSendLimit(availableLimitOptions[availableLimitOptions.length - 1] || String(planLimit));
     }
   }, [sendLimit, availableLimitOptions, planLimit]);
 
@@ -2668,9 +2719,9 @@ export default function CampaignsPage() {
           icon={<BarChart3 size={20} />}
         />
         <StatCard
-          title="Límite por campaña"
-          value={`${planLimit}`}
-          helper="Máximo de contactos por envío."
+          title={channelLimitInfo.title}
+          value={channelLimitInfo.value}
+          helper={channelLimitInfo.helper}
           icon={<Send size={20} />}
         />
                 <StatCard
@@ -2679,6 +2730,36 @@ export default function CampaignsPage() {
           helper="Impacto máximo con la configuración actual."
           icon={<CheckCircle2 size={20} />}
         />
+      </div>
+
+      <div
+        className="inline-flex w-full flex-col gap-2 rounded-2xl border px-4 py-3 text-sm sm:w-auto sm:flex-row sm:items-center"
+        style={{
+          borderColor: channelLimitInfo.available
+            ? "rgba(37,99,235,0.24)"
+            : "rgba(245,158,11,0.28)",
+          background: channelLimitInfo.available
+            ? "rgba(37,99,235,0.08)"
+            : "rgba(245,158,11,0.10)",
+          color: "var(--text-main)",
+        }}
+      >
+        <span
+          className="inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold"
+          style={{
+            background: channelLimitInfo.available
+              ? "rgba(37,99,235,0.16)"
+              : "rgba(245,158,11,0.16)",
+            color: channelLimitInfo.available ? "rgb(37 99 235)" : "rgb(217 119 6)",
+          }}
+        >
+          {channelLimitInfo.badge}
+        </span>
+        <span style={{ color: "var(--text-muted)" }}>
+          {channel === "whatsapp"
+            ? "El panel refleja el límite visual de WhatsApp según el plan."
+            : "El panel refleja el límite visual de Email según el plan."}
+        </span>
       </div>
 
 
@@ -2791,16 +2872,18 @@ export default function CampaignsPage() {
               type="button"
               key={step.number}
               onClick={() => setActiveStep(step.step)}
-              className="flex items-center gap-3 border-b px-4 py-4 text-left transition md:border-b-0 md:border-r last:border-r-0"
+              aria-current={activeStep === step.step ? "step" : undefined}
+              className="group flex cursor-pointer items-center gap-3 border-b px-4 py-4 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 md:border-b-0 md:border-r last:border-r-0"
               style={{
-                borderColor: "var(--border-color)",
+                borderColor:
+                  activeStep === step.step ? "rgba(37,99,235,0.38)" : "var(--border-color)",
                 background: activeStep === step.step
                   ? "linear-gradient(135deg, rgba(37,99,235,0.12), transparent)"
-                  : "transparent",
+                  : undefined,
               }}
             >
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-transform duration-200 group-hover:scale-105"
                 style={{
                   background: activeStep === step.step
                     ? "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))"
@@ -2965,6 +3048,7 @@ export default function CampaignsPage() {
                 <select
                   value={sendLimit}
                   onChange={(e) => setSendLimit(e.target.value)}
+                  disabled={availableLimitOptions.length === 0}
                   className={selectClass}
                   style={{
                     borderColor: "var(--border-color)",
@@ -2972,12 +3056,19 @@ export default function CampaignsPage() {
                     color: "var(--text-main)",
                   }}
                 >
-                  {availableLimitOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option} destinatarios
-                    </option>
-                  ))}
+                  {availableLimitOptions.length === 0 ? (
+                    <option value="0">No disponible</option>
+                  ) : (
+                    availableLimitOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option} destinatarios
+                      </option>
+                    ))
+                  )}
                 </select>
+                <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                  {channelLimitInfo.value}
+                </p>
               </div>
 
               <div>
