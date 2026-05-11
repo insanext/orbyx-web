@@ -190,12 +190,12 @@ function getCampaignChannelLimit(plan: PlanSlug, channel: CampaignChannel) {
     const limit = PLAN_WHATSAPP_LIMITS[plan] ?? 0;
 
     return {
-      title: "LÃ­mite WhatsApp",
+      title: "Límite WhatsApp",
       value: limit > 0 ? `${limit} / mes` : "No disponible",
       helper:
         limit > 0
-          ? "MÃ¡ximo visual mensual para WhatsApp."
-          : "WhatsApp no estÃ¡ incluido en tu plan.",
+          ? "Máximo visual mensual para WhatsApp."
+          : "WhatsApp no está incluido en tu plan.",
       badge: limit > 0 ? "Incluido" : "Disponible en VIP",
       available: limit > 0,
       limit,
@@ -205,12 +205,12 @@ function getCampaignChannelLimit(plan: PlanSlug, channel: CampaignChannel) {
   const limit = PLAN_EMAIL_LIMITS[plan] ?? 0;
 
   return {
-    title: "LÃ­mite Email",
+    title: "Límite Email",
     value: limit > 0 ? String(limit) : "No incluido",
     helper:
       limit > 0
-        ? "MÃ¡ximo de contactos por campaÃ±a email."
-        : "CampaÃ±as email disponibles desde VIP.",
+        ? "Máximo de contactos por campaña email."
+        : "Campañas email disponibles desde VIP.",
     badge: limit > 0 ? "Incluido" : "Disponible en VIP",
     available: limit > 0,
     limit,
