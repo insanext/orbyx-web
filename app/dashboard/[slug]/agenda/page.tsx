@@ -16,6 +16,8 @@ type Appointment = {
   customer_phone: string | null;
   customer_email: string | null;
   service_name_snapshot: string | null;
+  service_is_group?: boolean | null;
+  service_capacity?: number | null;
   status: string;
   customer_data?: {
     pet_name?: string;
@@ -651,6 +653,10 @@ function generateSlotsFromWindows(
           new Date(a[0]?.start_at || 0).getTime() -
           new Date(b[0]?.start_at || 0).getTime()
       );
+  }
+
+  function isGroupAppointment(appt?: Appointment | null) {
+    return appt?.service_is_group === true;
   }
 
   function matchesFilter(appt: Appointment, filter: FilterValue) {
@@ -1764,7 +1770,7 @@ loadPendingCloseAppointments();
       );
   }, [appointments, selectedAppointment]);
 
-  const isSelectedGroupAppointment = selectedGroupAppointments.length > 1;
+  const isSelectedGroupAppointment = isGroupAppointment(selectedAppointment);
 
   const nextAppointment = useMemo(() => {
     const now = Date.now();
@@ -2540,7 +2546,7 @@ const appt = slotGroups[0]?.[0];
                               <div key={slot} className="space-y-1.5">
                                 {slotGroups.map((group) => {
                                   const appt = group[0];
-                                  const isGroupSlot = group.length > 1;
+                                  const isGroupSlot = isGroupAppointment(appt);
                                   const selectedKey = selectedAppointment
                                     ? getAppointmentGroupKey(selectedAppointment)
                                     : "";
