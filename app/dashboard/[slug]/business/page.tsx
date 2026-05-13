@@ -113,11 +113,11 @@ const genericBusinessSubtypes = [
 const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
   {
     key: "unit_type",
-    label: "Tipo de unidad/equipo",
+    label: "Tipo de vehículo/equipo",
     enabled: true,
-    required: true,
+    required: false,
     type: "select",
-    options: ["Auto", "Moto", "Camion", "Maquinaria", "Bus"],
+    options: ["Auto", "Moto", "Camión", "Maquinaria", "Bus"],
   },
   {
     key: "brand",
@@ -128,18 +128,18 @@ const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
     options: [],
   },
   { key: "model", label: "Modelo", enabled: true, required: false, type: "text" },
-  { key: "year", label: "Anio", enabled: true, required: false, type: "text" },
+  { key: "year", label: "Año", enabled: false, required: false, type: "text" },
   {
     key: "unit_identifier",
     label: "Patente / Identificador",
-    enabled: true,
+    enabled: false,
     required: false,
     type: "text",
   },
   {
     key: "usage_value",
     label: "Kilometraje / Horas de uso",
-    enabled: true,
+    enabled: false,
     required: false,
     type: "text",
   },
@@ -153,7 +153,7 @@ const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
   {
     key: "observations",
     label: "Observaciones",
-    enabled: true,
+    enabled: false,
     required: false,
     type: "textarea",
   },
@@ -180,12 +180,16 @@ function normalizeSubtypeBookingFields(
           .map((option) => String(option || "").trim())
           .filter(Boolean)
       : baseField.options || [];
+    const savedLabel =
+      typeof savedField?.label === "string" && savedField.label.trim()
+        ? savedField.label.trim()
+        : "";
 
     return {
       ...baseField,
       label:
-        typeof savedField?.label === "string" && savedField.label.trim()
-          ? savedField.label.trim()
+        savedLabel && savedLabel !== "Tipo de unidad/equipo"
+          ? savedLabel
           : baseField.label,
       enabled:
         typeof savedField?.enabled === "boolean"
@@ -2463,7 +2467,29 @@ function updateHourByIndex(
           form.business_subtype === "taller_automotriz" ? "" : "xl:col-span-2"
         }`}
       >
-        <div className="space-y-3">
+        <div
+          className="space-y-3 rounded-2xl border border-dashed p-3"
+          style={{
+            borderColor: "rgba(37,99,235,0.35)",
+            background: "rgba(37,99,235,0.04)",
+          }}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span
+              className="rounded-full border px-3 py-1 text-xs font-semibold"
+              style={{
+                borderColor: "rgba(37,99,235,0.35)",
+                background: "rgba(37,99,235,0.08)",
+                color: "var(--text-main)",
+              }}
+            >
+              Vista previa
+            </span>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Así lo verá el cliente
+            </span>
+          </div>
+
           <div
             className="rounded-2xl border p-4"
             style={{
@@ -2489,7 +2515,7 @@ function updateHourByIndex(
                   <input
                     disabled
                     placeholder={label}
-                    className="h-10 w-full rounded-xl border px-3 text-sm"
+                    className="h-10 w-full cursor-not-allowed rounded-xl border px-3 text-sm opacity-80"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -2509,7 +2535,7 @@ function updateHourByIndex(
               <input
                 disabled
                 placeholder={field.label}
-                className="h-10 w-full rounded-xl border px-3 text-sm"
+                className="h-10 w-full cursor-not-allowed rounded-xl border px-3 text-sm opacity-80"
                 style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
               />
             </div>
@@ -2526,13 +2552,13 @@ function updateHourByIndex(
                         {label}
                       </label>
                       <select
-                        disabled
+                        defaultValue=""
                         className="h-10 w-full rounded-xl border px-3 text-sm"
                         style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
                       >
-                        <option>{field.label}</option>
+                        <option value="">{field.label}</option>
                         {(field.options || []).map((option) => (
-                          <option key={option}>{option}</option>
+                          <option key={option} value={option}>{option}</option>
                         ))}
                       </select>
                     </div>
@@ -2548,7 +2574,7 @@ function updateHourByIndex(
                       <textarea
                         disabled
                         placeholder={field.label}
-                        className="min-h-[82px] w-full rounded-xl border px-3 py-2 text-sm"
+                        className="min-h-[82px] w-full cursor-not-allowed rounded-xl border px-3 py-2 text-sm opacity-80"
                         style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
                       />
                     </div>
@@ -2563,7 +2589,7 @@ function updateHourByIndex(
                     <input
                       disabled
                       placeholder={field.label}
-                      className="h-10 w-full rounded-xl border px-3 text-sm"
+                      className="h-10 w-full cursor-not-allowed rounded-xl border px-3 text-sm opacity-80"
                       style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
                     />
                   </div>
