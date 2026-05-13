@@ -846,6 +846,31 @@ const cleanedHours = Object.values(grouped);
         throw new Error(data?.error || "Error guardando campos");
       }
 
+      if (businessCategory === "generic") {
+        const tenantRes = await fetch(
+          `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...form,
+              business_subtype_config:
+                form.business_subtype === "taller_automotriz"
+                  ? businessSubtypeConfig
+                  : {},
+            }),
+          }
+        );
+
+        const tenantData = await tenantRes.json();
+
+        if (!tenantRes.ok) {
+          throw new Error(
+            tenantData?.error || "Error guardando campos del tipo de negocio"
+          );
+        }
+      }
+
       alert("Campos guardados correctamente");
     } catch (err: unknown) {
       alert(
@@ -1433,7 +1458,7 @@ function updateHourByIndex(
           />
         </div>
 
-        {businessCategory === "generic" ? (
+        {false ? (
           <div
             className="rounded-2xl border p-4"
             style={{
@@ -1859,6 +1884,68 @@ function updateHourByIndex(
   </Panel>
 
   <div className="space-y-4">
+    {businessCategory === "generic" ? (
+      <Panel
+        title="Tipo de negocio"
+        description="Define la familia del negocio para preparar configuraciones específicas."
+        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+      >
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Tipo de negocio
+          </label>
+          <select
+            value={form.business_subtype}
+            onChange={(e) => {
+              const nextSubtype = e.target.value;
+
+              setForm((prev) => ({
+                ...prev,
+                business_subtype: nextSubtype,
+              }));
+
+              setBusinessSubtypeConfig({
+                booking_fields:
+                  nextSubtype === "taller_automotriz"
+                    ? normalizeSubtypeBookingFields(
+                        businessSubtypeConfig.booking_fields
+                      )
+                    : [],
+              });
+            }}
+            className={selectClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value="">Selecciona tipo de negocio</option>
+            {genericBusinessSubtypes
+              .filter((item) => item.value)
+              .map((item) => (
+                <option key={item.value || "none"} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+          </select>
+          <p
+            className="mt-2 text-xs leading-5"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {
+              genericBusinessSubtypes.find(
+                (item) => item.value === form.business_subtype
+              )?.description
+            }
+          </p>
+        </div>
+      </Panel>
+    ) : null}
+
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
       {[
         {
@@ -2377,6 +2464,43 @@ function updateHourByIndex(
         }`}
       >
         <div className="space-y-3">
+          <div
+            className="rounded-2xl border p-4"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <p
+              className="text-sm font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Completa tus datos
+            </p>
+            <div className="mt-3 space-y-3">
+              {["Nombre y apellido", "Teléfono", "Email"].map((label) => (
+                <div key={label}>
+                  <label
+                    className="mb-1 block text-xs font-medium"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {label} *
+                  </label>
+                  <input
+                    disabled
+                    placeholder={label}
+                    className="h-10 w-full rounded-xl border px-3 text-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           {bookingFields.filter((field) => field.enabled).map((field) => (
             <div key={field.key}>
               <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
@@ -2447,13 +2571,6 @@ function updateHourByIndex(
               })
             : null}
 
-          {bookingFields.filter((field) => field.enabled).length === 0 &&
-          (form.business_subtype !== "taller_automotriz" ||
-            businessSubtypeConfig.booking_fields.filter((field) => field.enabled).length === 0) ? (
-            <div className="rounded-2xl border border-dashed px-4 py-5 text-sm" style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}>
-              No hay campos visibles para mostrar.
-            </div>
-          ) : null}
         </div>
       </Panel>
     </div>
