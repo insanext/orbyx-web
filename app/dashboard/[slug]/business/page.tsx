@@ -1441,13 +1441,13 @@ function updateHourByIndex(
               background: "var(--bg-soft)",
             }}
           >
-            <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="max-w-2xl">
               <div>
                 <label
                   className="mb-2 block text-sm font-medium"
                   style={{ color: "var(--text-main)" }}
                 >
-                  Tipo de experiencia
+                  Tipo de negocio
                 </label>
                 <select
                   value={form.business_subtype}
@@ -1475,7 +1475,10 @@ function updateHourByIndex(
                     color: "var(--text-main)",
                   }}
                 >
-                  {genericBusinessSubtypes.map((item) => (
+                  <option value="">Selecciona tipo de negocio</option>
+                  {genericBusinessSubtypes
+                    .filter((item) => item.value)
+                    .map((item) => (
                     <option key={item.value || "none"} value={item.value}>
                       {item.label}
                     </option>
