@@ -1503,6 +1503,7 @@ export default function CampaignsPage() {
   }, [whatsappMessage, businessName, whatsappLink]);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState("");
   const [audienceSearch, setAudienceSearch] = useState("");
   const [manualRecipientForm, setManualRecipientForm] = useState<ManualRecipientForm>({
     name: "",
@@ -1563,6 +1564,14 @@ export default function CampaignsPage() {
   const [imageLibraryError, setImageLibraryError] = useState("");
   const [imageLibraryMessage, setImageLibraryMessage] = useState("");
   const [imagesLimitInfo, setImagesLimitInfo] = useState({ current: 0, max: 7 });
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
+
+  function readStoredBranchId() {
+    if (typeof window === "undefined" || !branchStorageKey) return "";
+    return localStorage.getItem(branchStorageKey) || "";
+  }
 
   const inputClass =
     "h-12 w-full rounded-2xl border px-4 text-sm outline-none transition";
@@ -1592,6 +1601,27 @@ export default function CampaignsPage() {
       setCtaUrl(`https://www.orbyx.cl/${slug}`);
     }
   }, [slug]);
+
+  useEffect(() => {
+    setSelectedBranchId(readStoredBranchId());
+  }, [branchStorageKey]);
+
+  useEffect(() => {
+    function handleBranchChanged(event: Event) {
+      const customEvent = event as CustomEvent<{ branchId?: string }>;
+      setSelectedBranchId(customEvent.detail?.branchId || readStoredBranchId());
+      setExcludedRecipientIds([]);
+      setAudienceSearch("");
+      setSendSummary(null);
+      setResultMessage("");
+    }
+
+    window.addEventListener("orbyx-branch-changed", handleBranchChanged);
+
+    return () => {
+      window.removeEventListener("orbyx-branch-changed", handleBranchChanged);
+    };
+  }, [branchStorageKey]);
 
   useEffect(() => {
     if (slug && !whatsappCtaUrl.trim()) {
@@ -1690,6 +1720,9 @@ export default function CampaignsPage() {
         const params = new URLSearchParams();
         params.set("segment", segment);
         params.set("inactive_days", inactiveDays);
+        if (selectedBranchId) {
+          params.set("branch_id", selectedBranchId);
+        }
 
         const res = await fetch(
           `${BACKEND_URL}/customers/${slug}?${params.toString()}`
@@ -1713,7 +1746,7 @@ export default function CampaignsPage() {
     if (slug) {
       loadAudience();
     }
-  }, [slug, segment, inactiveDays]);
+  }, [slug, segment, inactiveDays, selectedBranchId]);
 
   async function loadCampaignHistory(currentSlug: string) {
     try {
