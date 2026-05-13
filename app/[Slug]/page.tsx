@@ -955,13 +955,13 @@ const detectedCustomerId =
     });
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-4 py-10 md:px-8">
-        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
-          <div className="w-full overflow-hidden rounded-[34px] border border-emerald-200 bg-white shadow-[0_35px_90px_-45px_rgba(16,185,129,0.42)]">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-3 py-4 sm:px-4 md:px-8 md:py-10">
+        <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-5xl items-center justify-center md:min-h-[calc(100vh-5rem)]">
+          <div className="w-full overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-[0_35px_90px_-45px_rgba(16,185,129,0.42)] md:rounded-[34px]">
             <div className="h-2 bg-gradient-to-r from-emerald-500 via-sky-500 to-indigo-500" />
 
-            <div className="p-6 md:p-10">
-              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-sky-100 text-5xl shadow-sm ring-8 ring-emerald-50">
+            <div className="p-4 md:p-10">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-sky-100 text-3xl shadow-sm ring-8 ring-emerald-50 md:h-24 md:w-24 md:text-5xl">
                 ✅
               </div>
 
@@ -970,7 +970,7 @@ const detectedCustomerId =
                   Reserva online
                 </p>
 
-                <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
+                <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 md:text-5xl">
                   Reserva confirmada
                 </h1>
 
@@ -981,7 +981,7 @@ const detectedCustomerId =
                 </p>
               </div>
 
-              <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 md:mt-8 md:gap-4">
                 <SummaryChip label="Servicio" value={bookingSuccess.serviceName} />
                 <SummaryChip
                   label="Fecha y hora"
@@ -995,8 +995,8 @@ const detectedCustomerId =
                 ) : null}
               </div>
 
-              <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
-                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mt-4 grid gap-3 lg:grid-cols-[1.4fr_0.9fr] md:gap-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                     Dirección de la sucursal
                   </p>
@@ -1016,7 +1016,7 @@ const detectedCustomerId =
                   ) : null}
                 </div>
 
-                <div className="rounded-3xl border border-sky-100 bg-sky-50/80 p-5">
+                <div className="rounded-2xl border border-sky-100 bg-sky-50/80 p-4 md:rounded-3xl md:p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
                     Confirmación enviada
                   </p>
@@ -1033,7 +1033,7 @@ const detectedCustomerId =
                 </div>
               </div>
 
-              <div className="mt-8 rounded-3xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-sky-50 p-5">
+              <div className="mt-6 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-sky-50 p-4 md:mt-8 md:rounded-3xl md:p-5">
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-sm text-slate-700">
                     Puedes volver a reservar otra hora cuando quieras.
@@ -1044,7 +1044,7 @@ const detectedCustomerId =
                 </div>
               </div>
 
-              <div className="mt-8 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-6 grid gap-3 md:mt-8 md:grid-cols-2 xl:grid-cols-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -1127,29 +1127,29 @@ const detectedCustomerId =
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto w-full max-w-[1750px] px-4 py-8 md:px-8 xl:px-12">
-        <div className="grid gap-8 xl:grid-cols-[390px_1fr]">
-          <div className="space-y-6">
-            <div className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+      <div className="mx-auto w-full max-w-[1750px] px-3 py-4 sm:px-4 md:px-8 md:py-8 xl:px-12">
+        <div className="grid gap-4 xl:grid-cols-[390px_1fr] xl:gap-8">
+          <div className="space-y-4 xl:space-y-6">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[30px]">
               <div className="h-2 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400" />
-              <div className="p-6">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+              <div className="p-4 md:p-6">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 md:text-[11px] md:tracking-[0.3em]">
                   Reserva online
                 </p>
 
-                <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950">
+                <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl md:text-4xl">
                   {business?.name || slug || "Reserva"}
                 </h1>
 
                 {business?.description ? (
-                  <p className="mt-4 text-sm leading-6 text-slate-600">
+                  <p className="mt-3 text-sm leading-6 text-slate-600 md:mt-4">
                     {business.description}
                   </p>
                 ) : null}
 
-                 <div className="mt-5 flex flex-wrap gap-2 text-sm text-slate-600">
+                 <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-600 md:mt-5">
                   {visibleAddress ? (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-slate-700">
+                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-slate-700">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -1165,15 +1165,15 @@ const detectedCustomerId =
                         />
                         <circle cx="12" cy="10" r="2.5" />
                       </svg>
-                      <span>{visibleAddress}</span>
+                      <span className="min-w-0 truncate">{visibleAddress}</span>
                     </span>
                   ) : null}
                 </div>
               </div>
             </div>
 
-            <div className="flex min-h-[980px] flex-col rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
-              <div className="space-y-4">
+            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[30px] md:p-5 xl:min-h-[980px]">
+              <div className="space-y-3 md:space-y-4">
                 {showBranchSelector ? (
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -1202,7 +1202,7 @@ const detectedCustomerId =
                   className="relative"
                 >
 {!selectedService ? (
-  <div className="pointer-events-none absolute -top-3 left-14 z-20 flex animate-bounce flex-col items-start">
+  <div className="pointer-events-none absolute -top-3 left-14 z-20 hidden animate-bounce flex-col items-start sm:flex">
     <div className="animate-pulse rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 px-4 py-1.5 text-xs font-semibold text-white shadow-[0_10px_30px_-12px_rgba(245,158,11,0.9)]">
       Selecciona un servicio aquí
     </div>
@@ -1248,7 +1248,7 @@ const detectedCustomerId =
                 </div>
 
                 {selectedService ? (
-                  <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-4">
+                  <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:p-4">
                     <p className="text-sm font-semibold text-slate-900">
                       {selectedService.name}
                     </p>
@@ -1287,14 +1287,14 @@ const detectedCustomerId =
                             setSelectedStaffId("");
                             setSelectedSlot(null);
                           }}
-                          className={`w-full rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer ${
+                          className={`w-full rounded-2xl border p-3 text-left transition-all duration-200 cursor-pointer md:p-4 ${
   selectedStaffId === ""
     ? "border-indigo-600 bg-indigo-50 shadow-md scale-[1.01]"
     : "border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm hover:scale-[1.01]"
 }`}
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700">
+                          <div className="flex items-center gap-3 md:gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-base font-semibold text-slate-700 md:h-16 md:w-16 md:text-lg">
                               *
                             </div>
 
@@ -1317,19 +1317,19 @@ const detectedCustomerId =
                               setSelectedStaffId(staff.id);
                               setSelectedSlot(null);
                             }}
-                            className={`w-full rounded-2xl border p-4 text-left transition ${
+                            className={`w-full rounded-2xl border p-3 text-left transition md:p-4 ${
                               selectedStaffId === staff.id
                                 ? "border-indigo-500 bg-indigo-50 shadow-sm"
                                 : "border-slate-200 bg-white hover:border-slate-300"
                             }`}
                           >
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3 md:gap-4">
 
 
 
 <div className="relative group">
   {/* FOTO BASE */}
-  <div className="h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+  <div className="h-12 w-12 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 md:h-16 md:w-16">
     {staff.photo_url ? (
       <img
         src={staff.photo_url}
@@ -1344,7 +1344,7 @@ const detectedCustomerId =
   </div>
 
   {/* HOVER GRANDE */}
-  <div className="pointer-events-none absolute left-full top-1/2 z-30 ml-5 -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100">
+  <div className="pointer-events-none absolute left-full top-1/2 z-30 ml-5 hidden -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100 xl:block">
     <div className="w-[500px] rounded-3xl border p-6 shadow-2xl bg-white">
       <div className="flex flex-col items-center gap-4">
         <div className="h-[390px] w-[390px] overflow-hidden rounded-2xl bg-slate-200">
@@ -1390,7 +1390,7 @@ const detectedCustomerId =
                   </div>
                 ) : null}
 
-                <div className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-inner">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-inner [&_.react-calendar]:w-full [&_.react-calendar]:max-w-full [&_.react-calendar]:border-0 md:rounded-[26px] md:p-4">
                   <Calendar
                     minDate={new Date()}
                     onChange={(value: any) => {
@@ -1407,19 +1407,19 @@ const detectedCustomerId =
 
           </div>
 
-          <div className="flex min-h-[980px] flex-col rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
-            <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[30px] md:p-5 xl:min-h-[980px]">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 md:text-[11px] md:tracking-[0.28em]">
                   Horarios disponibles
                 </p>
-                <h2 className="mt-1 text-xl font-bold text-slate-950">
+                <h2 className="mt-1 text-lg font-bold text-slate-950 md:text-xl">
                   Agenda semanal {selectedDate.getFullYear()}
                 </h2>
               </div>
 
               {selectedService ? (
-                <div className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700">
+                <div className="w-fit max-w-full truncate rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700">
                   {selectedService!.name}
                 </div>
               ) : null}
@@ -1437,7 +1437,7 @@ const detectedCustomerId =
                 </div>
               </div>
             ) : null}
-            <div className="grid min-w-[980px] grid-cols-7 gap-3 items-start">
+            <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-7">
               {weekDates.map((dateObj, index) => {
                 const dateKey = formatDate(dateObj);
                 const slots = weekSlots[dateKey] || [];
@@ -1452,7 +1452,7 @@ const detectedCustomerId =
                         : "border-slate-200 bg-slate-50/60"
                     }`}
                   >
-                    <div className="sticky top-4 z-30 -mx-3 mb-3 border-b border-slate-200 bg-white px-3 pb-2 pt-1">
+                    <div className="-mx-3 mb-3 border-b border-slate-200 bg-white px-3 pb-2 pt-1 md:sticky md:top-4 md:z-30">
                       <p className="text-sm font-bold text-slate-900">
                         {getWeekdayLabel(dateObj)}
                       </p>
@@ -1499,7 +1499,7 @@ const detectedCustomerId =
             });
           }, 120);
         }}
-className={`flex min-h-[40px] w-full flex-col items-center justify-center rounded-xl border px-2 py-1 text-center transition ${
+className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition md:min-h-[40px] md:flex-col md:justify-center md:px-2 md:py-1 md:text-center ${
   selectedSlot?.slot_start === slot.slot_start
     ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
     : slot.is_group && (slot.available_spots || 0) === 0
@@ -1507,11 +1507,11 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
     : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
 }`}
       >
-        <span className="text-[12px] font-semibold leading-none">
+        <span className="text-sm font-semibold leading-none md:text-[12px]">
           {formatHour(slot.slot_start)}
         </span>
         <span
-  className={`mt-1 text-[9px] leading-none ${
+  className={`text-[11px] leading-none md:mt-1 md:text-[9px] ${
     selectedSlot?.slot_start === slot.slot_start
       ? "text-indigo-100"
       : slot.is_group && isGroupBookingBusiness
@@ -1551,7 +1551,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
 </div>
 
 {selectedService && noSlotsThisWeek ? (
-  <div className="mt-6 rounded-[26px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-5 shadow-sm">
+  <div className="mt-4 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-4 shadow-sm md:mt-6 md:rounded-[26px] md:p-5">
 
     {loadingNextSlots ? (
   <div className="flex items-center gap-2 animate-pulse">
@@ -1572,11 +1572,11 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
   </p>
 )}
 
-    <div className="mt-4 grid gap-4 md:grid-cols-2">
+    <div className="mt-4 grid gap-3 md:grid-cols-2 md:gap-4">
       {nextAvailableDays.map((day) => (
         <div
           key={day.date}
-          className="rounded-2xl border border-white bg-white/90 p-4 shadow-sm"
+          className="rounded-2xl border border-white bg-white/90 p-3 shadow-sm md:p-4"
         >
           <p className="text-sm font-semibold text-slate-900">
             {formatFullDate(day.slots[0].slot_start)}
@@ -1630,17 +1630,17 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
             {selectedSlot ? (
               <div
                 ref={formRef}
-                className="mt-6 overflow-hidden rounded-[30px] border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 shadow-[0_30px_80px_-45px_rgba(79,70,229,0.5)]"
+                className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 shadow-[0_30px_80px_-45px_rgba(79,70,229,0.5)] md:mt-6 md:rounded-[30px]"
               >
                 <div className="h-1.5 bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500" />
 
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-indigo-500">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500 md:text-[11px] md:tracking-[0.28em]">
                         Reserva en curso
                       </p>
-                      <h3 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                      <h3 className="mt-2 text-xl font-bold tracking-tight text-slate-950 md:text-2xl">
                         Completa tus datos
                       </h3>
                       <p className="mt-2 text-sm text-slate-600">
@@ -1648,8 +1648,8 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
                       </p>
                     </div>
 
-                    <div className="grid gap-2 sm:grid-cols-4">
-                      <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <div className="rounded-2xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm md:px-4 md:py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                           Fecha
                         </p>
@@ -1658,7 +1658,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
                         </p>
                       </div>
 
-                      <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                      <div className="rounded-2xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm md:px-4 md:py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                           Hora
                         </p>
@@ -1668,7 +1668,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
                       </div>
 
                       {selectedService ? (
-                        <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                        <div className="rounded-2xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm md:px-4 md:py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                             Servicio
                           </p>
@@ -1679,7 +1679,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
                       ) : null}
 
                       {selectedStaffId ? (
-                        <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm">
+                        <div className="rounded-2xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm md:px-4 md:py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                             Profesional
                           </p>
@@ -1692,7 +1692,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
                   </div>
 
 
-                  <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  <div className="mt-4 grid gap-3 md:mt-6 md:grid-cols-2">
                     <input
                       placeholder="Nombre y apellido"
                       value={customerData.name || ""}
@@ -1717,7 +1717,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
 
                     {isVeterinaria && (
                       <div className="space-y-3 md:col-span-2">
-                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
+                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-3 md:p-4">
                           <p className="text-sm font-semibold text-emerald-900">
                             Datos de la mascota
                           </p>
@@ -1754,7 +1754,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
                                       applyPetToForm(selected);
                                     }
                                   }}
-                                  className={`h-11 rounded-2xl border px-4 text-sm font-medium transition ${
+                                  className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-medium transition md:h-11 md:px-4 md:py-0 ${
                                     petMode === "existing"
                                       ? "border-emerald-600 bg-emerald-600 text-white"
                                       : "border-slate-300 bg-white text-slate-700 hover:border-emerald-300"
@@ -1771,7 +1771,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
                                     updateCustomerField("pet_name", "");
                                     updateCustomerField("pet_species", "");
                                   }}
-                                  className={`h-11 rounded-2xl border px-4 text-sm font-medium transition ${
+                                  className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-medium transition md:h-11 md:px-4 md:py-0 ${
                                     petMode === "new"
                                       ? "border-slate-900 bg-slate-900 text-white"
                                       : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
@@ -1809,8 +1809,8 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
               {species.toLowerCase().includes("gato") ? "🐱" : "🐶"}
             </div>
 
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">
                 {pet.name}
               </p>
               <p className="text-xs text-slate-500">
@@ -1879,7 +1879,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
                       type="button"
                       onClick={handleSubmitBooking}
                       disabled={submitting}
-                      className="inline-flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
                     >
                       {submitting ? "Confirmando..." : "Confirmar hora"}
                     </button>
@@ -1889,7 +1889,7 @@ className={`flex min-h-[40px] w-full flex-col items-center justify-center rounde
             ) : null}
 
 
-            <div className="mt-auto grid gap-3 pt-6 lg:grid-cols-4">
+            <div className="mt-auto grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4 lg:pt-6">
               <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
                 <div className="flex items-start gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm">
