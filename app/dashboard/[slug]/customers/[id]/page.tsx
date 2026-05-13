@@ -957,24 +957,28 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
         {viewingPetId === pet.id ? (
           <div
-            className="mt-4 rounded-2xl border p-4"
+            className="mt-4 rounded-2xl border p-4 sm:p-5"
             style={{
               borderColor: "var(--border-color)",
               background: "var(--bg-soft)",
             }}
           >
             <p
-              className="text-sm font-semibold"
-              style={{ color: "var(--text-main)" }}
-            >
-              Ficha clínica de {pet.name}
-            </p>
-
-            <p
-              className="mt-1 text-xs"
+              className="text-xs font-semibold uppercase tracking-[0.18em]"
               style={{ color: "var(--text-muted)" }}
             >
-              Historial alimentado desde Agenda.
+              Ficha clínica veterinaria
+            </p>
+
+            <h3
+              className="mt-1 text-xl font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              {pet.name}
+            </h3>
+
+            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+              Responsable: {customer.name}
             </p>
 
             <div className="mt-3 flex justify-end">
@@ -993,7 +997,71 @@ next_control_at: data?.appointment?.next_control_at ?? null,
               )}
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div
+                className="rounded-xl border p-3"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                  Datos de mascota
+                </p>
+                <dl className="mt-3 grid gap-2 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <dt style={{ color: "var(--text-muted)" }}>Especie</dt>
+                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{getPetSpeciesLabel(pet)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt style={{ color: "var(--text-muted)" }}>Sexo</dt>
+                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{pet.sex || "Sin informar"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt style={{ color: "var(--text-muted)" }}>Peso</dt>
+                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{pet.weight_kg ? `${pet.weight_kg} kg` : "Sin informar"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt style={{ color: "var(--text-muted)" }}>Esterilizado</dt>
+                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{pet.is_sterilized ? "Sí" : "No"}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div
+                className="rounded-xl border p-3"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                  Datos del cliente
+                </p>
+                <dl className="mt-3 grid gap-2 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <dt style={{ color: "var(--text-muted)" }}>Nombre</dt>
+                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{customer.name}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt style={{ color: "var(--text-muted)" }}>Teléfono</dt>
+                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{customer.phone || "Sin teléfono"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt style={{ color: "var(--text-muted)" }}>Email</dt>
+                    <dd className="truncate font-medium" style={{ color: "var(--text-main)" }}>{customer.email || "Sin email"}</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                Historial clínico
+              </p>
+            </div>
+
+            <div className="mt-3 space-y-3">
               {validAppointments.filter((appt) => appt.pet_id === pet.id).length === 0 ? (
                 <EmptyState
                   title="Sin atenciones registradas"
@@ -1015,7 +1083,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                           background: "var(--bg-card)",
                         }}
                       >
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="grid gap-3 md:grid-cols-[160px_1fr]">
                           <div>
                             
 <p
@@ -1032,18 +1100,18 @@ next_control_at: data?.appointment?.next_control_at ?? null,
   {appt.service_name_snapshot || "Atención"}
 </p>
 
+                          </div>
+
+                          <div>
                             <p
-                              className="mt-1 text-xs"
-                              style={{ color: "var(--text-muted)" }}
+                              className="text-sm font-semibold"
+                              style={{ color: "var(--text-main)" }}
                             >
                               {appt.reason || "Sin motivo registrado"}
                             </p>
-                          </div>
 
-                        </div>
-
-                        <div
-                            className="mt-3 rounded-xl border p-3 text-sm"
+                            <div
+                            className="mt-2 rounded-xl border p-3 text-sm"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-soft)",
@@ -1061,6 +1129,8 @@ next_control_at: data?.appointment?.next_control_at ?? null,
   ? formatDateLong(appt.next_control_at)
   : "Sin próximo control."}
                             </p>
+                        </div>
+                          </div>
                         </div>
                       </div>
                     ) : (
