@@ -247,6 +247,9 @@ const [slotMinutesError, setSlotMinutesError] = useState("");
   const [businessSubtypeConfig, setBusinessSubtypeConfig] = useState<{
     booking_fields: SubtypeBookingField[];
   }>({ booking_fields: [] });
+  const [subtypeOptionDrafts, setSubtypeOptionDrafts] = useState<
+    Record<string, string>
+  >({});
   const [businessCategory, setBusinessCategory] = useState("");
 const [slotMinutes, setSlotMinutes] = useState(30);
 const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
@@ -985,6 +988,47 @@ function updateHourByIndex(
     }));
   }
 
+  function addSubtypeFieldOption(index: number, fieldKey: string) {
+    const option = String(subtypeOptionDrafts[fieldKey] || "").trim();
+    if (!option) return;
+
+    setBusinessSubtypeConfig((prev) => ({
+      booking_fields: prev.booking_fields.map((item, i) => {
+        if (i !== index) return item;
+
+        const currentOptions = item.options || [];
+        const exists = currentOptions.some(
+          (current) => current.toLowerCase() === option.toLowerCase()
+        );
+
+        return {
+          ...item,
+          options: exists ? currentOptions : [...currentOptions, option],
+        };
+      }),
+    }));
+
+    setSubtypeOptionDrafts((prev) => ({
+      ...prev,
+      [fieldKey]: "",
+    }));
+  }
+
+  function removeSubtypeFieldOption(index: number, optionToRemove: string) {
+    setBusinessSubtypeConfig((prev) => ({
+      booking_fields: prev.booking_fields.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              options: (item.options || []).filter(
+                (option) => option !== optionToRemove
+              ),
+            }
+          : item
+      ),
+    }));
+  }
+
   function normalizeTimeInput(value: string) {
     const cleaned = value.replace(/[^\d:]/g, "").slice(0, 5);
 
@@ -1450,7 +1494,9 @@ function updateHourByIndex(
               </div>
 
               {form.business_subtype === "taller_automotriz" ? (
-                <div>
+                <div className="lg:col-span-2">
+                  <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                    <div>
                   <p
                     className="text-sm font-semibold"
                     style={{ color: "var(--text-main)" }}
@@ -1562,28 +1608,87 @@ function updateHourByIndex(
                               className="mb-1 block text-xs font-medium"
                               style={{ color: "var(--text-muted)" }}
                             >
-                              Opciones del select
+                              Opciones del select, una por línea
                             </label>
-                            <textarea
-                              value={(field.options || []).join("\n")}
-                              onChange={(e) =>
-                                updateSubtypeBookingField(
-                                  index,
-                                  "options",
-                                  e.target.value
-                                    .split("\n")
-                                    .map((option) => option.trim())
-                                    .filter(Boolean)
-                                )
-                              }
-                              placeholder="Una opcion por linea. Ej: Auto, Moto, Camion"
-                              className="min-h-[84px] w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-soft)",
-                                color: "var(--text-main)",
-                              }}
-                            />
+                            <p
+                              className="mb-2 text-xs"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Escribe una opción y agrégala a la lista. Ejemplo: Auto, Moto, Camión.
+                            </p>
+
+                            {(field.options || []).length > 0 ? (
+                              <div className="mb-3 flex flex-wrap gap-2">
+                                {(field.options || []).map((option) => (
+                                  <span
+                                    key={option}
+                                    className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
+                                    style={{
+                                      borderColor: "var(--border-color)",
+                                      background: "var(--bg-soft)",
+                                      color: "var(--text-main)",
+                                    }}
+                                  >
+                                    {option}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        removeSubtypeFieldOption(index, option)
+                                      }
+                                      className="font-semibold text-rose-400 transition hover:text-rose-300"
+                                      aria-label={`Eliminar ${option}`}
+                                    >
+                                      x
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                              <input
+                                type="text"
+                                value={subtypeOptionDrafts[field.key] || ""}
+                                onChange={(e) =>
+                                  setSubtypeOptionDrafts((prev) => ({
+                                    ...prev,
+                                    [field.key]: e.target.value,
+                                  }))
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    addSubtypeFieldOption(index, field.key);
+                                  }
+                                }}
+                                placeholder={
+                                  field.key === "unit_type"
+                                    ? "Ej: Auto"
+                                    : "Ej: Toyota"
+                                }
+                                className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-soft)",
+                                  color: "var(--text-main)",
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  addSubtypeFieldOption(index, field.key)
+                                }
+                                className="h-10 rounded-xl border px-4 text-sm font-medium transition hover:opacity-80"
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                }}
+                              >
+                                Agregar
+                              </button>
+                            </div>
+
                             {(field.options || []).length === 0 ? (
                               <p
                                 className="mt-1 text-xs"
@@ -1596,6 +1701,123 @@ function updateHourByIndex(
                         ) : null}
                       </div>
                     ))}
+                  </div>
+                    </div>
+
+                    <div
+                      className="rounded-2xl border p-4"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                      }}
+                    >
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: "var(--text-main)" }}
+                      >
+                        Así verá este formulario tu cliente
+                      </p>
+                      <p
+                        className="mt-1 text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Vista previa de los campos visibles para la reserva pública.
+                      </p>
+
+                      <div className="mt-4 space-y-3">
+                        {businessSubtypeConfig.booking_fields.filter((field) => field.enabled).length === 0 ? (
+                          <div
+                            className="rounded-2xl border border-dashed px-4 py-5 text-sm"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            No hay campos visibles para mostrar.
+                          </div>
+                        ) : null}
+
+                        {businessSubtypeConfig.booking_fields
+                          .filter((field) => field.enabled)
+                          .map((field) => {
+                            const label = `${field.label}${field.required ? " *" : ""}`;
+
+                            if (field.type === "select" && (field.options || []).length > 0) {
+                              return (
+                                <div key={field.key}>
+                                  <label
+                                    className="mb-1 block text-xs font-medium"
+                                    style={{ color: "var(--text-muted)" }}
+                                  >
+                                    {label}
+                                    {field.required ? " · Obligatorio" : ""}
+                                  </label>
+                                  <select
+                                    disabled
+                                    className="h-10 w-full rounded-xl border px-3 text-sm"
+                                    style={{
+                                      borderColor: "var(--border-color)",
+                                      background: "var(--bg-soft)",
+                                      color: "var(--text-main)",
+                                    }}
+                                  >
+                                    <option>{field.label}</option>
+                                    {(field.options || []).map((option) => (
+                                      <option key={option}>{option}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              );
+                            }
+
+                            if (field.type === "textarea") {
+                              return (
+                                <div key={field.key}>
+                                  <label
+                                    className="mb-1 block text-xs font-medium"
+                                    style={{ color: "var(--text-muted)" }}
+                                  >
+                                    {label}
+                                    {field.required ? " · Obligatorio" : ""}
+                                  </label>
+                                  <textarea
+                                    disabled
+                                    placeholder={field.label}
+                                    className="min-h-[82px] w-full rounded-xl border px-3 py-2 text-sm"
+                                    style={{
+                                      borderColor: "var(--border-color)",
+                                      background: "var(--bg-soft)",
+                                      color: "var(--text-main)",
+                                    }}
+                                  />
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div key={field.key}>
+                                <label
+                                  className="mb-1 block text-xs font-medium"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  {label}
+                                  {field.required ? " · Obligatorio" : ""}
+                                </label>
+                                <input
+                                  disabled
+                                  placeholder={field.label}
+                                  className="h-10 w-full rounded-xl border px-3 text-sm"
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-soft)",
+                                    color: "var(--text-main)",
+                                  }}
+                                />
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : null}
