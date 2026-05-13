@@ -84,6 +84,7 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [businessCategory, setBusinessCategory] = useState("");
   const isVeterinaria = businessCategory === "veterinaria";
+  const [selectedBranchId, setSelectedBranchId] = useState("");
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -97,11 +98,36 @@ export default function CustomersPage() {
     frecuentes: 0,
     inactivos: 0,
   });
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
+
+  function readStoredBranchId() {
+    if (typeof window === "undefined" || !branchStorageKey) return "";
+    return localStorage.getItem(branchStorageKey) || "";
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  useEffect(() => {
+    setSelectedBranchId(readStoredBranchId());
+  }, [branchStorageKey]);
+
+  useEffect(() => {
+    function handleBranchChanged(event: Event) {
+      const customEvent = event as CustomEvent<{ branchId?: string }>;
+      setSelectedBranchId(customEvent.detail?.branchId || readStoredBranchId());
+    }
+
+    window.addEventListener("orbyx-branch-changed", handleBranchChanged);
+
+    return () => {
+      window.removeEventListener("orbyx-branch-changed", handleBranchChanged);
+    };
+  }, [branchStorageKey]);
 
   useEffect(() => {
     async function load() {
@@ -114,6 +140,7 @@ export default function CustomersPage() {
       if (search) params.set("q", search);
       if (segment !== "all") params.set("segment", segment);
       params.set("inactive_days", inactiveDays);
+      if (selectedBranchId) params.set("branch_id", selectedBranchId);
 
       const res = await fetch(
         `${BACKEND_URL}/customers/${slug}?${params.toString()}`
@@ -125,7 +152,7 @@ export default function CustomersPage() {
     }
 
     if (slug) load();
-  }, [slug, search, segment, inactiveDays]);
+  }, [slug, search, segment, inactiveDays, selectedBranchId]);
 
   const activeSegmentLabel = useMemo(() => {
     return (

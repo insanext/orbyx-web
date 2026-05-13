@@ -209,6 +209,7 @@ export default function CustomerDetailPage() {
   const [viewingPetId, setViewingPetId] = useState<string | null>(null);
   const [activeVetTab, setActiveVetTab] = useState<VetCustomerTab>("pets");
   const [selectedControlPreset, setSelectedControlPreset] = useState<Record<string, number>>({});
+  const [selectedBranchId, setSelectedBranchId] = useState("");
 
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
@@ -220,6 +221,31 @@ export default function CustomerDetailPage() {
     is_sterilized: false,
     notes: "",
   });
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
+
+  function readStoredBranchId() {
+    if (typeof window === "undefined" || !branchStorageKey) return "";
+    return localStorage.getItem(branchStorageKey) || "";
+  }
+
+  useEffect(() => {
+    setSelectedBranchId(readStoredBranchId());
+  }, [branchStorageKey]);
+
+  useEffect(() => {
+    function handleBranchChanged(event: Event) {
+      const customEvent = event as CustomEvent<{ branchId?: string }>;
+      setSelectedBranchId(customEvent.detail?.branchId || readStoredBranchId());
+    }
+
+    window.addEventListener("orbyx-branch-changed", handleBranchChanged);
+
+    return () => {
+      window.removeEventListener("orbyx-branch-changed", handleBranchChanged);
+    };
+  }, [branchStorageKey]);
 
   useEffect(() => {
     async function loadData() {
@@ -259,8 +285,16 @@ export default function CustomerDetailPage() {
         }
 
         try {
+          const appointmentParams = new URLSearchParams({
+            customer_id: customerId,
+          });
+
+          if (selectedBranchId) {
+            appointmentParams.set("branch_id", selectedBranchId);
+          }
+
           const resAppointments = await fetch(
-            `${BACKEND_URL}/appointments/customer-history/${slug}?customer_id=${customerId}`
+            `${BACKEND_URL}/appointments/customer-history/${slug}?${appointmentParams.toString()}`
           );
           const dataAppointments = await resAppointments.json();
           setAppointments(dataAppointments.appointments || []);
@@ -287,7 +321,7 @@ export default function CustomerDetailPage() {
     if (slug && customerId) {
       loadData();
     }
-  }, [slug, customerId]);
+  }, [slug, customerId, selectedBranchId]);
 
   async function handleCreatePet(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -501,7 +535,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 <p className="mt-2 text-xs text-slate-400">
   Última visita:{" "}
   {isVeterinaria
-    ? formatDateLong(customer.last_visit_at)
+    ? formatDateLong(lastValidAppointment?.start_at)
     : formatDateLong(lastValidAppointment?.start_at)}
 </p>
   </div>
@@ -1396,7 +1430,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
   label="Última visita"
   value={
     isVeterinaria
-      ? formatDate(customer.last_visit_at)
+      ? formatDate(lastValidAppointment?.start_at)
       : formatDate(lastValidAppointment?.start_at)
   }
   hint={
