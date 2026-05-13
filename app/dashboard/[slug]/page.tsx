@@ -321,6 +321,7 @@ export default function DashboardHomePage() {
   const [plan, setPlan] = useState<PlanSlug>("starter");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedBranchId, setSelectedBranchId] = useState("");
   const [metrics, setMetrics] = useState({
     reservas_hoy: 0,
     reservas_semana: 0,
@@ -332,6 +333,31 @@ export default function DashboardHomePage() {
 
   const [rangeType, setRangeType] = useState("Semana");
   const [rangeMonth, setRangeMonth] = useState("Abril 2026");
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
+
+  function readStoredBranchId() {
+    if (typeof window === "undefined" || !branchStorageKey) return "";
+    return localStorage.getItem(branchStorageKey) || "";
+  }
+
+  useEffect(() => {
+    setSelectedBranchId(readStoredBranchId());
+  }, [branchStorageKey]);
+
+  useEffect(() => {
+    function handleBranchChanged(event: Event) {
+      const customEvent = event as CustomEvent<{ branchId?: string }>;
+      setSelectedBranchId(customEvent.detail?.branchId || readStoredBranchId());
+    }
+
+    window.addEventListener("orbyx-branch-changed", handleBranchChanged);
+
+    return () => {
+      window.removeEventListener("orbyx-branch-changed", handleBranchChanged);
+    };
+  }, [branchStorageKey]);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -339,9 +365,14 @@ export default function DashboardHomePage() {
         setLoading(true);
         setError("");
 
+        const metricsUrl = new URL(`${BACKEND_URL}/dashboard/metrics/${slug}`);
+        if (selectedBranchId) {
+          metricsUrl.searchParams.set("branch_id", selectedBranchId);
+        }
+
         const [businessRes, metricsRes] = await Promise.all([
           fetch(`${BACKEND_URL}/public/business/${slug}`),
-          fetch(`${BACKEND_URL}/dashboard/metrics/${slug}`),
+          fetch(metricsUrl.toString()),
         ]);
 
         const businessData: BusinessResponse | { error?: string } =
@@ -395,7 +426,7 @@ export default function DashboardHomePage() {
     if (slug) {
       loadDashboard();
     }
-  }, [slug]);
+  }, [slug, selectedBranchId]);
 
   const planLabel = useMemo(() => PLAN_LABELS[plan], [plan]);
 
