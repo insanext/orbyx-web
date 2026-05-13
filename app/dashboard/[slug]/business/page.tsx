@@ -11,6 +11,14 @@ type BookingField = {
   required: boolean;
 };
 
+type SubtypeBookingField = {
+  key: string;
+  label: string;
+  enabled: boolean;
+  required: boolean;
+  type: "text" | "textarea";
+};
+
 type BusinessResponse = {
   business: {
     id: string;
@@ -101,6 +109,76 @@ const genericBusinessSubtypes = [
   },
 ];
 
+const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
+  {
+    key: "unit_type",
+    label: "Tipo de unidad/equipo",
+    enabled: true,
+    required: false,
+    type: "text",
+  },
+  { key: "brand", label: "Marca", enabled: true, required: false, type: "text" },
+  { key: "model", label: "Modelo", enabled: true, required: false, type: "text" },
+  { key: "year", label: "Anio", enabled: true, required: false, type: "text" },
+  {
+    key: "unit_identifier",
+    label: "Patente / Identificador",
+    enabled: true,
+    required: false,
+    type: "text",
+  },
+  {
+    key: "usage_value",
+    label: "Kilometraje / Horas de uso",
+    enabled: true,
+    required: false,
+    type: "text",
+  },
+  {
+    key: "visit_reason",
+    label: "Motivo de la visita",
+    enabled: true,
+    required: false,
+    type: "textarea",
+  },
+  {
+    key: "observations",
+    label: "Observaciones",
+    enabled: true,
+    required: false,
+    type: "textarea",
+  },
+];
+
+function normalizeSubtypeBookingFields(
+  fields?: unknown
+): SubtypeBookingField[] {
+  const savedFields = Array.isArray(fields) ? fields : [];
+
+  return tallerAutomotrizBookingFields.map((baseField) => {
+    const savedField = savedFields.find((item) => {
+      if (!item || typeof item !== "object") return false;
+      return (item as { key?: unknown }).key === baseField.key;
+    }) as Partial<SubtypeBookingField> | undefined;
+
+    return {
+      ...baseField,
+      label:
+        typeof savedField?.label === "string" && savedField.label.trim()
+          ? savedField.label.trim()
+          : baseField.label,
+      enabled:
+        typeof savedField?.enabled === "boolean"
+          ? savedField.enabled
+          : baseField.enabled,
+      required:
+        typeof savedField?.required === "boolean"
+          ? savedField.required
+          : false,
+    };
+  });
+}
+
 const days = [
   "Domingo",
   "Lunes",
@@ -144,6 +222,9 @@ const [slotMinutesError, setSlotMinutesError] = useState("");
   const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
   const [specialDates, setSpecialDates] = useState<SpecialDate[]>([]);
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
+  const [businessSubtypeConfig, setBusinessSubtypeConfig] = useState<{
+    booking_fields: SubtypeBookingField[];
+  }>({ booking_fields: [] });
   const [businessCategory, setBusinessCategory] = useState("");
 const [slotMinutes, setSlotMinutes] = useState(30);
 const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
@@ -277,6 +358,21 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
         setBusinessCategory(normalizedCategory);
 setSlotMinutes(Number(data.slot_minutes || 30));
 setCustomSlotMinutes(Number(data.slot_minutes || 30));
+        const normalizedSubtype =
+          normalizedCategory === "generic"
+            ? data.business.business_subtype || ""
+            : "";
+        const rawSubtypeConfig = data.business.business_subtype_config as
+          | { booking_fields?: unknown }
+          | null
+          | undefined;
+
+        setBusinessSubtypeConfig({
+          booking_fields:
+            normalizedSubtype === "taller_automotriz"
+              ? normalizeSubtypeBookingFields(rawSubtypeConfig?.booking_fields)
+              : [],
+        });
 
         setForm({
           name: data.business.name || "",
@@ -287,10 +383,7 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
           instagram_url: data.business.instagram_url || "",
           facebook_url: data.business.facebook_url || "",
           description: data.business.description || "",
-          business_subtype:
-            normalizedCategory === "generic"
-              ? data.business.business_subtype || ""
-              : "",
+          business_subtype: normalizedSubtype,
           min_booking_notice_minutes: Number(
             data.business.min_booking_notice_minutes || 0
           ),
@@ -789,7 +882,14 @@ async function saveSlotMinutes() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(form),
+          body: JSON.stringify({
+            ...form,
+            business_subtype_config:
+              businessCategory === "generic" &&
+              form.business_subtype === "taller_automotriz"
+                ? businessSubtypeConfig
+                : {},
+          }),
         }
       );
 
@@ -831,6 +931,29 @@ function updateHourByIndex(
     setBookingFields((prev) =>
       prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
+  }
+
+  function updateSubtypeBookingField(
+    index: number,
+    field: keyof Pick<SubtypeBookingField, "label" | "enabled" | "required">,
+    value: string | boolean
+  ) {
+    setBusinessSubtypeConfig((prev) => ({
+      booking_fields: prev.booking_fields.map((item, i) => {
+        if (i !== index) return item;
+
+        const nextItem = {
+          ...item,
+          [field]: value,
+        };
+
+        if (field === "enabled" && value === false) {
+          nextItem.required = false;
+        }
+
+        return nextItem;
+      }),
+    }));
   }
 
   function normalizeTimeInput(value: string) {
@@ -1236,6 +1359,160 @@ function updateHourByIndex(
             }}
           />
         </div>
+
+        {businessCategory === "generic" ? (
+          <div
+            className="rounded-2xl border p-4"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+            }}
+          >
+            <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+              <div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Tipo de experiencia
+                </label>
+                <select
+                  value={form.business_subtype}
+                  onChange={(e) => {
+                    const nextSubtype = e.target.value;
+
+                    setForm((prev) => ({
+                      ...prev,
+                      business_subtype: nextSubtype,
+                    }));
+
+                    setBusinessSubtypeConfig({
+                      booking_fields:
+                        nextSubtype === "taller_automotriz"
+                          ? normalizeSubtypeBookingFields(
+                              businessSubtypeConfig.booking_fields
+                            )
+                          : [],
+                    });
+                  }}
+                  className={selectClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  {genericBusinessSubtypes.map((item) => (
+                    <option key={item.value || "none"} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <p
+                  className="mt-2 text-xs leading-5"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {
+                    genericBusinessSubtypes.find(
+                      (item) => item.value === form.business_subtype
+                    )?.description
+                  }
+                </p>
+              </div>
+
+              {form.business_subtype === "taller_automotriz" ? (
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Campos para unidad/equipo
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Se muestran en la reserva publica. Ninguno es obligatorio por defecto.
+                  </p>
+
+                  <div className="mt-3 space-y-2">
+                    {businessSubtypeConfig.booking_fields.map((field, index) => (
+                      <div
+                        key={field.key}
+                        className="grid gap-2 rounded-2xl border p-3 md:grid-cols-[1fr_auto_auto]"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={field.label}
+                          onChange={(e) =>
+                            updateSubtypeBookingField(
+                              index,
+                              "label",
+                              e.target.value
+                            )
+                          }
+                          className="h-10 rounded-xl border px-3 text-sm outline-none transition"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
+                        />
+
+                        <label
+                          className="flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            color: "var(--text-main)",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={field.enabled}
+                            onChange={(e) =>
+                              updateSubtypeBookingField(
+                                index,
+                                "enabled",
+                                e.target.checked
+                              )
+                            }
+                          />
+                          Visible
+                        </label>
+
+                        <label
+                          className="flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            color: "var(--text-main)",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            disabled={!field.enabled}
+                            onChange={(e) =>
+                              updateSubtypeBookingField(
+                                index,
+                                "required",
+                                e.target.checked
+                              )
+                            }
+                          />
+                          Obligatorio
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         {saveError ? (
           <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
@@ -2024,45 +2301,6 @@ onClick={() => {
                     }}
           />
         </div>
-
-        {businessCategory === "generic" ? (
-          <div>
-            <label
-              className="mb-2 block text-sm font-medium"
-              style={{ color: "var(--text-main)" }}
-            >
-              Tipo de experiencia
-            </label>
-            <select
-              value={form.business_subtype}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  business_subtype: e.target.value,
-                }))
-              }
-              className={selectClass}
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-card)",
-                color: "var(--text-main)",
-              }}
-            >
-              {genericBusinessSubtypes.map((item) => (
-                <option key={item.value || "none"} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-            <p className="mt-2 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
-              {
-                genericBusinessSubtypes.find(
-                  (item) => item.value === form.business_subtype
-                )?.description
-              }
-            </p>
-          </div>
-        ) : null}
 
         <div>
           <label

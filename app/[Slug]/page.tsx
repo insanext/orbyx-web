@@ -57,6 +57,14 @@ type BookingField = {
   required: boolean;
 };
 
+type SubtypeBookingField = {
+  key: string;
+  label: string;
+  enabled: boolean;
+  required: boolean;
+  type?: "text" | "textarea";
+};
+
 type BusinessItem = {
   id: string;
   name: string;
@@ -72,6 +80,8 @@ type BusinessItem = {
   max_booking_days_ahead?: number | null;
   booking_fields_config?: BookingField[];
   business_category?: string;
+  business_subtype?: string | null;
+  business_subtype_config?: Record<string, unknown> | null;
 };
 
 type PublicServicesResponse = {
@@ -96,6 +106,17 @@ type BookingSuccessData = {
 };
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
+
+const subtypeFieldKeys = new Set([
+  "unit_type",
+  "brand",
+  "model",
+  "year",
+  "unit_identifier",
+  "usage_value",
+  "visit_reason",
+  "observations",
+]);
 
 
 function formatDate(date: Date) {
@@ -351,6 +372,41 @@ const nextAvailableDays = useMemo(() => {
 
   const showBranchSelector = branches.length > 1;
   const visibleBookingFields = bookingFields.filter((field) => field.enabled);
+  const visibleSubtypeBookingFields = useMemo(() => {
+    if (
+      business?.business_category !== "generic" ||
+      business?.business_subtype !== "taller_automotriz"
+    ) {
+      return [];
+    }
+
+    const config = business.business_subtype_config as
+      | { booking_fields?: unknown }
+      | null
+      | undefined;
+    const fields = Array.isArray(config?.booking_fields)
+      ? config.booking_fields
+      : [];
+
+    return fields
+      .filter((field): field is SubtypeBookingField => {
+        if (!field || typeof field !== "object") return false;
+
+        const item = field as Partial<SubtypeBookingField>;
+        return (
+          typeof item.key === "string" &&
+          subtypeFieldKeys.has(item.key) &&
+          item.enabled === true
+        );
+      })
+      .map((field) => ({
+        key: field.key,
+        label: String(field.label || field.key).trim(),
+        enabled: true,
+        required: field.required === true,
+        type: field.type === "textarea" ? "textarea" : "text",
+      }));
+  }, [business]);
 
   const selectedBranch =
     branches.find((branch) => branch.id === selectedBranchId) || null;
@@ -431,6 +487,12 @@ const nextAvailableDays = useMemo(() => {
       }
 
     for (const field of visibleBookingFields) {
+      if (field.required && !String(customerData[field.key] || "").trim()) {
+        return `Debes completar ${field.label}.`;
+      }
+    }
+
+    for (const field of visibleSubtypeBookingFields) {
       if (field.required && !String(customerData[field.key] || "").trim()) {
         return `Debes completar ${field.label}.`;
       }
@@ -833,6 +895,13 @@ const detectedCustomerId =
   existingCustomerFound && selectedPetId
     ? pets.find((p) => p.id === selectedPetId)?.customer_id || null
     : null;
+const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
+  Record<string, string>
+>((acc, field) => {
+  const value = String(customerData[field.key] || "").trim();
+  if (value) acc[field.key] = value;
+  return acc;
+}, {});
 
       const payload = {
         calendar_id: calendarId,
@@ -851,6 +920,9 @@ const detectedCustomerId =
     if (value) acc[field.key] = value;
     return acc;
   }, {}),
+  ...(visibleSubtypeBookingFields.length > 0
+    ? { subtype_fields: subtypeFieldsPayload }
+    : {}),
   pet_id:
     petMode === "existing" && selectedPetId
       ? selectedPetId
@@ -909,6 +981,12 @@ const detectedCustomerId =
         acc[field.key] = "";
         return acc;
       }, {});
+      const clearedSubtypeFields = visibleSubtypeBookingFields.reduce<
+        Record<string, string>
+      >((acc, field) => {
+        acc[field.key] = "";
+        return acc;
+      }, {});
 
       setCustomerData({
         name: "",
@@ -917,6 +995,7 @@ const detectedCustomerId =
         pet_name: "",
         pet_species: "",
         ...clearedExtraFields,
+        ...clearedSubtypeFields,
       });
 
       setSelectedPetId("");
@@ -1850,6 +1929,53 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
                         </div>
                       </div>
                     )}
+
+                    {visibleSubtypeBookingFields.length > 0 ? (
+                      <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 md:col-span-2">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            Datos de unidad/equipo
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Completa la informacion que ayude al negocio a preparar tu atencion.
+                          </p>
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-2">
+                          {visibleSubtypeBookingFields.map((field) =>
+                            field.type === "textarea" ? (
+                              <textarea
+                                key={field.key}
+                                placeholder={
+                                  field.required
+                                    ? `${field.label} *`
+                                    : field.label
+                                }
+                                value={customerData[field.key] || ""}
+                                onChange={(e) =>
+                                  updateCustomerField(field.key, e.target.value)
+                                }
+                                className="min-h-[96px] rounded-2xl border border-indigo-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-400 md:col-span-2"
+                              />
+                            ) : (
+                              <input
+                                key={field.key}
+                                placeholder={
+                                  field.required
+                                    ? `${field.label} *`
+                                    : field.label
+                                }
+                                value={customerData[field.key] || ""}
+                                onChange={(e) =>
+                                  updateCustomerField(field.key, e.target.value)
+                                }
+                                className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400"
+                              />
+                            )
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
 
                     {visibleBookingFields.map((field) => (
                       <input
