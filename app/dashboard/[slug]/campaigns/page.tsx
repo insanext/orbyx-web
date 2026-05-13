@@ -902,13 +902,16 @@ function ChannelCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-2xl border p-3 text-left transition sm:p-4"
+      aria-current={active ? "true" : undefined}
+      className="w-full cursor-pointer rounded-2xl border p-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 sm:p-4"
       style={{
-        borderColor: active ? "rgba(37,99,235,0.28)" : "var(--border-color)",
+        borderColor: active ? "rgba(37,99,235,0.55)" : "var(--border-color)",
         background: active
-          ? "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.06))"
+          ? "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.08))"
           : "var(--bg-card)",
-        boxShadow: active ? "0 12px 28px rgba(37,99,235,0.10)" : "none",
+        boxShadow: active
+          ? "inset 0 0 0 1px rgba(37,99,235,0.24), 0 12px 28px rgba(37,99,235,0.10)"
+          : "none",
       }}
     >
       <div className="flex items-start gap-3">
@@ -972,12 +975,14 @@ function SegmentCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-[20px] border p-4 text-left transition"
+      aria-current={active ? "true" : undefined}
+      className="w-full cursor-pointer rounded-2xl border p-4 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
       style={{
-        borderColor: active ? "rgba(37,99,235,0.28)" : "var(--border-color)",
+        borderColor: active ? "rgba(37,99,235,0.55)" : "var(--border-color)",
         background: active
-          ? "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(168,85,247,0.06))"
+          ? "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.08))"
           : "var(--bg-card)",
+        boxShadow: active ? "inset 0 0 0 1px rgba(37,99,235,0.24)" : "none",
       }}
     >
       <div className="flex items-start gap-3">
@@ -1028,15 +1033,17 @@ function SoftChip({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full px-4 py-2 text-xs font-semibold transition"
+      aria-current={active ? "true" : undefined}
+      className="cursor-pointer rounded-xl border px-4 py-2 text-xs font-semibold transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
       style={{
         background: active
-          ? "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))"
+          ? "rgba(37,99,235,0.14)"
           : "var(--bg-soft)",
-        color: active ? "#ffffff" : "var(--text-main)",
+        color: active ? "rgb(37 99 235)" : "var(--text-main)",
         border: active
-          ? "1px solid rgba(37,99,235,0.34)"
+          ? "1px solid rgba(37,99,235,0.55)"
           : "1px solid var(--border-color)",
+        boxShadow: active ? "inset 0 0 0 1px rgba(37,99,235,0.18)" : "none",
       }}
     >
       {label}
@@ -2825,13 +2832,13 @@ export default function CampaignsPage() {
       ) : null}
 
       <section
-        className="overflow-hidden rounded-[20px] border"
+        className="overflow-hidden rounded-2xl border p-1"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
         }}
       >
-        <div className="grid gap-0 md:grid-cols-3">
+        <div className="grid gap-1 md:grid-cols-3">
           {[
             {
               number: "1",
@@ -2857,13 +2864,16 @@ export default function CampaignsPage() {
               key={step.number}
               onClick={() => setActiveStep(step.step)}
               aria-current={activeStep === step.step ? "step" : undefined}
-              className="group flex cursor-pointer items-center gap-3 border-b px-4 py-4 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 md:border-b-0 md:border-r last:border-r-0"
+              className="group flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               style={{
                 borderColor:
-                  activeStep === step.step ? "rgba(37,99,235,0.38)" : "var(--border-color)",
+                  activeStep === step.step ? "rgba(37,99,235,0.55)" : "transparent",
                 background: activeStep === step.step
-                  ? "linear-gradient(135deg, rgba(37,99,235,0.12), transparent)"
-                  : undefined,
+                  ? "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.08))"
+                  : "transparent",
+                boxShadow: activeStep === step.step
+                  ? "inset 0 0 0 1px rgba(37,99,235,0.22)"
+                  : "none",
               }}
             >
               <span
