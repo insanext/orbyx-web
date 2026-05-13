@@ -166,7 +166,11 @@ export default function CustomersPage() {
       <PageHeader
         eyebrow={isVeterinaria ? "Tutores y mascotas" : "Clientes"}
         title="Base de clientes"
-        description="Gestiona clientes, filtra y analiza su comportamiento."
+        description={
+          selectedBranchId
+            ? "Clientes con actividad en la sucursal seleccionada."
+            : "Gestiona clientes, filtra y analiza su comportamiento."
+        }
       />
 
       {/* STATS */}
