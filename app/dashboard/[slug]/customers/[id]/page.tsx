@@ -206,6 +206,7 @@ export default function CustomerDetailPage() {
   const [savingClinicalId, setSavingClinicalId] = useState<string | null>(null);
   const [clinicalMessage, setClinicalMessage] = useState("");
   const [editingPetId, setEditingPetId] = useState<string | null>(null);
+  const [viewingPetId, setViewingPetId] = useState<string | null>(null);
   const [viewingClinicalId, setViewingClinicalId] = useState<string | null>(null);
   const [activeVetTab, setActiveVetTab] = useState<VetCustomerTab>("pets");
 
@@ -468,7 +469,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
 
         <div className="grid gap-4 xl:grid-cols-[1.45fr_0.8fr]">
-          <div className={`space-y-4 ${isVeterinaria && activeVetTab === "pets" ? "xl:col-span-2" : ""}`}>
+          <div className={`space-y-4 ${isVeterinaria ? "xl:col-span-2" : ""}`}>
             
 
 
@@ -509,24 +510,22 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
             {isVeterinaria ? (
               <div
-                className="overflow-x-auto rounded-2xl border p-1.5"
+                className="overflow-x-auto rounded-2xl border p-1"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
                 }}
               >
-                <div className="flex min-w-max gap-2">
+                <div className="grid min-w-max grid-cols-3 gap-1 sm:min-w-0">
                   {[
-                    { id: "pets", label: "Mascotas", value: pets.length },
+                    { id: "pets", label: "Mascotas" },
                     {
                       id: "summary",
-                      label: "Resumen rapido",
-                      value: validAppointments.length,
+                      label: "Resumen rápido",
                     },
                     {
                       id: "followups",
-                      label: "Proximos controles",
-                      value: followups.length,
+                      label: "Próximos controles",
                     },
                   ].map((tab) => {
                     const isActive = activeVetTab === tab.id;
@@ -537,7 +536,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                         type="button"
                         aria-current={isActive ? "page" : undefined}
                         onClick={() => setActiveVetTab(tab.id as VetCustomerTab)}
-                        className="cursor-pointer rounded-xl border px-3 py-2 text-left text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500 sm:px-4"
+                        className="cursor-pointer rounded-xl border px-3 py-2.5 text-center text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
                         style={{
                           borderColor: isActive
                             ? "rgba(37,99,235,0.38)"
@@ -566,10 +565,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                           }
                         }}
                       >
-                        <span className="block font-semibold">{tab.label}</span>
-                        <span className="mt-0.5 block text-xs opacity-75">
-                          {tab.value}
-                        </span>
+                        {tab.label}
                       </button>
                     );
                   })}
@@ -916,23 +912,25 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
   <button
     type="button"
-    onClick={() =>
-      setEditingPetId((prev) => (prev === pet.id ? null : pet.id))
-    }
+    onClick={() => {
+      setViewingPetId((prev) => (prev === pet.id ? null : pet.id));
+      setEditingPetId(null);
+    }}
     className="rounded-xl px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
     style={{
       background:
         "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
     }}
   >
-    {editingPetId === pet.id ? "Cerrar ficha" : "Ver ficha"}
+    {viewingPetId === pet.id ? "Cerrar ficha" : "Ver ficha"}
   </button>
 
   <button
     type="button"
-    onClick={() =>
-      setEditingPetId((prev) => (prev === pet.id ? null : pet.id))
-    }
+    onClick={() => {
+      setViewingPetId(pet.id);
+      setEditingPetId(pet.id);
+    }}
     className="rounded-xl border px-4 py-2 text-xs font-medium transition hover:bg-slate-100"
     style={{
       borderColor: "var(--border-color)",
@@ -958,7 +956,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 </div>
 
 
-        {editingPetId === pet.id ? (
+        {viewingPetId === pet.id ? (
           <div
             className="mt-4 rounded-2xl border p-4"
             style={{
@@ -980,6 +978,22 @@ next_control_at: data?.appointment?.next_control_at ?? null,
               Historial alimentado desde Agenda.
             </p>
 
+            <div className="mt-3 flex justify-end">
+              {editingPetId === pet.id ? null : (
+                <button
+                  type="button"
+                  onClick={() => setEditingPetId(pet.id)}
+                  className="rounded-xl border px-4 py-2 text-xs font-medium transition hover:bg-slate-100"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Editar ficha
+                </button>
+              )}
+            </div>
+
             <div className="mt-4 space-y-3">
               {validAppointments.filter((appt) => appt.pet_id === pet.id).length === 0 ? (
                 <EmptyState
@@ -994,7 +1008,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
   const isViewing = viewingClinicalId === appt.id;
 
   return (
-                    !isLatest ? (
+                    !isLatest || editingPetId !== pet.id ? (
                       <div
                         key={appt.id}
                         className="rounded-xl border px-4 py-3"
@@ -1269,7 +1283,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
           </div>
 
-          <div className={`space-y-4 ${isVeterinaria && activeVetTab === "pets" ? "hidden" : ""}`}>
+          <div className={`space-y-4 ${isVeterinaria ? "xl:col-span-2" : ""} ${isVeterinaria && activeVetTab === "pets" ? "hidden" : ""}`}>
             {(!isVeterinaria || activeVetTab === "summary") ? (
             <Panel
               title="Resumen rápido"
