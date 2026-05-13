@@ -62,7 +62,8 @@ type SubtypeBookingField = {
   label: string;
   enabled: boolean;
   required: boolean;
-  type?: "text" | "textarea";
+  type?: "text" | "textarea" | "select";
+  options?: string[];
 };
 
 type BusinessItem = {
@@ -404,7 +405,15 @@ const nextAvailableDays = useMemo(() => {
         label: String(field.label || field.key).trim(),
         enabled: true,
         required: field.required === true,
-        type: field.type === "textarea" ? "textarea" : "text",
+        type:
+          field.type === "textarea" || field.type === "select"
+            ? field.type
+            : "text",
+        options: Array.isArray(field.options)
+          ? field.options
+              .map((option) => String(option || "").trim())
+              .filter(Boolean)
+          : [],
       }));
   }, [business]);
 
@@ -1942,8 +1951,37 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
-                          {visibleSubtypeBookingFields.map((field) =>
-                            field.type === "textarea" ? (
+                          {visibleSubtypeBookingFields.map((field) => {
+                            const selectOptions = field.options || [];
+
+                            if (
+                              field.type === "select" &&
+                              selectOptions.length > 0
+                            ) {
+                              return (
+                                <select
+                                  key={field.key}
+                                  value={customerData[field.key] || ""}
+                                  onChange={(e) =>
+                                    updateCustomerField(field.key, e.target.value)
+                                  }
+                                  className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400"
+                                >
+                                  <option value="">
+                                    {field.required
+                                      ? `${field.label} *`
+                                      : field.label}
+                                  </option>
+                                  {selectOptions.map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                              );
+                            }
+
+                            return field.type === "textarea" ? (
                               <textarea
                                 key={field.key}
                                 placeholder={
@@ -1971,8 +2009,8 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
                                 }
                                 className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400"
                               />
-                            )
-                          )}
+                            );
+                          })}
                         </div>
                       </div>
                     ) : null}

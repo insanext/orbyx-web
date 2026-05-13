@@ -16,7 +16,8 @@ type SubtypeBookingField = {
   label: string;
   enabled: boolean;
   required: boolean;
-  type: "text" | "textarea";
+  type: "text" | "textarea" | "select";
+  options?: string[];
 };
 
 type BusinessResponse = {
@@ -114,10 +115,18 @@ const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
     key: "unit_type",
     label: "Tipo de unidad/equipo",
     enabled: true,
+    required: true,
+    type: "select",
+    options: ["Auto", "Moto", "Camion", "Maquinaria", "Bus"],
+  },
+  {
+    key: "brand",
+    label: "Marca",
+    enabled: true,
     required: false,
     type: "text",
+    options: [],
   },
-  { key: "brand", label: "Marca", enabled: true, required: false, type: "text" },
   { key: "model", label: "Modelo", enabled: true, required: false, type: "text" },
   { key: "year", label: "Anio", enabled: true, required: false, type: "text" },
   {
@@ -160,6 +169,17 @@ function normalizeSubtypeBookingFields(
       if (!item || typeof item !== "object") return false;
       return (item as { key?: unknown }).key === baseField.key;
     }) as Partial<SubtypeBookingField> | undefined;
+    const savedType =
+      savedField?.type === "select" ||
+      savedField?.type === "textarea" ||
+      savedField?.type === "text"
+        ? savedField.type
+        : baseField.type;
+    const savedOptions = Array.isArray(savedField?.options)
+      ? savedField.options
+          .map((option) => String(option || "").trim())
+          .filter(Boolean)
+      : baseField.options || [];
 
     return {
       ...baseField,
@@ -174,7 +194,9 @@ function normalizeSubtypeBookingFields(
       required:
         typeof savedField?.required === "boolean"
           ? savedField.required
-          : false,
+          : baseField.required,
+      type: savedType,
+      options: savedType === "select" ? savedOptions : [],
     };
   });
 }
@@ -935,8 +957,11 @@ function updateHourByIndex(
 
   function updateSubtypeBookingField(
     index: number,
-    field: keyof Pick<SubtypeBookingField, "label" | "enabled" | "required">,
-    value: string | boolean
+    field: keyof Pick<
+      SubtypeBookingField,
+      "label" | "enabled" | "required" | "type" | "options"
+    >,
+    value: string | boolean | string[]
   ) {
     setBusinessSubtypeConfig((prev) => ({
       booking_fields: prev.booking_fields.map((item, i) => {
@@ -949,6 +974,10 @@ function updateHourByIndex(
 
         if (field === "enabled" && value === false) {
           nextItem.required = false;
+        }
+
+        if (field === "type" && value !== "select") {
+          nextItem.options = [];
         }
 
         return nextItem;
@@ -1432,14 +1461,14 @@ function updateHourByIndex(
                     className="text-xs"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    Se muestran en la reserva publica. Ninguno es obligatorio por defecto.
+                    Se muestran en la reserva publica. Puedes usar texto libre, texto largo o select con opciones.
                   </p>
 
                   <div className="mt-3 space-y-2">
                     {businessSubtypeConfig.booking_fields.map((field, index) => (
                       <div
                         key={field.key}
-                        className="grid gap-2 rounded-2xl border p-3 md:grid-cols-[1fr_auto_auto]"
+                        className="grid gap-2 rounded-2xl border p-3 md:grid-cols-[1fr_150px_auto_auto]"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-card)",
@@ -1462,6 +1491,27 @@ function updateHourByIndex(
                             color: "var(--text-main)",
                           }}
                         />
+
+                        <select
+                          value={field.type}
+                          onChange={(e) =>
+                            updateSubtypeBookingField(
+                              index,
+                              "type",
+                              e.target.value
+                            )
+                          }
+                          className="h-10 rounded-xl border px-3 text-sm outline-none transition"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
+                        >
+                          <option value="text">Texto</option>
+                          <option value="select">Select</option>
+                          <option value="textarea">Texto largo</option>
+                        </select>
 
                         <label
                           className="flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium"
@@ -1505,6 +1555,45 @@ function updateHourByIndex(
                           />
                           Obligatorio
                         </label>
+
+                        {field.type === "select" ? (
+                          <div className="md:col-span-4">
+                            <label
+                              className="mb-1 block text-xs font-medium"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Opciones del select
+                            </label>
+                            <textarea
+                              value={(field.options || []).join("\n")}
+                              onChange={(e) =>
+                                updateSubtypeBookingField(
+                                  index,
+                                  "options",
+                                  e.target.value
+                                    .split("\n")
+                                    .map((option) => option.trim())
+                                    .filter(Boolean)
+                                )
+                              }
+                              placeholder="Una opcion por linea. Ej: Auto, Moto, Camion"
+                              className="min-h-[84px] w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-soft)",
+                                color: "var(--text-main)",
+                              }}
+                            />
+                            {(field.options || []).length === 0 ? (
+                              <p
+                                className="mt-1 text-xs"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                Si no hay opciones, en la reserva publica se mostrara como texto libre.
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
                     ))}
                   </div>
