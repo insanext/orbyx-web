@@ -74,6 +74,8 @@ type PetFollowup = {
   } | null;
 };
 
+type VetCustomerTab = "pets" | "summary" | "followups";
+
 /* ================= HELPERS ================= */
 
 function formatDate(value?: string | null) {
@@ -117,7 +119,7 @@ function SummaryCard({
 }) {
   return (
     <div
-      className="rounded-2xl border p-4"
+      className="rounded-2xl border p-3 sm:p-4"
       style={{
         borderColor: "var(--border-color)",
         background:
@@ -132,7 +134,7 @@ function SummaryCard({
       </p>
 
       <p
-        className="mt-2 text-2xl font-semibold"
+        className="mt-2 text-xl font-semibold sm:text-2xl"
         style={{ color: "var(--text-main)" }}
       >
         {value}
@@ -203,8 +205,9 @@ export default function CustomerDetailPage() {
   const [petSuccess, setPetSuccess] = useState("");
   const [savingClinicalId, setSavingClinicalId] = useState<string | null>(null);
   const [clinicalMessage, setClinicalMessage] = useState("");
-const [editingPetId, setEditingPetId] = useState<string | null>(null);
-const [viewingClinicalId, setViewingClinicalId] = useState<string | null>(null);
+  const [editingPetId, setEditingPetId] = useState<string | null>(null);
+  const [viewingClinicalId, setViewingClinicalId] = useState<string | null>(null);
+  const [activeVetTab, setActiveVetTab] = useState<VetCustomerTab>("pets");
 
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
@@ -464,8 +467,8 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
 
 
-        <div className="grid gap-6 xl:grid-cols-[1.45fr_0.8fr]">
-          <div className="space-y-6">
+        <div className="grid gap-4 xl:grid-cols-[1.45fr_0.8fr]">
+          <div className={`space-y-4 ${isVeterinaria && activeVetTab === "pets" ? "xl:col-span-2" : ""}`}>
             
 
 
@@ -504,9 +507,79 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 </div>
 
 
-
-
             {isVeterinaria ? (
+              <div
+                className="overflow-x-auto rounded-2xl border p-1.5"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <div className="flex min-w-max gap-2">
+                  {[
+                    { id: "pets", label: "Mascotas", value: pets.length },
+                    {
+                      id: "summary",
+                      label: "Resumen rapido",
+                      value: validAppointments.length,
+                    },
+                    {
+                      id: "followups",
+                      label: "Proximos controles",
+                      value: followups.length,
+                    },
+                  ].map((tab) => {
+                    const isActive = activeVetTab === tab.id;
+
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        aria-current={isActive ? "page" : undefined}
+                        onClick={() => setActiveVetTab(tab.id as VetCustomerTab)}
+                        className="cursor-pointer rounded-xl border px-3 py-2 text-left text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500 sm:px-4"
+                        style={{
+                          borderColor: isActive
+                            ? "rgba(37,99,235,0.38)"
+                            : "transparent",
+                          background: isActive
+                            ? "rgba(37,99,235,0.10)"
+                            : "transparent",
+                          color: isActive
+                            ? "var(--text-main)"
+                            : "var(--text-muted)",
+                        }}
+                        onMouseEnter={(event) => {
+                          if (!isActive) {
+                            event.currentTarget.style.background =
+                              "var(--bg-soft)";
+                            event.currentTarget.style.borderColor =
+                              "var(--border-color)";
+                          }
+                        }}
+                        onMouseLeave={(event) => {
+                          if (!isActive) {
+                            event.currentTarget.style.background =
+                              "transparent";
+                            event.currentTarget.style.borderColor =
+                              "transparent";
+                          }
+                        }}
+                      >
+                        <span className="block font-semibold">{tab.label}</span>
+                        <span className="mt-0.5 block text-xs opacity-75">
+                          {tab.value}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+
+
+            {isVeterinaria && activeVetTab === "pets" ? (
               <Panel
                 title="Mascotas"
                 description="Agrega mascotas del cliente y construye una ficha veterinaria liviana."
@@ -795,17 +868,18 @@ next_control_at: data?.appointment?.next_control_at ?? null,
     {pets.map((pet) => (
       <div
         key={pet.id}
-        className="rounded-2xl border p-4 flex items-center gap-4"
+        className="rounded-2xl border p-3 sm:p-4"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
         }}
       >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="h-16 w-16 rounded-full bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
           🐾
         </div>
 
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <p
             className="text-lg font-semibold"
             style={{ color: "var(--text-main)" }}
@@ -839,25 +913,48 @@ next_control_at: data?.appointment?.next_control_at ?? null,
           ) : null}
         </div>
 
-<div className="flex items-center gap-2">
+<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
   <button
     type="button"
     onClick={() =>
       setEditingPetId((prev) => (prev === pet.id ? null : pet.id))
     }
-    className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
+    className="rounded-xl px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+    style={{
+      background:
+        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+    }}
   >
-    {editingPetId === pet.id ? "Cerrar" : "Editar"}
+    {editingPetId === pet.id ? "Cerrar ficha" : "Ver ficha"}
+  </button>
+
+  <button
+    type="button"
+    onClick={() =>
+      setEditingPetId((prev) => (prev === pet.id ? null : pet.id))
+    }
+    className="rounded-xl border px-4 py-2 text-xs font-medium transition hover:bg-slate-100"
+    style={{
+      borderColor: "var(--border-color)",
+      color: "var(--text-main)",
+    }}
+  >
+    Editar
   </button>
 
   <a
     href={`${BACKEND_URL}/pets/${pet.id}/clinical-pdf?slug=${slug}`}
     target="_blank"
     rel="noreferrer"
-    className="rounded-xl border px-3 py-1 text-xs hover:bg-slate-100"
+    className="rounded-xl border px-4 py-2 text-center text-xs font-medium transition hover:bg-slate-100"
+    style={{
+      borderColor: "var(--border-color)",
+      color: "var(--text-main)",
+    }}
   >
     PDF
   </a>
+</div>
 </div>
 
 
@@ -1167,12 +1264,13 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
           </div>
 
-          <div className="space-y-6">
+          <div className="hidden">
 
 
           </div>
 
-          <div className="space-y-6">
+          <div className={`space-y-4 ${isVeterinaria && activeVetTab === "pets" ? "hidden" : ""}`}>
+            {(!isVeterinaria || activeVetTab === "summary") ? (
             <Panel
               title="Resumen rápido"
               description="Lectura rápida del cliente para operación diaria."
@@ -1212,8 +1310,9 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 />
               </div>
             </Panel>
+            ) : null}
 
-            {isVeterinaria ? (
+            {isVeterinaria && activeVetTab === "followups" ? (
               <Panel
                 title="Próximos controles"
                 description="Seguimientos registrados desde Agenda para este cliente."
@@ -1304,7 +1403,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                   </div>
                 )}
               </Panel>
-            ) : (
+            ) : !isVeterinaria ? (
               <Panel
                 title="Seguimiento"
                 description="Espacio preparado para futuras acciones del cliente."
@@ -1314,7 +1413,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                   description="Este bloque puede evolucionar después según el rubro del negocio."
                 />
               </Panel>
-            )}
+            ) : null}
 
                       </div>
         </div>
