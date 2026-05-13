@@ -208,6 +208,7 @@ export default function CustomerDetailPage() {
   const [editingPetId, setEditingPetId] = useState<string | null>(null);
   const [viewingPetId, setViewingPetId] = useState<string | null>(null);
   const [activeVetTab, setActiveVetTab] = useState<VetCustomerTab>("pets");
+  const [selectedControlPreset, setSelectedControlPreset] = useState<Record<string, number>>({});
 
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
@@ -1008,20 +1009,20 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                 <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
                   Datos de mascota
                 </p>
-                <dl className="mt-3 grid gap-2 text-sm">
-                  <div className="flex justify-between gap-4">
+                <dl className="mt-3 grid max-w-[360px] gap-2 text-sm">
+                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
                     <dt style={{ color: "var(--text-muted)" }}>Especie</dt>
                     <dd className="font-medium" style={{ color: "var(--text-main)" }}>{getPetSpeciesLabel(pet)}</dd>
                   </div>
-                  <div className="flex justify-between gap-4">
+                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
                     <dt style={{ color: "var(--text-muted)" }}>Sexo</dt>
                     <dd className="font-medium" style={{ color: "var(--text-main)" }}>{pet.sex || "Sin informar"}</dd>
                   </div>
-                  <div className="flex justify-between gap-4">
+                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
                     <dt style={{ color: "var(--text-muted)" }}>Peso</dt>
                     <dd className="font-medium" style={{ color: "var(--text-main)" }}>{pet.weight_kg ? `${pet.weight_kg} kg` : "Sin informar"}</dd>
                   </div>
-                  <div className="flex justify-between gap-4">
+                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
                     <dt style={{ color: "var(--text-muted)" }}>Esterilizado</dt>
                     <dd className="font-medium" style={{ color: "var(--text-main)" }}>{pet.is_sterilized ? "Sí" : "No"}</dd>
                   </div>
@@ -1038,16 +1039,16 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                 <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
                   Datos del cliente
                 </p>
-                <dl className="mt-3 grid gap-2 text-sm">
-                  <div className="flex justify-between gap-4">
+                <dl className="mt-3 grid max-w-[440px] gap-2 text-sm">
+                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
                     <dt style={{ color: "var(--text-muted)" }}>Nombre</dt>
                     <dd className="font-medium" style={{ color: "var(--text-main)" }}>{customer.name}</dd>
                   </div>
-                  <div className="flex justify-between gap-4">
+                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
                     <dt style={{ color: "var(--text-muted)" }}>Teléfono</dt>
                     <dd className="font-medium" style={{ color: "var(--text-main)" }}>{customer.phone || "Sin teléfono"}</dd>
                   </div>
-                  <div className="flex justify-between gap-4">
+                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
                     <dt style={{ color: "var(--text-muted)" }}>Email</dt>
                     <dd className="truncate font-medium" style={{ color: "var(--text-main)" }}>{customer.email || "Sin email"}</dd>
                   </div>
@@ -1193,10 +1194,14 @@ next_control_at: data?.appointment?.next_control_at ?? null,
   </p>
 
   <div className="flex flex-wrap gap-2">
-    {[7, 15, 30, 60].map((days) => (
+    {[7, 15, 30, 60].map((days) => {
+      const isSelected = selectedControlPreset[appt.id] === days;
+
+      return (
       <button
         key={days}
         type="button"
+        aria-pressed={isSelected}
         onClick={() => {
           const date = new Date();
           date.setDate(date.getDate() + days);
@@ -1208,13 +1213,28 @@ next_control_at: data?.appointment?.next_control_at ?? null,
           if (input) {
             input.value = date.toISOString().slice(0, 10);
           }
+
+          setSelectedControlPreset((prev) => ({
+            ...prev,
+            [appt.id]: days,
+          }));
         }}
-        className="rounded-full border px-3 py-1 text-xs hover:bg-slate-100"
+        className="rounded-full border px-3 py-1 text-xs font-medium transition"
+        style={{
+          borderColor: isSelected ? "rgba(37,99,235,0.72)" : "var(--border-color)",
+          background: isSelected ? "rgba(37,99,235,0.16)" : "transparent",
+          color: isSelected ? "rgb(96 165 250)" : "var(--text-main)",
+        }}
       >
         {days} días
       </button>
-    ))}
+      );
+    })}
   </div>
+
+  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+    Selecciona fecha de su próximo control.
+  </p>
 
   <input
     type="date"
@@ -1224,11 +1244,19 @@ next_control_at: data?.appointment?.next_control_at ?? null,
         : ""
     }
     id={`pet-control-date-${appt.id}`}
+    onChange={() =>
+      setSelectedControlPreset((prev) => {
+        const next = { ...prev };
+        delete next[appt.id];
+        return next;
+      })
+    }
     className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
     style={{
       borderColor: "var(--border-color)",
       background: "var(--bg-card)",
       color: "var(--text-main)",
+      colorScheme: "dark",
     }}
   />
 </div>
