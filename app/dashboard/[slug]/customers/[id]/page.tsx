@@ -207,7 +207,6 @@ export default function CustomerDetailPage() {
   const [clinicalMessage, setClinicalMessage] = useState("");
   const [editingPetId, setEditingPetId] = useState<string | null>(null);
   const [viewingPetId, setViewingPetId] = useState<string | null>(null);
-  const [viewingClinicalId, setViewingClinicalId] = useState<string | null>(null);
   const [activeVetTab, setActiveVetTab] = useState<VetCustomerTab>("pets");
 
   const [petForm, setPetForm] = useState<PetFormState>({
@@ -1005,7 +1004,6 @@ next_control_at: data?.appointment?.next_control_at ?? null,
   .filter((appt) => appt.pet_id === pet.id)
                   .map((appt, index) => {
   const isLatest = index === 0;
-  const isViewing = viewingClinicalId === appt.id;
 
   return (
                     !isLatest || editingPetId !== pet.id ? (
@@ -1042,21 +1040,9 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                             </p>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setViewingClinicalId((prev) =>
-                                prev === appt.id ? null : appt.id
-                              )
-                            }
-                            className="rounded-xl border px-3 py-1 text-xs"
-                          >
-                            {isViewing ? "Ocultar" : "Ver detalles"}
-                          </button>
                         </div>
 
-                        {isViewing ? (
-                          <div
+                        <div
                             className="mt-3 rounded-xl border p-3 text-sm"
                             style={{
                               borderColor: "var(--border-color)",
@@ -1075,8 +1061,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
   ? formatDateLong(appt.next_control_at)
   : "Sin próximo control."}
                             </p>
-                          </div>
-                        ) : null}
+                        </div>
                       </div>
                     ) : (
                     <div
