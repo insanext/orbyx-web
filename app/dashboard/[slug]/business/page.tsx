@@ -23,6 +23,9 @@ type BusinessResponse = {
     instagram_url?: string | null;
     facebook_url?: string | null;
     description?: string | null;
+    business_category?: string | null;
+    business_subtype?: string | null;
+    business_subtype_config?: Record<string, unknown> | null;
     min_booking_notice_minutes?: number | null;
     max_booking_days_ahead?: number | null;
   };
@@ -54,6 +57,49 @@ type BranchItem = {
 };
 
 type BusinessSectionId = "general" | "reservas" | "horarios" | "fechas";
+
+const genericBusinessSubtypes = [
+  {
+    value: "",
+    label: "Sin subtipo",
+    description: "Experiencia genérica base.",
+  },
+  {
+    value: "belleza_estetica",
+    label: "Belleza y estética",
+    description: "Peluquerías, barberías, uñas, estética y similares.",
+  },
+  {
+    value: "salud_bienestar",
+    label: "Salud y bienestar",
+    description: "Terapias, bienestar, consultas no veterinarias.",
+  },
+  {
+    value: "taller_automotriz",
+    label: "Taller automotriz",
+    description: "Talleres, mantenciones y servicios para vehículos.",
+  },
+  {
+    value: "servicios_tecnicos",
+    label: "Servicios técnicos",
+    description: "Reparaciones, soporte técnico y visitas técnicas.",
+  },
+  {
+    value: "profesionales_cita",
+    label: "Profesionales con cita",
+    description: "Consultores, asesores y atención profesional.",
+  },
+  {
+    value: "educacion_individual",
+    label: "Educación individual",
+    description: "Clases uno a uno, tutorías y sesiones individuales.",
+  },
+  {
+    value: "servicios_creativos",
+    label: "Servicios creativos",
+    description: "Fotografía, diseño, producción y servicios creativos.",
+  },
+];
 
 const days = [
   "Domingo",
@@ -98,6 +144,7 @@ const [slotMinutesError, setSlotMinutesError] = useState("");
   const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
   const [specialDates, setSpecialDates] = useState<SpecialDate[]>([]);
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
+  const [businessCategory, setBusinessCategory] = useState("");
 const [slotMinutes, setSlotMinutes] = useState(30);
 const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
 const [slotMinutesMode, setSlotMinutesMode] = useState<"preset" | "custom">("preset");
@@ -113,6 +160,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     instagram_url: "",
     facebook_url: "",
     description: "",
+    business_subtype: "",
     min_booking_notice_minutes: 0,
     max_booking_days_ahead: 60,
   });
@@ -221,6 +269,12 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
 
         persistSelectedBranchId(activeBranchId);
         setGoogleConnected(Boolean(data.google_connected));
+        const normalizedCategory = String(
+          data.business.business_category || "generic"
+        )
+          .trim()
+          .toLowerCase();
+        setBusinessCategory(normalizedCategory);
 setSlotMinutes(Number(data.slot_minutes || 30));
 setCustomSlotMinutes(Number(data.slot_minutes || 30));
 
@@ -233,6 +287,10 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
           instagram_url: data.business.instagram_url || "",
           facebook_url: data.business.facebook_url || "",
           description: data.business.description || "",
+          business_subtype:
+            normalizedCategory === "generic"
+              ? data.business.business_subtype || ""
+              : "",
           min_booking_notice_minutes: Number(
             data.business.min_booking_notice_minutes || 0
           ),
@@ -1964,13 +2022,52 @@ onClick={() => {
                       background: "var(--bg-soft)",
                       color: "var(--text-main)",
                     }}
-                  />
-                </div>
+          />
+        </div>
 
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
+        {businessCategory === "generic" ? (
+          <div>
+            <label
+              className="mb-2 block text-sm font-medium"
+              style={{ color: "var(--text-main)" }}
+            >
+              Tipo de experiencia
+            </label>
+            <select
+              value={form.business_subtype}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  business_subtype: e.target.value,
+                }))
+              }
+              className={selectClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            >
+              {genericBusinessSubtypes.map((item) => (
+                <option key={item.value || "none"} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+              {
+                genericBusinessSubtypes.find(
+                  (item) => item.value === form.business_subtype
+                )?.description
+              }
+            </p>
+          </div>
+        ) : null}
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
                   >
                     Motivo o etiqueta
                   </label>
