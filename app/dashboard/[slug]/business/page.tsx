@@ -1493,7 +1493,7 @@ function updateHourByIndex(
                 </p>
               </div>
 
-              {form.business_subtype === "taller_automotriz" ? (
+              {false ? (
                 <div className="lg:col-span-2">
                   <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
                     <div>
@@ -2185,6 +2185,275 @@ function updateHourByIndex(
         </div>
       </div>
     </Panel>
+
+    <div className="grid gap-4 xl:col-span-2 xl:grid-cols-[1.15fr_0.85fr]">
+      {form.business_subtype === "taller_automotriz" ? (
+        <Panel
+          title="Campos de unidad/equipo"
+          description="Configura los datos adicionales que completará el cliente en la reserva pública."
+          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+        >
+          <div className="space-y-3">
+            {businessSubtypeConfig.booking_fields.map((field, index) => (
+              <div
+                key={field.key}
+                className="grid gap-2 rounded-2xl border p-3 md:grid-cols-[1fr_150px_auto_auto]"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <input
+                  type="text"
+                  value={field.label}
+                  onChange={(e) =>
+                    updateSubtypeBookingField(index, "label", e.target.value)
+                  }
+                  className="h-10 rounded-xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+
+                <select
+                  value={field.type}
+                  onChange={(e) =>
+                    updateSubtypeBookingField(index, "type", e.target.value)
+                  }
+                  className="h-10 rounded-xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option value="text">Texto</option>
+                  <option value="select">Select</option>
+                  <option value="textarea">Texto largo</option>
+                </select>
+
+                <label
+                  className="flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={field.enabled}
+                    onChange={(e) =>
+                      updateSubtypeBookingField(index, "enabled", e.target.checked)
+                    }
+                  />
+                  Visible
+                </label>
+
+                <label
+                  className="flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={field.required}
+                    disabled={!field.enabled}
+                    onChange={(e) =>
+                      updateSubtypeBookingField(index, "required", e.target.checked)
+                    }
+                  />
+                  Obligatorio
+                </label>
+
+                {field.type === "select" ? (
+                  <div className="md:col-span-4">
+                    <label
+                      className="mb-1 block text-xs font-medium"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Opciones del select
+                    </label>
+                    <p
+                      className="mb-2 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Cada opción agregada será una opción para el cliente. Ejemplo: Auto, Moto, Camión.
+                    </p>
+
+                    {(field.options || []).length > 0 ? (
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        {(field.options || []).map((option) => (
+                          <span
+                            key={option}
+                            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            {option}
+                            <button
+                              type="button"
+                              onClick={() => removeSubtypeFieldOption(index, option)}
+                              className="font-semibold text-rose-400 transition hover:text-rose-300"
+                              aria-label={`Eliminar ${option}`}
+                            >
+                              x
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        value={subtypeOptionDrafts[field.key] || ""}
+                        onChange={(e) =>
+                          setSubtypeOptionDrafts((prev) => ({
+                            ...prev,
+                            [field.key]: e.target.value,
+                          }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addSubtypeFieldOption(index, field.key);
+                          }
+                        }}
+                        placeholder={
+                          field.key === "unit_type" ? "Ej: Auto" : "Ej: Toyota"
+                        }
+                        className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addSubtypeFieldOption(index, field.key)}
+                        className="h-10 rounded-xl border px-4 text-sm font-medium transition hover:opacity-80"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        Agregar
+                      </button>
+                    </div>
+
+                    {(field.options || []).length === 0 ? (
+                      <p
+                        className="mt-1 text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Si no hay opciones, en la reserva pública se mostrará como texto libre.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
+
+      <Panel
+        title="Vista previa del formulario público"
+        description="Así se verán los campos configurados cuando el cliente reserve."
+        className={`bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)] ${
+          form.business_subtype === "taller_automotriz" ? "" : "xl:col-span-2"
+        }`}
+      >
+        <div className="space-y-3">
+          {bookingFields.filter((field) => field.enabled).map((field) => (
+            <div key={field.key}>
+              <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                {field.label}{field.required ? " *" : ""}
+              </label>
+              <input
+                disabled
+                placeholder={field.label}
+                className="h-10 w-full rounded-xl border px-3 text-sm"
+                style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+              />
+            </div>
+          ))}
+
+          {form.business_subtype === "taller_automotriz"
+            ? businessSubtypeConfig.booking_fields.filter((field) => field.enabled).map((field) => {
+                const label = `${field.label}${field.required ? " *" : ""}`;
+
+                if (field.type === "select" && (field.options || []).length > 0) {
+                  return (
+                    <div key={field.key}>
+                      <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                        {label}
+                      </label>
+                      <select
+                        disabled
+                        className="h-10 w-full rounded-xl border px-3 text-sm"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                      >
+                        <option>{field.label}</option>
+                        {(field.options || []).map((option) => (
+                          <option key={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
+
+                if (field.type === "textarea") {
+                  return (
+                    <div key={field.key}>
+                      <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                        {label}
+                      </label>
+                      <textarea
+                        disabled
+                        placeholder={field.label}
+                        className="min-h-[82px] w-full rounded-xl border px-3 py-2 text-sm"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                      />
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={field.key}>
+                    <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                      {label}
+                    </label>
+                    <input
+                      disabled
+                      placeholder={field.label}
+                      className="h-10 w-full rounded-xl border px-3 text-sm"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                    />
+                  </div>
+                );
+              })
+            : null}
+
+          {bookingFields.filter((field) => field.enabled).length === 0 &&
+          (form.business_subtype !== "taller_automotriz" ||
+            businessSubtypeConfig.booking_fields.filter((field) => field.enabled).length === 0) ? (
+            <div className="rounded-2xl border border-dashed px-4 py-5 text-sm" style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}>
+              No hay campos visibles para mostrar.
+            </div>
+          ) : null}
+        </div>
+      </Panel>
+    </div>
 
     <Panel
       title="Intervalo de horarios"
