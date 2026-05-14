@@ -241,6 +241,7 @@ export default function StaffPage() {
 
   const [staff, setStaff] = useState<StaffItem[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   const [form, setForm] = useState(emptyForm);
 const [photoUrl, setPhotoUrl] = useState("");
@@ -727,6 +728,7 @@ async function loadStaffHours(id: string, staffId: string) {
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
+    setFormOpen(false);
 setPhotoUrl("");
     setStaffHours(defaultHours);
     setStaffSpecialDates([]);
@@ -740,6 +742,7 @@ setPhotoUrl("");
     try {
       setLoading(true);
       setEditingId(item.id);
+      setFormOpen(true);
       setForm({
         name: item.name || "",
         role: item.role || "",
@@ -1003,6 +1006,58 @@ function validateStaffHours() {
     }
   }
 
+  async function handleToggleStaffActive(item: StaffItem) {
+    const nextActive = !item.is_active;
+    const ok = window.confirm(
+      nextActive
+        ? `¿Quieres activar a ${item.name}?`
+        : `¿Quieres desactivar a ${item.name}?`
+    );
+    if (!ok) return;
+
+    try {
+      setSaveError("");
+      setSaveOk("");
+
+      const res = await fetch(`${BACKEND_URL}/staff/${item.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tenant_id: item.tenant_id || tenantId,
+          branch_id: item.branch_id || selectedBranchId,
+          name: item.name,
+          role: item.role || "",
+          email: item.email || "",
+          phone: item.phone || "",
+          is_active: nextActive,
+          sort_order: Number(item.sort_order || 0),
+          use_business_hours:
+            item.use_business_hours === undefined
+              ? true
+              : Boolean(item.use_business_hours),
+          photo_url: item.photo_url || null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo actualizar el staff");
+      }
+
+      await loadStaff(tenantId);
+      setSaveOk(nextActive ? "Staff activado correctamente." : "Staff desactivado correctamente.");
+    } catch (error: unknown) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar el estado del staff"
+      );
+    }
+  }
+
   function handleEditSpecialDate(item: StaffSpecialDateItem) {
     setEditingSpecialDateId(item.id || null);
     setSpecialDateForm({
@@ -1164,8 +1219,8 @@ function validateStaffHours() {
               style={{ color: "var(--text-muted)" }}
             >
               {selectedBranchName
-                ? `Administra el staff de la sucursal ${selectedBranchName}, sus servicios, horarios y excepciones.`
-                : "Administra las personas que atienden en tu negocio, sus servicios, horarios y excepciones."}
+                ? `Administra el staff de la sucursal ${selectedBranchName}, sus servicios, horarios y días/horarios excepcionales.`
+                : "Administra las personas que atienden en tu negocio, sus servicios, horarios y días/horarios excepcionales."}
             </p>
           </div>
 
@@ -1277,11 +1332,20 @@ function validateStaffHours() {
         <Notice tone="danger" title={loadError} />
       ) : null}
 
+      {saveOk ? (
+        <Notice tone="success" title={saveOk} />
+      ) : null}
+
+      {saveError && !(formOpen || editingId) ? (
+        <Notice tone="danger" title={saveError} />
+      ) : null}
+
       <section className="grid gap-6 xl:grid-cols-1 2xl:grid-cols-[1fr_1fr]">
+        {formOpen || editingId ? (
         <Panel
   title={editingId ? "Editar staff" : "Nuevo staff"}
   description="Agrega personas del equipo y deja su información base lista."
-  className="min-w-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
+  className="order-2 min-w-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
 >
           {!selectedBranchId ? (
             <div
@@ -1532,28 +1596,44 @@ function validateStaffHours() {
                 </div>
               </div>
 
-                            <div className="flex items-end">
-                <label
-                  className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={form.is_active}
-                    onChange={(e) =>
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                      Estado del staff
+                    </p>
+                    <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+                      Define si este profesional aparece disponible para operar.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
                       setForm((prev) => ({
                         ...prev,
-                        is_active: e.target.checked,
+                        is_active: !prev.is_active,
                       }))
                     }
-                    className="h-4 w-4 rounded"
-                  />
-                  Staff activo
-                </label>
+                    className="inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition"
+                  style={{
+                      borderColor: form.is_active
+                        ? "rgba(16,185,129,0.34)"
+                        : "rgba(148,163,184,0.34)",
+                      background: form.is_active
+                        ? "rgba(16,185,129,0.10)"
+                        : "var(--bg-soft)",
+                      color: form.is_active ? "rgb(16 185 129)" : "var(--text-muted)",
+                  }}
+                  >
+                    {form.is_active ? "Staff activo" : "Staff inactivo"}
+                  </button>
+                </div>
               </div>
 
               <div
@@ -1600,7 +1680,9 @@ function validateStaffHours() {
                       }
                       className="h-4 w-4 rounded"
                     />
-                    {form.use_business_hours ? "Activo" : "Desactivado"}
+                    {form.use_business_hours
+                      ? "Usar horario del negocio"
+                      : "Usar horario propio del staff"}
                   </label>
                 </div>
               </div>
@@ -1625,7 +1707,7 @@ function validateStaffHours() {
   >
     <div className="mb-4">
       <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-        Horarios del staff
+        Horario propio del staff
       </p>
       <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
         Configura el horario semanal propio de este profesional.
@@ -1849,7 +1931,7 @@ function validateStaffHours() {
                     className="text-sm font-semibold"
                     style={{ color: "var(--text-main)" }}
                   >
-                    Excepciones del staff
+                    Días/horarios excepcionales del staff
                   </p>
                   <p
                     className="mt-1 text-sm"
@@ -1864,7 +1946,7 @@ function validateStaffHours() {
                   <Notice
                     tone="warning"
                     title="Primero crea o guarda el staff."
-                    description="Después podrás administrar sus excepciones."
+                    description="Después podrás administrar sus días/horarios excepcionales."
                   />
                 ) : (
                   <div className="space-y-4">
@@ -2186,13 +2268,40 @@ function validateStaffHours() {
             </div>
           )}
         </Panel>
+        ) : null}
 
 
         <Panel
           title="Equipo actual"
           description="Visualiza, edita o elimina integrantes del staff."
-          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
+          className="order-1 bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                Equipo de la sucursal
+              </p>
+              <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+                Primero revisa tu equipo actual. Crea o edita staff solo cuando lo necesites.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                resetForm();
+                setFormOpen(true);
+              }}
+              disabled={!selectedBranchId || loading || (!editingId && (reachedLimit || hasExcess))}
+              className={primaryButtonClass}
+              style={{
+                background:
+                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+              }}
+            >
+              Crear nuevo staff
+            </button>
+          </div>
+
           {!selectedBranchId ? (
             <div
               className="rounded-2xl border border-dashed px-4 py-8 text-sm"
@@ -2234,7 +2343,7 @@ function validateStaffHours() {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between gap-4 rounded-2xl border px-4 py-4"
+                    className="flex flex-col gap-4 rounded-2xl border px-4 py-4 transition hover:border-blue-400/40 sm:flex-row sm:items-center sm:justify-between"
                     style={{
                       borderColor: isSelected
                         ? "rgba(37,99,235,0.45)"
@@ -2244,12 +2353,12 @@ function validateStaffHours() {
                         : "var(--bg-card)",
                     }}
                   >
-                    <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-4">
 
 
 <div className="relative group">
   {/* FOTO PEQUEÑA */}
-  <div className="h-16 w-16 overflow-hidden rounded-2xl bg-slate-200">
+  <div className="h-20 w-20 overflow-hidden rounded-2xl bg-slate-200 sm:h-24 sm:w-24">
     {item.photo_url ? (
       <img
         src={item.photo_url}
@@ -2314,7 +2423,7 @@ function validateStaffHours() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                       <span
                         className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                         style={{
@@ -2332,17 +2441,37 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => startEdit(item)}
-                        className="text-xs underline"
-                        style={{ color: "var(--text-main)" }}
+                        className={secondaryButtonClass}
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
                       >
                         Editar
                       </button>
 
                       <button
                         type="button"
+                        onClick={() => handleToggleStaffActive(item)}
+                        className={secondaryButtonClass}
+                        style={{
+                          borderColor: item.is_active
+                            ? "rgba(245,158,11,0.34)"
+                            : "rgba(16,185,129,0.34)",
+                          background: item.is_active
+                            ? "rgba(245,158,11,0.10)"
+                            : "rgba(16,185,129,0.10)",
+                          color: item.is_active ? "rgb(245 158 11)" : "rgb(16 185 129)",
+                        }}
+                      >
+                        {item.is_active ? "Desactivar" : "Activar"}
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => handleDelete(item.id)}
-                        className="text-xs underline"
-                        style={{ color: "rgb(244 63 94)" }}
+                        className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
                       >
                         Eliminar
                       </button>
