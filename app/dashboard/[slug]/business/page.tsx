@@ -71,12 +71,12 @@ const genericBusinessSubtypes = [
   {
     value: "",
     label: "Sin subtipo",
-    description: "Experiencia genÃ©rica base.",
+    description: "Experiencia genérica base.",
   },
   {
     value: "belleza_estetica",
-    label: "Belleza y estÃ©tica",
-    description: "PeluquerÃ­as, barberÃ­as, uÃ±as, estÃ©tica y similares.",
+    label: "Belleza y estética",
+    description: "Peluquerías, barberías, uñas, estética y similares.",
   },
   {
     value: "salud_bienestar",
@@ -86,38 +86,38 @@ const genericBusinessSubtypes = [
   {
     value: "taller_automotriz",
     label: "Taller automotriz",
-    description: "Talleres, mantenciones y servicios para vehÃ­culos.",
+    description: "Talleres, mantenciones y servicios para vehículos.",
   },
   {
     value: "servicios_tecnicos",
-    label: "Servicios tÃ©cnicos",
-    description: "Reparaciones, soporte tÃ©cnico y visitas tÃ©cnicas.",
+    label: "Servicios técnicos",
+    description: "Reparaciones, soporte técnico y visitas técnicas.",
   },
   {
     value: "profesionales_cita",
     label: "Profesionales con cita",
-    description: "Consultores, asesores y atenciÃ³n profesional.",
+    description: "Consultores, asesores y atención profesional.",
   },
   {
     value: "educacion_individual",
-    label: "EducaciÃ³n individual",
-    description: "Clases uno a uno, tutorÃ­as y sesiones individuales.",
+    label: "Educación individual",
+    description: "Clases uno a uno, tutorías y sesiones individuales.",
   },
   {
     value: "servicios_creativos",
     label: "Servicios creativos",
-    description: "FotografÃ­a, diseÃ±o, producciÃ³n y servicios creativos.",
+    description: "Fotografía, diseño, producción y servicios creativos.",
   },
 ];
 
 const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
   {
     key: "unit_type",
-    label: "Tipo de vehÃ­culo/equipo",
+    label: "Tipo de vehículo/equipo",
     enabled: true,
     required: false,
     type: "select",
-    options: ["Auto", "Moto", "CamiÃ³n", "Maquinaria", "Bus"],
+    options: ["Auto", "Moto", "Camión", "Maquinaria", "Bus"],
   },
   {
     key: "brand",
@@ -127,14 +127,15 @@ const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
     type: "text",
     options: [],
   },
-  { key: "model", label: "Modelo", enabled: true, required: false, type: "text" },
-  { key: "year", label: "AÃ±o", enabled: false, required: false, type: "text" },
+  { key: "model", label: "Modelo", enabled: true, required: false, type: "text", options: [] },
+  { key: "year", label: "Año", enabled: false, required: false, type: "text", options: [] },
   {
     key: "unit_identifier",
     label: "Patente / Identificador",
     enabled: false,
     required: false,
     type: "text",
+    options: [],
   },
   {
     key: "usage_value",
@@ -142,6 +143,7 @@ const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
     enabled: false,
     required: false,
     type: "text",
+    options: [],
   },
   {
     key: "visit_reason",
@@ -149,6 +151,7 @@ const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
     enabled: true,
     required: false,
     type: "textarea",
+    options: [],
   },
   {
     key: "observations",
@@ -156,6 +159,7 @@ const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
     enabled: false,
     required: false,
     type: "textarea",
+    options: [],
   },
 ];
 
@@ -209,10 +213,10 @@ const days = [
   "Domingo",
   "Lunes",
   "Martes",
-  "MiÃ©rcoles",
+  "Miércoles",
   "Jueves",
   "Viernes",
-  "SÃ¡bado",
+  "Sábado",
 ];
 
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
@@ -341,7 +345,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
         }
 
         if (!("business" in data)) {
-          throw new Error("Respuesta invÃ¡lida del backend");
+          throw new Error("Respuesta inválida del backend");
         }
 
         setTenantId(data.business.id);
@@ -374,7 +378,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
           : activeBranches[0]?.id || "";
 
         if (!activeBranchId) {
-          throw new Error("No se encontrÃ³ una sucursal activa");
+          throw new Error("No se encontró una sucursal activa");
         }
 
         persistSelectedBranchId(activeBranchId);
@@ -642,7 +646,7 @@ async function removeSpecialDate(index: number) {
   if (!item) return;
 
   const confirmed = window.confirm(
-    "Â¿Seguro que quieres quitar esta fecha especial?"
+    "¿Seguro que quieres quitar esta fecha especial?"
   );
 
   if (!confirmed) return;
@@ -958,7 +962,7 @@ async function saveSlotMinutes() {
       setSaveError(
         error instanceof Error
           ? error.message
-          : "No se pudo guardar la informaciÃ³n"
+          : "No se pudo guardar la información"
       );
     } finally {
       setSaving(false);
@@ -1101,12 +1105,12 @@ function updateHourByIndex(
 
 
 <h1 className="text-xl font-semibold">
-  Configura tu negocio aquÃ­
+  Configura tu negocio aquí
 </h1>
 
 
             <p className="mt-1 text-sm leading-6">
-              Administra la configuraciÃ³n global, reservas, horarios por sucursal y excepciones del calendario.
+              Administra la configuración global, reservas, horarios por sucursal y excepciones del calendario.
             </p>
           </div>
 
@@ -1127,7 +1131,7 @@ function updateHourByIndex(
                     className="text-[11px] font-semibold uppercase tracking-[0.16em]"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    URL pÃºblica
+                    URL pública
                   </p>
 
                   <p className="mt-1 break-all text-xs font-semibold sm:text-sm">{publicUrl}</p>
@@ -1165,7 +1169,7 @@ function updateHourByIndex(
                 {loading
                   ? "Cargando..."
                   : googleConnected
-                  ? "Conectado"
+                    ? "Conectado"
                   : "Pendiente"}
               </p>
             </div>
@@ -1181,7 +1185,7 @@ function updateHourByIndex(
 
       <nav
         className="-mx-1 overflow-x-auto px-1"
-        aria-label="Secciones de configuraciÃ³n de negocio"
+        aria-label="Secciones de configuración de negocio"
       >
         <div
           className="flex min-w-max gap-2 rounded-[20px] border p-1.5 shadow-sm backdrop-blur"
@@ -1241,7 +1245,7 @@ function updateHourByIndex(
 <section className="space-y-3">
   <div>
     <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-      1. ConfiguraciÃ³n global
+      1. Configuración global
     </p>
     <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
       Datos del negocio
@@ -1251,8 +1255,8 @@ function updateHourByIndex(
 <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
   
   <Panel
-    title="InformaciÃ³n principal"
-    description="Edita los datos que verÃ¡n tus clientes y que tambiÃ©n podrÃ¡ usar la IA."
+    title="Información principal"
+    description="Edita los datos que verán tus clientes y que también podrá usar la IA."
     className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
   >
     {loading ? (
@@ -1296,7 +1300,7 @@ function updateHourByIndex(
               className="mb-2 block text-sm font-medium"
               style={{ color: "var(--text-main)" }}
             >
-              TelÃ©fono
+              Teléfono
             </label>
             <input
               type="text"
@@ -1366,7 +1370,7 @@ function updateHourByIndex(
             className="mb-2 block text-sm font-medium"
             style={{ color: "var(--text-main)" }}
           >
-            DirecciÃ³n
+            Dirección
           </label>
           <input
             type="text"
@@ -1374,7 +1378,7 @@ function updateHourByIndex(
             onChange={(e) =>
               setForm((prev) => ({ ...prev, address: e.target.value }))
             }
-            placeholder="Ej: Avenida Principal 123, ConcepciÃ³n"
+            placeholder="Ej: Avenida Principal 123, Concepción"
             className={inputClass}
             style={{
               borderColor: "var(--border-color)",
@@ -1443,7 +1447,7 @@ function updateHourByIndex(
             className="mb-2 block text-sm font-medium"
             style={{ color: "var(--text-main)" }}
           >
-            DescripciÃ³n del negocio
+            Descripción del negocio
           </label>
           <textarea
             value={form.description}
@@ -1453,7 +1457,7 @@ function updateHourByIndex(
                 description: e.target.value,
               }))
             }
-            placeholder="Describe tu negocio, especialidad, estilo de atenciÃ³n y lo que te diferencia."
+            placeholder="Describe tu negocio, especialidad, estilo de atención y lo que te diferencia."
             className={textareaClass}
             style={{
               borderColor: "var(--border-color)",
@@ -1641,13 +1645,13 @@ function updateHourByIndex(
                               className="mb-1 block text-xs font-medium"
                               style={{ color: "var(--text-muted)" }}
                             >
-                              Opciones del select, una por lÃ­nea
+                              Opciones del select, una por línea
                             </label>
                             <p
                               className="mb-2 text-xs"
                               style={{ color: "var(--text-muted)" }}
                             >
-                              Escribe una opciÃ³n y agrÃ©gala a la lista. Ejemplo: Auto, Moto, CamiÃ³n.
+                              Escribe una opción y agrégala a la lista. Ejemplo: Auto, Moto, Camión.
                             </p>
 
                             {(field.options || []).length > 0 ? (
@@ -1748,13 +1752,13 @@ function updateHourByIndex(
                         className="text-sm font-semibold"
                         style={{ color: "var(--text-main)" }}
                       >
-                        AsÃ­ verÃ¡ este formulario tu cliente
+                        Así verá este formulario tu cliente
                       </p>
                       <p
                         className="mt-1 text-xs"
                         style={{ color: "var(--text-muted)" }}
                       >
-                        Vista previa de los campos visibles para la reserva pÃºblica.
+                        Vista previa de los campos visibles para la reserva pública.
                       </p>
 
                       <div className="mt-4 space-y-3">
@@ -1783,7 +1787,7 @@ function updateHourByIndex(
                                     style={{ color: "var(--text-muted)" }}
                                   >
                                     {label}
-                                    {field.required ? " Â· Obligatorio" : ""}
+                                    {field.required ? " · Obligatorio" : ""}
                                   </label>
                                   <select
                                     disabled
@@ -1811,7 +1815,7 @@ function updateHourByIndex(
                                     style={{ color: "var(--text-muted)" }}
                                   >
                                     {label}
-                                    {field.required ? " Â· Obligatorio" : ""}
+                                    {field.required ? " · Obligatorio" : ""}
                                   </label>
                                   <textarea
                                     disabled
@@ -1834,7 +1838,7 @@ function updateHourByIndex(
                                   style={{ color: "var(--text-muted)" }}
                                 >
                                   {label}
-                                  {field.required ? " Â· Obligatorio" : ""}
+                                  {field.required ? " · Obligatorio" : ""}
                                 </label>
                                 <input
                                   disabled
@@ -1892,7 +1896,7 @@ function updateHourByIndex(
     {businessCategory === "generic" ? (
       <Panel
         title="Tipo de negocio"
-        description="Define la familia del negocio para preparar configuraciones especÃ­ficas."
+        description="Define la familia del negocio para preparar configuraciones específicas."
         className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
       >
         <div>
@@ -1972,11 +1976,11 @@ function updateHourByIndex(
           value: loading
             ? "Cargando..."
             : form.instagram_url || form.facebook_url
-            ? "Configuradas"
+              ? "Configuradas"
             : "No configuradas",
         },
         {
-          label: "URL pÃºblica",
+          label: "URL pública",
           value: publicUrl,
         },
         {
@@ -2023,109 +2027,16 @@ function updateHourByIndex(
       2. Campos
     </p>
     <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
-      Formulario de reserva pÃºblica
+      Formulario de reserva pública
     </h2>
   </div>
 
   <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-    <Panel
-      title="Campos de reserva"
-      description="Define quÃ© informaciÃ³n solicitar al cliente al reservar."
-      className="flex flex-col bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
-    >
-      <div className="flex flex-col">
-        <div className="space-y-4">
-          {bookingFields.length === 0 ? (
-            <div
-              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-muted)",
-              }}
-            >
-              No hay campos configurables cargados aÃºn.
-            </div>
-          ) : (
-            bookingFields.map((field, index) => (
-              <div
-                key={field.key}
-                className="flex items-center justify-between gap-4 rounded-2xl border p-4"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background:
-                    "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
-                }}
-              >
-                <div>
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    {field.label}
-                  </p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    {field.enabled
-                      ? field.required
-                        ? "Obligatorio"
-                        : "Opcional"
-                      : "Desactivado"}
-                  </p>
-                </div>
-
-                <div
-                  className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:gap-4"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={field.enabled}
-                      onChange={(e) =>
-                        updateBookingField(index, "enabled", e.target.checked)
-                      }
-                    />
-                    Activo
-                  </label>
-
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={field.required}
-                      disabled={!field.enabled}
-                      onChange={(e) =>
-                        updateBookingField(index, "required", e.target.checked)
-                      }
-                    />
-                    Obligatorio
-                  </label>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        <div className="pt-4">
-          <button
-            onClick={saveBookingFields}
-            disabled={savingFields}
-            className={primaryButtonClass}
-            style={{
-              background:
-                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-            }}
-          >
-            {savingFields ? "Guardando..." : "Guardar campos"}
-          </button>
-        </div>
-      </div>
-    </Panel>
-
     <div className="grid gap-4 xl:col-span-2 xl:grid-cols-[1.15fr_0.85fr]">
       {form.business_subtype === "taller_automotriz" ? (
         <Panel
           title="Campos de unidad/equipo"
-          description="Configura los datos adicionales que completarÃ¡ el cliente en la reserva pÃºblica."
+          description="Configura los datos adicionales que completará el cliente en la reserva pública."
           className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
         >
           <div className="space-y-3">
@@ -2216,7 +2127,7 @@ function updateHourByIndex(
                       className="mb-2 text-xs"
                       style={{ color: "var(--text-muted)" }}
                     >
-                      Cada opciÃ³n agregada serÃ¡ una opciÃ³n para el cliente. Ejemplo: Auto, Moto, CamiÃ³n.
+                      Cada opción agregada será una opción para el cliente. Ejemplo: Auto, Moto, Camión.
                     </p>
 
                     {(field.options || []).length > 0 ? (
@@ -2290,7 +2201,7 @@ function updateHourByIndex(
                         className="mt-1 text-xs"
                         style={{ color: "var(--text-muted)" }}
                       >
-                        Si no hay opciones, en la reserva pÃºblica se mostrarÃ¡ como texto libre.
+                        Si no hay opciones, en la reserva pública se mostrará como texto libre.
                       </p>
                     ) : null}
                   </div>
@@ -2302,8 +2213,8 @@ function updateHourByIndex(
       ) : null}
 
       <Panel
-        title="Vista previa del formulario pÃºblico"
-        description="AsÃ­ se verÃ¡n los campos configurados cuando el cliente reserve."
+        title="Vista previa del formulario público"
+        description="Así se verán los campos configurados cuando el cliente reserve."
         className={`bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)] ${
           form.business_subtype === "taller_automotriz" ? "" : "xl:col-span-2"
         }`}
@@ -2327,7 +2238,7 @@ function updateHourByIndex(
               Vista previa
             </span>
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              AsÃ­ lo verÃ¡ el cliente
+              Así lo verá el cliente
             </span>
           </div>
 
@@ -2345,7 +2256,7 @@ function updateHourByIndex(
               Completa tus datos
             </p>
             <div className="mt-3 space-y-3">
-              {["Nombre y apellido", "TelÃ©fono", "Email"].map((label) => (
+              {["Nombre y apellido", "Teléfono", "Email"].map((label) => (
                 <div key={label}>
                   <label
                     className="mb-1 block text-xs font-medium"
@@ -2442,6 +2353,103 @@ function updateHourByIndex(
       </Panel>
     </div>
 
+    <div className="xl:col-span-2">
+    <Panel
+      title="Campos de reserva"
+      description="Define qué información solicitar al cliente al reservar."
+      className="flex flex-col bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
+    >
+      <div className="flex flex-col">
+        <div className="space-y-4">
+          {bookingFields.length === 0 ? (
+            <div
+              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
+              No hay campos configurables cargados aún.
+            </div>
+          ) : (
+            bookingFields.map((field, index) => (
+              <div
+                key={field.key}
+                className="flex items-center justify-between gap-4 rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                }}
+              >
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {field.label}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    {field.enabled
+                      ? field.required
+                        ? "Obligatorio"
+                        : "Opcional"
+                      : "Desactivado"}
+                  </p>
+                </div>
+
+                <div
+                  className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:gap-4"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={field.enabled}
+                      onChange={(e) =>
+                        updateBookingField(index, "enabled", e.target.checked)
+                      }
+                    />
+                    Activo
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={field.required}
+                      disabled={!field.enabled}
+                      onChange={(e) =>
+                        updateBookingField(index, "required", e.target.checked)
+                      }
+                    />
+                    Obligatorio
+                  </label>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="pt-4">
+          <button
+            onClick={saveBookingFields}
+            disabled={savingFields}
+            className={primaryButtonClass}
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+            }}
+          >
+            {savingFields ? "Guardando..." : "Guardar campos"}
+          </button>
+        </div>
+      </div>
+    </Panel>
+    </div>
+
+
+
   </div>
 </section>
 ) : null}
@@ -2460,13 +2468,13 @@ function updateHourByIndex(
   <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
     <Panel
       title="Reglas de reserva"
-      description="Define anticipaciÃ³n mÃ­nima y ventana mÃ¡xima para reservar."
+      description="Define anticipación mínima y ventana máxima para reservar."
       className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
     >
       <div className="space-y-5">
         <div>
           <label className="mb-2 block text-sm font-medium" style={{ color: "var(--text-main)" }}>
-            Tiempo mÃ­nimo antes de reservar
+            Tiempo mínimo antes de reservar
           </label>
           <select
             value={minNoticeMode === "custom" ? "custom" : form.min_booking_notice_minutes}
@@ -2486,7 +2494,7 @@ function updateHourByIndex(
             className={selectClass}
             style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
           >
-            <option value={0}>Sin restricciÃ³n</option>
+            <option value={0}>Sin restricción</option>
             <option value={15}>15 minutos</option>
             <option value={30}>30 minutos</option>
             <option value={60}>1 hora</option>
@@ -2509,13 +2517,13 @@ function updateHourByIndex(
             </div>
           ) : null}
           <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-            Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes solo podrÃ¡n reservar con al menos 60 minutos de anticipaciÃ³n.
+            Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes solo podrán reservar con al menos 60 minutos de anticipación.
           </p>
         </div>
 
         <div>
           <label className="mb-2 block text-sm font-medium" style={{ color: "var(--text-main)" }}>
-            MÃ¡ximo dÃ­as hacia adelante
+            Máximo días hacia adelante
           </label>
           <select
             value={maxDaysMode === "custom" ? "custom" : form.max_booking_days_ahead}
@@ -2535,11 +2543,11 @@ function updateHourByIndex(
             className={selectClass}
             style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
           >
-            <option value={7}>7 dÃ­as</option>
-            <option value={14}>14 dÃ­as</option>
-            <option value={30}>30 dÃ­as</option>
-            <option value={60}>60 dÃ­as</option>
-            <option value={90}>90 dÃ­as</option>
+            <option value={7}>7 días</option>
+            <option value={14}>14 días</option>
+            <option value={30}>30 días</option>
+            <option value={60}>60 días</option>
+            <option value={90}>90 días</option>
             <option value="custom">Personalizado</option>
           </select>
           {maxDaysMode === "custom" ? (
@@ -2554,11 +2562,11 @@ function updateHourByIndex(
                 className="h-11 w-full rounded-2xl border px-4 text-sm sm:w-28"
                 style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
               />
-              <span className="text-sm" style={{ color: "var(--text-muted)" }}>dÃ­as</span>
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>días</span>
             </div>
           ) : null}
           <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-            Limita cuÃ¡ntos dÃ­as hacia el futuro pueden agendar los clientes.
+            Limita cuántos días hacia el futuro pueden agendar los clientes.
           </p>
         </div>
       </div>
@@ -2566,7 +2574,7 @@ function updateHourByIndex(
 
     <Panel
       title="Intervalo de horarios"
-      description="Define cada cuÃ¡ntos minutos se mostrarÃ¡n los horarios a tus clientes."
+      description="Define cada cuántos minutos se mostrarán los horarios a tus clientes."
       className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
     >
       <div className="space-y-5">
@@ -2656,8 +2664,8 @@ function updateHourByIndex(
   </div>
 
   <Panel
-    title="Horarios de atenciÃ³n"
-    description="Define cuÃ¡ndo tu negocio estÃ¡ disponible para recibir reservas en la sucursal activa."
+    title="Horarios de atención"
+    description="Define cuándo tu negocio está disponible para recibir reservas en la sucursal activa."
     className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
   >
     <div
@@ -2674,7 +2682,7 @@ function updateHourByIndex(
             color: "var(--text-muted)",
           }}
         >
-          <div>DÃ­a</div>
+          <div>Día</div>
           <div>Activo</div>
           <div>Inicio</div>
           <div></div>
@@ -2745,7 +2753,7 @@ updateHourByIndex(
         className="h-10 w-28 rounded-xl border px-3 text-sm"
       />
 
-      <span>â€”</span>
+      <span>-</span>
 
       <input
         type="text"
@@ -2788,7 +2796,7 @@ onClick={() => {
 
         className="text-xs text-red-500"
       >
-        âœ•
+        x
       </button>
     </div>
   ))}
@@ -2861,7 +2869,7 @@ onClick={() => {
 
   <Panel
     title="Fechas especiales"
-    description="Configura feriados, vÃ­speras, vacaciones, cierres y horarios especiales por fecha."
+    description="Configura feriados, vísperas, vacaciones, cierres y horarios especiales por fecha."
     className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
   >
     <div className="space-y-4">
@@ -2898,7 +2906,7 @@ onClick={() => {
             color: "var(--text-muted)",
           }}
         >
-          AÃºn no has agregado fechas especiales.
+          Aún no has agregado fechas especiales.
         </div>
       ) : (
         <div className="space-y-4">
@@ -2976,7 +2984,7 @@ onClick={() => {
                     }
                     className="h-4 w-4 rounded"
                   />
-                  Cerrado todo el dÃ­a
+                  Cerrado todo el día
                 </label>
 
                 <button
