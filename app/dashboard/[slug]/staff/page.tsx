@@ -1340,13 +1340,36 @@ function validateStaffHours() {
         <Notice tone="danger" title={saveError} />
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-1 2xl:grid-cols-[1fr_1fr]">
+      <section className="space-y-6">
         {formOpen || editingId ? (
         <Panel
   title={editingId ? "Editar staff" : "Nuevo staff"}
   description="Agrega personas del equipo y deja su información base lista."
-  className="order-2 min-w-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
+  className="min-w-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
 >
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                {editingId ? "Editar integrante del equipo" : "Crear nuevo integrante"}
+              </p>
+              <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+                Completa las secciones y guarda los cambios cuando esté listo.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={resetForm}
+              className={secondaryButtonClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              Volver al equipo
+            </button>
+          </div>
+
           {!selectedBranchId ? (
             <div
               className="rounded-2xl border border-dashed px-4 py-8 text-sm"
@@ -1679,49 +1702,60 @@ function validateStaffHours() {
                     "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-soft))",
                 }}
               >
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--text-main)" }}
-                    >
-                      Usar horario del negocio
-                    </p>
-                    <p
-                      className="mt-1 text-sm"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      Si está activo, este profesional heredará los horarios del
-                      negocio.
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                    Horarios
+                  </p>
+                  <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+                    Define si este profesional hereda la disponibilidad general o tendrá un horario propio.
+                  </p>
+                </div>
 
-                  <label
-                    className="inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={form.use_business_hours}
-                      onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          use_business_hours: e.target.checked,
-                        }))
-                      }
-                      className="h-4 w-4 rounded"
-                    />
-                    {form.use_business_hours
-                      ? "Usar horario del negocio"
-                      : "Usar horario propio del staff"}
-                  </label>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {[
+                    {
+                      value: true,
+                      title: "Usar horario del negocio",
+                      description: "Este staff heredará los horarios generales del negocio.",
+                    },
+                    {
+                      value: false,
+                      title: "Usar horario propio del staff",
+                      description: "Define una disponibilidad personalizada para este profesional.",
+                    },
+                  ].map((option) => {
+                    const selected = form.use_business_hours === option.value;
+
+                    return (
+                      <button
+                        key={option.title}
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            use_business_hours: option.value,
+                          }))
+                        }
+                        className="rounded-2xl border p-4 text-left transition hover:border-blue-400/50"
+                        style={{
+                          borderColor: selected
+                            ? "rgba(37,99,235,0.58)"
+                            : "var(--border-color)",
+                          background: selected
+                            ? "linear-gradient(135deg, rgba(37,99,235,0.16), var(--bg-card))"
+                            : "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        <span className="text-sm font-semibold">{option.title}</span>
+                        <span className="mt-1 block text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                          {option.description}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-
 
 
 
@@ -2305,7 +2339,7 @@ function validateStaffHours() {
         </Panel>
         ) : null}
 
-
+        {!(formOpen || editingId) ? (
         <Panel
           title="Equipo actual"
           description="Visualiza, edita o elimina integrantes del staff."
@@ -2541,6 +2575,7 @@ function validateStaffHours() {
               </button>
             </div>
           )}        </Panel>
+        ) : null}
 
       </section>
     </div>
