@@ -672,7 +672,7 @@ function generateSlotsFromWindows(
       return {
         key: "canceled",
         label: "Cancelada",
-        tooltip: "La reserva grupal fue cancelada.",
+        tooltip: "La actividad fue cancelada.",
       };
     }
 
@@ -689,7 +689,7 @@ function generateSlotsFromWindows(
         key: "partial",
         label: "Cierre parcial",
         tooltip:
-          "La asistencia fue cerrada parcialmente. Aún faltan asistentes por revisar.",
+          "La asistencia está parcialmente cerrada. Faltan asistentes por revisar.",
       };
     }
 
@@ -697,14 +697,14 @@ function generateSlotsFromWindows(
       return {
         key: "pending",
         label: "Pendiente de cierre",
-        tooltip: "La actividad finalizó y aún falta cerrar la asistencia.",
+        tooltip: "La actividad finalizó y falta cerrar la asistencia.",
       };
     }
 
     return {
       key: "scheduled",
       label: "Programada",
-      tooltip: "Esta reserva grupal aún no comienza.",
+      tooltip: "Esta actividad aún no comienza.",
     };
   }
 
@@ -2694,19 +2694,11 @@ const appt = slotGroups[0]?.[0];
                                     Number(appt.service_capacity || 0) ||
                                     activeGroupCount ||
                                     group.length;
-                                  const groupTooltip = groupVisualState
-                                    ? getGroupBookingTooltip(
-                                        group,
-                                        groupVisualState.tooltip,
-                                        selectedBranchName
-                                      )
-                                    : "";
 
                                   return (
                               <button
                                 key={getAppointmentGroupKey(appt)}
                                 type="button"
-                                title={groupTooltip || undefined}
                                 onClick={() => handleSelectAppointment(appt)}
                                 onMouseEnter={(e) =>
                                   handleAppointmentMouseEnter(e, appt)
@@ -2747,7 +2739,7 @@ const appt = slotGroups[0]?.[0];
                                   ) : null}
 
                                   {isGroupSlot && groupVisualState && groupStyles ? (
-  <div className="flex min-w-0 flex-col gap-1.5" title={groupTooltip}>
+  <div className="flex min-w-0 flex-col gap-1.5">
     <div className="flex min-w-0 items-center gap-2">
       <div
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
@@ -2776,7 +2768,6 @@ const appt = slotGroups[0]?.[0];
 
     <div className="flex min-w-0 flex-wrap gap-1.5">
       <span
-        title={groupTooltip}
         className={`inline-flex max-w-full truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold ${groupStyles.stateBadge}`}
       >
         {groupVisualState.label}
@@ -3869,16 +3860,125 @@ const appt = slotGroups[0]?.[0];
         </div>
       ) : null}
 
-      {hoverCard ? (
+      {hoverCard ? (() => {
+        const hoverAppointment = hoverCard.appointment;
+        const hoverIsGroup = isGroupAppointment(hoverAppointment);
+        const hoverGroup = hoverIsGroup
+          ? appointments.filter(
+              (appt) =>
+                getAppointmentGroupKey(appt) ===
+                getAppointmentGroupKey(hoverAppointment)
+            )
+          : [];
+        const hoverGroupState =
+          hoverIsGroup && hoverGroup.length > 0
+            ? getGroupBookingVisualState(hoverGroup)
+            : null;
+        const hoverGroupStyles = hoverGroupState
+          ? getGroupBookingStyles(hoverGroupState.key, false)
+          : null;
+        const hoverActiveCount = hoverGroup.filter(
+          (appt) => appt.status !== "canceled"
+        ).length;
+        const hoverCapacity =
+          Number(hoverAppointment.service_capacity || 0) ||
+          hoverActiveCount ||
+          hoverGroup.length;
+
+        return (
   <div
-    className="pointer-events-none fixed z-[80] hidden w-[290px] rounded-2xl border p-4 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35)] backdrop-blur xl:block"
+    className="pointer-events-none fixed z-[80] hidden w-[300px] rounded-2xl border p-4 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35)] backdrop-blur xl:block"
     style={{
       borderColor: "var(--border-color)",
-      background: "rgba(255,255,255,0.95)",
+      background: "var(--bg-card)",
       left: hoverCard.x,
       top: hoverCard.y,
     }}
   >
+          {hoverIsGroup && hoverGroupState && hoverGroupStyles ? (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p
+                    className="truncate text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {hoverAppointment.service_name_snapshot || "Reserva grupal"}
+                  </p>
+                  <p
+                    className="mt-1 text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Actividad grupal
+                  </p>
+                </div>
+
+                <span
+                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${hoverGroupStyles.stateBadge}`}
+                >
+                  {hoverGroupState.label}
+                </span>
+              </div>
+
+              <div className="grid gap-2 text-xs">
+                <div>
+                  <p
+                    className="font-semibold uppercase tracking-[0.14em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Profesional
+                  </p>
+                  <p
+                    className="mt-1 font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {getStaffName(hoverAppointment.staff_id)}
+                  </p>
+                </div>
+
+                <div>
+                  <p
+                    className="font-semibold uppercase tracking-[0.14em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Inscritos
+                  </p>
+                  <p
+                    className="mt-1 font-medium"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {hoverActiveCount}/{hoverCapacity} inscritos
+                  </p>
+                </div>
+
+                <div>
+                  <p
+                    className="font-semibold uppercase tracking-[0.14em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Estado
+                  </p>
+                  <p
+                    className="mt-1 leading-5"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {hoverGroupState.tooltip}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="rounded-xl border px-3 py-2 text-center text-xs font-semibold"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Ver inscritos
+              </div>
+            </div>
+          ) : (
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
@@ -3949,8 +4049,10 @@ const appt = slotGroups[0]?.[0];
               </div>
             </div>
           </div>
+          )}
         </div>
-      ) : null}
+        );
+      })() : null}
     </div>
   );
 }
