@@ -2593,24 +2593,45 @@ const appt = slotGroups[0]?.[0];
                                     </span>
                                   </div>
 
-                                  
-				{isGroupSlot ? (
-  <div>
-    <p
-      className={`text-sm font-semibold ${
-        isSelected ? "text-white" : "text-slate-900"
-      }`}
-    >
-      {appt.service_name_snapshot || "Clase"}
-    </p>
+                                  {isGroupSlot ? (
+  <div className="space-y-2">
+    <div className="flex items-start justify-between gap-2">
+      <p
+        className={`min-w-0 truncate text-sm font-semibold ${
+          isSelected ? "text-white" : "text-slate-900"
+        }`}
+      >
+        {appt.service_name_snapshot || "Clase"}
+      </p>
+      <span
+        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+          isSelected
+            ? "border-white/20 bg-white/10 text-white"
+            : "border-slate-200 bg-slate-50 text-slate-700"
+        }`}
+      >
+        {group.length}/{appt.service_capacity || group.length} inscritos
+      </span>
+    </div>
 
-    <p
-      className={`mt-1 text-[11px] ${
-        isSelected ? "text-slate-200" : "text-slate-600"
+    <div
+      className={`max-h-20 space-y-1 overflow-y-auto rounded-lg border px-2 py-1.5 ${
+        isSelected
+          ? "border-white/15 bg-white/10"
+          : "border-slate-200 bg-slate-50"
       }`}
     >
-      {group.length} inscritos
-    </p>
+      {group.map((attendee) => (
+        <div
+          key={attendee.id}
+          className={`truncate text-[11px] ${
+            isSelected ? "text-slate-100" : "text-slate-700"
+          }`}
+        >
+          {attendee.customer_name || "Sin nombre"}
+        </div>
+      ))}
+    </div>
 
     <p
       className={`text-[11px] underline cursor-pointer ${
@@ -2653,10 +2674,11 @@ const appt = slotGroups[0]?.[0];
   }`}
 >
   {isGroupSlot
-    ? `${group.length} inscritos`
+    ? getStaffName(appt.staff_id)
     : appt.service_name_snapshot || "Reserva"}
 </p>
 
+                                  {!isGroupSlot ? (
                                   <p
                                     className={`truncate text-[11px] ${
                                       isSelected
@@ -2666,6 +2688,7 @@ const appt = slotGroups[0]?.[0];
                                   >
                                     {getStaffName(appt.staff_id)}
                                   </p>
+                                  ) : null}
 
                                   {isPastPendingClosure(appt) ? (
                                     <div
