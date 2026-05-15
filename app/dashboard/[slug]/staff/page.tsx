@@ -2410,14 +2410,14 @@ function validateStaffHours() {
               Aún no has creado staff.
             </div>
                     ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {staff.map((item) => {
                 const isSelected = editingId === item.id;
 
                 return (
                   <div
                     key={item.id}
-                    className="flex min-h-[320px] flex-col justify-between gap-4 overflow-hidden rounded-2xl border p-3 transition hover:border-blue-400/40"
+                    className="flex min-h-[250px] flex-col justify-between gap-3 overflow-hidden rounded-2xl border p-3 transition hover:border-blue-400/40"
                     style={{
                       borderColor: isSelected
                         ? "rgba(37,99,235,0.45)"
@@ -2432,11 +2432,11 @@ function validateStaffHours() {
 
 <div className="relative group">
   {/* FOTO PEQUEÑA */}
-  <div className="h-44 w-full overflow-hidden rounded-2xl bg-slate-200">
+  <div className="h-32 w-full overflow-hidden rounded-2xl bg-slate-200 sm:h-36">
     {item.photo_url ? (
       <img
         src={item.photo_url}
-        className="h-full w-full object-cover"
+        className="h-full w-full object-cover object-[center_35%]"
       />
     ) : (
       <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
@@ -2482,7 +2482,7 @@ function validateStaffHours() {
 
                       <div className="min-w-0">
                         <p
-                          className="truncate text-base font-semibold"
+          className="truncate text-sm font-semibold"
                           style={{ color: "var(--text-main)" }}
                         >
                           {item.name}
@@ -2515,7 +2515,7 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => startEdit(item)}
-                        className={secondaryButtonClass}
+                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-card)",
@@ -2528,7 +2528,7 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => handleToggleStaffActive(item)}
-                        className={secondaryButtonClass}
+                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                         style={{
                           borderColor: item.is_active
                             ? "rgba(245,158,11,0.34)"
@@ -2545,7 +2545,7 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => handleDelete(item.id)}
-                        className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
+                        className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-300 transition hover:bg-rose-500/15"
                       >
                         Eliminar
                       </button>
@@ -2560,7 +2560,7 @@ function validateStaffHours() {
                   setFormOpen(true);
                 }}
                 disabled={!selectedBranchId || loading || (!editingId && (reachedLimit || hasExcess))}
-                className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-2xl border border-dashed p-4 text-sm font-medium transition hover:border-blue-400/50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-h-[250px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-4 text-sm font-medium transition hover:border-blue-400/50 disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
