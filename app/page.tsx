@@ -58,7 +58,7 @@ export default function OrbyxLandingPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#050816] text-white">
+    <main className="min-h-screen w-full overflow-x-hidden bg-[#050816] text-white">
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <Image
@@ -76,8 +76,8 @@ export default function OrbyxLandingPage() {
 
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(255,94,247,0.16),transparent_25%),radial-gradient(circle_at_78%_52%,rgba(34,211,238,0.08),transparent_22%),radial-gradient(circle_at_20%_70%,rgba(59,130,246,0.08),transparent_22%)]" />
 
-        <div className="relative z-20 mx-auto max-w-[1400px] px-6 pt-6">
-          <header className="grid grid-cols-[auto_1fr_auto] items-center">
+        <div className="relative z-20 mx-auto w-full max-w-[1400px] px-4 pt-5 sm:px-6 sm:pt-6">
+          <header className="flex flex-wrap items-center justify-between gap-3 lg:grid lg:grid-cols-[auto_1fr_auto]">
             <Link href="/" className="text-2xl font-semibold">
               Orbyx
             </Link>
@@ -105,15 +105,15 @@ export default function OrbyxLandingPage() {
           </header>
         </div>
 
-        <div className="relative z-20 mx-auto max-w-[1400px] px-6 pb-20 pt-8">
-          <div className="flex min-h-[760px] items-start">
-            <div className="max-w-[650px] pt-24">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm backdrop-blur">
+        <div className="relative z-20 mx-auto w-full max-w-[1400px] px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-8">
+          <div className="flex min-h-[620px] items-start sm:min-h-[700px] lg:min-h-[760px]">
+            <div className="w-full max-w-[650px] pt-12 sm:pt-20 lg:pt-24">
+              <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs backdrop-blur sm:px-4 sm:text-sm">
                 <Sparkles className="h-4 w-4" />
                 Automatiza todo por WhatsApp
               </div>
 
-              <h1 className="mt-8 text-[60px] font-semibold leading-[1] tracking-[-0.03em]">
+              <h1 className="mt-6 max-w-full text-[40px] font-semibold leading-[1.04] tracking-[-0.03em] sm:mt-8 sm:text-[52px] lg:text-[60px]">
                 Orbyx trabaja por ti:
                 <br />
                 responde, agenda y
@@ -125,21 +125,21 @@ export default function OrbyxLandingPage() {
                 </span>
               </h1>
 
-              <p className="mt-6 max-w-[620px] text-lg text-slate-300">
+              <p className="mt-5 max-w-[620px] text-base leading-7 text-slate-300 sm:mt-6 sm:text-lg">
                 Automatiza respuestas, agenda y seguimiento sin esfuerzo.
               </p>
 
-              <div className="mt-8 flex gap-4">
+              <div className="mt-7 flex w-full flex-col gap-3 sm:mt-8 sm:w-auto sm:flex-row sm:gap-4">
                 <Link
                   href="/register"
-                  className="rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-6 py-3 font-semibold text-white shadow-[0_14px_34px_rgba(16,185,129,0.32)] transition hover:scale-105"
+                  className="inline-flex justify-center rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-6 py-3 font-semibold text-white shadow-[0_14px_34px_rgba(16,185,129,0.32)] transition hover:scale-105"
                 >
                   Probar gratis
                 </Link>
 
                 <Link
                   href="/planes"
-                  className="rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold transition hover:bg-white/15"
+                  className="inline-flex justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold transition hover:bg-white/15"
                 >
                   Ver planes
                 </Link>
@@ -263,30 +263,30 @@ export default function OrbyxLandingPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[#050816] py-24">
+      <section className="relative overflow-hidden bg-[#050816] py-14 sm:py-20 lg:py-24">
         <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(59,130,246,0.16)_0%,rgba(168,85,247,0.12)_35%,rgba(5,8,22,0)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(168,85,247,0.14),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(34,211,238,0.10),transparent_24%),radial-gradient(circle_at_80%_70%,rgba(16,185,129,0.10),transparent_24%)]" />
 
-        <div className="relative mx-auto max-w-[1200px] px-6">
+        <div className="relative mx-auto w-full max-w-[1200px] px-4 sm:px-6">
           <div className="mx-auto max-w-[900px] text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 backdrop-blur-md">
+            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-200 backdrop-blur-md sm:px-4 sm:text-sm">
               <Bot className="h-4 w-4 text-emerald-300" />
               IA aplicada a reservas y atención
             </div>
 
-            <h2 className="mt-6 text-4xl font-semibold tracking-[-0.03em]">
+            <h2 className="mt-5 text-3xl font-semibold tracking-[-0.03em] sm:mt-6 sm:text-4xl">
               Inteligencia artificial que trabaja por tu negocio
             </h2>
 
-            <p className="mx-auto mt-5 max-w-[760px] text-lg leading-8 text-slate-300">
+            <p className="mx-auto mt-4 max-w-[760px] text-base leading-7 text-slate-300 sm:mt-5 sm:text-lg sm:leading-8">
               Orbyx responde automáticamente a tus clientes, agenda citas y hace
               seguimiento sin intervención manual. Todo adaptado a tu negocio,
               para que vendas más y operes con menos carga.
             </p>
           </div>
 
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
-            <div className="group rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] p-7 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/25 hover:shadow-[0_20px_55px_rgba(16,185,129,0.10)]">
+          <div className="mt-10 grid gap-4 sm:gap-6 md:mt-14 md:grid-cols-3">
+            <div className="group rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/25 hover:shadow-[0_20px_55px_rgba(16,185,129,0.10)] sm:p-7">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 ring-1 ring-emerald-300/15">
                 <MessageCircleMore className="h-6 w-6 text-emerald-300" />
               </div>
@@ -299,7 +299,7 @@ export default function OrbyxLandingPage() {
               </p>
             </div>
 
-            <div className="group rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] p-7 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-cyan-300/25 hover:shadow-[0_20px_55px_rgba(34,211,238,0.10)]">
+            <div className="group rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-cyan-300/25 hover:shadow-[0_20px_55px_rgba(34,211,238,0.10)] sm:p-7">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/15 ring-1 ring-cyan-300/15">
                 <CalendarCheck2 className="h-6 w-6 text-cyan-300" />
               </div>
@@ -312,7 +312,7 @@ export default function OrbyxLandingPage() {
               </p>
             </div>
 
-            <div className="group rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] p-7 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-fuchsia-300/25 hover:shadow-[0_20px_55px_rgba(217,70,239,0.10)]">
+            <div className="group rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-fuchsia-300/25 hover:shadow-[0_20px_55px_rgba(217,70,239,0.10)] sm:p-7">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-500/15 ring-1 ring-fuchsia-300/15">
                 <RefreshCcw className="h-6 w-6 text-fuchsia-300" />
               </div>
@@ -326,13 +326,13 @@ export default function OrbyxLandingPage() {
             </div>
           </div>
 
-          <div className="mt-14 rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(16,185,129,0.10)_0%,rgba(59,130,246,0.08)_45%,rgba(168,85,247,0.10)_100%)] p-8 shadow-[0_22px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-            <div className="grid items-center gap-8 md:grid-cols-[1.1fr_0.9fr]">
+          <div className="mt-10 rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(16,185,129,0.10)_0%,rgba(59,130,246,0.08)_45%,rgba(168,85,247,0.10)_100%)] p-5 shadow-[0_22px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:mt-14 sm:rounded-[32px] sm:p-8">
+            <div className="grid items-center gap-6 md:grid-cols-[1.1fr_0.9fr] md:gap-8">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-300/90">
                   Más que una agenda
                 </p>
-                <h3 className="mt-3 text-3xl font-semibold tracking-[-0.03em]">
+                <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
                   Orbyx responde, agenda y hace seguimiento por ti
                 </h3>
                 <p className="mt-4 max-w-[620px] leading-8 text-slate-300">
