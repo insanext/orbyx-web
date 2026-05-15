@@ -2747,41 +2747,42 @@ const appt = slotGroups[0]?.[0];
                                   ) : null}
 
                                   {isGroupSlot && groupVisualState && groupStyles ? (
-  <div className="flex items-center gap-3" title={groupTooltip}>
-    <div
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-        isSelected ? "bg-white/10" : "bg-white/65"
-      }`}
-    >
-      <UsersRound className={`h-5 w-5 ${groupStyles.icon}`} />
-    </div>
+  <div className="flex min-w-0 flex-col gap-1.5" title={groupTooltip}>
+    <div className="flex min-w-0 items-center gap-2">
+      <div
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+          isSelected ? "bg-white/10" : "bg-white/65"
+        }`}
+      >
+        <UsersRound className={`h-4 w-4 ${groupStyles.icon}`} />
+      </div>
 
-    <div className="min-w-0 flex-1">
       <p
-        className={`truncate text-sm font-semibold ${
+        className={`min-w-0 flex-1 truncate text-sm font-semibold ${
           isSelected ? "text-white" : "text-slate-900"
         }`}
       >
         {appt.service_name_snapshot || "Clase"}
       </p>
-      <p
-        className={`mt-0.5 text-[11px] font-medium ${
-          isSelected ? "text-slate-200" : "text-slate-600"
-        }`}
-      >
-        {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
-      </p>
     </div>
 
-    <div className="flex shrink-0 flex-col items-end gap-1">
+    <p
+      className={`truncate text-[11px] font-medium ${
+        isSelected ? "text-slate-200" : "text-slate-600"
+      }`}
+    >
+      {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
+    </p>
+
+    <div className="flex min-w-0 flex-wrap gap-1.5">
       <span
         title={groupTooltip}
-        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${groupStyles.stateBadge}`}
+        className={`inline-flex max-w-full truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold ${groupStyles.stateBadge}`}
       >
         {groupVisualState.label}
       </span>
       <span
-        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${groupStyles.countBadge}`}
+        className={`inline-flex max-w-full truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold ${groupStyles.countBadge}`}
       >
         {activeGroupCount}/{groupCapacity} inscritos
       </span>
