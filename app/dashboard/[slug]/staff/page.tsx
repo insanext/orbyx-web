@@ -1376,8 +1376,43 @@ function validateStaffHours() {
 
 
 
-            <div className="space-y-5">
-              
+            <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+              <aside
+                className="rounded-2xl border p-3 lg:sticky lg:top-4 lg:self-start"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                }}
+              >
+                {[
+                  { step: "1", title: "Datos básicos", description: "Información personal y estado" },
+                  { step: "2", title: "Servicios que atiende", description: "Servicios asignados" },
+                  { step: "3", title: "Horarios", description: "Disponibilidad del staff" },
+                  { step: "4", title: "Días/horarios excepcionales", description: "Cambios puntuales" },
+                ].map((section) => (
+                  <div
+                    key={section.step}
+                    className="flex gap-3 rounded-2xl px-3 py-3"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    <span
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
+                      style={{
+                        borderColor: "rgba(37,99,235,0.38)",
+                        background: section.step === "1" ? "rgba(37,99,235,0.18)" : "var(--bg-card)",
+                      }}
+                    >
+                      {section.step}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{section.title}</p>
+                      <p className="mt-1 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                        {section.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </aside>
 
 <div className="space-y-5">
 
@@ -2336,14 +2371,14 @@ function validateStaffHours() {
               Aún no has creado staff.
             </div>
                     ) : (
-            <div className="space-y-2">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {staff.map((item) => {
                 const isSelected = editingId === item.id;
 
                 return (
                   <div
                     key={item.id}
-                    className="flex flex-col gap-4 rounded-2xl border px-4 py-4 transition hover:border-blue-400/40 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex min-h-[320px] flex-col justify-between gap-4 overflow-hidden rounded-2xl border p-3 transition hover:border-blue-400/40"
                     style={{
                       borderColor: isSelected
                         ? "rgba(37,99,235,0.45)"
@@ -2353,12 +2388,12 @@ function validateStaffHours() {
                         : "var(--bg-card)",
                     }}
                   >
-                    <div className="flex min-w-0 items-center gap-4">
+                    <div className="flex min-w-0 flex-col gap-3">
 
 
 <div className="relative group">
   {/* FOTO PEQUEÑA */}
-  <div className="h-20 w-20 overflow-hidden rounded-2xl bg-slate-200 sm:h-24 sm:w-24">
+  <div className="h-44 w-full overflow-hidden rounded-2xl bg-slate-200">
     {item.photo_url ? (
       <img
         src={item.photo_url}
@@ -2372,7 +2407,7 @@ function validateStaffHours() {
   </div>
 
   {/* HOVER CARD */}
-  <div className="pointer-events-none absolute left-full top-1/2 z-20 ml-4 -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100">
+  <div className="pointer-events-none absolute left-full top-1/2 z-20 ml-4 hidden -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100 lg:block">
     <div
       className="w-[500px] rounded-3xl border p-6 shadow-2xl"
       style={{
@@ -2423,7 +2458,7 @@ function validateStaffHours() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span
                         className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                         style={{
@@ -2479,6 +2514,31 @@ function validateStaffHours() {
                   </div>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setFormOpen(true);
+                }}
+                disabled={!selectedBranchId || loading || (!editingId && (reachedLimit || hasExcess))}
+                className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-2xl border border-dashed p-4 text-sm font-medium transition hover:border-blue-400/50 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                <span
+                  className="flex h-14 w-14 items-center justify-center rounded-full border text-3xl"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                  }}
+                >
+                  +
+                </span>
+                Agregar staff
+              </button>
             </div>
           )}        </Panel>
 
