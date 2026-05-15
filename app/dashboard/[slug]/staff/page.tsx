@@ -2351,14 +2351,6 @@ function validateStaffHours() {
           className="order-1 bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                Equipo de la sucursal
-              </p>
-              <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-                Primero revisa tu equipo actual. Crea o edita staff solo cuando lo necesites.
-              </p>
-            </div>
             <button
               type="button"
               onClick={() => {
