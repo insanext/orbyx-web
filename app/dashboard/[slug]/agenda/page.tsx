@@ -1879,6 +1879,13 @@ loadPendingCloseAppointments();
     Number(selectedAppointment?.service_capacity || 0) ||
     selectedGroupActiveCount ||
     selectedGroupAppointments.length;
+  const selectedGroupVisualState =
+    isSelectedGroupAppointment && selectedGroupAppointments.length > 0
+      ? getGroupBookingVisualState(selectedGroupAppointments)
+      : null;
+  const selectedGroupStyles = selectedGroupVisualState
+    ? getGroupBookingStyles(selectedGroupVisualState.key, false)
+    : null;
 
   const nextAppointment = useMemo(() => {
     const now = Date.now();
@@ -3093,11 +3100,17 @@ const appt = slotGroups[0]?.[0];
                         </p>
 
                         <span
-                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(
-                            selectedAppointment
-                          )}`}
+                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                            isSelectedGroupAppointment &&
+                            selectedGroupVisualState &&
+                            selectedGroupStyles
+                              ? selectedGroupStyles.stateBadge
+                              : getStatusBadgeClass(selectedAppointment)
+                          }`}
                         >
-                          {getStatusLabel(selectedAppointment)}
+                          {isSelectedGroupAppointment && selectedGroupVisualState
+                            ? selectedGroupVisualState.label
+                            : getStatusLabel(selectedAppointment)}
                         </span>
                       </div>
 
@@ -3214,7 +3227,7 @@ const appt = slotGroups[0]?.[0];
                                       disabled={statusSaving || isCompleted}
                                       className="inline-flex h-8 items-center justify-center rounded-lg bg-emerald-600 px-2.5 text-[11px] font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                      {isCompleted ? "Asistio" : "Marcar asistio"}
+                                      {isCompleted ? "Asistió" : "Asistió"}
                                     </button>
 
                                     <button
@@ -3226,8 +3239,8 @@ const appt = slotGroups[0]?.[0];
                                       className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-500 px-2.5 text-[11px] font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                       {isNoShow
-                                        ? "No asistio"
-                                        : "Marcar no asistio"}
+                                        ? "No asistió"
+                                        : "No asistió"}
                                     </button>
                                   </div>
                                 ) : null}
@@ -3303,6 +3316,32 @@ const appt = slotGroups[0]?.[0];
                       </Notice>
                     ) : null}
 
+                    {isSelectedGroupAppointment ? (
+                      <div
+                        className="rounded-xl border p-3"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                        }}
+                      >
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--text-main)" }}
+                        >
+                          Datos del cliente
+                        </p>
+                        <p
+                          className="mt-2 rounded-xl border px-3 py-3 text-sm"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          Selecciona un inscrito para ver sus datos.
+                        </p>
+                      </div>
+                    ) : (
                     <div
                       className="rounded-xl border p-3"
                       style={{
@@ -3563,6 +3602,7 @@ const appt = slotGroups[0]?.[0];
                         </div>
                       )}
                     </div>
+                    )}
                   </div>
                 )}
               </div>
