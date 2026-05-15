@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Panel } from "../../../../components/dashboard/panel";
 
@@ -242,6 +242,9 @@ export default function StaffPage() {
   const [staff, setStaff] = useState<StaffItem[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [activeFormSection, setActiveFormSection] = useState<"datos" | "horarios">("datos");
+  const staffDataSectionRef = useRef<HTMLDivElement | null>(null);
+  const staffScheduleSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [form, setForm] = useState(emptyForm);
 const [photoUrl, setPhotoUrl] = useState("");
@@ -729,6 +732,7 @@ async function loadStaffHours(id: string, staffId: string) {
     setForm(emptyForm);
     setEditingId(null);
     setFormOpen(false);
+    setActiveFormSection("datos");
 setPhotoUrl("");
     setStaffHours(defaultHours);
     setStaffSpecialDates([]);
@@ -743,6 +747,7 @@ setPhotoUrl("");
       setLoading(true);
       setEditingId(item.id);
       setFormOpen(true);
+      setActiveFormSection("datos");
       setForm({
         name: item.name || "",
         role: item.role || "",
@@ -1408,36 +1413,48 @@ function validateStaffHours() {
                 }}
               >
                 {[
-                  { step: "1", title: "Datos básicos", description: "Información personal y estado" },
-                  { step: "2", title: "Servicios que atiende", description: "Servicios asignados" },
-                  { step: "3", title: "Horarios", description: "Disponibilidad del staff" },
-                  { step: "4", title: "Días/horarios excepcionales", description: "Cambios puntuales" },
-                ].map((section) => (
-                  <div
-                    key={section.step}
-                    className="flex gap-3 rounded-2xl px-3 py-3"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    <span
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
-                      style={{
-                        borderColor: "rgba(37,99,235,0.38)",
-                        background: section.step === "1" ? "rgba(37,99,235,0.18)" : "var(--bg-card)",
+                  { id: "datos" as const, step: "1", title: "Datos básicos", description: "Foto, datos, estado y servicios", ref: staffDataSectionRef },
+                  { id: "horarios" as const, step: "2", title: "Horarios", description: "Disponibilidad y excepciones", ref: staffScheduleSectionRef },
+                ].map((section) => {
+                  const active = activeFormSection === section.id;
+
+                  return (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveFormSection(section.id);
+                        section.ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                       }}
+                      className="flex w-full cursor-pointer gap-3 rounded-2xl border px-3 py-3 text-left transition hover:border-blue-400/50"
+                      style={{
+                        borderColor: active ? "rgba(37,99,235,0.42)" : "transparent",
+                        background: active ? "rgba(37,99,235,0.14)" : "transparent",
+                        color: "var(--text-main)",
+                      }}
+                      aria-current={active ? "page" : undefined}
                     >
-                      {section.step}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold">{section.title}</p>
-                      <p className="mt-1 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
-                        {section.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                      <span
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
+                        style={{
+                          borderColor: active ? "rgba(37,99,235,0.58)" : "var(--border-color)",
+                          background: active ? "rgba(37,99,235,0.22)" : "var(--bg-card)",
+                        }}
+                      >
+                        {section.step}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">{section.title}</span>
+                        <span className="mt-1 block text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                          {section.description}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
               </aside>
 
-<div className="space-y-5">
+<div ref={staffDataSectionRef} className="space-y-5 scroll-mt-6">
 
   <div
     className="rounded-2xl border p-4"
@@ -1695,7 +1712,92 @@ function validateStaffHours() {
               </div>
 
               <div
-                className="rounded-2xl border p-4"
+  className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <div className="mb-4">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Servicios que atiende
+                  </p>
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Selecciona qué servicios puede realizar este profesional.
+                  </p>
+                </div>
+
+                {services.length === 0 ? (
+                  <div
+                    className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    No hay servicios activos disponibles para asignar.
+                  </div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {services.map((service) => {
+                      const checked = selectedServiceIds.includes(service.id);
+
+                      return (
+                        <label
+                          key={service.id}
+                          className="flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition"
+                          style={{
+                            borderColor: checked
+                              ? "rgba(37,99,235,0.45)"
+                              : "var(--border-color)",
+                            background: checked
+                              ? "linear-gradient(135deg, rgba(37,99,235,0.10), var(--bg-soft))"
+                              : "var(--bg-card)",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleService(service.id)}
+                            className="mt-0.5 h-4 w-4 rounded"
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {service.name}
+                            </p>
+                            <p
+                              className="mt-1 text-xs"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Duración: {service.duration_minutes ?? 0} min
+                              {service.price != null
+                                ? ` · $${Number(service.price).toLocaleString(
+                                    "es-CL"
+                                  )}`
+                                : ""}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+<div
+                ref={staffScheduleSectionRef}
+                className="scroll-mt-6 rounded-2xl border p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background:
@@ -1904,89 +2006,7 @@ function validateStaffHours() {
   </div>
 )}
 
-<div
-  className="rounded-2xl border p-4"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-card)",
-                }}
-              >
-                <div className="mb-4">
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Servicios que atiende
-                  </p>
-                  <p
-                    className="mt-1 text-sm"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Selecciona qué servicios puede realizar este profesional.
-                  </p>
-                </div>
 
-                {services.length === 0 ? (
-                  <div
-                    className="rounded-2xl border border-dashed px-4 py-6 text-sm"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    No hay servicios activos disponibles para asignar.
-                  </div>
-                ) : (
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {services.map((service) => {
-                      const checked = selectedServiceIds.includes(service.id);
-
-                      return (
-                        <label
-                          key={service.id}
-                          className="flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition"
-                          style={{
-                            borderColor: checked
-                              ? "rgba(37,99,235,0.45)"
-                              : "var(--border-color)",
-                            background: checked
-                              ? "linear-gradient(135deg, rgba(37,99,235,0.10), var(--bg-soft))"
-                              : "var(--bg-card)",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleService(service.id)}
-                            className="mt-0.5 h-4 w-4 rounded"
-                          />
-
-                          <div className="min-w-0 flex-1">
-                            <p
-                              className="text-sm font-medium"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {service.name}
-                            </p>
-                            <p
-                              className="mt-1 text-xs"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Duración: {service.duration_minutes ?? 0} min
-                              {service.price != null
-                                ? ` · $${Number(service.price).toLocaleString(
-                                    "es-CL"
-                                  )}`
-                                : ""}
-                            </p>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
 
               <div
                 className="rounded-2xl border p-4"
