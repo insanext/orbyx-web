@@ -1996,7 +1996,7 @@ function validateStaffHours() {
                   />
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_120px_120px] xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_120px_120px_auto_auto] xl:items-end">
                       <div>
                         <label
                           className="mb-2 block text-xs font-semibold uppercase tracking-wide"
@@ -2081,6 +2081,8 @@ function validateStaffHours() {
                         </label>
                         <input
                           type="time"
+                          lang="en-GB"
+                          step="60"
                           value={specialDateForm.start_time || "09:00"}
                           disabled={specialDateForm.is_closed}
                           onChange={(e) =>
@@ -2108,6 +2110,8 @@ function validateStaffHours() {
                         </label>
                         <input
                           type="time"
+                          lang="en-GB"
+                          step="60"
                           value={specialDateForm.end_time || "18:00"}
                           disabled={specialDateForm.is_closed}
                           onChange={(e) =>
