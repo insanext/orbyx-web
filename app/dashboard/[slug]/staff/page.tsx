@@ -1345,19 +1345,12 @@ function validateStaffHours() {
 
       <section className="space-y-6">
         {formOpen || editingId ? (
-        <Panel
-  title={editingId ? "Editar staff" : "Nuevo staff"}
-  description="Agrega personas del equipo y deja su información base lista."
-  className="min-w-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
->
+        <Panel className="min-w-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                {editingId ? "Editar integrante del equipo" : "Crear nuevo integrante"}
-              </p>
-              <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-                Completa las secciones y guarda los cambios cuando esté listo.
-              </p>
+              <h3 className="text-base font-semibold tracking-tight" style={{ color: "var(--text-main)" }}>
+                {editingId ? "Editar integrante" : "Crear nuevo integrante"}
+              </h3>
             </div>
             <button
               type="button"
@@ -1439,28 +1432,6 @@ function validateStaffHours() {
 
               {activeFormSection === "datos" ? (
                 <>
-
-  <div
-    className="rounded-2xl border p-4"
-    style={{
-      borderColor: "var(--border-color)",
-      background:
-        "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-soft))",
-    }}
-  >
-    <p
-      className="text-sm font-medium"
-      style={{ color: "var(--text-main)" }}
-    >
-      Plan actual: <span className="capitalize">{plan}</span>
-    </p>
-    <p
-      className="text-xs"
-      style={{ color: "var(--text-muted)" }}
-    >
-      Has creado {activeCount} de {caps.max_staff} staff disponibles en tu plan.
-    </p>
-  </div>
 
   <div
     className="rounded-2xl border p-4"
@@ -1655,14 +1626,14 @@ function validateStaffHours() {
               </div>
 
               <div
-                className="rounded-2xl border p-4"
+                className="w-full max-w-3xl rounded-2xl border p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
                 }}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
                       Estado del staff
                     </p>
@@ -1678,7 +1649,7 @@ function validateStaffHours() {
                         is_active: !prev.is_active,
                       }))
                     }
-                    className="inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition"
+                    className="inline-flex h-11 shrink-0 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition"
                   style={{
                       borderColor: form.is_active
                         ? "rgba(16,185,129,0.34)"
