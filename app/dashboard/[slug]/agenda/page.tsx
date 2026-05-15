@@ -2,6 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { UsersRound } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 
@@ -657,6 +658,129 @@ function generateSlotsFromWindows(
 
   function isGroupAppointment(appt?: Appointment | null) {
     return appt?.service_is_group === true;
+  }
+
+  function getGroupBookingVisualState(group: Appointment[]) {
+    const now = Date.now();
+    const first = group[0];
+    const active = group.filter((appt) => appt.status !== "canceled");
+    const reviewed = active.filter((appt) =>
+      ["completed", "no_show"].includes(appt.status)
+    );
+
+    if (group.length > 0 && group.every((appt) => appt.status === "canceled")) {
+      return {
+        key: "canceled",
+        label: "Cancelada",
+        tooltip: "La reserva grupal fue cancelada.",
+      };
+    }
+
+    if (active.length > 0 && reviewed.length === active.length) {
+      return {
+        key: "closed",
+        label: "Cerrada",
+        tooltip: "La asistencia fue cerrada completamente.",
+      };
+    }
+
+    if (reviewed.length > 0 && reviewed.length < active.length) {
+      return {
+        key: "partial",
+        label: "Cierre parcial",
+        tooltip:
+          "La asistencia fue cerrada parcialmente. Aún faltan asistentes por revisar.",
+      };
+    }
+
+    if (first && new Date(first.end_at).getTime() < now) {
+      return {
+        key: "pending",
+        label: "Pendiente de cierre",
+        tooltip: "La actividad finalizó y aún falta cerrar la asistencia.",
+      };
+    }
+
+    return {
+      key: "scheduled",
+      label: "Programada",
+      tooltip: "Esta reserva grupal aún no comienza.",
+    };
+  }
+
+  function getGroupBookingStyles(
+    key: string,
+    selected: boolean
+  ): { card: string; icon: string; stateBadge: string; countBadge: string } {
+    if (selected) {
+      return {
+        card: "border-slate-900 bg-slate-900 text-white shadow-lg",
+        icon: "text-white",
+        stateBadge: "border-white/20 bg-white/10 text-white",
+        countBadge: "border-white/20 bg-white/10 text-white",
+      };
+    }
+
+    const styles: Record<
+      string,
+      { card: string; icon: string; stateBadge: string; countBadge: string }
+    > = {
+      scheduled: {
+        card: "border-sky-200 bg-sky-50 text-slate-900 hover:border-sky-300",
+        icon: "text-sky-600",
+        stateBadge: "border-sky-200 bg-sky-100 text-sky-700",
+        countBadge: "border-sky-200 bg-white/70 text-sky-700",
+      },
+      pending: {
+        card: "border-rose-200 bg-rose-50 text-slate-900 hover:border-rose-300",
+        icon: "text-rose-600",
+        stateBadge: "border-rose-200 bg-rose-500 text-white",
+        countBadge: "border-rose-200 bg-white/70 text-rose-700",
+      },
+      partial: {
+        card: "border-orange-200 bg-orange-50 text-slate-900 hover:border-orange-300",
+        icon: "text-orange-600",
+        stateBadge: "border-orange-200 bg-orange-500 text-white",
+        countBadge: "border-orange-200 bg-white/70 text-orange-700",
+      },
+      closed: {
+        card: "border-emerald-200 bg-emerald-50 text-slate-900 hover:border-emerald-300",
+        icon: "text-emerald-600",
+        stateBadge: "border-emerald-200 bg-emerald-500 text-white",
+        countBadge: "border-emerald-200 bg-white/70 text-emerald-700",
+      },
+      canceled: {
+        card: "border-slate-200 bg-slate-100 text-slate-600 opacity-90 hover:border-slate-300",
+        icon: "text-slate-500",
+        stateBadge: "border-slate-200 bg-slate-500 text-white",
+        countBadge: "border-slate-200 bg-white/70 text-slate-600",
+      },
+    };
+
+    return styles[key] || styles.scheduled;
+  }
+
+  function getGroupBookingTooltip(
+    group: Appointment[],
+    stateTooltip: string,
+    branchName: string
+  ) {
+    const first = group[0];
+    const serviceName = first?.service_name_snapshot || "Reserva grupal";
+    const staffName = first ? getStaffName(first.staff_id) : "No asignado";
+    const capacity = Number(first?.service_capacity || group.length || 0);
+
+    return [
+      serviceName,
+      `Profesional: ${staffName}`,
+      branchName ? `Sucursal: ${branchName}` : "",
+      `Capacidad: ${capacity} personas`,
+      "",
+      "Estado:",
+      stateTooltip,
+    ]
+      .filter((line) => line !== "")
+      .join("\n");
   }
 
   function matchesFilter(appt: Appointment, filter: FilterValue) {
@@ -2554,22 +2678,48 @@ const appt = slotGroups[0]?.[0];
                                     selectedKey &&
                                       selectedKey === getAppointmentGroupKey(appt)
                                   );
+                                  const groupVisualState = isGroupSlot
+                                    ? getGroupBookingVisualState(group)
+                                    : null;
+                                  const groupStyles = groupVisualState
+                                    ? getGroupBookingStyles(
+                                        groupVisualState.key,
+                                        isSelected
+                                      )
+                                    : null;
+                                  const activeGroupCount = group.filter(
+                                    (attendee) => attendee.status !== "canceled"
+                                  ).length;
+                                  const groupCapacity =
+                                    Number(appt.service_capacity || 0) ||
+                                    activeGroupCount ||
+                                    group.length;
+                                  const groupTooltip = groupVisualState
+                                    ? getGroupBookingTooltip(
+                                        group,
+                                        groupVisualState.tooltip,
+                                        selectedBranchName
+                                      )
+                                    : "";
 
                                   return (
                               <button
                                 key={getAppointmentGroupKey(appt)}
                                 type="button"
+                                title={groupTooltip || undefined}
                                 onClick={() => handleSelectAppointment(appt)}
                                 onMouseEnter={(e) =>
                                   handleAppointmentMouseEnter(e, appt)
                                 }
                                 onMouseLeave={handleAppointmentMouseLeave}
-                                className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
-                                  appt,
-                                  isSelected
-                                )}`}
+                                className={`w-full rounded-xl border p-2.5 text-left transition ${
+                                  isGroupSlot && groupStyles
+                                    ? groupStyles.card
+                                    : getCardClass(appt, isSelected)
+                                }`}
                               >
                                 <div className="space-y-1.5">
+                                  {!isGroupSlot ? (
                                   <div
                                     className={`text-[11px] font-semibold ${
                                       isSelected
@@ -2580,7 +2730,9 @@ const appt = slotGroups[0]?.[0];
                                     {formatHour(appt.start_at)} -{" "}
                                     {formatHour(appt.end_at)}
                                   </div>
+                                  ) : null}
 
+                                  {!isGroupSlot ? (
                                   <div>
                                     <span
                                       className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
@@ -2592,54 +2744,48 @@ const appt = slotGroups[0]?.[0];
                                       {getCalendarBadgeLabel(appt)}
                                     </span>
                                   </div>
+                                  ) : null}
 
-                                  {isGroupSlot ? (
-  <div className="space-y-2">
-    <div className="flex items-start justify-between gap-2">
+                                  {isGroupSlot && groupVisualState && groupStyles ? (
+  <div className="flex items-center gap-3" title={groupTooltip}>
+    <div
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+        isSelected ? "bg-white/10" : "bg-white/65"
+      }`}
+    >
+      <UsersRound className={`h-5 w-5 ${groupStyles.icon}`} />
+    </div>
+
+    <div className="min-w-0 flex-1">
       <p
-        className={`min-w-0 truncate text-sm font-semibold ${
+        className={`truncate text-sm font-semibold ${
           isSelected ? "text-white" : "text-slate-900"
         }`}
       >
         {appt.service_name_snapshot || "Clase"}
       </p>
-      <span
-        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-          isSelected
-            ? "border-white/20 bg-white/10 text-white"
-            : "border-slate-200 bg-slate-50 text-slate-700"
+      <p
+        className={`mt-0.5 text-[11px] font-medium ${
+          isSelected ? "text-slate-200" : "text-slate-600"
         }`}
       >
-        {group.length}/{appt.service_capacity || group.length} inscritos
+        {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
+      </p>
+    </div>
+
+    <div className="flex shrink-0 flex-col items-end gap-1">
+      <span
+        title={groupTooltip}
+        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${groupStyles.stateBadge}`}
+      >
+        {groupVisualState.label}
+      </span>
+      <span
+        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${groupStyles.countBadge}`}
+      >
+        {activeGroupCount}/{groupCapacity} inscritos
       </span>
     </div>
-
-    <div
-      className={`max-h-20 space-y-1 overflow-y-auto rounded-lg border px-2 py-1.5 ${
-        isSelected
-          ? "border-white/15 bg-white/10"
-          : "border-slate-200 bg-slate-50"
-      }`}
-    >
-      {group.map((attendee) => (
-        <div
-          key={attendee.id}
-          className={`truncate text-[11px] ${
-            isSelected ? "text-slate-100" : "text-slate-700"
-          }`}
-        >
-          {attendee.customer_name || "Sin nombre"}
-        </div>
-      ))}
-    </div>
-
-    <p
-      className={`text-[11px] underline cursor-pointer ${
-        isSelected ? "text-slate-200" : "text-slate-500"
-      }`}
-    >
-      Ver inscritos
-    </p>
   </div>
 ) : (
   <p
@@ -2651,7 +2797,7 @@ const appt = slotGroups[0]?.[0];
   </p>
 )}
 
-                                  {appt.customer_data?.pet_name ? (
+                                  {!isGroupSlot && appt.customer_data?.pet_name ? (
                                     <p
                                       className={`truncate text-[11px] ${
                                         isSelected
@@ -2666,6 +2812,7 @@ const appt = slotGroups[0]?.[0];
                                     </p>
                                   ) : null}
 
+                                  {!isGroupSlot ? (
                                   <p
   className={`truncate text-[11px] ${
     isSelected
@@ -2677,6 +2824,7 @@ const appt = slotGroups[0]?.[0];
     ? getStaffName(appt.staff_id)
     : appt.service_name_snapshot || "Reserva"}
 </p>
+                                  ) : null}
 
                                   {!isGroupSlot ? (
                                   <p
@@ -2690,7 +2838,7 @@ const appt = slotGroups[0]?.[0];
                                   </p>
                                   ) : null}
 
-                                  {isPastPendingClosure(appt) ? (
+                                  {!isGroupSlot && isPastPendingClosure(appt) ? (
                                     <div
                                       className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${
                                         isSelected
