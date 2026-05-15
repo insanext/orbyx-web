@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { Panel } from "../../../../components/dashboard/panel";
 
@@ -243,8 +243,6 @@ export default function StaffPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [activeFormSection, setActiveFormSection] = useState<"datos" | "horarios">("datos");
-  const staffDataSectionRef = useRef<HTMLDivElement | null>(null);
-  const staffScheduleSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [form, setForm] = useState(emptyForm);
 const [photoUrl, setPhotoUrl] = useState("");
@@ -1404,57 +1402,43 @@ function validateStaffHours() {
 
 
 
-            <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-              <aside
-                className="rounded-2xl border p-3 lg:sticky lg:top-4 lg:self-start"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                }}
-              >
-                {[
-                  { id: "datos" as const, step: "1", title: "Datos básicos", description: "Foto, datos, estado y servicios", ref: staffDataSectionRef },
-                  { id: "horarios" as const, step: "2", title: "Horarios", description: "Disponibilidad y excepciones", ref: staffScheduleSectionRef },
-                ].map((section) => {
-                  const active = activeFormSection === section.id;
+            <div className="space-y-5">
+              <div className="-mx-1 overflow-x-auto px-1" aria-label="Secciones de staff">
+                <div
+                  className="flex min-w-max gap-2 rounded-2xl border p-1.5"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  {[
+                    { id: "datos" as const, title: "Datos básicos" },
+                    { id: "horarios" as const, title: "Horarios" },
+                  ].map((section) => {
+                    const active = activeFormSection === section.id;
 
-                  return (
-                    <button
-                      key={section.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveFormSection(section.id);
-                        section.ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }}
-                      className="flex w-full cursor-pointer gap-3 rounded-2xl border px-3 py-3 text-left transition hover:border-blue-400/50"
-                      style={{
-                        borderColor: active ? "rgba(37,99,235,0.42)" : "transparent",
-                        background: active ? "rgba(37,99,235,0.14)" : "transparent",
-                        color: "var(--text-main)",
-                      }}
-                      aria-current={active ? "page" : undefined}
-                    >
-                      <span
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
+                    return (
+                      <button
+                        key={section.id}
+                        type="button"
+                        onClick={() => setActiveFormSection(section.id)}
+                        className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:border-blue-400/50 focus:outline-none focus:ring-2 focus:ring-blue-400/60"
                         style={{
-                          borderColor: active ? "rgba(37,99,235,0.58)" : "var(--border-color)",
-                          background: active ? "rgba(37,99,235,0.22)" : "var(--bg-card)",
+                          borderColor: active ? "rgba(37,99,235,0.55)" : "transparent",
+                          background: active ? "rgba(37,99,235,0.14)" : "transparent",
+                          color: active ? "var(--text-main)" : "var(--text-muted)",
                         }}
+                        aria-current={active ? "page" : undefined}
                       >
-                        {section.step}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold">{section.title}</span>
-                        <span className="mt-1 block text-xs leading-5" style={{ color: "var(--text-muted)" }}>
-                          {section.description}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </aside>
+                        {section.title}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-<div ref={staffDataSectionRef} className="space-y-5 scroll-mt-6">
+              {activeFormSection === "datos" ? (
+                <>
 
   <div
     className="rounded-2xl border p-4"
@@ -1546,8 +1530,7 @@ function validateStaffHours() {
       </div>
     </div>
   </div>
-
-
+              <div>
                 <label
                   className="mb-2 block text-sm font-medium"
                   style={{ color: "var(--text-main)" }}
@@ -1794,10 +1777,13 @@ function validateStaffHours() {
                   </div>
                 )}
               </div>
+                </>
+              ) : null}
 
-<div
-                ref={staffScheduleSectionRef}
-                className="scroll-mt-6 rounded-2xl border p-4"
+              {activeFormSection === "horarios" ? (
+                <>
+              <div
+                className="rounded-2xl border p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background:
@@ -2289,6 +2275,8 @@ function validateStaffHours() {
                   </div>
                 )}
               </div>
+                </>
+              ) : null}
 
               {saveError ? (
                 <Notice tone="danger" title={saveError} />
