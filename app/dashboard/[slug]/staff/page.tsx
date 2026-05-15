@@ -2417,7 +2417,7 @@ function validateStaffHours() {
                 return (
                   <div
                     key={item.id}
-                    className="flex min-h-[250px] flex-col justify-between gap-3 overflow-hidden rounded-2xl border p-3 transition hover:border-blue-400/40"
+                    className="relative flex min-h-[250px] flex-col justify-between gap-3 overflow-visible rounded-2xl border p-3 transition hover:z-30 hover:border-blue-400/40"
                     style={{
                       borderColor: isSelected
                         ? "rgba(37,99,235,0.45)"
@@ -2430,13 +2430,13 @@ function validateStaffHours() {
                     <div className="flex min-w-0 flex-col gap-3">
 
 
-<div className="relative group">
+<div className="group relative">
   {/* FOTO PEQUEÑA */}
   <div className="h-32 w-full overflow-hidden rounded-2xl bg-slate-200 sm:h-36">
     {item.photo_url ? (
       <img
         src={item.photo_url}
-        className="h-full w-full object-cover object-[center_35%]"
+        className="h-full w-full object-contain object-top"
       />
     ) : (
       <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
@@ -2446,7 +2446,7 @@ function validateStaffHours() {
   </div>
 
   {/* HOVER CARD */}
-  <div className="pointer-events-none absolute left-full top-1/2 z-20 ml-4 hidden -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100 lg:block">
+  <div className="pointer-events-none absolute left-full top-1/2 z-[9999] ml-4 hidden -translate-y-1/2 opacity-0 transition-all duration-200 lg:block lg:group-hover:opacity-100">
     <div
       className="w-[500px] rounded-3xl border p-6 shadow-2xl"
       style={{
@@ -2455,11 +2455,11 @@ function validateStaffHours() {
       }}
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="h-[390px] w-[390px] overflow-hidden rounded-2xl bg-slate-200">
+        <div className="h-[450px] w-[450px] overflow-hidden rounded-2xl bg-slate-200">
           {item.photo_url ? (
             <img
               src={item.photo_url}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain object-top"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-2xl text-slate-400">
