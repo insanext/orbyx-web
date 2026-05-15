@@ -87,6 +87,12 @@ const days = [
   { value: 6, label: "Sábado" },
 ];
 
+const timeOptions = Array.from({ length: 24 * 4 }, (_, index) => {
+  const hours = Math.floor(index / 4);
+  const minutes = (index % 4) * 15;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+});
+
 const defaultHours: StaffHourItem[] = days.map((day) => ({
   day_of_week: day.value,
   block_order: 1,
@@ -1879,25 +1885,35 @@ function validateStaffHours() {
                     Activo
                   </label>
 
-                  <input
-                    type="time"
+                  <select
                     value={block.start_time || "09:00"}
                     disabled={!block.enabled}
                     onChange={(e) =>
                       updateHour(day.value, block.block_order, "start_time", e.target.value)
                     }
                     className={inputClass}
-                  />
+                  >
+                    {timeOptions.map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                  </select>
 
-                  <input
-                    type="time"
+                  <select
                     value={block.end_time || "18:00"}
                     disabled={!block.enabled}
                     onChange={(e) =>
                       updateHour(day.value, block.block_order, "end_time", e.target.value)
                     }
                     className={inputClass}
-                  />
+                  >
+                    {timeOptions.map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                  </select>
 
                   <button
                     type="button"
@@ -2079,10 +2095,7 @@ function validateStaffHours() {
                         >
                           Inicio
                         </label>
-                        <input
-                          type="time"
-                          lang="en-GB"
-                          step="60"
+                        <select
                           value={specialDateForm.start_time || "09:00"}
                           disabled={specialDateForm.is_closed}
                           onChange={(e) =>
@@ -2098,7 +2111,13 @@ function validateStaffHours() {
                             color: "var(--text-main)",
                             opacity: specialDateForm.is_closed ? 0.6 : 1,
                           }}
-                        />
+                        >
+                          {timeOptions.map((time) => (
+                            <option key={time} value={time}>
+                              {time}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
@@ -2108,10 +2127,7 @@ function validateStaffHours() {
                         >
                           Fin
                         </label>
-                        <input
-                          type="time"
-                          lang="en-GB"
-                          step="60"
+                        <select
                           value={specialDateForm.end_time || "18:00"}
                           disabled={specialDateForm.is_closed}
                           onChange={(e) =>
@@ -2127,7 +2143,13 @@ function validateStaffHours() {
                             color: "var(--text-main)",
                             opacity: specialDateForm.is_closed ? 0.6 : 1,
                           }}
-                        />
+                        >
+                          {timeOptions.map((time) => (
+                            <option key={time} value={time}>
+                              {time}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div className="flex items-end">
