@@ -760,29 +760,6 @@ function generateSlotsFromWindows(
     return styles[key] || styles.scheduled;
   }
 
-  function getGroupBookingTooltip(
-    group: Appointment[],
-    stateTooltip: string,
-    branchName: string
-  ) {
-    const first = group[0];
-    const serviceName = first?.service_name_snapshot || "Reserva grupal";
-    const staffName = first ? getStaffName(first.staff_id) : "No asignado";
-    const capacity = Number(first?.service_capacity || group.length || 0);
-
-    return [
-      serviceName,
-      `Profesional: ${staffName}`,
-      branchName ? `Sucursal: ${branchName}` : "",
-      `Capacidad: ${capacity} personas`,
-      "",
-      "Estado:",
-      stateTooltip,
-    ]
-      .filter((line) => line !== "")
-      .join("\n");
-  }
-
   function matchesFilter(appt: Appointment, filter: FilterValue) {
     if (filter === "active") return isVisibleAsActive(appt);
     if (filter === "pending_close") return isPastPendingClosure(appt);
@@ -1895,6 +1872,13 @@ loadPendingCloseAppointments();
   }, [appointments, selectedAppointment]);
 
   const isSelectedGroupAppointment = isGroupAppointment(selectedAppointment);
+  const selectedGroupActiveCount = selectedGroupAppointments.filter(
+    (appt) => appt.status !== "canceled"
+  ).length;
+  const selectedGroupCapacity =
+    Number(selectedAppointment?.service_capacity || 0) ||
+    selectedGroupActiveCount ||
+    selectedGroupAppointments.length;
 
   const nextAppointment = useMemo(() => {
     const now = Date.now();
@@ -3153,18 +3137,28 @@ const appt = slotGroups[0]?.[0];
                           >
                             Inscritos
                           </p>
-                          <span
-                            className="rounded-full border px-2.5 py-1 text-[11px] font-semibold"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              color: "var(--text-muted)",
-                            }}
-                          >
-                            {selectedGroupAppointments.length} personas
-                          </span>
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <span
+                              className="rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                color: "var(--text-muted)",
+                              }}
+                            >
+                              {selectedGroupActiveCount}/{selectedGroupCapacity} inscritos
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <p
+                          className="mb-2 text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Mostrando {selectedGroupAppointments.length} de{" "}
+                          {selectedGroupAppointments.length} inscritos
+                        </p>
+
+                        <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
                           {selectedGroupAppointments.map((attendee) => {
                             const isCanceled = attendee.status === "canceled";
                             const isCompleted = attendee.status === "completed";
@@ -3173,13 +3167,13 @@ const appt = slotGroups[0]?.[0];
                             return (
                               <div
                                 key={attendee.id}
-                                className="rounded-xl border p-3"
+                                className="rounded-xl border p-2.5"
                                 style={{
                                   borderColor: "var(--border-color)",
                                   background: "var(--bg-soft)",
                                 }}
                               >
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="flex items-start justify-between gap-2">
                                   <div className="min-w-0">
                                     <p
                                       className="truncate text-sm font-semibold"
@@ -3188,13 +3182,13 @@ const appt = slotGroups[0]?.[0];
                                       {attendee.customer_name}
                                     </p>
                                     <p
-                                      className="mt-1 text-xs"
+                                      className="mt-0.5 truncate text-xs"
                                       style={{ color: "var(--text-muted)" }}
                                     >
                                       {attendee.customer_email || "Email no disponible"}
                                     </p>
                                     <p
-                                      className="mt-0.5 text-xs"
+                                      className="mt-0.5 truncate text-xs"
                                       style={{ color: "var(--text-muted)" }}
                                     >
                                       {attendee.customer_phone || "Telefono no disponible"}
@@ -3211,14 +3205,14 @@ const appt = slotGroups[0]?.[0];
                                 </div>
 
                                 {!isCanceled ? (
-                                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                  <div className="mt-2 flex flex-wrap gap-2">
                                     <button
                                       type="button"
                                       onClick={() =>
                                         handleUpdateStatus(attendee.id, "completed")
                                       }
                                       disabled={statusSaving || isCompleted}
-                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-3 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                      className="inline-flex h-8 items-center justify-center rounded-lg bg-emerald-600 px-2.5 text-[11px] font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                       {isCompleted ? "Asistio" : "Marcar asistio"}
                                     </button>
@@ -3229,7 +3223,7 @@ const appt = slotGroups[0]?.[0];
                                         handleUpdateStatus(attendee.id, "no_show")
                                       }
                                       disabled={statusSaving || isNoShow}
-                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-amber-500 px-3 text-xs font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                      className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-500 px-2.5 text-[11px] font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                       {isNoShow
                                         ? "No asistio"
@@ -3241,6 +3235,20 @@ const appt = slotGroups[0]?.[0];
                             );
                           })}
                         </div>
+
+                        <button
+                          type="button"
+                          disabled
+                          className="mt-3 inline-flex h-9 w-full cursor-not-allowed items-center justify-center rounded-xl border px-3 text-xs font-semibold opacity-70"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-muted)",
+                          }}
+                          title="Vista dedicada pendiente de una ruta segura para cargar el grupo completo."
+                        >
+                          Ver lista completa
+                        </button>
                       </div>
                     ) : null}
 
@@ -3967,16 +3975,6 @@ const appt = slotGroups[0]?.[0];
                 </div>
               </div>
 
-              <div
-                className="rounded-xl border px-3 py-2 text-center text-xs font-semibold"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
-                }}
-              >
-                Ver inscritos
-              </div>
             </div>
           ) : (
           <div className="space-y-3">
