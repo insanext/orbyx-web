@@ -4,9 +4,15 @@ import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
+  Check,
+  Clock,
+  Phone,
+  RotateCcw,
   Search,
+  UserRound,
   UsersRound,
   X,
+  XCircle,
 } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -3065,7 +3071,7 @@ const appt = slotGroups[0]?.[0];
         {selectedAppointment ? (
         <div
           ref={detailRef}
-          className="fixed inset-x-3 bottom-3 z-[75] max-h-[82vh] overflow-y-auto rounded-3xl border p-4 shadow-[0_30px_80px_-30px_rgba(15,23,42,0.55)] backdrop-blur md:inset-x-auto md:right-6 md:top-24 md:bottom-auto md:w-[420px] xl:w-[460px]"
+          className="fixed inset-x-3 bottom-3 z-[75] max-h-[82vh] overflow-y-auto rounded-3xl border p-3 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.55)] backdrop-blur md:inset-x-auto md:right-6 md:top-24 md:bottom-auto md:w-[340px]"
           style={{
             borderColor: "var(--border-color)",
             background: "color-mix(in srgb, var(--bg-card) 92%, transparent)",
@@ -3322,6 +3328,174 @@ const appt = slotGroups[0]?.[0];
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {!isSelectedGroupAppointment ? (
+                      <div
+                        className="space-y-3 rounded-2xl border p-3"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p
+                              className="truncate text-base font-semibold"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {selectedAppointment.customer_name}
+                            </p>
+                            <span className="mt-1 inline-flex max-w-full rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                              {selectedAppointment.service_name_snapshot || "Reserva"}
+                            </span>
+
+                            {isVeterinaria && selectedAppointment.customer_data?.pet_name ? (
+                              <p className="mt-2 truncate text-xs font-semibold text-emerald-600">
+                                {selectedAppointment.customer_data.pet_name}
+                                {selectedAppointment.customer_data.pet_species
+                                  ? ` (${selectedAppointment.customer_data.pet_species})`
+                                  : ""}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <span
+                            className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(
+                              selectedAppointment
+                            )}`}
+                          >
+                            {getStatusLabel(selectedAppointment)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                          <div className="flex items-center gap-2">
+                            <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+                            <span className="capitalize">{formatLongDate(selectedAppointment.start_at)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-3.5 w-3.5 shrink-0" />
+                            <span>
+                              {formatHour(selectedAppointment.start_at)} -{" "}
+                              {formatHour(selectedAppointment.end_at)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <UserRound className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">
+                              {getStaffName(selectedAppointment.staff_id)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">
+                              {selectedAppointment.customer_phone || "Teléfono no disponible"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div
+                          className="rounded-xl border px-3 py-2"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                          }}
+                        >
+                          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                            Estado actual
+                          </p>
+                          <p
+                            className="mt-1 text-xs font-semibold"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            {getStatusLabel(selectedAppointment)}
+                          </p>
+                        </div>
+
+                        <div
+                          className="rounded-xl border p-2.5"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                          }}
+                        >
+                          <p className="mb-2 text-[11px]" style={{ color: "var(--text-muted)" }}>
+                            Acciones rápidas
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isVeterinaria) {
+                                  openVeterinaryCloseModal();
+                                  return;
+                                }
+
+                                handleUpdateStatus(selectedAppointment.id, "completed");
+                              }}
+                              disabled={statusSaving || closeSaving || selectedAppointment.status === "completed"}
+                              className="inline-flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Check className="h-4 w-4" />
+                              Asistió
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStatus(selectedAppointment.id, "no_show")}
+                              disabled={statusSaving || selectedAppointment.status === "no_show"}
+                              className="inline-flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <XCircle className="h-4 w-4" />
+                              No asistió
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStatus(selectedAppointment.id, "rescheduled")}
+                              disabled={statusSaving || selectedAppointment.status === "rescheduled"}
+                              className="inline-flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border border-violet-200 bg-violet-50 px-2 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                              Reagendó
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(selectedAppointment.id, "canceled")}
+                            disabled={statusSaving || selectedAppointment.status === "canceled"}
+                            className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            Cancelar reserva
+                          </button>
+                        </div>
+
+                        <div>
+                          <label
+                            className="mb-1 block text-[11px]"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Notas opcionales
+                          </label>
+                          <textarea
+                            rows={2}
+                            placeholder="Agregar nota..."
+                            className="w-full resize-none rounded-xl border px-3 py-2 text-xs outline-none transition"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                              color: "var(--text-main)",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
                     <div
                       className="rounded-xl border p-3"
                       style={{
@@ -3373,8 +3547,9 @@ const appt = slotGroups[0]?.[0];
                         Profesional: {getStaffName(selectedAppointment.staff_id)}
                       </p>
                     </div>
+                    )}
 
-                    {!isSelectedGroupAppointment ? (
+                    {false && !isSelectedGroupAppointment ? (
                       <div
                         className="rounded-xl border p-3"
                         style={{
@@ -3397,9 +3572,9 @@ const appt = slotGroups[0]?.[0];
                                 return;
                               }
 
-                              handleUpdateStatus(selectedAppointment.id, "completed");
+                              handleUpdateStatus(selectedAppointment!.id, "completed");
                             }}
-                            disabled={statusSaving || closeSaving || selectedAppointment.status === "completed"}
+                            disabled={statusSaving || closeSaving || selectedAppointment!.status === "completed"}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Asistió
@@ -3407,8 +3582,8 @@ const appt = slotGroups[0]?.[0];
 
                           <button
                             type="button"
-                            onClick={() => handleUpdateStatus(selectedAppointment.id, "no_show")}
-                            disabled={statusSaving || selectedAppointment.status === "no_show"}
+                              onClick={() => handleUpdateStatus(selectedAppointment!.id, "no_show")}
+                              disabled={statusSaving || selectedAppointment!.status === "no_show"}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-500 px-3 text-xs font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             No asistió
@@ -3416,8 +3591,8 @@ const appt = slotGroups[0]?.[0];
 
                           <button
                             type="button"
-                            onClick={() => handleUpdateStatus(selectedAppointment.id, "rescheduled")}
-                            disabled={statusSaving || selectedAppointment.status === "rescheduled"}
+                              onClick={() => handleUpdateStatus(selectedAppointment!.id, "rescheduled")}
+                              disabled={statusSaving || selectedAppointment!.status === "rescheduled"}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-violet-600 px-3 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Reagendó
@@ -3425,8 +3600,8 @@ const appt = slotGroups[0]?.[0];
 
                           <button
                             type="button"
-                            onClick={() => handleUpdateStatus(selectedAppointment.id, "canceled")}
-                            disabled={statusSaving || selectedAppointment.status === "canceled"}
+                            onClick={() => handleUpdateStatus(selectedAppointment!.id, "canceled")}
+                            disabled={statusSaving || selectedAppointment!.status === "canceled"}
                             className="inline-flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                             style={{
                               borderColor: "var(--border-color)",
@@ -3582,7 +3757,7 @@ const appt = slotGroups[0]?.[0];
                       </div>
                     ) : null}
 
-                    {!isSelectedGroupAppointment && isPastPendingClosure(selectedAppointment) ? (
+                    {false && selectedAppointment && !isSelectedGroupAppointment && isPastPendingClosure(selectedAppointment!) ? (
                       <Notice
                         tone="danger"
                         title="Esta cita ya terminó."
@@ -3602,7 +3777,7 @@ const appt = slotGroups[0]?.[0];
                               }
 
                               handleUpdateStatus(
-                                selectedAppointment.id,
+                                selectedAppointment!.id,
                                 "completed"
                               );
                             }}
@@ -3618,7 +3793,7 @@ const appt = slotGroups[0]?.[0];
                             type="button"
                             onClick={() =>
                               handleUpdateStatus(
-                                selectedAppointment.id,
+                                selectedAppointment!.id,
                                 "no_show"
                               )
                             }
@@ -3660,7 +3835,7 @@ const appt = slotGroups[0]?.[0];
                       </div>
                     ) : (
                     <div
-                      className="rounded-xl border p-3"
+                      className="hidden"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-card)",
