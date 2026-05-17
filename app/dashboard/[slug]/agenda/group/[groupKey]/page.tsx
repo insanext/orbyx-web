@@ -92,6 +92,21 @@ function getStatusClass(status: string) {
   }
 }
 
+function getAttendeeCardClass(status: string) {
+  switch (status) {
+    case "completed":
+      return "border-emerald-200 bg-emerald-50/80";
+    case "no_show":
+      return "border-amber-200 bg-amber-50/80";
+    case "rescheduled":
+      return "border-violet-200 bg-violet-50/80";
+    case "canceled":
+      return "border-slate-200 bg-slate-100/80";
+    default:
+      return "border-sky-200 bg-sky-50/80";
+  }
+}
+
 function getAppointmentGroupKey(appt: Appointment) {
   return [
     new Date(appt.start_at).toISOString(),
@@ -417,11 +432,9 @@ export default function GroupBookingPage() {
               return (
                 <article
                   key={attendee.id}
-                  className="rounded-2xl border p-4"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                  }}
+                  className={`rounded-2xl border p-4 transition ${getAttendeeCardClass(
+                    attendee.status
+                  )}`}
                 >
                   <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                     <div className="min-w-0">
