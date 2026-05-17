@@ -2904,77 +2904,24 @@ onClick={() => {
                     }}
                   >
                     <div
-                      className="sticky left-0 top-[78px] z-50 flex h-[64px] items-center justify-center border-b border-r px-3 text-xs font-semibold shadow-sm"
+                      className="sticky left-0 z-10 border-r"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-soft)",
-                        color: "var(--text-muted)",
-                        backdropFilter: "blur(8px)",
                       }}
                     >
-                      Hora
-                    </div>
-
-                    {dayStaffColumns.length === 0 ? (
                       <div
-                        className="sticky top-[78px] z-40 flex h-[64px] items-center border-b px-4 text-sm font-semibold shadow-sm"
+                        className="sticky z-[15] flex h-[64px] items-center justify-center border-b px-3 text-xs font-semibold shadow-sm"
                         style={{
+                          top: "78px",
                           borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                          color: "var(--text-main)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-muted)",
                           backdropFilter: "blur(8px)",
                         }}
                       >
-                        Profesionales
+                        Hora
                       </div>
-                    ) : (
-                      dayStaffColumns.map((staff) => (
-                        <div
-                          key={`${staff.id}-header`}
-                          className="sticky top-[78px] z-40 flex h-[64px] w-[260px] items-center justify-center gap-2 border-b border-r px-3 shadow-sm last:border-r-0"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            backdropFilter: "blur(8px)",
-                          }}
-                        >
-                          <span
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
-                            style={{ background: staff.color || "#2563eb" }}
-                          >
-                            {staff.name
-                              .split(" ")
-                              .map((part) => part[0])
-                              .join("")
-                              .slice(0, 2)}
-                          </span>
-                          <div className="min-w-0">
-                            <p
-                              className="truncate text-sm font-semibold"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {staff.name}
-                            </p>
-                            {staff.role ? (
-                              <p
-                                className="truncate text-xs"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                {staff.role}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      ))
-                    )}
-
-                    <div
-                      className="sticky left-0 z-30 border-r"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-soft)",
-                      }}
-                    >
                       {dayViewSlots.map((slot) => {
                         const timeKey = getTimeKey(slot);
                         return (
@@ -3018,6 +2965,43 @@ onClick={() => {
                             className="w-[260px] border-r last:border-r-0"
                             style={{ borderColor: "var(--border-color)" }}
                           >
+                            <div
+                              className="sticky z-[14] flex h-[64px] items-center justify-center gap-2 border-b px-3 shadow-sm"
+                              style={{
+                                top: "78px",
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                backdropFilter: "blur(8px)",
+                              }}
+                            >
+                              <span
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
+                                style={{ background: staff.color || "#2563eb" }}
+                              >
+                                {staff.name
+                                  .split(" ")
+                                  .map((part) => part[0])
+                                  .join("")
+                                  .slice(0, 2)}
+                              </span>
+                              <div className="min-w-0">
+                                <p
+                                  className="truncate text-sm font-semibold"
+                                  style={{ color: "var(--text-main)" }}
+                                >
+                                  {staff.name}
+                                </p>
+                                {staff.role ? (
+                                  <p
+                                    className="truncate text-xs"
+                                    style={{ color: "var(--text-muted)" }}
+                                  >
+                                    {staff.role}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+
                             <div className="space-y-0">
                               {dayViewSlots.map((slot, index) => {
                                 const slotTime = new Date(slot).getTime();
