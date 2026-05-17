@@ -4502,7 +4502,7 @@ const appt = slotGroups[0]?.[0];
                           }}
                           title="Abrir la vista dedicada de gestion del grupo."
                         >
-                          Ver lista completa
+                          Pasar lista
                         </button>
                       </div>
                     ) : null}

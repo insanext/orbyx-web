@@ -65,11 +65,12 @@ function getStatusLabel(status: string) {
     case "completed":
       return "Asisti&oacute;";
     case "no_show":
-      return "No asisti&oacute;";
+      return "Ausente";
     case "rescheduled":
       return "Reagend&oacute;";
     case "canceled":
       return "Cancelada";
+    case "pending":
     case "booked":
       return "Pendiente";
     default:
@@ -340,7 +341,8 @@ export default function GroupBookingPage() {
 
       const matchesFilter =
         activeFilter === "all" ||
-        (activeFilter === "pending" && attendee.status === "booked") ||
+        (activeFilter === "pending" &&
+          ["booked", "pending"].includes(attendee.status)) ||
         (activeFilter === "completed" && attendee.status === "completed") ||
         (activeFilter === "no_show" && attendee.status === "no_show") ||
         (activeFilter === "rescheduled" && attendee.status === "rescheduled");
@@ -355,7 +357,9 @@ export default function GroupBookingPage() {
     completed: attendees.filter((attendee) => attendee.status === "completed").length,
     noShow: attendees.filter((attendee) => attendee.status === "no_show").length,
     rescheduled: attendees.filter((attendee) => attendee.status === "rescheduled").length,
-    pending: attendees.filter((attendee) => attendee.status === "booked").length,
+    pending: attendees.filter((attendee) =>
+      ["booked", "pending"].includes(attendee.status)
+    ).length,
   };
   const capacity =
     Number(firstAttendee?.service_capacity || 0) || activeCount || attendees.length;
@@ -369,50 +373,205 @@ export default function GroupBookingPage() {
     { key: "all", label: "Todos" },
     { key: "pending", label: "Pendientes" },
     { key: "completed", label: "Asisti&oacute;" },
-    { key: "no_show", label: "No asisti&oacute;" },
+    { key: "no_show", label: "Ausente" },
     { key: "rescheduled", label: "Reagend&oacute;" },
   ];
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-5">
-        <Link
-          href={`/dashboard/${encodeURIComponent(slug)}/agenda`}
-          className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
-          style={{
-            borderColor: "var(--border-color)",
-            background: "var(--bg-card)",
-            color: "var(--text-main)",
-          }}
-        >
-          &larr; Volver a Agenda
-        </Link>
+    <>
+      <style>{`
+        .print-only {
+          display: none;
+        }
 
-        <header
-          className="rounded-2xl border p-5"
-          style={{
-            borderColor: "var(--border-color)",
-            background: "var(--bg-card)",
-          }}
-        >
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
-                Lista completa de inscritos
-              </p>
-              <h1 className="mt-2 text-2xl font-semibold" style={{ color: "var(--text-main)" }}>
-                {serviceName}
-              </h1>
-              <div className="mt-3 grid gap-1 text-sm" style={{ color: "var(--text-muted)" }}>
-                <p>{formatLongDate(startAt)}</p>
-                <p>
-                  {formatHour(startAt)} - {formatHour(firstAttendee?.end_at)}
+        @media print {
+          aside,
+          nav,
+          header,
+          button,
+          input,
+          .no-print {
+            display: none !important;
+          }
+
+          main {
+            min-height: auto !important;
+            padding: 0 !important;
+          }
+
+          body {
+            background: white !important;
+            color: #111827 !important;
+          }
+
+          .print-only {
+            display: block !important;
+          }
+
+          .print-page {
+            padding: 18mm;
+          }
+
+          .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+          }
+
+          .print-table th,
+          .print-table td {
+            border: 1px solid #111827;
+            padding: 7px 8px;
+            text-align: left;
+            vertical-align: top;
+          }
+
+          .print-table th {
+            background: #f3f4f6;
+            font-weight: 700;
+          }
+
+          .print-checkbox {
+            display: inline-block;
+            height: 14px;
+            width: 14px;
+            border: 1px solid #111827;
+          }
+
+          .print-note {
+            min-width: 120px;
+            height: 26px;
+          }
+        }
+      `}</style>
+
+      <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+        <div className="print-only print-page">
+          <h1 className="text-2xl font-semibold">Lista de asistencia</h1>
+          <div className="mt-3 grid gap-1 text-sm">
+            <p>
+              <strong>Actividad:</strong> {serviceName}
+            </p>
+            <p>
+              <strong>Fecha/hora:</strong> {formatLongDate(startAt)} ·{" "}
+              {formatHour(startAt)} - {formatHour(firstAttendee?.end_at)}
+            </p>
+            <p>
+              <strong>Profesional:</strong> {professionalName}
+            </p>
+            <p>
+              <strong>Inscritos/capacidad:</strong> {activeCount}/{capacity}
+            </p>
+          </div>
+
+          <table className="print-table mt-6">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Telefono</th>
+                <th>Asistio</th>
+                <th>Ausente</th>
+                <th>Reagendo</th>
+                <th>Nota</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attendees.map((attendee) => (
+                <tr key={attendee.id}>
+                  <td>{attendee.customer_name}</td>
+                  <td>{attendee.customer_email || ""}</td>
+                  <td>{attendee.customer_phone || ""}</td>
+                  <td>
+                    <span className="print-checkbox" />
+                  </td>
+                  <td>
+                    <span className="print-checkbox" />
+                  </td>
+                  <td>
+                    <span className="print-checkbox" />
+                  </td>
+                  <td className="print-note" />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="no-print mx-auto max-w-7xl space-y-4">
+          <section
+            className="rounded-2xl border p-5 shadow-sm"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
+              <div className="min-w-0">
+                <p
+                  className="text-xs font-semibold uppercase tracking-[0.14em]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Group booking
                 </p>
-                <p>{professionalName}</p>
+                <h1
+                  className="mt-1 text-2xl font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Pasar lista
+                </h1>
+                <div className="mt-3 grid gap-1 text-sm" style={{ color: "var(--text-muted)" }}>
+                  <p>
+                    <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+                      Actividad:
+                    </span>{" "}
+                    {serviceName}
+                  </p>
+                  <p>
+                    <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+                      Fecha/hora:
+                    </span>{" "}
+                    {formatLongDate(startAt)} · {formatHour(startAt)} -{" "}
+                    {formatHour(firstAttendee?.end_at)}
+                  </p>
+                  <p>
+                    <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+                      Profesional:
+                    </span>{" "}
+                    {professionalName}
+                  </p>
+                  <p>
+                    <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+                      Inscritos/capacidad:
+                    </span>{" "}
+                    {activeCount}/{capacity}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 xl:justify-end">
+                <Link
+                  href={`/dashboard/${encodeURIComponent(slug)}/agenda`}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  &larr; Volver a Agenda
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-[0_16px_30px_-20px_rgba(37,99,235,0.9)] transition hover:bg-blue-700"
+                >
+                  Imprimir lista
+                </button>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 lg:justify-end">
+            <div className="mt-4 flex flex-wrap gap-2">
               {[
                 {
                   label: "Asistieron",
@@ -420,7 +579,7 @@ export default function GroupBookingPage() {
                   status: "completed",
                 },
                 {
-                  label: "No asistieron",
+                  label: "Ausentes",
                   value: attendanceStats.noShow,
                   status: "no_show",
                 },
@@ -446,178 +605,215 @@ export default function GroupBookingPage() {
                   </span>
                 </span>
               ))}
-              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${groupState.className}`}>
+              <span className={`rounded-xl border px-3 py-2 text-xs font-semibold ${groupState.className}`}>
                 {groupState.label}
               </span>
-              <span
-                className="rounded-full border px-3 py-1 text-xs font-semibold"
+            </div>
+          </section>
+
+          <section
+            className="rounded-2xl border p-4"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Buscar por nombre, email o telefono"
+                className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition focus:ring-2 focus:ring-sky-200"
                 style={{
                   borderColor: "var(--border-color)",
-                  color: "var(--text-muted)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
                 }}
-              >
-                {activeCount}/{capacity} inscritos
-              </span>
+              />
+
+              <div className="flex flex-wrap gap-2">
+                {filters.map((filter) => (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    onClick={() => setActiveFilter(filter.key)}
+                    className={`h-9 rounded-xl border px-3 text-xs font-semibold transition ${
+                      activeFilter === filter.key
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "hover:shadow-sm"
+                    }`}
+                    style={
+                      activeFilter === filter.key
+                        ? undefined
+                        : {
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-muted)",
+                          }
+                    }
+                    dangerouslySetInnerHTML={{ __html: filter.label }}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        </header>
+          </section>
 
-        <section
-          className="rounded-2xl border p-4"
-          style={{
-            borderColor: "var(--border-color)",
-            background: "var(--bg-card)",
-          }}
-        >
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Buscar por nombre, email o telefono"
-              className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition focus:ring-2 focus:ring-sky-200"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-main)",
-              }}
-            />
-
-            <div className="flex flex-wrap gap-2">
-              {filters.map((filter) => (
-                <button
-                  key={filter.key}
-                  type="button"
-                  onClick={() => setActiveFilter(filter.key)}
-                  className={`h-9 rounded-xl border px-3 text-xs font-semibold transition ${
-                    activeFilter === filter.key
-                      ? "border-slate-900 bg-slate-900 text-white"
-                      : "hover:shadow-sm"
-                  }`}
-                  style={
-                    activeFilter === filter.key
-                      ? undefined
-                      : {
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-muted)",
-                        }
-                  }
-                  dangerouslySetInnerHTML={{ __html: filter.label }}
-                />
-              ))}
+          {error ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
+              {error}
             </div>
-          </div>
-        </section>
+          ) : null}
 
-        {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
-            {error}
-          </div>
-        ) : null}
+          <section
+            className="overflow-hidden rounded-2xl border"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            {loading ? (
+              <div className="p-5 text-sm" style={{ color: "var(--text-muted)" }}>
+                Cargando inscritos...
+              </div>
+            ) : filteredAttendees.length === 0 ? (
+              <div className="p-5 text-sm" style={{ color: "var(--text-muted)" }}>
+                No hay inscritos para mostrar con estos filtros.
+              </div>
+            ) : (
+              <div className="max-h-[62vh] overflow-auto">
+                <table className="min-w-[1120px] w-full border-collapse text-sm">
+                  <thead
+                    className="sticky top-0 z-10"
+                    style={{
+                      background: "var(--bg-soft)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.12em]">
+                      <th className="border-b px-3 py-3" style={{ borderColor: "var(--border-color)" }}>
+                        Nombre
+                      </th>
+                      <th className="border-b px-3 py-3" style={{ borderColor: "var(--border-color)" }}>
+                        Email
+                      </th>
+                      <th className="border-b px-3 py-3" style={{ borderColor: "var(--border-color)" }}>
+                        Telefono
+                      </th>
+                      <th className="border-b px-3 py-3" style={{ borderColor: "var(--border-color)" }}>
+                        Estado
+                      </th>
+                      <th className="border-b px-3 py-3" style={{ borderColor: "var(--border-color)" }}>
+                        Asistio
+                      </th>
+                      <th className="border-b px-3 py-3" style={{ borderColor: "var(--border-color)" }}>
+                        Ausente
+                      </th>
+                      <th className="border-b px-3 py-3" style={{ borderColor: "var(--border-color)" }}>
+                        Reagendo
+                      </th>
+                      <th className="border-b px-3 py-3" style={{ borderColor: "var(--border-color)" }}>
+                        Nota
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAttendees.map((attendee) => {
+                      const isCompleted = attendee.status === "completed";
+                      const isNoShow = attendee.status === "no_show";
+                      const isRescheduled = attendee.status === "rescheduled";
+                      const isCanceled = attendee.status === "canceled";
+                      const isSaving = savingId === attendee.id;
+                      const attendeeTone = getStatusTone(attendee.status);
 
-        <section className="max-h-[62vh] space-y-2 overflow-y-auto pr-1">
-          {loading ? (
-            <div
-              className="rounded-2xl border p-5 text-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-card)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Cargando inscritos...
-            </div>
-          ) : filteredAttendees.length === 0 ? (
-            <div
-              className="rounded-2xl border p-5 text-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-card)",
-                color: "var(--text-muted)",
-              }}
-            >
-              No hay inscritos para mostrar con estos filtros.
-            </div>
-          ) : (
-            filteredAttendees.map((attendee) => {
-              const isCompleted = attendee.status === "completed";
-              const isNoShow = attendee.status === "no_show";
-              const isRescheduled = attendee.status === "rescheduled";
-              const isCanceled = attendee.status === "canceled";
-              const isSaving = savingId === attendee.id;
-              const attendeeTone = getStatusTone(attendee.status);
-
-              return (
-                <article
-                  key={attendee.id}
-                  className="rounded-2xl border p-4 transition"
-                  style={getAttendeeCardStyle(attendee.status)}
-                >
-                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                          {attendee.customer_name}
-                        </h2>
-                        <span
-                          className="rounded-full border px-2.5 py-1 text-[11px] font-semibold"
-                          style={getStatusBadgeStyle(attendee.status)}
+                      return (
+                        <tr
+                          key={attendee.id}
+                          className="transition"
+                          style={getAttendeeCardStyle(attendee.status)}
                         >
-                          <span dangerouslySetInnerHTML={{ __html: getStatusLabel(attendee.status) }} />
-                        </span>
-                      </div>
-                      <div className="mt-1 grid gap-0.5 text-xs" style={{ color: attendeeTone.softText }}>
-                        <p className="truncate">{attendee.customer_email || "Email no disponible"}</p>
-                        <p className="truncate">{attendee.customer_phone || "Telefono no disponible"}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => updateStatus(attendee.id, "completed")}
-                        disabled={isCanceled || isSaving || isCompleted}
-                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed"
-                        style={{
-                          ...getStatusButtonStyle("completed", isCompleted),
-                          opacity: isCanceled ? 0.55 : 1,
-                        }}
-                      >
-                        Asisti&oacute;
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateStatus(attendee.id, "no_show")}
-                        disabled={isCanceled || isSaving || isNoShow}
-                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed"
-                        style={{
-                          ...getStatusButtonStyle("no_show", isNoShow),
-                          opacity: isCanceled ? 0.55 : 1,
-                        }}
-                      >
-                        No asisti&oacute;
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateStatus(attendee.id, "rescheduled")}
-                        disabled={isCanceled || isSaving || isRescheduled}
-                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed"
-                        style={{
-                          ...getStatusButtonStyle("rescheduled", isRescheduled),
-                          opacity: isCanceled ? 0.55 : 1,
-                        }}
-                      >
-                        Reagend&oacute;
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })
-          )}
-        </section>
-      </div>
-    </main>
+                          <td
+                            className="border-b px-3 py-3 font-semibold"
+                            style={{
+                              borderColor: "rgba(148,163,184,0.18)",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            {attendee.customer_name}
+                          </td>
+                          <td
+                            className="border-b px-3 py-3"
+                            style={{
+                              borderColor: "rgba(148,163,184,0.18)",
+                              color: attendeeTone.softText,
+                            }}
+                          >
+                            {attendee.customer_email || "Email no disponible"}
+                          </td>
+                          <td
+                            className="border-b px-3 py-3"
+                            style={{
+                              borderColor: "rgba(148,163,184,0.18)",
+                              color: attendeeTone.softText,
+                            }}
+                          >
+                            {attendee.customer_phone || "Telefono no disponible"}
+                          </td>
+                          <td className="border-b px-3 py-3" style={{ borderColor: "rgba(148,163,184,0.18)" }}>
+                            <span
+                              className="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                              style={getStatusBadgeStyle(attendee.status)}
+                            >
+                              <span dangerouslySetInnerHTML={{ __html: getStatusLabel(attendee.status) }} />
+                            </span>
+                          </td>
+                          {[
+                            { status: "completed", active: isCompleted, label: "Asisti&oacute;" },
+                            { status: "no_show", active: isNoShow, label: "Ausente" },
+                            { status: "rescheduled", active: isRescheduled, label: "Reagend&oacute;" },
+                          ].map((action) => (
+                            <td
+                              key={action.status}
+                              className="border-b px-3 py-3"
+                              style={{ borderColor: "rgba(148,163,184,0.18)" }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateStatus(
+                                    attendee.id,
+                                    action.status as "completed" | "no_show" | "rescheduled"
+                                  )
+                                }
+                                disabled={isCanceled || isSaving || action.active}
+                                className="inline-flex h-8 items-center justify-center rounded-lg border px-2.5 text-[11px] font-semibold transition hover:shadow-sm disabled:cursor-not-allowed"
+                                style={{
+                                  ...getStatusButtonStyle(action.status, action.active),
+                                  opacity: isCanceled ? 0.55 : 1,
+                                }}
+                                dangerouslySetInnerHTML={{ __html: action.label }}
+                              />
+                            </td>
+                          ))}
+                          <td
+                            className="border-b px-3 py-3 text-xs"
+                            style={{
+                              borderColor: "rgba(148,163,184,0.18)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            -
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+    </>
   );
 }
