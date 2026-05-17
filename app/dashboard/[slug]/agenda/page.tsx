@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Phone,
   RotateCcw,
@@ -367,6 +369,7 @@ next_control_custom_unit: "days",
   const detailRef = useRef<HTMLDivElement | null>(null);
   const dayGridScrollRef = useRef<HTMLDivElement | null>(null);
   const dayTopScrollRef = useRef<HTMLDivElement | null>(null);
+  const dayHeaderScrollRef = useRef<HTMLDivElement | null>(null);
   const dayGridDragRef = useRef({
     dragging: false,
     moved: false,
@@ -2064,23 +2067,42 @@ const hasPendingClose = pendingCloseCount > 0;
 
   function syncDayGridScroll(source: "top" | "grid") {
     const topScroller = dayTopScrollRef.current;
+    const headerScroller = dayHeaderScrollRef.current;
     const gridScroller = dayGridScrollRef.current;
     if (!topScroller || !gridScroller) return;
 
     if (source === "top") {
       gridScroller.scrollLeft = topScroller.scrollLeft;
+      if (headerScroller) {
+        headerScroller.scrollLeft = topScroller.scrollLeft;
+      }
     } else {
       topScroller.scrollLeft = gridScroller.scrollLeft;
+      if (headerScroller) {
+        headerScroller.scrollLeft = gridScroller.scrollLeft;
+      }
     }
   }
 
   function setDayGridScrollLeft(scrollLeft: number) {
     const topScroller = dayTopScrollRef.current;
+    const headerScroller = dayHeaderScrollRef.current;
     const gridScroller = dayGridScrollRef.current;
     if (!topScroller || !gridScroller) return;
 
     topScroller.scrollLeft = scrollLeft;
+    if (headerScroller) {
+      headerScroller.scrollLeft = scrollLeft;
+    }
     gridScroller.scrollLeft = scrollLeft;
+  }
+
+  function scrollDayGridBy(delta: number) {
+    const gridScroller = dayGridScrollRef.current;
+    const currentScrollLeft =
+      gridScroller?.scrollLeft || dayTopScrollRef.current?.scrollLeft || 0;
+
+    setDayGridScrollLeft(currentScrollLeft + delta);
   }
 
   function handleDayGridMouseDown(event: React.MouseEvent<HTMLDivElement>) {
@@ -2756,103 +2778,38 @@ onClick={() => {
               </div>
             ) : agendaView === "day" ? (
               <div className="space-y-4">
-                <div>
-                  <p
-                    className="mb-2 text-xs font-semibold"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Profesionales
-                  </p>
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedStaffId("");
-                        setSelectedAppointment(null);
-                        setHoverCard(null);
-                      }}
-                      className={`inline-flex h-9 shrink-0 items-center rounded-xl border px-3 text-xs font-semibold transition ${
-                        !selectedStaffId ? "border-slate-950 bg-slate-950 text-white" : ""
-                      }`}
-                      style={
-                        !selectedStaffId
-                          ? undefined
-                          : {
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-card)",
-                              color: "var(--text-main)",
-                            }
-                      }
-                    >
-                      Todos
-                    </button>
-
-                    {staffList.map((staff) => (
-                      <button
-                        key={staff.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedStaffId(staff.id);
-                          setSelectedAppointment(null);
-                          setHoverCard(null);
-                        }}
-                        className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition ${
-                          selectedStaffId === staff.id
-                            ? "border-slate-950 bg-slate-950 text-white"
-                            : ""
-                        }`}
-                        style={
-                          selectedStaffId === staff.id
-                            ? undefined
-                            : {
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-card)",
-                                color: "var(--text-main)",
-                              }
-                        }
-                      >
-                        <span
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                          style={{ background: staff.color || "#2563eb" }}
-                        >
-                          {staff.name
-                            .split(" ")
-                            .map((part) => part[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </span>
-                        {staff.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <style>{`
                   .orbyx-day-scrollbar {
-                    scrollbar-width: thin;
-                    scrollbar-color: color-mix(in srgb, #2563eb 64%, #38bdf8 36%) color-mix(in srgb, var(--bg-soft) 88%, transparent);
+                    scrollbar-width: auto;
+                    scrollbar-color: color-mix(in srgb, #2563eb 68%, #38bdf8 32%) color-mix(in srgb, var(--bg-soft) 86%, transparent);
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar {
-                    height: 14px;
+                    height: 22px;
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar-track {
-                    background: color-mix(in srgb, var(--bg-soft) 92%, transparent);
+                    background: color-mix(in srgb, var(--bg-soft) 90%, transparent);
                     border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
-                    border-radius: 999px;
-                    box-shadow: inset 0 1px 2px rgba(15,23,42,0.05);
+                    border-radius: 8px;
+                    box-shadow: inset 0 1px 2px rgba(15,23,42,0.08);
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar-thumb {
-                    background: linear-gradient(90deg, rgba(37,99,235,0.72), rgba(56,189,248,0.76));
-                    border: 3px solid color-mix(in srgb, var(--bg-soft) 92%, transparent);
-                    border-radius: 999px;
-                    box-shadow: 0 2px 8px rgba(37,99,235,0.18);
+                    background: linear-gradient(90deg, rgba(37,99,235,0.84), rgba(56,189,248,0.8));
+                    border: 4px solid color-mix(in srgb, var(--bg-soft) 90%, transparent);
+                    border-radius: 6px;
+                    box-shadow: 0 2px 10px rgba(37,99,235,0.22);
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: linear-gradient(90deg, rgba(37,99,235,0.86), rgba(56,189,248,0.88));
+                    background: linear-gradient(90deg, rgba(29,78,216,0.92), rgba(14,165,233,0.9));
+                  }
+
+                  .orbyx-day-scrollbar::-webkit-scrollbar-button:single-button {
+                    display: block;
+                    width: 18px;
+                    background: color-mix(in srgb, var(--bg-card) 92%, transparent);
                   }
 
                   .orbyx-day-grid-scroll {
@@ -2865,9 +2822,51 @@ onClick={() => {
                   }
                 `}</style>
 
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label="Desplazar profesionales a la izquierda"
+                    onClick={() => scrollDayGridBy(-320)}
+                    className="inline-flex h-10 w-11 shrink-0 items-center justify-center rounded-xl border transition hover:shadow-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+
+                  <div
+                    ref={dayTopScrollRef}
+                    onScroll={() => syncDayGridScroll("top")}
+                    className="orbyx-day-scrollbar h-9 min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-xl border px-1.5"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background:
+                        "linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 96%, transparent), color-mix(in srgb, var(--bg-soft) 92%, transparent))",
+                    }}
+                  >
+                    <div style={{ width: dayGridWidth, height: 1 }} />
+                  </div>
+
+                  <button
+                    type="button"
+                    aria-label="Desplazar profesionales a la derecha"
+                    onClick={() => scrollDayGridBy(320)}
+                    className="inline-flex h-10 w-11 shrink-0 items-center justify-center rounded-xl border transition hover:shadow-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+
                 <div
-                  ref={dayTopScrollRef}
-                  onScroll={() => syncDayGridScroll("top")}
+                  ref={dayHeaderScrollRef}
                   className="sticky z-20 overflow-x-hidden rounded-t-2xl border border-b-0 shadow-sm"
                   style={{
                     top: "78px",
