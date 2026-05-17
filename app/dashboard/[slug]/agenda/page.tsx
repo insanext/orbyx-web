@@ -1,7 +1,7 @@
 "use client";
 
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { UsersRound } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -148,6 +148,7 @@ type VeterinaryCloseForm = {
 };
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
+const GROUP_ATTENDEE_PREVIEW_LIMIT = 3;
 
 const filterLabels: Record<FilterValue, string> = {
   active: "Activas",
@@ -284,6 +285,7 @@ function StatCard({
 
 export default function AgendaPage() {
   const params = useParams();
+  const router = useRouter();
   const slug =
     ((params as { slug?: string })?.slug as string) ||
     ((params as { Slug?: string })?.Slug as string);
@@ -859,6 +861,13 @@ next_control_custom_unit: "days",
         block: "start",
       });
     }, 80);
+  }
+
+  function handleOpenSelectedGroup() {
+    if (!selectedAppointment || !slug) return;
+
+    const groupKey = encodeURIComponent(getAppointmentGroupKey(selectedAppointment));
+    router.push(`/dashboard/${encodeURIComponent(slug)}/agenda/group/${groupKey}`);
   }
 
   function handleAppointmentMouseEnter(
@@ -1870,6 +1879,11 @@ loadPendingCloseAppointments();
         )
       );
   }, [appointments, selectedAppointment]);
+  const selectedGroupVisibleAppointments = selectedGroupAppointments.slice(
+    0,
+    GROUP_ATTENDEE_PREVIEW_LIMIT
+  );
+  const selectedGroupVisibleCount = selectedGroupVisibleAppointments.length;
 
   const isSelectedGroupAppointment = isGroupAppointment(selectedAppointment);
   const selectedGroupActiveCount = selectedGroupAppointments.filter(
@@ -3167,12 +3181,12 @@ const appt = slotGroups[0]?.[0];
                           className="mb-2 text-xs"
                           style={{ color: "var(--text-muted)" }}
                         >
-                          Mostrando {selectedGroupAppointments.length} de{" "}
+                          Mostrando {selectedGroupVisibleCount} de{" "}
                           {selectedGroupAppointments.length} inscritos
                         </p>
 
-                        <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
-                          {selectedGroupAppointments.map((attendee) => {
+                        <div className="max-h-[250px] space-y-2 overflow-y-auto pr-1">
+                          {selectedGroupVisibleAppointments.map((attendee) => {
                             const isCanceled = attendee.status === "canceled";
                             const isCompleted = attendee.status === "completed";
                             const isNoShow = attendee.status === "no_show";
@@ -3251,14 +3265,14 @@ const appt = slotGroups[0]?.[0];
 
                         <button
                           type="button"
-                          disabled
-                          className="mt-3 inline-flex h-9 w-full cursor-not-allowed items-center justify-center rounded-xl border px-3 text-xs font-semibold opacity-70"
+                          onClick={handleOpenSelectedGroup}
+                          className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-soft)",
-                            color: "var(--text-muted)",
+                            color: "var(--text-main)",
                           }}
-                          title="Vista dedicada pendiente de una ruta segura para cargar el grupo completo."
+                          title="Abrir la vista dedicada de gestion del grupo."
                         >
                           Ver lista completa
                         </button>
