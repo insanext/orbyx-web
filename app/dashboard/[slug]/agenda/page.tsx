@@ -2,7 +2,12 @@
 
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { UsersRound } from "lucide-react";
+import {
+  CalendarDays,
+  Search,
+  UsersRound,
+  X,
+} from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 
@@ -591,27 +596,7 @@ function generateSlotsFromWindows(
     const visualStatus = getVisualStatus(appt);
 
     if (selected) {
-      if (visualStatus === "pending_close") {
-        return "border-rose-500 bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg";
-      }
-
-      if (visualStatus === "completed") {
-        return "border-emerald-500 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg";
-      }
-
-      if (visualStatus === "no_show") {
-        return "border-amber-500 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg";
-      }
-
-      if (visualStatus === "canceled") {
-        return "border-slate-500 bg-gradient-to-br from-slate-500 to-slate-600 text-white shadow-lg";
-      }
-
-      if (visualStatus === "rescheduled") {
-        return "border-violet-500 bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-lg";
-      }
-
-      return "border-slate-900 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-lg";
+      return "border-slate-900 bg-slate-900 text-white shadow-lg";
     }
 
     if (visualStatus === "pending_close") {
@@ -634,7 +619,7 @@ function generateSlotsFromWindows(
       return "border-violet-200 bg-violet-50 text-slate-900 hover:border-violet-300";
     }
 
-    return "border-slate-200 bg-white text-slate-900 hover:border-sky-300 hover:bg-sky-50";
+    return "border-sky-200 bg-sky-50 text-slate-900 hover:border-sky-300 hover:bg-sky-100";
   }
 
   function getAppointmentGroupKey(appt: Appointment) {
@@ -750,25 +735,25 @@ function generateSlotsFromWindows(
       pending: {
         card: "border-rose-200 bg-rose-50 text-slate-900 hover:border-rose-300",
         icon: "text-rose-600",
-        stateBadge: "border-rose-200 bg-rose-500 text-white",
+        stateBadge: "border-rose-200 bg-rose-100 text-rose-700",
         countBadge: "border-rose-200 bg-white/70 text-rose-700",
       },
       partial: {
         card: "border-orange-200 bg-orange-50 text-slate-900 hover:border-orange-300",
         icon: "text-orange-600",
-        stateBadge: "border-orange-200 bg-orange-500 text-white",
+        stateBadge: "border-orange-200 bg-orange-100 text-orange-700",
         countBadge: "border-orange-200 bg-white/70 text-orange-700",
       },
       closed: {
         card: "border-emerald-200 bg-emerald-50 text-slate-900 hover:border-emerald-300",
         icon: "text-emerald-600",
-        stateBadge: "border-emerald-200 bg-emerald-500 text-white",
+        stateBadge: "border-emerald-200 bg-emerald-100 text-emerald-700",
         countBadge: "border-emerald-200 bg-white/70 text-emerald-700",
       },
       canceled: {
         card: "border-slate-200 bg-slate-100 text-slate-600 opacity-90 hover:border-slate-300",
         icon: "text-slate-500",
-        stateBadge: "border-slate-200 bg-slate-500 text-white",
+        stateBadge: "border-slate-200 bg-slate-100 text-slate-600",
         countBadge: "border-slate-200 bg-white/70 text-slate-600",
       },
     };
@@ -1521,7 +1506,7 @@ async function loadPendingCloseAppointments() {
 
   async function handleUpdateStatus(
     appointmentId: string,
-    newStatus: "completed" | "no_show" | "rescheduled"
+    newStatus: "completed" | "no_show" | "rescheduled" | "canceled"
   ) {
     try {
       setStatusSaving(true);
@@ -1992,16 +1977,26 @@ const hasPendingClose = pendingCloseCount > 0;
     staffList.find((staff) => staff.id === selectedStaffId)?.name || "";
 
   return (
-    <div className="space-y-8 pb-6">
+    <div className="space-y-6 pb-6">
 <div
-  className="flex flex-col gap-4 rounded-2xl border px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+  className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
   style={{
-    borderColor: "var(--border-color)",
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.06), rgba(14,165,233,0.05), var(--bg-card))",
+    borderColor: "transparent",
+    background: "transparent",
   }}
 >
-  <div>
+  <div className="flex items-start gap-4">
+    <div
+      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl border shadow-sm"
+      style={{
+        borderColor: "var(--border-color)",
+        background: "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    >
+      <CalendarDays className="h-6 w-6" />
+    </div>
+    <div>
     <p
       className="text-[11px] font-semibold uppercase tracking-[0.24em]"
       style={{ color: "var(--text-muted)" }}
@@ -2010,7 +2005,7 @@ const hasPendingClose = pendingCloseCount > 0;
     </p>
 
     <h1
-      className="mt-1 text-xl font-semibold"
+      className="mt-1 text-2xl font-semibold"
       style={{ color: "var(--text-main)" }}
     >
       Agenda semanal
@@ -2026,6 +2021,7 @@ const hasPendingClose = pendingCloseCount > 0;
         : `Gestiona las reservas de ${loading ? "tu negocio" : businessName}.`}
     </p>
   </div>
+  </div>
 
   <button
     type="button"
@@ -2034,17 +2030,17 @@ const hasPendingClose = pendingCloseCount > 0;
       if (!calendarId) return;
       window.location.href = `/dashboard/${slug}/connect-calendar?calendar_id=${calendarId}`;
     }}
-    className={`inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+    className={`inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
       googleConnected
         ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-        : "border border-rose-200 bg-rose-50 text-rose-700 shadow-[0_0_10px_rgba(244,63,94,0.35)] hover:bg-rose-100 animate-pulse"
+        : "border border-slate-950 bg-slate-950 text-white shadow-[0_12px_30px_-16px_rgba(15,23,42,0.8)] hover:bg-slate-800"
     }`}
   >
     {googleConnected ? "Google Calendar conectado" : "Conectar Google Calendar"}
   </button>
 </div>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="hidden grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard
           title="Hoy"
           value={loading ? "..." : appointmentsToday.length}
@@ -2081,6 +2077,187 @@ const hasPendingClose = pendingCloseCount > 0;
               : "--"
           }
         />
+      </div>
+
+      <div
+        className="rounded-2xl border p-4 shadow-sm"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+        }}
+      >
+        <div className="grid gap-4 xl:grid-cols-[minmax(260px,1fr)_220px_minmax(0,2.4fr)] xl:items-end">
+          <div>
+            <label
+              className="mb-2 block text-xs font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Buscar
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearchAppointments();
+                  }
+                }}
+                placeholder="Buscar cliente o reserva..."
+                className="h-11 w-full rounded-xl border py-2 pl-10 pr-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              className="mb-2 block text-xs font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Profesional
+            </label>
+            <select
+              value={selectedStaffId}
+              onChange={(e) => {
+                setSelectedStaffId(e.target.value);
+                setSelectedAppointment(null);
+                setIsEditingReservation(false);
+                setHoverCard(null);
+                setSearchResults([]);
+                setSearchError("");
+              }}
+              disabled={!selectedBranchId || loadingStaff}
+              className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              <option value="">Todos los profesionales</option>
+              {staffList.map((staff) => (
+                <option key={staff.id} value={staff.id}>
+                  {staff.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <p
+              className="mb-2 text-xs font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Estado
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
+                const count =
+                  filter === "active"
+                    ? counts.active
+                    : filter === "pending_close"
+                    ? counts.pending_close
+                    : filter === "booked"
+                    ? counts.booked
+                    : filter === "completed"
+                    ? counts.completed
+                    : filter === "no_show"
+                    ? counts.no_show
+                    : counts.canceled;
+
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setActiveFilter(filter)}
+                    className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition ${
+                      activeFilter === filter
+                        ? "border-slate-950 bg-slate-950 text-white shadow-sm"
+                        : "hover:shadow-sm"
+                    }`}
+                    style={
+                      activeFilter === filter
+                        ? undefined
+                        : {
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }
+                    }
+                  >
+                    <span>{filterLabels[filter]}</span>
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                        activeFilter === filter
+                          ? "bg-white/20 text-white"
+                          : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {(searchError || searchResults.length > 0) && searchQuery.trim().length > 0 ? (
+          <div className="mt-3">
+            {searchError ? (
+              <p className="text-xs font-medium text-amber-600">{searchError}</p>
+            ) : null}
+
+            {searchResults.length > 0 ? (
+              <div className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {searchResults.slice(0, 6).map((appt) => (
+                  <button
+                    key={appt.id}
+                    type="button"
+                    onClick={() => handleSelectAppointment(appt)}
+                    className="rounded-xl border p-3 text-left transition hover:shadow-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p
+                          className="truncate text-sm font-semibold"
+                          style={{ color: "var(--text-main)" }}
+                        >
+                          {appt.customer_name}
+                        </p>
+                        <p
+                          className="mt-1 truncate text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {appt.service_name_snapshot || "Reserva"} ·{" "}
+                          {formatCompactDateTime(appt.start_at)}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(
+                          appt
+                        )}`}
+                      >
+                        {getStatusLabel(appt)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {loadingBranches && !selectedBranchId ? (
@@ -2194,7 +2371,7 @@ const hasPendingClose = pendingCloseCount > 0;
   </div>
 ) : null}
 
-      <div className="grid gap-8 xl:grid-cols-[1.7fr_0.55fr]">
+      <div className="relative">
         <section className="space-y-6">
           <div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -2212,30 +2389,34 @@ const hasPendingClose = pendingCloseCount > 0;
 onClick={() => {
   setShowPendingPanel(true);
 }}
-                    className={`inline-flex h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-[0_0_12px_rgba(244,63,94,0.6)] transition hover:scale-105 hover:bg-rose-700 ${
+                    className={`inline-flex h-11 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-100 ${
   pendingCloseCount > 0 ? "animate-pulse" : ""
 }`}
                   >
                     Pendientes: {pendingCloseCount}
                   </button>
                 ) : (
-                  <div className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-300/50 bg-emerald-500/10 px-3.5 text-sm font-semibold text-emerald-300">
+                  <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700">
                     Sin pendientes
                   </div>
                 )}
 
                 <div
-                  className="flex items-center rounded-xl border p-1"
+                  className="flex items-center gap-2"
                   style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
+                    borderColor: "transparent",
+                    background: "transparent",
                   }}
                 >
                   <button
                     type="button"
                     onClick={goPrevWeek}
-                    className="inline-flex h-10 items-center justify-center rounded-lg px-3.5 text-sm font-medium transition"
-                    style={{ color: "var(--text-main)" }}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                    style={{
+                      borderColor: "rgba(37,99,235,0.28)",
+                      background: "var(--bg-card)",
+                      color: "#2563eb",
+                    }}
                   >
                     ← Anterior
                   </button>
@@ -2243,7 +2424,7 @@ onClick={() => {
                   <button
                     type="button"
                     onClick={goToday}
-                    className="inline-flex h-10 items-center justify-center rounded-lg px-3.5 text-sm font-medium text-white transition"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold text-white shadow-[0_14px_30px_-18px_rgba(37,99,235,0.9)] transition hover:scale-[1.01]"
                     style={{
                       background:
                         "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
@@ -2255,8 +2436,12 @@ onClick={() => {
                   <button
                     type="button"
                     onClick={goNextWeek}
-                    className="inline-flex h-10 items-center justify-center rounded-lg px-3.5 text-sm font-medium transition"
-                    style={{ color: "var(--text-main)" }}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                    style={{
+                      borderColor: "rgba(37,99,235,0.28)",
+                      background: "var(--bg-card)",
+                      color: "#2563eb",
+                    }}
                   >
                     Siguiente →
                   </button>
@@ -2293,7 +2478,7 @@ onClick={() => {
               </div>
             </div>
 
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="hidden flex-wrap gap-2">
               {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
                 const count =
                   filter === "active"
@@ -2403,7 +2588,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                   return (
                     <div
                       key={dayKey}
-                      className="rounded-xl border p-2.5"
+                      className="min-h-[660px] rounded-2xl border p-3"
                       style={{
   borderColor: dayPendingCount > 0
     ? "rgba(244,63,94,0.28)"
@@ -2877,9 +3062,17 @@ const appt = slotGroups[0]?.[0];
           </div>
         </section>
 
-        <div ref={detailRef} className="self-start xl:sticky xl:top-6">
+        {selectedAppointment ? (
+        <div
+          ref={detailRef}
+          className="fixed inset-x-3 bottom-3 z-[75] max-h-[82vh] overflow-y-auto rounded-3xl border p-4 shadow-[0_30px_80px_-30px_rgba(15,23,42,0.55)] backdrop-blur md:inset-x-auto md:right-6 md:top-24 md:bottom-auto md:w-[420px] xl:w-[460px]"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "color-mix(in srgb, var(--bg-card) 92%, transparent)",
+          }}
+        >
           <div className="space-y-6">
-            <section>
+            <section className="hidden">
               <h2
                 className="mb-3 text-base font-semibold"
                 style={{ color: "var(--text-main)" }}
@@ -3025,7 +3218,7 @@ const appt = slotGroups[0]?.[0];
               </div>
             </section>
 
-            <section>
+            <section className="hidden">
               <h2
                 className="mb-3 text-base font-semibold"
                 style={{ color: "var(--text-main)" }}
@@ -3084,12 +3277,30 @@ const appt = slotGroups[0]?.[0];
             </section>
 
             <section>
-              <h2
-                className="mb-3 text-base font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                Detalle de reserva
-              </h2>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2
+                  className="text-base font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  {isSelectedGroupAppointment ? "Actividad grupal" : "Detalle de reserva"}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedAppointment(null);
+                    setIsEditingReservation(false);
+                  }}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border transition hover:shadow-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                  aria-label="Cerrar detalle"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
               <div
                 className="rounded-xl border p-4"
@@ -3162,6 +3373,72 @@ const appt = slotGroups[0]?.[0];
                         Profesional: {getStaffName(selectedAppointment.staff_id)}
                       </p>
                     </div>
+
+                    {!isSelectedGroupAppointment ? (
+                      <div
+                        className="rounded-xl border p-3"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                        }}
+                      >
+                        <p
+                          className="mb-2 text-xs font-semibold"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Acciones rápidas
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isVeterinaria) {
+                                openVeterinaryCloseModal();
+                                return;
+                              }
+
+                              handleUpdateStatus(selectedAppointment.id, "completed");
+                            }}
+                            disabled={statusSaving || closeSaving || selectedAppointment.status === "completed"}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Asistió
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(selectedAppointment.id, "no_show")}
+                            disabled={statusSaving || selectedAppointment.status === "no_show"}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-500 px-3 text-xs font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            No asistió
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(selectedAppointment.id, "rescheduled")}
+                            disabled={statusSaving || selectedAppointment.status === "rescheduled"}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-violet-600 px-3 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Reagendó
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(selectedAppointment.id, "canceled")}
+                            disabled={statusSaving || selectedAppointment.status === "canceled"}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            Cancelar reserva
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
 
                     {isSelectedGroupAppointment ? (
                       <div
@@ -3649,6 +3926,7 @@ const appt = slotGroups[0]?.[0];
             </section>
           </div>
         </div>
+        ) : null}
       </div>
 
 
