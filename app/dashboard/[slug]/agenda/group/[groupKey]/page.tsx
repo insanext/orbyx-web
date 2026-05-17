@@ -66,6 +66,8 @@ function getStatusLabel(status: string) {
       return "Asisti&oacute;";
     case "no_show":
       return "No asisti&oacute;";
+    case "rescheduled":
+      return "Reagend&oacute;";
     case "canceled":
       return "Cancelada";
     case "booked":
@@ -81,6 +83,8 @@ function getStatusClass(status: string) {
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
     case "no_show":
       return "border-amber-200 bg-amber-50 text-amber-800";
+    case "rescheduled":
+      return "border-violet-200 bg-violet-50 text-violet-700";
     case "canceled":
       return "border-slate-200 bg-slate-100 text-slate-600";
     default:
@@ -100,7 +104,7 @@ function getAppointmentGroupKey(appt: Appointment) {
 function getGroupState(attendees: Appointment[]) {
   const active = attendees.filter((appt) => appt.status !== "canceled");
   const reviewed = active.filter((appt) =>
-    ["completed", "no_show"].includes(appt.status)
+    ["completed", "no_show", "rescheduled"].includes(appt.status)
   );
 
   if (attendees.length > 0 && attendees.every((appt) => appt.status === "canceled")) {
@@ -193,7 +197,10 @@ export default function GroupBookingPage() {
     loadGroupAppointments();
   }, [slug, groupKey]);
 
-  async function updateStatus(appointmentId: string, status: "completed" | "no_show") {
+  async function updateStatus(
+    appointmentId: string,
+    status: "completed" | "no_show" | "rescheduled"
+  ) {
     try {
       setSavingId(appointmentId);
 
@@ -241,7 +248,8 @@ export default function GroupBookingPage() {
         activeFilter === "all" ||
         (activeFilter === "pending" && attendee.status === "booked") ||
         (activeFilter === "completed" && attendee.status === "completed") ||
-        (activeFilter === "no_show" && attendee.status === "no_show");
+        (activeFilter === "no_show" && attendee.status === "no_show") ||
+        (activeFilter === "rescheduled" && attendee.status === "rescheduled");
 
       return matchesSearch && matchesFilter;
     });
@@ -402,6 +410,7 @@ export default function GroupBookingPage() {
             filteredAttendees.map((attendee) => {
               const isCompleted = attendee.status === "completed";
               const isNoShow = attendee.status === "no_show";
+              const isRescheduled = attendee.status === "rescheduled";
               const isCanceled = attendee.status === "canceled";
               const isSaving = savingId === attendee.id;
 
@@ -449,7 +458,8 @@ export default function GroupBookingPage() {
                       </button>
                       <button
                         type="button"
-                        disabled
+                        onClick={() => updateStatus(attendee.id, "rescheduled")}
+                        disabled={isCanceled || isSaving || isRescheduled}
                         className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                         style={{
                           borderColor: "var(--border-color)",

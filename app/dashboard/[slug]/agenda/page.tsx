@@ -534,6 +534,8 @@ function generateSlotsFromWindows(
         return "Atendida";
       case "no_show":
         return "No asistió";
+      case "rescheduled":
+        return "Reagendó";
       case "pending_close":
         return "Pendiente de cierre";
       case "canceled":
@@ -553,6 +555,8 @@ function generateSlotsFromWindows(
         return "Atendida";
       case "no_show":
         return "No asistió";
+      case "rescheduled":
+        return "Reagendó";
       case "pending_close":
         return "Pendiente";
       case "canceled":
@@ -572,6 +576,8 @@ function generateSlotsFromWindows(
         return "border-emerald-200 bg-emerald-50 text-emerald-700";
       case "no_show":
         return "border-amber-200 bg-amber-50 text-amber-800";
+      case "rescheduled":
+        return "border-violet-200 bg-violet-50 text-violet-700";
       case "pending_close":
         return "border-rose-200 bg-rose-50 text-rose-700";
       case "canceled":
@@ -601,6 +607,10 @@ function generateSlotsFromWindows(
         return "border-slate-500 bg-gradient-to-br from-slate-500 to-slate-600 text-white shadow-lg";
       }
 
+      if (visualStatus === "rescheduled") {
+        return "border-violet-500 bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-lg";
+      }
+
       return "border-slate-900 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-lg";
     }
 
@@ -618,6 +628,10 @@ function generateSlotsFromWindows(
 
     if (visualStatus === "canceled") {
       return "border-slate-200 bg-slate-100 text-slate-600 opacity-80 hover:border-slate-300";
+    }
+
+    if (visualStatus === "rescheduled") {
+      return "border-violet-200 bg-violet-50 text-slate-900 hover:border-violet-300";
     }
 
     return "border-slate-200 bg-white text-slate-900 hover:border-sky-300 hover:bg-sky-50";
@@ -667,7 +681,7 @@ function generateSlotsFromWindows(
     const first = group[0];
     const active = group.filter((appt) => appt.status !== "canceled");
     const reviewed = active.filter((appt) =>
-      ["completed", "no_show"].includes(appt.status)
+      ["completed", "no_show", "rescheduled"].includes(appt.status)
     );
 
     if (group.length > 0 && group.every((appt) => appt.status === "canceled")) {
@@ -1507,7 +1521,7 @@ async function loadPendingCloseAppointments() {
 
   async function handleUpdateStatus(
     appointmentId: string,
-    newStatus: "completed" | "no_show"
+    newStatus: "completed" | "no_show" | "rescheduled"
   ) {
     try {
       setStatusSaving(true);
@@ -3190,6 +3204,7 @@ const appt = slotGroups[0]?.[0];
                             const isCanceled = attendee.status === "canceled";
                             const isCompleted = attendee.status === "completed";
                             const isNoShow = attendee.status === "no_show";
+                            const isRescheduled = attendee.status === "rescheduled";
 
                             return (
                               <div
@@ -3255,6 +3270,17 @@ const appt = slotGroups[0]?.[0];
                                       {isNoShow
                                         ? "No asistió"
                                         : "No asistió"}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateStatus(attendee.id, "rescheduled")
+                                      }
+                                      disabled={statusSaving || isRescheduled}
+                                      className="inline-flex h-8 items-center justify-center rounded-lg bg-violet-600 px-2.5 text-[11px] font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      Reagendó
                                     </button>
                                   </div>
                                 ) : null}
