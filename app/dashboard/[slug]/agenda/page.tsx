@@ -351,6 +351,7 @@ next_control_custom_unit: "days",
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [searchResults, setSearchResults] = useState<Appointment[]>([]);
+  const [hoveredTimeKey, setHoveredTimeKey] = useState("");
 
   const [isEditingReservation, setIsEditingReservation] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -399,6 +400,19 @@ next_control_custom_unit: "days",
       minute: "2-digit",
       hour12: false,
     });
+  }
+
+  function getTimeKey(dateString: string) {
+    return formatHour(dateString);
+  }
+
+  function getAppointmentBlockMinHeight(appt: Appointment) {
+    const start = new Date(appt.start_at).getTime();
+    const end = new Date(appt.end_at).getTime();
+    const durationMinutes = Math.max((end - start) / 60000, 15);
+    const rows = Math.max(durationMinutes / 30, 0.5);
+
+    return Math.max(Math.round(rows * 54) - 6, 34);
   }
 
   function formatLongDate(dateString: string) {
@@ -1404,6 +1418,37 @@ function getSelectedStaffDayWindow(day: Date) {
     [weekStart]
   );
   const weekEnd = weekDays[6];
+  const calendarTimeSlots = useMemo(() => {
+    const fallback = generateDaySlots(weekStart, {
+      startMinutes: 9 * 60,
+      endMinutes: 13 * 60,
+    });
+    const slots = new Set<string>();
+
+    for (const day of weekDays) {
+      const dayWindow = getSelectedStaffDayWindow(day);
+      let daySlots: string[] = [];
+
+      if ("windows" in dayWindow && Array.isArray(dayWindow.windows)) {
+        daySlots = generateSlotsFromWindows(day, dayWindow.windows);
+      } else if ("startMinutes" in dayWindow && "endMinutes" in dayWindow) {
+        daySlots = generateDaySlots(day, {
+          startMinutes: dayWindow.startMinutes,
+          endMinutes: dayWindow.endMinutes,
+        });
+      }
+
+      for (const slot of daySlots) {
+        slots.add(formatHour(slot));
+      }
+    }
+
+    const source = slots.size
+      ? Array.from(slots)
+      : fallback.map((slot) => formatHour(slot));
+
+    return source.sort((a, b) => a.localeCompare(b));
+  }, [weekDays, selectedStaffId, staffHours, businessHours, staffSpecialDates, businessSpecialDates]);
 
 
 
@@ -2539,7 +2584,37 @@ onClick={() => {
                 Cargando agenda...
               </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))] xl:gap-0">
+                <div
+                  className="hidden rounded-l-2xl border border-r-0 p-3 xl:block"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <div className="h-[58px]" />
+                  <div className="space-y-0">
+                    {calendarTimeSlots.map((time) => (
+                      <div
+                        key={time}
+                        className="flex h-[54px] items-start justify-end border-t pt-1.5 text-[11px]"
+                        style={{
+                          borderColor: "rgba(148,163,184,0.18)",
+                          color:
+                            hoveredTimeKey === time
+                              ? "#2563eb"
+                              : "var(--text-muted)",
+                          background:
+                            hoveredTimeKey === time
+                              ? "rgba(59,130,246,0.08)"
+                              : "transparent",
+                        }}
+                      >
+                        {time}
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 {weekDays.map((day) => {
                   const dayKey = formatDateYYYYMMDD(day);
                   const dayAppointments = appointmentsByDay[dayKey] || [];
@@ -2590,11 +2665,16 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
     });
   }
 }
+                  const renderSlots = calendarTimeSlots.length
+                    ? calendarTimeSlots.map((time) =>
+                        new Date(`${dayKey}T${time}:00`).toISOString()
+                      )
+                    : daySlots;
 
                   return (
                     <div
                       key={dayKey}
-                      className="min-h-[660px] rounded-2xl border p-3"
+                      className="min-h-[660px] border p-3 first:xl:rounded-l-none last:xl:rounded-r-2xl md:rounded-2xl xl:rounded-none xl:border-l-0"
                       style={{
   borderColor: dayPendingCount > 0
     ? "rgba(244,63,94,0.28)"
@@ -2681,7 +2761,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
        
                       </div>
 
-                      <div className="space-y-1.5">
+                      <div className="space-y-0">
                         {showClosedBySchedule ? (
                           <div
                             className="rounded-lg border border-dashed px-2 py-3 text-center"
@@ -2746,16 +2826,24 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                   key={appt.id}
                                   type="button"
                                   onClick={() => handleSelectAppointment(appt)}
-                                  onMouseEnter={(e) =>
-                                    handleAppointmentMouseEnter(e, appt)
-                                  }
-                                  onMouseLeave={handleAppointmentMouseLeave}
-                                  className={`w-full rounded-xl border p-2.5 text-left transition ${getCardClass(
+                                  onMouseEnter={(e) => {
+                                    setHoveredTimeKey(getTimeKey(appt.start_at));
+                                    handleAppointmentMouseEnter(e, appt);
+                                  }}
+                                  onMouseLeave={() => {
+                                    setHoveredTimeKey("");
+                                    handleAppointmentMouseLeave();
+                                  }}
+                                  className={`w-full rounded-lg border p-2 text-left transition ${getCardClass(
                                     appt,
                                     isSelected
                                   )}`}
+                                  style={{
+                                    minHeight: getAppointmentBlockMinHeight(appt),
+                                  }}
                                 >
-                                  <div className="space-y-1.5">
+                                  <div className="space-y-0.5">
+                                    {false ? (
                                     <div
                                       className={`text-[11px] font-semibold ${
                                         isSelected
@@ -2766,7 +2854,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                       {formatHour(appt.start_at)} -{" "}
                                       {formatHour(appt.end_at)}
                                     </div>
+                                    ) : null}
 
+                                    {false ? (
                                     <div>
                                       <span
                                         className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
@@ -2778,9 +2868,10 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                         {getCalendarBadgeLabel(appt)}
                                       </span>
                                     </div>
+                                    ) : null}
 
                                     <p
-                                      className={`truncate text-sm font-semibold ${
+                                      className={`truncate text-xs font-semibold ${
                                         isSelected
                                           ? "text-white"
                                           : "text-slate-900"
@@ -2789,7 +2880,17 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                       {appt.customer_name}
                                     </p>
 
-                                    {appt.customer_data?.pet_name ? (
+                                    <p
+                                      className={`truncate text-[11px] ${
+                                        isSelected
+                                          ? "text-slate-200"
+                                          : "text-slate-600"
+                                      }`}
+                                    >
+                                      {appt.customer_phone || "Teléfono no disponible"}
+                                    </p>
+
+                                    {false && appt.customer_data?.pet_name ? (
                                       <p
                                         className={`truncate text-[11px] ${
                                           isSelected
@@ -2797,9 +2898,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                             : "text-emerald-600"
                                         }`}
                                       >
-                                        🐶 {appt.customer_data.pet_name}
-                                        {appt.customer_data.pet_species
-                                          ? ` (${appt.customer_data.pet_species})`
+                                        🐶 {appt.customer_data?.pet_name}
+                                        {appt.customer_data?.pet_species
+                                          ? ` (${appt.customer_data?.pet_species})`
                                           : ""}
                                       </p>
                                     ) : null}
@@ -2814,6 +2915,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                       {appt.service_name_snapshot || "Reserva"}
                                     </p>
 
+                                    {false ? (
                                     <p
                                       className={`truncate text-[11px] ${
                                         isSelected
@@ -2823,12 +2925,13 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     >
                                       {getStaffName(appt.staff_id)}
                                     </p>
+                                    ) : null}
                                   </div>
                                 </button>
                               );
                             })
                           )
-                        ) : daySlots.length === 0 && dayAppointments.length === 0 ? (
+                        ) : renderSlots.length === 0 && dayAppointments.length === 0 ? (
                           <div
                             className="rounded-lg border border-dashed px-2 py-3 text-center text-[11px]"
                             style={{
@@ -2840,12 +2943,19 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             Sin bloques disponibles
                           </div>
                         ) : (
-                          daySlots.map((slot, index) => {
+                          renderSlots.map((slot, index) => {
 const slotAppointments = dayAppointments.filter(
   (a) =>
     new Date(a.start_at).getTime() ===
     new Date(slot).getTime()
 );
+const slotTime = new Date(slot).getTime();
+const slotTimeKey = getTimeKey(slot);
+const isCoveredByLongAppointment = dayAppointments.some((a) => {
+  const start = new Date(a.start_at).getTime();
+  const end = new Date(a.end_at).getTime();
+  return start < slotTime && end > slotTime;
+});
 
 const slotGroups = groupAppointmentsByBlock(slotAppointments);
 const appt = slotGroups[0]?.[0];
@@ -2853,31 +2963,48 @@ const appt = slotGroups[0]?.[0];
                             const isHourStart = index % 2 === 0;
                             const isEvenBand = Math.floor(index / 2) % 2 === 0;
 
+                            if (isCoveredByLongAppointment) {
+                              return null;
+                            }
+
                             if (!appt || slotGroups.length === 0) {
                               return (
                                 <div
                                   key={slot}
-                                  className="rounded-lg border px-2 py-2 text-center text-[11px]"
+                                  onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
+                                  onMouseLeave={() => setHoveredTimeKey("")}
+                                  className="hidden h-[54px] border-t xl:block"
                                   style={{
                                     borderColor: isHourStart
-                                      ? "rgba(148,163,184,0.28)"
-                                      : "var(--border-color)",
-                                    background: isEvenBand
-                                      ? "var(--bg-soft)"
-                                      : "var(--bg-card)",
+                                      ? "rgba(148,163,184,0.22)"
+                                      : "rgba(148,163,184,0.14)",
+                                    background:
+                                      hoveredTimeKey === slotTimeKey
+                                        ? "rgba(59,130,246,0.08)"
+                                        : "transparent",
                                     color: "var(--text-muted)",
                                   }}
-                                >
-                                  <span className="block font-medium">
-                                    {formatHour(slot)}
-                                  </span>
-                                  <span className="block">Libre</span>
-                                </div>
+                                />
                               );
                             }
 
                             return (
-                              <div key={slot} className="space-y-1.5">
+                              <div
+                                key={slot}
+                                onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
+                                onMouseLeave={() => setHoveredTimeKey("")}
+                                className="border-t py-1"
+                                style={{
+                                  minHeight: 54,
+                                  borderColor: isHourStart
+                                    ? "rgba(148,163,184,0.22)"
+                                    : "rgba(148,163,184,0.14)",
+                                  background:
+                                    hoveredTimeKey === slotTimeKey
+                                      ? "rgba(59,130,246,0.08)"
+                                      : "transparent",
+                                }}
+                              >
                                 {slotGroups.map((group) => {
                                   const appt = group[0];
                                   const isGroupSlot = isGroupAppointment(appt);
@@ -2910,18 +3037,25 @@ const appt = slotGroups[0]?.[0];
                                 key={getAppointmentGroupKey(appt)}
                                 type="button"
                                 onClick={() => handleSelectAppointment(appt)}
-                                onMouseEnter={(e) =>
-                                  handleAppointmentMouseEnter(e, appt)
-                                }
-                                onMouseLeave={handleAppointmentMouseLeave}
-                                className={`w-full rounded-xl border p-2.5 text-left transition ${
+                                onMouseEnter={(e) => {
+                                  setHoveredTimeKey(getTimeKey(appt.start_at));
+                                  handleAppointmentMouseEnter(e, appt);
+                                }}
+                                onMouseLeave={() => {
+                                  setHoveredTimeKey("");
+                                  handleAppointmentMouseLeave();
+                                }}
+                                className={`w-full rounded-lg border p-2 text-left transition ${
                                   isGroupSlot && groupStyles
                                     ? groupStyles.card
                                     : getCardClass(appt, isSelected)
                                 }`}
+                                style={{
+                                  minHeight: getAppointmentBlockMinHeight(appt),
+                                }}
                               >
-                                <div className="space-y-1.5">
-                                  {!isGroupSlot ? (
+                                <div className="space-y-0.5">
+                                  {false && !isGroupSlot ? (
                                   <div
                                     className={`text-[11px] font-semibold ${
                                       isSelected
@@ -2934,7 +3068,7 @@ const appt = slotGroups[0]?.[0];
                                   </div>
                                   ) : null}
 
-                                  {!isGroupSlot ? (
+                                  {false && !isGroupSlot ? (
                                   <div>
                                     <span
                                       className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
@@ -2991,7 +3125,7 @@ const appt = slotGroups[0]?.[0];
   </div>
 ) : (
   <p
-    className={`truncate text-sm font-semibold ${
+    className={`truncate text-xs font-semibold ${
       isSelected ? "text-white" : "text-slate-900"
     }`}
   >
@@ -2999,7 +3133,19 @@ const appt = slotGroups[0]?.[0];
   </p>
 )}
 
-                                  {!isGroupSlot && appt.customer_data?.pet_name ? (
+                                  {!isGroupSlot ? (
+                                  <p
+                                    className={`truncate text-[11px] ${
+                                      isSelected
+                                        ? "text-slate-200"
+                                        : "text-slate-600"
+                                    }`}
+                                  >
+                                    {appt.customer_phone || "Teléfono no disponible"}
+                                  </p>
+                                  ) : null}
+
+                                  {false && !isGroupSlot && appt.customer_data?.pet_name ? (
                                     <p
                                       className={`truncate text-[11px] ${
                                         isSelected
@@ -3007,9 +3153,9 @@ const appt = slotGroups[0]?.[0];
                                           : "text-emerald-600"
                                       }`}
                                     >
-                                      🐶 {appt.customer_data.pet_name}
-                                      {appt.customer_data.pet_species
-                                        ? ` (${appt.customer_data.pet_species})`
+                                      🐶 {appt.customer_data?.pet_name}
+                                      {appt.customer_data?.pet_species
+                                        ? ` (${appt.customer_data?.pet_species})`
                                         : ""}
                                     </p>
                                   ) : null}
@@ -3028,7 +3174,7 @@ const appt = slotGroups[0]?.[0];
 </p>
                                   ) : null}
 
-                                  {!isGroupSlot ? (
+                                  {false && !isGroupSlot ? (
                                   <p
                                     className={`truncate text-[11px] ${
                                       isSelected
