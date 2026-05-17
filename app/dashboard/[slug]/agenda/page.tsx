@@ -331,6 +331,7 @@ const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<A
   const [error, setError] = useState("");
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+  const [agendaView, setAgendaView] = useState<"week" | "day">("week");
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
 const [showPendingPanel, setShowPendingPanel] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
@@ -2026,6 +2027,30 @@ const hasPendingClose = pendingCloseCount > 0;
 
   const selectedStaffName =
     staffList.find((staff) => staff.id === selectedStaffId)?.name || "";
+  const selectedDayKey = formatDateYYYYMMDD(weekBaseDate);
+  const selectedDayAppointments = filteredAppointments.filter(
+    (appt) => formatDateYYYYMMDD(new Date(appt.start_at)) === selectedDayKey
+  );
+  const dayStaffColumns = staffList.filter((staff) => {
+    if (selectedStaffId) return staff.id === selectedStaffId;
+    return staff.is_active !== false;
+  });
+  const dayViewSlots = calendarTimeSlots.length
+    ? calendarTimeSlots.map((time) =>
+        new Date(`${selectedDayKey}T${time}:00`).toISOString()
+      )
+    : generateDaySlots(weekBaseDate, {
+        startMinutes: 9 * 60,
+        endMinutes: 20 * 60,
+      });
+  const dayTitle = new Intl.DateTimeFormat("es-CL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(weekBaseDate);
+  const formattedDayTitle =
+    dayTitle.charAt(0).toUpperCase() + dayTitle.slice(1);
 
   return (
     <div className="space-y-6 pb-6">
@@ -2430,7 +2455,7 @@ const hasPendingClose = pendingCloseCount > 0;
                 className="text-base font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
-                Calendario semanal
+                {agendaView === "week" ? "Calendario semanal" : "Día por profesional"}
               </h2>
 
               <div className="flex flex-wrap items-center justify-end gap-2">
@@ -2461,7 +2486,17 @@ onClick={() => {
                 >
                   <button
                     type="button"
-                    onClick={goPrevWeek}
+                    onClick={() => {
+                      if (agendaView === "day") {
+                        setWeekBaseDate((prev) => addDays(prev, -1));
+                        setSelectedAppointment(null);
+                        setIsEditingReservation(false);
+                        setHoverCard(null);
+                        return;
+                      }
+
+                      goPrevWeek();
+                    }}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition hover:shadow-sm"
                     style={{
                       borderColor: "rgba(37,99,235,0.28)",
@@ -2469,7 +2504,7 @@ onClick={() => {
                       color: "#2563eb",
                     }}
                   >
-                    ← Anterior
+                    {agendaView === "day" ? "← Día anterior" : "← Anterior"}
                   </button>
 
                   <button
@@ -2486,7 +2521,17 @@ onClick={() => {
 
                   <button
                     type="button"
-                    onClick={goNextWeek}
+                    onClick={() => {
+                      if (agendaView === "day") {
+                        setWeekBaseDate((prev) => addDays(prev, 1));
+                        setSelectedAppointment(null);
+                        setIsEditingReservation(false);
+                        setHoverCard(null);
+                        return;
+                      }
+
+                      goNextWeek();
+                    }}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition hover:shadow-sm"
                     style={{
                       borderColor: "rgba(37,99,235,0.28)",
@@ -2494,7 +2539,7 @@ onClick={() => {
                       color: "#2563eb",
                     }}
                   >
-                    Siguiente →
+                    {agendaView === "day" ? "Día siguiente →" : "Siguiente →"}
                   </button>
                 </div>
 
@@ -2506,7 +2551,46 @@ onClick={() => {
                     color: "var(--text-main)",
                   }}
                 >
-                  {formatRangeTitle(weekStart, weekEnd)}
+                  {agendaView === "day"
+                    ? formattedDayTitle
+                    : formatRangeTitle(weekStart, weekEnd)}
+                </div>
+
+                <div
+                  className="flex items-center rounded-2xl border p-1"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setAgendaView("week")}
+                    className={`inline-flex h-9 items-center justify-center rounded-xl px-4 text-xs font-semibold transition ${
+                      agendaView === "week" ? "bg-blue-600 text-white" : ""
+                    }`}
+                    style={
+                      agendaView === "week"
+                        ? undefined
+                        : { color: "var(--text-muted)" }
+                    }
+                  >
+                    Semana
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAgendaView("day")}
+                    className={`inline-flex h-9 items-center justify-center rounded-xl px-4 text-xs font-semibold transition ${
+                      agendaView === "day" ? "bg-blue-600 text-white" : ""
+                    }`}
+                    style={
+                      agendaView === "day"
+                        ? undefined
+                        : { color: "var(--text-muted)" }
+                    }
+                  >
+                    Día por profesional
+                  </button>
                 </div>
 
                 <input
@@ -2582,6 +2666,381 @@ onClick={() => {
                 }}
               >
                 Cargando agenda...
+              </div>
+            ) : agendaView === "day" ? (
+              <div className="space-y-4">
+                <div>
+                  <p
+                    className="mb-2 text-xs font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Profesionales
+                  </p>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedStaffId("");
+                        setSelectedAppointment(null);
+                        setHoverCard(null);
+                      }}
+                      className={`inline-flex h-9 shrink-0 items-center rounded-xl border px-3 text-xs font-semibold transition ${
+                        !selectedStaffId ? "border-slate-950 bg-slate-950 text-white" : ""
+                      }`}
+                      style={
+                        !selectedStaffId
+                          ? undefined
+                          : {
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }
+                      }
+                    >
+                      Todos
+                    </button>
+
+                    {staffList.map((staff) => (
+                      <button
+                        key={staff.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedStaffId(staff.id);
+                          setSelectedAppointment(null);
+                          setHoverCard(null);
+                        }}
+                        className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition ${
+                          selectedStaffId === staff.id
+                            ? "border-slate-950 bg-slate-950 text-white"
+                            : ""
+                        }`}
+                        style={
+                          selectedStaffId === staff.id
+                            ? undefined
+                            : {
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }
+                        }
+                      >
+                        <span
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                          style={{ background: staff.color || "#2563eb" }}
+                        >
+                          {staff.name
+                            .split(" ")
+                            .map((part) => part[0])
+                            .join("")
+                            .slice(0, 2)}
+                        </span>
+                        {staff.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <div
+                    className="grid min-w-max rounded-2xl border"
+                    style={{
+                      gridTemplateColumns: `64px repeat(${Math.max(
+                        dayStaffColumns.length,
+                        1
+                      )}, minmax(240px, 1fr))`,
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                    }}
+                  >
+                    <div
+                      className="sticky left-0 z-20 border-r p-3"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                      }}
+                    >
+                      <div
+                        className="flex h-[64px] items-center justify-center text-xs font-semibold"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Hora
+                      </div>
+                      {dayViewSlots.map((slot) => {
+                        const timeKey = getTimeKey(slot);
+                        return (
+                          <div
+                            key={slot}
+                            className="flex h-[54px] items-start justify-end border-t pt-1.5 text-[11px]"
+                            style={{
+                              borderColor: "rgba(148,163,184,0.18)",
+                              color:
+                                hoveredTimeKey === timeKey
+                                  ? "#2563eb"
+                                  : "var(--text-muted)",
+                              background:
+                                hoveredTimeKey === timeKey
+                                  ? "rgba(59,130,246,0.08)"
+                                  : "transparent",
+                            }}
+                          >
+                            {timeKey}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {dayStaffColumns.length === 0 ? (
+                      <div
+                        className="p-6 text-sm"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        No hay profesionales activos para esta sucursal.
+                      </div>
+                    ) : (
+                      dayStaffColumns.map((staff) => {
+                        const staffAppointments = selectedDayAppointments.filter(
+                          (appt) => appt.staff_id === staff.id
+                        );
+
+                        return (
+                          <div
+                            key={staff.id}
+                            className="border-r last:border-r-0"
+                            style={{ borderColor: "var(--border-color)" }}
+                          >
+                            <div
+                              className="flex h-[64px] items-center justify-center gap-2 border-b px-3"
+                              style={{ borderColor: "var(--border-color)" }}
+                            >
+                              <span
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
+                                style={{ background: staff.color || "#2563eb" }}
+                              >
+                                {staff.name
+                                  .split(" ")
+                                  .map((part) => part[0])
+                                  .join("")
+                                  .slice(0, 2)}
+                              </span>
+                              <div className="min-w-0">
+                                <p
+                                  className="truncate text-sm font-semibold"
+                                  style={{ color: "var(--text-main)" }}
+                                >
+                                  {staff.name}
+                                </p>
+                                {staff.role ? (
+                                  <p
+                                    className="truncate text-xs"
+                                    style={{ color: "var(--text-muted)" }}
+                                  >
+                                    {staff.role}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <div className="space-y-0">
+                              {dayViewSlots.map((slot, index) => {
+                                const slotTime = new Date(slot).getTime();
+                                const slotTimeKey = getTimeKey(slot);
+                                const slotAppointments = staffAppointments.filter(
+                                  (a) =>
+                                    new Date(a.start_at).getTime() === slotTime
+                                );
+                                const isCoveredByLongAppointment =
+                                  staffAppointments.some((a) => {
+                                    const start = new Date(a.start_at).getTime();
+                                    const end = new Date(a.end_at).getTime();
+                                    return start < slotTime && end > slotTime;
+                                  });
+                                const slotGroups =
+                                  groupAppointmentsByBlock(slotAppointments);
+                                const isHourStart = index % 2 === 0;
+
+                                if (isCoveredByLongAppointment) {
+                                  return null;
+                                }
+
+                                if (slotGroups.length === 0) {
+                                  return (
+                                    <div
+                                      key={slot}
+                                      onMouseEnter={() =>
+                                        setHoveredTimeKey(slotTimeKey)
+                                      }
+                                      onMouseLeave={() => setHoveredTimeKey("")}
+                                      className="h-[54px] border-t"
+                                      style={{
+                                        borderColor: isHourStart
+                                          ? "rgba(148,163,184,0.22)"
+                                          : "rgba(148,163,184,0.14)",
+                                        background:
+                                          hoveredTimeKey === slotTimeKey
+                                            ? "rgba(59,130,246,0.08)"
+                                            : "transparent",
+                                      }}
+                                    />
+                                  );
+                                }
+
+                                return (
+                                  <div
+                                    key={slot}
+                                    onMouseEnter={() =>
+                                      setHoveredTimeKey(slotTimeKey)
+                                    }
+                                    onMouseLeave={() => setHoveredTimeKey("")}
+                                    className="border-t p-1.5"
+                                    style={{
+                                      minHeight: 54,
+                                      borderColor: isHourStart
+                                        ? "rgba(148,163,184,0.22)"
+                                        : "rgba(148,163,184,0.14)",
+                                      background:
+                                        hoveredTimeKey === slotTimeKey
+                                          ? "rgba(59,130,246,0.08)"
+                                          : "transparent",
+                                    }}
+                                  >
+                                    {slotGroups.map((group) => {
+                                      const appt = group[0];
+                                      const isGroupSlot =
+                                        isGroupAppointment(appt);
+                                      const selectedKey = selectedAppointment
+                                        ? getAppointmentGroupKey(
+                                            selectedAppointment
+                                          )
+                                        : "";
+                                      const isSelected = Boolean(
+                                        selectedKey &&
+                                          selectedKey ===
+                                            getAppointmentGroupKey(appt)
+                                      );
+                                      const groupVisualState = isGroupSlot
+                                        ? getGroupBookingVisualState(group)
+                                        : null;
+                                      const groupStyles = groupVisualState
+                                        ? getGroupBookingStyles(
+                                            groupVisualState.key,
+                                            isSelected
+                                          )
+                                        : null;
+                                      const activeGroupCount = group.filter(
+                                        (attendee) =>
+                                          attendee.status !== "canceled"
+                                      ).length;
+                                      const groupCapacity =
+                                        Number(appt.service_capacity || 0) ||
+                                        activeGroupCount ||
+                                        group.length;
+
+                                      return (
+                                        <button
+                                          key={getAppointmentGroupKey(appt)}
+                                          type="button"
+                                          onClick={() =>
+                                            handleSelectAppointment(appt)
+                                          }
+                                          onMouseEnter={(e) => {
+                                            setHoveredTimeKey(
+                                              getTimeKey(appt.start_at)
+                                            );
+                                            handleAppointmentMouseEnter(e, appt);
+                                          }}
+                                          onMouseLeave={() => {
+                                            setHoveredTimeKey("");
+                                            handleAppointmentMouseLeave();
+                                          }}
+                                          className={`w-full rounded-lg border p-2 text-left transition ${
+                                            isGroupSlot && groupStyles
+                                              ? groupStyles.card
+                                              : getCardClass(appt, isSelected)
+                                          }`}
+                                          style={{
+                                            minHeight:
+                                              getAppointmentBlockMinHeight(appt),
+                                          }}
+                                        >
+                                          {isGroupSlot &&
+                                          groupVisualState &&
+                                          groupStyles ? (
+                                            <div className="space-y-0.5">
+                                              <p
+                                                className={`truncate text-xs font-semibold ${
+                                                  isSelected
+                                                    ? "text-white"
+                                                    : "text-slate-900"
+                                                }`}
+                                              >
+                                                {appt.service_name_snapshot ||
+                                                  "Actividad grupal"}
+                                              </p>
+                                              <p
+                                                className={`truncate text-[11px] ${
+                                                  isSelected
+                                                    ? "text-slate-200"
+                                                    : "text-slate-600"
+                                                }`}
+                                              >
+                                                {activeGroupCount}/{groupCapacity} inscritos
+                                              </p>
+                                              <p
+                                                className={`truncate text-[11px] ${
+                                                  isSelected
+                                                    ? "text-slate-200"
+                                                    : "text-slate-500"
+                                                }`}
+                                              >
+                                                {groupVisualState.label}
+                                              </p>
+                                            </div>
+                                          ) : (
+                                            <div className="space-y-0.5">
+                                              <p
+                                                className={`truncate text-xs font-semibold ${
+                                                  isSelected
+                                                    ? "text-white"
+                                                    : "text-slate-900"
+                                                }`}
+                                              >
+                                                {appt.customer_name}
+                                              </p>
+                                              <p
+                                                className={`truncate text-[11px] ${
+                                                  isSelected
+                                                    ? "text-slate-200"
+                                                    : "text-slate-600"
+                                                }`}
+                                              >
+                                                {appt.customer_phone ||
+                                                  "Teléfono no disponible"}
+                                              </p>
+                                              <p
+                                                className={`truncate text-[11px] ${
+                                                  isSelected
+                                                    ? "text-slate-200"
+                                                    : "text-slate-500"
+                                                }`}
+                                              >
+                                                {appt.service_name_snapshot ||
+                                                  "Reserva"}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))] xl:gap-0">
