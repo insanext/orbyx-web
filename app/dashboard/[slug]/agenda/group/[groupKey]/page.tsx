@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -77,34 +77,113 @@ function getStatusLabel(status: string) {
   }
 }
 
-function getStatusClass(status: string) {
+type StatusTone = {
+  border: string;
+  background: string;
+  text: string;
+  softText: string;
+  solid: string;
+  solidHover: string;
+  shadow: string;
+};
+
+function getStatusTone(status: string): StatusTone {
   switch (status) {
     case "completed":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      return {
+        border: "rgba(16,185,129,0.58)",
+        background:
+          "linear-gradient(135deg, rgba(16,185,129,0.22), color-mix(in srgb, var(--bg-card) 82%, rgba(16,185,129,0.16)))",
+        text: "#047857",
+        softText: "color-mix(in srgb, var(--text-main) 82%, #059669 18%)",
+        solid: "#059669",
+        solidHover: "#047857",
+        shadow: "0 14px 32px -24px rgba(16,185,129,0.95)",
+      };
     case "no_show":
-      return "border-amber-200 bg-amber-50 text-amber-800";
+      return {
+        border: "rgba(245,158,11,0.62)",
+        background:
+          "linear-gradient(135deg, rgba(245,158,11,0.24), color-mix(in srgb, var(--bg-card) 82%, rgba(245,158,11,0.18)))",
+        text: "#b45309",
+        softText: "color-mix(in srgb, var(--text-main) 82%, #d97706 18%)",
+        solid: "#d97706",
+        solidHover: "#b45309",
+        shadow: "0 14px 32px -24px rgba(245,158,11,0.95)",
+      };
     case "rescheduled":
-      return "border-violet-200 bg-violet-50 text-violet-700";
+      return {
+        border: "rgba(124,58,237,0.6)",
+        background:
+          "linear-gradient(135deg, rgba(124,58,237,0.22), color-mix(in srgb, var(--bg-card) 82%, rgba(59,130,246,0.16)))",
+        text: "#6d28d9",
+        softText: "color-mix(in srgb, var(--text-main) 82%, #7c3aed 18%)",
+        solid: "#7c3aed",
+        solidHover: "#6d28d9",
+        shadow: "0 14px 32px -24px rgba(124,58,237,0.9)",
+      };
     case "canceled":
-      return "border-slate-200 bg-slate-100 text-slate-600";
+      return {
+        border: "rgba(100,116,139,0.58)",
+        background:
+          "linear-gradient(135deg, rgba(100,116,139,0.2), color-mix(in srgb, var(--bg-card) 84%, rgba(100,116,139,0.16)))",
+        text: "#475569",
+        softText: "color-mix(in srgb, var(--text-main) 78%, #64748b 22%)",
+        solid: "#64748b",
+        solidHover: "#475569",
+        shadow: "0 14px 32px -24px rgba(100,116,139,0.8)",
+      };
     default:
-      return "border-sky-200 bg-sky-50 text-sky-700";
+      return {
+        border: "rgba(14,165,233,0.56)",
+        background:
+          "linear-gradient(135deg, rgba(14,165,233,0.18), color-mix(in srgb, var(--bg-card) 84%, rgba(37,99,235,0.14)))",
+        text: "#0369a1",
+        softText: "color-mix(in srgb, var(--text-main) 84%, #0284c7 16%)",
+        solid: "#2563eb",
+        solidHover: "#1d4ed8",
+        shadow: "0 14px 32px -24px rgba(37,99,235,0.85)",
+      };
   }
 }
 
-function getAttendeeCardClass(status: string) {
-  switch (status) {
-    case "completed":
-      return "border-emerald-200 bg-emerald-50/80";
-    case "no_show":
-      return "border-amber-200 bg-amber-50/80";
-    case "rescheduled":
-      return "border-violet-200 bg-violet-50/80";
-    case "canceled":
-      return "border-slate-200 bg-slate-100/80";
-    default:
-      return "border-sky-200 bg-sky-50/80";
+function getAttendeeCardStyle(status: string): CSSProperties {
+  const tone = getStatusTone(status);
+
+  return {
+    borderColor: tone.border,
+    background: tone.background,
+    boxShadow: `${tone.shadow}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+  };
+}
+
+function getStatusBadgeStyle(status: string): CSSProperties {
+  const tone = getStatusTone(status);
+
+  return {
+    borderColor: tone.border,
+    background: "color-mix(in srgb, var(--bg-card) 72%, transparent)",
+    color: tone.softText,
+  };
+}
+
+function getStatusButtonStyle(status: string, active: boolean): CSSProperties {
+  const tone = getStatusTone(status);
+
+  if (active) {
+    return {
+      borderColor: tone.solid,
+      background: `linear-gradient(135deg, ${tone.solid}, ${tone.solidHover})`,
+      color: "white",
+      boxShadow: tone.shadow,
+    };
   }
+
+  return {
+    borderColor: tone.border,
+    background: "color-mix(in srgb, var(--bg-card) 86%, transparent)",
+    color: tone.softText,
+  };
 }
 
 function getAppointmentGroupKey(appt: Appointment) {
@@ -272,6 +351,12 @@ export default function GroupBookingPage() {
 
   const firstAttendee = attendees[0];
   const activeCount = attendees.filter((attendee) => attendee.status !== "canceled").length;
+  const attendanceStats = {
+    completed: attendees.filter((attendee) => attendee.status === "completed").length,
+    noShow: attendees.filter((attendee) => attendee.status === "no_show").length,
+    rescheduled: attendees.filter((attendee) => attendee.status === "rescheduled").length,
+    pending: attendees.filter((attendee) => attendee.status === "booked").length,
+  };
   const capacity =
     Number(firstAttendee?.service_capacity || 0) || activeCount || attendees.length;
   const groupState = getGroupState(attendees);
@@ -327,7 +412,40 @@ export default function GroupBookingPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              {[
+                {
+                  label: "Asistieron",
+                  value: attendanceStats.completed,
+                  status: "completed",
+                },
+                {
+                  label: "No asistieron",
+                  value: attendanceStats.noShow,
+                  status: "no_show",
+                },
+                {
+                  label: "Reagendaron",
+                  value: attendanceStats.rescheduled,
+                  status: "rescheduled",
+                },
+                {
+                  label: "Pendientes",
+                  value: attendanceStats.pending,
+                  status: "booked",
+                },
+              ].map((stat) => (
+                <span
+                  key={stat.label}
+                  className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold"
+                  style={getStatusBadgeStyle(stat.status)}
+                >
+                  <span>{stat.label}</span>
+                  <span className="text-sm" style={{ color: "var(--text-main)" }}>
+                    {stat.value}
+                  </span>
+                </span>
+              ))}
               <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${groupState.className}`}>
                 {groupState.label}
               </span>
@@ -428,13 +546,13 @@ export default function GroupBookingPage() {
               const isRescheduled = attendee.status === "rescheduled";
               const isCanceled = attendee.status === "canceled";
               const isSaving = savingId === attendee.id;
+              const attendeeTone = getStatusTone(attendee.status);
 
               return (
                 <article
                   key={attendee.id}
-                  className={`rounded-2xl border p-4 transition ${getAttendeeCardClass(
-                    attendee.status
-                  )}`}
+                  className="rounded-2xl border p-4 transition"
+                  style={getAttendeeCardStyle(attendee.status)}
                 >
                   <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                     <div className="min-w-0">
@@ -442,11 +560,14 @@ export default function GroupBookingPage() {
                         <h2 className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
                           {attendee.customer_name}
                         </h2>
-                        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusClass(attendee.status)}`}>
+                        <span
+                          className="rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                          style={getStatusBadgeStyle(attendee.status)}
+                        >
                           <span dangerouslySetInnerHTML={{ __html: getStatusLabel(attendee.status) }} />
                         </span>
                       </div>
-                      <div className="mt-1 grid gap-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                      <div className="mt-1 grid gap-0.5 text-xs" style={{ color: attendeeTone.softText }}>
                         <p className="truncate">{attendee.customer_email || "Email no disponible"}</p>
                         <p className="truncate">{attendee.customer_phone || "Telefono no disponible"}</p>
                       </div>
@@ -457,7 +578,11 @@ export default function GroupBookingPage() {
                         type="button"
                         onClick={() => updateStatus(attendee.id, "completed")}
                         disabled={isCanceled || isSaving || isCompleted}
-                        className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed"
+                        style={{
+                          ...getStatusButtonStyle("completed", isCompleted),
+                          opacity: isCanceled ? 0.55 : 1,
+                        }}
                       >
                         Asisti&oacute;
                       </button>
@@ -465,7 +590,11 @@ export default function GroupBookingPage() {
                         type="button"
                         onClick={() => updateStatus(attendee.id, "no_show")}
                         disabled={isCanceled || isSaving || isNoShow}
-                        className="inline-flex h-9 items-center justify-center rounded-xl bg-amber-500 px-3 text-xs font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed"
+                        style={{
+                          ...getStatusButtonStyle("no_show", isNoShow),
+                          opacity: isCanceled ? 0.55 : 1,
+                        }}
                       >
                         No asisti&oacute;
                       </button>
@@ -473,11 +602,10 @@ export default function GroupBookingPage() {
                         type="button"
                         onClick={() => updateStatus(attendee.id, "rescheduled")}
                         disabled={isCanceled || isSaving || isRescheduled}
-                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed"
                         style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-muted)",
+                          ...getStatusButtonStyle("rescheduled", isRescheduled),
+                          opacity: isCanceled ? 0.55 : 1,
                         }}
                       >
                         Reagend&oacute;
