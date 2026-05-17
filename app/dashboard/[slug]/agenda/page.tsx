@@ -365,6 +365,15 @@ next_control_custom_unit: "days",
   const [hoverCard, setHoverCard] = useState<HoverCardState>(null);
 
   const detailRef = useRef<HTMLDivElement | null>(null);
+  const dayGridScrollRef = useRef<HTMLDivElement | null>(null);
+  const dayTopScrollRef = useRef<HTMLDivElement | null>(null);
+  const dayGridDragRef = useRef({
+    dragging: false,
+    moved: false,
+    startX: 0,
+    scrollLeft: 0,
+  });
+  const [isDayGridDragging, setIsDayGridDragging] = useState(false);
 
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
@@ -2051,6 +2060,61 @@ const hasPendingClose = pendingCloseCount > 0;
   }).format(weekBaseDate);
   const formattedDayTitle =
     dayTitle.charAt(0).toUpperCase() + dayTitle.slice(1);
+  const dayGridWidth = 64 + Math.max(dayStaffColumns.length, 1) * 260;
+
+  function syncDayGridScroll(source: "top" | "grid") {
+    const topScroller = dayTopScrollRef.current;
+    const gridScroller = dayGridScrollRef.current;
+    if (!topScroller || !gridScroller) return;
+
+    if (source === "top") {
+      gridScroller.scrollLeft = topScroller.scrollLeft;
+    } else {
+      topScroller.scrollLeft = gridScroller.scrollLeft;
+    }
+  }
+
+  function handleDayGridMouseDown(event: React.MouseEvent<HTMLDivElement>) {
+    const gridScroller = dayGridScrollRef.current;
+    if (!gridScroller) return;
+
+    dayGridDragRef.current = {
+      dragging: true,
+      moved: false,
+      startX: event.clientX,
+      scrollLeft: gridScroller.scrollLeft,
+    };
+    setIsDayGridDragging(true);
+  }
+
+  function handleDayGridMouseMove(event: React.MouseEvent<HTMLDivElement>) {
+    const gridScroller = dayGridScrollRef.current;
+    if (!gridScroller || !dayGridDragRef.current.dragging) return;
+
+    event.preventDefault();
+    const dragDelta = event.clientX - dayGridDragRef.current.startX;
+    if (Math.abs(dragDelta) > 4) {
+      dayGridDragRef.current.moved = true;
+    }
+    gridScroller.scrollLeft = dayGridDragRef.current.scrollLeft - dragDelta;
+    syncDayGridScroll("grid");
+  }
+
+  function handleDayGridClickCapture(event: React.MouseEvent<HTMLDivElement>) {
+    if (!dayGridDragRef.current.moved) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dayGridDragRef.current.moved = false;
+  }
+
+  function stopDayGridDrag(resetMoved = false) {
+    if (!dayGridDragRef.current.dragging) return;
+    dayGridDragRef.current.dragging = false;
+    if (resetMoved) {
+      dayGridDragRef.current.moved = false;
+    }
+    setIsDayGridDragging(false);
+  }
 
   return (
     <div className="space-y-6 pb-6">
@@ -2741,8 +2805,33 @@ onClick={() => {
                 </div>
 
                 <div
-                  className="max-h-[72vh] overflow-auto rounded-2xl border"
-                  style={{ borderColor: "var(--border-color)" }}
+                  ref={dayTopScrollRef}
+                  onScroll={() => syncDayGridScroll("top")}
+                  className="overflow-x-auto overflow-y-hidden rounded-xl border"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    scrollbarWidth: "thin",
+                  }}
+                >
+                  <div style={{ width: dayGridWidth, height: 12 }} />
+                </div>
+
+                <div
+                  ref={dayGridScrollRef}
+                  onScroll={() => syncDayGridScroll("grid")}
+                  onMouseDown={handleDayGridMouseDown}
+                  onMouseMove={handleDayGridMouseMove}
+                  onMouseUp={() => stopDayGridDrag()}
+                  onMouseLeave={() => stopDayGridDrag(true)}
+                  onClickCapture={handleDayGridClickCapture}
+                  className={`max-h-[72vh] select-none overflow-auto rounded-2xl border ${
+                    isDayGridDragging ? "cursor-grabbing" : "cursor-grab"
+                  }`}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    scrollbarWidth: "thin",
+                  }}
                 >
                   <div
                     className="grid w-max min-w-max"
@@ -2815,7 +2904,7 @@ onClick={() => {
                             style={{ borderColor: "var(--border-color)" }}
                           >
                             <div
-                              className="sticky top-0 z-20 flex h-[64px] items-center justify-center gap-2 border-b px-3"
+                              className="sticky top-0 z-30 flex h-[64px] items-center justify-center gap-2 border-b px-3"
                               style={{
                                 borderColor: "var(--border-color)",
                                 background: "var(--bg-card)",
@@ -3685,7 +3774,9 @@ const appt = slotGroups[0]?.[0];
         {selectedAppointment ? (
         <div
           ref={detailRef}
-          className="fixed inset-x-3 bottom-3 z-[75] max-h-[82vh] overflow-y-auto rounded-3xl border p-3 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.55)] backdrop-blur md:inset-x-auto md:right-6 md:top-24 md:bottom-auto md:w-[340px]"
+          className={`fixed inset-x-3 bottom-3 z-[75] max-h-[82vh] max-w-[calc(100vw-32px)] overflow-y-auto rounded-3xl border p-3 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.55)] backdrop-blur md:inset-x-auto md:right-6 md:top-24 md:bottom-auto ${
+            isSelectedGroupAppointment ? "md:w-[460px]" : "md:w-[340px]"
+          }`}
           style={{
             borderColor: "var(--border-color)",
             background: "color-mix(in srgb, var(--bg-card) 92%, transparent)",
