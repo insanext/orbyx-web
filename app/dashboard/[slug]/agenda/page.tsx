@@ -2740,28 +2740,34 @@ onClick={() => {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div
+                  className="max-h-[72vh] overflow-auto rounded-2xl border"
+                  style={{ borderColor: "var(--border-color)" }}
+                >
                   <div
-                    className="grid min-w-max rounded-2xl border"
+                    className="grid w-max min-w-max"
                     style={{
                       gridTemplateColumns: `64px repeat(${Math.max(
                         dayStaffColumns.length,
                         1
-                      )}, minmax(240px, 1fr))`,
-                      borderColor: "var(--border-color)",
+                      )}, 260px)`,
                       background: "var(--bg-card)",
                     }}
                   >
                     <div
-                      className="sticky left-0 z-20 border-r p-3"
+                      className="sticky left-0 z-30 border-r"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-soft)",
                       }}
                     >
                       <div
-                        className="flex h-[64px] items-center justify-center text-xs font-semibold"
-                        style={{ color: "var(--text-muted)" }}
+                        className="sticky top-0 z-40 flex h-[64px] items-center justify-center border-b px-3 text-xs font-semibold"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-muted)",
+                        }}
                       >
                         Hora
                       </div>
@@ -2770,7 +2776,7 @@ onClick={() => {
                         return (
                           <div
                             key={slot}
-                            className="flex h-[54px] items-start justify-end border-t pt-1.5 text-[11px]"
+                            className="flex h-[54px] items-start justify-end px-3 pt-1.5 text-[11px]"
                             style={{
                               borderColor: "rgba(148,163,184,0.18)",
                               color:
@@ -2805,12 +2811,15 @@ onClick={() => {
                         return (
                           <div
                             key={staff.id}
-                            className="border-r last:border-r-0"
+                            className="w-[260px] border-r last:border-r-0"
                             style={{ borderColor: "var(--border-color)" }}
                           >
                             <div
-                              className="flex h-[64px] items-center justify-center gap-2 border-b px-3"
-                              style={{ borderColor: "var(--border-color)" }}
+                              className="sticky top-0 z-20 flex h-[64px] items-center justify-center gap-2 border-b px-3"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                              }}
                             >
                               <span
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
