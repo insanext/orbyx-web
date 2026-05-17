@@ -2827,17 +2827,51 @@ onClick={() => {
                   </div>
                 </div>
 
+                <style>{`
+                  .orbyx-day-scrollbar {
+                    scrollbar-width: thin;
+                    scrollbar-color: color-mix(in srgb, #2563eb 45%, var(--border-color)) color-mix(in srgb, var(--bg-soft) 92%, transparent);
+                  }
+
+                  .orbyx-day-scrollbar::-webkit-scrollbar {
+                    height: 8px;
+                  }
+
+                  .orbyx-day-scrollbar::-webkit-scrollbar-track {
+                    background: color-mix(in srgb, var(--bg-soft) 92%, transparent);
+                    border-radius: 999px;
+                  }
+
+                  .orbyx-day-scrollbar::-webkit-scrollbar-thumb {
+                    background: color-mix(in srgb, #2563eb 45%, var(--border-color));
+                    border: 2px solid color-mix(in srgb, var(--bg-soft) 92%, transparent);
+                    border-radius: 999px;
+                  }
+
+                  .orbyx-day-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: color-mix(in srgb, #2563eb 62%, var(--border-color));
+                  }
+
+                  .orbyx-day-grid-scroll {
+                    scrollbar-width: none;
+                    -ms-overflow-style: none;
+                  }
+
+                  .orbyx-day-grid-scroll::-webkit-scrollbar {
+                    display: none;
+                  }
+                `}</style>
+
                 <div
                   ref={dayTopScrollRef}
                   onScroll={() => syncDayGridScroll("top")}
-                  className="overflow-x-auto overflow-y-hidden rounded-xl border"
+                  className="orbyx-day-scrollbar overflow-x-auto overflow-y-hidden rounded-full border px-1 py-0.5"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
-                    scrollbarWidth: "thin",
                   }}
                 >
-                  <div style={{ width: dayGridWidth, height: 12 }} />
+                  <div style={{ width: dayGridWidth, height: 8 }} />
                 </div>
 
                 <div
@@ -2849,12 +2883,11 @@ onClick={() => {
                   onMouseLeave={() => stopDayGridDrag(true)}
                   onWheel={handleDayGridWheel}
                   onClickCapture={handleDayGridClickCapture}
-                  className={`select-none overflow-x-hidden overflow-y-visible rounded-2xl border ${
+                  className={`orbyx-day-grid-scroll select-none overflow-x-hidden overflow-y-visible rounded-2xl border ${
                     isDayGridDragging ? "cursor-grabbing" : "cursor-grab"
                   }`}
                   style={{
                     borderColor: "var(--border-color)",
-                    scrollbarWidth: "none",
                   }}
                 >
                   <div
@@ -2875,7 +2908,7 @@ onClick={() => {
                       }}
                     >
                       <div
-                        className="sticky top-0 z-40 flex h-[64px] items-center justify-center border-b px-3 text-xs font-semibold"
+                        className="sticky top-[88px] z-40 flex h-[64px] items-center justify-center border-b px-3 text-xs font-semibold shadow-sm"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-soft)",
@@ -2928,7 +2961,7 @@ onClick={() => {
                             style={{ borderColor: "var(--border-color)" }}
                           >
                             <div
-                              className="sticky top-0 z-30 flex h-[64px] items-center justify-center gap-2 border-b px-3"
+                              className="sticky top-[88px] z-30 flex h-[64px] items-center justify-center gap-2 border-b px-3 shadow-sm"
                               style={{
                                 borderColor: "var(--border-color)",
                                 background: "var(--bg-card)",
