@@ -237,6 +237,7 @@ export default function GroupBookingPage() {
   const [activeFilter, setActiveFilter] = useState<GroupFilter>("all");
   const [savingId, setSavingId] = useState("");
   const [savingNoteId, setSavingNoteId] = useState("");
+  const [noteSaveStatus, setNoteSaveStatus] = useState<Record<string, string>>({});
 
   async function loadGroupAppointments() {
     if (!slug || !startAt || !branchId || branchId === "no_branch") {
@@ -330,8 +331,12 @@ export default function GroupBookingPage() {
   async function updateNote(appointmentId: string, notes: string) {
     try {
       setSavingNoteId(appointmentId);
+      setNoteSaveStatus((current) => ({
+        ...current,
+        [appointmentId]: "Guardando...",
+      }));
 
-      const response = await fetch(`${BACKEND_URL}/appointments/${appointmentId}/status`, {
+      const response = await fetch(`${BACKEND_URL}/appointments/${appointmentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes }),
@@ -347,8 +352,15 @@ export default function GroupBookingPage() {
           appt.id === appointmentId ? { ...appt, notes: data.appointment?.notes || null } : appt
         )
       );
+      setNoteSaveStatus((current) => ({
+        ...current,
+        [appointmentId]: "Guardado ✓",
+      }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar la nota");
+      setNoteSaveStatus((current) => ({
+        ...current,
+        [appointmentId]: "No se pudo guardar",
+      }));
     } finally {
       setSavingNoteId("");
     }
@@ -829,31 +841,51 @@ export default function GroupBookingPage() {
                               borderColor: "rgba(148,163,184,0.18)",
                             }}
                           >
-                            <input
-                              type="text"
-                              value={attendee.notes || ""}
-                              onChange={(event) => {
-                                const nextNotes = event.target.value;
-                                setAttendees((current) =>
-                                  current.map((appt) =>
-                                    appt.id === attendee.id
-                                      ? { ...appt, notes: nextNotes }
-                                      : appt
-                                  )
-                                );
-                              }}
-                              onBlur={(event) =>
-                                updateNote(attendee.id, event.target.value)
-                              }
-                              disabled={savingNoteId === attendee.id}
-                              placeholder="Agregar nota..."
-                              className="h-8 w-full min-w-[170px] rounded-lg border px-2.5 text-xs outline-none transition focus:ring-2 focus:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-70"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "color-mix(in srgb, var(--bg-card) 88%, transparent)",
-                                color: "var(--text-main)",
-                              }}
-                            />
+                            <div className="grid gap-1">
+                              <input
+                                type="text"
+                                value={attendee.notes || ""}
+                                onChange={(event) => {
+                                  const nextNotes = event.target.value;
+                                  setNoteSaveStatus((current) => ({
+                                    ...current,
+                                    [attendee.id]: "",
+                                  }));
+                                  setAttendees((current) =>
+                                    current.map((appt) =>
+                                      appt.id === attendee.id
+                                        ? { ...appt, notes: nextNotes }
+                                        : appt
+                                    )
+                                  );
+                                }}
+                                onBlur={(event) =>
+                                  updateNote(attendee.id, event.target.value)
+                                }
+                                disabled={savingNoteId === attendee.id}
+                                placeholder="Agregar nota..."
+                                className="h-8 w-full min-w-[170px] rounded-lg border px-2.5 text-xs outline-none transition focus:ring-2 focus:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-70"
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "color-mix(in srgb, var(--bg-card) 88%, transparent)",
+                                  color: "var(--text-main)",
+                                }}
+                              />
+                              {noteSaveStatus[attendee.id] ? (
+                                <span
+                                  className="text-[10px] font-semibold"
+                                  style={{
+                                    color:
+                                      noteSaveStatus[attendee.id] ===
+                                      "No se pudo guardar"
+                                        ? "#e11d48"
+                                        : "var(--text-muted)",
+                                  }}
+                                >
+                                  {noteSaveStatus[attendee.id]}
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
                         </tr>
                       );
