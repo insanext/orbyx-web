@@ -5,8 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
   Check,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   Phone,
   RotateCcw,
@@ -2097,14 +2095,6 @@ const hasPendingClose = pendingCloseCount > 0;
     gridScroller.scrollLeft = scrollLeft;
   }
 
-  function scrollDayGridBy(delta: number) {
-    const gridScroller = dayGridScrollRef.current;
-    const currentScrollLeft =
-      gridScroller?.scrollLeft || dayTopScrollRef.current?.scrollLeft || 0;
-
-    setDayGridScrollLeft(currentScrollLeft + delta);
-  }
-
   function handleDayGridMouseDown(event: React.MouseEvent<HTMLDivElement>) {
     const gridScroller = dayGridScrollRef.current;
     if (!gridScroller) return;
@@ -2781,23 +2771,23 @@ onClick={() => {
                 <style>{`
                   .orbyx-day-scrollbar {
                     scrollbar-width: auto;
-                    scrollbar-color: color-mix(in srgb, #2563eb 68%, #38bdf8 32%) color-mix(in srgb, var(--bg-soft) 86%, transparent);
+                    scrollbar-color: color-mix(in srgb, #2563eb 70%, #38bdf8 30%) color-mix(in srgb, var(--bg-soft) 88%, transparent);
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar {
-                    height: 22px;
+                    height: 18px;
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar-track {
-                    background: color-mix(in srgb, var(--bg-soft) 90%, transparent);
+                    background: color-mix(in srgb, var(--bg-soft) 88%, transparent);
                     border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
-                    border-radius: 8px;
+                    border-radius: 7px;
                     box-shadow: inset 0 1px 2px rgba(15,23,42,0.08);
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar-thumb {
-                    background: linear-gradient(90deg, rgba(37,99,235,0.84), rgba(56,189,248,0.8));
-                    border: 4px solid color-mix(in srgb, var(--bg-soft) 90%, transparent);
+                    background: linear-gradient(90deg, rgba(37,99,235,0.92), rgba(56,189,248,0.88));
+                    border: 0;
                     border-radius: 6px;
                     box-shadow: 0 2px 10px rgba(37,99,235,0.22);
                   }
@@ -2806,10 +2796,11 @@ onClick={() => {
                     background: linear-gradient(90deg, rgba(29,78,216,0.92), rgba(14,165,233,0.9));
                   }
 
+                  .orbyx-day-scrollbar::-webkit-scrollbar-button,
                   .orbyx-day-scrollbar::-webkit-scrollbar-button:single-button {
-                    display: block;
-                    width: 18px;
-                    background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+                    display: none;
+                    width: 0;
+                    height: 0;
                   }
 
                   .orbyx-day-grid-scroll {
@@ -2822,47 +2813,17 @@ onClick={() => {
                   }
                 `}</style>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    aria-label="Desplazar profesionales a la izquierda"
-                    onClick={() => scrollDayGridBy(-320)}
-                    className="inline-flex h-10 w-11 shrink-0 items-center justify-center rounded-xl border transition hover:shadow-sm"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-
-                  <div
-                    ref={dayTopScrollRef}
-                    onScroll={() => syncDayGridScroll("top")}
-                    className="orbyx-day-scrollbar h-9 min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-xl border px-1.5"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background:
-                        "linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 96%, transparent), color-mix(in srgb, var(--bg-soft) 92%, transparent))",
-                    }}
-                  >
-                    <div style={{ width: dayGridWidth, height: 1 }} />
-                  </div>
-
-                  <button
-                    type="button"
-                    aria-label="Desplazar profesionales a la derecha"
-                    onClick={() => scrollDayGridBy(320)}
-                    className="inline-flex h-10 w-11 shrink-0 items-center justify-center rounded-xl border transition hover:shadow-sm"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
+                <div
+                  ref={dayTopScrollRef}
+                  onScroll={() => syncDayGridScroll("top")}
+                  className="orbyx-day-scrollbar h-[22px] min-w-0 overflow-x-auto overflow-y-hidden rounded-lg border"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background:
+                      "linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 96%, transparent), color-mix(in srgb, var(--bg-soft) 92%, transparent))",
+                  }}
+                >
+                  <div style={{ width: dayGridWidth, height: 1 }} />
                 </div>
 
                 <div
