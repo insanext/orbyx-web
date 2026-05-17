@@ -19,6 +19,8 @@ type Appointment = {
   service_name_snapshot: string | null;
   service_is_group?: boolean | null;
   service_capacity?: number | null;
+  staff_name?: string | null;
+  notes?: string | null;
   status: string;
 };
 
@@ -234,6 +236,7 @@ export default function GroupBookingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<GroupFilter>("all");
   const [savingId, setSavingId] = useState("");
+  const [savingNoteId, setSavingNoteId] = useState("");
 
   async function loadGroupAppointments() {
     if (!slug || !startAt || !branchId || branchId === "no_branch") {
@@ -324,6 +327,33 @@ export default function GroupBookingPage() {
     }
   }
 
+  async function updateNote(appointmentId: string, notes: string) {
+    try {
+      setSavingNoteId(appointmentId);
+
+      const response = await fetch(`${BACKEND_URL}/appointments/${appointmentId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo guardar la nota");
+      }
+
+      setAttendees((current) =>
+        current.map((appt) =>
+          appt.id === appointmentId ? { ...appt, notes: data.appointment?.notes || null } : appt
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar la nota");
+    } finally {
+      setSavingNoteId("");
+    }
+  }
+
   const filteredAttendees = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
 
@@ -365,9 +395,7 @@ export default function GroupBookingPage() {
     Number(firstAttendee?.service_capacity || 0) || activeCount || attendees.length;
   const groupState = getGroupState(attendees);
   const serviceName = firstAttendee?.service_name_snapshot || "Reserva grupal";
-  const professionalName = firstAttendee?.staff_id
-    ? "Profesional asignado"
-    : "Profesional por confirmar";
+  const professionalName = firstAttendee?.staff_name || "Profesional por confirmar";
 
   const filters: { key: GroupFilter; label: string }[] = [
     { key: "all", label: "Todos" },
@@ -796,13 +824,36 @@ export default function GroupBookingPage() {
                             </td>
                           ))}
                           <td
-                            className="border-b px-3 py-3 text-xs"
+                            className="border-b px-3 py-3"
                             style={{
                               borderColor: "rgba(148,163,184,0.18)",
-                              color: "var(--text-muted)",
                             }}
                           >
-                            -
+                            <input
+                              type="text"
+                              value={attendee.notes || ""}
+                              onChange={(event) => {
+                                const nextNotes = event.target.value;
+                                setAttendees((current) =>
+                                  current.map((appt) =>
+                                    appt.id === attendee.id
+                                      ? { ...appt, notes: nextNotes }
+                                      : appt
+                                  )
+                                );
+                              }}
+                              onBlur={(event) =>
+                                updateNote(attendee.id, event.target.value)
+                              }
+                              disabled={savingNoteId === attendee.id}
+                              placeholder="Agregar nota..."
+                              className="h-8 w-full min-w-[170px] rounded-lg border px-2.5 text-xs outline-none transition focus:ring-2 focus:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-70"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "color-mix(in srgb, var(--bg-card) 88%, transparent)",
+                                color: "var(--text-main)",
+                              }}
+                            />
                           </td>
                         </tr>
                       );
