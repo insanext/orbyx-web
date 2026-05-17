@@ -2074,6 +2074,15 @@ const hasPendingClose = pendingCloseCount > 0;
     }
   }
 
+  function setDayGridScrollLeft(scrollLeft: number) {
+    const topScroller = dayTopScrollRef.current;
+    const gridScroller = dayGridScrollRef.current;
+    if (!topScroller || !gridScroller) return;
+
+    topScroller.scrollLeft = scrollLeft;
+    gridScroller.scrollLeft = scrollLeft;
+  }
+
   function handleDayGridMouseDown(event: React.MouseEvent<HTMLDivElement>) {
     const gridScroller = dayGridScrollRef.current;
     if (!gridScroller) return;
@@ -2096,8 +2105,22 @@ const hasPendingClose = pendingCloseCount > 0;
     if (Math.abs(dragDelta) > 4) {
       dayGridDragRef.current.moved = true;
     }
-    gridScroller.scrollLeft = dayGridDragRef.current.scrollLeft - dragDelta;
-    syncDayGridScroll("grid");
+    setDayGridScrollLeft(dayGridDragRef.current.scrollLeft - dragDelta);
+  }
+
+  function handleDayGridWheel(event: React.WheelEvent<HTMLDivElement>) {
+    const gridScroller = dayGridScrollRef.current;
+    if (!gridScroller) return;
+
+    const horizontalDelta = event.shiftKey
+      ? event.deltaY
+      : Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ? event.deltaX
+      : 0;
+
+    if (!horizontalDelta) return;
+    event.preventDefault();
+    setDayGridScrollLeft(gridScroller.scrollLeft + horizontalDelta);
   }
 
   function handleDayGridClickCapture(event: React.MouseEvent<HTMLDivElement>) {
@@ -2824,13 +2847,14 @@ onClick={() => {
                   onMouseMove={handleDayGridMouseMove}
                   onMouseUp={() => stopDayGridDrag()}
                   onMouseLeave={() => stopDayGridDrag(true)}
+                  onWheel={handleDayGridWheel}
                   onClickCapture={handleDayGridClickCapture}
-                  className={`max-h-[72vh] select-none overflow-auto rounded-2xl border ${
+                  className={`select-none overflow-x-hidden overflow-y-visible rounded-2xl border ${
                     isDayGridDragging ? "cursor-grabbing" : "cursor-grab"
                   }`}
                   style={{
                     borderColor: "var(--border-color)",
-                    scrollbarWidth: "thin",
+                    scrollbarWidth: "none",
                   }}
                 >
                   <div
