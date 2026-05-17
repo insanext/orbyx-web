@@ -65,6 +65,8 @@ type StaffItem = {
   email?: string | null;
   phone?: string | null;
   color?: string | null;
+  photo_url?: string | null;
+  avatar?: string | null;
   is_active: boolean;
   sort_order?: number;
   use_business_hours?: boolean;
@@ -2868,22 +2870,33 @@ onClick={() => {
                       dayStaffColumns.map((staff) => (
                         <div
                           key={staff.id}
-                          className="flex h-[64px] items-center justify-center gap-2 border-r px-3 last:border-r-0"
+                          className="flex h-[64px] items-center gap-3 border-r px-2.5 last:border-r-0"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-card)",
                           }}
                         >
-                          <span
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
-                            style={{ background: staff.color || "#2563eb" }}
+                          <div
+                            className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border text-sm font-bold text-white shadow-sm"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: staff.color || "#2563eb",
+                            }}
                           >
-                            {staff.name
-                              .split(" ")
-                              .map((part) => part[0])
-                              .join("")
-                              .slice(0, 2)}
-                          </span>
+                            {staff.photo_url || staff.avatar ? (
+                              <img
+                                src={staff.photo_url || staff.avatar || ""}
+                                alt={staff.name}
+                                className="h-full w-full scale-110 object-cover object-center"
+                              />
+                            ) : (
+                              staff.name
+                                .split(" ")
+                                .map((part) => part[0])
+                                .join("")
+                                .slice(0, 2)
+                            )}
+                          </div>
                           <div className="min-w-0">
                             <p
                               className="truncate text-sm font-semibold"
