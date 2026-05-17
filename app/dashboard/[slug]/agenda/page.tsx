@@ -2830,26 +2830,29 @@ onClick={() => {
                 <style>{`
                   .orbyx-day-scrollbar {
                     scrollbar-width: thin;
-                    scrollbar-color: color-mix(in srgb, #2563eb 45%, var(--border-color)) color-mix(in srgb, var(--bg-soft) 92%, transparent);
+                    scrollbar-color: color-mix(in srgb, #2563eb 64%, #38bdf8 36%) color-mix(in srgb, var(--bg-soft) 88%, transparent);
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar {
-                    height: 8px;
+                    height: 14px;
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar-track {
                     background: color-mix(in srgb, var(--bg-soft) 92%, transparent);
+                    border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
                     border-radius: 999px;
+                    box-shadow: inset 0 1px 2px rgba(15,23,42,0.05);
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar-thumb {
-                    background: color-mix(in srgb, #2563eb 45%, var(--border-color));
-                    border: 2px solid color-mix(in srgb, var(--bg-soft) 92%, transparent);
+                    background: linear-gradient(90deg, rgba(37,99,235,0.72), rgba(56,189,248,0.76));
+                    border: 3px solid color-mix(in srgb, var(--bg-soft) 92%, transparent);
                     border-radius: 999px;
+                    box-shadow: 0 2px 8px rgba(37,99,235,0.18);
                   }
 
                   .orbyx-day-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: color-mix(in srgb, #2563eb 62%, var(--border-color));
+                    background: linear-gradient(90deg, rgba(37,99,235,0.86), rgba(56,189,248,0.88));
                   }
 
                   .orbyx-day-grid-scroll {
@@ -2865,13 +2868,13 @@ onClick={() => {
                 <div
                   ref={dayTopScrollRef}
                   onScroll={() => syncDayGridScroll("top")}
-                  className="orbyx-day-scrollbar overflow-x-auto overflow-y-hidden rounded-full border px-1 py-0.5"
+                  className="orbyx-day-scrollbar overflow-x-auto overflow-y-hidden rounded-full border px-1.5 py-1 shadow-sm"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
                   }}
                 >
-                  <div style={{ width: dayGridWidth, height: 8 }} />
+                  <div style={{ width: dayGridWidth, height: 14 }} />
                 </div>
 
                 <div
@@ -2901,22 +2904,77 @@ onClick={() => {
                     }}
                   >
                     <div
+                      className="sticky left-0 top-[78px] z-50 flex h-[64px] items-center justify-center border-b border-r px-3 text-xs font-semibold shadow-sm"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-muted)",
+                        backdropFilter: "blur(8px)",
+                      }}
+                    >
+                      Hora
+                    </div>
+
+                    {dayStaffColumns.length === 0 ? (
+                      <div
+                        className="sticky top-[78px] z-40 flex h-[64px] items-center border-b px-4 text-sm font-semibold shadow-sm"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                          backdropFilter: "blur(8px)",
+                        }}
+                      >
+                        Profesionales
+                      </div>
+                    ) : (
+                      dayStaffColumns.map((staff) => (
+                        <div
+                          key={`${staff.id}-header`}
+                          className="sticky top-[78px] z-40 flex h-[64px] w-[260px] items-center justify-center gap-2 border-b border-r px-3 shadow-sm last:border-r-0"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            backdropFilter: "blur(8px)",
+                          }}
+                        >
+                          <span
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
+                            style={{ background: staff.color || "#2563eb" }}
+                          >
+                            {staff.name
+                              .split(" ")
+                              .map((part) => part[0])
+                              .join("")
+                              .slice(0, 2)}
+                          </span>
+                          <div className="min-w-0">
+                            <p
+                              className="truncate text-sm font-semibold"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {staff.name}
+                            </p>
+                            {staff.role ? (
+                              <p
+                                className="truncate text-xs"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                {staff.role}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))
+                    )}
+
+                    <div
                       className="sticky left-0 z-30 border-r"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-soft)",
                       }}
                     >
-                      <div
-                        className="sticky top-[88px] z-40 flex h-[64px] items-center justify-center border-b px-3 text-xs font-semibold shadow-sm"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        Hora
-                      </div>
                       {dayViewSlots.map((slot) => {
                         const timeKey = getTimeKey(slot);
                         return (
@@ -2960,41 +3018,6 @@ onClick={() => {
                             className="w-[260px] border-r last:border-r-0"
                             style={{ borderColor: "var(--border-color)" }}
                           >
-                            <div
-                              className="sticky top-[88px] z-30 flex h-[64px] items-center justify-center gap-2 border-b px-3 shadow-sm"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-card)",
-                              }}
-                            >
-                              <span
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
-                                style={{ background: staff.color || "#2563eb" }}
-                              >
-                                {staff.name
-                                  .split(" ")
-                                  .map((part) => part[0])
-                                  .join("")
-                                  .slice(0, 2)}
-                              </span>
-                              <div className="min-w-0">
-                                <p
-                                  className="truncate text-sm font-semibold"
-                                  style={{ color: "var(--text-main)" }}
-                                >
-                                  {staff.name}
-                                </p>
-                                {staff.role ? (
-                                  <p
-                                    className="truncate text-xs"
-                                    style={{ color: "var(--text-muted)" }}
-                                  >
-                                    {staff.role}
-                                  </p>
-                                ) : null}
-                              </div>
-                            </div>
-
                             <div className="space-y-0">
                               {dayViewSlots.map((slot, index) => {
                                 const slotTime = new Date(slot).getTime();
