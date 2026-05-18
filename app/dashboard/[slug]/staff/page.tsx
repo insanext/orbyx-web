@@ -134,6 +134,14 @@ function isValidHHmm(value?: string | null) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
+function normalizeTimeValue(value?: string | null) {
+  if (!value) return "";
+  const normalized = String(value).trim();
+  return /^\d{2}:\d{2}:\d{2}$/.test(normalized)
+    ? normalized.slice(0, 5)
+    : normalized;
+}
+
 function getDateRangeDays(from: string, to: string) {
   const result: string[] = [];
   const current = new Date(`${from}T12:00:00`);
@@ -289,6 +297,7 @@ const [photoUrl, setPhotoUrl] = useState("");
   const [specialRangeForm, setSpecialRangeForm] =
     useState<SpecialRangeForm>(emptySpecialRangeForm);
   const [specialDateSaving, setSpecialDateSaving] = useState(false);
+  const [specialDateError, setSpecialDateError] = useState("");
   const [editingSpecialDateId, setEditingSpecialDateId] = useState<
     string | null
   >(null);
@@ -541,8 +550,8 @@ async function loadStaffHours(id: string, staffId: string) {
         day_of_week: day.value,
         block_order: Number(row.block_order || index + 1),
         enabled: Boolean(row.enabled),
-        start_time: row.start_time || "09:00",
-        end_time: row.end_time || "18:00",
+        start_time: normalizeTimeValue(row.start_time) || "09:00",
+        end_time: normalizeTimeValue(row.end_time) || "18:00",
       })
     );
   });
@@ -699,6 +708,7 @@ async function loadStaffHours(id: string, staffId: string) {
   function resetSpecialDateForm() {
     setSpecialDateForm(emptySpecialDateForm);
     setSpecialRangeForm(emptySpecialRangeForm);
+    setSpecialDateError("");
     setEditingSpecialDateId(null);
   }
 
@@ -832,6 +842,28 @@ function updateHour(
   );
 }
 
+function getStaffHourDayError(dayOfWeek: number) {
+  const blocks = staffHours.filter(
+    (item) => item.day_of_week === dayOfWeek && item.enabled
+  );
+
+  for (const block of blocks) {
+    if (!block.start_time || !block.end_time) {
+      return "Usa formato HH:mm válido. Ejemplo: 09:30";
+    }
+
+    if (!isValidHHmm(block.start_time) || !isValidHHmm(block.end_time)) {
+      return "Usa formato HH:mm válido. Ejemplo: 09:30";
+    }
+
+    if (block.start_time >= block.end_time) {
+      return "La hora fin debe ser mayor a la hora inicio.";
+    }
+  }
+
+  return "";
+}
+
 
 async function saveStaffHours(staffId: string) {
   const payload = {
@@ -867,7 +899,7 @@ function validateStaffHours() {
 
   for (const item of enabledBlocks) {
     const dayLabel =
-      days.find((day) => day.value === item.day_of_week)?.label || "DÃ­a";
+      days.find((day) => day.value === item.day_of_week)?.label || "Día";
 
     if (!item.start_time || !item.end_time) {
       throw new Error(`Debes ingresar hora de inicio y fin en ${dayLabel}`);
@@ -875,7 +907,7 @@ function validateStaffHours() {
 
     if (!isValidHHmm(item.start_time) || !isValidHHmm(item.end_time)) {
       throw new Error(
-        `Usa formato HH:mm vÃ¡lido en ${dayLabel}. Ejemplo: 09:30`
+        `Usa formato HH:mm válido en ${dayLabel}. Ejemplo: 09:30`
       );
     }
 
@@ -948,7 +980,9 @@ function validateStaffHours() {
         !isValidHHmm(specialDateForm.start_time) ||
         !isValidHHmm(specialDateForm.end_time)
       ) {
-        throw new Error("Usa formato HH:mm vÃ¡lido. Ejemplo: 09:30");
+        throw new Error(
+          "Usa el formato correcto en Días/horarios excepcionales del staff. Ejemplo: 09:30"
+        );
       }
 
       if (specialDateForm.start_time >= specialDateForm.end_time) {
@@ -1147,10 +1181,11 @@ function validateStaffHours() {
       date: item.date || "",
       label: item.label || "",
       is_closed: Boolean(item.is_closed),
-      start_time: item.start_time || "09:00",
-      end_time: item.end_time || "18:00",
+      start_time: normalizeTimeValue(item.start_time) || "09:00",
+      end_time: normalizeTimeValue(item.end_time) || "18:00",
     });
     setSaveError("");
+    setSpecialDateError("");
     setSaveOk("");
   }
 
@@ -1170,6 +1205,7 @@ function validateStaffHours() {
 
       setSpecialDateSaving(true);
       setSaveError("");
+      setSpecialDateError("");
       setSaveOk("");
 
       if (specialRangeForm.enabled && !editingSpecialDateId) {
@@ -1190,7 +1226,7 @@ function validateStaffHours() {
 
         if (duplicated) {
           throw new Error(
-            `Ya existe una excepciÃ³n para ${duplicated.date} en este staff`
+            `Ya existe una excepción para ${duplicated.date} en este staff`
           );
         }
 
@@ -1220,7 +1256,7 @@ function validateStaffHours() {
 
         await loadStaffSpecialDates(tenantId, editingId);
         resetSpecialDateForm();
-        setSaveOk(`Rango de ${rangeDays.length} dÃ­as creado correctamente.`);
+        setSaveOk(`Rango de ${rangeDays.length} días creado correctamente.`);
         return;
       }
 
@@ -1274,7 +1310,7 @@ function validateStaffHours() {
           : "Excepción del staff creada correctamente."
       );
     } catch (error: unknown) {
-      setSaveError(
+      setSpecialDateError(
         error instanceof Error
           ? error.message
           : "No se pudo guardar la excepción"
@@ -2006,6 +2042,7 @@ function validateStaffHours() {
         const dayBlocks = staffHours
           .filter((item) => item.day_of_week === day.value)
           .sort((a, b) => a.block_order - b.block_order);
+        const dayError = getStaffHourDayError(day.value);
 
         return (
           <div
@@ -2042,7 +2079,7 @@ function validateStaffHours() {
                     type="text"
                     inputMode="numeric"
                     placeholder="HH:mm"
-                    value={block.start_time || "09:00"}
+                    value={normalizeTimeValue(block.start_time) || "09:00"}
                     disabled={!block.enabled}
                     onChange={(e) =>
                       updateHour(day.value, block.block_order, "start_time", e.target.value)
@@ -2054,7 +2091,7 @@ function validateStaffHours() {
                     type="text"
                     inputMode="numeric"
                     placeholder="HH:mm"
-                    value={block.end_time || "18:00"}
+                    value={normalizeTimeValue(block.end_time) || "18:00"}
                     disabled={!block.enabled}
                     onChange={(e) =>
                       updateHour(day.value, block.block_order, "end_time", e.target.value)
@@ -2082,6 +2119,12 @@ function validateStaffHours() {
                 </div>
               ))}
             </div>
+
+            {dayError ? (
+              <p className="mt-2 text-xs font-semibold text-rose-500">
+                {dayError}
+              </p>
+            ) : null}
 
             <button
               type="button"
@@ -2361,7 +2404,7 @@ function validateStaffHours() {
                           type="text"
                           inputMode="numeric"
                           placeholder="HH:mm"
-                          value={specialDateForm.start_time || "09:00"}
+                          value={normalizeTimeValue(specialDateForm.start_time) || "09:00"}
                           disabled={specialDateForm.is_closed || specialRangeForm.enabled}
                           onChange={(e) =>
                             setSpecialDateForm((prev) => ({
@@ -2393,7 +2436,7 @@ function validateStaffHours() {
                           type="text"
                           inputMode="numeric"
                           placeholder="HH:mm"
-                          value={specialDateForm.end_time || "18:00"}
+                          value={normalizeTimeValue(specialDateForm.end_time) || "18:00"}
                           disabled={specialDateForm.is_closed || specialRangeForm.enabled}
                           onChange={(e) =>
                             setSpecialDateForm((prev) => ({
@@ -2451,6 +2494,12 @@ function validateStaffHours() {
                         </button>
                       </div>
                     </div>
+
+                    {specialDateError ? (
+                      <p className="text-xs font-semibold text-rose-500">
+                        {specialDateError}
+                      </p>
+                    ) : null}
 
                     {editingSpecialDateId ? (
                       <Notice
