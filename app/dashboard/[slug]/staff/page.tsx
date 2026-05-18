@@ -58,6 +58,14 @@ type StaffSpecialDateItem = {
   end_time: string | null;
 };
 
+type SpecialRangeForm = {
+  enabled: boolean;
+  type: "Vacaciones" | "Permiso" | "Otro";
+  date_from: string;
+  date_to: string;
+  label: string;
+};
+
 type ServiceItem = {
   id: string;
   tenant_id: string;
@@ -87,12 +95,6 @@ const days = [
   { value: 6, label: "Sábado" },
 ];
 
-const timeOptions = Array.from({ length: 24 * 4 }, (_, index) => {
-  const hours = Math.floor(index / 4);
-  const minutes = (index % 4) * 15;
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-});
-
 const defaultHours: StaffHourItem[] = days.map((day) => ({
   day_of_week: day.value,
   block_order: 1,
@@ -118,6 +120,32 @@ const emptySpecialDateForm: StaffSpecialDateItem = {
   start_time: "09:00",
   end_time: "18:00",
 };
+
+const emptySpecialRangeForm: SpecialRangeForm = {
+  enabled: false,
+  type: "Vacaciones",
+  date_from: "",
+  date_to: "",
+  label: "",
+};
+
+function isValidHHmm(value?: string | null) {
+  if (!value) return false;
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function getDateRangeDays(from: string, to: string) {
+  const result: string[] = [];
+  const current = new Date(`${from}T12:00:00`);
+  const end = new Date(`${to}T12:00:00`);
+
+  while (current <= end) {
+    result.push(current.toISOString().slice(0, 10));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return result;
+}
 
 function normalizePlanSlug(planSlug?: string | null) {
   const normalized = String(planSlug || "pro").toLowerCase();
@@ -258,6 +286,8 @@ const [photoUrl, setPhotoUrl] = useState("");
   >([]);
   const [specialDateForm, setSpecialDateForm] =
     useState<StaffSpecialDateItem>(emptySpecialDateForm);
+  const [specialRangeForm, setSpecialRangeForm] =
+    useState<SpecialRangeForm>(emptySpecialRangeForm);
   const [specialDateSaving, setSpecialDateSaving] = useState(false);
   const [editingSpecialDateId, setEditingSpecialDateId] = useState<
     string | null
@@ -668,6 +698,7 @@ async function loadStaffHours(id: string, staffId: string) {
 
   function resetSpecialDateForm() {
     setSpecialDateForm(emptySpecialDateForm);
+    setSpecialRangeForm(emptySpecialRangeForm);
     setEditingSpecialDateId(null);
   }
 
@@ -835,6 +866,27 @@ function validateStaffHours() {
   const enabledBlocks = staffHours.filter((item) => item.enabled);
 
   for (const item of enabledBlocks) {
+    const dayLabel =
+      days.find((day) => day.value === item.day_of_week)?.label || "DÃ­a";
+
+    if (!item.start_time || !item.end_time) {
+      throw new Error(`Debes ingresar hora de inicio y fin en ${dayLabel}`);
+    }
+
+    if (!isValidHHmm(item.start_time) || !isValidHHmm(item.end_time)) {
+      throw new Error(
+        `Usa formato HH:mm vÃ¡lido en ${dayLabel}. Ejemplo: 09:30`
+      );
+    }
+
+    if (item.start_time >= item.end_time) {
+      throw new Error(
+        `La hora fin debe ser mayor a la hora inicio en ${dayLabel}`
+      );
+    }
+  }
+
+  for (const item of enabledBlocks) {
     if (!item.start_time || !item.end_time) {
       throw new Error("Cada bloque activo debe tener hora de inicio y fin");
     }
@@ -871,6 +923,18 @@ function validateStaffHours() {
 
 
   function validateSpecialDate() {
+    if (specialRangeForm.enabled && !editingSpecialDateId) {
+      if (!specialRangeForm.date_from || !specialRangeForm.date_to) {
+        throw new Error("Debes ingresar fecha desde y fecha hasta");
+      }
+
+      if (specialRangeForm.date_from > specialRangeForm.date_to) {
+        throw new Error("La fecha hasta debe ser igual o posterior a fecha desde");
+      }
+
+      return;
+    }
+
     if (!specialDateForm.date) {
       throw new Error("Debes ingresar una fecha");
     }
@@ -878,6 +942,13 @@ function validateStaffHours() {
     if (!specialDateForm.is_closed) {
       if (!specialDateForm.start_time || !specialDateForm.end_time) {
         throw new Error("Debes ingresar hora inicio y fin");
+      }
+
+      if (
+        !isValidHHmm(specialDateForm.start_time) ||
+        !isValidHHmm(specialDateForm.end_time)
+      ) {
+        throw new Error("Usa formato HH:mm vÃ¡lido. Ejemplo: 09:30");
       }
 
       if (specialDateForm.start_time >= specialDateForm.end_time) {
@@ -1100,6 +1171,58 @@ function validateStaffHours() {
       setSpecialDateSaving(true);
       setSaveError("");
       setSaveOk("");
+
+      if (specialRangeForm.enabled && !editingSpecialDateId) {
+        const rangeDays = getDateRangeDays(
+          specialRangeForm.date_from,
+          specialRangeForm.date_to
+        );
+        const label = [
+          specialRangeForm.type,
+          (specialRangeForm.label || "").trim(),
+        ]
+          .filter(Boolean)
+          .join(" - ");
+
+        const duplicated = staffSpecialDates.find((item) =>
+          rangeDays.includes(item.date)
+        );
+
+        if (duplicated) {
+          throw new Error(
+            `Ya existe una excepciÃ³n para ${duplicated.date} en este staff`
+          );
+        }
+
+        for (const date of rangeDays) {
+          const res = await fetch(`${BACKEND_URL}/staff-special-dates`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              tenant_id: tenantId,
+              branch_id: selectedBranchId,
+              staff_id: editingId,
+              date,
+              label,
+              is_closed: true,
+              start_time: null,
+              end_time: null,
+            }),
+          });
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data?.error || "No se pudo crear el rango");
+          }
+        }
+
+        await loadStaffSpecialDates(tenantId, editingId);
+        resetSpecialDateForm();
+        setSaveOk(`Rango de ${rangeDays.length} dÃ­as creado correctamente.`);
+        return;
+      }
 
       const payload = {
         tenant_id: tenantId,
@@ -1768,6 +1891,33 @@ function validateStaffHours() {
                 }}
               >
                 <div>
+                  <style>{`
+                    .orbyx-staff-schedule-option {
+                      cursor: pointer;
+                      transition:
+                        transform 180ms ease,
+                        border-color 180ms ease,
+                        box-shadow 180ms ease,
+                        filter 180ms ease;
+                    }
+
+                    .orbyx-staff-schedule-option:hover {
+                      border-color: rgba(59,130,246,0.62) !important;
+                      box-shadow:
+                        0 0 0 1px rgba(59,130,246,0.16),
+                        0 12px 28px -18px rgba(37,99,235,0.85),
+                        0 0 22px -12px rgba(56,189,248,0.72);
+                      filter: saturate(1.06);
+                      transform: translateY(-1px);
+                    }
+
+                    .orbyx-staff-schedule-option:active {
+                      box-shadow:
+                        0 0 0 3px rgba(96,165,250,0.22),
+                        0 0 24px -8px rgba(59,130,246,0.9);
+                      transform: translateY(0) scale(0.98);
+                    }
+                  `}</style>
                   <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
                     Horarios
                   </p>
@@ -1801,7 +1951,7 @@ function validateStaffHours() {
                             use_business_hours: option.value,
                           }))
                         }
-                        className="rounded-2xl border p-4 text-left transition hover:border-blue-400/50"
+                        className="orbyx-staff-schedule-option rounded-2xl border p-4 text-left"
                         style={{
                           borderColor: selected
                             ? "rgba(37,99,235,0.58)"
@@ -1810,6 +1960,9 @@ function validateStaffHours() {
                             ? "linear-gradient(135deg, rgba(37,99,235,0.16), var(--bg-card))"
                             : "var(--bg-card)",
                           color: "var(--text-main)",
+                          boxShadow: selected
+                            ? "0 0 0 1px rgba(147,197,253,0.18), 0 16px 32px -24px rgba(37,99,235,0.9)"
+                            : "none",
                         }}
                       >
                         <span className="text-sm font-semibold">{option.title}</span>
@@ -1885,35 +2038,29 @@ function validateStaffHours() {
                     Activo
                   </label>
 
-                  <select
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="HH:mm"
                     value={block.start_time || "09:00"}
                     disabled={!block.enabled}
                     onChange={(e) =>
                       updateHour(day.value, block.block_order, "start_time", e.target.value)
                     }
                     className={inputClass}
-                  >
-                    {timeOptions.map((time) => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
+                  />
 
-                  <select
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="HH:mm"
                     value={block.end_time || "18:00"}
                     disabled={!block.enabled}
                     onChange={(e) =>
                       updateHour(day.value, block.block_order, "end_time", e.target.value)
                     }
                     className={inputClass}
-                  >
-                    {timeOptions.map((time) => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
+                  />
 
                   <button
                     type="button"
@@ -2012,6 +2159,121 @@ function validateStaffHours() {
                   />
                 ) : (
                   <div className="space-y-4">
+                    {!editingSpecialDateId ? (
+                      <div className="grid gap-3 rounded-2xl border p-3 md:grid-cols-[180px_1fr_1fr_1fr_1fr]"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                        }}
+                      >
+                        <label
+                          className="flex h-11 items-center gap-3 rounded-2xl border px-4 text-sm"
+                          style={{
+                            borderColor: specialRangeForm.enabled
+                              ? "rgba(37,99,235,0.58)"
+                              : "var(--border-color)",
+                            background: specialRangeForm.enabled
+                              ? "linear-gradient(135deg, rgba(37,99,235,0.14), var(--bg-card))"
+                              : "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={specialRangeForm.enabled}
+                            onChange={(e) =>
+                              setSpecialRangeForm((prev) => ({
+                                ...prev,
+                                enabled: e.target.checked,
+                              }))
+                            }
+                            className="h-4 w-4 rounded"
+                          />
+                          Rango
+                        </label>
+
+                        <select
+                          value={specialRangeForm.type}
+                          disabled={!specialRangeForm.enabled}
+                          onChange={(e) =>
+                            setSpecialRangeForm((prev) => ({
+                              ...prev,
+                              type: e.target.value as SpecialRangeForm["type"],
+                            }))
+                          }
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                            opacity: specialRangeForm.enabled ? 1 : 0.6,
+                          }}
+                        >
+                          <option value="Vacaciones">Vacaciones</option>
+                          <option value="Permiso">Permiso</option>
+                          <option value="Otro">Otro</option>
+                        </select>
+
+                        <input
+                          type="date"
+                          value={specialRangeForm.date_from}
+                          disabled={!specialRangeForm.enabled}
+                          onChange={(e) =>
+                            setSpecialRangeForm((prev) => ({
+                              ...prev,
+                              date_from: e.target.value,
+                            }))
+                          }
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                            opacity: specialRangeForm.enabled ? 1 : 0.6,
+                          }}
+                        />
+
+                        <input
+                          type="date"
+                          value={specialRangeForm.date_to}
+                          disabled={!specialRangeForm.enabled}
+                          onChange={(e) =>
+                            setSpecialRangeForm((prev) => ({
+                              ...prev,
+                              date_to: e.target.value,
+                            }))
+                          }
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                            opacity: specialRangeForm.enabled ? 1 : 0.6,
+                          }}
+                        />
+
+                        <input
+                          type="text"
+                          value={specialRangeForm.label}
+                          disabled={!specialRangeForm.enabled}
+                          onChange={(e) =>
+                            setSpecialRangeForm((prev) => ({
+                              ...prev,
+                              label: e.target.value,
+                            }))
+                          }
+                          placeholder="Etiqueta opcional"
+                          className={inputClass}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                            opacity: specialRangeForm.enabled ? 1 : 0.6,
+                          }}
+                        />
+                      </div>
+                    ) : null}
+
                     <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_120px_120px] xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_120px_120px_auto_auto] xl:items-end">
                       <div>
                         <label
@@ -2095,9 +2357,12 @@ function validateStaffHours() {
                         >
                           Inicio
                         </label>
-                        <select
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="HH:mm"
                           value={specialDateForm.start_time || "09:00"}
-                          disabled={specialDateForm.is_closed}
+                          disabled={specialDateForm.is_closed || specialRangeForm.enabled}
                           onChange={(e) =>
                             setSpecialDateForm((prev) => ({
                               ...prev,
@@ -2109,15 +2374,12 @@ function validateStaffHours() {
                             borderColor: "var(--border-color)",
                             background: "var(--bg-soft)",
                             color: "var(--text-main)",
-                            opacity: specialDateForm.is_closed ? 0.6 : 1,
+                            opacity:
+                              specialDateForm.is_closed || specialRangeForm.enabled
+                                ? 0.6
+                                : 1,
                           }}
-                        >
-                          {timeOptions.map((time) => (
-                            <option key={time} value={time}>
-                              {time}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </div>
 
                       <div>
@@ -2127,9 +2389,12 @@ function validateStaffHours() {
                         >
                           Fin
                         </label>
-                        <select
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="HH:mm"
                           value={specialDateForm.end_time || "18:00"}
-                          disabled={specialDateForm.is_closed}
+                          disabled={specialDateForm.is_closed || specialRangeForm.enabled}
                           onChange={(e) =>
                             setSpecialDateForm((prev) => ({
                               ...prev,
@@ -2141,15 +2406,12 @@ function validateStaffHours() {
                             borderColor: "var(--border-color)",
                             background: "var(--bg-soft)",
                             color: "var(--text-main)",
-                            opacity: specialDateForm.is_closed ? 0.6 : 1,
+                            opacity:
+                              specialDateForm.is_closed || specialRangeForm.enabled
+                                ? 0.6
+                                : 1,
                           }}
-                        >
-                          {timeOptions.map((time) => (
-                            <option key={time} value={time}>
-                              {time}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </div>
 
                       <div className="flex items-end">
