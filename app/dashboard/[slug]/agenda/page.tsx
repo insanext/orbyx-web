@@ -2552,6 +2552,83 @@ const hasPendingClose = pendingCloseCount > 0;
         <section className="space-y-6">
           <div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <style>{`
+                .orbyx-nav-energy {
+                  position: relative;
+                  isolation: isolate;
+                  cursor: pointer;
+                  overflow: hidden;
+                  transition:
+                    transform 180ms ease,
+                    border-color 180ms ease,
+                    box-shadow 180ms ease,
+                    filter 180ms ease,
+                    background 180ms ease;
+                }
+
+                .orbyx-nav-energy::after {
+                  content: "";
+                  position: absolute;
+                  inset: -2px;
+                  z-index: -1;
+                  border-radius: inherit;
+                  background: radial-gradient(circle at 50% 50%, rgba(59,130,246,0.32), transparent 62%);
+                  opacity: 0;
+                  transform: scale(0.78);
+                  transition: opacity 180ms ease, transform 180ms ease;
+                }
+
+                .orbyx-nav-energy:hover {
+                  border-color: rgba(59,130,246,0.62) !important;
+                  box-shadow:
+                    0 0 0 1px rgba(59,130,246,0.16),
+                    0 12px 28px -18px rgba(37,99,235,0.85),
+                    0 0 22px -12px rgba(56,189,248,0.8);
+                  filter: saturate(1.08);
+                  transform: translateY(-1px);
+                }
+
+                .orbyx-nav-energy:hover::after {
+                  opacity: 1;
+                  transform: scale(1);
+                }
+
+                .orbyx-nav-energy:active {
+                  animation: orbyx-nav-pulse 260ms ease-out;
+                  box-shadow:
+                    0 0 0 3px rgba(96,165,250,0.22),
+                    0 0 26px -8px rgba(59,130,246,0.95),
+                    0 10px 24px -18px rgba(37,99,235,0.85);
+                  transform: translateY(0) scale(0.98);
+                }
+
+                .orbyx-nav-tab-active {
+                  border-color: rgba(147,197,253,0.72) !important;
+                  box-shadow:
+                    0 0 0 1px rgba(147,197,253,0.2),
+                    0 12px 28px -18px rgba(37,99,235,0.9),
+                    0 0 24px -12px rgba(56,189,248,0.9);
+                }
+
+                @keyframes orbyx-nav-pulse {
+                  0% {
+                    box-shadow:
+                      0 0 0 0 rgba(96,165,250,0.34),
+                      0 0 18px -10px rgba(56,189,248,0.9);
+                  }
+                  70% {
+                    box-shadow:
+                      0 0 0 7px rgba(96,165,250,0),
+                      0 0 30px -8px rgba(59,130,246,0.95);
+                  }
+                  100% {
+                    box-shadow:
+                      0 0 0 0 rgba(96,165,250,0),
+                      0 0 18px -12px rgba(56,189,248,0.75);
+                  }
+                }
+              `}</style>
+
               <h2
                 className="text-base font-semibold"
                 style={{ color: "var(--text-main)" }}
@@ -2598,7 +2675,7 @@ onClick={() => {
 
                       goPrevWeek();
                     }}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                    className="orbyx-nav-energy inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold"
                     style={{
                       borderColor: "rgba(37,99,235,0.28)",
                       background: "var(--bg-card)",
@@ -2611,8 +2688,9 @@ onClick={() => {
                   <button
                     type="button"
                     onClick={goToday}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold text-white shadow-[0_14px_30px_-18px_rgba(37,99,235,0.9)] transition hover:scale-[1.01]"
+                    className="orbyx-nav-energy inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-semibold text-white shadow-[0_14px_30px_-18px_rgba(37,99,235,0.9)]"
                     style={{
+                      borderColor: "rgba(147,197,253,0.34)",
                       background:
                         "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
                     }}
@@ -2633,7 +2711,7 @@ onClick={() => {
 
                       goNextWeek();
                     }}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                    className="orbyx-nav-energy inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold"
                     style={{
                       borderColor: "rgba(37,99,235,0.28)",
                       background: "var(--bg-card)",
@@ -2667,13 +2745,20 @@ onClick={() => {
                   <button
                     type="button"
                     onClick={() => setAgendaView("week")}
-                    className={`inline-flex h-9 items-center justify-center rounded-xl px-4 text-xs font-semibold transition ${
-                      agendaView === "week" ? "bg-blue-600 text-white" : ""
+                    className={`orbyx-nav-energy inline-flex h-9 items-center justify-center rounded-xl border px-4 text-xs font-semibold ${
+                      agendaView === "week" ? "orbyx-nav-tab-active text-white" : ""
                     }`}
                     style={
                       agendaView === "week"
-                        ? undefined
-                        : { color: "var(--text-muted)" }
+                        ? {
+                            borderColor: "rgba(147,197,253,0.72)",
+                            background:
+                              "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                          }
+                        : {
+                            color: "var(--text-muted)",
+                            borderColor: "transparent",
+                          }
                     }
                   >
                     Semana
@@ -2681,13 +2766,20 @@ onClick={() => {
                   <button
                     type="button"
                     onClick={() => setAgendaView("day")}
-                    className={`inline-flex h-9 items-center justify-center rounded-xl px-4 text-xs font-semibold transition ${
-                      agendaView === "day" ? "bg-blue-600 text-white" : ""
+                    className={`orbyx-nav-energy inline-flex h-9 items-center justify-center rounded-xl border px-4 text-xs font-semibold ${
+                      agendaView === "day" ? "orbyx-nav-tab-active text-white" : ""
                     }`}
                     style={
                       agendaView === "day"
-                        ? undefined
-                        : { color: "var(--text-muted)" }
+                        ? {
+                            borderColor: "rgba(147,197,253,0.72)",
+                            background:
+                              "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                          }
+                        : {
+                            color: "var(--text-muted)",
+                            borderColor: "transparent",
+                          }
                     }
                   >
                     Día por profesional
