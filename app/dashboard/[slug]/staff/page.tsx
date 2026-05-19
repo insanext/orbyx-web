@@ -2104,116 +2104,207 @@ function validateStaffHours() {
         const dayBlocks = staffHours
           .filter((item) => item.day_of_week === day.value)
           .sort((a, b) => a.block_order - b.block_order);
+        const enabled = dayBlocks.some((block) => block.enabled);
         const dayError = getStaffHourDayError(day.value);
 
         return (
           <div
             key={day.value}
-            className="rounded-2xl border p-3"
+            className="grid gap-3 rounded-2xl border p-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-start"
             style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-soft)",
+              borderColor: enabled
+                ? "rgba(37,99,235,0.22)"
+                : "var(--border-color)",
+              background: enabled
+                ? "linear-gradient(135deg, rgba(37,99,235,0.05), var(--bg-card))"
+                : "var(--bg-card)",
             }}
           >
-            <p className="mb-2 text-sm font-medium" style={{ color: "var(--text-main)" }}>
-              {day.label}
-            </p>
-
-            <div className="space-y-2">
-              {dayBlocks.map((block) => (
-                <div
-                  key={block.block_order}
-                  className="grid gap-3 md:grid-cols-[0.8fr_1fr_1fr_auto] md:items-center"
+            <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-start">
+              <div>
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
                 >
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={block.enabled}
-                      onChange={(e) =>
-                        updateHour(day.value, block.block_order, "enabled", e.target.checked)
-                      }
-                      className="h-4 w-4 rounded"
-                    />
-                    Activo
-                  </label>
+                  {day.label}
+                </p>
+                <p
+                  className="mt-0.5 text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {enabled
+                    ? `${dayBlocks.filter((block) => block.enabled).length} bloque${
+                        dayBlocks.filter((block) => block.enabled).length === 1 ? "" : "s"
+                      }`
+                    : "Cerrado"}
+                </p>
+              </div>
 
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="HH:mm"
-                    value={normalizeTimeValue(block.start_time) || "09:00"}
-                    disabled={!block.enabled}
-                    onChange={(e) =>
-                      updateHour(day.value, block.block_order, "start_time", e.target.value)
-                    }
-                    className={inputClass}
-                  />
-
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="HH:mm"
-                    value={normalizeTimeValue(block.end_time) || "18:00"}
-                    disabled={!block.enabled}
-                    onChange={(e) =>
-                      updateHour(day.value, block.block_order, "end_time", e.target.value)
-                    }
-                    className={inputClass}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStaffHours((prev) =>
-                        prev.filter(
-                          (item) =>
-                            !(
-                              item.day_of_week === day.value &&
-                              item.block_order === block.block_order
-                            )
-                        )
-                      );
-                    }}
-                    className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-400 transition"
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              ))}
+              <label
+                className={`orbyx-staff-energy inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                  enabled ? "orbyx-staff-energy-active" : ""
+                }`}
+                style={{
+                  borderColor: enabled
+                    ? "rgba(37,99,235,0.48)"
+                    : "var(--border-color)",
+                  background: enabled
+                    ? "rgba(37,99,235,0.10)"
+                    : "var(--bg-soft)",
+                  color: enabled ? "var(--text-main)" : "var(--text-muted)",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={enabled}
+                  onChange={(e) => {
+                    const nextEnabled = e.target.checked;
+                    setStaffHours((prev) =>
+                      prev.map((item) =>
+                        item.day_of_week === day.value
+                          ? { ...item, enabled: nextEnabled }
+                          : item
+                      )
+                    );
+                  }}
+                  className="h-4 w-4 rounded"
+                />
+                Activo
+              </label>
             </div>
 
-            {dayError ? (
-              <p className="mt-2 text-xs font-semibold text-rose-500">
-                {dayError}
-              </p>
-            ) : null}
+            <div className="flex min-w-0 flex-col gap-2">
+              {!enabled ? (
+                <span
+                  className="inline-flex h-9 w-fit items-center rounded-full border px-3 text-xs font-semibold"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  No disponible
+                </span>
+              ) : (
+                dayBlocks
+                  .filter((block) => block.enabled)
+                  .map((block) => (
+                    <div
+                      key={block.block_order}
+                      className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-2xl border px-2 py-2"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                      }}
+                    >
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="HH:mm"
+                        value={normalizeTimeValue(block.start_time) || "09:00"}
+                        onChange={(e) =>
+                          updateHour(
+                            day.value,
+                            block.block_order,
+                            "start_time",
+                            e.target.value
+                          )
+                        }
+                        className="h-10 w-[150px] rounded-xl border px-3 text-sm outline-none transition sm:w-[160px]"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      />
 
-            <button
-              type="button"
-              onClick={() => {
-                setStaffHours((prev) => {
-                  const blocks = prev.filter((item) => item.day_of_week === day.value);
-                  const nextOrder =
-                    blocks.length > 0
-                      ? Math.max(...blocks.map((b) => b.block_order)) + 1
-                      : 1;
+                      <span
+                        className="text-sm"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        -
+                      </span>
 
-                  return [
-                    ...prev,
-                    {
-                      day_of_week: day.value,
-                      block_order: nextOrder,
-                      enabled: true,
-                      start_time: "09:00",
-                      end_time: "13:00",
-                    },
-                  ];
-                });
-              }}
-              className="orbyx-staff-energy mt-3 inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm font-medium text-blue-500"
-            >
-              + Agregar bloque
-            </button>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="HH:mm"
+                        value={normalizeTimeValue(block.end_time) || "18:00"}
+                        onChange={(e) =>
+                          updateHour(
+                            day.value,
+                            block.block_order,
+                            "end_time",
+                            e.target.value
+                          )
+                        }
+                        className="h-10 w-[150px] rounded-xl border px-3 text-sm outline-none transition sm:w-[160px]"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStaffHours((prev) =>
+                            prev.filter(
+                              (item) =>
+                                !(
+                                  item.day_of_week === day.value &&
+                                  item.block_order === block.block_order
+                                )
+                            )
+                          );
+                        }}
+                        className="orbyx-staff-energy inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-300/50 bg-rose-500/10 p-0 text-sm font-semibold leading-none text-rose-400 transition hover:border-rose-300/70 hover:bg-rose-500/15 hover:shadow-[0_0_18px_rgba(244,63,94,0.16)]"
+                        aria-label={`Eliminar bloque de ${day.label}`}
+                      >
+                        x
+                      </button>
+                    </div>
+                  ))
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStaffHours((prev) => {
+                    const blocks = prev.filter((item) => item.day_of_week === day.value);
+                    const nextOrder =
+                      blocks.length > 0
+                        ? Math.max(...blocks.map((b) => b.block_order)) + 1
+                        : 1;
+
+                    return [
+                      ...prev,
+                      {
+                        day_of_week: day.value,
+                        block_order: nextOrder,
+                        enabled: true,
+                        start_time: "09:00",
+                        end_time: "13:00",
+                      },
+                    ];
+                  });
+                }}
+                className="orbyx-staff-energy inline-flex h-8 w-fit items-center justify-center rounded-xl border px-3 text-xs font-medium text-blue-500 transition"
+                style={{
+                  borderColor: "rgba(37,99,235,0.24)",
+                  background: "rgba(37,99,235,0.06)",
+                }}
+              >
+                + Agregar bloque
+              </button>
+
+              {dayError ? (
+                <p className="text-xs font-semibold text-rose-500">
+                  {dayError}
+                </p>
+              ) : null}
+            </div>
           </div>
         );
       })}
