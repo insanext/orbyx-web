@@ -879,6 +879,23 @@ function getStaffHourDayError(dayOfWeek: number) {
   return "";
 }
 
+function getStaffSpecialDateTimeError() {
+  if (specialDateForm.is_closed || specialRangeForm.enabled) return "";
+
+  const startTime = String(specialDateForm.start_time || "").trim();
+  const endTime = String(specialDateForm.end_time || "").trim();
+
+  if (!isValidHHmm(startTime) || !isValidHHmm(endTime)) {
+    return "Formato inválido. Usa HH:mm entre 00:00 y 23:59.";
+  }
+
+  if (startTime >= endTime) {
+    return "La hora inicio debe ser menor que la hora fin.";
+  }
+
+  return "";
+}
+
 
 async function saveStaffHours(staffId: string) {
   const payload = {
@@ -987,22 +1004,12 @@ function validateStaffHours() {
     }
 
     if (!specialDateForm.is_closed) {
-      if (!specialDateForm.start_time || !specialDateForm.end_time) {
-        throw new Error("Debes ingresar hora inicio y fin");
+      const timeError = getStaffSpecialDateTimeError();
+
+      if (timeError) {
+        throw new Error(timeError);
       }
 
-      if (
-        !isValidHHmm(specialDateForm.start_time) ||
-        !isValidHHmm(specialDateForm.end_time)
-      ) {
-        throw new Error(
-          "Usa el formato correcto en Días/horarios excepcionales del staff. Ejemplo: 09:30"
-        );
-      }
-
-      if (specialDateForm.start_time >= specialDateForm.end_time) {
-        throw new Error("La hora fin debe ser mayor a la hora inicio");
-      }
     }
 
     const duplicated = staffSpecialDates.find((item) => {
@@ -2623,6 +2630,11 @@ function validateStaffHours() {
                           placeholder="HH:mm"
                           value={normalizeTimeValue(specialDateForm.start_time) || "09:00"}
                           disabled={specialDateForm.is_closed || specialRangeForm.enabled}
+                          aria-invalid={
+                            !specialDateForm.is_closed &&
+                            !specialRangeForm.enabled &&
+                            !isValidHHmm(specialDateForm.start_time)
+                          }
                           onChange={(e) =>
                             setSpecialDateForm((prev) => ({
                               ...prev,
@@ -2631,7 +2643,12 @@ function validateStaffHours() {
                           }
                           className={inputClass}
                           style={{
-                            borderColor: "var(--border-color)",
+                            borderColor:
+                              !specialDateForm.is_closed &&
+                              !specialRangeForm.enabled &&
+                              !isValidHHmm(specialDateForm.start_time)
+                                ? "rgba(244,63,94,0.62)"
+                                : "var(--border-color)",
                             background: "var(--bg-soft)",
                             color: "var(--text-main)",
                             opacity:
@@ -2655,6 +2672,11 @@ function validateStaffHours() {
                           placeholder="HH:mm"
                           value={normalizeTimeValue(specialDateForm.end_time) || "18:00"}
                           disabled={specialDateForm.is_closed || specialRangeForm.enabled}
+                          aria-invalid={
+                            !specialDateForm.is_closed &&
+                            !specialRangeForm.enabled &&
+                            !isValidHHmm(specialDateForm.end_time)
+                          }
                           onChange={(e) =>
                             setSpecialDateForm((prev) => ({
                               ...prev,
@@ -2663,7 +2685,12 @@ function validateStaffHours() {
                           }
                           className={inputClass}
                           style={{
-                            borderColor: "var(--border-color)",
+                            borderColor:
+                              !specialDateForm.is_closed &&
+                              !specialRangeForm.enabled &&
+                              !isValidHHmm(specialDateForm.end_time)
+                                ? "rgba(244,63,94,0.62)"
+                                : "var(--border-color)",
                             background: "var(--bg-soft)",
                             color: "var(--text-main)",
                             opacity:
@@ -2674,17 +2701,14 @@ function validateStaffHours() {
                         />
                       </div>
 
-                      {!specialDateForm.is_closed && !specialRangeForm.enabled ? (
-                        <p className="text-xs font-medium md:col-span-2 lg:col-span-5 xl:col-span-7" style={{ color: "var(--text-muted)" }}>
-                          Formato 24 hrs. Ejemplo: 09:30
-                        </p>
-                      ) : null}
-
                       <div className="flex items-end">
                         <button
                           type="button"
                           onClick={handleSaveSpecialDate}
-                          disabled={specialDateSaving}
+                          disabled={
+                            specialDateSaving ||
+                            Boolean(getStaffSpecialDateTimeError())
+                          }
                           className={primaryButtonClass}
                           style={{
                             background:
@@ -2717,6 +2741,21 @@ function validateStaffHours() {
                         </button>
                       </div>
                     </div>
+
+                    {!specialDateForm.is_closed && !specialRangeForm.enabled ? (
+                      getStaffSpecialDateTimeError() ? (
+                        <p className="text-xs font-semibold text-rose-500">
+                          {getStaffSpecialDateTimeError()}
+                        </p>
+                      ) : (
+                        <p
+                          className="text-xs font-medium"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Formato 24 hrs. Ejemplo: 09:30
+                        </p>
+                      )
+                    ) : null}
 
                     {specialDateError ? (
                       <p className="text-xs font-semibold text-rose-500">

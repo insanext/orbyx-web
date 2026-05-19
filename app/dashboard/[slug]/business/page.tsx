@@ -696,6 +696,23 @@ setBusinessHours(result);
     setSpecialDateRangeForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  function getSpecialDateDraftTimeError() {
+    if (!specialDateRangeForm.is_closed) {
+      const startTime = String(specialDateRangeForm.start_time || "").trim();
+      const endTime = String(specialDateRangeForm.end_time || "").trim();
+
+      if (!isValidTime(startTime) || !isValidTime(endTime)) {
+        return "Formato inválido. Usa HH:mm entre 00:00 y 23:59.";
+      }
+
+      if (startTime >= endTime) {
+        return "La hora inicio debe ser menor que la hora fin.";
+      }
+    }
+
+    return "";
+  }
+
   function getSpecialDateRangeError() {
     if (!specialDateFormOpen) return "";
 
@@ -718,20 +735,7 @@ setBusinessHours(result);
       return "La fecha hasta no puede ser menor que la fecha desde.";
     }
 
-    if (!specialDateRangeForm.is_closed) {
-      const startTime = String(specialDateRangeForm.start_time || "").trim();
-      const endTime = String(specialDateRangeForm.end_time || "").trim();
-
-      if (!isValidTime(startTime) || !isValidTime(endTime)) {
-        return "Usa formato HH:mm válido. Ejemplo: 09:30";
-      }
-
-      if (startTime >= endTime) {
-        return "La hora inicio debe ser menor que la hora fin.";
-      }
-    }
-
-    return "";
+    return getSpecialDateDraftTimeError();
   }
 
   function getDatesInRange(dateFrom: string, dateTo: string) {
@@ -1326,7 +1330,7 @@ function updateHourByIndex(
     const endTime = String(item.end_time || "").trim();
 
     if (!isValidTime(startTime) || !isValidTime(endTime)) {
-      return "Usa formato HH:mm válido. Ejemplo: 09:30";
+      return "Formato inválido. Usa HH:mm entre 00:00 y 23:59.";
     }
 
     if (startTime >= endTime) {
@@ -3501,9 +3505,18 @@ onClick={() => {
                     onBlur={(e) =>
                       updateSpecialDateRange("start_time", e.target.value.trim())
                     }
+                    aria-invalid={
+                      !isValidTime(
+                        String(specialDateRangeForm.start_time || "").trim()
+                      )
+                    }
                     className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
                     style={{
-                      borderColor: "var(--border-color)",
+                      borderColor: !isValidTime(
+                        String(specialDateRangeForm.start_time || "").trim()
+                      )
+                        ? "rgba(244,63,94,0.62)"
+                        : "var(--border-color)",
                       background: "var(--bg-soft)",
                       color: "var(--text-main)",
                     }}
@@ -3526,9 +3539,18 @@ onClick={() => {
                     onBlur={(e) =>
                       updateSpecialDateRange("end_time", e.target.value.trim())
                     }
+                    aria-invalid={
+                      !isValidTime(
+                        String(specialDateRangeForm.end_time || "").trim()
+                      )
+                    }
                     className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
                     style={{
-                      borderColor: "var(--border-color)",
+                      borderColor: !isValidTime(
+                        String(specialDateRangeForm.end_time || "").trim()
+                      )
+                        ? "rgba(244,63,94,0.62)"
+                        : "var(--border-color)",
                       background: "var(--bg-soft)",
                       color: "var(--text-main)",
                     }}
@@ -3537,16 +3559,12 @@ onClick={() => {
               </>
             ) : null}
 
-            {!specialDateRangeForm.is_closed ? (
-              <p className="text-xs font-medium md:col-span-3" style={{ color: "var(--text-muted)" }}>
-                Formato 24 hrs. Ejemplo: 09:30
-              </p>
-            ) : null}
-
             <button
               type="button"
               onClick={saveSpecialDateDraft}
-              disabled={savingSpecialDates}
+              disabled={
+                savingSpecialDates || Boolean(getSpecialDateDraftTimeError())
+              }
               className={secondaryButtonClass}
               style={{
                 borderColor: "rgba(37,99,235,0.28)",
@@ -3571,6 +3589,21 @@ onClick={() => {
               Cancelar
             </button>
           </div>
+
+          {!specialDateRangeForm.is_closed ? (
+            getSpecialDateDraftTimeError() ? (
+              <p className="mt-2 text-xs font-semibold text-rose-500">
+                {getSpecialDateDraftTimeError()}
+              </p>
+            ) : (
+              <p
+                className="mt-2 text-xs font-medium"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Formato 24 hrs. Ejemplo: 09:30
+              </p>
+            )
+          ) : null}
 
         {specialDateRangeError ? (
           <p className="mt-3 text-xs font-semibold text-rose-500">
