@@ -694,6 +694,14 @@ async function removeSpecialDate(index: number) {
         throw new Error("No hay sucursal activa seleccionada");
       }
 
+      const invalidSpecialDate = specialDates.find((item) =>
+        Boolean(getSpecialDateTimeError(item))
+      );
+
+      if (invalidSpecialDate) {
+        throw new Error(getSpecialDateTimeError(invalidSpecialDate));
+      }
+
       const existingItems = specialDates.filter((item) => item.id);
       const newItems = specialDates.filter((item) => !item.id);
 
@@ -1079,6 +1087,23 @@ function updateHourByIndex(
 
   function isValidTime(value: string) {
     return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+  }
+
+  function getSpecialDateTimeError(item: SpecialDate) {
+    if (item.is_closed) return "";
+
+    const startTime = String(item.start_time || "").trim();
+    const endTime = String(item.end_time || "").trim();
+
+    if (!isValidTime(startTime) || !isValidTime(endTime)) {
+      return "Usa formato HH:mm válido. Ejemplo: 09:30";
+    }
+
+    if (startTime >= endTime) {
+      return "La hora inicio debe ser menor que la hora fin.";
+    }
+
+    return "";
   }
 
   async function copyPublicUrl() {
@@ -3041,7 +3066,14 @@ onClick={() => {
         </div>
       ) : (
         <div className="space-y-4">
-          {specialDates.map((item, index) => (
+          {specialDates.map((item, index) => {
+            const timeError = getSpecialDateTimeError(item);
+            const startTimeInvalid =
+              !item.is_closed && !isValidTime(String(item.start_time || "").trim());
+            const endTimeInvalid =
+              !item.is_closed && !isValidTime(String(item.end_time || "").trim());
+
+            return (
             <div
               key={item.id || `new-${index}`}
               className="rounded-2xl border p-4 shadow-sm"
@@ -3139,14 +3171,22 @@ onClick={() => {
                       Hora inicio
                     </label>
                     <input
-                      type="time"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="HH:mm"
                       value={item.start_time}
                       onChange={(e) =>
                         updateSpecialDate(index, "start_time", e.target.value)
                       }
+                      onBlur={(e) =>
+                        updateSpecialDate(index, "start_time", e.target.value.trim())
+                      }
+                      aria-invalid={startTimeInvalid}
                       className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
                       style={{
-                        borderColor: "var(--border-color)",
+                        borderColor: startTimeInvalid
+                          ? "rgba(244,63,94,0.62)"
+                          : "var(--border-color)",
                         background: "var(--bg-soft)",
                         color: "var(--text-main)",
                       }}
@@ -3161,23 +3201,38 @@ onClick={() => {
                       Hora fin
                     </label>
                     <input
-                      type="time"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="HH:mm"
                       value={item.end_time}
                       onChange={(e) =>
                         updateSpecialDate(index, "end_time", e.target.value)
                       }
+                      onBlur={(e) =>
+                        updateSpecialDate(index, "end_time", e.target.value.trim())
+                      }
+                      aria-invalid={endTimeInvalid}
                       className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
                       style={{
-                        borderColor: "var(--border-color)",
+                        borderColor: endTimeInvalid
+                          ? "rgba(244,63,94,0.62)"
+                          : "var(--border-color)",
                         background: "var(--bg-soft)",
                         color: "var(--text-main)",
                       }}
                     />
                   </div>
+
+                  {timeError ? (
+                    <p className="text-xs font-semibold text-rose-500 md:col-span-2">
+                      {timeError}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
