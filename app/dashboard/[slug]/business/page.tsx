@@ -61,7 +61,17 @@ type SpecialDate = {
 
 type SpecialDateRangeForm = {
   enabled: boolean;
-  type: "Vacaciones" | "Feriado" | "Mantención" | "Cierre administrativo" | "Otro";
+  type:
+    | "Vacaciones"
+    | "Feriado"
+    | "Mantención"
+    | "Cierre administrativo"
+    | "Capacitación interna"
+    | "Evento interno"
+    | "Inventario"
+    | "Emergencia operacional"
+    | "Día libre"
+    | "Otro";
   date: string;
   date_from: string;
   date_to: string;
@@ -3351,34 +3361,55 @@ onClick={() => {
             <option value="Feriado">Feriado</option>
             <option value="Mantención">Mantención</option>
             <option value="Cierre administrativo">Cierre administrativo</option>
+            <option value="Capacitación interna">Capacitación interna</option>
+            <option value="Evento interno">Evento interno</option>
+            <option value="Inventario">Inventario</option>
+            <option value="Emergencia operacional">Emergencia operacional</option>
+            <option value="Día libre">Día libre</option>
             <option value="Otro">Otro</option>
           </select>
 
           {specialDateRangeForm.enabled ? (
             <>
-              <input
-                type="date"
-                value={specialDateRangeForm.date_from}
-                onChange={(e) => updateSpecialDateRange("date_from", e.target.value)}
-                className="h-11 rounded-2xl border px-3 text-sm outline-none transition"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
-                }}
-              />
+              <div className="space-y-1">
+                <label
+                  className="block text-[11px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Desde
+                </label>
+                <input
+                  type="date"
+                  value={specialDateRangeForm.date_from}
+                  onChange={(e) => updateSpecialDateRange("date_from", e.target.value)}
+                  className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
 
-              <input
-                type="date"
-                value={specialDateRangeForm.date_to}
-                onChange={(e) => updateSpecialDateRange("date_to", e.target.value)}
-                className="h-11 rounded-2xl border px-3 text-sm outline-none transition"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
-                }}
-              />
+              <div className="space-y-1">
+                <label
+                  className="block text-[11px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Hasta
+                </label>
+                <input
+                  type="date"
+                  value={specialDateRangeForm.date_to}
+                  onChange={(e) => updateSpecialDateRange("date_to", e.target.value)}
+                  className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
             </>
           ) : (
             <input

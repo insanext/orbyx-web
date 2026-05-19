@@ -60,7 +60,17 @@ type StaffSpecialDateItem = {
 
 type SpecialRangeForm = {
   enabled: boolean;
-  type: "Vacaciones" | "Permiso" | "Otro";
+  type:
+    | "Vacaciones"
+    | "Permiso"
+    | "Licencia médica"
+    | "Capacitación"
+    | "Reunión interna"
+    | "Turno administrativo"
+    | "Bloqueo operacional"
+    | "Día libre"
+    | "Feriado"
+    | "Otro";
   date_from: string;
   date_to: string;
   label: string;
@@ -2409,46 +2419,73 @@ function validateStaffHours() {
                         >
                           <option value="Vacaciones">Vacaciones</option>
                           <option value="Permiso">Permiso</option>
+                          <option value="Licencia médica">Licencia médica</option>
+                          <option value="Capacitación">Capacitación</option>
+                          <option value="Reunión interna">Reunión interna</option>
+                          <option value="Turno administrativo">Turno administrativo</option>
+                          <option value="Bloqueo operacional">Bloqueo operacional</option>
+                          <option value="Día libre">Día libre</option>
+                          <option value="Feriado">Feriado</option>
                           <option value="Otro">Otro</option>
                         </select>
 
-                        <input
-                          type="date"
-                          value={specialRangeForm.date_from}
-                          disabled={!specialRangeForm.enabled}
-                          onChange={(e) =>
-                            setSpecialRangeForm((prev) => ({
-                              ...prev,
-                              date_from: e.target.value,
-                            }))
-                          }
-                          className={inputClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                            opacity: specialRangeForm.enabled ? 1 : 0.6,
-                          }}
-                        />
+                        <div className="space-y-1">
+                          {specialRangeForm.enabled ? (
+                            <label
+                              className="block text-[11px] font-semibold uppercase tracking-wide"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Desde
+                            </label>
+                          ) : null}
+                          <input
+                            type="date"
+                            value={specialRangeForm.date_from}
+                            disabled={!specialRangeForm.enabled}
+                            onChange={(e) =>
+                              setSpecialRangeForm((prev) => ({
+                                ...prev,
+                                date_from: e.target.value,
+                              }))
+                            }
+                            className={inputClass}
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                              opacity: specialRangeForm.enabled ? 1 : 0.6,
+                            }}
+                          />
+                        </div>
 
-                        <input
-                          type="date"
-                          value={specialRangeForm.date_to}
-                          disabled={!specialRangeForm.enabled}
-                          onChange={(e) =>
-                            setSpecialRangeForm((prev) => ({
-                              ...prev,
-                              date_to: e.target.value,
-                            }))
-                          }
-                          className={inputClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                            opacity: specialRangeForm.enabled ? 1 : 0.6,
-                          }}
-                        />
+                        <div className="space-y-1">
+                          {specialRangeForm.enabled ? (
+                            <label
+                              className="block text-[11px] font-semibold uppercase tracking-wide"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Hasta
+                            </label>
+                          ) : null}
+                          <input
+                            type="date"
+                            value={specialRangeForm.date_to}
+                            disabled={!specialRangeForm.enabled}
+                            onChange={(e) =>
+                              setSpecialRangeForm((prev) => ({
+                                ...prev,
+                                date_to: e.target.value,
+                              }))
+                            }
+                            className={inputClass}
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                              opacity: specialRangeForm.enabled ? 1 : 0.6,
+                            }}
+                          />
+                        </div>
 
                         <input
                           type="text"
