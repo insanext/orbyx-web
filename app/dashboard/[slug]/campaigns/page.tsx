@@ -903,7 +903,9 @@ function ChannelCard({
       type="button"
       onClick={onClick}
       aria-current={active ? "true" : undefined}
-      className="w-full cursor-pointer rounded-2xl border p-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 sm:p-4"
+      className={`orbyx-campaign-energy w-full cursor-pointer rounded-2xl border p-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 sm:p-4 ${
+        active ? "orbyx-campaign-energy-active" : ""
+      }`}
       style={{
         borderColor: active ? "rgba(37,99,235,0.55)" : "var(--border-color)",
         background: active
@@ -2864,6 +2866,80 @@ export default function CampaignsPage() {
         </div>
       ) : null}
 
+      <style>{`
+        .orbyx-campaign-energy {
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          cursor: pointer;
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease,
+            background 180ms ease,
+            filter 180ms ease;
+        }
+
+        .orbyx-campaign-energy::after {
+          content: "";
+          position: absolute;
+          inset: -1px;
+          z-index: -1;
+          border-radius: inherit;
+          background:
+            radial-gradient(circle at 50% 0%, rgba(96, 165, 250, 0.28), transparent 42%),
+            linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(14, 165, 233, 0.1));
+          opacity: 0;
+          transform: scale(0.94);
+          transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .orbyx-campaign-energy:hover {
+          border-color: rgba(96, 165, 250, 0.68) !important;
+          box-shadow:
+            0 0 0 1px rgba(59, 130, 246, 0.16),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 24px rgba(14, 165, 233, 0.16) !important;
+          filter: saturate(1.08);
+          transform: translateY(-1px);
+        }
+
+        .orbyx-campaign-energy:hover::after {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        .orbyx-campaign-energy:active {
+          animation: orbyx-campaign-energy-pulse 260ms ease-out;
+          box-shadow:
+            0 0 0 1px rgba(147, 197, 253, 0.36),
+            0 0 22px rgba(37, 99, 235, 0.28),
+            0 8px 22px rgba(37, 99, 235, 0.16) !important;
+          transform: translateY(0) scale(0.98);
+        }
+
+        .orbyx-campaign-energy-active {
+          border-color: rgba(96, 165, 250, 0.72) !important;
+          box-shadow:
+            inset 0 0 0 1px rgba(147, 197, 253, 0.28),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 20px rgba(14, 165, 233, 0.14) !important;
+        }
+
+        @keyframes orbyx-campaign-energy-pulse {
+          0% {
+            box-shadow:
+              0 0 0 0 rgba(96, 165, 250, 0.36),
+              0 0 16px rgba(37, 99, 235, 0.22);
+          }
+          100% {
+            box-shadow:
+              0 0 0 10px rgba(96, 165, 250, 0),
+              0 0 24px rgba(37, 99, 235, 0.12);
+          }
+        }
+      `}</style>
+
       <section
         className="overflow-hidden rounded-2xl border p-1"
         style={{
@@ -2897,7 +2973,9 @@ export default function CampaignsPage() {
               key={step.number}
               onClick={() => setActiveStep(step.step)}
               aria-current={activeStep === step.step ? "step" : undefined}
-              className="group flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className={`orbyx-campaign-energy group flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
+                activeStep === step.step ? "orbyx-campaign-energy-active" : ""
+              }`}
               style={{
                 borderColor:
                   activeStep === step.step ? "rgba(37,99,235,0.55)" : "transparent",
