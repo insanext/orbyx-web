@@ -303,9 +303,9 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
   const selectClass =
     "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
   const primaryButtonClass =
-    "inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+    "orbyx-business-energy inline-flex h-11 w-full items-center justify-center rounded-2xl border px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
   const secondaryButtonClass =
-    "inline-flex h-11 w-full items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+    "orbyx-business-energy inline-flex h-11 w-full items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
 
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
@@ -1092,6 +1092,82 @@ function updateHourByIndex(
 
   return (
     <div className="space-y-4 pb-6">
+      <style>{`
+        .orbyx-business-energy {
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          cursor: pointer;
+          border-color: rgba(147, 197, 253, 0.28);
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease,
+            background 180ms ease,
+            filter 180ms ease;
+        }
+
+        .orbyx-business-energy::after {
+          content: "";
+          position: absolute;
+          inset: -1px;
+          z-index: -1;
+          border-radius: inherit;
+          background:
+            radial-gradient(circle at 50% 0%, rgba(96, 165, 250, 0.28), transparent 42%),
+            linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(14, 165, 233, 0.1));
+          opacity: 0;
+          transform: scale(0.94);
+          transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .orbyx-business-energy:not(:disabled):hover {
+          border-color: rgba(96, 165, 250, 0.68) !important;
+          box-shadow:
+            0 0 0 1px rgba(59, 130, 246, 0.16),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 24px rgba(14, 165, 233, 0.16) !important;
+          filter: saturate(1.08);
+          transform: translateY(-1px);
+        }
+
+        .orbyx-business-energy:not(:disabled):hover::after {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        .orbyx-business-energy:not(:disabled):active {
+          animation: orbyx-business-energy-pulse 260ms ease-out;
+          box-shadow:
+            0 0 0 1px rgba(147, 197, 253, 0.36),
+            0 0 22px rgba(37, 99, 235, 0.28),
+            0 8px 22px rgba(37, 99, 235, 0.16) !important;
+          transform: translateY(0) scale(0.98);
+        }
+
+        .orbyx-business-energy-active {
+          border-color: rgba(96, 165, 250, 0.72) !important;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(14, 165, 233, 0.08)) !important;
+          box-shadow:
+            inset 0 0 0 1px rgba(147, 197, 253, 0.28),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 20px rgba(14, 165, 233, 0.14) !important;
+        }
+
+        @keyframes orbyx-business-energy-pulse {
+          0% {
+            box-shadow:
+              0 0 0 0 rgba(96, 165, 250, 0.36),
+              0 0 16px rgba(37, 99, 235, 0.22);
+          }
+          100% {
+            box-shadow:
+              0 0 0 10px rgba(96, 165, 250, 0),
+              0 0 24px rgba(37, 99, 235, 0.12);
+          }
+        }
+      `}</style>
+
       <section
         className="overflow-hidden rounded-2xl border p-4 shadow-sm sm:p-5"
         style={{
@@ -1140,7 +1216,7 @@ function updateHourByIndex(
                 <button
                   type="button"
                   onClick={copyPublicUrl}
-                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl px-3 text-xs font-semibold transition"
+                  className="orbyx-business-energy inline-flex h-9 shrink-0 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition"
                   style={{
                     background:
                       "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
@@ -1203,7 +1279,9 @@ function updateHourByIndex(
                 type="button"
                 onClick={() => setActiveSection(item.id)}
                 aria-current={active ? "page" : undefined}
-                className="cursor-pointer whitespace-nowrap rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                className={`orbyx-business-energy cursor-pointer whitespace-nowrap rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
+                  active ? "orbyx-business-energy-active" : ""
+                }`}
                 style={{
                   borderColor: active ? "rgba(37,99,235,0.36)" : "transparent",
                   background: active
@@ -1597,7 +1675,9 @@ function updateHourByIndex(
                         </select>
 
                         <label
-                          className="flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium"
+                          className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                            field.enabled ? "orbyx-business-energy-active" : ""
+                          }`}
                           style={{
                             borderColor: "var(--border-color)",
                             color: "var(--text-main)",
@@ -1618,7 +1698,9 @@ function updateHourByIndex(
                         </label>
 
                         <label
-                          className="flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium"
+                          className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                            field.required ? "orbyx-business-energy-active" : ""
+                          }`}
                           style={{
                             borderColor: "var(--border-color)",
                             color: "var(--text-main)",
@@ -1672,7 +1754,7 @@ function updateHourByIndex(
                                       onClick={() =>
                                         removeSubtypeFieldOption(index, option)
                                       }
-                                      className="font-semibold text-rose-400 transition hover:text-rose-300"
+                                      className="orbyx-business-energy inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/40 text-xs font-semibold text-rose-400 transition hover:text-rose-300"
                                       aria-label={`Eliminar ${option}`}
                                     >
                                       x
@@ -1715,7 +1797,7 @@ function updateHourByIndex(
                                 onClick={() =>
                                   addSubtypeFieldOption(index, field.key)
                                 }
-                                className="h-10 rounded-xl border px-4 text-sm font-medium transition hover:opacity-80"
+                                className="orbyx-business-energy h-10 rounded-xl border px-4 text-sm font-medium transition hover:opacity-80"
                                 style={{
                                   borderColor: "var(--border-color)",
                                   background: "var(--bg-card)",
@@ -2081,7 +2163,9 @@ function updateHourByIndex(
                 </select>
 
                 <label
-                  className="flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium"
+                  className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                    field.enabled ? "orbyx-business-energy-active" : ""
+                  }`}
                   style={{
                     borderColor: "var(--border-color)",
                     color: "var(--text-main)",
@@ -2098,7 +2182,9 @@ function updateHourByIndex(
                 </label>
 
                 <label
-                  className="flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium"
+                  className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                    field.required ? "orbyx-business-energy-active" : ""
+                  }`}
                   style={{
                     borderColor: "var(--border-color)",
                     color: "var(--text-main)",
@@ -2146,7 +2232,7 @@ function updateHourByIndex(
                             <button
                               type="button"
                               onClick={() => removeSubtypeFieldOption(index, option)}
-                              className="font-semibold text-rose-400 transition hover:text-rose-300"
+                              className="orbyx-business-energy inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/40 text-xs font-semibold text-rose-400 transition hover:text-rose-300"
                               aria-label={`Eliminar ${option}`}
                             >
                               x
@@ -2185,7 +2271,7 @@ function updateHourByIndex(
                       <button
                         type="button"
                         onClick={() => addSubtypeFieldOption(index, field.key)}
-                        className="h-10 rounded-xl border px-4 text-sm font-medium transition hover:opacity-80"
+                        className="orbyx-business-energy h-10 rounded-xl border px-4 text-sm font-medium transition hover:opacity-80"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-card)",
@@ -2587,9 +2673,9 @@ function updateHourByIndex(
                 setSlotMinutesMode("preset");
                 setSlotMinutes(val);
               }}
-              className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+              className={`orbyx-business-energy px-4 py-2 rounded-xl border text-sm font-medium transition ${
                 slotMinutesMode === "preset" && slotMinutes === val
-                  ? "bg-indigo-600 text-white border-indigo-600"
+                  ? "orbyx-business-energy-active bg-indigo-600 text-white border-indigo-600"
                   : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
               }`}
             >
@@ -2598,13 +2684,13 @@ function updateHourByIndex(
           ))}
           <button
             type="button"
-            onClick={() => {
-              setSlotMinutesMode("custom");
-              setSlotMinutes(customSlotMinutes);
-            }}
-            className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+              onClick={() => {
+                setSlotMinutesMode("custom");
+                setSlotMinutes(customSlotMinutes);
+              }}
+            className={`orbyx-business-energy px-4 py-2 rounded-xl border text-sm font-medium transition ${
               slotMinutesMode === "custom"
-                ? "bg-indigo-600 text-white border-indigo-600"
+                ? "orbyx-business-energy-active bg-indigo-600 text-white border-indigo-600"
                 : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
             }`}
           >
@@ -2794,7 +2880,7 @@ onClick={() => {
   );
 }}
 
-        className="text-xs text-red-500"
+        className="orbyx-business-energy inline-flex h-8 items-center justify-center rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-400 transition"
       >
         x
       </button>
@@ -2814,7 +2900,7 @@ onClick={() => {
         },
       ]);
     }}
-    className="text-xs text-blue-500"
+    className="orbyx-business-energy inline-flex h-8 items-center justify-center rounded-xl border px-3 text-xs font-medium text-blue-500 transition"
   >
     + Agregar bloque
   </button>
@@ -2969,7 +3055,9 @@ onClick={() => {
 
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label
-                  className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
+                  className={`orbyx-business-energy flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm ${
+                    item.is_closed ? "orbyx-business-energy-active" : ""
+                  }`}
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -2990,7 +3078,7 @@ onClick={() => {
                 <button
                   type="button"
                   onClick={() => removeSpecialDate(index)}
-                  className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
+                  className="orbyx-business-energy inline-flex h-11 w-full items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
                 >
                   Quitar
                 </button>

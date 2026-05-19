@@ -340,10 +340,10 @@ const [photoUrl, setPhotoUrl] = useState("");
   const inputClass =
     "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
   const primaryButtonClass =
-  "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+  "orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
 
 const secondaryButtonClass =
-  "inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+  "orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
 async function uploadStaffImage(file: File, staffId: string) {
   const formData = new FormData();
@@ -1358,6 +1358,82 @@ function validateStaffHours() {
 
   return (
     <div className="space-y-6 pb-6">
+      <style>{`
+        .orbyx-staff-energy {
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          cursor: pointer;
+          border-color: rgba(147, 197, 253, 0.28);
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease,
+            background 180ms ease,
+            filter 180ms ease;
+        }
+
+        .orbyx-staff-energy::after {
+          content: "";
+          position: absolute;
+          inset: -1px;
+          z-index: -1;
+          border-radius: inherit;
+          background:
+            radial-gradient(circle at 50% 0%, rgba(96, 165, 250, 0.28), transparent 42%),
+            linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(14, 165, 233, 0.1));
+          opacity: 0;
+          transform: scale(0.94);
+          transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .orbyx-staff-energy:not(:disabled):hover {
+          border-color: rgba(96, 165, 250, 0.68) !important;
+          box-shadow:
+            0 0 0 1px rgba(59, 130, 246, 0.16),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 24px rgba(14, 165, 233, 0.16) !important;
+          filter: saturate(1.08);
+          transform: translateY(-1px);
+        }
+
+        .orbyx-staff-energy:not(:disabled):hover::after {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        .orbyx-staff-energy:not(:disabled):active {
+          animation: orbyx-staff-energy-pulse 260ms ease-out;
+          box-shadow:
+            0 0 0 1px rgba(147, 197, 253, 0.36),
+            0 0 22px rgba(37, 99, 235, 0.28),
+            0 8px 22px rgba(37, 99, 235, 0.16) !important;
+          transform: translateY(0) scale(0.98);
+        }
+
+        .orbyx-staff-energy-active {
+          border-color: rgba(96, 165, 250, 0.72) !important;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(14, 165, 233, 0.08)) !important;
+          box-shadow:
+            inset 0 0 0 1px rgba(147, 197, 253, 0.28),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 20px rgba(14, 165, 233, 0.14) !important;
+        }
+
+        @keyframes orbyx-staff-energy-pulse {
+          0% {
+            box-shadow:
+              0 0 0 0 rgba(96, 165, 250, 0.36),
+              0 0 16px rgba(37, 99, 235, 0.22);
+          }
+          100% {
+            box-shadow:
+              0 0 0 10px rgba(96, 165, 250, 0),
+              0 0 24px rgba(37, 99, 235, 0.12);
+          }
+        }
+      `}</style>
+
       <section
   className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
         style={{
@@ -1580,7 +1656,9 @@ function validateStaffHours() {
                         key={section.id}
                         type="button"
                         onClick={() => setActiveFormSection(section.id)}
-                        className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:border-blue-400/50 focus:outline-none focus:ring-2 focus:ring-blue-400/60"
+                        className={`orbyx-staff-energy inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:border-blue-400/50 focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
+                          active ? "orbyx-staff-energy-active" : ""
+                        }`}
                         style={{
                           borderColor: active ? "rgba(37,99,235,0.55)" : "transparent",
                           background: active ? "rgba(37,99,235,0.14)" : "transparent",
@@ -1624,7 +1702,7 @@ function validateStaffHours() {
       </div>
 
       <div className="flex items-center gap-3">
-        <label className="cursor-pointer rounded-xl border px-3 py-2 text-sm">
+        <label className="orbyx-staff-energy cursor-pointer rounded-xl border px-3 py-2 text-sm">
           Subir foto
           <input
             type="file"
@@ -1653,7 +1731,7 @@ function validateStaffHours() {
           <button
             type="button"
             onClick={() => setPhotoUrl("")}
-            className="rounded-xl border px-3 py-2 text-sm"
+            className="orbyx-staff-energy rounded-xl border px-3 py-2 text-sm"
             style={{
               borderColor: "rgba(244,63,94,0.28)",
               background: "rgba(244,63,94,0.08)",
@@ -1814,7 +1892,9 @@ function validateStaffHours() {
                         is_active: !prev.is_active,
                       }))
                     }
-                    className="inline-flex h-11 shrink-0 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition"
+                    className={`orbyx-staff-energy inline-flex h-11 shrink-0 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition ${
+                      form.is_active ? "orbyx-staff-energy-active" : ""
+                    }`}
                   style={{
                       borderColor: form.is_active
                         ? "rgba(16,185,129,0.34)"
@@ -1871,7 +1951,9 @@ function validateStaffHours() {
                       return (
                         <label
                           key={service.id}
-                          className="flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition"
+                          className={`orbyx-staff-energy flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
+                            checked ? "orbyx-staff-energy-active" : ""
+                          }`}
                           style={{
                             borderColor: checked
                               ? "rgba(37,99,235,0.45)"
@@ -1930,28 +2012,6 @@ function validateStaffHours() {
                   <style>{`
                     .orbyx-staff-schedule-option {
                       cursor: pointer;
-                      transition:
-                        transform 180ms ease,
-                        border-color 180ms ease,
-                        box-shadow 180ms ease,
-                        filter 180ms ease;
-                    }
-
-                    .orbyx-staff-schedule-option:hover {
-                      border-color: rgba(59,130,246,0.62) !important;
-                      box-shadow:
-                        0 0 0 1px rgba(59,130,246,0.16),
-                        0 12px 28px -18px rgba(37,99,235,0.85),
-                        0 0 22px -12px rgba(56,189,248,0.72);
-                      filter: saturate(1.06);
-                      transform: translateY(-1px);
-                    }
-
-                    .orbyx-staff-schedule-option:active {
-                      box-shadow:
-                        0 0 0 3px rgba(96,165,250,0.22),
-                        0 0 24px -8px rgba(59,130,246,0.9);
-                      transform: translateY(0) scale(0.98);
                     }
                   `}</style>
                   <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
@@ -1987,7 +2047,9 @@ function validateStaffHours() {
                             use_business_hours: option.value,
                           }))
                         }
-                        className="orbyx-staff-schedule-option rounded-2xl border p-4 text-left"
+                        className={`orbyx-staff-energy orbyx-staff-schedule-option rounded-2xl border p-4 text-left ${
+                          selected ? "orbyx-staff-energy-active" : ""
+                        }`}
                         style={{
                           borderColor: selected
                             ? "rgba(37,99,235,0.58)"
@@ -2112,7 +2174,7 @@ function validateStaffHours() {
                         )
                       );
                     }}
-                    className="text-xs text-red-500"
+                    className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-400 transition"
                   >
                     Eliminar
                   </button>
@@ -2148,7 +2210,7 @@ function validateStaffHours() {
                   ];
                 });
               }}
-              className="mt-3 text-sm text-blue-500"
+              className="orbyx-staff-energy mt-3 inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm font-medium text-blue-500"
             >
               + Agregar bloque
             </button>
@@ -2210,7 +2272,9 @@ function validateStaffHours() {
                         }}
                       >
                         <label
-                          className="flex h-11 items-center gap-3 rounded-2xl border px-4 text-sm"
+                          className={`orbyx-staff-energy flex h-11 items-center gap-3 rounded-2xl border px-4 text-sm ${
+                            specialRangeForm.enabled ? "orbyx-staff-energy-active" : ""
+                          }`}
                           style={{
                             borderColor: specialRangeForm.enabled
                               ? "rgba(37,99,235,0.58)"
@@ -2571,7 +2635,7 @@ function validateStaffHours() {
                                 onClick={() =>
                                   item.id && handleDeleteSpecialDate(item.id)
                                 }
-                                className="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
+                                className="orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
                               >
                                 Eliminar
                               </button>
@@ -2606,7 +2670,7 @@ function validateStaffHours() {
     <div className="mt-1">
       <a
         href={`/planes?current_plan=${plan}&tenant_id=${tenantId}&slug=${slug}&from=staff`}
-        className="inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+        className="orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold text-white transition"
         style={{
           background:
             "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
@@ -2818,7 +2882,7 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => startEdit(item)}
-                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                        className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-card)",
@@ -2831,7 +2895,7 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => handleToggleStaffActive(item)}
-                        className="inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                        className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                         style={{
                           borderColor: item.is_active
                             ? "rgba(245,158,11,0.34)"
@@ -2848,7 +2912,7 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => handleDelete(item.id)}
-                        className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-300 transition hover:bg-rose-500/15"
+                        className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-300 transition hover:bg-rose-500/15"
                       >
                         Eliminar
                       </button>
@@ -2863,7 +2927,7 @@ function validateStaffHours() {
                   setFormOpen(true);
                 }}
                 disabled={!selectedBranchId || loading || (!editingId && (reachedLimit || hasExcess))}
-                className="flex min-h-[250px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-4 text-sm font-medium transition hover:border-blue-400/50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="orbyx-staff-energy flex min-h-[250px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-4 text-sm font-medium transition hover:border-blue-400/50 disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",

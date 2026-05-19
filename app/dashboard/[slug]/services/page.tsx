@@ -911,6 +911,81 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
 
   return (
     <div className="space-y-6 pb-6">
+      <style>{`
+        .orbyx-services-energy {
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          cursor: pointer;
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease,
+            background 180ms ease,
+            filter 180ms ease;
+        }
+
+        .orbyx-services-energy::after {
+          content: "";
+          position: absolute;
+          inset: -1px;
+          z-index: -1;
+          border-radius: inherit;
+          background:
+            radial-gradient(circle at 50% 0%, rgba(96, 165, 250, 0.28), transparent 42%),
+            linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(14, 165, 233, 0.1));
+          opacity: 0;
+          transform: scale(0.94);
+          transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .orbyx-services-energy:not(:disabled):hover {
+          border-color: rgba(96, 165, 250, 0.68) !important;
+          box-shadow:
+            0 0 0 1px rgba(59, 130, 246, 0.16),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 24px rgba(14, 165, 233, 0.16) !important;
+          filter: saturate(1.08);
+          transform: translateY(-1px);
+        }
+
+        .orbyx-services-energy:not(:disabled):hover::after {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        .orbyx-services-energy:not(:disabled):active {
+          animation: orbyx-services-energy-pulse 260ms ease-out;
+          box-shadow:
+            0 0 0 1px rgba(147, 197, 253, 0.36),
+            0 0 22px rgba(37, 99, 235, 0.28),
+            0 8px 22px rgba(37, 99, 235, 0.16) !important;
+          transform: translateY(0) scale(0.98);
+        }
+
+        .orbyx-services-energy-active {
+          border-color: rgba(96, 165, 250, 0.72) !important;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(14, 165, 233, 0.08)) !important;
+          box-shadow:
+            inset 0 0 0 1px rgba(147, 197, 253, 0.28),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 20px rgba(14, 165, 233, 0.14) !important;
+        }
+
+        @keyframes orbyx-services-energy-pulse {
+          0% {
+            box-shadow:
+              0 0 0 0 rgba(96, 165, 250, 0.36),
+              0 0 16px rgba(37, 99, 235, 0.22);
+          }
+          100% {
+            box-shadow:
+              0 0 0 10px rgba(96, 165, 250, 0),
+              0 0 24px rgba(37, 99, 235, 0.12);
+          }
+        }
+      `}</style>
+
       <section
         className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
         style={{
@@ -950,7 +1025,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
               <Link
                 href={publicUrl}
                 target="_blank"
-                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+                className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
                 style={{
                   borderColor: "rgba(59,130,246,0.24)",
                   background: "rgba(255,255,255,0.08)",
@@ -1242,7 +1317,18 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                           </div>
 {isGroupBookingBusiness ? (
   <div className="space-y-2">
-    <label className="flex items-center gap-2 text-sm font-medium">
+    <label
+      className={`orbyx-services-energy flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${
+        editForm.is_group ? "orbyx-services-energy-active" : ""
+      }`}
+      style={{
+        borderColor: editForm.is_group
+          ? "rgba(37,99,235,0.55)"
+          : "var(--border-color)",
+        background: editForm.is_group ? "rgba(37,99,235,0.10)" : "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    >
       <input
         type="checkbox"
         checked={editForm.is_group}
@@ -1293,8 +1379,9 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                               type="button"
                               onClick={() => handleSaveEdit(service.id)}
                               disabled={saving}
-                              className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-medium text-white transition disabled:opacity-60"
+                              className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                               style={{
+                                borderColor: "rgba(147,197,253,0.36)",
                                 background:
                                   "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
                               }}
@@ -1306,7 +1393,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                               type="button"
                               onClick={cancelEditing}
                               disabled={saving}
-                              className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:opacity-60"
+                              className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                               style={{
                                 borderColor: "var(--border-color)",
                                 background: "var(--bg-card)",
@@ -1338,7 +1425,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                             <button
                               type="button"
                               onClick={() => startEditing(service)}
-                              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:opacity-90"
+                              className="orbyx-services-energy inline-flex h-9 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:opacity-90"
                               style={{
                                 borderColor: "rgba(37,99,235,0.28)",
                                 background:
@@ -1464,7 +1551,18 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
 
 {isGroupBookingBusiness ? (
   <div className="space-y-2">
-    <label className="flex items-center gap-2 text-sm font-medium">
+    <label
+      className={`orbyx-services-energy flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${
+        form.is_group ? "orbyx-services-energy-active" : ""
+      }`}
+      style={{
+        borderColor: form.is_group
+          ? "rgba(37,99,235,0.55)"
+          : "var(--border-color)",
+        background: form.is_group ? "rgba(37,99,235,0.10)" : "var(--bg-card)",
+        color: "var(--text-main)",
+      }}
+    >
       <input
         type="checkbox"
         checked={form.is_group}
@@ -1513,8 +1611,9 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                 type="button"
                 onClick={handleCreateService}
                 disabled={saving || loading || servicesLimitReached || hasExcess}
-                className="w-full rounded-xl py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="orbyx-services-energy w-full rounded-xl border py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
+                  borderColor: "rgba(147,197,253,0.36)",
                   background:
                     "linear-gradient(135deg, rgb(37 99 235), rgb(59 130 246), rgb(14 165 233))",
                   boxShadow: "0 14px 30px rgba(37,99,235,0.28)",
