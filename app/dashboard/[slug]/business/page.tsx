@@ -2754,30 +2754,8 @@ function updateHourByIndex(
     description="Define cuándo tu negocio está disponible para recibir reservas en la sucursal activa."
     className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
   >
-    <div
-      className="overflow-x-auto rounded-2xl border"
-      style={{ borderColor: "var(--border-color)" }}
-    >
-      <div className="min-w-[520px]">
-        <div
-          className="grid grid-cols-[110px_70px_112px_24px_112px_1fr] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em]"
-          style={{
-            borderColor: "var(--border-color)",
-            background:
-              "linear-gradient(135deg, rgba(37,99,235,0.12), var(--bg-soft))",
-            color: "var(--text-muted)",
-          }}
-        >
-          <div>Día</div>
-          <div>Activo</div>
-          <div>Inicio</div>
-          <div></div>
-          <div>Fin</div>
-          <div></div>
-        </div>
-
-        <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-          {displayOrder.map((dayIndex) => {
+    <div className="space-y-3">
+      {displayOrder.map((dayIndex) => {
   const dayBlocks = businessHours.filter(
     (d) => d.day_of_week === dayIndex
   );
@@ -2787,44 +2765,92 @@ function updateHourByIndex(
             return (
               <div
                 key={dayIndex}
-                className="grid grid-cols-[110px_70px_112px_24px_112px_1fr] items-center gap-3 px-4 py-3"
-                style={{ background: "var(--bg-card)" }}
+                className="grid gap-3 rounded-2xl border p-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-start"
+                style={{
+                  borderColor: enabled
+                    ? "rgba(37,99,235,0.22)"
+                    : "var(--border-color)",
+                  background: enabled
+                    ? "linear-gradient(135deg, rgba(37,99,235,0.05), var(--bg-card))"
+                    : "var(--bg-card)",
+                }}
               >
-                <div
-                  className="text-sm font-medium"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  {days[dayIndex]}
+                <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-start">
+                  <div>
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {days[dayIndex]}
+                    </p>
+                    <p
+                      className="mt-0.5 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {enabled ? `${dayBlocks.length} bloque${dayBlocks.length === 1 ? "" : "s"}` : "Cerrado"}
+                    </p>
+                  </div>
+
+                  <label
+                    className={`orbyx-business-energy inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                      enabled ? "orbyx-business-energy-active" : ""
+                    }`}
+                    style={{
+                      borderColor: enabled
+                        ? "rgba(37,99,235,0.48)"
+                        : "var(--border-color)",
+                      background: enabled
+                        ? "rgba(37,99,235,0.10)"
+                        : "var(--bg-soft)",
+                      color: enabled ? "var(--text-main)" : "var(--text-muted)",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={enabled}
+                      onChange={(e) => {
+                        const newValue = e.target.checked;
+
+                        setBusinessHours((prev) =>
+                          prev.map((item) =>
+                            item.day_of_week === dayIndex
+                              ? { ...item, enabled: newValue }
+                              : item
+                          )
+                        );
+                      }}
+                      className="h-4 w-4 rounded"
+                    />
+                    Activo
+                  </label>
                 </div>
 
-                <div>
-<input
-  type="checkbox"
-  checked={enabled}
-  onChange={(e) => {
-    const newValue = e.target.checked;
-
-    setBusinessHours((prev) =>
-      prev.map((item) =>
-        item.day_of_week === dayIndex
-          ? { ...item, enabled: newValue }
-          : item
-      )
-    );
-  }}
-/>
-                </div>
-
-
-
-
-<div className="col-span-4 flex flex-col gap-2">
-  {dayBlocks.map((block, i) => (
-    <div key={i} className="grid grid-cols-[112px_24px_112px_1fr] items-center gap-3">
-      <input
-        type="text"
-        value={block.start_time}
-        onChange={(e) =>
+                <div className="flex min-w-0 flex-col gap-2">
+                  {!enabled ? (
+                    <span
+                      className="inline-flex h-9 w-fit items-center rounded-full border px-3 text-xs font-semibold"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      No disponible
+                    </span>
+                  ) : (
+                    dayBlocks.map((block, i) => (
+                      <div
+                        key={i}
+                        className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-2xl border px-2 py-2"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={block.start_time}
+                          onChange={(e) =>
 updateHourByIndex(
   businessHours.findIndex(
     (x) =>
@@ -2836,14 +2862,24 @@ updateHourByIndex(
             normalizeTimeInput(e.target.value)
           )
         }
-        className="h-10 w-28 rounded-xl border px-3 text-sm"
-      />
+                          className="h-10 w-[150px] rounded-xl border px-3 text-sm outline-none transition sm:w-[160px]"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        />
 
-      <span>-</span>
+                        <span
+                          className="text-sm"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          -
+                        </span>
 
-      <input
-        type="text"
-        value={block.end_time}
+                        <input
+                          type="text"
+                          value={block.end_time}
 
 onChange={(e) =>
   updateHourByIndex(
@@ -2858,11 +2894,16 @@ onChange={(e) =>
   )
 }
 
-        className="h-10 w-28 rounded-xl border px-3 text-sm"
-      />
+                          className="h-10 w-[150px] rounded-xl border px-3 text-sm outline-none transition sm:w-[160px]"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        />
 
-      <button
-        type="button"
+                        <button
+                          type="button"
 onClick={() => {
   const realIndex = businessHours.findIndex(
     (x, idx) =>
@@ -2880,36 +2921,40 @@ onClick={() => {
   );
 }}
 
-        className="orbyx-business-energy inline-flex h-8 items-center justify-center rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-400 transition"
-      >
-        x
-      </button>
-    </div>
-  ))}
+                          className="orbyx-business-energy inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-300/50 bg-rose-500/10 p-0 text-sm font-semibold leading-none text-rose-400 transition hover:border-rose-300/70 hover:bg-rose-500/15 hover:shadow-[0_0_18px_rgba(244,63,94,0.16)]"
+                          aria-label={`Eliminar bloque de ${days[dayIndex]}`}
+                        >
+                          x
+                        </button>
+                      </div>
+                    ))
+                  )}
 
-  <button
-    type="button"
-    onClick={() => {
-      setBusinessHours((prev) => [
-        ...prev,
-        {
-          day_of_week: dayIndex,
-          enabled: true,
-          start_time: "09:00",
-          end_time: "18:00",
-        },
-      ]);
-    }}
-    className="orbyx-business-energy inline-flex h-8 items-center justify-center rounded-xl border px-3 text-xs font-medium text-blue-500 transition"
-  >
-    + Agregar bloque
-  </button>
-</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusinessHours((prev) => [
+                        ...prev,
+                        {
+                          day_of_week: dayIndex,
+                          enabled: true,
+                          start_time: "09:00",
+                          end_time: "18:00",
+                        },
+                      ]);
+                    }}
+                    className="orbyx-business-energy inline-flex h-8 w-fit items-center justify-center rounded-xl border px-3 text-xs font-medium text-blue-500 transition"
+                    style={{
+                      borderColor: "rgba(37,99,235,0.24)",
+                      background: "rgba(37,99,235,0.06)",
+                    }}
+                  >
+                    + Agregar bloque
+                  </button>
+                </div>
               </div>
             );
           })}
-        </div>
-      </div>
     </div>
 
     <div className="mt-4 flex flex-wrap gap-3">
