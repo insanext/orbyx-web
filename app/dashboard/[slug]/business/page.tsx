@@ -3342,32 +3342,40 @@ onClick={() => {
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[160px_minmax(150px,0.5fr)_minmax(150px,0.5fr)_minmax(0,1fr)]">
-          <select
-            value={specialDateRangeForm.type}
-            onChange={(e) =>
-              updateSpecialDateRange(
-                "type",
-                e.target.value as SpecialDateRangeForm["type"]
-              )
-            }
-            className="h-11 rounded-2xl border px-3 text-sm outline-none transition"
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-soft)",
-              color: "var(--text-main)",
-            }}
-          >
-            <option value="Vacaciones">Vacaciones</option>
-            <option value="Feriado">Feriado</option>
-            <option value="Mantención">Mantención</option>
-            <option value="Cierre administrativo">Cierre administrativo</option>
-            <option value="Capacitación interna">Capacitación interna</option>
-            <option value="Evento interno">Evento interno</option>
-            <option value="Inventario">Inventario</option>
-            <option value="Emergencia operacional">Emergencia operacional</option>
-            <option value="Día libre">Día libre</option>
-            <option value="Otro">Otro</option>
-          </select>
+          <div className="space-y-1">
+            <label
+              className="block text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Motivo
+            </label>
+            <select
+              value={specialDateRangeForm.type}
+              onChange={(e) =>
+                updateSpecialDateRange(
+                  "type",
+                  e.target.value as SpecialDateRangeForm["type"]
+                )
+              }
+              className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              <option value="Vacaciones">Vacaciones</option>
+              <option value="Feriado">Feriado</option>
+              <option value="Mantención">Mantención</option>
+              <option value="Cierre administrativo">Cierre administrativo</option>
+              <option value="Capacitación interna">Capacitación interna</option>
+              <option value="Evento interno">Evento interno</option>
+              <option value="Inventario">Inventario</option>
+              <option value="Emergencia operacional">Emergencia operacional</option>
+              <option value="Día libre">Día libre</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
 
           {specialDateRangeForm.enabled ? (
             <>
@@ -3425,18 +3433,26 @@ onClick={() => {
             />
           )}
 
-          <input
-            type="text"
-            value={specialDateRangeForm.label}
-            onChange={(e) => updateSpecialDateRange("label", e.target.value)}
-            placeholder="Etiqueta opcional"
-            className="h-11 rounded-2xl border px-3 text-sm outline-none transition"
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-soft)",
-              color: "var(--text-main)",
-            }}
-          />
+          <div className="space-y-1">
+            <label
+              className="block text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Etiqueta
+            </label>
+            <input
+              type="text"
+              value={specialDateRangeForm.label}
+              onChange={(e) => updateSpecialDateRange("label", e.target.value)}
+              placeholder="Etiqueta opcional"
+              className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            />
+          </div>
         </div>
 
           <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_150px_150px_auto_auto] md:items-end">
@@ -3467,42 +3483,64 @@ onClick={() => {
 
             {!specialDateRangeForm.is_closed ? (
               <>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Hora inicio"
-                  value={specialDateRangeForm.start_time}
-                  onChange={(e) =>
-                    updateSpecialDateRange("start_time", e.target.value)
-                  }
-                  onBlur={(e) =>
-                    updateSpecialDateRange("start_time", e.target.value.trim())
-                  }
-                  className="h-11 rounded-2xl border px-3 text-sm outline-none transition"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                    color: "var(--text-main)",
-                  }}
-                />
+                <div className="space-y-1">
+                  <label
+                    className="block text-[11px] font-semibold uppercase tracking-wide"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Desde
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="HH:mm"
+                    value={specialDateRangeForm.start_time}
+                    onChange={(e) =>
+                      updateSpecialDateRange("start_time", e.target.value)
+                    }
+                    onBlur={(e) =>
+                      updateSpecialDateRange("start_time", e.target.value.trim())
+                    }
+                    className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
 
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Hora fin"
-                  value={specialDateRangeForm.end_time}
-                  onChange={(e) => updateSpecialDateRange("end_time", e.target.value)}
-                  onBlur={(e) =>
-                    updateSpecialDateRange("end_time", e.target.value.trim())
-                  }
-                  className="h-11 rounded-2xl border px-3 text-sm outline-none transition"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                    color: "var(--text-main)",
-                  }}
-                />
+                <div className="space-y-1">
+                  <label
+                    className="block text-[11px] font-semibold uppercase tracking-wide"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Hasta
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="HH:mm"
+                    value={specialDateRangeForm.end_time}
+                    onChange={(e) => updateSpecialDateRange("end_time", e.target.value)}
+                    onBlur={(e) =>
+                      updateSpecialDateRange("end_time", e.target.value.trim())
+                    }
+                    className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
               </>
+            ) : null}
+
+            {!specialDateRangeForm.is_closed ? (
+              <p className="text-xs font-medium md:col-span-3" style={{ color: "var(--text-muted)" }}>
+                Formato 24 hrs. Ejemplo: 09:30
+              </p>
             ) : null}
 
             <button
@@ -3646,7 +3684,7 @@ onClick={() => {
                       className="mb-2 block text-sm font-medium"
                       style={{ color: "var(--text-main)" }}
                     >
-                      Hora inicio
+                      Desde
                     </label>
                     <input
                       type="text"
@@ -3676,7 +3714,7 @@ onClick={() => {
                       className="mb-2 block text-sm font-medium"
                       style={{ color: "var(--text-main)" }}
                     >
-                      Hora fin
+                      Hasta
                     </label>
                     <input
                       type="text"
@@ -3705,7 +3743,11 @@ onClick={() => {
                     <p className="text-xs font-semibold text-rose-500 md:col-span-2">
                       {timeError}
                     </p>
-                  ) : null}
+                  ) : (
+                    <p className="text-xs font-medium md:col-span-2" style={{ color: "var(--text-muted)" }}>
+                      Formato 24 hrs. Ejemplo: 09:30
+                    </p>
+                  )}
                 </div>
               ) : null}
             </div>

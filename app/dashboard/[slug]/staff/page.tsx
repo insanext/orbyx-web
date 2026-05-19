@@ -105,6 +105,11 @@ const days = [
   { value: 6, label: "Sábado" },
 ];
 
+const staffScheduleDays = [
+  ...days.filter((day) => day.value !== 0),
+  days.find((day) => day.value === 0)!,
+];
+
 const defaultHours: StaffHourItem[] = days.map((day) => ({
   day_of_week: day.value,
   block_order: 1,
@@ -2110,7 +2115,7 @@ function validateStaffHours() {
     </div>
 
     <div className="space-y-3">
-      {days.map((day) => {
+      {staffScheduleDays.map((day) => {
         const dayBlocks = staffHours
           .filter((item) => item.day_of_week === day.value)
           .sort((a, b) => a.block_order - b.block_order);
@@ -2400,6 +2405,15 @@ function validateStaffHours() {
                           Rango
                         </label>
 
+                        <div className="space-y-1">
+                          {specialRangeForm.enabled ? (
+                            <label
+                              className="block text-[11px] font-semibold uppercase tracking-wide"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Motivo
+                            </label>
+                          ) : null}
                         <select
                           value={specialRangeForm.type}
                           disabled={!specialRangeForm.enabled}
@@ -2428,6 +2442,7 @@ function validateStaffHours() {
                           <option value="Feriado">Feriado</option>
                           <option value="Otro">Otro</option>
                         </select>
+                        </div>
 
                         <div className="space-y-1">
                           {specialRangeForm.enabled ? (
@@ -2487,6 +2502,15 @@ function validateStaffHours() {
                           />
                         </div>
 
+                        <div className="space-y-1">
+                          {specialRangeForm.enabled ? (
+                            <label
+                              className="block text-[11px] font-semibold uppercase tracking-wide"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Etiqueta
+                            </label>
+                          ) : null}
                         <input
                           type="text"
                           value={specialRangeForm.label}
@@ -2506,6 +2530,7 @@ function validateStaffHours() {
                             opacity: specialRangeForm.enabled ? 1 : 0.6,
                           }}
                         />
+                        </div>
                       </div>
                     ) : null}
 
@@ -2590,7 +2615,7 @@ function validateStaffHours() {
                           className="mb-2 block text-xs font-semibold uppercase tracking-wide"
                           style={{ color: "var(--text-muted)" }}
                         >
-                          Inicio
+                          Desde
                         </label>
                         <input
                           type="text"
@@ -2622,7 +2647,7 @@ function validateStaffHours() {
                           className="mb-2 block text-xs font-semibold uppercase tracking-wide"
                           style={{ color: "var(--text-muted)" }}
                         >
-                          Fin
+                          Hasta
                         </label>
                         <input
                           type="text"
@@ -2648,6 +2673,12 @@ function validateStaffHours() {
                           }}
                         />
                       </div>
+
+                      {!specialDateForm.is_closed && !specialRangeForm.enabled ? (
+                        <p className="text-xs font-medium md:col-span-2 lg:col-span-5 xl:col-span-7" style={{ color: "var(--text-muted)" }}>
+                          Formato 24 hrs. Ejemplo: 09:30
+                        </p>
+                      ) : null}
 
                       <div className="flex items-end">
                         <button
