@@ -59,6 +59,15 @@ type SpecialDate = {
   end_time: string;
 };
 
+type SpecialDateGroup = {
+  key: string;
+  items: SpecialDate[];
+  first: SpecialDate;
+  startDate: string;
+  endDate: string;
+  isRange: boolean;
+};
+
 type SpecialDateRangeForm = {
   enabled: boolean;
   type:
@@ -88,6 +97,93 @@ type BranchItem = {
 };
 
 type BusinessSectionId = "general" | "reservas" | "horarios" | "fechas";
+
+function normalizeSpecialTime(value?: string | null) {
+  if (!value) return "";
+  const normalized = String(value).trim();
+  return /^\d{2}:\d{2}:\d{2}$/.test(normalized)
+    ? normalized.slice(0, 5)
+    : normalized;
+}
+
+function formatDateDisplay(dateString?: string | null) {
+  if (!dateString) return "";
+  const [year, month, day] = String(dateString).slice(0, 10).split("-");
+  if (!year || !month || !day) return String(dateString);
+  return `${day}-${month}-${year}`;
+}
+
+function parseDateDisplay(dateString?: string | null) {
+  const value = String(dateString || "").trim();
+  if (!/^\d{2}-\d{2}-\d{4}$/.test(value)) return "";
+  const [day, month, year] = value.split("-");
+  return `${year}-${month}-${day}`;
+}
+
+function isValidDisplayDate(dateString?: string | null) {
+  const value = String(dateString || "").trim();
+  const isoDate = parseDateDisplay(value);
+  if (!isoDate) return false;
+
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+function getNextDateIso(dateString: string) {
+  const date = new Date(`${dateString}T12:00:00`);
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function getSpecialDateGroupConfigKey(item: SpecialDate) {
+  return [
+    item.label || "",
+    item.is_closed ? "closed" : "partial",
+    normalizeSpecialTime(item.start_time),
+    normalizeSpecialTime(item.end_time),
+  ].join("|");
+}
+
+function groupSpecialDates(items: SpecialDate[]) {
+  const sorted = [...items]
+    .filter((item) => item.date)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+  const groups: SpecialDateGroup[] = [];
+
+  for (const item of sorted) {
+    const configKey = getSpecialDateGroupConfigKey(item);
+    const previous = groups[groups.length - 1];
+    const isConsecutive =
+      previous &&
+      previous.key === configKey &&
+      getNextDateIso(previous.endDate) === item.date;
+
+    if (isConsecutive) {
+      previous.items.push(item);
+      previous.endDate = item.date;
+      previous.isRange = previous.startDate !== previous.endDate;
+      continue;
+    }
+
+    groups.push({
+      key: configKey,
+      items: [item],
+      first: item,
+      startDate: item.date,
+      endDate: item.date,
+      isRange: false,
+    });
+  }
+
+  return groups;
+}
 
 const genericBusinessSubtypes = [
   {
@@ -271,7 +367,6 @@ const [slotMinutesError, setSlotMinutesError] = useState("");
   const [specialDatesOk, setSpecialDatesOk] = useState("");
   const [specialDateRangeError, setSpecialDateRangeError] = useState("");
   const [specialDateFormOpen, setSpecialDateFormOpen] = useState(false);
-  const [specialDatesDirty, setSpecialDatesDirty] = useState(false);
 
   const [googleConnected, setGoogleConnected] = useState(false);
   const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
@@ -288,6 +383,10 @@ const [slotMinutesError, setSlotMinutesError] = useState("");
       start_time: "",
       end_time: "",
     });
+  const [specialDateDisplay, setSpecialDateDisplay] = useState("");
+  const [specialDateFromDisplay, setSpecialDateFromDisplay] = useState("");
+  const [specialDateToDisplay, setSpecialDateToDisplay] = useState("");
+  const [editingSpecialDateId, setEditingSpecialDateId] = useState("");
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
   const [businessSubtypeConfig, setBusinessSubtypeConfig] = useState<{
     booking_fields: SubtypeBookingField[];
@@ -347,6 +446,12 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     "h-10 w-full rounded-xl border px-3 text-xs outline-none transition";
   const specialSecondaryButtonClass =
     "orbyx-business-energy inline-flex h-10 w-full items-center justify-center rounded-xl border px-4 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+  const calendarPickerClass =
+    "absolute inset-y-0 right-0 h-10 w-10 cursor-pointer opacity-0";
+  const groupedSpecialDates = useMemo(
+    () => groupSpecialDates(specialDates),
+    [specialDates]
+  );
 
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
@@ -663,6 +768,10 @@ setBusinessHours(result);
     setSpecialDateRangeError("");
     setSpecialDatesError("");
     setSpecialDatesOk("");
+    setSpecialDateDisplay("");
+    setSpecialDateFromDisplay("");
+    setSpecialDateToDisplay("");
+    setEditingSpecialDateId("");
     setSpecialDateRangeForm({
       enabled: false,
       type: "Vacaciones",
@@ -679,6 +788,10 @@ setBusinessHours(result);
   function resetSpecialDateDraft() {
     setSpecialDateFormOpen(false);
     setSpecialDateRangeError("");
+    setSpecialDateDisplay("");
+    setSpecialDateFromDisplay("");
+    setSpecialDateToDisplay("");
+    setEditingSpecialDateId("");
     setSpecialDateRangeForm({
       enabled: false,
       type: "Vacaciones",
@@ -720,21 +833,33 @@ setBusinessHours(result);
   function getSpecialDateRangeError() {
     if (!specialDateFormOpen) return "";
 
-    if (!specialDateRangeForm.enabled && !specialDateRangeForm.date) {
+    if (!specialDateRangeForm.enabled && !specialDateDisplay) {
       return "Selecciona la fecha.";
     }
 
-    if (specialDateRangeForm.enabled && !specialDateRangeForm.date_from) {
+    if (!specialDateRangeForm.enabled && !isValidDisplayDate(specialDateDisplay)) {
+      return "Usa formato dd-mm-yyyy válido.";
+    }
+
+    if (specialDateRangeForm.enabled && !specialDateFromDisplay) {
       return "Selecciona la fecha desde.";
     }
 
-    if (specialDateRangeForm.enabled && !specialDateRangeForm.date_to) {
+    if (specialDateRangeForm.enabled && !specialDateToDisplay) {
       return "Selecciona la fecha hasta.";
     }
 
     if (
       specialDateRangeForm.enabled &&
-      specialDateRangeForm.date_to < specialDateRangeForm.date_from
+      (!isValidDisplayDate(specialDateFromDisplay) ||
+        !isValidDisplayDate(specialDateToDisplay))
+    ) {
+      return "Usa formato dd-mm-yyyy válido.";
+    }
+
+    if (
+      specialDateRangeForm.enabled &&
+      parseDateDisplay(specialDateToDisplay) < parseDateDisplay(specialDateFromDisplay)
     ) {
       return "La fecha hasta no puede ser menor que la fecha desde.";
     }
@@ -758,10 +883,10 @@ setBusinessHours(result);
   function buildSpecialDateRangeItems() {
     const dates = specialDateRangeForm.enabled
       ? getDatesInRange(
-          specialDateRangeForm.date_from,
-          specialDateRangeForm.date_to
+          parseDateDisplay(specialDateFromDisplay),
+          parseDateDisplay(specialDateToDisplay)
         )
-      : [specialDateRangeForm.date];
+      : [parseDateDisplay(specialDateDisplay)];
     const label = specialDateRangeForm.label.trim() || specialDateRangeForm.type;
 
     return dates.map((date) => ({
@@ -795,6 +920,39 @@ setBusinessHours(result);
       }
 
       const items = buildSpecialDateRangeItems();
+
+      if (editingSpecialDateId) {
+        const item = items[0];
+        const res = await fetch(
+          `https://orbyx-backend.onrender.com/business-special-dates/${editingSpecialDateId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              tenant_id: tenantId,
+              branch_id: selectedBranchId,
+              date: item.date,
+              label: item.label,
+              is_closed: item.is_closed,
+              start_time: item.is_closed ? item.start_time || null : item.start_time,
+              end_time: item.is_closed ? item.end_time || null : item.end_time,
+            }),
+          }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Error actualizando fecha especial");
+        }
+
+        await loadSpecialDates(tenantId, selectedBranchId);
+        resetSpecialDateDraft();
+        setSpecialDatesOk("Fecha especial actualizada correctamente");
+        return;
+      }
 
       for (const item of items) {
         const res = await fetch(
@@ -841,24 +999,14 @@ setBusinessHours(result);
     }
   }
 
-  function updateSpecialDate(
-    index: number,
-    field: keyof SpecialDate,
-    value: string | boolean
-  ) {
-    setSpecialDatesDirty(true);
-    setSpecialDates((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-    );
-  }
-
-async function removeSpecialDate(index: number) {
-  const item = specialDates[index];
-
-  if (!item) return;
+async function removeSpecialDateGroup(group: SpecialDateGroup) {
+  const ids = group.items.map((item) => item.id).filter(Boolean) as string[];
+  if (ids.length === 0) return;
 
   const confirmed = window.confirm(
-    "¿Seguro que quieres quitar esta fecha especial?"
+    group.isRange
+      ? "¿Seguro que quieres quitar este rango de fechas especiales?"
+      : "¿Seguro que quieres quitar esta fecha especial?"
   );
 
   if (!confirmed) return;
@@ -868,9 +1016,9 @@ async function removeSpecialDate(index: number) {
     setSpecialDatesError("");
     setSpecialDatesOk("");
 
-    if (item.id) {
+    for (const id of ids) {
       const res = await fetch(
-        `https://orbyx-backend.onrender.com/business-special-dates/${item.id}`,
+        `https://orbyx-backend.onrender.com/business-special-dates/${id}`,
         {
           method: "DELETE",
         }
@@ -883,8 +1031,14 @@ async function removeSpecialDate(index: number) {
       }
     }
 
-    setSpecialDates((prev) => prev.filter((_, i) => i !== index));
-    setSpecialDatesOk("Fecha especial eliminada correctamente");
+    setSpecialDates((prev) =>
+      prev.filter((item) => !item.id || !ids.includes(item.id))
+    );
+    setSpecialDatesOk(
+      group.isRange
+        ? "Rango de fechas especiales eliminado correctamente"
+        : "Fecha especial eliminada correctamente"
+    );
   } catch (err: unknown) {
     setSpecialDatesError(
       err instanceof Error
@@ -896,119 +1050,28 @@ async function removeSpecialDate(index: number) {
   }
 }
 
-  async function saveSpecialDates() {
-    try {
-      setSavingSpecialDates(true);
-      setSpecialDatesError("");
-      setSpecialDatesOk("");
-
-      if (!selectedBranchId) {
-        throw new Error("No hay sucursal activa seleccionada");
-      }
-
-      const rangeError = getSpecialDateRangeError();
-
-      if (rangeError) {
-        setSpecialDateRangeError(rangeError);
-        throw new Error(rangeError);
-      }
-
-      const invalidSpecialDate = specialDates.find((item) =>
-        Boolean(getSpecialDateTimeError(item))
-      );
-
-      if (invalidSpecialDate) {
-        throw new Error(getSpecialDateTimeError(invalidSpecialDate));
-      }
-
-      const pendingRangeItems = specialDateRangeForm.enabled
-        ? buildSpecialDateRangeItems()
-        : [];
-      const existingItems = specialDates.filter((item) => item.id);
-      const newItems = [
-        ...specialDates.filter((item) => !item.id),
-        ...pendingRangeItems,
-      ];
-
-      for (const item of existingItems) {
-        const res = await fetch(
-          `https://orbyx-backend.onrender.com/business-special-dates/${item.id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              tenant_id: tenantId,
-              branch_id: selectedBranchId,
-              date: item.date,
-              label: item.label,
-              is_closed: item.is_closed,
-              start_time: item.is_closed ? item.start_time || null : item.start_time,
-              end_time: item.is_closed ? item.end_time || null : item.end_time,
-            }),
-          }
-        );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data?.error || "Error actualizando fecha especial");
-        }
-      }
-
-      for (const item of newItems) {
-        const res = await fetch(
-          "https://orbyx-backend.onrender.com/business-special-dates",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              tenant_id: tenantId,
-              branch_id: selectedBranchId,
-              date: item.date,
-              label: item.label,
-              is_closed: item.is_closed,
-              start_time: item.is_closed ? item.start_time || null : item.start_time,
-              end_time: item.is_closed ? item.end_time || null : item.end_time,
-            }),
-          }
-        );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data?.error || "Error creando fecha especial");
-        }
-      }
-
-      await loadSpecialDates(tenantId, selectedBranchId);
-      setSpecialDatesOk("Fechas especiales guardadas correctamente");
-      setSpecialDatesDirty(false);
-      setSpecialDateRangeError("");
-      setSpecialDateRangeForm({
-        enabled: false,
-        type: "Vacaciones",
-        date: "",
-        date_from: "",
-        date_to: "",
-        label: "",
-        is_closed: true,
-        start_time: "",
-        end_time: "",
-      });
-    } catch (err: unknown) {
-      setSpecialDatesError(
-        err instanceof Error
-          ? err.message
-          : "No se pudieron guardar las fechas especiales"
-      );
-    } finally {
-      setSavingSpecialDates(false);
-    }
-  }
+function editSpecialDateGroup(group: SpecialDateGroup) {
+  const item = group.first;
+  setSpecialDateFormOpen(true);
+  setSpecialDateRangeError("");
+  setSpecialDatesError("");
+  setSpecialDatesOk("");
+  setSpecialDateDisplay(formatDateDisplay(item.date));
+  setSpecialDateFromDisplay("");
+  setSpecialDateToDisplay("");
+  setEditingSpecialDateId(item.id || "");
+  setSpecialDateRangeForm({
+    enabled: false,
+    type: "Otro",
+    date: item.date,
+    date_from: "",
+    date_to: "",
+    label: item.label || "",
+    is_closed: Boolean(item.is_closed),
+    start_time: normalizeSpecialTime(item.start_time) || "09:00",
+    end_time: normalizeSpecialTime(item.end_time) || "18:00",
+  });
+}
 
   async function saveBusinessHours() {
     try {
@@ -1325,23 +1388,6 @@ function updateHourByIndex(
 
   function isValidTime(value: string) {
     return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
-  }
-
-  function getSpecialDateTimeError(item: SpecialDate) {
-    if (item.is_closed) return "";
-
-    const startTime = String(item.start_time || "").trim();
-    const endTime = String(item.end_time || "").trim();
-
-    if (!isValidTime(startTime) || !isValidTime(endTime)) {
-      return "Formato inválido. Usa HH:mm entre 00:00 y 23:59.";
-    }
-
-    if (startTime >= endTime) {
-      return "La hora inicio debe ser menor que la hora fin.";
-    }
-
-    return "";
   }
 
   async function copyPublicUrl() {
@@ -3278,33 +3324,25 @@ onClick={() => {
         </div>
 
         {!specialDateFormOpen ? (
-          <button
-            type="button"
-            onClick={addSpecialDate}
-            className={secondaryButtonClass}
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-soft)",
-              color: "var(--text-main)",
-            }}
-          >
-            Agregar fecha especial
-          </button>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={addSpecialDate}
+              className={secondaryButtonClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              Agregar fecha especial
+            </button>
+            <p className="max-w-md text-xs" style={{ color: "var(--text-muted)" }}>
+              Agrega una fecha o rango que quieras bloquear o ajustar para desactivar bloques de agenda.
+            </p>
+          </div>
         ) : null}
       </div>
-
-      {specialDates.length === 0 ? (
-        <div
-          className="rounded-2xl border border-dashed px-4 py-6 text-sm"
-          style={{
-            borderColor: "var(--border-color)",
-            background: "var(--bg-soft)",
-            color: "var(--text-muted)",
-          }}
-        >
-          Aún no has agregado fechas especiales.
-        </div>
-      ) : null}
 
       {specialDateFormOpen ? (
       <div
@@ -3387,17 +3425,50 @@ onClick={() => {
                 >
                   Desde
                 </label>
-                <input
-                  type="date"
-                  value={specialDateRangeForm.date_from}
-                  onChange={(e) => updateSpecialDateRange("date_from", e.target.value)}
-                  className={specialInputClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                    color: "var(--text-main)",
-                  }}
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="dd-mm-yyyy"
+                    value={specialDateFromDisplay}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSpecialDateFromDisplay(value);
+                      updateSpecialDateRange(
+                        "date_from",
+                        isValidDisplayDate(value) ? parseDateDisplay(value) : ""
+                      );
+                    }}
+                    className={`${specialInputClass} pr-10`}
+                    style={{
+                      borderColor:
+                        specialDateFromDisplay &&
+                        !isValidDisplayDate(specialDateFromDisplay)
+                          ? "rgba(244,63,94,0.62)"
+                          : "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                  <span
+                    className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                    aria-hidden="true"
+                  >
+                    ▦
+                  </span>
+                  <input
+                    type="date"
+                    value={specialDateRangeForm.date_from}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      updateSpecialDateRange("date_from", value);
+                      setSpecialDateFromDisplay(formatDateDisplay(value));
+                    }}
+                    className={calendarPickerClass}
+                    aria-label="Seleccionar fecha desde"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -3407,17 +3478,50 @@ onClick={() => {
                 >
                   Hasta
                 </label>
-                <input
-                  type="date"
-                  value={specialDateRangeForm.date_to}
-                  onChange={(e) => updateSpecialDateRange("date_to", e.target.value)}
-                  className={specialInputClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                    color: "var(--text-main)",
-                  }}
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="dd-mm-yyyy"
+                    value={specialDateToDisplay}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSpecialDateToDisplay(value);
+                      updateSpecialDateRange(
+                        "date_to",
+                        isValidDisplayDate(value) ? parseDateDisplay(value) : ""
+                      );
+                    }}
+                    className={`${specialInputClass} pr-10`}
+                    style={{
+                      borderColor:
+                        specialDateToDisplay &&
+                        !isValidDisplayDate(specialDateToDisplay)
+                          ? "rgba(244,63,94,0.62)"
+                          : "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                  <span
+                    className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                    aria-hidden="true"
+                  >
+                    ▦
+                  </span>
+                  <input
+                    type="date"
+                    value={specialDateRangeForm.date_to}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      updateSpecialDateRange("date_to", value);
+                      setSpecialDateToDisplay(formatDateDisplay(value));
+                    }}
+                    className={calendarPickerClass}
+                    aria-label="Seleccionar fecha hasta"
+                  />
+                </div>
               </div>
             </>
           ) : (
@@ -3428,17 +3532,49 @@ onClick={() => {
               >
                 Fecha
               </label>
-              <input
-                type="date"
-                value={specialDateRangeForm.date}
-                onChange={(e) => updateSpecialDateRange("date", e.target.value)}
-                className={specialInputClass}
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
-                }}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="dd-mm-yyyy"
+                  value={specialDateDisplay}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSpecialDateDisplay(value);
+                    updateSpecialDateRange(
+                      "date",
+                      isValidDisplayDate(value) ? parseDateDisplay(value) : ""
+                    );
+                  }}
+                  className={`${specialInputClass} pr-10`}
+                  style={{
+                    borderColor:
+                      specialDateDisplay && !isValidDisplayDate(specialDateDisplay)
+                        ? "rgba(244,63,94,0.62)"
+                        : "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+                <span
+                  className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                  aria-hidden="true"
+                >
+                  ▦
+                </span>
+                <input
+                  type="date"
+                  value={specialDateRangeForm.date}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    updateSpecialDateRange("date", value);
+                    setSpecialDateDisplay(formatDateDisplay(value));
+                  }}
+                  className={calendarPickerClass}
+                  aria-label="Seleccionar fecha"
+                />
+              </div>
             </div>
           )}
 
@@ -3579,7 +3715,11 @@ onClick={() => {
               color: "var(--text-main)",
             }}
           >
-            {savingSpecialDates ? "Guardando..." : "Guardar fecha especial"}
+            {savingSpecialDates
+              ? "Guardando..."
+              : editingSpecialDateId
+              ? "Guardar cambios"
+              : "Guardar fecha especial"}
           </button>
 
           <button
@@ -3620,199 +3760,110 @@ onClick={() => {
       </div>
       ) : null}
 
-      {specialDates.length > 0 ? (
-        <div className="space-y-4">
-          {specialDates.map((item, index) => {
-            const timeError = getSpecialDateTimeError(item);
-            const startTimeInvalid =
-              !item.is_closed && !isValidTime(String(item.start_time || "").trim());
-            const endTimeInvalid =
-              !item.is_closed && !isValidTime(String(item.end_time || "").trim());
-
-            return (
-            <div
-              key={item.id || `new-${index}`}
-              className="rounded-2xl border p-4 shadow-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background:
-                  "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
-              }}
-            >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Fecha
-                  </label>
-                  <input
-                    type="date"
-                    value={item.date}
-                    onChange={(e) =>
-                      updateSpecialDate(index, "date", e.target.value)
-                    }
-                    className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-main)",
-                    }}
-          />
-        </div>
-
+      <div
+        className="space-y-3 rounded-2xl border p-4"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+        }}
+      >
         <div>
-          <label
-            className="mb-2 block text-sm font-medium"
+          <h4
+            className="text-sm font-semibold"
             style={{ color: "var(--text-main)" }}
-                  >
-                    Motivo o etiqueta
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Feriado, Navidad, Vacaciones"
-                    value={item.label}
-                    onChange={(e) =>
-                      updateSpecialDate(index, "label", e.target.value)
-                    }
-                    className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label
-                  className={`orbyx-business-energy flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm ${
-                    item.is_closed ? "orbyx-business-energy-active" : ""
-                  }`}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={item.is_closed}
-                    onChange={(e) =>
-                      updateSpecialDate(index, "is_closed", e.target.checked)
-                    }
-                    className="h-4 w-4 rounded"
-                  />
-                  Cerrado todo el día
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => removeSpecialDate(index)}
-                  className="orbyx-business-energy inline-flex h-11 w-full items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
-                >
-                  Quitar
-                </button>
-              </div>
-
-              {!item.is_closed ? (
-                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label
-                      className="mb-2 block text-sm font-medium"
-                      style={{ color: "var(--text-main)" }}
-                    >
-                      Desde
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="HH:mm"
-                      value={item.start_time}
-                      onChange={(e) =>
-                        updateSpecialDate(index, "start_time", e.target.value)
-                      }
-                      onBlur={(e) =>
-                        updateSpecialDate(index, "start_time", e.target.value.trim())
-                      }
-                      aria-invalid={startTimeInvalid}
-                      className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                      style={{
-                        borderColor: startTimeInvalid
-                          ? "rgba(244,63,94,0.62)"
-                          : "var(--border-color)",
-                        background: "var(--bg-soft)",
-                        color: "var(--text-main)",
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      className="mb-2 block text-sm font-medium"
-                      style={{ color: "var(--text-main)" }}
-                    >
-                      Hasta
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="HH:mm"
-                      value={item.end_time}
-                      onChange={(e) =>
-                        updateSpecialDate(index, "end_time", e.target.value)
-                      }
-                      onBlur={(e) =>
-                        updateSpecialDate(index, "end_time", e.target.value.trim())
-                      }
-                      aria-invalid={endTimeInvalid}
-                      className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                      style={{
-                        borderColor: endTimeInvalid
-                          ? "rgba(244,63,94,0.62)"
-                          : "var(--border-color)",
-                        background: "var(--bg-soft)",
-                        color: "var(--text-main)",
-                      }}
-                    />
-                  </div>
-
-                  {timeError ? (
-                    <p className="text-xs font-semibold text-rose-500 md:col-span-2">
-                      {timeError}
-                    </p>
-                  ) : (
-                    <p className="text-xs font-medium md:col-span-2" style={{ color: "var(--text-muted)" }}>
-                      Formato 24 hrs. Ejemplo: 09:30
-                    </p>
-                  )}
-                </div>
-              ) : null}
-            </div>
-            );
-          })}
+          >
+            Historial de excepciones
+          </h4>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+            Días libres u horarios especiales configurados para el negocio.
+          </p>
         </div>
-      ) : null}
 
-      {specialDatesDirty ? (
-        <div className="flex flex-wrap gap-3 pt-2">
-          <button
-            type="button"
-            onClick={saveSpecialDates}
-            disabled={savingSpecialDates}
-            className={primaryButtonClass}
+        {groupedSpecialDates.length === 0 ? (
+          <div
+            className="rounded-2xl border border-dashed px-4 py-6 text-sm"
             style={{
-              background:
-                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+              color: "var(--text-muted)",
             }}
           >
-            {savingSpecialDates ? "Guardando..." : "Guardar cambios"}
-          </button>
-        </div>
-      ) : null}
+            Aún no has agregado fechas especiales.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {groupedSpecialDates.map((group) => {
+              const item = group.first;
+              const dateLabel = group.isRange
+                ? `${formatDateDisplay(group.startDate)} al ${formatDateDisplay(group.endDate)}`
+                : formatDateDisplay(group.startDate);
+              const timeLabel = item.is_closed
+                ? "Cerrado todo el día"
+                : `${normalizeSpecialTime(item.start_time) || "--:--"} a ${
+                    normalizeSpecialTime(item.end_time) || "--:--"
+                  }`;
 
+              return (
+                <div
+                  key={`${group.key}-${group.startDate}-${group.endDate}`}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background:
+                      "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-soft))",
+                  }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {dateLabel}
+                    </p>
+                    <p
+                      className="mt-1 text-sm"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {item.label || "Sin etiqueta"} · {timeLabel}
+                    </p>
+                    {group.isRange ? (
+                      <p
+                        className="mt-1 text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Editar abre la primera fecha del rango.
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => editSpecialDateGroup(group)}
+                      className={secondaryButtonClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => removeSpecialDateGroup(group)}
+                      className="orbyx-business-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
       {specialDatesError ? (
         <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {specialDatesError}
