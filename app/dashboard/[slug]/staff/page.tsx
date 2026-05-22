@@ -402,6 +402,9 @@ const specialPrimaryButtonClass =
 const specialSecondaryButtonClass =
   "orbyx-staff-energy inline-flex h-10 w-full items-center justify-center rounded-xl border px-4 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
 
+const calendarPickerClass =
+  "absolute inset-y-0 right-0 h-10 w-10 cursor-pointer opacity-0";
+
 async function uploadStaffImage(file: File, staffId: string) {
   const formData = new FormData();
   formData.append("file", file);
@@ -2593,36 +2596,61 @@ function validateStaffHours() {
                               >
                                 Desde
                               </label>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                placeholder="dd-mm-yyyy"
-                                value={specialRangeDateFromDisplay}
-                                aria-invalid={
-                                  Boolean(specialRangeDateFromDisplay) &&
-                                  !isValidDisplayDate(specialRangeDateFromDisplay)
-                                }
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  setSpecialRangeDateFromDisplay(value);
-                                  setSpecialRangeForm((prev) => ({
-                                    ...prev,
-                                    date_from: isValidDisplayDate(value)
-                                      ? parseDateDisplay(value)
-                                      : "",
-                                  }));
-                                }}
-                                className={specialInputClass}
-                                style={{
-                                  borderColor:
-                                    specialRangeDateFromDisplay &&
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="dd-mm-yyyy"
+                                  value={specialRangeDateFromDisplay}
+                                  aria-invalid={
+                                    Boolean(specialRangeDateFromDisplay) &&
                                     !isValidDisplayDate(specialRangeDateFromDisplay)
-                                      ? "rgba(244,63,94,0.62)"
-                                      : "var(--border-color)",
-                                  background: "var(--bg-card)",
-                                  color: "var(--text-main)",
-                                }}
-                              />
+                                  }
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSpecialRangeDateFromDisplay(value);
+                                    setSpecialRangeForm((prev) => ({
+                                      ...prev,
+                                      date_from: isValidDisplayDate(value)
+                                        ? parseDateDisplay(value)
+                                        : "",
+                                    }));
+                                  }}
+                                  className={`${specialInputClass} pr-10`}
+                                  style={{
+                                    borderColor:
+                                      specialRangeDateFromDisplay &&
+                                      !isValidDisplayDate(specialRangeDateFromDisplay)
+                                        ? "rgba(244,63,94,0.62)"
+                                        : "var(--border-color)",
+                                    background: "var(--bg-card)",
+                                    color: "var(--text-main)",
+                                  }}
+                                />
+                                <span
+                                  className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs"
+                                  style={{ color: "var(--text-muted)" }}
+                                  aria-hidden="true"
+                                >
+                                  ▦
+                                </span>
+                                <input
+                                  type="date"
+                                  value={specialRangeForm.date_from || ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSpecialRangeForm((prev) => ({
+                                      ...prev,
+                                      date_from: value,
+                                    }));
+                                    setSpecialRangeDateFromDisplay(
+                                      formatDateDisplay(value)
+                                    );
+                                  }}
+                                  className={calendarPickerClass}
+                                  aria-label="Seleccionar fecha desde"
+                                />
+                              </div>
                             </div>
 
                             <div className="space-y-1">
@@ -2632,36 +2660,61 @@ function validateStaffHours() {
                               >
                                 Hasta
                               </label>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                placeholder="dd-mm-yyyy"
-                                value={specialRangeDateToDisplay}
-                                aria-invalid={
-                                  Boolean(specialRangeDateToDisplay) &&
-                                  !isValidDisplayDate(specialRangeDateToDisplay)
-                                }
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  setSpecialRangeDateToDisplay(value);
-                                  setSpecialRangeForm((prev) => ({
-                                    ...prev,
-                                    date_to: isValidDisplayDate(value)
-                                      ? parseDateDisplay(value)
-                                      : "",
-                                  }));
-                                }}
-                                className={specialInputClass}
-                                style={{
-                                  borderColor:
-                                    specialRangeDateToDisplay &&
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="dd-mm-yyyy"
+                                  value={specialRangeDateToDisplay}
+                                  aria-invalid={
+                                    Boolean(specialRangeDateToDisplay) &&
                                     !isValidDisplayDate(specialRangeDateToDisplay)
-                                      ? "rgba(244,63,94,0.62)"
-                                      : "var(--border-color)",
-                                  background: "var(--bg-card)",
-                                  color: "var(--text-main)",
-                                }}
-                              />
+                                  }
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSpecialRangeDateToDisplay(value);
+                                    setSpecialRangeForm((prev) => ({
+                                      ...prev,
+                                      date_to: isValidDisplayDate(value)
+                                        ? parseDateDisplay(value)
+                                        : "",
+                                    }));
+                                  }}
+                                  className={`${specialInputClass} pr-10`}
+                                  style={{
+                                    borderColor:
+                                      specialRangeDateToDisplay &&
+                                      !isValidDisplayDate(specialRangeDateToDisplay)
+                                        ? "rgba(244,63,94,0.62)"
+                                        : "var(--border-color)",
+                                    background: "var(--bg-card)",
+                                    color: "var(--text-main)",
+                                  }}
+                                />
+                                <span
+                                  className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs"
+                                  style={{ color: "var(--text-muted)" }}
+                                  aria-hidden="true"
+                                >
+                                  ▦
+                                </span>
+                                <input
+                                  type="date"
+                                  value={specialRangeForm.date_to || ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSpecialRangeForm((prev) => ({
+                                      ...prev,
+                                      date_to: value,
+                                    }));
+                                    setSpecialRangeDateToDisplay(
+                                      formatDateDisplay(value)
+                                    );
+                                  }}
+                                  className={calendarPickerClass}
+                                  aria-label="Seleccionar fecha hasta"
+                                />
+                              </div>
                             </div>
                           </>
                         ) : (
@@ -2672,36 +2725,59 @@ function validateStaffHours() {
                             >
                               Fecha
                             </label>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              placeholder="dd-mm-yyyy"
-                              value={specialDateDisplay}
-                              aria-invalid={
-                                Boolean(specialDateDisplay) &&
-                                !isValidDisplayDate(specialDateDisplay)
-                              }
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setSpecialDateDisplay(value);
-                                setSpecialDateForm((prev) => ({
-                                  ...prev,
-                                  date: isValidDisplayDate(value)
-                                    ? parseDateDisplay(value)
-                                    : "",
-                                }));
-                              }}
-                              className={specialInputClass}
-                              style={{
-                                borderColor:
-                                  specialDateDisplay &&
+                            <div className="relative">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="dd-mm-yyyy"
+                                value={specialDateDisplay}
+                                aria-invalid={
+                                  Boolean(specialDateDisplay) &&
                                   !isValidDisplayDate(specialDateDisplay)
-                                    ? "rgba(244,63,94,0.62)"
-                                    : "var(--border-color)",
-                                background: "var(--bg-card)",
-                                color: "var(--text-main)",
-                              }}
-                            />
+                                }
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setSpecialDateDisplay(value);
+                                  setSpecialDateForm((prev) => ({
+                                    ...prev,
+                                    date: isValidDisplayDate(value)
+                                      ? parseDateDisplay(value)
+                                      : "",
+                                  }));
+                                }}
+                                className={`${specialInputClass} pr-10`}
+                                style={{
+                                  borderColor:
+                                    specialDateDisplay &&
+                                    !isValidDisplayDate(specialDateDisplay)
+                                      ? "rgba(244,63,94,0.62)"
+                                      : "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                }}
+                              />
+                              <span
+                                className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs"
+                                style={{ color: "var(--text-muted)" }}
+                                aria-hidden="true"
+                              >
+                                ▦
+                              </span>
+                              <input
+                                type="date"
+                                value={specialDateForm.date || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setSpecialDateForm((prev) => ({
+                                    ...prev,
+                                    date: value,
+                                  }));
+                                  setSpecialDateDisplay(formatDateDisplay(value));
+                                }}
+                                className={calendarPickerClass}
+                                aria-label="Seleccionar fecha"
+                              />
+                            </div>
                           </div>
                         )}
 
