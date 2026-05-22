@@ -880,7 +880,7 @@ function getStaffHourDayError(dayOfWeek: number) {
 }
 
 function getStaffSpecialDateTimeError() {
-  if (specialDateForm.is_closed || specialRangeForm.enabled) return "";
+  if (specialDateForm.is_closed) return "";
 
   const startTime = String(specialDateForm.start_time || "").trim();
   const endTime = String(specialDateForm.end_time || "").trim();
@@ -894,6 +894,12 @@ function getStaffSpecialDateTimeError() {
   }
 
   return "";
+}
+
+function getStaffSpecialDateLabel() {
+  return [specialRangeForm.type, (specialDateForm.label || "").trim()]
+    .filter(Boolean)
+    .join(" - ");
 }
 
 
@@ -995,11 +1001,7 @@ function validateStaffHours() {
       if (specialRangeForm.date_from > specialRangeForm.date_to) {
         throw new Error("La fecha hasta debe ser igual o posterior a fecha desde");
       }
-
-      return;
-    }
-
-    if (!specialDateForm.date) {
+    } else if (!specialDateForm.date) {
       throw new Error("Debes ingresar una fecha");
     }
 
@@ -1237,7 +1239,7 @@ function validateStaffHours() {
         );
         const label = [
           specialRangeForm.type,
-          (specialRangeForm.label || "").trim(),
+          (specialDateForm.label || "").trim(),
         ]
           .filter(Boolean)
           .join(" - ");
@@ -1264,9 +1266,13 @@ function validateStaffHours() {
               staff_id: editingId,
               date,
               label,
-              is_closed: true,
-              start_time: null,
-              end_time: null,
+              is_closed: specialDateForm.is_closed,
+              start_time: specialDateForm.is_closed
+                ? null
+                : specialDateForm.start_time || null,
+              end_time: specialDateForm.is_closed
+                ? null
+                : specialDateForm.end_time || null,
             }),
           });
           const data = await res.json();
@@ -1287,7 +1293,7 @@ function validateStaffHours() {
         branch_id: selectedBranchId,
         staff_id: editingId,
         date: specialDateForm.date,
-        label: (specialDateForm.label || "").trim() || null,
+        label: getStaffSpecialDateLabel() || null,
         is_closed: specialDateForm.is_closed,
         start_time: specialDateForm.is_closed
           ? null
@@ -2377,97 +2383,56 @@ function validateStaffHours() {
                   />
                 ) : (
                   <div className="space-y-4">
-                    {!editingSpecialDateId ? (
-                      <div className="grid gap-3 rounded-2xl border p-3 md:grid-cols-[180px_1fr_1fr_1fr_1fr]"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-soft)",
-                        }}
-                      >
-                        <label
-                          className={`orbyx-staff-energy flex h-11 items-center gap-3 rounded-2xl border px-4 text-sm ${
-                            specialRangeForm.enabled ? "orbyx-staff-energy-active" : ""
-                          }`}
-                          style={{
-                            borderColor: specialRangeForm.enabled
-                              ? "rgba(37,99,235,0.58)"
-                              : "var(--border-color)",
-                            background: specialRangeForm.enabled
-                              ? "linear-gradient(135deg, rgba(37,99,235,0.14), var(--bg-card))"
-                              : "var(--bg-card)",
-                            color: "var(--text-main)",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={specialRangeForm.enabled}
-                            onChange={(e) =>
-                              setSpecialRangeForm((prev) => ({
-                                ...prev,
-                                enabled: e.target.checked,
-                              }))
-                            }
-                            className="h-4 w-4 rounded"
-                          />
-                          Rango
-                        </label>
-
-                        <div className="space-y-1">
-                          {specialRangeForm.enabled ? (
+                    <div
+                      className="rounded-2xl border p-3"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                      }}
+                    >
+                      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_150px_150px] xl:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_150px_150px_auto_auto] xl:items-end">
+                        {!editingSpecialDateId ? (
+                          <div className="space-y-1">
                             <label
                               className="block text-[11px] font-semibold uppercase tracking-wide"
                               style={{ color: "var(--text-muted)" }}
                             >
-                              Motivo
+                              Tipo de fecha
                             </label>
-                          ) : null}
-                        <select
-                          value={specialRangeForm.type}
-                          disabled={!specialRangeForm.enabled}
-                          onChange={(e) =>
-                            setSpecialRangeForm((prev) => ({
-                              ...prev,
-                              type: e.target.value as SpecialRangeForm["type"],
-                            }))
-                          }
-                          className={inputClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                            opacity: specialRangeForm.enabled ? 1 : 0.6,
-                          }}
-                        >
-                          <option value="Vacaciones">Vacaciones</option>
-                          <option value="Permiso">Permiso</option>
-                          <option value="Licencia médica">Licencia médica</option>
-                          <option value="Capacitación">Capacitación</option>
-                          <option value="Reunión interna">Reunión interna</option>
-                          <option value="Turno administrativo">Turno administrativo</option>
-                          <option value="Bloqueo operacional">Bloqueo operacional</option>
-                          <option value="Día libre">Día libre</option>
-                          <option value="Feriado">Feriado</option>
-                          <option value="Otro">Otro</option>
-                        </select>
-                        </div>
+                            <select
+                              value={specialRangeForm.enabled ? "range" : "single"}
+                              onChange={(e) =>
+                                setSpecialRangeForm((prev) => ({
+                                  ...prev,
+                                  enabled: e.target.value === "range",
+                                }))
+                              }
+                              className={inputClass}
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
+                            >
+                              <option value="single">Un día</option>
+                              <option value="range">Rango de fechas</option>
+                            </select>
+                          </div>
+                        ) : null}
 
                         <div className="space-y-1">
-                          {specialRangeForm.enabled ? (
-                            <label
-                              className="block text-[11px] font-semibold uppercase tracking-wide"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Desde
-                            </label>
-                          ) : null}
-                          <input
-                            type="date"
-                            value={specialRangeForm.date_from}
-                            disabled={!specialRangeForm.enabled}
+                          <label
+                            className="block text-[11px] font-semibold uppercase tracking-wide"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Motivo
+                          </label>
+                          <select
+                            value={specialRangeForm.type}
                             onChange={(e) =>
                               setSpecialRangeForm((prev) => ({
                                 ...prev,
-                                date_from: e.target.value,
+                                type: e.target.value as SpecialRangeForm["type"],
                               }))
                             }
                             className={inputClass}
@@ -2475,274 +2440,260 @@ function validateStaffHours() {
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
                               color: "var(--text-main)",
-                              opacity: specialRangeForm.enabled ? 1 : 0.6,
                             }}
-                          />
+                          >
+                            <option value="Vacaciones">Vacaciones</option>
+                            <option value="Permiso">Permiso</option>
+                            <option value="Licencia médica">Licencia médica</option>
+                            <option value="Capacitación">Capacitación</option>
+                            <option value="Reunión interna">Reunión interna</option>
+                            <option value="Turno administrativo">Turno administrativo</option>
+                            <option value="Bloqueo operacional">Bloqueo operacional</option>
+                            <option value="Día libre">Día libre</option>
+                            <option value="Feriado">Feriado</option>
+                            <option value="Otro">Otro</option>
+                          </select>
                         </div>
 
-                        <div className="space-y-1">
-                          {specialRangeForm.enabled ? (
+                        {specialRangeForm.enabled && !editingSpecialDateId ? (
+                          <>
+                            <div className="space-y-1">
+                              <label
+                                className="block text-[11px] font-semibold uppercase tracking-wide"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                Desde
+                              </label>
+                              <input
+                                type="date"
+                                value={specialRangeForm.date_from}
+                                onChange={(e) =>
+                                  setSpecialRangeForm((prev) => ({
+                                    ...prev,
+                                    date_from: e.target.value,
+                                  }))
+                                }
+                                className={inputClass}
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                }}
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label
+                                className="block text-[11px] font-semibold uppercase tracking-wide"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                Hasta
+                              </label>
+                              <input
+                                type="date"
+                                value={specialRangeForm.date_to}
+                                onChange={(e) =>
+                                  setSpecialRangeForm((prev) => ({
+                                    ...prev,
+                                    date_to: e.target.value,
+                                  }))
+                                }
+                                className={inputClass}
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                }}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="space-y-1">
                             <label
                               className="block text-[11px] font-semibold uppercase tracking-wide"
                               style={{ color: "var(--text-muted)" }}
                             >
-                              Hasta
+                              Fecha
                             </label>
-                          ) : null}
-                          <input
-                            type="date"
-                            value={specialRangeForm.date_to}
-                            disabled={!specialRangeForm.enabled}
-                            onChange={(e) =>
-                              setSpecialRangeForm((prev) => ({
-                                ...prev,
-                                date_to: e.target.value,
-                              }))
-                            }
-                            className={inputClass}
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-card)",
-                              color: "var(--text-main)",
-                              opacity: specialRangeForm.enabled ? 1 : 0.6,
-                            }}
-                          />
-                        </div>
+                            <input
+                              type="date"
+                              value={specialDateForm.date}
+                              onChange={(e) =>
+                                setSpecialDateForm((prev) => ({
+                                  ...prev,
+                                  date: e.target.value,
+                                }))
+                              }
+                              className={inputClass}
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
+                            />
+                          </div>
+                        )}
 
                         <div className="space-y-1">
-                          {specialRangeForm.enabled ? (
-                            <label
-                              className="block text-[11px] font-semibold uppercase tracking-wide"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Etiqueta
-                            </label>
-                          ) : null}
-                        <input
-                          type="text"
-                          value={specialRangeForm.label}
-                          disabled={!specialRangeForm.enabled}
-                          onChange={(e) =>
-                            setSpecialRangeForm((prev) => ({
-                              ...prev,
-                              label: e.target.value,
-                            }))
-                          }
-                          placeholder="Etiqueta opcional"
-                          className={inputClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                            opacity: specialRangeForm.enabled ? 1 : 0.6,
-                          }}
-                        />
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_120px_120px] xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_120px_120px_auto_auto] xl:items-end">
-                      <div>
-                        <label
-                          className="mb-2 block text-xs font-semibold uppercase tracking-wide"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          Fecha
-                        </label>
-                        <input
-                          type="date"
-                          value={specialDateForm.date}
-                          onChange={(e) =>
-                            setSpecialDateForm((prev) => ({
-                              ...prev,
-                              date: e.target.value,
-                            }))
-                          }
-                          className={inputClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          className="mb-2 block text-xs font-semibold uppercase tracking-wide"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          Etiqueta
-                        </label>
-                        <input
-                          type="text"
-                          value={specialDateForm.label || ""}
-                          onChange={(e) =>
-                            setSpecialDateForm((prev) => ({
-                              ...prev,
-                              label: e.target.value,
-                            }))
-                          }
-                          placeholder="Ej: Vacaciones"
-                          className={inputClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-                      </div>
-
-                      <div className="flex items-end">
-                        <label
-                          className="flex h-11 w-full items-center gap-3 rounded-2xl border px-4 text-sm"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                          }}
-                        >
+                          <label
+                            className="block text-[11px] font-semibold uppercase tracking-wide"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Etiqueta
+                          </label>
                           <input
-                            type="checkbox"
-                            checked={specialDateForm.is_closed}
+                            type="text"
+                            value={specialDateForm.label || ""}
                             onChange={(e) =>
                               setSpecialDateForm((prev) => ({
                                 ...prev,
-                                is_closed: e.target.checked,
+                                label: e.target.value,
                               }))
                             }
-                            className="h-4 w-4 rounded"
+                            placeholder="Etiqueta opcional"
+                            className={inputClass}
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
                           />
-                          Cerrado
-                        </label>
-                      </div>
+                        </div>
 
-                      <div>
-                        <label
-                          className="mb-2 block text-xs font-semibold uppercase tracking-wide"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          Desde
-                        </label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="HH:mm"
-                          value={normalizeTimeValue(specialDateForm.start_time) || "09:00"}
-                          disabled={specialDateForm.is_closed || specialRangeForm.enabled}
-                          aria-invalid={
-                            !specialDateForm.is_closed &&
-                            !specialRangeForm.enabled &&
-                            !isValidHHmm(specialDateForm.start_time)
-                          }
-                          onChange={(e) =>
-                            setSpecialDateForm((prev) => ({
-                              ...prev,
-                              start_time: e.target.value,
-                            }))
-                          }
-                          className={inputClass}
-                          style={{
-                            borderColor:
-                              !specialDateForm.is_closed &&
-                              !specialRangeForm.enabled &&
-                              !isValidHHmm(specialDateForm.start_time)
-                                ? "rgba(244,63,94,0.62)"
-                                : "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                            opacity:
-                              specialDateForm.is_closed || specialRangeForm.enabled
-                                ? 0.6
-                                : 1,
-                          }}
-                        />
-                      </div>
+                        <div className="space-y-1">
+                          <label
+                            className="block text-[11px] font-semibold uppercase tracking-wide"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Tipo de cobertura
+                          </label>
+                          <select
+                            value={specialDateForm.is_closed ? "all_day" : "time_range"}
+                            onChange={(e) =>
+                              setSpecialDateForm((prev) => ({
+                                ...prev,
+                                is_closed: e.target.value === "all_day",
+                              }))
+                            }
+                            className={inputClass}
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            <option value="all_day">Todo el día</option>
+                            <option value="time_range">Rango de horario</option>
+                          </select>
+                        </div>
 
-                      <div>
-                        <label
-                          className="mb-2 block text-xs font-semibold uppercase tracking-wide"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          Hasta
-                        </label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="HH:mm"
-                          value={normalizeTimeValue(specialDateForm.end_time) || "18:00"}
-                          disabled={specialDateForm.is_closed || specialRangeForm.enabled}
-                          aria-invalid={
-                            !specialDateForm.is_closed &&
-                            !specialRangeForm.enabled &&
-                            !isValidHHmm(specialDateForm.end_time)
-                          }
-                          onChange={(e) =>
-                            setSpecialDateForm((prev) => ({
-                              ...prev,
-                              end_time: e.target.value,
-                            }))
-                          }
-                          className={inputClass}
-                          style={{
-                            borderColor:
-                              !specialDateForm.is_closed &&
-                              !specialRangeForm.enabled &&
-                              !isValidHHmm(specialDateForm.end_time)
-                                ? "rgba(244,63,94,0.62)"
-                                : "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                            opacity:
-                              specialDateForm.is_closed || specialRangeForm.enabled
-                                ? 0.6
-                                : 1,
-                          }}
-                        />
-                      </div>
+                        {!specialDateForm.is_closed ? (
+                          <>
+                            <div className="space-y-1">
+                              <label
+                                className="block text-[11px] font-semibold uppercase tracking-wide"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                Desde
+                              </label>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="HH:mm"
+                                value={normalizeTimeValue(specialDateForm.start_time) || "09:00"}
+                                aria-invalid={!isValidHHmm(specialDateForm.start_time)}
+                                onChange={(e) =>
+                                  setSpecialDateForm((prev) => ({
+                                    ...prev,
+                                    start_time: e.target.value,
+                                  }))
+                                }
+                                className={inputClass}
+                                style={{
+                                  borderColor: !isValidHHmm(specialDateForm.start_time)
+                                    ? "rgba(244,63,94,0.62)"
+                                    : "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                }}
+                              />
+                            </div>
 
-                      <div className="flex items-end">
-                        <button
-                          type="button"
-                          onClick={handleSaveSpecialDate}
-                          disabled={
-                            specialDateSaving ||
-                            Boolean(getStaffSpecialDateTimeError())
-                          }
-                          className={primaryButtonClass}
-                          style={{
-                            background:
-                              "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                          }}
-                        >
-                          {specialDateSaving
-                            ? editingSpecialDateId
-                              ? "Guardando..."
-                              : "Agregando..."
-                            : editingSpecialDateId
-                            ? "Guardar"
-                            : "Agregar"}
-                        </button>
-                      </div>
+                            <div className="space-y-1">
+                              <label
+                                className="block text-[11px] font-semibold uppercase tracking-wide"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                Hasta
+                              </label>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="HH:mm"
+                                value={normalizeTimeValue(specialDateForm.end_time) || "18:00"}
+                                aria-invalid={!isValidHHmm(specialDateForm.end_time)}
+                                onChange={(e) =>
+                                  setSpecialDateForm((prev) => ({
+                                    ...prev,
+                                    end_time: e.target.value,
+                                  }))
+                                }
+                                className={inputClass}
+                                style={{
+                                  borderColor: !isValidHHmm(specialDateForm.end_time)
+                                    ? "rgba(244,63,94,0.62)"
+                                    : "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                }}
+                              />
+                            </div>
+                          </>
+                        ) : null}
 
-                      <div className="flex items-end">
-                        <button
-                          type="button"
-                          onClick={resetSpecialDateForm}
-                          disabled={specialDateSaving}
-                          className={secondaryButtonClass}
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                          }}
-                        >
-                          Cancelar
-                        </button>
+                        <div className="flex items-end xl:justify-end">
+                          <button
+                            type="button"
+                            onClick={handleSaveSpecialDate}
+                            disabled={
+                              specialDateSaving ||
+                              Boolean(getStaffSpecialDateTimeError())
+                            }
+                            className={primaryButtonClass}
+                            style={{
+                              background:
+                                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                            }}
+                          >
+                            {specialDateSaving
+                              ? editingSpecialDateId
+                                ? "Guardando..."
+                                : "Agregando..."
+                              : editingSpecialDateId
+                              ? "Guardar"
+                              : "Agregar"}
+                          </button>
+                        </div>
+
+                        <div className="flex items-end xl:justify-end">
+                          <button
+                            type="button"
+                            onClick={resetSpecialDateForm}
+                            disabled={specialDateSaving}
+                            className={secondaryButtonClass}
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    {!specialDateForm.is_closed && !specialRangeForm.enabled ? (
+                    {!specialDateForm.is_closed ? (
                       getStaffSpecialDateTimeError() ? (
                         <p className="text-xs font-semibold text-rose-500">
                           {getStaffSpecialDateTimeError()}

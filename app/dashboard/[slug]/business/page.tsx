@@ -3314,38 +3314,31 @@ onClick={() => {
             : "var(--bg-card)",
         }}
       >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <label
-            className={`orbyx-business-energy flex h-11 w-fit items-center gap-3 rounded-2xl border px-4 text-sm font-medium ${
-              specialDateRangeForm.enabled ? "orbyx-business-energy-active" : ""
-            }`}
-            style={{
-              borderColor: specialDateRangeForm.enabled
-                ? "rgba(37,99,235,0.58)"
-                : "var(--border-color)",
-              background: specialDateRangeForm.enabled
-                ? "rgba(37,99,235,0.10)"
-                : "var(--bg-soft)",
-              color: "var(--text-main)",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={specialDateRangeForm.enabled}
+        <div className="mt-1 grid gap-3 md:grid-cols-2 xl:grid-cols-[150px_160px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_170px_150px_150px_auto_auto] xl:items-end">
+          <div className="space-y-1">
+            <label
+              className="block text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Tipo de fecha
+            </label>
+            <select
+              value={specialDateRangeForm.enabled ? "range" : "single"}
               onChange={(e) =>
-                updateSpecialDateRange("enabled", e.target.checked)
+                updateSpecialDateRange("enabled", e.target.value === "range")
               }
-              className="h-4 w-4 rounded"
-            />
-            Rango
-          </label>
+              className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              <option value="single">Un día</option>
+              <option value="range">Rango de fechas</option>
+            </select>
+          </div>
 
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            Agrega cierres o horarios especiales para varios días seguidos.
-          </p>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[160px_minmax(150px,0.5fr)_minmax(150px,0.5fr)_minmax(0,1fr)]">
           <div className="space-y-1">
             <label
               className="block text-[11px] font-semibold uppercase tracking-wide"
@@ -3424,17 +3417,25 @@ onClick={() => {
               </div>
             </>
           ) : (
-            <input
-              type="date"
-              value={specialDateRangeForm.date}
-              onChange={(e) => updateSpecialDateRange("date", e.target.value)}
-              className="h-11 rounded-2xl border px-3 text-sm outline-none transition md:col-span-2 xl:col-span-2"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-main)",
-              }}
-            />
+            <div className="space-y-1">
+              <label
+                className="block text-[11px] font-semibold uppercase tracking-wide"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Fecha
+              </label>
+              <input
+                type="date"
+                value={specialDateRangeForm.date}
+                onChange={(e) => updateSpecialDateRange("date", e.target.value)}
+                className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              />
+            </div>
           )}
 
           <div className="space-y-1">
@@ -3457,138 +3458,135 @@ onClick={() => {
               }}
             />
           </div>
-        </div>
 
-          <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_150px_150px_auto_auto] md:items-end">
+          <div className="space-y-1">
             <label
-              className={`orbyx-business-energy flex h-11 items-center gap-3 rounded-2xl border px-4 text-sm ${
-                specialDateRangeForm.is_closed ? "orbyx-business-energy-active" : ""
-              }`}
-              style={{
-                borderColor: specialDateRangeForm.is_closed
-                  ? "rgba(37,99,235,0.58)"
-                  : "var(--border-color)",
-                background: specialDateRangeForm.is_closed
-                  ? "rgba(37,99,235,0.10)"
-                  : "var(--bg-soft)",
-                color: "var(--text-main)",
-              }}
+              className="block text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
             >
-              <input
-                type="checkbox"
-                checked={specialDateRangeForm.is_closed}
-                onChange={(e) =>
-                  updateSpecialDateRange("is_closed", e.target.checked)
-                }
-                className="h-4 w-4 rounded"
-              />
-              Cerrado todo el día
+              Tipo de cobertura
             </label>
-
-            {!specialDateRangeForm.is_closed ? (
-              <>
-                <div className="space-y-1">
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Desde
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="HH:mm"
-                    value={specialDateRangeForm.start_time}
-                    onChange={(e) =>
-                      updateSpecialDateRange("start_time", e.target.value)
-                    }
-                    onBlur={(e) =>
-                      updateSpecialDateRange("start_time", e.target.value.trim())
-                    }
-                    aria-invalid={
-                      !isValidTime(
-                        String(specialDateRangeForm.start_time || "").trim()
-                      )
-                    }
-                    className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                    style={{
-                      borderColor: !isValidTime(
-                        String(specialDateRangeForm.start_time || "").trim()
-                      )
-                        ? "rgba(244,63,94,0.62)"
-                        : "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label
-                    className="block text-[11px] font-semibold uppercase tracking-wide"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    Hasta
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="HH:mm"
-                    value={specialDateRangeForm.end_time}
-                    onChange={(e) => updateSpecialDateRange("end_time", e.target.value)}
-                    onBlur={(e) =>
-                      updateSpecialDateRange("end_time", e.target.value.trim())
-                    }
-                    aria-invalid={
-                      !isValidTime(
-                        String(specialDateRangeForm.end_time || "").trim()
-                      )
-                    }
-                    className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
-                    style={{
-                      borderColor: !isValidTime(
-                        String(specialDateRangeForm.end_time || "").trim()
-                      )
-                        ? "rgba(244,63,94,0.62)"
-                        : "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
-              </>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={saveSpecialDateDraft}
-              disabled={
-                savingSpecialDates || Boolean(getSpecialDateDraftTimeError())
+            <select
+              value={specialDateRangeForm.is_closed ? "all_day" : "time_range"}
+              onChange={(e) =>
+                updateSpecialDateRange("is_closed", e.target.value === "all_day")
               }
-              className={secondaryButtonClass}
-              style={{
-                borderColor: "rgba(37,99,235,0.28)",
-                background: "rgba(37,99,235,0.08)",
-                color: "var(--text-main)",
-              }}
-            >
-              {savingSpecialDates ? "Guardando..." : "Guardar fecha especial"}
-            </button>
-
-            <button
-              type="button"
-              onClick={resetSpecialDateDraft}
-              disabled={savingSpecialDates}
-              className={secondaryButtonClass}
+              className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
                 color: "var(--text-main)",
               }}
             >
-              Cancelar
-            </button>
+              <option value="all_day">Todo el día</option>
+              <option value="time_range">Rango de horario</option>
+            </select>
           </div>
+
+          {!specialDateRangeForm.is_closed ? (
+            <>
+              <div className="space-y-1">
+                <label
+                  className="block text-[11px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Desde
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="HH:mm"
+                  value={specialDateRangeForm.start_time}
+                  onChange={(e) =>
+                    updateSpecialDateRange("start_time", e.target.value)
+                  }
+                  onBlur={(e) =>
+                    updateSpecialDateRange("start_time", e.target.value.trim())
+                  }
+                  aria-invalid={
+                    !isValidTime(
+                      String(specialDateRangeForm.start_time || "").trim()
+                    )
+                  }
+                  className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: !isValidTime(
+                      String(specialDateRangeForm.start_time || "").trim()
+                    )
+                      ? "rgba(244,63,94,0.62)"
+                      : "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label
+                  className="block text-[11px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Hasta
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="HH:mm"
+                  value={specialDateRangeForm.end_time}
+                  onChange={(e) => updateSpecialDateRange("end_time", e.target.value)}
+                  onBlur={(e) =>
+                    updateSpecialDateRange("end_time", e.target.value.trim())
+                  }
+                  aria-invalid={
+                    !isValidTime(
+                      String(specialDateRangeForm.end_time || "").trim()
+                    )
+                  }
+                  className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: !isValidTime(
+                      String(specialDateRangeForm.end_time || "").trim()
+                    )
+                      ? "rgba(244,63,94,0.62)"
+                      : "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+            </>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={saveSpecialDateDraft}
+            disabled={
+              savingSpecialDates || Boolean(getSpecialDateDraftTimeError())
+            }
+            className={secondaryButtonClass}
+            style={{
+              borderColor: "rgba(37,99,235,0.28)",
+              background: "rgba(37,99,235,0.08)",
+              color: "var(--text-main)",
+            }}
+          >
+            {savingSpecialDates ? "Guardando..." : "Guardar fecha especial"}
+          </button>
+
+          <button
+            type="button"
+            onClick={resetSpecialDateDraft}
+            disabled={savingSpecialDates}
+            className={secondaryButtonClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+              color: "var(--text-main)",
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
 
           {!specialDateRangeForm.is_closed ? (
             getSpecialDateDraftTimeError() ? (
