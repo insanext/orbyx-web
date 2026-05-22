@@ -345,6 +345,7 @@ const [photoUrl, setPhotoUrl] = useState("");
     useState("");
   const [specialRangeDateToDisplay, setSpecialRangeDateToDisplay] =
     useState("");
+  const [specialDateFormOpen, setSpecialDateFormOpen] = useState(false);
   const [specialDateSaving, setSpecialDateSaving] = useState(false);
   const [specialDateError, setSpecialDateError] = useState("");
   const [editingSpecialDateId, setEditingSpecialDateId] = useState<
@@ -769,6 +770,18 @@ async function loadStaffHours(id: string, staffId: string) {
     setSpecialRangeDateToDisplay("");
     setSpecialDateError("");
     setEditingSpecialDateId(null);
+    setSpecialDateFormOpen(false);
+  }
+
+  function openSpecialDateForm() {
+    setSpecialDateForm(emptySpecialDateForm);
+    setSpecialRangeForm(emptySpecialRangeForm);
+    setSpecialDateDisplay("");
+    setSpecialRangeDateFromDisplay("");
+    setSpecialRangeDateToDisplay("");
+    setSpecialDateError("");
+    setEditingSpecialDateId(null);
+    setSpecialDateFormOpen(true);
   }
 
   function toggleStaffSelection(staffId: string) {
@@ -1298,6 +1311,7 @@ function validateStaffHours() {
     setSpecialDateDisplay(formatDateDisplay(item.date));
     setSpecialRangeDateFromDisplay("");
     setSpecialRangeDateToDisplay("");
+    setSpecialDateFormOpen(true);
     setSaveError("");
     setSpecialDateError("");
     setSaveOk("");
@@ -2475,6 +2489,29 @@ function validateStaffHours() {
                   />
                 ) : (
                   <div className="space-y-4">
+                    {!specialDateFormOpen ? (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={openSpecialDateForm}
+                          className={specialPrimaryButtonClass}
+                          style={{
+                            background:
+                              "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                          }}
+                        >
+                          Agregar fecha especial
+                        </button>
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Agrega una fecha o rango que quieras bloquear o ajustar para desactivar bloques de agenda.
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {specialDateFormOpen ? (
                     <div
                       className="rounded-2xl border p-3"
                       style={{
@@ -2855,6 +2892,7 @@ function validateStaffHours() {
                         )
                       ) : null}
                     </div>
+                    ) : null}
 
                     {specialDateError ? (
                       <p className="text-xs font-semibold text-rose-500">
