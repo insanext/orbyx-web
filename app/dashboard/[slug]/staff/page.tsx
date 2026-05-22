@@ -58,6 +58,15 @@ type StaffSpecialDateItem = {
   end_time: string | null;
 };
 
+type StaffSpecialDateGroup = {
+  key: string;
+  items: StaffSpecialDateItem[];
+  first: StaffSpecialDateItem;
+  startDate: string;
+  endDate: string;
+  isRange: boolean;
+};
+
 type SpecialRangeForm = {
   enabled: boolean;
   type:
@@ -197,6 +206,56 @@ function getDateRangeDays(from: string, to: string) {
   }
 
   return result;
+}
+
+function getNextDateIso(dateString: string) {
+  const date = new Date(`${dateString}T12:00:00`);
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function getSpecialDateGroupConfigKey(item: StaffSpecialDateItem) {
+  return [
+    item.label || "",
+    item.is_closed ? "closed" : "partial",
+    normalizeTimeValue(item.start_time),
+    normalizeTimeValue(item.end_time),
+  ].join("|");
+}
+
+function groupStaffSpecialDates(items: StaffSpecialDateItem[]) {
+  const sorted = [...items]
+    .filter((item) => item.date)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+  const groups: StaffSpecialDateGroup[] = [];
+
+  for (const item of sorted) {
+    const configKey = getSpecialDateGroupConfigKey(item);
+    const previous = groups[groups.length - 1];
+    const isConsecutive =
+      previous &&
+      previous.key === configKey &&
+      getNextDateIso(previous.endDate) === item.date;
+
+    if (isConsecutive) {
+      previous.items.push(item);
+      previous.endDate = item.date;
+      previous.isRange = previous.startDate !== previous.endDate;
+      continue;
+    }
+
+    groups.push({
+      key: configKey,
+      items: [item],
+      first: item,
+      startDate: item.date,
+      endDate: item.date,
+      isRange: false,
+    });
+  }
+
+  return groups;
 }
 
 function normalizePlanSlug(planSlug?: string | null) {
@@ -374,6 +433,11 @@ const [photoUrl, setPhotoUrl] = useState("");
 
   const selectedBranchName =
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
+
+  const groupedStaffSpecialDates = useMemo(
+    () => groupStaffSpecialDates(staffSpecialDates),
+    [staffSpecialDates]
+  );
 
   const planCaps: Record<string, { max_staff: number }> = {
     pro: { max_staff: 2 },
@@ -1484,6 +1548,54 @@ function validateStaffHours() {
       }
 
       setSaveOk("Excepción eliminada correctamente.");
+    } catch (error: unknown) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo eliminar la excepción"
+      );
+    }
+  }
+  async function handleDeleteSpecialDateGroup(group: StaffSpecialDateGroup) {
+    const ids = group.items.map((item) => item.id).filter(Boolean) as string[];
+    if (ids.length === 0) return;
+
+    const ok = window.confirm(
+      group.isRange
+        ? "¿Seguro que quieres eliminar este rango de excepciones?"
+        : "¿Seguro que quieres eliminar esta excepción?"
+    );
+    if (!ok) return;
+
+    try {
+      setSaveError("");
+      setSaveOk("");
+
+      for (const id of ids) {
+        const res = await fetch(`${BACKEND_URL}/staff-special-dates/${id}`, {
+          method: "DELETE",
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "No se pudo eliminar la excepción");
+        }
+      }
+
+      if (tenantId && editingId) {
+        await loadStaffSpecialDates(tenantId, editingId);
+      }
+
+      if (editingSpecialDateId && ids.includes(editingSpecialDateId)) {
+        resetSpecialDateForm();
+      }
+
+      setSaveOk(
+        group.isRange
+          ? "Rango de excepciones eliminado correctamente."
+          : "Excepción eliminada correctamente."
+      );
     } catch (error: unknown) {
       setSaveError(
         error instanceof Error
@@ -3006,7 +3118,7 @@ function validateStaffHours() {
                         </p>
                       </div>
 
-                      {staffSpecialDates.length === 0 ? (
+                      {groupedStaffSpecialDates.length === 0 ? (
                         <div
                           className="rounded-2xl border border-dashed px-4 py-6 text-sm"
                           style={{
@@ -3019,9 +3131,20 @@ function validateStaffHours() {
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {staffSpecialDates.map((item) => (
+                          {groupedStaffSpecialDates.map((group) => {
+                            const item = group.first;
+                            const dateLabel = group.isRange
+                              ? `${formatDateDisplay(group.startDate)} al ${formatDateDisplay(group.endDate)}`
+                              : formatDateDisplay(group.startDate);
+                            const timeLabel = item.is_closed
+                              ? "Cerrado todo el día"
+                              : `${normalizeTimeValue(item.start_time) || "--:--"} a ${
+                                  normalizeTimeValue(item.end_time) || "--:--"
+                                }`;
+
+                            return (
                             <div
-                              key={item.id}
+                              key={`${group.key}-${group.startDate}-${group.endDate}`}
                               className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3"
                               style={{
                                 borderColor: "var(--border-color)",
@@ -3034,19 +3157,22 @@ function validateStaffHours() {
                                   className="text-sm font-medium"
                                   style={{ color: "var(--text-main)" }}
                                 >
-                                  {formatDateDisplay(item.date)}
+                                  {dateLabel}
                                 </p>
                                 <p
                                   className="mt-1 text-sm"
                                   style={{ color: "var(--text-muted)" }}
                                 >
-                                  {item.label || "Sin etiqueta"} ·{" "}
-                                  {item.is_closed
-                                    ? "Cerrado todo el día"
-                                    : `${item.start_time || "--:--"} a ${
-                                        item.end_time || "--:--"
-                                      }`}
+                                  {item.label || "Sin etiqueta"} · {timeLabel}
                                 </p>
+                                {group.isRange ? (
+                                  <p
+                                    className="mt-1 text-xs"
+                                    style={{ color: "var(--text-muted)" }}
+                                  >
+                                    Editar abre la primera fecha del rango.
+                                  </p>
+                                ) : null}
                               </div>
 
                               <div className="flex flex-wrap gap-2">
@@ -3066,7 +3192,7 @@ function validateStaffHours() {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    item.id && handleDeleteSpecialDate(item.id)
+                                    handleDeleteSpecialDateGroup(group)
                                   }
                                   className="orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
                                 >
@@ -3074,7 +3200,8 @@ function validateStaffHours() {
                                 </button>
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
