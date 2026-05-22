@@ -343,6 +343,10 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     "orbyx-business-energy inline-flex h-11 w-full items-center justify-center rounded-2xl border px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
   const secondaryButtonClass =
     "orbyx-business-energy inline-flex h-11 w-full items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+  const specialInputClass =
+    "h-10 w-full rounded-xl border px-3 text-xs outline-none transition";
+  const specialSecondaryButtonClass =
+    "orbyx-business-energy inline-flex h-10 w-full items-center justify-center rounded-xl border px-4 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
 
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
@@ -3314,10 +3318,10 @@ onClick={() => {
             : "var(--bg-card)",
         }}
       >
-        <div className="mt-1 grid gap-3 md:grid-cols-2 xl:grid-cols-[150px_160px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_170px_150px_150px_auto_auto] xl:items-end">
+        <div className="mt-1 grid gap-2 md:grid-cols-2 xl:grid-cols-[150px_170px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)] xl:items-end">
           <div className="space-y-1">
             <label
-              className="block text-[11px] font-semibold uppercase tracking-wide"
+              className="block text-[10px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--text-muted)" }}
             >
               Tipo de fecha
@@ -3327,7 +3331,7 @@ onClick={() => {
               onChange={(e) =>
                 updateSpecialDateRange("enabled", e.target.value === "range")
               }
-              className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+              className={specialInputClass}
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -3341,7 +3345,7 @@ onClick={() => {
 
           <div className="space-y-1">
             <label
-              className="block text-[11px] font-semibold uppercase tracking-wide"
+              className="block text-[10px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--text-muted)" }}
             >
               Motivo
@@ -3354,7 +3358,7 @@ onClick={() => {
                   e.target.value as SpecialDateRangeForm["type"]
                 )
               }
-              className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+              className={specialInputClass}
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -3378,7 +3382,7 @@ onClick={() => {
             <>
               <div className="space-y-1">
                 <label
-                  className="block text-[11px] font-semibold uppercase tracking-wide"
+                  className="block text-[10px] font-semibold uppercase tracking-wide"
                   style={{ color: "var(--text-muted)" }}
                 >
                   Desde
@@ -3387,7 +3391,7 @@ onClick={() => {
                   type="date"
                   value={specialDateRangeForm.date_from}
                   onChange={(e) => updateSpecialDateRange("date_from", e.target.value)}
-                  className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                  className={specialInputClass}
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -3398,7 +3402,7 @@ onClick={() => {
 
               <div className="space-y-1">
                 <label
-                  className="block text-[11px] font-semibold uppercase tracking-wide"
+                  className="block text-[10px] font-semibold uppercase tracking-wide"
                   style={{ color: "var(--text-muted)" }}
                 >
                   Hasta
@@ -3407,7 +3411,7 @@ onClick={() => {
                   type="date"
                   value={specialDateRangeForm.date_to}
                   onChange={(e) => updateSpecialDateRange("date_to", e.target.value)}
-                  className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                  className={specialInputClass}
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -3419,7 +3423,7 @@ onClick={() => {
           ) : (
             <div className="space-y-1">
               <label
-                className="block text-[11px] font-semibold uppercase tracking-wide"
+                className="block text-[10px] font-semibold uppercase tracking-wide"
                 style={{ color: "var(--text-muted)" }}
               >
                 Fecha
@@ -3428,7 +3432,7 @@ onClick={() => {
                 type="date"
                 value={specialDateRangeForm.date}
                 onChange={(e) => updateSpecialDateRange("date", e.target.value)}
-                className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                className={specialInputClass}
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -3440,7 +3444,7 @@ onClick={() => {
 
           <div className="space-y-1">
             <label
-              className="block text-[11px] font-semibold uppercase tracking-wide"
+              className="block text-[10px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--text-muted)" }}
             >
               Etiqueta
@@ -3450,7 +3454,7 @@ onClick={() => {
               value={specialDateRangeForm.label}
               onChange={(e) => updateSpecialDateRange("label", e.target.value)}
               placeholder="Etiqueta opcional"
-              className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+              className={specialInputClass}
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -3459,9 +3463,12 @@ onClick={() => {
             />
           </div>
 
+        </div>
+
+        <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-[170px_130px_130px_auto_auto] lg:items-end">
           <div className="space-y-1">
             <label
-              className="block text-[11px] font-semibold uppercase tracking-wide"
+              className="block text-[10px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--text-muted)" }}
             >
               Tipo de cobertura
@@ -3471,7 +3478,7 @@ onClick={() => {
               onChange={(e) =>
                 updateSpecialDateRange("is_closed", e.target.value === "all_day")
               }
-              className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+              className={specialInputClass}
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -3487,7 +3494,7 @@ onClick={() => {
             <>
               <div className="space-y-1">
                 <label
-                  className="block text-[11px] font-semibold uppercase tracking-wide"
+                  className="block text-[10px] font-semibold uppercase tracking-wide"
                   style={{ color: "var(--text-muted)" }}
                 >
                   Desde
@@ -3508,7 +3515,7 @@ onClick={() => {
                       String(specialDateRangeForm.start_time || "").trim()
                     )
                   }
-                  className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                  className={specialInputClass}
                   style={{
                     borderColor: !isValidTime(
                       String(specialDateRangeForm.start_time || "").trim()
@@ -3523,7 +3530,7 @@ onClick={() => {
 
               <div className="space-y-1">
                 <label
-                  className="block text-[11px] font-semibold uppercase tracking-wide"
+                  className="block text-[10px] font-semibold uppercase tracking-wide"
                   style={{ color: "var(--text-muted)" }}
                 >
                   Hasta
@@ -3542,7 +3549,7 @@ onClick={() => {
                       String(specialDateRangeForm.end_time || "").trim()
                     )
                   }
-                  className="h-11 w-full rounded-2xl border px-3 text-sm outline-none transition"
+                  className={specialInputClass}
                   style={{
                     borderColor: !isValidTime(
                       String(specialDateRangeForm.end_time || "").trim()
@@ -3563,7 +3570,9 @@ onClick={() => {
             disabled={
               savingSpecialDates || Boolean(getSpecialDateDraftTimeError())
             }
-            className={secondaryButtonClass}
+            className={`${specialSecondaryButtonClass} ${
+              specialDateRangeForm.is_closed ? "lg:col-start-4" : ""
+            }`}
             style={{
               borderColor: "rgba(37,99,235,0.28)",
               background: "rgba(37,99,235,0.08)",
@@ -3577,7 +3586,7 @@ onClick={() => {
             type="button"
             onClick={resetSpecialDateDraft}
             disabled={savingSpecialDates}
-            className={secondaryButtonClass}
+            className={specialSecondaryButtonClass}
             style={{
               borderColor: "var(--border-color)",
               background: "var(--bg-soft)",

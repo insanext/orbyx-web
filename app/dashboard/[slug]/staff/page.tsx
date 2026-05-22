@@ -360,6 +360,13 @@ const [photoUrl, setPhotoUrl] = useState("");
 const secondaryButtonClass =
   "orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
+const specialInputClass =
+  "h-10 w-full rounded-xl border px-3 text-xs outline-none transition";
+const specialPrimaryButtonClass =
+  "orbyx-staff-energy inline-flex h-10 w-full items-center justify-center rounded-xl border px-4 text-xs font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+const specialSecondaryButtonClass =
+  "orbyx-staff-energy inline-flex h-10 w-full items-center justify-center rounded-xl border px-4 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+
 async function uploadStaffImage(file: File, staffId: string) {
   const formData = new FormData();
   formData.append("file", file);
@@ -2390,11 +2397,11 @@ function validateStaffHours() {
                         background: "var(--bg-soft)",
                       }}
                     >
-                      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_150px_150px] xl:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_150px_150px_auto_auto] xl:items-end">
+                      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[150px_180px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)] xl:items-end">
                         {!editingSpecialDateId ? (
                           <div className="space-y-1">
                             <label
-                              className="block text-[11px] font-semibold uppercase tracking-wide"
+                              className="block text-[10px] font-semibold uppercase tracking-wide"
                               style={{ color: "var(--text-muted)" }}
                             >
                               Tipo de fecha
@@ -2407,7 +2414,7 @@ function validateStaffHours() {
                                   enabled: e.target.value === "range",
                                 }))
                               }
-                              className={inputClass}
+                              className={specialInputClass}
                               style={{
                                 borderColor: "var(--border-color)",
                                 background: "var(--bg-card)",
@@ -2422,7 +2429,7 @@ function validateStaffHours() {
 
                         <div className="space-y-1">
                           <label
-                            className="block text-[11px] font-semibold uppercase tracking-wide"
+                            className="block text-[10px] font-semibold uppercase tracking-wide"
                             style={{ color: "var(--text-muted)" }}
                           >
                             Motivo
@@ -2435,7 +2442,7 @@ function validateStaffHours() {
                                 type: e.target.value as SpecialRangeForm["type"],
                               }))
                             }
-                            className={inputClass}
+                            className={specialInputClass}
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -2459,7 +2466,7 @@ function validateStaffHours() {
                           <>
                             <div className="space-y-1">
                               <label
-                                className="block text-[11px] font-semibold uppercase tracking-wide"
+                                className="block text-[10px] font-semibold uppercase tracking-wide"
                                 style={{ color: "var(--text-muted)" }}
                               >
                                 Desde
@@ -2473,7 +2480,7 @@ function validateStaffHours() {
                                     date_from: e.target.value,
                                   }))
                                 }
-                                className={inputClass}
+                                className={specialInputClass}
                                 style={{
                                   borderColor: "var(--border-color)",
                                   background: "var(--bg-card)",
@@ -2484,7 +2491,7 @@ function validateStaffHours() {
 
                             <div className="space-y-1">
                               <label
-                                className="block text-[11px] font-semibold uppercase tracking-wide"
+                                className="block text-[10px] font-semibold uppercase tracking-wide"
                                 style={{ color: "var(--text-muted)" }}
                               >
                                 Hasta
@@ -2498,7 +2505,7 @@ function validateStaffHours() {
                                     date_to: e.target.value,
                                   }))
                                 }
-                                className={inputClass}
+                                className={specialInputClass}
                                 style={{
                                   borderColor: "var(--border-color)",
                                   background: "var(--bg-card)",
@@ -2510,7 +2517,7 @@ function validateStaffHours() {
                         ) : (
                           <div className="space-y-1">
                             <label
-                              className="block text-[11px] font-semibold uppercase tracking-wide"
+                              className="block text-[10px] font-semibold uppercase tracking-wide"
                               style={{ color: "var(--text-muted)" }}
                             >
                               Fecha
@@ -2524,7 +2531,7 @@ function validateStaffHours() {
                                   date: e.target.value,
                                 }))
                               }
-                              className={inputClass}
+                              className={specialInputClass}
                               style={{
                                 borderColor: "var(--border-color)",
                                 background: "var(--bg-card)",
@@ -2536,7 +2543,7 @@ function validateStaffHours() {
 
                         <div className="space-y-1">
                           <label
-                            className="block text-[11px] font-semibold uppercase tracking-wide"
+                            className="block text-[10px] font-semibold uppercase tracking-wide"
                             style={{ color: "var(--text-muted)" }}
                           >
                             Etiqueta
@@ -2551,7 +2558,7 @@ function validateStaffHours() {
                               }))
                             }
                             placeholder="Etiqueta opcional"
-                            className={inputClass}
+                            className={specialInputClass}
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -2560,9 +2567,12 @@ function validateStaffHours() {
                           />
                         </div>
 
+                      </div>
+
+                      <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-[170px_130px_130px_auto_auto] lg:items-end">
                         <div className="space-y-1">
                           <label
-                            className="block text-[11px] font-semibold uppercase tracking-wide"
+                            className="block text-[10px] font-semibold uppercase tracking-wide"
                             style={{ color: "var(--text-muted)" }}
                           >
                             Tipo de cobertura
@@ -2575,7 +2585,7 @@ function validateStaffHours() {
                                 is_closed: e.target.value === "all_day",
                               }))
                             }
-                            className={inputClass}
+                            className={specialInputClass}
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -2591,7 +2601,7 @@ function validateStaffHours() {
                           <>
                             <div className="space-y-1">
                               <label
-                                className="block text-[11px] font-semibold uppercase tracking-wide"
+                                className="block text-[10px] font-semibold uppercase tracking-wide"
                                 style={{ color: "var(--text-muted)" }}
                               >
                                 Desde
@@ -2608,7 +2618,7 @@ function validateStaffHours() {
                                     start_time: e.target.value,
                                   }))
                                 }
-                                className={inputClass}
+                                className={specialInputClass}
                                 style={{
                                   borderColor: !isValidHHmm(specialDateForm.start_time)
                                     ? "rgba(244,63,94,0.62)"
@@ -2621,7 +2631,7 @@ function validateStaffHours() {
 
                             <div className="space-y-1">
                               <label
-                                className="block text-[11px] font-semibold uppercase tracking-wide"
+                                className="block text-[10px] font-semibold uppercase tracking-wide"
                                 style={{ color: "var(--text-muted)" }}
                               >
                                 Hasta
@@ -2638,7 +2648,7 @@ function validateStaffHours() {
                                     end_time: e.target.value,
                                   }))
                                 }
-                                className={inputClass}
+                                className={specialInputClass}
                                 style={{
                                   borderColor: !isValidHHmm(specialDateForm.end_time)
                                     ? "rgba(244,63,94,0.62)"
@@ -2651,7 +2661,11 @@ function validateStaffHours() {
                           </>
                         ) : null}
 
-                        <div className="flex items-end xl:justify-end">
+                        <div
+                          className={`flex items-end lg:justify-end ${
+                            specialDateForm.is_closed ? "lg:col-start-4" : ""
+                          }`}
+                        >
                           <button
                             type="button"
                             onClick={handleSaveSpecialDate}
@@ -2659,7 +2673,7 @@ function validateStaffHours() {
                               specialDateSaving ||
                               Boolean(getStaffSpecialDateTimeError())
                             }
-                            className={primaryButtonClass}
+                            className={specialPrimaryButtonClass}
                             style={{
                               background:
                                 "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
@@ -2675,12 +2689,12 @@ function validateStaffHours() {
                           </button>
                         </div>
 
-                        <div className="flex items-end xl:justify-end">
+                        <div className="flex items-end lg:justify-end">
                           <button
                             type="button"
                             onClick={resetSpecialDateForm}
                             disabled={specialDateSaving}
-                            className={secondaryButtonClass}
+                            className={specialSecondaryButtonClass}
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -2691,22 +2705,22 @@ function validateStaffHours() {
                           </button>
                         </div>
                       </div>
-                    </div>
 
-                    {!specialDateForm.is_closed ? (
-                      getStaffSpecialDateTimeError() ? (
-                        <p className="text-xs font-semibold text-rose-500">
-                          {getStaffSpecialDateTimeError()}
-                        </p>
-                      ) : (
-                        <p
-                          className="text-xs font-medium"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          Formato 24 hrs. Ejemplo: 09:30
-                        </p>
-                      )
-                    ) : null}
+                      {!specialDateForm.is_closed ? (
+                        getStaffSpecialDateTimeError() ? (
+                          <p className="mt-2 text-xs font-semibold text-rose-500">
+                            {getStaffSpecialDateTimeError()}
+                          </p>
+                        ) : (
+                          <p
+                            className="mt-2 text-xs font-medium"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Formato 24 hrs. Ejemplo: 09:30
+                          </p>
+                        )
+                      ) : null}
+                    </div>
 
                     {specialDateError ? (
                       <p className="text-xs font-semibold text-rose-500">
