@@ -157,6 +157,13 @@ function normalizeTimeValue(value?: string | null) {
     : normalized;
 }
 
+function formatDateDisplay(dateString?: string | null) {
+  if (!dateString) return "";
+  const [year, month, day] = String(dateString).slice(0, 10).split("-");
+  if (!year || !month || !day) return String(dateString);
+  return `${day}-${month}-${year}`;
+}
+
 function getDateRangeDays(from: string, to: string) {
   const result: string[] = [];
   const current = new Date(`${from}T12:00:00`);
@@ -2689,7 +2696,7 @@ function validateStaffHours() {
                           </button>
                         </div>
 
-                        <div className="flex items-end lg:justify-end">
+                        <div className="flex items-end lg:justify-start">
                           <button
                             type="button"
                             onClick={resetSpecialDateForm}
@@ -2736,77 +2743,100 @@ function validateStaffHours() {
                       />
                     ) : null}
 
-                    {staffSpecialDates.length === 0 ? (
-                      <div
-                        className="rounded-2xl border border-dashed px-4 py-6 text-sm"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-soft)",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        Este staff aún no tiene excepciones configuradas.
+                    <div
+                      className="space-y-3 rounded-2xl border p-4"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                      }}
+                    >
+                      <div>
+                        <h4
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--text-main)" }}
+                        >
+                          Historial de excepciones
+                        </h4>
+                        <p
+                          className="mt-1 text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Días libres u horarios especiales configurados para este profesional.
+                        </p>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {staffSpecialDates.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background:
-                                "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-soft))",
-                            }}
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p
-                                className="text-sm font-medium"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {item.date}
-                              </p>
-                              <p
-                                className="mt-1 text-sm"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                {item.label || "Sin etiqueta"} ·{" "}
-                                {item.is_closed
-                                  ? "Cerrado todo el día"
-                                  : `${item.start_time || "--:--"} a ${
-                                      item.end_time || "--:--"
-                                    }`}
-                              </p>
-                            </div>
 
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleEditSpecialDate(item)}
-                                className={secondaryButtonClass}
-                                style={{
-                                  borderColor: "var(--border-color)",
-                                  background: "var(--bg-card)",
-                                  color: "var(--text-main)",
-                                }}
-                              >
-                                Editar
-                              </button>
+                      {staffSpecialDates.length === 0 ? (
+                        <div
+                          className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          Este staff aún no tiene excepciones configuradas.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {staffSpecialDates.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background:
+                                  "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-soft))",
+                              }}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className="text-sm font-medium"
+                                  style={{ color: "var(--text-main)" }}
+                                >
+                                  {formatDateDisplay(item.date)}
+                                </p>
+                                <p
+                                  className="mt-1 text-sm"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  {item.label || "Sin etiqueta"} ·{" "}
+                                  {item.is_closed
+                                    ? "Cerrado todo el día"
+                                    : `${item.start_time || "--:--"} a ${
+                                        item.end_time || "--:--"
+                                      }`}
+                                </p>
+                              </div>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  item.id && handleDeleteSpecialDate(item.id)
-                                }
-                                className="orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
-                              >
-                                Eliminar
-                              </button>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditSpecialDate(item)}
+                                  className={secondaryButtonClass}
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-card)",
+                                    color: "var(--text-main)",
+                                  }}
+                                >
+                                  Editar
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    item.id && handleDeleteSpecialDate(item.id)
+                                  }
+                                  className="orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
