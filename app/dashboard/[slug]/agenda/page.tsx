@@ -4403,6 +4403,21 @@ const appt = slotGroups[0]?.[0];
                       >
                         Profesional: {getStaffName(selectedAppointment.staff_id)}
                       </p>
+
+                      <button
+                        type="button"
+                        onClick={() => setCancelConfirmAppointment(selectedAppointment)}
+                        disabled={statusSaving || selectedAppointment.status === "canceled"}
+                        className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Cancelar reserva
+                      </button>
                     </div>
                     )}
 
@@ -4457,7 +4472,7 @@ const appt = slotGroups[0]?.[0];
 
                           <button
                             type="button"
-                            onClick={() => handleUpdateStatus(selectedAppointment!.id, "canceled")}
+                            onClick={() => setCancelConfirmAppointment(selectedAppointment!)}
                             disabled={statusSaving || selectedAppointment!.status === "canceled"}
                             className="inline-flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                             style={{
@@ -4590,6 +4605,21 @@ const appt = slotGroups[0]?.[0];
                                       className="inline-flex h-8 items-center justify-center rounded-lg bg-violet-600 px-2.5 text-[11px] font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                       Reagendó
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setCancelConfirmAppointment(attendee)}
+                                      disabled={statusSaving || isCanceled}
+                                      className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-[11px] font-medium transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                                      style={{
+                                        borderColor: "var(--border-color)",
+                                        background: "var(--bg-card)",
+                                        color: "var(--text-main)",
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                      Cancelar reserva
                                     </button>
                                   </div>
                                 ) : null}
