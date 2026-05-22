@@ -333,6 +333,8 @@ const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<A
   const [error, setError] = useState("");
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+  const [cancelConfirmAppointment, setCancelConfirmAppointment] =
+    useState<Appointment | null>(null);
   const [agendaView, setAgendaView] = useState<"week" | "day">("week");
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
 const [showPendingPanel, setShowPendingPanel] = useState(false);
@@ -2213,7 +2215,7 @@ const hasPendingClose = pendingCloseCount > 0;
         : "border border-slate-950 bg-slate-950 text-white shadow-[0_12px_30px_-16px_rgba(15,23,42,0.8)] hover:bg-slate-800"
     }`}
   >
-    {googleConnected ? "Google Calendar conectado" : "Conectar Google Calendar"}
+    {googleConnected ? "Google Calendar conectado" : "Conecta tu calendario"}
   </button>
 </div>
 
@@ -4317,7 +4319,7 @@ const appt = slotGroups[0]?.[0];
 
                           <button
                             type="button"
-                            onClick={() => handleUpdateStatus(selectedAppointment.id, "canceled")}
+                            onClick={() => setCancelConfirmAppointment(selectedAppointment)}
                             disabled={statusSaving || selectedAppointment.status === "canceled"}
                             className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                             style={{
@@ -4959,6 +4961,58 @@ const appt = slotGroups[0]?.[0];
         ) : null}
       </div>
 
+
+      {cancelConfirmAppointment ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
+          <div
+            className="w-full max-w-md rounded-3xl border p-5 shadow-2xl"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              ¿Cancelar reserva?
+            </h3>
+            <p
+              className="mt-2 text-sm leading-6"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Esta acción cancelará la reserva del cliente.
+            </p>
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setCancelConfirmAppointment(null)}
+                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const appointmentId = cancelConfirmAppointment.id;
+                  setCancelConfirmAppointment(null);
+                  handleUpdateStatus(appointmentId, "canceled");
+                }}
+                disabled={statusSaving}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Sí, cancelar reserva
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showCloseModal && selectedAppointment ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">

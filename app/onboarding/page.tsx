@@ -49,7 +49,7 @@ function OnboardingInner() {
               border: "1px solid #ccc",
             }}
           >
-            Conectar Google Calendar
+            Conecta tu calendario
           </a>
         ) : (
           <p style={{ marginTop: 16, color: "red" }}>

@@ -33,7 +33,7 @@ export default function ConnectCalendarPage() {
           className="text-xl font-semibold text-center"
           style={{ color: "var(--text-main)" }}
         >
-          Conectar Google Calendar
+          Conecta tu calendario
         </h1>
 
         <p
