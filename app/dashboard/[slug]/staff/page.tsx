@@ -164,6 +164,28 @@ function formatDateDisplay(dateString?: string | null) {
   return `${day}-${month}-${year}`;
 }
 
+function parseDateDisplay(dateString?: string | null) {
+  const value = String(dateString || "").trim();
+  if (!/^\d{2}-\d{2}-\d{4}$/.test(value)) return "";
+  const [day, month, year] = value.split("-");
+  return `${year}-${month}-${day}`;
+}
+
+function isValidDisplayDate(dateString?: string | null) {
+  const value = String(dateString || "").trim();
+  const isoDate = parseDateDisplay(value);
+  if (!isoDate) return false;
+
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
 function getDateRangeDays(from: string, to: string) {
   const result: string[] = [];
   const current = new Date(`${from}T12:00:00`);
@@ -318,6 +340,11 @@ const [photoUrl, setPhotoUrl] = useState("");
     useState<StaffSpecialDateItem>(emptySpecialDateForm);
   const [specialRangeForm, setSpecialRangeForm] =
     useState<SpecialRangeForm>(emptySpecialRangeForm);
+  const [specialDateDisplay, setSpecialDateDisplay] = useState("");
+  const [specialRangeDateFromDisplay, setSpecialRangeDateFromDisplay] =
+    useState("");
+  const [specialRangeDateToDisplay, setSpecialRangeDateToDisplay] =
+    useState("");
   const [specialDateSaving, setSpecialDateSaving] = useState(false);
   const [specialDateError, setSpecialDateError] = useState("");
   const [editingSpecialDateId, setEditingSpecialDateId] = useState<
@@ -737,6 +764,9 @@ async function loadStaffHours(id: string, staffId: string) {
   function resetSpecialDateForm() {
     setSpecialDateForm(emptySpecialDateForm);
     setSpecialRangeForm(emptySpecialRangeForm);
+    setSpecialDateDisplay("");
+    setSpecialRangeDateFromDisplay("");
+    setSpecialRangeDateToDisplay("");
     setSpecialDateError("");
     setEditingSpecialDateId(null);
   }
@@ -916,6 +946,39 @@ function getStaffSpecialDateLabel() {
     .join(" - ");
 }
 
+function getStaffSpecialDateDisplayError() {
+  if (specialRangeForm.enabled && !editingSpecialDateId) {
+    if (
+      specialRangeDateFromDisplay &&
+      !isValidDisplayDate(specialRangeDateFromDisplay)
+    ) {
+      return "Usa formato dd-mm-yyyy válido.";
+    }
+
+    if (
+      specialRangeDateToDisplay &&
+      !isValidDisplayDate(specialRangeDateToDisplay)
+    ) {
+      return "Usa formato dd-mm-yyyy válido.";
+    }
+
+    const dateFrom = parseDateDisplay(specialRangeDateFromDisplay);
+    const dateTo = parseDateDisplay(specialRangeDateToDisplay);
+
+    if (dateFrom && dateTo && dateTo < dateFrom) {
+      return "Hasta no puede ser menor que Desde.";
+    }
+
+    return "";
+  }
+
+  if (specialDateDisplay && !isValidDisplayDate(specialDateDisplay)) {
+    return "Usa formato dd-mm-yyyy válido.";
+  }
+
+  return "";
+}
+
 
 async function saveStaffHours(staffId: string) {
   const payload = {
@@ -1008,15 +1071,24 @@ function validateStaffHours() {
 
   function validateSpecialDate() {
     if (specialRangeForm.enabled && !editingSpecialDateId) {
-      if (!specialRangeForm.date_from || !specialRangeForm.date_to) {
+      const dateFrom = parseDateDisplay(specialRangeDateFromDisplay);
+      const dateTo = parseDateDisplay(specialRangeDateToDisplay);
+
+      if (!specialRangeDateFromDisplay || !specialRangeDateToDisplay) {
         throw new Error("Debes ingresar fecha desde y fecha hasta");
       }
 
-      if (specialRangeForm.date_from > specialRangeForm.date_to) {
+      if (!isValidDisplayDate(specialRangeDateFromDisplay) || !isValidDisplayDate(specialRangeDateToDisplay)) {
+        throw new Error("Usa formato dd-mm-yyyy válido.");
+      }
+
+      if (dateFrom > dateTo) {
         throw new Error("La fecha hasta debe ser igual o posterior a fecha desde");
       }
-    } else if (!specialDateForm.date) {
+    } else if (!specialDateDisplay) {
       throw new Error("Debes ingresar una fecha");
+    } else if (!isValidDisplayDate(specialDateDisplay)) {
+      throw new Error("Usa formato dd-mm-yyyy válido.");
     }
 
     if (!specialDateForm.is_closed) {
@@ -1029,7 +1101,8 @@ function validateStaffHours() {
     }
 
     const duplicated = staffSpecialDates.find((item) => {
-      if (!item.date || item.date !== specialDateForm.date) return false;
+      const selectedDate = parseDateDisplay(specialDateDisplay);
+      if (!item.date || item.date !== selectedDate) return false;
 
       if (editingSpecialDateId) {
         return item.id !== editingSpecialDateId;
@@ -1222,6 +1295,9 @@ function validateStaffHours() {
       start_time: normalizeTimeValue(item.start_time) || "09:00",
       end_time: normalizeTimeValue(item.end_time) || "18:00",
     });
+    setSpecialDateDisplay(formatDateDisplay(item.date));
+    setSpecialRangeDateFromDisplay("");
+    setSpecialRangeDateToDisplay("");
     setSaveError("");
     setSpecialDateError("");
     setSaveOk("");
@@ -1247,9 +1323,11 @@ function validateStaffHours() {
       setSaveOk("");
 
       if (specialRangeForm.enabled && !editingSpecialDateId) {
+        const dateFrom = parseDateDisplay(specialRangeDateFromDisplay);
+        const dateTo = parseDateDisplay(specialRangeDateToDisplay);
         const rangeDays = getDateRangeDays(
-          specialRangeForm.date_from,
-          specialRangeForm.date_to
+          dateFrom,
+          dateTo
         );
         const label = [
           specialRangeForm.type,
@@ -1306,7 +1384,7 @@ function validateStaffHours() {
         tenant_id: tenantId,
         branch_id: selectedBranchId,
         staff_id: editingId,
-        date: specialDateForm.date,
+        date: parseDateDisplay(specialDateDisplay),
         label: getStaffSpecialDateLabel() || null,
         is_closed: specialDateForm.is_closed,
         start_time: specialDateForm.is_closed
@@ -2479,17 +2557,31 @@ function validateStaffHours() {
                                 Desde
                               </label>
                               <input
-                                type="date"
-                                value={specialRangeForm.date_from}
-                                onChange={(e) =>
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="dd-mm-yyyy"
+                                value={specialRangeDateFromDisplay}
+                                aria-invalid={
+                                  Boolean(specialRangeDateFromDisplay) &&
+                                  !isValidDisplayDate(specialRangeDateFromDisplay)
+                                }
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setSpecialRangeDateFromDisplay(value);
                                   setSpecialRangeForm((prev) => ({
                                     ...prev,
-                                    date_from: e.target.value,
-                                  }))
-                                }
+                                    date_from: isValidDisplayDate(value)
+                                      ? parseDateDisplay(value)
+                                      : "",
+                                  }));
+                                }}
                                 className={specialInputClass}
                                 style={{
-                                  borderColor: "var(--border-color)",
+                                  borderColor:
+                                    specialRangeDateFromDisplay &&
+                                    !isValidDisplayDate(specialRangeDateFromDisplay)
+                                      ? "rgba(244,63,94,0.62)"
+                                      : "var(--border-color)",
                                   background: "var(--bg-card)",
                                   color: "var(--text-main)",
                                 }}
@@ -2504,17 +2596,31 @@ function validateStaffHours() {
                                 Hasta
                               </label>
                               <input
-                                type="date"
-                                value={specialRangeForm.date_to}
-                                onChange={(e) =>
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="dd-mm-yyyy"
+                                value={specialRangeDateToDisplay}
+                                aria-invalid={
+                                  Boolean(specialRangeDateToDisplay) &&
+                                  !isValidDisplayDate(specialRangeDateToDisplay)
+                                }
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setSpecialRangeDateToDisplay(value);
                                   setSpecialRangeForm((prev) => ({
                                     ...prev,
-                                    date_to: e.target.value,
-                                  }))
-                                }
+                                    date_to: isValidDisplayDate(value)
+                                      ? parseDateDisplay(value)
+                                      : "",
+                                  }));
+                                }}
                                 className={specialInputClass}
                                 style={{
-                                  borderColor: "var(--border-color)",
+                                  borderColor:
+                                    specialRangeDateToDisplay &&
+                                    !isValidDisplayDate(specialRangeDateToDisplay)
+                                      ? "rgba(244,63,94,0.62)"
+                                      : "var(--border-color)",
                                   background: "var(--bg-card)",
                                   color: "var(--text-main)",
                                 }}
@@ -2530,17 +2636,31 @@ function validateStaffHours() {
                               Fecha
                             </label>
                             <input
-                              type="date"
-                              value={specialDateForm.date}
-                              onChange={(e) =>
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="dd-mm-yyyy"
+                              value={specialDateDisplay}
+                              aria-invalid={
+                                Boolean(specialDateDisplay) &&
+                                !isValidDisplayDate(specialDateDisplay)
+                              }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setSpecialDateDisplay(value);
                                 setSpecialDateForm((prev) => ({
                                   ...prev,
-                                  date: e.target.value,
-                                }))
-                              }
+                                  date: isValidDisplayDate(value)
+                                    ? parseDateDisplay(value)
+                                    : "",
+                                }));
+                              }}
                               className={specialInputClass}
                               style={{
-                                borderColor: "var(--border-color)",
+                                borderColor:
+                                  specialDateDisplay &&
+                                  !isValidDisplayDate(specialDateDisplay)
+                                    ? "rgba(244,63,94,0.62)"
+                                    : "var(--border-color)",
                                 background: "var(--bg-card)",
                                 color: "var(--text-main)",
                               }}
@@ -2575,6 +2695,12 @@ function validateStaffHours() {
                         </div>
 
                       </div>
+
+                      {getStaffSpecialDateDisplayError() ? (
+                        <p className="mt-2 text-xs font-semibold text-rose-500">
+                          {getStaffSpecialDateDisplayError()}
+                        </p>
+                      ) : null}
 
                       <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-[170px_130px_130px_auto_auto] lg:items-end">
                         <div className="space-y-1">
@@ -2678,6 +2804,7 @@ function validateStaffHours() {
                             onClick={handleSaveSpecialDate}
                             disabled={
                               specialDateSaving ||
+                              Boolean(getStaffSpecialDateDisplayError()) ||
                               Boolean(getStaffSpecialDateTimeError())
                             }
                             className={specialPrimaryButtonClass}
