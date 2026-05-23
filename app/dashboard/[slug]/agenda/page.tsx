@@ -3260,22 +3260,22 @@ onClick={() => {
                                             setHoveredTimeKey("");
                                             handleAppointmentMouseLeave();
                                           }}
-                                          className={`w-full rounded-lg border p-2 text-left transition ${
+                                          className={`w-full overflow-hidden rounded-lg border px-2 py-1 text-left transition ${
                                             isGroupSlot && groupStyles
                                               ? groupStyles.card
                                               : getCardClass(appt, isSelected)
                                           }`}
                                           style={{
-                                            minHeight:
+                                            height:
                                               getAppointmentBlockMinHeight(appt),
                                           }}
                                         >
                                           {isGroupSlot &&
                                           groupVisualState &&
                                           groupStyles ? (
-                                            <div className="space-y-0.5">
+                                            <div className="min-w-0 space-y-0.5 overflow-hidden">
                                               <p
-                                                className={`truncate text-xs font-semibold ${
+                                                className={`truncate text-[11px] font-semibold ${
                                                   isSelected
                                                     ? "text-white"
                                                     : "text-slate-900"
@@ -3285,7 +3285,7 @@ onClick={() => {
                                                   "Actividad grupal"}
                                               </p>
                                               <p
-                                                className={`truncate text-[11px] ${
+                                                className={`truncate text-[10px] ${
                                                   isSelected
                                                     ? "text-slate-200"
                                                     : "text-slate-600"
@@ -3294,7 +3294,7 @@ onClick={() => {
                                                 {activeGroupCount}/{groupCapacity} inscritos
                                               </p>
                                               <p
-                                                className={`truncate text-[11px] ${
+                                                className={`truncate text-[10px] ${
                                                   isSelected
                                                     ? "text-slate-200"
                                                     : "text-slate-500"
@@ -3304,9 +3304,9 @@ onClick={() => {
                                               </p>
                                             </div>
                                           ) : (
-                                            <div className="space-y-0.5">
+                                            <div className="min-w-0 space-y-0.5 overflow-hidden">
                                               <p
-                                                className={`truncate text-xs font-semibold ${
+                                                className={`truncate text-[11px] font-semibold ${
                                                   isSelected
                                                     ? "text-white"
                                                     : "text-slate-900"
@@ -3315,7 +3315,7 @@ onClick={() => {
                                                 {appt.customer_name}
                                               </p>
                                               <p
-                                                className={`truncate text-[11px] ${
+                                                className={`truncate text-[10px] ${
                                                   isSelected
                                                     ? "text-slate-200"
                                                     : "text-slate-600"
@@ -3325,7 +3325,7 @@ onClick={() => {
                                                   "Teléfono no disponible"}
                                               </p>
                                               <p
-                                                className={`truncate text-[11px] ${
+                                                className={`truncate text-[10px] ${
                                                   isSelected
                                                     ? "text-slate-200"
                                                     : "text-slate-500"
@@ -3601,15 +3601,15 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     setHoveredTimeKey("");
                                     handleAppointmentMouseLeave();
                                   }}
-                                  className={`w-full rounded-lg border p-2 text-left transition ${getCardClass(
+                                  className={`w-full overflow-hidden rounded-lg border px-2 py-1 text-left transition ${getCardClass(
                                     appt,
                                     isSelected
                                   )}`}
                                   style={{
-                                    minHeight: getAppointmentBlockMinHeight(appt),
+                                    height: getAppointmentBlockMinHeight(appt),
                                   }}
                                 >
-                                  <div className="space-y-0.5">
+                                  <div className="min-w-0 space-y-0.5 overflow-hidden">
                                     {false ? (
                                     <div
                                       className={`text-[11px] font-semibold ${
@@ -3638,7 +3638,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     ) : null}
 
                                     <p
-                                      className={`truncate text-xs font-semibold ${
+                                      className={`truncate text-[11px] font-semibold ${
                                         isSelected
                                           ? "text-white"
                                           : "text-slate-900"
@@ -3648,7 +3648,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     </p>
 
                                     <p
-                                      className={`truncate text-[11px] ${
+                                      className={`truncate text-[10px] ${
                                         isSelected
                                           ? "text-slate-200"
                                           : "text-slate-600"
@@ -3659,7 +3659,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
 
                                     {false && appt.customer_data?.pet_name ? (
                                       <p
-                                        className={`truncate text-[11px] ${
+                                        className={`truncate text-[10px] ${
                                           isSelected
                                             ? "text-slate-200"
                                             : "text-emerald-600"
@@ -3673,7 +3673,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     ) : null}
 
                                     <p
-                                      className={`truncate text-[11px] ${
+                                      className={`truncate text-[10px] ${
                                         isSelected
                                           ? "text-slate-200"
                                           : "text-slate-500"
@@ -3812,19 +3812,19 @@ const appt = slotGroups[0]?.[0];
                                   setHoveredTimeKey("");
                                   handleAppointmentMouseLeave();
                                 }}
-                                className={`w-full rounded-lg border p-2 text-left transition ${
+                                className={`w-full overflow-hidden rounded-lg border px-2 py-1 text-left transition ${
                                   isGroupSlot && groupStyles
                                     ? groupStyles.card
                                     : getCardClass(appt, isSelected)
                                 }`}
                                 style={{
-                                  minHeight: getAppointmentBlockMinHeight(appt),
+                                  height: getAppointmentBlockMinHeight(appt),
                                 }}
                               >
-                                <div className="space-y-0.5">
+                                <div className="min-w-0 space-y-0.5 overflow-hidden">
                                   {false && !isGroupSlot ? (
                                   <div
-                                    className={`text-[11px] font-semibold ${
+                                    className={`text-[10px] font-semibold ${
                                       isSelected
                                         ? "text-slate-200"
                                         : "text-slate-600"
@@ -3850,18 +3850,18 @@ const appt = slotGroups[0]?.[0];
                                   ) : null}
 
                                   {isGroupSlot && groupVisualState && groupStyles ? (
-  <div className="flex min-w-0 flex-col gap-1.5">
+  <div className="flex min-w-0 flex-col gap-0.5 overflow-hidden">
     <div className="flex min-w-0 items-center gap-2">
       <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
           isSelected ? "bg-white/10" : "bg-white/65"
         }`}
       >
-        <UsersRound className={`h-4 w-4 ${groupStyles.icon}`} />
+        <UsersRound className={`h-3 w-3 ${groupStyles.icon}`} />
       </div>
 
       <p
-        className={`min-w-0 flex-1 truncate text-sm font-semibold ${
+        className={`min-w-0 flex-1 truncate text-[11px] font-semibold ${
           isSelected ? "text-white" : "text-slate-900"
         }`}
       >
@@ -3870,21 +3870,21 @@ const appt = slotGroups[0]?.[0];
     </div>
 
     <p
-      className={`truncate text-[11px] font-medium ${
+      className={`truncate text-[10px] font-medium ${
         isSelected ? "text-slate-200" : "text-slate-600"
       }`}
     >
       {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
     </p>
 
-    <div className="flex min-w-0 flex-wrap gap-1.5">
+    <div className="flex min-w-0 gap-1 overflow-hidden">
       <span
-        className={`inline-flex max-w-full truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold ${groupStyles.stateBadge}`}
+        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${groupStyles.stateBadge}`}
       >
         {groupVisualState.label}
       </span>
       <span
-        className={`inline-flex max-w-full truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold ${groupStyles.countBadge}`}
+        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${groupStyles.countBadge}`}
       >
         {activeGroupCount}/{groupCapacity} inscritos
       </span>
@@ -3892,7 +3892,7 @@ const appt = slotGroups[0]?.[0];
   </div>
 ) : (
   <p
-    className={`truncate text-xs font-semibold ${
+    className={`truncate text-[11px] font-semibold ${
       isSelected ? "text-white" : "text-slate-900"
     }`}
   >
@@ -3902,7 +3902,7 @@ const appt = slotGroups[0]?.[0];
 
                                   {!isGroupSlot ? (
                                   <p
-                                    className={`truncate text-[11px] ${
+                                    className={`truncate text-[10px] ${
                                       isSelected
                                         ? "text-slate-200"
                                         : "text-slate-600"
@@ -3914,7 +3914,7 @@ const appt = slotGroups[0]?.[0];
 
                                   {false && !isGroupSlot && appt.customer_data?.pet_name ? (
                                     <p
-                                      className={`truncate text-[11px] ${
+                                      className={`truncate text-[10px] ${
                                         isSelected
                                           ? "text-slate-200"
                                           : "text-emerald-600"
@@ -3929,7 +3929,7 @@ const appt = slotGroups[0]?.[0];
 
                                   {!isGroupSlot ? (
                                   <p
-  className={`truncate text-[11px] ${
+  className={`truncate text-[10px] ${
     isSelected
       ? "text-slate-200"
       : "text-slate-500"
