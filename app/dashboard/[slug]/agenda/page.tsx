@@ -183,7 +183,7 @@ type ManualBookingDraft = {
 type FreeSlotActionDraft = {
   slot_start: string;
   staff_id: string;
-  coming_soon: boolean;
+  mode: "actions" | "schedule_config";
 };
 
 type ClosedScheduleDraft = {
@@ -1887,7 +1887,7 @@ next_control_custom_value:
     setFreeSlotActionDraft({
       slot_start: slotStart,
       staff_id: staffId || selectedStaffId || "",
-      coming_soon: false,
+      mode: "actions",
     });
   }
 
@@ -5231,12 +5231,13 @@ const appt = slotGroups[0]?.[0];
       </div>
 
       {closedScheduleDraft ? (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
           <div
-            className="w-full max-w-md rounded-3xl border p-5 shadow-2xl"
+            className="w-full max-w-md rounded-3xl border p-6 shadow-[0_24px_80px_-30px_rgba(15,23,42,0.75)]"
             style={{
               borderColor: "var(--border-color)",
-              background: "var(--bg-card)",
+              background:
+                "linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 96%, transparent), var(--bg-card))",
             }}
           >
             <h3
@@ -5301,66 +5302,110 @@ const appt = slotGroups[0]?.[0];
 
 
       {freeSlotActionDraft ? (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
           <div
-            className="w-full max-w-md rounded-3xl border p-5 shadow-2xl"
+            className="w-full max-w-md rounded-3xl border p-6 shadow-[0_24px_80px_-30px_rgba(15,23,42,0.75)]"
             style={{
               borderColor: "var(--border-color)",
-              background: "var(--bg-card)",
+              background:
+                "linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 96%, transparent), var(--bg-card))",
             }}
           >
-            <h3
-              className="text-lg font-semibold"
-              style={{ color: "var(--text-main)" }}
-            >
-              ¿Qué quieres hacer en este horario?
-            </h3>
-            <p
-              className="mt-2 text-sm leading-6"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {formatLongDate(freeSlotActionDraft.slot_start)} ·{" "}
-              {formatHour(freeSlotActionDraft.slot_start)}
-            </p>
+            <div className="space-y-1">
+              <h3
+                className="text-lg font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {freeSlotActionDraft.mode === "schedule_config"
+                  ? "¿Qué deseas configurar?"
+                  : "¿Qué quieres hacer en este horario?"}
+              </h3>
+              <p
+                className="text-sm leading-6"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {formatLongDate(freeSlotActionDraft.slot_start)} ·{" "}
+                {formatHour(freeSlotActionDraft.slot_start)}
+              </p>
+            </div>
 
-            {freeSlotActionDraft.coming_soon ? (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                Cerrar bloque estará disponible próximamente.
-              </div>
-            ) : null}
+            <div className="mt-6 grid gap-2.5">
+              {freeSlotActionDraft.mode === "actions" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextDraft = freeSlotActionDraft;
+                      setFreeSlotActionDraft(null);
+                      openManualBooking(nextDraft.slot_start, nextDraft.staff_id);
+                    }}
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-[0_14px_28px_-16px_rgba(15,23,42,0.85)]"
+                  >
+                    Agendar cliente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFreeSlotActionDraft((prev) =>
+                        prev ? { ...prev, mode: "schedule_config" } : prev
+                      )
+                    }
+                    className="inline-flex h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-18px_rgba(59,130,246,0.65)]"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    Configurar horarios
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFreeSlotActionDraft(null);
+                      router.push(`/dashboard/${slug}/business`);
+                    }}
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-[0_14px_28px_-16px_rgba(15,23,42,0.85)]"
+                  >
+                    Horarios del negocio
+                  </button>
 
-            <div className="mt-5 grid gap-2">
+                  {freeSlotActionDraft.staff_id ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFreeSlotActionDraft(null);
+                        router.push(`/dashboard/${slug}/staff`);
+                      }}
+                      className="inline-flex h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-18px_rgba(59,130,246,0.65)]"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      Horarios del profesional
+                    </button>
+                  ) : null}
+                </>
+              )}
+
               <button
                 type="button"
                 onClick={() => {
-                  const nextDraft = freeSlotActionDraft;
+                  if (freeSlotActionDraft.mode === "schedule_config") {
+                    setFreeSlotActionDraft((prev) =>
+                      prev ? { ...prev, mode: "actions" } : prev
+                    );
+                    return;
+                  }
+
                   setFreeSlotActionDraft(null);
-                  openManualBooking(nextDraft.slot_start, nextDraft.staff_id);
                 }}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                Agendar cliente
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setFreeSlotActionDraft((prev) =>
-                    prev ? { ...prev, coming_soon: true } : prev
-                  )
-                }
-                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
-                }}
-              >
-                Cerrar bloque
-              </button>
-              <button
-                type="button"
-                onClick={() => setFreeSlotActionDraft(null)}
-                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                className="inline-flex h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-18px_rgba(15,23,42,0.35)]"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
