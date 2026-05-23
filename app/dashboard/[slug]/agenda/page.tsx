@@ -4403,21 +4403,6 @@ const appt = slotGroups[0]?.[0];
                       >
                         Profesional: {getStaffName(selectedAppointment.staff_id)}
                       </p>
-
-                      <button
-                        type="button"
-                        onClick={() => setCancelConfirmAppointment(selectedAppointment)}
-                        disabled={statusSaving || selectedAppointment.status === "canceled"}
-                        className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                          color: "var(--text-main)",
-                        }}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        Cancelar reserva
-                      </button>
                     </div>
                     )}
 
@@ -4695,32 +4680,7 @@ const appt = slotGroups[0]?.[0];
                       </Notice>
                     ) : null}
 
-                    {isSelectedGroupAppointment ? (
-                      <div
-                        className="rounded-xl border p-3"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                        }}
-                      >
-                        <p
-                          className="text-sm font-semibold"
-                          style={{ color: "var(--text-main)" }}
-                        >
-                          Datos del cliente
-                        </p>
-                        <p
-                          className="mt-2 rounded-xl border px-3 py-3 text-sm"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-muted)",
-                          }}
-                        >
-                          Selecciona un inscrito para ver sus datos.
-                        </p>
-                      </div>
-                    ) : (
+                    {isSelectedGroupAppointment ? null : (
                     <div
                       className="hidden"
                       style={{
