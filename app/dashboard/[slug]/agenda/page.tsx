@@ -188,6 +188,7 @@ type FreeSlotActionDraft = {
 
 type ClosedScheduleDraft = {
   staff_id: string;
+  kind: "block" | "day";
 };
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -1134,6 +1135,7 @@ next_control_custom_unit: "days",
     return {
       startMinutes: workingWindows[0].start,
       endMinutes: workingWindows[workingWindows.length - 1].end,
+      windows: workingWindows,
       hasConfiguredHours: true,
       fullyClosed: false,
       closedLabel: "",
@@ -1524,8 +1526,25 @@ function getSelectedStaffDayWindow(day: Date) {
       let daySlots: string[] = [];
 
       if ("windows" in dayWindow && Array.isArray(dayWindow.windows)) {
-        daySlots = generateSlotsFromWindows(day, dayWindow.windows);
-      } else if ("startMinutes" in dayWindow && "endMinutes" in dayWindow) {
+        const sortedWindows = [...dayWindow.windows].sort(
+          (a, b) => a.start - b.start
+        );
+        const firstWindow = sortedWindows[0];
+        const lastWindow = sortedWindows[sortedWindows.length - 1];
+
+        daySlots =
+          firstWindow && lastWindow
+            ? generateDaySlots(day, {
+                startMinutes: firstWindow.start,
+                endMinutes: lastWindow.end,
+              })
+            : [];
+      } else if (
+        "startMinutes" in dayWindow &&
+        "endMinutes" in dayWindow &&
+        dayWindow.startMinutes !== null &&
+        dayWindow.endMinutes !== null
+      ) {
         daySlots = generateDaySlots(day, {
           startMinutes: dayWindow.startMinutes,
           endMinutes: dayWindow.endMinutes,
@@ -1891,9 +1910,13 @@ next_control_custom_value:
     });
   }
 
-  function openClosedScheduleActions(staffId?: string | null) {
+  function openClosedScheduleActions(
+    staffId?: string | null,
+    kind: "block" | "day" = "day"
+  ) {
     setClosedScheduleDraft({
       staff_id: staffId || selectedStaffId || "",
+      kind,
     });
   }
 
@@ -2310,6 +2333,21 @@ const hasPendingClose = pendingCloseCount > 0;
     selectedDayAppointments.length === 0;
   const selectedDayIsUnavailable =
     selectedDayClosedBySchedule || selectedDayHasNoWorkingWindow;
+  const selectedDayAvailableSlots =
+    "windows" in selectedDayWindow && Array.isArray(selectedDayWindow.windows)
+      ? generateSlotsFromWindows(weekBaseDate, selectedDayWindow.windows)
+      : "startMinutes" in selectedDayWindow &&
+        "endMinutes" in selectedDayWindow &&
+        selectedDayWindow.startMinutes !== null &&
+        selectedDayWindow.endMinutes !== null
+      ? generateDaySlots(weekBaseDate, {
+          startMinutes: selectedDayWindow.startMinutes,
+          endMinutes: selectedDayWindow.endMinutes,
+        })
+      : [];
+  const selectedDayAvailableSlotKeys = new Set(
+    selectedDayAvailableSlots.map(getTimeKey)
+  );
   const dayTitle = new Intl.DateTimeFormat("es-CL", {
     weekday: "long",
     day: "numeric",
@@ -3364,6 +3402,9 @@ onClick={() => {
                                 const slotGroups =
                                   groupAppointmentsByBlock(slotAppointments);
                                 const isHourStart = index % 2 === 0;
+                                const isSlotClosed =
+                                  selectedDayIsUnavailable ||
+                                  !selectedDayAvailableSlotKeys.has(slotTimeKey);
 
                                 if (isCoveredByLongAppointment) {
                                   return null;
@@ -3376,15 +3417,21 @@ onClick={() => {
                                       role="button"
                                       tabIndex={0}
                                       onClick={() =>
-                                        selectedDayIsUnavailable
-                                          ? openClosedScheduleActions(staff.id)
+                                        isSlotClosed
+                                          ? openClosedScheduleActions(
+                                              staff.id,
+                                              selectedDayIsUnavailable ? "day" : "block"
+                                            )
                                           : openFreeSlotActions(slot, staff.id)
                                       }
                                       onKeyDown={(event) => {
                                         if (event.key === "Enter" || event.key === " ") {
                                           event.preventDefault();
-                                          if (selectedDayIsUnavailable) {
-                                            openClosedScheduleActions(staff.id);
+                                          if (isSlotClosed) {
+                                            openClosedScheduleActions(
+                                              staff.id,
+                                              selectedDayIsUnavailable ? "day" : "block"
+                                            );
                                           } else {
                                             openFreeSlotActions(slot, staff.id);
                                           }
@@ -3397,14 +3444,14 @@ onClick={() => {
                                       className="flex h-[54px] cursor-pointer items-center justify-center border-t px-2 text-[10px] font-semibold transition"
                                       style={{
                                         borderColor: isHourStart
-                                          ? selectedDayIsUnavailable
+                                          ? isSlotClosed
                                             ? "rgba(100,116,139,0.20)"
                                             : "rgba(148,163,184,0.22)"
-                                          : selectedDayIsUnavailable
+                                          : isSlotClosed
                                           ? "rgba(100,116,139,0.14)"
                                           : "rgba(148,163,184,0.14)",
                                         background:
-                                          selectedDayIsUnavailable
+                                          isSlotClosed
                                             ? hoveredTimeKey === slotTimeKey
                                               ? "rgba(100,116,139,0.16)"
                                               : "rgba(100,116,139,0.08)"
@@ -3414,10 +3461,12 @@ onClick={() => {
                                         color: "var(--text-muted)",
                                       }}
                                     >
-                                      {selectedDayIsUnavailable && index === 0
-                                        ? selectedDayClosedBySchedule
-                                          ? "Cerrado"
-                                          : "Sin horario"
+                                      {isSlotClosed
+                                        ? selectedDayIsUnavailable
+                                          ? selectedDayClosedBySchedule
+                                            ? "Cerrado"
+                                            : "Sin horario"
+                                          : "Cerrado"
                                         : ""}
                                     </div>
                                   );
@@ -3656,7 +3705,12 @@ onClick={() => {
 if (!showClosedBySchedule && !hasNoWorkingWindow) {
   if ("windows" in dayWindow && Array.isArray(dayWindow.windows)) {
     daySlots = generateSlotsFromWindows(day, dayWindow.windows);
-    } else if ("startMinutes" in dayWindow && "endMinutes" in dayWindow) {
+    } else if (
+      "startMinutes" in dayWindow &&
+      "endMinutes" in dayWindow &&
+      dayWindow.startMinutes !== null &&
+      dayWindow.endMinutes !== null
+    ) {
     daySlots = generateDaySlots(day, {
       startMinutes: dayWindow.startMinutes,
       endMinutes: dayWindow.endMinutes,
@@ -3679,10 +3733,11 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                   const isClosedScheduleDay =
                     showClosedBySchedule ||
                     hasNoWorkingWindow ||
-                    (renderSlots.length === 0 && dayAppointments.length === 0);
+                    (daySlots.length === 0 && dayAppointments.length === 0);
                   const closedScheduleLabel = showClosedBySchedule
                     ? "Cerrado"
                     : "Sin horario";
+                  const availableSlotKeys = new Set(daySlots.map(getTimeKey));
 
                   return (
                     <div
@@ -3780,7 +3835,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             {isClosedScheduleDay ? (
                               <button
                                 type="button"
-                                onClick={() => openClosedScheduleActions(selectedStaffId)}
+                                onClick={() =>
+                                  openClosedScheduleActions(selectedStaffId, "day")
+                                }
                                 className="rounded-full border px-2 py-0.5 text-[10px] font-semibold transition hover:shadow-sm"
                                 style={{
                                   borderColor: "rgba(100,116,139,0.28)",
@@ -3802,7 +3859,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                           <div className="space-y-0">
                             <button
                               type="button"
-                              onClick={() => openClosedScheduleActions(selectedStaffId)}
+                              onClick={() =>
+                                openClosedScheduleActions(selectedStaffId, "day")
+                              }
                               className="mb-2 w-full rounded-lg border border-dashed px-2 py-3 text-center transition hover:shadow-sm"
                               style={{
                                 borderColor: "rgba(100,116,139,0.28)",
@@ -3830,7 +3889,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                 <button
                                   key={slot}
                                   type="button"
-                                  onClick={() => openClosedScheduleActions(selectedStaffId)}
+                                  onClick={() =>
+                                    openClosedScheduleActions(selectedStaffId, "day")
+                                  }
                                   onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                   onMouseLeave={() => setHoveredTimeKey("")}
                                   className="flex h-[54px] w-full items-center justify-center border-t px-2 text-[10px] font-semibold transition"
@@ -3854,7 +3915,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                           <div className="space-y-0">
                             <button
                               type="button"
-                              onClick={() => openClosedScheduleActions(selectedStaffId)}
+                              onClick={() =>
+                                openClosedScheduleActions(selectedStaffId, "day")
+                              }
                               className="mb-2 w-full rounded-lg border border-dashed px-2 py-3 text-center transition hover:shadow-sm"
                               style={{
                                 borderColor: "var(--border-color)",
@@ -3882,7 +3945,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                 <button
                                   key={slot}
                                   type="button"
-                                  onClick={() => openClosedScheduleActions(selectedStaffId)}
+                                  onClick={() =>
+                                    openClosedScheduleActions(selectedStaffId, "day")
+                                  }
                                   onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                   onMouseLeave={() => setHoveredTimeKey("")}
                                   className="flex h-[54px] w-full items-center justify-center border-t px-2 text-[10px] font-semibold transition"
@@ -4033,7 +4098,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                           <div className="space-y-0">
                             <button
                               type="button"
-                              onClick={() => openClosedScheduleActions(selectedStaffId)}
+                              onClick={() =>
+                                openClosedScheduleActions(selectedStaffId, "day")
+                              }
                               className="mb-2 w-full rounded-lg border border-dashed px-2 py-3 text-center text-[11px] transition hover:shadow-sm"
                               style={{
                                 borderColor: "var(--border-color)",
@@ -4051,7 +4118,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                 <button
                                   key={slot}
                                   type="button"
-                                  onClick={() => openClosedScheduleActions(selectedStaffId)}
+                                  onClick={() =>
+                                    openClosedScheduleActions(selectedStaffId, "day")
+                                  }
                                   onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                   onMouseLeave={() => setHoveredTimeKey("")}
                                   className="flex h-[54px] w-full items-center justify-center border-t px-2 text-[10px] font-semibold transition"
@@ -4091,6 +4160,9 @@ const appt = slotGroups[0]?.[0];
 
                             const isHourStart = index % 2 === 0;
                             const isEvenBand = Math.floor(index / 2) % 2 === 0;
+                            const isSlotClosed =
+                              isClosedScheduleDay ||
+                              !availableSlotKeys.has(slotTimeKey);
 
                             if (isCoveredByLongAppointment) {
                               return null;
@@ -4102,27 +4174,51 @@ const appt = slotGroups[0]?.[0];
                                   key={slot}
                                   role="button"
                                   tabIndex={0}
-                                  onClick={() => openFreeSlotActions(slot, selectedStaffId)}
+                                  onClick={() =>
+                                    isSlotClosed
+                                      ? openClosedScheduleActions(
+                                          selectedStaffId,
+                                          isClosedScheduleDay ? "day" : "block"
+                                        )
+                                      : openFreeSlotActions(slot, selectedStaffId)
+                                  }
                                   onKeyDown={(event) => {
                                     if (event.key === "Enter" || event.key === " ") {
                                       event.preventDefault();
-                                      openFreeSlotActions(slot, selectedStaffId);
+                                      if (isSlotClosed) {
+                                        openClosedScheduleActions(
+                                          selectedStaffId,
+                                          isClosedScheduleDay ? "day" : "block"
+                                        );
+                                      } else {
+                                        openFreeSlotActions(slot, selectedStaffId);
+                                      }
                                     }
                                   }}
                                   onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                   onMouseLeave={() => setHoveredTimeKey("")}
-                                  className="hidden h-[54px] cursor-pointer border-t xl:block"
+                                  className="hidden h-[54px] cursor-pointer border-t px-2 text-center text-[10px] font-semibold transition xl:flex xl:items-center xl:justify-center"
                                   style={{
                                     borderColor: isHourStart
-                                      ? "rgba(148,163,184,0.22)"
+                                      ? isSlotClosed
+                                        ? "rgba(100,116,139,0.22)"
+                                        : "rgba(148,163,184,0.22)"
+                                      : isSlotClosed
+                                      ? "rgba(100,116,139,0.14)"
                                       : "rgba(148,163,184,0.14)",
                                     background:
-                                      hoveredTimeKey === slotTimeKey
+                                      isSlotClosed
+                                        ? hoveredTimeKey === slotTimeKey
+                                          ? "rgba(100,116,139,0.17)"
+                                          : "rgba(100,116,139,0.08)"
+                                        : hoveredTimeKey === slotTimeKey
                                         ? "rgba(59,130,246,0.08)"
                                         : "transparent",
                                     color: "var(--text-muted)",
                                   }}
-                                />
+                                >
+                                  {isSlotClosed ? "Cerrado" : ""}
+                                </div>
                               );
                             }
 
@@ -5408,13 +5504,15 @@ const appt = slotGroups[0]?.[0];
               className="text-lg font-semibold"
               style={{ color: "var(--text-main)" }}
             >
-              Este horario está cerrado
+              {closedScheduleDraft.kind === "block"
+                ? "Bloque cerrado"
+                : "Día cerrado"}
             </h3>
             <p
               className="mt-2 text-sm leading-6"
               style={{ color: "var(--text-muted)" }}
             >
-              Puedes configurar horarios o excepciones desde Negocio o Staff.
+              Configura horarios del negocio o del profesional para habilitar este horario.
             </p>
 
             <div className="mt-5 grid gap-2">
