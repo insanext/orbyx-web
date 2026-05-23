@@ -178,6 +178,12 @@ type ManualBookingDraft = {
   note: string;
 };
 
+type FreeSlotActionDraft = {
+  slot_start: string;
+  staff_id: string;
+  coming_soon: boolean;
+};
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 const GROUP_ATTENDEE_PREVIEW_LIMIT = 3;
 
@@ -362,6 +368,8 @@ const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<A
     useState<"form" | "confirm">("form");
   const [manualBookingSaving, setManualBookingSaving] = useState(false);
   const [manualBookingError, setManualBookingError] = useState("");
+  const [freeSlotActionDraft, setFreeSlotActionDraft] =
+    useState<FreeSlotActionDraft | null>(null);
   const [agendaView, setAgendaView] = useState<"week" | "day">("week");
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
 const [showPendingPanel, setShowPendingPanel] = useState(false);
@@ -1865,6 +1873,14 @@ next_control_custom_value:
     setManualBookingError("");
   }
 
+  function openFreeSlotActions(slotStart: string, staffId?: string | null) {
+    setFreeSlotActionDraft({
+      slot_start: slotStart,
+      staff_id: staffId || selectedStaffId || "",
+      coming_soon: false,
+    });
+  }
+
   function validateManualBookingDraft(draft: ManualBookingDraft) {
     if (!calendarId) return "No se encontró el calendario del negocio.";
     if (!selectedBranchId) return "Debes seleccionar una sucursal.";
@@ -1985,6 +2001,7 @@ setBusinessCategory(
     setServices([]);
     setSelectedServiceId("");
     setManualBookingDraft(null);
+    setFreeSlotActionDraft(null);
     setBusinessHours([]);
     setBusinessSpecialDates([]);
     return;
@@ -2025,6 +2042,7 @@ loadPendingCloseAppointments();
       setSelectedServiceId("");
       setSelectedAppointment(null);
       setManualBookingDraft(null);
+      setFreeSlotActionDraft(null);
       setIsEditingReservation(false);
       setHoverCard(null);
       setSearchResults([]);
@@ -2041,6 +2059,7 @@ loadPendingCloseAppointments();
       setSelectedServiceId("");
       setSelectedAppointment(null);
       setManualBookingDraft(null);
+      setFreeSlotActionDraft(null);
       setIsEditingReservation(false);
       setHoverCard(null);
       setSearchResults([]);
@@ -3289,11 +3308,11 @@ onClick={() => {
                                       key={slot}
                                       role="button"
                                       tabIndex={0}
-                                      onClick={() => openManualBooking(slot, staff.id)}
+                                      onClick={() => openFreeSlotActions(slot, staff.id)}
                                       onKeyDown={(event) => {
                                         if (event.key === "Enter" || event.key === " ") {
                                           event.preventDefault();
-                                          openManualBooking(slot, staff.id);
+                                          openFreeSlotActions(slot, staff.id);
                                         }
                                       }}
                                       onMouseEnter={() =>
@@ -3862,11 +3881,11 @@ const appt = slotGroups[0]?.[0];
                                   key={slot}
                                   role="button"
                                   tabIndex={0}
-                                  onClick={() => openManualBooking(slot, selectedStaffId)}
+                                  onClick={() => openFreeSlotActions(slot, selectedStaffId)}
                                   onKeyDown={(event) => {
                                     if (event.key === "Enter" || event.key === " ") {
                                       event.preventDefault();
-                                      openManualBooking(slot, selectedStaffId);
+                                      openFreeSlotActions(slot, selectedStaffId);
                                     }
                                   }}
                                   onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
@@ -5140,6 +5159,80 @@ const appt = slotGroups[0]?.[0];
         ) : null}
       </div>
 
+
+      {freeSlotActionDraft ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
+          <div
+            className="w-full max-w-md rounded-3xl border p-5 shadow-2xl"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              ¿Qué quieres hacer en este horario?
+            </h3>
+            <p
+              className="mt-2 text-sm leading-6"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {formatLongDate(freeSlotActionDraft.slot_start)} ·{" "}
+              {formatHour(freeSlotActionDraft.slot_start)}
+            </p>
+
+            {freeSlotActionDraft.coming_soon ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                Cerrar bloque estará disponible próximamente.
+              </div>
+            ) : null}
+
+            <div className="mt-5 grid gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const nextDraft = freeSlotActionDraft;
+                  setFreeSlotActionDraft(null);
+                  openManualBooking(nextDraft.slot_start, nextDraft.staff_id);
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Agendar cliente
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setFreeSlotActionDraft((prev) =>
+                    prev ? { ...prev, coming_soon: true } : prev
+                  )
+                }
+                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Cerrar bloque
+              </button>
+              <button
+                type="button"
+                onClick={() => setFreeSlotActionDraft(null)}
+                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Volver
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {manualBookingDraft ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
