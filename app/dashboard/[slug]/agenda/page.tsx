@@ -186,6 +186,10 @@ type FreeSlotActionDraft = {
   coming_soon: boolean;
 };
 
+type ClosedScheduleDraft = {
+  staff_id: string;
+};
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 const GROUP_ATTENDEE_PREVIEW_LIMIT = 3;
 
@@ -372,6 +376,8 @@ const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<A
   const [manualBookingError, setManualBookingError] = useState("");
   const [freeSlotActionDraft, setFreeSlotActionDraft] =
     useState<FreeSlotActionDraft | null>(null);
+  const [closedScheduleDraft, setClosedScheduleDraft] =
+    useState<ClosedScheduleDraft | null>(null);
   const [agendaView, setAgendaView] = useState<"week" | "day">("week");
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
 const [showPendingPanel, setShowPendingPanel] = useState(false);
@@ -1882,6 +1888,12 @@ next_control_custom_value:
       slot_start: slotStart,
       staff_id: staffId || selectedStaffId || "",
       coming_soon: false,
+    });
+  }
+
+  function openClosedScheduleActions(staffId?: string | null) {
+    setClosedScheduleDraft({
+      staff_id: staffId || selectedStaffId || "",
     });
   }
 
@@ -3710,8 +3722,10 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
 
                       <div className="space-y-0">
                         {showClosedBySchedule ? (
-                          <div
-                            className="rounded-lg border border-dashed px-2 py-3 text-center"
+                          <button
+                            type="button"
+                            onClick={() => openClosedScheduleActions(selectedStaffId)}
+                            className="w-full rounded-lg border border-dashed px-2 py-3 text-center transition hover:shadow-sm"
                             style={{
                               borderColor: "rgba(245,158,11,0.34)",
                               background: "rgba(245,158,11,0.10)",
@@ -3729,10 +3743,12 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             >
                               Profesional no disponible este día
                             </span>
-                          </div>
+                          </button>
                         ) : hasNoWorkingWindow ? (
-                          <div
-                            className="rounded-lg border border-dashed px-2 py-3 text-center"
+                          <button
+                            type="button"
+                            onClick={() => openClosedScheduleActions(selectedStaffId)}
+                            className="w-full rounded-lg border border-dashed px-2 py-3 text-center transition hover:shadow-sm"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -3750,7 +3766,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             >
                               No hay bloques configurados para este día
                             </span>
-                          </div>
+                          </button>
                         ) : activeFilter === "canceled" ? (
                           dayAppointments.length === 0 ? (
                             <div
@@ -3879,8 +3895,10 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             })
                           )
                         ) : renderSlots.length === 0 && dayAppointments.length === 0 ? (
-                          <div
-                            className="rounded-lg border border-dashed px-2 py-3 text-center text-[11px]"
+                          <button
+                            type="button"
+                            onClick={() => openClosedScheduleActions(selectedStaffId)}
+                            className="w-full rounded-lg border border-dashed px-2 py-3 text-center text-[11px] transition hover:shadow-sm"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -3888,7 +3906,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             }}
                           >
                             Sin bloques disponibles
-                          </div>
+                          </button>
                         ) : (
                           renderSlots.map((slot, index) => {
 const slotAppointments = dayAppointments.filter(
@@ -4769,7 +4787,7 @@ const appt = slotGroups[0]?.[0];
                           {selectedGroupAppointments.length} inscritos
                         </p>
 
-                        <div className="max-h-[250px] space-y-2 overflow-y-auto pr-1">
+                        <div className="max-h-[min(42vh,360px)] space-y-2 overflow-y-auto pb-3 pr-2">
                           {selectedGroupVisibleAppointments.map((attendee) => {
                             const isCanceled = attendee.status === "canceled";
                             const isCompleted = attendee.status === "completed";
@@ -5211,6 +5229,75 @@ const appt = slotGroups[0]?.[0];
         </div>
         ) : null}
       </div>
+
+      {closedScheduleDraft ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
+          <div
+            className="w-full max-w-md rounded-3xl border p-5 shadow-2xl"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Este horario está cerrado
+            </h3>
+            <p
+              className="mt-2 text-sm leading-6"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Puedes configurar horarios o excepciones desde Negocio o Staff.
+            </p>
+
+            <div className="mt-5 grid gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setClosedScheduleDraft(null);
+                  router.push(`/dashboard/${slug}/business`);
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Configurar horario del negocio
+              </button>
+
+              {closedScheduleDraft.staff_id ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClosedScheduleDraft(null);
+                    router.push(`/dashboard/${slug}/staff`);
+                  }}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Configurar horario del profesional
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => setClosedScheduleDraft(null)}
+                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Volver
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
 
       {freeSlotActionDraft ? (
