@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Check,
   Clock,
+  Lock,
   Phone,
   RotateCcw,
   Search,
@@ -3445,29 +3446,23 @@ onClick={() => {
                                       style={{
                                         borderColor: isHourStart
                                           ? isSlotClosed
-                                            ? "rgba(100,116,139,0.20)"
+                                            ? "rgba(248,113,113,0.24)"
                                             : "rgba(148,163,184,0.22)"
                                           : isSlotClosed
-                                          ? "rgba(100,116,139,0.14)"
+                                          ? "rgba(248,113,113,0.14)"
                                           : "rgba(148,163,184,0.14)",
                                         background:
                                           isSlotClosed
                                             ? hoveredTimeKey === slotTimeKey
-                                              ? "rgba(100,116,139,0.16)"
-                                              : "rgba(100,116,139,0.08)"
+                                              ? "linear-gradient(180deg, rgba(127,29,29,0.28), rgba(88,28,46,0.18))"
+                                              : "linear-gradient(180deg, rgba(127,29,29,0.22), rgba(88,28,46,0.14))"
                                             : hoveredTimeKey === slotTimeKey
                                             ? "rgba(59,130,246,0.08)"
                                             : "transparent",
                                         color: "var(--text-muted)",
                                       }}
                                     >
-                                      {isSlotClosed
-                                        ? selectedDayIsUnavailable
-                                          ? selectedDayClosedBySchedule
-                                            ? "Cerrado"
-                                            : "Sin horario"
-                                          : "Cerrado"
-                                        : ""}
+                                      {""}
                                     </div>
                                   );
                                 }
@@ -3734,9 +3729,12 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                     showClosedBySchedule ||
                     hasNoWorkingWindow ||
                     (daySlots.length === 0 && dayAppointments.length === 0);
-                  const closedScheduleLabel = showClosedBySchedule
+                  const closedDayTitle = showClosedBySchedule
                     ? "Cerrado"
-                    : "Sin horario";
+                    : "Sin horario disponible";
+                  const closedDaySubtitle = showClosedBySchedule
+                    ? "Sin horario disponible"
+                    : "Configura horarios";
                   const availableSlotKeys = new Set(daySlots.map(getTimeKey));
 
                   return (
@@ -3747,14 +3745,14 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
   borderColor: dayPendingCount > 0
     ? "rgba(244,63,94,0.28)"
     : isClosedScheduleDay
-    ? "rgba(100,116,139,0.22)"
+    ? "rgba(127,29,29,0.34)"
     : isToday
     ? "rgba(37,99,235,0.42)"
     : "var(--border-color)",
   background: dayPendingCount > 0
     ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
     : isClosedScheduleDay
-    ? "linear-gradient(180deg, rgba(100,116,139,0.14), rgba(100,116,139,0.06), var(--bg-card))"
+    ? "linear-gradient(180deg, rgba(127,29,29,0.20), rgba(88,28,46,0.14), var(--bg-card))"
     : isToday
     ? "linear-gradient(180deg, rgba(37,99,235,0.16), rgba(56,189,248,0.08), var(--bg-card))"
     : "var(--bg-soft)",
@@ -3771,7 +3769,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
       dayPendingCount > 0
         ? "rgba(244,63,94,0.24)"
         : isClosedScheduleDay
-        ? "rgba(100,116,139,0.22)"
+        ? "rgba(127,29,29,0.30)"
         : isToday
         ? "rgba(56,189,248,0.24)"
         : "var(--border-color)"
@@ -3779,7 +3777,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
     background: dayPendingCount > 0
       ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
       : isClosedScheduleDay
-      ? "linear-gradient(180deg, rgba(100,116,139,0.12), var(--bg-card))"
+      ? "linear-gradient(180deg, rgba(127,29,29,0.16), var(--bg-card))"
       : isToday
       ? "linear-gradient(180deg, rgba(56,189,248,0.08), var(--bg-card))"
       : "var(--bg-soft)",
@@ -3832,22 +3830,6 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
 </span>
                             ) : null}
 
-                            {isClosedScheduleDay ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openClosedScheduleActions(selectedStaffId, "day")
-                                }
-                                className="rounded-full border px-2 py-0.5 text-[10px] font-semibold transition hover:shadow-sm"
-                                style={{
-                                  borderColor: "rgba(100,116,139,0.28)",
-                                  background: "rgba(100,116,139,0.14)",
-                                  color: "var(--text-muted)",
-                                }}
-                              >
-                                {closedScheduleLabel}
-                              </button>
-                            ) : null}
                           </div>
                         </div>
 
@@ -3856,117 +3838,107 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
 
                       <div className="space-y-0">
                         {showClosedBySchedule ? (
-                          <div className="space-y-0">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openClosedScheduleActions(selectedStaffId, "day")
-                              }
-                              className="mb-2 w-full rounded-lg border border-dashed px-2 py-3 text-center transition hover:shadow-sm"
-                              style={{
-                                borderColor: "rgba(100,116,139,0.28)",
-                                background: "rgba(100,116,139,0.12)",
-                              }}
-                            >
-                              <span
-                                className="block text-[11px] font-semibold"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {closedLabel || "No disponible"}
-                              </span>
-                              <span
-                                className="mt-1 block text-[10px]"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                Profesional no disponible este día
-                              </span>
-                            </button>
-                            {closedVisualSlots.map((slot, index) => {
-                              const slotTimeKey = getTimeKey(slot);
-                              const isHourStart = index % 2 === 0;
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openClosedScheduleActions(selectedStaffId, "day")
+                            }
+                            className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
+                            style={{
+                              borderColor: "rgba(127,29,29,0.36)",
+                              background:
+                                "repeating-linear-gradient(135deg, rgba(127,29,29,0.16) 0px, rgba(127,29,29,0.16) 8px, rgba(127,29,29,0.08) 8px, rgba(127,29,29,0.08) 18px), linear-gradient(180deg, rgba(127,29,29,0.18), rgba(88,28,46,0.12))",
+                            }}
+                          >
+                            <div className="space-y-0">
+                              {closedVisualSlots.map((slot, index) => {
+                                const slotTimeKey = getTimeKey(slot);
+                                const isHourStart = index % 2 === 0;
 
-                              return (
-                                <button
-                                  key={slot}
-                                  type="button"
-                                  onClick={() =>
-                                    openClosedScheduleActions(selectedStaffId, "day")
-                                  }
-                                  onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
-                                  onMouseLeave={() => setHoveredTimeKey("")}
-                                  className="flex h-[54px] w-full items-center justify-center border-t px-2 text-[10px] font-semibold transition"
-                                  style={{
-                                    borderColor: isHourStart
-                                      ? "rgba(100,116,139,0.20)"
-                                      : "rgba(100,116,139,0.14)",
-                                    background:
-                                      hoveredTimeKey === slotTimeKey
-                                        ? "rgba(100,116,139,0.16)"
-                                        : "rgba(100,116,139,0.07)",
-                                    color: "var(--text-muted)",
-                                  }}
-                                >
-                                  {index === 0 ? "Cerrado" : ""}
-                                </button>
-                              );
-                            })}
-                          </div>
+                                return (
+                                  <div
+                                    key={slot}
+                                    onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
+                                    onMouseLeave={() => setHoveredTimeKey("")}
+                                    className="h-[54px] border-t transition"
+                                    style={{
+                                      borderColor: isHourStart
+                                        ? "rgba(248,113,113,0.16)"
+                                        : "rgba(248,113,113,0.09)",
+                                      background:
+                                        hoveredTimeKey === slotTimeKey
+                                          ? "rgba(127,29,29,0.18)"
+                                          : "transparent",
+                                    }}
+                                  />
+                                );
+                              })}
+                            </div>
+                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
+                              <div className="flex flex-col items-center gap-2 text-rose-300">
+                                <Lock className="h-5 w-5" />
+                                <div>
+                                  <p className="text-sm font-semibold text-rose-300">
+                                    {closedDayTitle}
+                                  </p>
+                                  <p className="mt-1 text-xs font-medium text-rose-200/85">
+                                    {closedDaySubtitle}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
                         ) : hasNoWorkingWindow ? (
-                          <div className="space-y-0">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openClosedScheduleActions(selectedStaffId, "day")
-                              }
-                              className="mb-2 w-full rounded-lg border border-dashed px-2 py-3 text-center transition hover:shadow-sm"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "rgba(100,116,139,0.10)",
-                              }}
-                            >
-                              <span
-                                className="block text-[11px] font-semibold"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                Sin horario disponible
-                              </span>
-                              <span
-                                className="mt-1 block text-[10px]"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                No hay bloques configurados para este día
-                              </span>
-                            </button>
-                            {closedVisualSlots.map((slot, index) => {
-                              const slotTimeKey = getTimeKey(slot);
-                              const isHourStart = index % 2 === 0;
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openClosedScheduleActions(selectedStaffId, "day")
+                            }
+                            className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
+                            style={{
+                              borderColor: "rgba(127,29,29,0.36)",
+                              background:
+                                "repeating-linear-gradient(135deg, rgba(127,29,29,0.16) 0px, rgba(127,29,29,0.16) 8px, rgba(127,29,29,0.08) 8px, rgba(127,29,29,0.08) 18px), linear-gradient(180deg, rgba(127,29,29,0.18), rgba(88,28,46,0.12))",
+                            }}
+                          >
+                            <div className="space-y-0">
+                              {closedVisualSlots.map((slot, index) => {
+                                const slotTimeKey = getTimeKey(slot);
+                                const isHourStart = index % 2 === 0;
 
-                              return (
-                                <button
-                                  key={slot}
-                                  type="button"
-                                  onClick={() =>
-                                    openClosedScheduleActions(selectedStaffId, "day")
-                                  }
-                                  onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
-                                  onMouseLeave={() => setHoveredTimeKey("")}
-                                  className="flex h-[54px] w-full items-center justify-center border-t px-2 text-[10px] font-semibold transition"
-                                  style={{
-                                    borderColor: isHourStart
-                                      ? "rgba(100,116,139,0.20)"
-                                      : "rgba(100,116,139,0.14)",
-                                    background:
-                                      hoveredTimeKey === slotTimeKey
-                                        ? "rgba(100,116,139,0.16)"
-                                        : "rgba(100,116,139,0.07)",
-                                    color: "var(--text-muted)",
-                                  }}
-                                >
-                                  {index === 0 ? "Sin horario" : ""}
-                                </button>
-                              );
-                            })}
-                          </div>
+                                return (
+                                  <div
+                                    key={slot}
+                                    onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
+                                    onMouseLeave={() => setHoveredTimeKey("")}
+                                    className="h-[54px] border-t transition"
+                                    style={{
+                                      borderColor: isHourStart
+                                        ? "rgba(248,113,113,0.16)"
+                                        : "rgba(248,113,113,0.09)",
+                                      background:
+                                        hoveredTimeKey === slotTimeKey
+                                          ? "rgba(127,29,29,0.18)"
+                                          : "transparent",
+                                    }}
+                                  />
+                                );
+                              })}
+                            </div>
+                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
+                              <div className="flex flex-col items-center gap-2 text-rose-300">
+                                <Lock className="h-5 w-5" />
+                                <div>
+                                  <p className="text-sm font-semibold text-rose-300">
+                                    {closedDayTitle}
+                                  </p>
+                                  <p className="mt-1 text-xs font-medium text-rose-200/85">
+                                    {closedDaySubtitle}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
                         ) : activeFilter === "canceled" ? (
                           dayAppointments.length === 0 ? (
                             <div
@@ -4095,51 +4067,56 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             })
                           )
                         ) : renderSlots.length === 0 && dayAppointments.length === 0 ? (
-                          <div className="space-y-0">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openClosedScheduleActions(selectedStaffId, "day")
-                              }
-                              className="mb-2 w-full rounded-lg border border-dashed px-2 py-3 text-center text-[11px] transition hover:shadow-sm"
-                              style={{
-                                borderColor: "var(--border-color)",
-                                background: "rgba(100,116,139,0.10)",
-                                color: "var(--text-muted)",
-                              }}
-                            >
-                              Sin bloques disponibles
-                            </button>
-                            {closedVisualSlots.map((slot, index) => {
-                              const slotTimeKey = getTimeKey(slot);
-                              const isHourStart = index % 2 === 0;
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openClosedScheduleActions(selectedStaffId, "day")
+                            }
+                            className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
+                            style={{
+                              borderColor: "rgba(127,29,29,0.36)",
+                              background:
+                                "repeating-linear-gradient(135deg, rgba(127,29,29,0.16) 0px, rgba(127,29,29,0.16) 8px, rgba(127,29,29,0.08) 8px, rgba(127,29,29,0.08) 18px), linear-gradient(180deg, rgba(127,29,29,0.18), rgba(88,28,46,0.12))",
+                            }}
+                          >
+                            <div className="space-y-0">
+                              {closedVisualSlots.map((slot, index) => {
+                                const slotTimeKey = getTimeKey(slot);
+                                const isHourStart = index % 2 === 0;
 
-                              return (
-                                <button
-                                  key={slot}
-                                  type="button"
-                                  onClick={() =>
-                                    openClosedScheduleActions(selectedStaffId, "day")
-                                  }
-                                  onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
-                                  onMouseLeave={() => setHoveredTimeKey("")}
-                                  className="flex h-[54px] w-full items-center justify-center border-t px-2 text-[10px] font-semibold transition"
-                                  style={{
-                                    borderColor: isHourStart
-                                      ? "rgba(100,116,139,0.20)"
-                                      : "rgba(100,116,139,0.14)",
-                                    background:
-                                      hoveredTimeKey === slotTimeKey
-                                        ? "rgba(100,116,139,0.16)"
-                                        : "rgba(100,116,139,0.07)",
-                                    color: "var(--text-muted)",
-                                  }}
-                                >
-                                  {index === 0 ? "Sin horario" : ""}
-                                </button>
-                              );
-                            })}
-                          </div>
+                                return (
+                                  <div
+                                    key={slot}
+                                    onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
+                                    onMouseLeave={() => setHoveredTimeKey("")}
+                                    className="h-[54px] border-t transition"
+                                    style={{
+                                      borderColor: isHourStart
+                                        ? "rgba(248,113,113,0.16)"
+                                        : "rgba(248,113,113,0.09)",
+                                      background:
+                                        hoveredTimeKey === slotTimeKey
+                                          ? "rgba(127,29,29,0.18)"
+                                          : "transparent",
+                                    }}
+                                  />
+                                );
+                              })}
+                            </div>
+                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
+                              <div className="flex flex-col items-center gap-2 text-rose-300">
+                                <Lock className="h-5 w-5" />
+                                <div>
+                                  <p className="text-sm font-semibold text-rose-300">
+                                    {closedDayTitle}
+                                  </p>
+                                  <p className="mt-1 text-xs font-medium text-rose-200/85">
+                                    {closedDaySubtitle}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
                         ) : (
                           renderSlots.map((slot, index) => {
 const slotAppointments = dayAppointments.filter(
@@ -4201,23 +4178,23 @@ const appt = slotGroups[0]?.[0];
                                   style={{
                                     borderColor: isHourStart
                                       ? isSlotClosed
-                                        ? "rgba(100,116,139,0.22)"
+                                        ? "rgba(248,113,113,0.26)"
                                         : "rgba(148,163,184,0.22)"
                                       : isSlotClosed
-                                      ? "rgba(100,116,139,0.14)"
+                                      ? "rgba(248,113,113,0.14)"
                                       : "rgba(148,163,184,0.14)",
                                     background:
                                       isSlotClosed
                                         ? hoveredTimeKey === slotTimeKey
-                                          ? "rgba(100,116,139,0.17)"
-                                          : "rgba(100,116,139,0.08)"
+                                          ? "linear-gradient(180deg, rgba(127,29,29,0.28), rgba(88,28,46,0.18))"
+                                          : "linear-gradient(180deg, rgba(127,29,29,0.22), rgba(88,28,46,0.14))"
                                         : hoveredTimeKey === slotTimeKey
                                         ? "rgba(59,130,246,0.08)"
                                         : "transparent",
                                     color: "var(--text-muted)",
                                   }}
                                 >
-                                  {isSlotClosed ? "Cerrado" : ""}
+                                  {""}
                                 </div>
                               );
                             }
