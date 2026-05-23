@@ -166,6 +166,18 @@ type VeterinaryCloseForm = {
   next_control_custom_unit: "days" | "months" | "years";
 };
 
+type ManualBookingDraft = {
+  slot_start: string;
+  staff_id: string;
+  staff_locked: boolean;
+  service_id: string;
+  service_locked: boolean;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  note: string;
+};
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 const GROUP_ATTENDEE_PREVIEW_LIMIT = 3;
 
@@ -344,6 +356,12 @@ const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<A
     useState<Appointment | null>(null);
   const [cancelConfirmAppointment, setCancelConfirmAppointment] =
     useState<Appointment | null>(null);
+  const [manualBookingDraft, setManualBookingDraft] =
+    useState<ManualBookingDraft | null>(null);
+  const [manualBookingStep, setManualBookingStep] =
+    useState<"form" | "confirm">("form");
+  const [manualBookingSaving, setManualBookingSaving] = useState(false);
+  const [manualBookingError, setManualBookingError] = useState("");
   const [agendaView, setAgendaView] = useState<"week" | "day">("week");
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
 const [showPendingPanel, setShowPendingPanel] = useState(false);
@@ -1824,6 +1842,98 @@ next_control_custom_value:
     }
   }
 
+  function closeManualBookingModal() {
+    setManualBookingDraft(null);
+    setManualBookingStep("form");
+    setManualBookingError("");
+    setManualBookingSaving(false);
+  }
+
+  function openManualBooking(slotStart: string, staffId?: string | null) {
+    setManualBookingDraft({
+      slot_start: slotStart,
+      staff_id: staffId || selectedStaffId || "",
+      staff_locked: Boolean(staffId || selectedStaffId),
+      service_id: selectedServiceId || "",
+      service_locked: Boolean(selectedServiceId),
+      customer_name: "",
+      customer_phone: "",
+      customer_email: "",
+      note: "",
+    });
+    setManualBookingStep("form");
+    setManualBookingError("");
+  }
+
+  function validateManualBookingDraft(draft: ManualBookingDraft) {
+    if (!calendarId) return "No se encontró el calendario del negocio.";
+    if (!selectedBranchId) return "Debes seleccionar una sucursal.";
+    if (!draft.staff_id) return "Debes seleccionar un profesional.";
+    if (!draft.service_id) return "Debes seleccionar un servicio.";
+    if (!draft.customer_name.trim()) return "Ingresa el nombre del cliente.";
+    if (!draft.customer_phone.trim()) return "Ingresa el teléfono del cliente.";
+    if (!draft.customer_email.trim()) return "Ingresa el correo del cliente.";
+    return "";
+  }
+
+  async function handleConfirmManualBooking() {
+    if (!manualBookingDraft) return;
+
+    const validationError = validateManualBookingDraft(manualBookingDraft);
+    if (validationError) {
+      setManualBookingError(validationError);
+      setManualBookingStep("form");
+      return;
+    }
+
+    try {
+      setManualBookingSaving(true);
+      setManualBookingError("");
+
+      const note = manualBookingDraft.note.trim();
+      const payload = {
+        calendar_id: calendarId,
+        branch_id: selectedBranchId || null,
+        service_id: manualBookingDraft.service_id,
+        staff_id: manualBookingDraft.staff_id,
+        date: formatDateYYYYMMDD(new Date(manualBookingDraft.slot_start)),
+        slot_start: manualBookingDraft.slot_start,
+        customer_name: manualBookingDraft.customer_name.trim(),
+        customer_phone: manualBookingDraft.customer_phone.trim(),
+        customer_email: manualBookingDraft.customer_email.trim(),
+        customer_data: note
+          ? {
+              manual_note: note,
+            }
+          : null,
+      };
+
+      const res = await fetch("/api/appointments/slot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo crear la reserva.");
+      }
+
+      closeManualBookingModal();
+      await loadAppointments({ preserveSelected: true });
+    } catch (err: unknown) {
+      setManualBookingError(
+        err instanceof Error ? err.message : "Error creando reserva"
+      );
+      setManualBookingStep("form");
+    } finally {
+      setManualBookingSaving(false);
+    }
+  }
+
   useEffect(() => {
     if (!slug) return;
 
@@ -1874,6 +1984,7 @@ setBusinessCategory(
     setSelectedStaffId("");
     setServices([]);
     setSelectedServiceId("");
+    setManualBookingDraft(null);
     setBusinessHours([]);
     setBusinessSpecialDates([]);
     return;
@@ -1913,6 +2024,7 @@ loadPendingCloseAppointments();
       setSelectedStaffId("");
       setSelectedServiceId("");
       setSelectedAppointment(null);
+      setManualBookingDraft(null);
       setIsEditingReservation(false);
       setHoverCard(null);
       setSearchResults([]);
@@ -1928,6 +2040,7 @@ loadPendingCloseAppointments();
       setSelectedStaffId("");
       setSelectedServiceId("");
       setSelectedAppointment(null);
+      setManualBookingDraft(null);
       setIsEditingReservation(false);
       setHoverCard(null);
       setSearchResults([]);
@@ -3174,11 +3287,20 @@ onClick={() => {
                                   return (
                                     <div
                                       key={slot}
+                                      role="button"
+                                      tabIndex={0}
+                                      onClick={() => openManualBooking(slot, staff.id)}
+                                      onKeyDown={(event) => {
+                                        if (event.key === "Enter" || event.key === " ") {
+                                          event.preventDefault();
+                                          openManualBooking(slot, staff.id);
+                                        }
+                                      }}
                                       onMouseEnter={() =>
                                         setHoveredTimeKey(slotTimeKey)
                                       }
                                       onMouseLeave={() => setHoveredTimeKey("")}
-                                      className="h-[54px] border-t"
+                                      className="h-[54px] cursor-pointer border-t"
                                       style={{
                                         borderColor: isHourStart
                                           ? "rgba(148,163,184,0.22)"
@@ -3738,9 +3860,18 @@ const appt = slotGroups[0]?.[0];
                               return (
                                 <div
                                   key={slot}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => openManualBooking(slot, selectedStaffId)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                      event.preventDefault();
+                                      openManualBooking(slot, selectedStaffId);
+                                    }
+                                  }}
                                   onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                   onMouseLeave={() => setHoveredTimeKey("")}
-                                  className="hidden h-[54px] border-t xl:block"
+                                  className="hidden h-[54px] cursor-pointer border-t xl:block"
                                   style={{
                                     borderColor: isHourStart
                                       ? "rgba(148,163,184,0.22)"
@@ -5009,6 +5140,301 @@ const appt = slotGroups[0]?.[0];
         ) : null}
       </div>
 
+
+      {manualBookingDraft ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
+          <div
+            className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border p-5 shadow-2xl"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <div className="mb-4">
+              <h3
+                className="text-lg font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {manualBookingStep === "confirm"
+                  ? "¿Confirmar reserva?"
+                  : "Nueva reserva"}
+              </h3>
+              <p
+                className="mt-1 text-sm leading-6"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {formatLongDate(manualBookingDraft.slot_start)} ·{" "}
+                {formatHour(manualBookingDraft.slot_start)}
+              </p>
+            </div>
+
+            {manualBookingStep === "confirm" ? (
+              <div className="grid gap-2">
+                {[
+                  ["Cliente", manualBookingDraft.customer_name],
+                  [
+                    "Servicio",
+                    services.find(
+                      (service) => service.id === manualBookingDraft.service_id
+                    )?.name || "Servicio",
+                  ],
+                  [
+                    "Profesional",
+                    staffList.find(
+                      (staff) => staff.id === manualBookingDraft.staff_id
+                    )?.name || "Profesional",
+                  ],
+                  ["Fecha", formatLongDate(manualBookingDraft.slot_start)],
+                  ["Hora", formatHour(manualBookingDraft.slot_start)],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="rounded-xl border p-3"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                    }}
+                  >
+                    <p
+                      className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {label}
+                    </p>
+                    <p
+                      className="mt-1 text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {!manualBookingDraft.staff_locked ? (
+                  <div>
+                    <label
+                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Profesional *
+                    </label>
+                    <select
+                      value={manualBookingDraft.staff_id}
+                      onChange={(event) =>
+                        setManualBookingDraft((prev) =>
+                          prev ? { ...prev, staff_id: event.target.value } : prev
+                        )
+                      }
+                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <option value="">Selecciona profesional</option>
+                      {staffList.map((staff) => (
+                        <option key={staff.id} value={staff.id}>
+                          {staff.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+
+                {!manualBookingDraft.service_locked ? (
+                  <div>
+                    <label
+                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Servicio *
+                    </label>
+                    <select
+                      value={manualBookingDraft.service_id}
+                      onChange={(event) =>
+                        setManualBookingDraft((prev) =>
+                          prev ? { ...prev, service_id: event.target.value } : prev
+                        )
+                      }
+                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <option value="">Selecciona servicio</option>
+                      {services.map((service) => (
+                        <option key={service.id} value={service.id}>
+                          {service.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+
+                <div>
+                  <label
+                    className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Nombre *
+                  </label>
+                  <input
+                    value={manualBookingDraft.customer_name}
+                    onChange={(event) =>
+                      setManualBookingDraft((prev) =>
+                        prev
+                          ? { ...prev, customer_name: event.target.value }
+                          : prev
+                      )
+                    }
+                    className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label
+                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Teléfono *
+                    </label>
+                    <input
+                      value={manualBookingDraft.customer_phone}
+                      onChange={(event) =>
+                        setManualBookingDraft((prev) =>
+                          prev
+                            ? { ...prev, customer_phone: event.target.value }
+                            : prev
+                        )
+                      }
+                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Correo *
+                    </label>
+                    <input
+                      type="email"
+                      value={manualBookingDraft.customer_email}
+                      onChange={(event) =>
+                        setManualBookingDraft((prev) =>
+                          prev
+                            ? { ...prev, customer_email: event.target.value }
+                            : prev
+                        )
+                      }
+                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Nota opcional
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={manualBookingDraft.note}
+                    onChange={(event) =>
+                      setManualBookingDraft((prev) =>
+                        prev ? { ...prev, note: event.target.value } : prev
+                      )
+                    }
+                    className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {manualBookingError ? (
+              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                {manualBookingError}
+              </div>
+            ) : null}
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={
+                  manualBookingStep === "confirm"
+                    ? () => setManualBookingStep("form")
+                    : closeManualBookingModal
+                }
+                disabled={manualBookingSaving}
+                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                {manualBookingStep === "confirm" ? "Volver" : "Cancelar"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (manualBookingStep === "confirm") {
+                    handleConfirmManualBooking();
+                    return;
+                  }
+
+                  const validationError =
+                    validateManualBookingDraft(manualBookingDraft);
+                  if (validationError) {
+                    setManualBookingError(validationError);
+                    return;
+                  }
+
+                  setManualBookingError("");
+                  setManualBookingStep("confirm");
+                }}
+                disabled={manualBookingSaving}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {manualBookingSaving
+                  ? "Creando..."
+                  : manualBookingStep === "confirm"
+                  ? "Confirmar reserva"
+                  : "Continuar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {cancelConfirmAppointment ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
