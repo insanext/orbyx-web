@@ -72,6 +72,12 @@ type StaffItem = {
   use_business_hours?: boolean;
 };
 
+type ServiceItem = {
+  id: string;
+  name: string;
+  active?: boolean;
+};
+
 type BusinessHourItem = {
   id?: string;
   tenant_id?: string;
@@ -316,6 +322,9 @@ const [googleConnected, setGoogleConnected] = useState(false);
   const [staffList, setStaffList] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [loadingStaff, setLoadingStaff] = useState(false);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState("");
+  const [loadingServices, setLoadingServices] = useState(false);
 
   const [businessHours, setBusinessHours] = useState<BusinessHourItem[]>([]);
   const [staffHours, setStaffHours] = useState<StaffHourItem[]>([]);
@@ -1330,6 +1339,42 @@ function getSelectedStaffDayWindow(day: Date) {
     }
   }
 
+  async function loadServices(currentTenantId: string, currentBranchId: string) {
+    try {
+      setLoadingServices(true);
+
+      const query = new URLSearchParams({
+        tenant_id: currentTenantId,
+        branch_id: currentBranchId,
+        active: "true",
+      });
+
+      const response = await fetch(`${BACKEND_URL}/services?${query.toString()}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo cargar los servicios");
+      }
+
+      const rows: ServiceItem[] = Array.isArray(data?.services)
+        ? data.services
+        : [];
+      setServices(rows);
+
+      setSelectedServiceId((prev) => {
+        if (!prev) return "";
+        const exists = rows.some((service) => service.id === prev);
+        return exists ? prev : "";
+      });
+    } catch (err) {
+      console.error("Error cargando servicios", err);
+      setServices([]);
+      setSelectedServiceId("");
+    } finally {
+      setLoadingServices(false);
+    }
+  }
+
   async function loadBusinessHours(
   currentTenantId: string,
   currentBranchId: string
@@ -1827,12 +1872,15 @@ setBusinessCategory(
   if (!tenantId || !selectedBranchId) {
     setStaffList([]);
     setSelectedStaffId("");
+    setServices([]);
+    setSelectedServiceId("");
     setBusinessHours([]);
     setBusinessSpecialDates([]);
     return;
   }
 
   loadStaff(tenantId, selectedBranchId);
+  loadServices(tenantId, selectedBranchId);
   loadBusinessHours(tenantId, selectedBranchId);
   loadBusinessSpecialDates(tenantId, selectedBranchId);
 }, [tenantId, selectedBranchId]);
@@ -1863,6 +1911,7 @@ loadPendingCloseAppointments();
 
       setSelectedBranchId(branchId);
       setSelectedStaffId("");
+      setSelectedServiceId("");
       setSelectedAppointment(null);
       setIsEditingReservation(false);
       setHoverCard(null);
@@ -1877,6 +1926,7 @@ loadPendingCloseAppointments();
       const nextBranchId = event.newValue || "";
       setSelectedBranchId(nextBranchId);
       setSelectedStaffId("");
+      setSelectedServiceId("");
       setSelectedAppointment(null);
       setIsEditingReservation(false);
       setHoverCard(null);
@@ -1901,8 +1951,12 @@ loadPendingCloseAppointments();
   }, [slug, branchStorageKey]);
 
   const filteredAppointments = useMemo(() => {
-    return appointments.filter((appt) => matchesFilter(appt, activeFilter));
-  }, [appointments, activeFilter]);
+    return appointments.filter(
+      (appt) =>
+        matchesFilter(appt, activeFilter) &&
+        (!selectedServiceId || appt.service_id === selectedServiceId)
+    );
+  }, [appointments, activeFilter, selectedServiceId]);
 
   const appointmentsByDay = useMemo(() => {
     const result: Record<string, Appointment[]> = {};
@@ -2265,7 +2319,7 @@ const hasPendingClose = pendingCloseCount > 0;
           background: "var(--bg-card)",
         }}
       >
-        <div className="grid gap-4 xl:grid-cols-[minmax(260px,1fr)_220px_minmax(0,2.4fr)] xl:items-end">
+        <div className="grid gap-4 xl:grid-cols-[minmax(260px,1fr)_220px_220px_220px] xl:items-end">
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
@@ -2330,61 +2384,65 @@ const hasPendingClose = pendingCloseCount > 0;
           </div>
 
           <div>
-            <p
-              className="mb-2 text-xs font-semibold"
+            <label
+              className="mb-2 block text-xs font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Servicio
+            </label>
+            <select
+              value={selectedServiceId}
+              onChange={(e) => {
+                setSelectedServiceId(e.target.value);
+                setSelectedAppointment(null);
+                setIsEditingReservation(false);
+                setHoverCard(null);
+              }}
+              disabled={!selectedBranchId || loadingServices}
+              className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              <option value="">Todos los servicios</option>
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              className="mb-2 block text-xs font-semibold"
               style={{ color: "var(--text-main)" }}
             >
               Estado
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
-                const count =
-                  filter === "active"
-                    ? counts.active
-                    : filter === "pending_close"
-                    ? counts.pending_close
-                    : filter === "booked"
-                    ? counts.booked
-                    : filter === "completed"
-                    ? counts.completed
-                    : filter === "no_show"
-                    ? counts.no_show
-                    : counts.canceled;
-
-                return (
-                  <button
-                    key={filter}
-                    type="button"
-                    onClick={() => setActiveFilter(filter)}
-                    className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition ${
-                      activeFilter === filter
-                        ? "border-slate-950 bg-slate-950 text-white shadow-sm"
-                        : "hover:shadow-sm"
-                    }`}
-                    style={
-                      activeFilter === filter
-                        ? undefined
-                        : {
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                            color: "var(--text-main)",
-                          }
-                    }
-                  >
-                    <span>{filterLabels[filter]}</span>
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                        activeFilter === filter
-                          ? "bg-white/20 text-white"
-                          : "bg-slate-200 text-slate-600"
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            </label>
+            <select
+              value={activeFilter}
+              onChange={(e) => {
+                setActiveFilter(e.target.value as FilterValue);
+                setSelectedAppointment(null);
+                setIsEditingReservation(false);
+                setHoverCard(null);
+              }}
+              className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              {(Object.keys(filterLabels) as FilterValue[]).map((filter) => (
+                <option key={filter} value={filter}>
+                  {filterLabels[filter]}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
