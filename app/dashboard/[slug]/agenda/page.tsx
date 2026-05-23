@@ -175,6 +175,8 @@ type ManualBookingDraft = {
   customer_name: string;
   customer_phone: string;
   customer_email: string;
+  pet_name: string;
+  pet_species: string;
   note: string;
 };
 
@@ -1867,6 +1869,8 @@ next_control_custom_value:
       customer_name: "",
       customer_phone: "",
       customer_email: "",
+      pet_name: "",
+      pet_species: "",
       note: "",
     });
     setManualBookingStep("form");
@@ -1881,6 +1885,24 @@ next_control_custom_value:
     });
   }
 
+  function openManualBookingForGroup(appt: Appointment) {
+    setManualBookingDraft({
+      slot_start: appt.start_at,
+      staff_id: appt.staff_id || "",
+      staff_locked: true,
+      service_id: appt.service_id || "",
+      service_locked: true,
+      customer_name: "",
+      customer_phone: "",
+      customer_email: "",
+      pet_name: "",
+      pet_species: "",
+      note: "",
+    });
+    setManualBookingStep("form");
+    setManualBookingError("");
+  }
+
   function validateManualBookingDraft(draft: ManualBookingDraft) {
     if (!calendarId) return "No se encontró el calendario del negocio.";
     if (!selectedBranchId) return "Debes seleccionar una sucursal.";
@@ -1889,6 +1911,12 @@ next_control_custom_value:
     if (!draft.customer_name.trim()) return "Ingresa el nombre del cliente.";
     if (!draft.customer_phone.trim()) return "Ingresa el teléfono del cliente.";
     if (!draft.customer_email.trim()) return "Ingresa el correo del cliente.";
+    if (isVeterinaria && !draft.pet_name.trim()) {
+      return "Ingresa el nombre de la mascota.";
+    }
+    if (isVeterinaria && !draft.pet_species.trim()) {
+      return "Ingresa la especie de la mascota.";
+    }
     return "";
   }
 
@@ -1907,6 +1935,16 @@ next_control_custom_value:
       setManualBookingError("");
 
       const note = manualBookingDraft.note.trim();
+      const customerData = {
+        ...(note ? { manual_note: note } : {}),
+        ...(isVeterinaria
+          ? {
+              pet_name: manualBookingDraft.pet_name.trim(),
+              pet_species: manualBookingDraft.pet_species.trim(),
+            }
+          : {}),
+      };
+
       const payload = {
         calendar_id: calendarId,
         branch_id: selectedBranchId || null,
@@ -1917,11 +1955,8 @@ next_control_custom_value:
         customer_name: manualBookingDraft.customer_name.trim(),
         customer_phone: manualBookingDraft.customer_phone.trim(),
         customer_email: manualBookingDraft.customer_email.trim(),
-        customer_data: note
-          ? {
-              manual_note: note,
-            }
-          : null,
+        customer_data:
+          Object.keys(customerData).length > 0 ? customerData : null,
       };
 
       const res = await fetch("/api/appointments/slot", {
@@ -2144,6 +2179,10 @@ loadPendingCloseAppointments();
     Number(selectedAppointment?.service_capacity || 0) ||
     selectedGroupActiveCount ||
     selectedGroupAppointments.length;
+  const selectedGroupAvailableSpots = Math.max(
+    selectedGroupCapacity - selectedGroupActiveCount,
+    0
+  );
   const selectedGroupVisualState =
     isSelectedGroupAppointment && selectedGroupAppointments.length > 0
       ? getGroupBookingVisualState(selectedGroupAppointments)
@@ -4611,6 +4650,20 @@ const appt = slotGroups[0]?.[0];
                       >
                         Profesional: {getStaffName(selectedAppointment.staff_id)}
                       </p>
+
+                      {selectedGroupAvailableSpots > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => openManualBookingForGroup(selectedAppointment)}
+                          className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-xl bg-slate-950 px-3 text-xs font-semibold text-white transition hover:bg-slate-800"
+                        >
+                          Agregar inscrito
+                        </button>
+                      ) : (
+                        <div className="mt-3 rounded-xl border px-3 py-2 text-xs font-semibold text-slate-500">
+                          Cupos completos
+                        </div>
+                      )}
                     </div>
                     )}
 
@@ -5446,6 +5499,58 @@ const appt = slotGroups[0]?.[0];
                     />
                   </div>
                 </div>
+
+                {isVeterinaria ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label
+                        className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Nombre de mascota *
+                      </label>
+                      <input
+                        value={manualBookingDraft.pet_name}
+                        onChange={(event) =>
+                          setManualBookingDraft((prev) =>
+                            prev ? { ...prev, pet_name: event.target.value } : prev
+                          )
+                        }
+                        className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Especie *
+                      </label>
+                      <input
+                        value={manualBookingDraft.pet_species}
+                        onChange={(event) =>
+                          setManualBookingDraft((prev) =>
+                            prev
+                              ? { ...prev, pet_species: event.target.value }
+                              : prev
+                          )
+                        }
+                        className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
 
                 <div>
                   <label
