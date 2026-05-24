@@ -1778,7 +1778,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     }`}
                   >
                     <div
-                      className={`-mx-3 mb-3 border-b px-3 pb-2 pt-1 md:sticky md:top-4 md:z-30 ${
+                      className={`-mx-3 mb-3 border-b px-3 pb-2 pt-1 md:sticky md:top-0 md:z-30 ${
                         isClosedDay
                           ? "border-rose-100 bg-rose-50/95"
                           : "border-slate-200 bg-white"
