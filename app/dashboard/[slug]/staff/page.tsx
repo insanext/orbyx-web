@@ -94,6 +94,17 @@ type ServiceItem = {
   active?: boolean;
 };
 
+type CalendarConnectionItem = {
+  id: string;
+  provider: string;
+  account_email?: string | null;
+  staff_id?: string | null;
+  branch_id?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
 type NoticeTone =
   | "info"
   | "success"
@@ -374,6 +385,7 @@ export default function StaffPage() {
     "";
 
   const [tenantId, setTenantId] = useState("");
+  const [calendarId, setCalendarId] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -413,6 +425,10 @@ const [photoUrl, setPhotoUrl] = useState("");
 
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [staffCalendarConnection, setStaffCalendarConnection] =
+    useState<CalendarConnectionItem | null>(null);
+  const [loadingStaffCalendarConnection, setLoadingStaffCalendarConnection] =
+    useState(false);
 
   const [plan, setPlan] = useState("pro");
   const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
@@ -524,6 +540,7 @@ async function uploadStaffImage(file: File, staffId: string) {
         }
 
         setTenantId(data.business.id);
+        setCalendarId(data.calendar_id || "");
         setPlan(normalizePlanSlug(data.business.plan_slug));
         await loadBranches(data.business.id);
       } catch (error: unknown) {
@@ -606,6 +623,15 @@ async function uploadStaffImage(file: File, staffId: string) {
     };
   }, [slug, branchStorageKey]);
 
+  useEffect(() => {
+    if (!tenantId || !editingId) {
+      setStaffCalendarConnection(null);
+      return;
+    }
+
+    loadStaffCalendarConnection(tenantId, editingId);
+  }, [tenantId, editingId]);
+
   async function loadStaff(id: string) {
     if (!selectedBranchId) {
       setStaff([]);
@@ -622,6 +648,51 @@ async function uploadStaffImage(file: File, staffId: string) {
     }
 
     setStaff(Array.isArray(data.staff) ? data.staff : []);
+  }
+
+  async function loadStaffCalendarConnection(id: string, staffId: string) {
+    try {
+      setLoadingStaffCalendarConnection(true);
+
+      const res = await fetch(
+        `${BACKEND_URL}/calendar-connections?tenant_id=${id}&staff_id=${staffId}`
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cargar calendario del staff");
+      }
+
+      const connections = Array.isArray(data?.connections)
+        ? data.connections
+        : [];
+      const googleConnection =
+        connections.find(
+          (item: CalendarConnectionItem) =>
+            item.provider === "google" && item.is_active
+        ) || null;
+
+      setStaffCalendarConnection(googleConnection);
+    } catch (error) {
+      console.error("Error cargando conexión calendario staff", error);
+      setStaffCalendarConnection(null);
+    } finally {
+      setLoadingStaffCalendarConnection(false);
+    }
+  }
+
+  function connectStaffGoogleCalendar() {
+    if (!tenantId || !selectedBranchId || !editingId || !calendarId) return;
+
+    const params = new URLSearchParams({
+      tenant_id: tenantId,
+      branch_id: selectedBranchId,
+      staff_id: editingId,
+      scope_level: "staff",
+      calendar_id: calendarId,
+    });
+
+    window.location.href = `${BACKEND_URL}/auth?${params.toString()}`;
   }
 
 
@@ -2155,6 +2226,119 @@ function validateStaffHours() {
                   }}
                   >
                     {form.is_active ? "Staff activo" : "Staff inactivo"}
+                  </button>
+                </div>
+              </div>
+
+              <div
+                className="rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      Sincroniza tu calendario
+                    </p>
+                    <p
+                      className="mt-1 text-sm"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Conecta el calendario de este profesional para que sus reservas se sincronicen automáticamente.
+                    </p>
+
+                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                      <div
+                        className="rounded-2xl border px-3 py-3"
+                        style={{
+                          borderColor: staffCalendarConnection
+                            ? "rgba(16,185,129,0.32)"
+                            : "var(--border-color)",
+                          background: staffCalendarConnection
+                            ? "rgba(16,185,129,0.08)"
+                            : "var(--bg-soft)",
+                        }}
+                      >
+                        <p
+                          className="text-xs font-semibold uppercase tracking-[0.12em]"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Google Calendar
+                        </p>
+                        <p
+                          className="mt-2 text-sm font-semibold"
+                          style={{
+                            color: staffCalendarConnection
+                              ? "rgb(16 185 129)"
+                              : "var(--text-main)",
+                          }}
+                        >
+                          {loadingStaffCalendarConnection
+                            ? "Revisando conexión..."
+                            : staffCalendarConnection
+                            ? "Google Calendar conectado"
+                            : "No conectado"}
+                        </p>
+                        {staffCalendarConnection?.account_email ? (
+                          <p
+                            className="mt-1 truncate text-xs"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            {staffCalendarConnection.account_email}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      {["Outlook", "Apple Calendar"].map((label) => (
+                        <div
+                          key={label}
+                          className="rounded-2xl border px-3 py-3 opacity-70"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                          }}
+                        >
+                          <p
+                            className="text-xs font-semibold uppercase tracking-[0.12em]"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            {label}
+                          </p>
+                          <p
+                            className="mt-2 text-sm font-semibold"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            Próximamente
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={connectStaffGoogleCalendar}
+                    disabled={
+                      !tenantId ||
+                      !selectedBranchId ||
+                      !editingId ||
+                      !calendarId ||
+                      loadingStaffCalendarConnection
+                    }
+                    className="orbyx-staff-energy inline-flex h-11 shrink-0 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      borderColor: "rgba(37,99,235,0.36)",
+                      background:
+                        "linear-gradient(135deg, rgba(37,99,235,0.16), var(--bg-soft))",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    {staffCalendarConnection ? "Cambiar cuenta" : "Conectar Google Calendar"}
                   </button>
                 </div>
               </div>
