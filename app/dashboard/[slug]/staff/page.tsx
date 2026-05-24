@@ -3511,11 +3511,27 @@ function validateStaffHours() {
 
         {!(formOpen || editingId) ? (
         <Panel
-          title="Equipo actual"
-          description="Visualiza, edita o elimina integrantes del staff."
           className="order-1 bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
-          <div className="mb-4 flex justify-end">
+          <div
+            className="mb-6 flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-center sm:justify-between"
+            style={{ borderColor: "var(--border-color)" }}
+          >
+            <div>
+              <h3
+                className="text-lg font-semibold tracking-tight"
+                style={{ color: "var(--text-main)" }}
+              >
+                Equipo actual
+              </h3>
+              <p
+                className="mt-1 text-sm leading-6"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Visualiza, edita o elimina integrantes del staff.
+              </p>
+            </div>
+
             <button
               type="button"
               onClick={() => {
@@ -3879,23 +3895,47 @@ function validateStaffHours() {
                     color: "var(--text-main)",
                   }}
                 >
-                  <span>
-                    <span className="block text-sm font-semibold">
-                      Google Calendar
-                    </span>
+                  <span className="flex items-center gap-3">
                     <span
-                      className="mt-1 block text-xs"
-                      style={{ color: "var(--text-muted)" }}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border text-base font-bold"
+                      style={{
+                        borderColor: "rgba(37,99,235,0.25)",
+                        background:
+                          "linear-gradient(135deg, rgba(66,133,244,0.18), rgba(52,168,83,0.12))",
+                        color: "rgb(37 99 235)",
+                      }}
                     >
-                      Disponible
+                      G
+                    </span>
+                    <span>
+                      <span className="block text-sm font-semibold">
+                        Google Calendar
+                      </span>
+                      <span
+                        className="mt-1 block text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Disponible
+                      </span>
                     </span>
                   </span>
                   <span className="text-lg">›</span>
                 </button>
 
-                {["Microsoft 365 / Outlook", "Apple Calendar"].map((label) => (
+                {[
+                  {
+                    label: "Microsoft 365 / Outlook",
+                    icon: "M",
+                    accent: "rgb(37 99 235)",
+                  },
+                  {
+                    label: "Apple Calendar",
+                    icon: "A",
+                    accent: "var(--text-main)",
+                  },
+                ].map((option) => (
                   <button
-                    key={label}
+                    key={option.label}
                     type="button"
                     disabled
                     className="flex w-full cursor-not-allowed items-center justify-between gap-4 rounded-2xl border px-4 py-4 text-left opacity-65"
@@ -3905,13 +3945,27 @@ function validateStaffHours() {
                       color: "var(--text-main)",
                     }}
                   >
-                    <span>
-                      <span className="block text-sm font-semibold">{label}</span>
+                    <span className="flex items-center gap-3">
+                      <span
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border text-base font-bold"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: option.accent,
+                        }}
+                      >
+                        {option.icon}
+                      </span>
+                      <span>
+                        <span className="block text-sm font-semibold">
+                          {option.label}
+                        </span>
                       <span
                         className="mt-1 block text-xs"
                         style={{ color: "var(--text-muted)" }}
                       >
                         Próximamente
+                      </span>
                       </span>
                     </span>
                   </button>
