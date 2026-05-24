@@ -2275,6 +2275,7 @@ function validateStaffHours() {
                 </div>
               </div>
 
+              {false ? (
               <div
                 className="rounded-2xl border p-4"
                 style={{
@@ -2334,7 +2335,7 @@ function validateStaffHours() {
                             className="mt-1 truncate text-xs"
                             style={{ color: "var(--text-muted)" }}
                           >
-                            {staffCalendarConnection.account_email}
+                            {staffCalendarConnection?.account_email}
                           </p>
                         ) : null}
                       </div>
@@ -2387,6 +2388,7 @@ function validateStaffHours() {
                   </button>
                 </div>
               </div>
+              ) : null}
 
               <div
   className="rounded-2xl border p-4"
@@ -3584,11 +3586,12 @@ function validateStaffHours() {
             </div>
                     ) : (
             <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {staff.map((item) => {
+              {staff.map((item, index) => {
                 const isSelected = editingId === item.id;
                 const calendarConnection = activeGoogleConnectionsByStaff.get(
                   item.id
                 );
+                const opensPreviewLeft = index % 3 === 2 || index % 4 === 3;
                 const initials = String(item.name || "?")
                   .trim()
                   .split(/\s+/)
@@ -3644,9 +3647,13 @@ function validateStaffHours() {
   </div>
 
   {/* HOVER CARD */}
-  <div className="pointer-events-none absolute left-full top-1/2 z-[9999] ml-4 hidden -translate-y-1/2 opacity-0 transition-all duration-200 lg:block lg:group-hover:opacity-100">
+  <div
+    className={`pointer-events-none absolute top-full z-[9999] mt-4 hidden opacity-0 transition-all duration-200 lg:block lg:group-hover:opacity-100 ${
+      opensPreviewLeft ? "right-0" : "left-0"
+    }`}
+  >
     <div
-      className="w-[360px] overflow-hidden rounded-3xl border shadow-2xl"
+      className="w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-3xl border shadow-2xl"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
