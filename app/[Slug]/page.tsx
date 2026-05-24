@@ -1756,12 +1756,11 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 </div>
               </div>
             ) : null}
-            <div className="hidden max-h-[720px] overflow-y-auto pr-1 md:block">
+            <div className="hidden md:block">
             <div className="grid grid-cols-7 items-start gap-2">
               {weekDates.map((dateObj, index) => {
                 const dateKey = formatDate(dateObj);
                 const slots = weekSlots[dateKey] || [];
-                const isSelectedDay = formatDate(selectedDate) === dateKey;
                 const isToday = todayKey === dateKey;
                 const isClosedDay =
                   Boolean(selectedService) && !loadingSlots && slots.length === 0;
@@ -1770,7 +1769,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                   <div
                     key={dateKey}
                     className={`rounded-2xl border p-3 transition ${
-                      isSelectedDay
+                      isToday
   ? "border-sky-500 bg-sky-100 shadow-md"
                         : isClosedDay
                         ? "border-rose-100 bg-[repeating-linear-gradient(135deg,rgba(254,226,226,0.9)_0px,rgba(254,226,226,0.9)_9px,rgba(255,241,242,0.75)_9px,rgba(255,241,242,0.75)_18px)]"
