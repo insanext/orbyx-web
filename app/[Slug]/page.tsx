@@ -258,6 +258,80 @@ function getStaffInitial(name?: string | null) {
   return safeName.charAt(0).toUpperCase();
 }
 
+function getBusinessInitials(name?: string | null) {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (parts.length === 0) return "O";
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function StaffPhotoPreview({
+  staff,
+  align = "left",
+}: {
+  staff: StaffItem;
+  align?: "left" | "right";
+}) {
+  return (
+    <div className="relative group">
+      <div className="h-12 w-12 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 md:h-14 md:w-14">
+        {staff.photo_url ? (
+          <img
+            src={staff.photo_url}
+            alt={staff.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-700">
+            {getStaffInitial(staff.name)}
+          </div>
+        )}
+      </div>
+
+      <div
+        className={`pointer-events-none absolute top-1/2 z-40 hidden -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100 xl:block ${
+          align === "right" ? "right-full mr-5" : "left-full ml-5"
+        }`}
+      >
+        <div className="w-[320px] overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_28px_80px_-35px_rgba(15,23,42,0.45)]">
+          <div className="h-[220px] bg-slate-100">
+            {staff.photo_url ? (
+              <img
+                src={staff.photo_url}
+                alt={staff.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-slate-300">
+                {getStaffInitial(staff.name)}
+              </div>
+            )}
+          </div>
+
+          <div className="p-5">
+            <p className="text-lg font-bold text-slate-950">{staff.name}</p>
+            <p className="mt-1 text-sm font-semibold text-indigo-600">
+              {staff.role?.trim() || "Profesional"}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              {staff.role?.trim()
+                ? `Especialista en ${staff.role.trim().toLowerCase()}.`
+                : "Profesional disponible para esta reserva."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SummaryChip({
   label,
   value,
@@ -309,6 +383,9 @@ const isGroupBookingBusiness =
   const [staffOptions, setStaffOptions] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePopover, setShowDatePopover] = useState(false);
+  const [showStaffDrawer, setShowStaffDrawer] = useState(false);
+  const [staffSearchQuery, setStaffSearchQuery] = useState("");
   const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
 const [nextAvailableSlots, setNextAvailableSlots] = useState<SlotItem[]>([]);
 const [loadingNextSlots, setLoadingNextSlots] = useState(false);
@@ -422,6 +499,40 @@ const nextAvailableDays = useMemo(() => {
 
   const visibleAddress = selectedBranch?.address || business?.address || null;
   const visiblePhone = selectedBranch?.phone || business?.phone || null;
+  const weekStartDate = weekDates[0];
+  const weekEndDate = weekDates[weekDates.length - 1];
+  const todayKey = formatDate(new Date());
+  const selectedStaff =
+    staffOptions.find((staff) => staff.id === selectedStaffId) || null;
+  const compactStaffBase = staffOptions.slice(0, 3);
+  const visibleStaffOptions =
+    selectedStaff && !compactStaffBase.some((staff) => staff.id === selectedStaff.id)
+      ? compactStaffBase.length >= 3
+        ? [...compactStaffBase.slice(0, 2), selectedStaff]
+        : [...compactStaffBase, selectedStaff]
+      : compactStaffBase;
+  const filteredDrawerStaff = staffOptions.filter((staff) => {
+    const term = staffSearchQuery.trim().toLowerCase();
+    if (!term) return true;
+
+    return `${staff.name} ${staff.role || ""}`.toLowerCase().includes(term);
+  });
+  const weekRangeLabel =
+    weekStartDate && weekEndDate
+      ? weekStartDate.getMonth() === weekEndDate.getMonth() &&
+        weekStartDate.getFullYear() === weekEndDate.getFullYear()
+        ? `${weekStartDate.getDate()} – ${weekEndDate.getDate()} ${weekEndDate.toLocaleDateString(
+            "es-CL",
+            { month: "long" }
+          )} ${weekEndDate.getFullYear()}`
+        : `${weekStartDate.getDate()} ${weekStartDate.toLocaleDateString(
+            "es-CL",
+            { month: "short" }
+          )} – ${weekEndDate.getDate()} ${weekEndDate.toLocaleDateString(
+            "es-CL",
+            { month: "short" }
+          )} ${weekEndDate.getFullYear()}`
+      : "";
 
   function updateCustomerField(key: string, value: string) {
     setCustomerData((prev) => ({
@@ -474,6 +585,14 @@ const nextAvailableDays = useMemo(() => {
     setWeekSlots({});
     setSubmitError("");
     setBookingSuccess(null);
+  }
+
+  function moveSelectedWeek(days: number) {
+    const nextDate = new Date(selectedDate);
+    nextDate.setDate(nextDate.getDate() + days);
+    setSelectedDate(nextDate);
+    setSelectedSlot(null);
+    setShowDatePopover(false);
   }
 
   function validateForm() {
@@ -1219,25 +1338,26 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         <div className="grid gap-4 xl:grid-cols-[390px_1fr] xl:gap-8">
           <div className="space-y-4 xl:space-y-6">
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[30px]">
-              <div className="h-2 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400" />
-              <div className="p-4 md:p-6">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 md:text-[11px] md:tracking-[0.3em]">
-                  Reserva online
-                </p>
+              <div className="p-4 md:p-5">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-lg font-bold text-white shadow-[0_18px_40px_-24px_rgba(15,23,42,0.8)]">
+                    {getBusinessInitials(business?.name || slug)}
+                  </div>
 
-                <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl md:text-4xl">
-                  {business?.name || slug || "Reserva"}
-                </h1>
+                  <div className="min-w-0">
+                    <h1 className="truncate text-xl font-bold tracking-tight text-slate-950 md:text-2xl">
+                      {business?.name || slug || "Reserva"}
+                    </h1>
+                    <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Reserva online
+                    </span>
+                  </div>
+                </div>
 
-                {business?.description ? (
-                  <p className="mt-3 text-sm leading-6 text-slate-600 md:mt-4">
-                    {business.description}
-                  </p>
-                ) : null}
-
-                 <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-600 md:mt-5">
+                 <div className="mt-4 grid gap-2 text-sm text-slate-600">
                   {visibleAddress ? (
-                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-slate-700">
+                    <span className="inline-flex max-w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -1254,6 +1374,25 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                         <circle cx="12" cy="10" r="2.5" />
                       </svg>
                       <span className="min-w-0 truncate">{visibleAddress}</span>
+                    </span>
+                  ) : null}
+                  {visiblePhone ? (
+                    <span className="inline-flex max-w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="h-4 w-4 text-slate-500"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M22 16.92v3a2 2 0 01-2.18 2 19.8 19.8 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.8 19.8 0 012.12 4.2 2 2 0 014.11 2h3a2 2 0 012 1.72c.12.9.32 1.77.59 2.61a2 2 0 01-.45 2.11L8 9.69a16 16 0 006.31 6.31l1.25-1.25a2 2 0 012.11-.45c.84.27 1.71.47 2.61.59A2 2 0 0122 16.92z"
+                        />
+                      </svg>
+                      <span className="min-w-0 truncate">{visiblePhone}</span>
                     </span>
                   ) : null}
                 </div>
@@ -1397,7 +1536,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                           </div>
                         </button>
 
-                        {staffOptions.map((staff) => (
+                        {visibleStaffOptions.map((staff) => (
                           <button
                             key={staff.id}
                             type="button"
@@ -1433,9 +1572,9 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
   {/* HOVER GRANDE */}
   <div className="pointer-events-none absolute left-full top-1/2 z-30 ml-5 hidden -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100 xl:block">
-    <div className="w-[500px] rounded-3xl border p-6 shadow-2xl bg-white">
-      <div className="flex flex-col items-center gap-4">
-        <div className="h-[390px] w-[390px] overflow-hidden rounded-2xl bg-slate-200">
+    <div className="w-[320px] overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_28px_80px_-35px_rgba(15,23,42,0.45)]">
+      <div>
+        <div className="h-[220px] w-full overflow-hidden bg-slate-200">
           {staff.photo_url ? (
             <img
               src={staff.photo_url}
@@ -1449,9 +1588,17 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           )}
         </div>
 
-        <p className="text-lg font-semibold text-slate-900 text-center">
-          {staff.name}
-        </p>
+        <div className="p-5">
+          <p className="text-lg font-bold text-slate-950">{staff.name}</p>
+          <p className="mt-1 text-sm font-semibold text-indigo-600">
+            {staff.role?.trim() || "Profesional"}
+          </p>
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            {staff.role?.trim()
+              ? `Especialista en ${staff.role.trim().toLowerCase()}.`
+              : "Profesional disponible para esta reserva."}
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -1473,37 +1620,87 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                             </div>
                           </button>
                         ))}
+
+                        {staffOptions.length > visibleStaffOptions.length ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStaffSearchQuery("");
+                              setShowStaffDrawer(true);
+                            }}
+                            className="flex h-12 w-full items-center justify-center rounded-2xl border border-indigo-200 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm"
+                          >
+                            Ver todos los profesionales ({staffOptions.length})
+                          </button>
+                        ) : null}
                       </div>
                     )}
                   </div>
                 ) : null}
 
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-inner [&_.react-calendar]:w-full [&_.react-calendar]:max-w-full [&_.react-calendar]:border-0 md:rounded-[26px] md:p-4">
-                  <Calendar
-                    minDate={new Date()}
-                    onChange={(value: any) => {
-                      const picked = Array.isArray(value) ? value[0] : value;
-                      if (!picked) return;
-                      setSelectedDate(new Date(picked));
-                      setSelectedSlot(null);
-                    }}
-                    value={selectedDate}
-                  />
-                </div>
               </div>
             </div>
 
           </div>
 
           <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[30px] md:p-5 xl:min-h-[980px]">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 md:text-[11px] md:tracking-[0.28em]">
-                  Horarios disponibles
-                </p>
-                <h2 className="mt-1 text-lg font-bold text-slate-950 md:text-xl">
-                  Agenda semanal {selectedDate.getFullYear()}
-                </h2>
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => moveSelectedWeek(-7)}
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                  aria-label="Semana anterior"
+                >
+                  ‹
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDatePopover((current) => !current)}
+                  className="inline-flex h-11 items-center gap-2 rounded-2xl border border-indigo-200 bg-white px-4 text-sm font-bold text-slate-950 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50"
+                >
+                  <span>{weekRangeLabel}</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-4 w-4 text-indigo-600"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v13a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => moveSelectedWeek(7)}
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                  aria-label="Semana siguiente"
+                >
+                  ›
+                </button>
+
+                {showDatePopover ? (
+                  <div className="absolute left-0 top-14 z-40 w-[310px] overflow-hidden rounded-[26px] border border-slate-200 bg-white p-3 shadow-[0_28px_90px_-38px_rgba(15,23,42,0.55)] [&_.react-calendar]:w-full [&_.react-calendar]:max-w-full [&_.react-calendar]:border-0">
+                    <Calendar
+                      minDate={new Date()}
+                      onChange={(value: any) => {
+                        const picked = Array.isArray(value) ? value[0] : value;
+                        if (!picked) return;
+                        setSelectedDate(new Date(picked));
+                        setSelectedSlot(null);
+                        setShowDatePopover(false);
+                      }}
+                      value={selectedDate}
+                    />
+                  </div>
+                ) : null}
               </div>
 
               {selectedService ? (
@@ -1530,6 +1727,9 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 const dateKey = formatDate(dateObj);
                 const slots = weekSlots[dateKey] || [];
                 const isSelectedDay = formatDate(selectedDate) === dateKey;
+                const isToday = todayKey === dateKey;
+                const isClosedDay =
+                  Boolean(selectedService) && !loadingSlots && slots.length === 0;
 
                 return (
                   <div
@@ -1537,12 +1737,29 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     className={`rounded-2xl border p-3 transition ${
                       isSelectedDay
   ? "border-sky-500 bg-sky-100 shadow-md"
+                        : isClosedDay
+                        ? "border-rose-100 bg-[repeating-linear-gradient(135deg,rgba(254,226,226,0.9)_0px,rgba(254,226,226,0.9)_9px,rgba(255,241,242,0.75)_9px,rgba(255,241,242,0.75)_18px)]"
                         : "border-slate-200 bg-slate-50/60"
                     }`}
                   >
-                    <div className="-mx-3 mb-3 border-b border-slate-200 bg-white px-3 pb-2 pt-1 md:sticky md:top-4 md:z-30">
-                      <p className="text-sm font-bold text-slate-900">
+                    <div
+                      className={`-mx-3 mb-3 border-b px-3 pb-2 pt-1 md:sticky md:top-4 md:z-30 ${
+                        isClosedDay
+                          ? "border-rose-100 bg-rose-50/95"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <p
+                        className={`text-sm font-bold ${
+                          isClosedDay ? "text-rose-900" : "text-slate-900"
+                        }`}
+                      >
                         {getWeekdayLabel(dateObj)}
+                        {isToday ? (
+                          <span className="ml-2 rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                            Hoy
+                          </span>
+                        ) : null}
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
                         {dateObj.toLocaleDateString("es-CL", {
@@ -1569,9 +1786,29 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
     Selecciona un servicio.
   </p>
 ) : slots.length === 0 ? (
-  <p className="text-xs text-slate-500">Sin horarios.</p>
+  <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-rose-100 bg-white/35 px-3 text-center">
+    <div>
+      <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-500">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          className="h-5 w-5"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M7 11V8a5 5 0 0110 0v3M6 11h12v9H6z"
+          />
+        </svg>
+      </div>
+      <p className="text-sm font-bold text-rose-700">Sin horario disponible</p>
+    </div>
+  </div>
 ) : (
-  <div className="space-y-1.5">
+  <div className="max-h-[640px] space-y-1.5 overflow-y-auto pr-1">
     {slots.map((slot, index) => (
       <button
         key={`${slot.slot_start}-${index}`}
@@ -2182,6 +2419,136 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
             </div>
           </div>
         </div>
+
+        {showStaffDrawer ? (
+          <div className="fixed inset-0 z-50">
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-950/35 backdrop-blur-sm"
+              aria-label="Cerrar profesionales"
+              onClick={() => setShowStaffDrawer(false)}
+            />
+
+            <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[460px] flex-col border-l border-slate-200 bg-white shadow-[0_30px_100px_-45px_rgba(15,23,42,0.7)] sm:rounded-l-[30px]">
+              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <div>
+                  <p className="text-lg font-bold text-slate-950">
+                    Profesionales disponibles
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Elige uno o deja que Orbyx asigne automáticamente.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowStaffDrawer(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 text-xl text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                  aria-label="Cerrar"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4 px-5 py-4">
+                <div className="relative">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 110-15 7.5 7.5 0 010 15z"
+                    />
+                  </svg>
+                  <input
+                    value={staffSearchQuery}
+                    onChange={(e) => setStaffSearchQuery(e.target.value)}
+                    placeholder="Buscar profesional..."
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
+                  />
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 pb-5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedStaffId("");
+                    setSelectedSlot(null);
+                    setShowStaffDrawer(false);
+                  }}
+                  className={`w-full rounded-2xl border p-4 text-left transition ${
+                    selectedStaffId === ""
+                      ? "border-indigo-500 bg-indigo-50 shadow-sm"
+                      : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-lg font-bold text-indigo-700">
+                      *
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-950">
+                        Cualquiera disponible
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Te asignaremos el primer profesional disponible.
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {filteredDrawerStaff.map((staff) => (
+                  <div
+                    key={staff.id}
+                    className={`rounded-2xl border bg-white p-4 transition ${
+                      selectedStaffId === staff.id
+                        ? "border-indigo-500 shadow-sm"
+                        : "border-slate-200 hover:border-indigo-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <StaffPhotoPreview staff={staff} align="right" />
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-slate-950">
+                          {staff.name}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-indigo-600">
+                          {staff.role?.trim() || "Profesional"}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedStaffId(staff.id);
+                          setSelectedSlot(null);
+                          setShowStaffDrawer(false);
+                        }}
+                        className="h-10 rounded-xl border border-indigo-300 px-4 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
+                      >
+                        Elegir
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {filteredDrawerStaff.length === 0 ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    No encontramos profesionales con ese nombre.
+                  </div>
+                ) : null}
+              </div>
+            </aside>
+          </div>
+        ) : null}
 
         {loadingPage ? (
           <div className="mt-6 text-sm text-slate-500">Cargando...</div>
