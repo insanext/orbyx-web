@@ -1722,7 +1722,7 @@ function validateStaffHours() {
   }
 
   return (
-    <div className="space-y-6 overflow-x-hidden pb-6">
+    <div className="space-y-6 [overflow-x:clip] pb-6">
       <style>{`
         .orbyx-staff-energy {
           position: relative;
