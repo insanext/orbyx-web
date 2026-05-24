@@ -1722,7 +1722,7 @@ function validateStaffHours() {
   }
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="space-y-6 overflow-x-hidden pb-6">
       <style>{`
         .orbyx-staff-energy {
           position: relative;
@@ -3583,7 +3583,7 @@ function validateStaffHours() {
               Aún no has creado staff.
             </div>
                     ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {staff.map((item) => {
                 const isSelected = editingId === item.id;
                 const calendarConnection = activeGoogleConnectionsByStaff.get(
@@ -3599,7 +3599,7 @@ function validateStaffHours() {
                 return (
                   <div
                     key={item.id}
-                    className="relative flex min-h-[360px] flex-col gap-4 overflow-visible rounded-3xl border p-4 text-center transition hover:z-30 hover:border-blue-400/40"
+                    className="relative flex min-h-[360px] min-w-0 flex-col gap-4 overflow-visible rounded-3xl border p-4 text-center transition hover:z-30 hover:border-blue-400/40"
                     style={{
                       borderColor: isSelected
                         ? "rgba(37,99,235,0.45)"
