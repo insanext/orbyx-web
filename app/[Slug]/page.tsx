@@ -272,6 +272,26 @@ function getBusinessInitials(name?: string | null) {
     .join("");
 }
 
+function getGroupSlotLabel(slot: SlotItem) {
+  const capacity = slot.capacity || 0;
+  const availableSpots = slot.available_spots || 0;
+
+  if (availableSpots <= 0) return "Completo";
+  if (capacity > 1 && availableSpots === 1) return "Último cupo";
+  if (capacity <= 1) return "Disponible";
+  return `${availableSpots} cupos disponibles`;
+}
+
+function getGroupSlotTone(slot: SlotItem) {
+  const capacity = slot.capacity || 0;
+  const availableSpots = slot.available_spots || 0;
+
+  if (availableSpots <= 0) return "bg-slate-200 text-slate-500";
+  if (capacity > 1 && availableSpots === 1) return "bg-rose-100 text-rose-600";
+  if (capacity > 1 && availableSpots <= 3) return "bg-amber-100 text-amber-600";
+  return "bg-emerald-100 text-emerald-600";
+}
+
 function StaffPhotoPreview({
   staff,
   align = "left",
@@ -296,8 +316,10 @@ function StaffPhotoPreview({
       </div>
 
       <div
-        className={`pointer-events-none absolute top-1/2 z-40 hidden -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100 xl:block ${
-          align === "right" ? "right-full mr-5" : "left-full ml-5"
+        className={`pointer-events-none z-[80] hidden -translate-y-1/2 opacity-0 transition-all duration-200 group-hover:opacity-100 xl:block ${
+          align === "right"
+            ? "fixed right-[470px] top-1/2"
+            : "absolute left-full top-1/2 ml-5"
         }`}
       >
         <div className="w-[320px] overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_28px_80px_-35px_rgba(15,23,42,0.45)]">
@@ -383,6 +405,9 @@ const isGroupBookingBusiness =
   const [staffOptions, setStaffOptions] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [mobileSelectedDateKey, setMobileSelectedDateKey] = useState(
+    formatDate(new Date())
+  );
   const [showDatePopover, setShowDatePopover] = useState(false);
   const [showStaffDrawer, setShowStaffDrawer] = useState(false);
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
@@ -502,6 +527,12 @@ const nextAvailableDays = useMemo(() => {
   const weekStartDate = weekDates[0];
   const weekEndDate = weekDates[weekDates.length - 1];
   const todayKey = formatDate(new Date());
+  const mobileSelectedDate =
+    weekDates.find((dateObj) => formatDate(dateObj) === mobileSelectedDateKey) ||
+    weekDates[0];
+  const mobileSelectedDateSlots = mobileSelectedDate
+    ? weekSlots[formatDate(mobileSelectedDate)] || []
+    : [];
   const selectedStaff =
     staffOptions.find((staff) => staff.id === selectedStaffId) || null;
   const compactStaffBase = staffOptions.slice(0, 3);
@@ -591,6 +622,7 @@ const nextAvailableDays = useMemo(() => {
     const nextDate = new Date(selectedDate);
     nextDate.setDate(nextDate.getDate() + days);
     setSelectedDate(nextDate);
+    setMobileSelectedDateKey(formatDate(nextDate));
     setSelectedSlot(null);
     setShowDatePopover(false);
   }
@@ -1334,8 +1366,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto w-full max-w-[1750px] px-3 py-4 sm:px-4 md:px-8 md:py-8 xl:px-12">
-        <div className="grid gap-4 xl:grid-cols-[390px_1fr] xl:gap-8">
+      <div className="mx-auto w-full max-w-[1600px] px-3 py-3 sm:px-4 md:px-6 md:py-6 xl:px-8">
+        <div className="grid gap-4 xl:grid-cols-[360px_1fr] xl:gap-6">
           <div className="space-y-4 xl:space-y-6">
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[30px]">
               <div className="p-4 md:p-5">
@@ -1399,7 +1431,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               </div>
             </div>
 
-            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[30px] md:p-5 xl:min-h-[980px]">
+            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[26px] md:p-4 xl:min-h-[860px]">
               <div className="space-y-3 md:space-y-4">
                 {showBranchSelector ? (
                   <div>
@@ -1643,7 +1675,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
           </div>
 
-          <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[30px] md:p-5 xl:min-h-[980px]">
+          <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[26px] md:p-4 xl:min-h-[860px]">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative flex flex-wrap items-center gap-2">
                 <button
@@ -1693,7 +1725,9 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                       onChange={(value: any) => {
                         const picked = Array.isArray(value) ? value[0] : value;
                         if (!picked) return;
-                        setSelectedDate(new Date(picked));
+                        const nextPickedDate = new Date(picked);
+                        setSelectedDate(nextPickedDate);
+                        setMobileSelectedDateKey(formatDate(nextPickedDate));
                         setSelectedSlot(null);
                         setShowDatePopover(false);
                       }}
@@ -1722,7 +1756,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 </div>
               </div>
             ) : null}
-            <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-7">
+            <div className="hidden max-h-[720px] overflow-y-auto pr-1 md:block">
+            <div className="grid grid-cols-7 items-start gap-2">
               {weekDates.map((dateObj, index) => {
                 const dateKey = formatDate(dateObj);
                 const slots = weekSlots[dateKey] || [];
@@ -1808,7 +1843,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
     </div>
   </div>
 ) : (
-  <div className="max-h-[640px] space-y-1.5 overflow-y-auto pr-1">
+  <div className="space-y-1.5">
     {slots.map((slot, index) => (
       <button
         key={`${slot.slot_start}-${index}`}
@@ -1824,7 +1859,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
             });
           }, 120);
         }}
-className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition md:min-h-[40px] md:flex-col md:justify-center md:px-2 md:py-1 md:text-center ${
+className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2 rounded-xl border px-2.5 py-1.5 text-left transition md:min-h-[34px] md:flex-col md:justify-center md:px-2 md:py-1 md:text-center ${
   selectedSlot?.slot_start === slot.slot_start
     ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
     : slot.is_group && (slot.available_spots || 0) === 0
@@ -1832,7 +1867,7 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
     : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
 }`}
       >
-        <span className="text-sm font-semibold leading-none md:text-[12px]">
+        <span className="text-sm font-semibold leading-none md:text-[11px]">
           {formatHour(slot.slot_start)}
         </span>
         <span
@@ -1849,17 +1884,19 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
     className={`px-1.5 py-[1px] rounded-full ${
       (slot.available_spots || 0) === 0
         ? "bg-slate-200 text-slate-500"
-        : (slot.available_spots || 0) === 1
+        : (slot.capacity || 0) > 1 && (slot.available_spots || 0) === 1
         ? "bg-rose-100 text-rose-600"
-        : (slot.available_spots || 0) <= 3
+        : (slot.capacity || 0) > 1 && (slot.available_spots || 0) <= 3
         ? "bg-amber-100 text-amber-600"
         : "bg-emerald-100 text-emerald-600"
     }`}
   >
     {(slot.available_spots || 0) === 0
       ? "Completo"
-      : (slot.available_spots || 0) === 1
+      : (slot.capacity || 0) > 1 && (slot.available_spots || 0) === 1
       ? "Último cupo"
+      : (slot.capacity || 0) <= 1
+      ? "Disponible"
       : `${slot.available_spots} cupos disponibles`}
   </span>
 ) : (
@@ -1870,10 +1907,129 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
     ))}
   </div>
 )}
-</div>
-);
-})}
-</div>
+                  </div>
+                );
+              })}
+            </div>
+            </div>
+
+            <div className="md:hidden">
+              <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-2">
+                {weekDates.map((dateObj) => {
+                  const dateKey = formatDate(dateObj);
+                  const isActiveMobileDay = mobileSelectedDateKey === dateKey;
+                  const isToday = todayKey === dateKey;
+                  const daySlots = weekSlots[dateKey] || [];
+                  const isClosedDay =
+                    Boolean(selectedService) && !loadingSlots && daySlots.length === 0;
+
+                  return (
+                    <button
+                      key={dateKey}
+                      type="button"
+                      onClick={() => {
+                        setMobileSelectedDateKey(dateKey);
+                        setSelectedDate(dateObj);
+                        setSelectedSlot(null);
+                      }}
+                      className={`min-w-[74px] rounded-2xl border px-3 py-2 text-left transition ${
+                        isActiveMobileDay
+                          ? "border-indigo-500 bg-indigo-50 shadow-sm"
+                          : isClosedDay
+                          ? "border-rose-100 bg-rose-50 text-rose-700"
+                          : "border-slate-200 bg-white text-slate-700"
+                      }`}
+                    >
+                      <p className="text-[11px] font-bold uppercase">
+                        {dateObj.toLocaleDateString("es-CL", { weekday: "short" })}
+                      </p>
+                      <p className="mt-1 text-sm font-bold">
+                        {dateObj.getDate()}
+                        {isToday ? (
+                          <span className="ml-1 rounded-full bg-indigo-600 px-1.5 py-0.5 text-[9px] text-white">
+                            Hoy
+                          </span>
+                        ) : null}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                <div className="mb-3">
+                  <p className="text-sm font-bold text-slate-950">
+                    {mobileSelectedDate ? getWeekdayLabel(mobileSelectedDate) : "Día"}
+                  </p>
+                  {mobileSelectedDate ? (
+                    <p className="mt-1 text-xs text-slate-500">
+                      {mobileSelectedDate.toLocaleDateString("es-CL", {
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </p>
+                  ) : null}
+                </div>
+
+                {loadingSlots ? (
+                  <p className="text-xs text-slate-500">Cargando...</p>
+                ) : !selectedService ? (
+                  <p className="text-xs text-slate-500">Selecciona un servicio.</p>
+                ) : mobileSelectedDateSlots.length === 0 ? (
+                  <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-5 text-center">
+                    <p className="text-sm font-bold text-rose-700">
+                      Sin horario disponible
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {mobileSelectedDateSlots.map((slot, index) => (
+                      <button
+                        key={`${slot.slot_start}-${index}`}
+                        type="button"
+                        disabled={
+                          Boolean(slot.is_group) && (slot.available_spots || 0) === 0
+                        }
+                        onClick={() => {
+                          setSelectedSlot(slot);
+
+                          setTimeout(() => {
+                            formRef.current?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
+                          }, 120);
+                        }}
+                        className={`min-h-[44px] rounded-xl border px-3 py-2 text-center transition ${
+                          selectedSlot?.slot_start === slot.slot_start
+                            ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
+                            : slot.is_group && (slot.available_spots || 0) === 0
+                            ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                        }`}
+                      >
+                        <span className="block text-sm font-semibold leading-none">
+                          {formatHour(slot.slot_start)}
+                        </span>
+                        <span
+                          className={`mt-1 block text-[10px] leading-tight ${
+                            selectedSlot?.slot_start === slot.slot_start
+                              ? "text-indigo-100"
+                              : slot.is_group && isGroupBookingBusiness
+                              ? "text-emerald-600"
+                              : "text-slate-400"
+                          }`}
+                        >
+                          {slot.is_group && isGroupBookingBusiness
+                            ? getGroupSlotLabel(slot)
+                            : "Disponible"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
 
 {selectedService && noSlotsThisWeek ? (
   <div className="mt-4 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-4 shadow-sm md:mt-6 md:rounded-[26px] md:p-5">
@@ -1913,7 +2069,9 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
                 key={slot.slot_start}
                 type="button"
                 onClick={() => {
-                  setSelectedDate(new Date(slot.slot_start));
+                  const nextSlotDate = new Date(slot.slot_start);
+                  setSelectedDate(nextSlotDate);
+                  setMobileSelectedDateKey(formatDate(nextSlotDate));
                   setSelectedSlot(slot);
 
                   setTimeout(() => {
@@ -1940,7 +2098,9 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
       const firstSlot = nextAvailableSlots[0];
       if (!firstSlot) return;
 
-      setSelectedDate(new Date(firstSlot.slot_start));
+      const nextSlotDate = new Date(firstSlot.slot_start);
+      setSelectedDate(nextSlotDate);
+      setMobileSelectedDateKey(formatDate(nextSlotDate));
       setSelectedSlot(null);
     }}
     className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90"
@@ -2429,7 +2589,7 @@ className={`flex min-h-[44px] w-full flex-row items-center justify-between gap-2
               onClick={() => setShowStaffDrawer(false)}
             />
 
-            <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[460px] flex-col border-l border-slate-200 bg-white shadow-[0_30px_100px_-45px_rgba(15,23,42,0.7)] sm:rounded-l-[30px]">
+            <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[460px] flex-col border-l border-slate-200 bg-white shadow-[0_30px_100px_-45px_rgba(15,23,42,0.7)]">
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div>
                   <p className="text-lg font-bold text-slate-950">
