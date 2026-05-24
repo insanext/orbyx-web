@@ -2249,146 +2249,47 @@ function validateStaffHours() {
                       Define si este profesional aparece disponible para operar.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        is_active: !prev.is_active,
-                      }))
-                    }
-                    className={`orbyx-staff-energy inline-flex h-11 shrink-0 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition ${
-                      form.is_active ? "orbyx-staff-energy-active" : ""
-                    }`}
-                  style={{
-                      borderColor: form.is_active
-                        ? "rgba(16,185,129,0.34)"
-                        : "rgba(148,163,184,0.34)",
-                      background: form.is_active
-                        ? "rgba(16,185,129,0.10)"
-                        : "var(--bg-soft)",
-                      color: form.is_active ? "rgb(16 185 129)" : "var(--text-muted)",
-                  }}
-                  >
-                    {form.is_active ? "Staff activo" : "Staff inactivo"}
-                  </button>
-                </div>
-              </div>
-
-              {false ? (
-              <div
-                className="rounded-2xl border p-4"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-card)",
-                }}
-              >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--text-main)" }}
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="text-sm font-medium"
+                      style={{
+                        color: form.is_active
+                          ? "rgb(16 185 129)"
+                          : "var(--text-muted)",
+                      }}
                     >
-                      Sincroniza tu calendario
-                    </p>
-                    <p
-                      className="mt-1 text-sm"
-                      style={{ color: "var(--text-muted)" }}
+                      {form.is_active ? "Activo" : "Inactivo"}
+                    </span>
+                    <button
+                      type="button"
+                      aria-pressed={form.is_active}
+                      aria-label="Cambiar estado del staff"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          is_active: !prev.is_active,
+                        }))
+                      }
+                      className="inline-flex h-8 w-14 shrink-0 items-center rounded-full border p-1 transition"
+                      style={{
+                        borderColor: form.is_active
+                          ? "rgba(124,58,237,0.34)"
+                          : "rgba(148,163,184,0.34)",
+                        background: form.is_active
+                          ? "linear-gradient(135deg, rgb(124 58 237), rgb(99 102 241))"
+                          : "rgba(148,163,184,0.18)",
+                      }}
                     >
-                      Conecta el calendario de este profesional para que sus reservas se sincronicen automáticamente.
-                    </p>
-
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      <div
-                        className="rounded-2xl border px-3 py-3"
-                        style={{
-                          borderColor: staffCalendarConnection
-                            ? "rgba(16,185,129,0.32)"
-                            : "var(--border-color)",
-                          background: staffCalendarConnection
-                            ? "rgba(16,185,129,0.08)"
-                            : "var(--bg-soft)",
-                        }}
-                      >
-                        <p
-                          className="text-xs font-semibold uppercase tracking-[0.12em]"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          Google Calendar
-                        </p>
-                        <p
-                          className="mt-2 text-sm font-semibold"
-                          style={{
-                            color: staffCalendarConnection
-                              ? "rgb(16 185 129)"
-                              : "var(--text-main)",
-                          }}
-                        >
-                          {loadingStaffCalendarConnection
-                            ? "Revisando conexión..."
-                            : staffCalendarConnection
-                            ? "Google Calendar conectado"
-                            : "No conectado"}
-                        </p>
-                        {staffCalendarConnection?.account_email ? (
-                          <p
-                            className="mt-1 truncate text-xs"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            {staffCalendarConnection?.account_email}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      {["Outlook", "Apple Calendar"].map((label) => (
-                        <div
-                          key={label}
-                          className="rounded-2xl border px-3 py-3 opacity-70"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                          }}
-                        >
-                          <p
-                            className="text-xs font-semibold uppercase tracking-[0.12em]"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            {label}
-                          </p>
-                          <p
-                            className="mt-2 text-sm font-semibold"
-                            style={{ color: "var(--text-main)" }}
-                          >
-                            Próximamente
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                      <span
+                        className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                          form.is_active ? "translate-x-6" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => connectStaffGoogleCalendar()}
-                    disabled={
-                      !tenantId ||
-                      !selectedBranchId ||
-                      !editingId ||
-                      !calendarId ||
-                      loadingStaffCalendarConnection
-                    }
-                    className="orbyx-staff-energy inline-flex h-11 shrink-0 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{
-                      borderColor: "rgba(37,99,235,0.36)",
-                      background:
-                        "linear-gradient(135deg, rgba(37,99,235,0.16), var(--bg-soft))",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    {staffCalendarConnection ? "Cambiar cuenta" : "Conectar Google Calendar"}
-                  </button>
                 </div>
               </div>
-              ) : null}
+
 
               <div
   className="rounded-2xl border p-4"

@@ -1144,13 +1144,6 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
 
 {loadError ? <Notice tone="danger" title={loadError} /> : null}
 
-{!loading && !googleConnected ? (
-  <Notice
-    tone="danger"
-    title="Google Calendar no está conectado"
-    description="Conecta Google Calendar para evitar problemas de sincronización y asegurar que las reservas se gestionen correctamente."
-  />
-) : null}
 
 {saveError ? <Notice tone="danger" title={saveError} /> : null}
 {saveOk ? <Notice tone="success" title={saveOk} /> : null}
