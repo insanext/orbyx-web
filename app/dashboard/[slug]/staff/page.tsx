@@ -427,8 +427,13 @@ const [photoUrl, setPhotoUrl] = useState("");
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [staffCalendarConnection, setStaffCalendarConnection] =
     useState<CalendarConnectionItem | null>(null);
+  const [staffCalendarConnections, setStaffCalendarConnections] = useState<
+    CalendarConnectionItem[]
+  >([]);
   const [loadingStaffCalendarConnection, setLoadingStaffCalendarConnection] =
     useState(false);
+  const [calendarModalStaff, setCalendarModalStaff] =
+    useState<StaffItem | null>(null);
 
   const [plan, setPlan] = useState("pro");
   const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
@@ -449,6 +454,22 @@ const [photoUrl, setPhotoUrl] = useState("");
 
   const selectedBranchName =
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
+
+  const activeGoogleConnectionsByStaff = useMemo(() => {
+    const map = new Map<string, CalendarConnectionItem>();
+
+    staffCalendarConnections.forEach((connection) => {
+      if (
+        connection.provider === "google" &&
+        connection.is_active &&
+        connection.staff_id
+      ) {
+        map.set(connection.staff_id, connection);
+      }
+    });
+
+    return map;
+  }, [staffCalendarConnections]);
 
   const groupedStaffSpecialDates = useMemo(
     () => groupStaffSpecialDates(staffSpecialDates),
@@ -572,7 +593,11 @@ async function uploadStaffImage(file: File, staffId: string) {
     async function loadData() {
       try {
         setLoadError("");
-        await Promise.all([loadStaff(tenantId), loadServices(tenantId)]);
+        await Promise.all([
+          loadStaff(tenantId),
+          loadServices(tenantId),
+          loadStaffCalendarConnections(tenantId),
+        ]);
       } catch (error: unknown) {
         setLoadError(
           error instanceof Error
@@ -681,13 +706,33 @@ async function uploadStaffImage(file: File, staffId: string) {
     }
   }
 
-  function connectStaffGoogleCalendar() {
-    if (!tenantId || !selectedBranchId || !editingId || !calendarId) return;
+  async function loadStaffCalendarConnections(id: string) {
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/calendar-connections?tenant_id=${id}`
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudieron cargar calendarios");
+      }
+
+      setStaffCalendarConnections(
+        Array.isArray(data?.connections) ? data.connections : []
+      );
+    } catch (error) {
+      console.error("Error cargando conexiones calendario", error);
+      setStaffCalendarConnections([]);
+    }
+  }
+
+  function connectStaffGoogleCalendar(staffId = editingId || "") {
+    if (!tenantId || !selectedBranchId || !staffId || !calendarId) return;
 
     const params = new URLSearchParams({
       tenant_id: tenantId,
       branch_id: selectedBranchId,
-      staff_id: editingId,
+      staff_id: staffId,
       scope_level: "staff",
       calendar_id: calendarId,
     });
@@ -2322,7 +2367,7 @@ function validateStaffHours() {
 
                   <button
                     type="button"
-                    onClick={connectStaffGoogleCalendar}
+                    onClick={() => connectStaffGoogleCalendar()}
                     disabled={
                       !tenantId ||
                       !selectedBranchId ||
@@ -3470,7 +3515,7 @@ function validateStaffHours() {
           description="Visualiza, edita o elimina integrantes del staff."
           className="order-1 bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-4 flex justify-end">
             <button
               type="button"
               onClick={() => {
@@ -3525,11 +3570,20 @@ function validateStaffHours() {
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {staff.map((item) => {
                 const isSelected = editingId === item.id;
+                const calendarConnection = activeGoogleConnectionsByStaff.get(
+                  item.id
+                );
+                const initials = String(item.name || "?")
+                  .trim()
+                  .split(/\s+/)
+                  .slice(0, 2)
+                  .map((part) => part.charAt(0).toUpperCase())
+                  .join("");
 
                 return (
                   <div
                     key={item.id}
-                    className="relative flex min-h-[250px] flex-col justify-between gap-3 overflow-visible rounded-2xl border p-3 transition hover:z-30 hover:border-blue-400/40"
+                    className="relative flex min-h-[360px] flex-col gap-4 overflow-visible rounded-3xl border p-4 text-center transition hover:z-30 hover:border-blue-400/40"
                     style={{
                       borderColor: isSelected
                         ? "rgba(37,99,235,0.45)"
@@ -3539,19 +3593,35 @@ function validateStaffHours() {
                         : "var(--bg-card)",
                     }}
                   >
+                    <div className="flex items-center justify-start">
+                      <span
+                        className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                        style={{
+                          background: item.is_active
+                            ? "rgba(16,185,129,0.14)"
+                            : "rgba(148,163,184,0.16)",
+                          color: item.is_active
+                            ? "rgb(16 185 129)"
+                            : "var(--text-muted)",
+                        }}
+                      >
+                        {item.is_active ? "Activo" : "Inactivo"}
+                      </span>
+                    </div>
+
                     <div className="flex min-w-0 flex-col gap-3">
 
 
 <div className="group relative">
   {/* FOTO PEQUEÑA */}
-  <div className="h-32 w-full overflow-hidden rounded-2xl bg-slate-200 sm:h-36">
+  <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border bg-slate-200 shadow-sm">
     {item.photo_url ? (
       <img
         src={item.photo_url}
-        className="h-full w-full object-contain object-top"
+        className="h-full w-full object-cover"
       />
     ) : (
-      <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+      <div className="flex h-full w-full items-center justify-center text-xl font-semibold text-slate-500">
         👤
       </div>
     )}
@@ -3560,21 +3630,21 @@ function validateStaffHours() {
   {/* HOVER CARD */}
   <div className="pointer-events-none absolute left-full top-1/2 z-[9999] ml-4 hidden -translate-y-1/2 opacity-0 transition-all duration-200 lg:block lg:group-hover:opacity-100">
     <div
-      className="w-[500px] rounded-3xl border p-6 shadow-2xl"
+      className="w-[360px] overflow-hidden rounded-3xl border shadow-2xl"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
       }}
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="h-[450px] w-[450px] overflow-hidden rounded-2xl bg-slate-200">
+        <div className="h-[280px] overflow-hidden bg-slate-200">
           {item.photo_url ? (
             <img
               src={item.photo_url}
-              className="h-full w-full object-contain object-top"
+              className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-2xl text-slate-400">
+            <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-slate-400">
               👤
             </div>
           )}
@@ -3594,7 +3664,7 @@ function validateStaffHours() {
 
                       <div className="min-w-0">
                         <p
-          className="truncate text-sm font-semibold"
+                          className="truncate text-base font-semibold"
                           style={{ color: "var(--text-main)" }}
                         >
                           {item.name}
@@ -3609,9 +3679,9 @@ function validateStaffHours() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <span
-                        className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                        className="hidden rounded-full px-2 py-0.5 text-[10px] font-semibold"
                         style={{
                           background: item.is_active
                             ? "rgba(16,185,129,0.14)"
@@ -3662,36 +3732,193 @@ function validateStaffHours() {
                         Eliminar
                       </button>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setCalendarModalStaff(item)}
+                      className={`orbyx-staff-energy flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                        calendarConnection ? "orbyx-staff-energy-active" : ""
+                      }`}
+                      style={{
+                        borderColor: calendarConnection
+                          ? "rgba(16,185,129,0.34)"
+                          : "rgba(244,63,94,0.34)",
+                        background: calendarConnection
+                          ? "rgba(16,185,129,0.10)"
+                          : "linear-gradient(135deg, rgba(244,63,94,0.14), rgba(244,63,94,0.05))",
+                        boxShadow: calendarConnection
+                          ? "0 18px 40px -32px rgba(16,185,129,0.8)"
+                          : "0 18px 40px -30px rgba(244,63,94,0.85)",
+                      }}
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                          style={{
+                            background: calendarConnection
+                              ? "rgba(16,185,129,0.16)"
+                              : "rgba(244,63,94,0.16)",
+                            color: calendarConnection
+                              ? "rgb(16 185 129)"
+                              : "rgb(244 63 94)",
+                          }}
+                        >
+                          📅
+                        </span>
+                        <span className="min-w-0">
+                          <span
+                            className="block text-sm font-semibold"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            {calendarConnection
+                              ? "Calendario conectado"
+                              : "Conectar calendario"}
+                          </span>
+                          <span
+                            className="mt-0.5 block truncate text-xs"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            {calendarConnection
+                              ? `Google Calendar${
+                                  calendarConnection.account_email
+                                    ? ` · ${calendarConnection.account_email}`
+                                    : ""
+                                }`
+                              : `Sincroniza las reservas de ${item.name} con su calendario.`}
+                          </span>
+                        </span>
+                      </span>
+                      <span
+                        className="shrink-0 text-lg font-semibold"
+                        style={{
+                          color: calendarConnection
+                            ? "rgb(16 185 129)"
+                            : "rgb(244 63 94)",
+                        }}
+                      >
+                        {calendarConnection ? "✓" : "›"}
+                      </span>
+                    </button>
                   </div>
                 );
               })}
-              <button
-                type="button"
-                onClick={() => {
-                  resetForm();
-                  setFormOpen(true);
-                }}
-                disabled={!selectedBranchId || loading || (!editingId && (reachedLimit || hasExcess))}
-                className="orbyx-staff-energy flex min-h-[250px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-4 text-sm font-medium transition hover:border-blue-400/50 disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
-                }}
-              >
-                <span
-                  className="flex h-14 w-14 items-center justify-center rounded-full border text-3xl"
+            </div>
+          )}
+
+          {selectedBranchId && staff.length > 0 ? (
+            <div
+              className="mt-4 rounded-2xl border px-4 py-3 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
+              Cada profesional puede conectar su calendario para sincronizar automáticamente sus reservas.
+            </div>
+          ) : null}
+        </Panel>
+        ) : null}
+
+        {calendarModalStaff ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
+              aria-label="Cerrar"
+              onClick={() => setCalendarModalStaff(null)}
+            />
+
+            <div
+              className="relative z-10 w-full max-w-lg rounded-3xl border p-5 shadow-2xl"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+              }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3
+                    className="text-lg font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Conectar calendario
+                  </h3>
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Elige la plataforma que prefieras.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCalendarModalStaff(null)}
+                  className="orbyx-staff-energy flex h-10 w-10 items-center justify-center rounded-2xl border text-lg"
                   style={{
                     borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
                   }}
                 >
-                  +
-                </span>
-                Agregar staff
-              </button>
+                  ×
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => connectStaffGoogleCalendar(calendarModalStaff.id)}
+                  disabled={!tenantId || !selectedBranchId || !calendarModalStaff.id || !calendarId}
+                  className="orbyx-staff-energy flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: "rgba(37,99,235,0.34)",
+                    background:
+                      "linear-gradient(135deg, rgba(37,99,235,0.12), var(--bg-soft))",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <span>
+                    <span className="block text-sm font-semibold">
+                      Google Calendar
+                    </span>
+                    <span
+                      className="mt-1 block text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Disponible
+                    </span>
+                  </span>
+                  <span className="text-lg">›</span>
+                </button>
+
+                {["Microsoft 365 / Outlook", "Apple Calendar"].map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled
+                    className="flex w-full cursor-not-allowed items-center justify-between gap-4 rounded-2xl border px-4 py-4 text-left opacity-65"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    <span>
+                      <span className="block text-sm font-semibold">{label}</span>
+                      <span
+                        className="mt-1 block text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Próximamente
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-          )}        </Panel>
+          </div>
         ) : null}
 
       </section>
