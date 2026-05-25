@@ -336,20 +336,117 @@ export default function OrbyxLandingPage() {
                 height={650}
                 className="w-full rounded-[22px] border border-white/10 bg-slate-950"
               />
-              <div className="absolute bottom-7 right-6 hidden w-[150px] rounded-[22px] border border-white/15 bg-white/90 p-3 text-slate-950 shadow-[0_24px_55px_rgba(0,0,0,0.38)] sm:block">
-                <p className="text-xs font-bold text-slate-500">Resumen diario</p>
-                <div className="mt-3 space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span>Reservas</span>
-                    <strong>28</strong>
+              <div className="absolute bottom-5 right-4 hidden w-[220px] overflow-hidden rounded-[24px] border border-emerald-300/40 bg-[#061623]/88 p-4 text-white shadow-[0_0_44px_rgba(16,185,129,0.22),0_24px_60px_rgba(0,0,0,0.45)] ring-1 ring-cyan-300/15 backdrop-blur-xl sm:block md:bottom-7 md:right-6 md:w-[250px]">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/80 to-transparent" />
+                <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
+                <div className="absolute -bottom-12 -left-12 h-32 w-32 rounded-full bg-cyan-400/15 blur-3xl" />
+
+                <div className="relative">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-violet-400/12 text-violet-200 ring-1 ring-violet-300/20">
+                      <Bot className="h-4 w-4" />
+                    </div>
+                    <p className="text-sm font-black tracking-tight">
+                      Hoy Orbyx <span className="text-emerald-300">automatizó</span>
+                    </p>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Confirmadas</span>
-                    <strong>24</strong>
+
+                  <div className="mt-4 rounded-2xl bg-gradient-to-b from-emerald-300/10 to-transparent px-2 pb-1 pt-2">
+                    <svg
+                      viewBox="0 0 190 54"
+                      className="h-14 w-full overflow-visible"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 39 C24 39 30 27 48 24 C70 20 78 37 98 33 C118 29 122 17 144 19 C162 21 168 25 186 7"
+                        fill="none"
+                        stroke="url(#automationLine)"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M4 39 C24 39 30 27 48 24 C70 20 78 37 98 33 C118 29 122 17 144 19 C162 21 168 25 186 7"
+                        fill="none"
+                        stroke="rgba(16,185,129,0.28)"
+                        strokeWidth="10"
+                        strokeLinecap="round"
+                      />
+                      <circle cx="186" cy="7" r="6" fill="#22f5a7" />
+                      <defs>
+                        <linearGradient id="automationLine" x1="0" x2="1" y1="0" y2="0">
+                          <stop stopColor="#22d3ee" />
+                          <stop offset="0.55" stopColor="#22f5a7" />
+                          <stop offset="1" stopColor="#86efac" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Nuevos clientes</span>
-                    <strong>6</strong>
+
+                  <div className="mt-3 space-y-3">
+                    {[
+                      {
+                        icon: CalendarCheck2,
+                        value: "18",
+                        label: "Reservas confirmadas",
+                        delta: "24%",
+                        tone: "bg-emerald-400/18 text-emerald-300",
+                      },
+                      {
+                        icon: Bell,
+                        value: "9",
+                        label: "Recordatorios enviados",
+                        delta: "18%",
+                        tone: "bg-fuchsia-400/18 text-fuchsia-200",
+                      },
+                      {
+                        icon: Users,
+                        value: "4",
+                        label: "Clientes recuperados",
+                        delta: "30%",
+                        tone: "bg-amber-400/18 text-amber-200",
+                      },
+                      {
+                        icon: MessageCircle,
+                        value: "12",
+                        label: "Conversaciones atendidas",
+                        delta: "20%",
+                        tone: "bg-blue-400/18 text-blue-200",
+                      },
+                    ].map((metric) => {
+                      const Icon = metric.icon;
+
+                      return (
+                        <div
+                          key={metric.label}
+                          className="grid grid-cols-[44px_1fr_auto] items-center gap-3 border-b border-white/8 pb-3 last:border-b-0 last:pb-0"
+                        >
+                          <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${metric.tone}`}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-baseline gap-2">
+                              <p className="text-2xl font-black leading-none text-white">
+                                {metric.value}
+                              </p>
+                              <p className="truncate text-[11px] text-slate-300">
+                                {metric.label}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-xs font-black text-emerald-300">
+                            ↑ {metric.delta}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between rounded-2xl border border-emerald-300/12 bg-emerald-300/8 px-4 py-3 text-emerald-300">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      <span className="text-sm font-black">IA activa ahora</span>
+                    </div>
+                    <span className="h-3 w-3 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(45,212,191,0.95)]" />
                   </div>
                 </div>
               </div>
