@@ -9,7 +9,6 @@ import {
   MessageCircleMore,
   CalendarCheck2,
   RefreshCcw,
-  Zap,
 } from "lucide-react";
 
 export default function OrbyxLandingPage() {
@@ -20,41 +19,41 @@ export default function OrbyxLandingPage() {
     { label: "Ver planes", href: "/planes" },
   ];
 
-  const floatTransition = {
-    duration: 4,
-    repeat: Infinity,
-    repeatType: "mirror" as const,
-    ease: "easeInOut" as const,
-  };
+  const trustBadges = [
+    "Reservas 24/7",
+    "Multi staff",
+    "Campañas",
+    "Recordatorios",
+    "Calendarios opcionales",
+  ];
 
-  const statCards = [
+  const platformCards = [
     {
-      value: "+24",
-      labelTop: "agendamientos",
-      labelBottom: "esta semana",
-      wrapper:
-        "from-[#0ea5e9] via-[#2563eb] to-[#1d4ed8] shadow-[0_0_35px_rgba(59,130,246,0.55)]",
-      ring: "ring-cyan-300/20",
-      pulse: "bg-cyan-300/30",
+      icon: CalendarCheck2,
+      title: "Agenda y reservas",
+      desc: "Disponibilidad, servicios, staff y sucursales en un flujo claro para tus clientes.",
+      tone: "text-cyan-300 bg-cyan-400/10 ring-cyan-300/15",
     },
     {
-      value: "+21",
-      labelTop: "clientes confirmaron",
-      labelBottom: "su asistencia",
-      wrapper:
-        "from-[#38bdf8] via-[#6366f1] to-[#4f46e5] shadow-[0_0_35px_rgba(99,102,241,0.55)]",
-      ring: "ring-blue-300/20",
-      pulse: "bg-blue-300/30",
+      icon: MessageCircleMore,
+      title: "Atención automática",
+      desc: "WhatsApp e IA ayudan a responder dudas frecuentes y llevar la conversación a una reserva.",
+      tone: "text-emerald-300 bg-emerald-400/10 ring-emerald-300/15",
     },
     {
-      value: "+22",
-      labelTop: "volvieron a agendar",
-      labelBottom: "automáticamente",
-      wrapper:
-        "from-[#22d3ee] via-[#3b82f6] to-[#1e40af] shadow-[0_0_35px_rgba(34,211,238,0.55)]",
-      ring: "ring-sky-300/20",
-      pulse: "bg-sky-300/30",
+      icon: RefreshCcw,
+      title: "Campañas y seguimiento",
+      desc: "Reactiva clientes, envía recordatorios y reduce trabajo manual desde el mismo SaaS.",
+      tone: "text-fuchsia-300 bg-fuchsia-400/10 ring-fuchsia-300/15",
     },
+  ];
+
+  const nicheCards = [
+    "Veterinarias",
+    "Fitness / clases",
+    "Talleres",
+    "Servicios profesionales",
+    "Group booking",
   ];
 
   return (
@@ -63,296 +62,240 @@ export default function OrbyxLandingPage() {
         <div className="absolute inset-0">
           <Image
             src="/images/hero-orbyx-final.png"
-            alt="Hero"
+            alt="Interfaz visual de Orbyx"
             fill
             priority
-            className="object-cover object-right-top"
+            className="object-cover object-right-top opacity-70"
           />
         </div>
 
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.96)_0%,rgba(5,8,22,0.92)_22%,rgba(5,8,22,0.70)_42%,rgba(5,8,22,0.25)_62%,rgba(5,8,22,0.05)_78%,rgba(5,8,22,0)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,22,0.98)_0%,rgba(5,8,22,0.92)_38%,rgba(5,8,22,0.62)_68%,rgba(5,8,22,0.20)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-[linear-gradient(180deg,rgba(5,8,22,0)_0%,#050816_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_20%,rgba(34,211,238,0.12),transparent_26%),radial-gradient(circle_at_18%_72%,rgba(99,102,241,0.12),transparent_26%)]" />
 
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(180deg,rgba(5,8,22,0)_0%,rgba(5,8,22,0.35)_45%,rgba(5,8,22,0.78)_75%,#050816_100%)]" />
-
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(255,94,247,0.16),transparent_25%),radial-gradient(circle_at_78%_52%,rgba(34,211,238,0.08),transparent_22%),radial-gradient(circle_at_20%_70%,rgba(59,130,246,0.08),transparent_22%)]" />
-
-        <div className="relative z-20 mx-auto w-full max-w-[1400px] px-4 pt-5 sm:px-6 sm:pt-6">
-          <header className="flex flex-wrap items-center justify-between gap-3 lg:grid lg:grid-cols-[auto_1fr_auto]">
-            <Link href="/" className="text-2xl font-semibold">
+        <div className="relative z-20 mx-auto w-full max-w-[1400px] px-4 pt-4 sm:px-6 sm:pt-5">
+          <header className="flex items-center justify-between gap-3 rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 backdrop-blur-xl sm:px-4">
+            <Link href="/" className="text-xl font-semibold tracking-tight sm:text-2xl">
               Orbyx
             </Link>
 
-            <nav className="hidden justify-center gap-10 lg:flex">
+            <nav className="hidden justify-center gap-7 lg:flex">
               {navItems.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="font-semibold text-white/90 transition hover:text-white"
+                  className="text-sm font-semibold text-white/75 transition hover:text-white"
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
 
-            <div className="flex justify-end">
+            <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="rounded-full border border-white/20 bg-white/10 px-5 py-2 text-sm font-semibold backdrop-blur-md transition hover:border-white/40 hover:bg-white/15"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/90 backdrop-blur-md transition hover:border-white/35 hover:bg-white/10 sm:px-4 sm:text-sm"
               >
                 Iniciar sesión
+              </Link>
+              <Link
+                href="/register"
+                className="hidden rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_12px_30px_rgba(255,255,255,0.14)] transition hover:bg-slate-100 sm:inline-flex"
+              >
+                Probar gratis
               </Link>
             </div>
           </header>
         </div>
 
-        <div className="relative z-20 mx-auto w-full max-w-[1400px] px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-8">
-          <div className="flex min-h-[620px] items-start sm:min-h-[700px] lg:min-h-[760px]">
-            <div className="w-full max-w-[650px] pt-12 sm:pt-20 lg:pt-24">
-              <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs backdrop-blur sm:px-4 sm:text-sm">
-                <Sparkles className="h-4 w-4" />
-                Automatiza todo por WhatsApp
-              </div>
+        <div className="relative z-20 mx-auto w-full max-w-[1400px] px-4 pb-12 pt-9 sm:px-6 sm:pb-16 sm:pt-10 lg:pb-20">
+          <div className="grid items-center gap-8 lg:min-h-[680px] lg:grid-cols-[minmax(0,0.92fr)_minmax(460px,0.9fr)] lg:gap-10">
+            <div className="w-full max-w-[720px]">
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45 }}
+                className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs text-slate-100 backdrop-blur sm:px-4 sm:text-sm"
+              >
+                <Sparkles className="h-4 w-4 text-emerald-300" />
+                SaaS de reservas con automatización e IA
+              </motion.div>
 
-              <h1 className="mt-6 max-w-full text-[40px] font-semibold leading-[1.04] tracking-[-0.03em] sm:mt-8 sm:text-[52px] lg:text-[60px]">
-                Orbyx trabaja por ti:
-                <br />
-                responde, agenda y
-                <br />
-                recupera clientes
-                <br />
-                <span className="bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">
-                  automáticamente
+              <motion.h1
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mt-5 max-w-full text-[38px] font-semibold leading-[1.04] tracking-[-0.03em] sm:text-[52px] lg:text-[64px]"
+              >
+                Reservas, agenda y clientes
+                <span className="block bg-gradient-to-r from-cyan-200 via-blue-200 to-emerald-200 bg-clip-text text-transparent">
+                  en un solo SaaS
                 </span>
-              </h1>
+              </motion.h1>
 
-              <p className="mt-5 max-w-[620px] text-base leading-7 text-slate-300 sm:mt-6 sm:text-lg">
-                Automatiza respuestas, agenda y seguimiento sin esfuerzo.
-              </p>
+              <motion.p
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55 }}
+                className="mt-4 max-w-[620px] text-base leading-7 text-slate-300 sm:text-lg"
+              >
+                Orbyx centraliza reservas online, staff, servicios, campañas y
+                seguimiento. WhatsApp e IA son la ventaja extra para atender y
+                convertir más clientes con menos trabajo manual.
+              </motion.p>
 
-              <div className="mt-7 flex w-full flex-col gap-3 sm:mt-8 sm:w-auto sm:flex-row sm:gap-4">
+              <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                 <Link
                   href="/register"
-                  className="inline-flex justify-center rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-6 py-3 font-semibold text-white shadow-[0_14px_34px_rgba(16,185,129,0.32)] transition hover:scale-105"
+                  className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-6 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(16,185,129,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(16,185,129,0.32)]"
                 >
                   Probar gratis
                 </Link>
 
                 <Link
                   href="/planes"
-                  className="inline-flex justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold transition hover:bg-white/15"
+                  className="inline-flex h-12 items-center justify-center rounded-xl border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/15"
                 >
                   Ver planes
                 </Link>
               </div>
-            </div>
 
-            <div className="relative hidden h-[700px] flex-1 lg:block">
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ ...floatTransition, delay: 0 }}
-                className="absolute right-8 top-12 flex gap-5"
-              >
-                {statCards.map((card, index) => (
-                  <motion.div
-                    key={card.value}
-                    whileHover={{ y: -6, scale: 1.03 }}
-                    transition={{ duration: 0.2 }}
-                    className={`group relative overflow-hidden rounded-[28px] bg-gradient-to-br ${card.wrapper} px-6 py-5 ring-1 ${card.ring}`}
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                {trustBadges.map((badge) => (
+                  <span
+                    key={badge}
+                    className="rounded-full border border-white/10 bg-white/[0.07] px-3 py-2 text-center text-xs font-medium text-slate-200 backdrop-blur"
                   >
-                    <motion.div
-                      animate={{ opacity: [0.35, 0.9, 0.35], scale: [1, 1.15, 1] }}
-                      transition={{
-                        duration: 2.2 + index * 0.25,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                      className={`absolute -left-6 -top-6 h-24 w-24 rounded-full blur-2xl ${card.pulse}`}
-                    />
-
-                    <motion.div
-                      animate={{ x: [-120, 170] }}
-                      transition={{
-                        duration: 2.8 + index * 0.2,
-                        repeat: Infinity,
-                        ease: "linear",
-                        repeatDelay: 0.5,
-                      }}
-                      className="pointer-events-none absolute top-0 h-full w-10 rotate-12 bg-gradient-to-r from-transparent via-white/20 to-transparent blur-sm"
-                    />
-
-                    <motion.div
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{
-                        duration: 1.6 + index * 0.2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                      className="absolute right-3 top-3"
-                    >
-                      <Zap className="h-4 w-4 text-cyan-100/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]" />
-                    </motion.div>
-
-                    <div className="relative">
-                      <div className="bg-gradient-to-r from-cyan-100 via-white to-cyan-200 bg-clip-text text-4xl font-bold leading-none text-transparent drop-shadow-[0_0_18px_rgba(147,197,253,0.9)]">
-                        {card.value}
-                      </div>
-                      <div className="mt-2 text-sm text-blue-50">
-                        {card.labelTop}
-                        <br />
-                        {card.labelBottom}
-                      </div>
-                    </div>
-                  </motion.div>
+                    {badge}
+                  </span>
                 ))}
-              </motion.div>
-
-              <motion.div
-                animate={{ y: [0, -10, 0], x: [0, 5, 0] }}
-                transition={{ ...floatTransition, delay: 0.2 }}
-                className="absolute right-20 top-215 flex justify-end"
-                style={{ top: 215 }}
-              >
-                <div className="max-w-[295px] rounded-[22px] rounded-tr-md border border-emerald-200/20 bg-gradient-to-r from-[#20d665] to-[#38ef7d] px-4 py-3 text-sm text-[#06210f] shadow-[0_18px_42px_rgba(37,211,102,0.36)] ring-1 ring-emerald-100/20">
-                  <div className="mb-1 text-[11px] font-semibold text-black/60">
-                    Cliente
-                  </div>
-                  ¿Tienen horas disponibles mañana?
-                </div>
-              </motion.div>
-
-              <motion.div
-                animate={{ y: [0, 8, 0], x: [0, -5, 0] }}
-                transition={{ ...floatTransition, delay: 0.6 }}
-                className="absolute right-48 top-[320px] flex justify-start"
-              >
-                <div className="max-w-[330px] rounded-[22px] rounded-tl-md border border-cyan-300/12 bg-[linear-gradient(180deg,rgba(37,46,96,0.97)_0%,rgba(26,33,72,0.98)_100%)] px-4 py-3 text-sm text-white shadow-[0_20px_46px_rgba(46,81,255,0.24)] ring-1 ring-cyan-200/10 backdrop-blur-xl">
-                  <div className="mb-1 text-[11px] font-semibold text-emerald-300">
-                    IA Orbyx
-                  </div>
-                  Sí, tengo disponibilidad. Tenemos a las 10:00 y 11:00.
-                </div>
-              </motion.div>
-
-              <motion.div
-                animate={{ y: [0, -8, 0], x: [0, 7, 0] }}
-                transition={{ ...floatTransition, delay: 1 }}
-                className="absolute right-12 top-[422px] flex justify-end"
-              >
-                <div className="max-w-[250px] rounded-[22px] rounded-tr-md border border-emerald-200/20 bg-gradient-to-r from-[#20d665] to-[#38ef7d] px-4 py-3 text-sm text-[#06210f] shadow-[0_18px_42px_rgba(37,211,102,0.36)] ring-1 ring-emerald-100/20">
-                  <div className="mb-1 text-[11px] font-semibold text-black/60">
-                    Cliente
-                  </div>
-                  El de las 11:00, por favor.
-                </div>
-              </motion.div>
-
-              <motion.div
-                animate={{ y: [0, 8, 0], x: [0, -4, 0] }}
-                transition={{ ...floatTransition, delay: 1.4 }}
-                className="absolute right-44 top-[515px] flex justify-start"
-              >
-                <div className="max-w-[295px] rounded-[22px] rounded-tl-md border border-cyan-300/12 bg-[linear-gradient(180deg,rgba(37,46,96,0.97)_0%,rgba(26,33,72,0.98)_100%)] px-4 py-3 text-sm text-white shadow-[0_20px_46px_rgba(46,81,255,0.24)] ring-1 ring-cyan-200/10 backdrop-blur-xl">
-                  <div className="mb-1 text-[11px] font-semibold text-emerald-300">
-                    IA Orbyx
-                  </div>
-                  Listo ✅ Tu cita quedó confirmada.
-                </div>
-              </motion.div>
+              </div>
             </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              className="relative"
+            >
+              <div className="absolute -inset-4 rounded-[36px] bg-cyan-400/10 blur-3xl" />
+              <div className="relative overflow-hidden rounded-[28px] border border-white/12 bg-white/[0.08] p-3 shadow-[0_30px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:rounded-[34px] sm:p-4">
+                <div className="mb-3 flex items-center justify-between px-1 text-xs text-slate-300">
+                  <span className="font-semibold text-white">Dashboard Orbyx</span>
+                  <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-200">
+                    Reservas activas
+                  </span>
+                </div>
+                <div className="overflow-hidden rounded-[22px] border border-white/10 bg-slate-950">
+                  <Image
+                    src="/images/mockup-dashboard.png"
+                    alt="Dashboard de agenda y reservas de Orbyx"
+                    width={980}
+                    height={650}
+                    className="h-auto w-full"
+                    priority
+                  />
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-3">
+                    <p className="font-semibold text-white">Agenda</p>
+                    <p className="mt-1 text-slate-400">por staff</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-3">
+                    <p className="font-semibold text-white">Reservas</p>
+                    <p className="mt-1 text-slate-400">online</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-3">
+                    <p className="font-semibold text-white">Campañas</p>
+                    <p className="mt-1 text-slate-400">clientes</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[#050816] py-14 sm:py-20 lg:py-24">
-        <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(59,130,246,0.16)_0%,rgba(168,85,247,0.12)_35%,rgba(5,8,22,0)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(168,85,247,0.14),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(34,211,238,0.10),transparent_24%),radial-gradient(circle_at_80%_70%,rgba(16,185,129,0.10),transparent_24%)]" />
+      <section
+        id="funcionalidades"
+        className="relative overflow-hidden bg-[#050816] py-12 sm:py-16 lg:py-20"
+      >
+        <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,rgba(59,130,246,0.12)_0%,rgba(5,8,22,0)_100%)]" />
 
         <div className="relative mx-auto w-full max-w-[1200px] px-4 sm:px-6">
-          <div className="mx-auto max-w-[900px] text-center">
-            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-200 backdrop-blur-md sm:px-4 sm:text-sm">
-              <Bot className="h-4 w-4 text-emerald-300" />
-              IA aplicada a reservas y atención
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+            <div>
+              <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-200 backdrop-blur-md sm:px-4 sm:text-sm">
+                <Bot className="h-4 w-4 text-emerald-300" />
+                Plataforma completa para operar mejor
+              </div>
+
+              <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
+                No es solo un bot. Es tu sistema de reservas.
+              </h2>
             </div>
 
-            <h2 className="mt-5 text-3xl font-semibold tracking-[-0.03em] sm:mt-6 sm:text-4xl">
-              Inteligencia artificial que trabaja por tu negocio
-            </h2>
-
-            <p className="mx-auto mt-4 max-w-[760px] text-base leading-7 text-slate-300 sm:mt-5 sm:text-lg sm:leading-8">
-              Orbyx responde automáticamente a tus clientes, agenda citas y hace
-              seguimiento sin intervención manual. Todo adaptado a tu negocio,
-              para que vendas más y operes con menos carga.
+            <p className="max-w-[680px] text-sm leading-7 text-slate-300 sm:text-base">
+              Configura servicios, profesionales, horarios, reservas públicas,
+              campañas y seguimiento desde un flujo diseñado para negocios que
+              viven de su agenda.
             </p>
           </div>
 
-          <div className="mt-10 grid gap-4 sm:gap-6 md:mt-14 md:grid-cols-3">
-            <div className="group rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/25 hover:shadow-[0_20px_55px_rgba(16,185,129,0.10)] sm:p-7">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 ring-1 ring-emerald-300/15">
-                <MessageCircleMore className="h-6 w-6 text-emerald-300" />
-              </div>
-              <h3 className="mt-5 text-xl font-semibold">
-                Responde clientes automáticamente
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                Atiende consultas frecuentes por WhatsApp y entrega respuestas
-                rápidas sin depender de que alguien esté conectado todo el día.
-              </p>
-            </div>
+          <div className="mt-8 grid gap-3 md:grid-cols-3 md:gap-4">
+            {platformCards.map((card) => {
+              const Icon = card.icon;
 
-            <div className="group rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-cyan-300/25 hover:shadow-[0_20px_55px_rgba(34,211,238,0.10)] sm:p-7">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/15 ring-1 ring-cyan-300/15">
-                <CalendarCheck2 className="h-6 w-6 text-cyan-300" />
-              </div>
-              <h3 className="mt-5 text-xl font-semibold">
-                Agenda sin intervención
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                Muestra disponibilidad, confirma horarios y reduce el trabajo
-                manual de tu equipo en la coordinación diaria.
-              </p>
-            </div>
-
-            <div className="group rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-fuchsia-300/25 hover:shadow-[0_20px_55px_rgba(217,70,239,0.10)] sm:p-7">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-500/15 ring-1 ring-fuchsia-300/15">
-                <RefreshCcw className="h-6 w-6 text-fuchsia-300" />
-              </div>
-              <h3 className="mt-5 text-xl font-semibold">
-                Recupera clientes perdidos
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                Vuelve a contactar clientes que no asistieron o dejaron de
-                reservar, con seguimiento automático y oportuno.
-              </p>
-            </div>
+              return (
+                <div
+                  key={card.title}
+                  className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.075)_0%,rgba(255,255,255,0.032)_100%)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] backdrop-blur-xl sm:p-5"
+                >
+                  <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${card.tone}`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold">{card.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                    {card.desc}
+                  </p>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="mt-10 rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(16,185,129,0.10)_0%,rgba(59,130,246,0.08)_45%,rgba(168,85,247,0.10)_100%)] p-5 shadow-[0_22px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:mt-14 sm:rounded-[32px] sm:p-8">
-            <div className="grid items-center gap-6 md:grid-cols-[1.1fr_0.9fr] md:gap-8">
+          <div
+            id="soluciones"
+            className="mt-8 rounded-[24px] border border-white/10 bg-white/[0.045] p-4 backdrop-blur-xl sm:p-5"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-300/90">
-                  Más que una agenda
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-300/90">
+                  Soluciones por rubro
                 </p>
-                <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
-                  Orbyx responde, agenda y hace seguimiento por ti
+                <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
+                  Flexible para negocios con agenda, cupos y recurrencia.
                 </h3>
-                <p className="mt-4 max-w-[620px] leading-8 text-slate-300">
-                  No solo ordenas tu calendario. También automatizas conversaciones,
-                  confirmaciones y recuperación de clientes con una experiencia
-                  moderna, rápida y profesional.
-                </p>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-1">
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-slate-100">
-                  WhatsApp con atención automatizada
+              <Link
+                href="/planes"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white transition hover:border-white/35 hover:bg-white/15"
+              >
+                Ver planes
+              </Link>
+            </div>
+
+            <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              {nicheCards.map((niche) => (
+                <div
+                  key={niche}
+                  className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm font-semibold text-slate-100"
+                >
+                  {niche}
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-slate-100">
-                  Confirmaciones y recordatorios automáticos
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-slate-100">
-                  Seguimiento inteligente para reactivar clientes
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
