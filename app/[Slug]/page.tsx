@@ -1366,30 +1366,30 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto w-full max-w-[1600px] px-3 py-3 sm:px-4 md:px-6 md:py-6 xl:px-8">
-        <div className="grid gap-4 xl:grid-cols-[360px_1fr] xl:gap-6">
-          <div className="space-y-4 xl:space-y-6">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[30px]">
-              <div className="p-4 md:p-5">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-lg font-bold text-white shadow-[0_18px_40px_-24px_rgba(15,23,42,0.8)]">
+      <div className="mx-auto w-full max-w-[1600px] px-3 py-2 sm:px-4 md:px-6 md:py-6 xl:px-8">
+        <div className="grid gap-3 md:gap-4 xl:grid-cols-[360px_1fr] xl:gap-6">
+          <div className="space-y-3 md:space-y-4 xl:space-y-6">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[30px] md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+              <div className="p-3.5 md:p-5">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-base font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.8)] md:h-16 md:w-16 md:rounded-2xl md:text-lg">
                     {getBusinessInitials(business?.name || slug)}
                   </div>
 
                   <div className="min-w-0">
-                    <h1 className="truncate text-xl font-bold tracking-tight text-slate-950 md:text-2xl">
+                    <h1 className="truncate text-lg font-bold tracking-tight text-slate-950 md:text-2xl">
                       {business?.name || slug || "Reserva"}
                     </h1>
-                    <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                    <span className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 md:mt-2">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       Reserva online
                     </span>
                   </div>
                 </div>
 
-                 <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                 <div className="mt-3 grid gap-2 text-xs text-slate-600 md:mt-4 md:text-sm">
                   {visibleAddress ? (
-                    <span className="inline-flex max-w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
+                    <span className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 md:rounded-2xl">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -1409,7 +1409,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     </span>
                   ) : null}
                   {visiblePhone ? (
-                    <span className="inline-flex max-w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
+                    <span className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 md:rounded-2xl">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -1431,8 +1431,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               </div>
             </div>
 
-            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[26px] md:p-4 xl:min-h-[860px]">
-              <div className="space-y-3 md:space-y-4">
+            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[26px] md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] xl:min-h-[860px]">
+              <div className="space-y-2.5 md:space-y-4">
                 {showBranchSelector ? (
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -1445,7 +1445,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                         resetAfterBranchChange();
                         setSelectedBranchId(nextBranchId);
                       }}
-                      className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
+                    className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
                     >
                       {branches.map((branch) => (
                         <option key={branch.id} value={branch.id}>
@@ -1482,7 +1482,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                       resetAfterServiceChange();
                       setSelectedService(service);
                     }}
-                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-800 outline-none transition disabled:bg-slate-100 focus:border-indigo-400"
+                    className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition disabled:bg-slate-100 focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
                   >
                     <option value="">
                       {loadingServices
@@ -1507,12 +1507,12 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 </div>
 
                 {selectedService ? (
-                  <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:p-4">
+                  <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-2xl md:p-4">
                     <p className="text-sm font-semibold text-slate-900">
                       {selectedService.name}
                     </p>
 
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs md:mt-3">
                       <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
                         {selectedService!.duration_minutes || 0} min
                       </span>
@@ -1525,7 +1525,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
                                 {selectedService ? (
                   <div>
-                    <div className="mb-3">
+                    <div className="mb-2.5 md:mb-3">
                       <p className="text-sm font-semibold text-slate-900">
   Profesional preferente (opcional)
 </p>
@@ -1539,21 +1539,21 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                         Cargando profesionales...
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-2 md:space-y-3">
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedStaffId("");
                             setSelectedSlot(null);
                           }}
-                          className={`w-full rounded-2xl border p-3 text-left transition-all duration-200 cursor-pointer md:p-4 ${
+                          className={`w-full rounded-xl border p-2.5 text-left transition-all duration-200 cursor-pointer md:rounded-2xl md:p-4 ${
   selectedStaffId === ""
     ? "border-indigo-600 bg-indigo-50 shadow-md scale-[1.01]"
     : "border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm hover:scale-[1.01]"
 }`}
                         >
                           <div className="flex items-center gap-3 md:gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-base font-semibold text-slate-700 md:h-16 md:w-16 md:text-lg">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-base font-semibold text-slate-700 md:h-16 md:w-16 md:rounded-2xl md:text-lg">
                               *
                             </div>
 
@@ -1576,7 +1576,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                               setSelectedStaffId(staff.id);
                               setSelectedSlot(null);
                             }}
-                            className={`w-full rounded-2xl border p-3 text-left transition md:p-4 ${
+                            className={`w-full rounded-xl border p-2.5 text-left transition md:rounded-2xl md:p-4 ${
                               selectedStaffId === staff.id
                                 ? "border-indigo-500 bg-indigo-50 shadow-sm"
                                 : "border-slate-200 bg-white hover:border-slate-300"
@@ -1588,7 +1588,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
 <div className="relative group">
   {/* FOTO BASE */}
-  <div className="h-12 w-12 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 md:h-16 md:w-16">
+  <div className="h-10 w-10 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 md:h-16 md:w-16 md:rounded-2xl">
     {staff.photo_url ? (
       <img
         src={staff.photo_url}
@@ -1641,7 +1641,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                                   {staff.name}
                                 </p>
 
-                                <p className="mt-1 text-xs text-slate-500">
+                                <p className="mt-1 hidden text-xs text-slate-500 sm:block">
                                   Especialidad / Cargo
                                 </p>
 
@@ -1660,7 +1660,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                               setStaffSearchQuery("");
                               setShowStaffDrawer(true);
                             }}
-                            className="flex h-12 w-full items-center justify-center rounded-2xl border border-indigo-200 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm"
+                            className="flex h-11 w-full items-center justify-center rounded-xl border border-indigo-200 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm md:h-12 md:rounded-2xl"
                           >
                             Ver todos los profesionales ({staffOptions.length})
                           </button>
@@ -1675,13 +1675,13 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
           </div>
 
-          <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] md:rounded-[26px] md:p-4 xl:min-h-[860px]">
-            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[26px] md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] xl:min-h-[860px]">
+            <div className="mb-3 flex flex-col gap-3 md:mb-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => moveSelectedWeek(-7)}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 md:h-11 md:w-11 md:rounded-2xl"
                   aria-label="Semana anterior"
                 >
                   ‹
@@ -1690,7 +1690,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 <button
                   type="button"
                   onClick={() => setShowDatePopover((current) => !current)}
-                  className="inline-flex h-11 items-center gap-2 rounded-2xl border border-indigo-200 bg-white px-4 text-sm font-bold text-slate-950 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 text-xs font-bold text-slate-950 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 sm:flex-none md:h-11 md:rounded-2xl md:px-4 md:text-sm"
                 >
                   <span>{weekRangeLabel}</span>
                   <svg
@@ -1712,7 +1712,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 <button
                   type="button"
                   onClick={() => moveSelectedWeek(7)}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 md:h-11 md:w-11 md:rounded-2xl"
                   aria-label="Semana siguiente"
                 >
                   ›
@@ -1913,7 +1913,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             </div>
 
             <div className="md:hidden">
-              <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-2">
+              <div className="-mx-1 mb-3 flex snap-x gap-2 overflow-x-auto px-1 pb-2">
                 {weekDates.map((dateObj) => {
                   const dateKey = formatDate(dateObj);
                   const isActiveMobileDay = mobileSelectedDateKey === dateKey;
@@ -1931,9 +1931,9 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         setSelectedDate(dateObj);
                         setSelectedSlot(null);
                       }}
-                      className={`min-w-[74px] rounded-2xl border px-3 py-2 text-left transition ${
+                      className={`min-w-[68px] snap-start rounded-2xl border px-2.5 py-2 text-left transition ${
                         isActiveMobileDay
-                          ? "border-indigo-500 bg-indigo-50 shadow-sm"
+                          ? "border-indigo-600 bg-indigo-600 text-white shadow-[0_14px_28px_-20px_rgba(79,70,229,0.85)]"
                           : isClosedDay
                           ? "border-rose-100 bg-rose-50 text-rose-700"
                           : "border-slate-200 bg-white text-slate-700"
@@ -1942,21 +1942,39 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       <p className="text-[11px] font-bold uppercase">
                         {dateObj.toLocaleDateString("es-CL", { weekday: "short" })}
                       </p>
-                      <p className="mt-1 text-sm font-bold">
+                      <p className="mt-1 text-base font-bold leading-none">
                         {dateObj.getDate()}
                         {isToday ? (
-                          <span className="ml-1 rounded-full bg-indigo-600 px-1.5 py-0.5 text-[9px] text-white">
+                          <span
+                            className={`ml-1 rounded-full px-1.5 py-0.5 text-[9px] ${
+                              isActiveMobileDay
+                                ? "bg-white/20 text-white"
+                                : "bg-indigo-600 text-white"
+                            }`}
+                          >
                             Hoy
                           </span>
                         ) : null}
                       </p>
+                      {selectedService ? (
+                        <p
+                          className={`mt-1 text-[10px] font-medium ${
+                            isActiveMobileDay ? "text-indigo-100" : "text-slate-400"
+                          }`}
+                        >
+                          {daySlots.length > 0
+                            ? `${daySlots.length} horas`
+                            : "Sin horas"}
+                        </p>
+                      ) : null}
                     </button>
                   );
                 })}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-                <div className="mb-3">
+              <div className="rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
                   <p className="text-sm font-bold text-slate-950">
                     {mobileSelectedDate ? getWeekdayLabel(mobileSelectedDate) : "Día"}
                   </p>
@@ -1968,16 +1986,35 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       })}
                     </p>
                   ) : null}
+                  </div>
+                  {selectedService && mobileSelectedDateSlots.length > 0 ? (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                      {mobileSelectedDateSlots.length} disponibles
+                    </span>
+                  ) : null}
                 </div>
 
                 {loadingSlots ? (
-                  <p className="text-xs text-slate-500">Cargando...</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[0, 1, 2, 3].map((item) => (
+                      <div
+                        key={item}
+                        className="h-[54px] animate-pulse rounded-2xl border border-slate-100 bg-slate-100"
+                      />
+                    ))}
+                  </div>
                 ) : !selectedService ? (
-                  <p className="text-xs text-slate-500">Selecciona un servicio.</p>
+                  <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+                    Selecciona un servicio para ver horarios disponibles.
+                  </div>
                 ) : mobileSelectedDateSlots.length === 0 ? (
                   <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-5 text-center">
+                    <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-rose-200" />
                     <p className="text-sm font-bold text-rose-700">
                       Sin horario disponible
+                    </p>
+                    <p className="mt-1 text-xs text-rose-600">
+                      Prueba otro día o revisa los próximos horarios sugeridos.
                     </p>
                   </div>
                 ) : (
@@ -1999,19 +2036,19 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                             });
                           }, 120);
                         }}
-                        className={`min-h-[44px] rounded-xl border px-3 py-2 text-center transition ${
+                        className={`min-h-[54px] rounded-2xl border px-3 py-2.5 text-center transition ${
                           selectedSlot?.slot_start === slot.slot_start
-                            ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
+                            ? "border-indigo-700 bg-indigo-700 text-white shadow-[0_16px_28px_-20px_rgba(79,70,229,0.9)]"
                             : slot.is_group && (slot.available_spots || 0) === 0
                             ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                            : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-sky-300 hover:bg-sky-50"
                         }`}
                       >
-                        <span className="block text-sm font-semibold leading-none">
+                        <span className="block text-base font-bold leading-none">
                           {formatHour(slot.slot_start)}
                         </span>
                         <span
-                          className={`mt-1 block text-[10px] leading-tight ${
+                          className={`mt-1.5 block text-[10px] font-medium leading-tight ${
                             selectedSlot?.slot_start === slot.slot_start
                               ? "text-indigo-100"
                               : slot.is_group && isGroupBookingBusiness
@@ -2031,7 +2068,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             </div>
 
 {selectedService && noSlotsThisWeek ? (
-  <div className="mt-4 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-4 shadow-sm md:mt-6 md:rounded-[26px] md:p-5">
+  <div className="mt-4 rounded-[22px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-3.5 shadow-sm md:mt-6 md:rounded-[26px] md:p-5">
 
     {loadingNextSlots ? (
   <div className="flex items-center gap-2 animate-pulse">
@@ -2052,7 +2089,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
   </p>
 )}
 
-    <div className="mt-4 grid gap-3 md:grid-cols-2 md:gap-4">
+    <div className="mt-4 grid gap-2.5 md:grid-cols-2 md:gap-4">
       {nextAvailableDays.map((day) => (
         <div
           key={day.date}
@@ -2080,7 +2117,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     });
                   }, 120);
                 }}
-                className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50"
+                className="min-h-10 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50"
               >
                 {formatHour(slot.slot_start)}
               </button>
@@ -2102,7 +2139,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
       setMobileSelectedDateKey(formatDate(nextSlotDate));
       setSelectedSlot(null);
     }}
-    className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90"
+    className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90 sm:w-auto"
   >
     Ir a semana con disponibilidad
   </button>
@@ -2114,27 +2151,27 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             {selectedSlot ? (
               <div
                 ref={formRef}
-                className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 shadow-[0_30px_80px_-45px_rgba(79,70,229,0.5)] md:mt-6 md:rounded-[30px]"
+                className="mt-4 overflow-hidden rounded-[22px] border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 shadow-[0_24px_65px_-45px_rgba(79,70,229,0.55)] md:mt-6 md:rounded-[30px] md:shadow-[0_30px_80px_-45px_rgba(79,70,229,0.5)]"
               >
                 <div className="h-1.5 bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500" />
 
-                <div className="p-4 md:p-6">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="p-3.5 md:p-6">
+                  <div className="flex flex-col gap-3 md:gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500 md:text-[11px] md:tracking-[0.28em]">
                         Reserva en curso
                       </p>
-                      <h3 className="mt-2 text-xl font-bold tracking-tight text-slate-950 md:text-2xl">
+                      <h3 className="mt-1.5 text-lg font-bold tracking-tight text-slate-950 md:mt-2 md:text-2xl">
                         Completa tus datos
                       </h3>
-                      <p className="mt-2 text-sm text-slate-600">
+                      <p className="mt-1.5 text-sm text-slate-600 md:mt-2">
                         Ya seleccionaste una hora. Completa tus datos para confirmar la reserva.
                       </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      <div className="rounded-2xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm md:px-4 md:py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      <div className="rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-2xl md:px-4 md:py-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 md:text-[11px] md:tracking-[0.16em]">
                           Fecha
                         </p>
                         <p className="mt-1 text-sm font-semibold text-slate-900">
@@ -2142,8 +2179,8 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         </p>
                       </div>
 
-                      <div className="rounded-2xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm md:px-4 md:py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      <div className="rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-2xl md:px-4 md:py-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 md:text-[11px] md:tracking-[0.16em]">
                           Hora
                         </p>
                         <p className="mt-1 text-sm font-semibold text-slate-900">
@@ -2152,8 +2189,8 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       </div>
 
                       {selectedService ? (
-                        <div className="rounded-2xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm md:px-4 md:py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        <div className="rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-2xl md:px-4 md:py-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 md:text-[11px] md:tracking-[0.16em]">
                             Servicio
                           </p>
                           <p className="mt-1 text-sm font-semibold text-slate-900">
@@ -2163,8 +2200,8 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       ) : null}
 
                       {selectedStaffId ? (
-                        <div className="rounded-2xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm md:px-4 md:py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        <div className="rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-2xl md:px-4 md:py-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 md:text-[11px] md:tracking-[0.16em]">
                             Profesional
                           </p>
                           <p className="mt-1 text-sm font-semibold text-slate-900">
@@ -2176,19 +2213,19 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                   </div>
 
 
-                  <div className="mt-4 grid gap-3 md:mt-6 md:grid-cols-2">
+                  <div className="mt-4 grid gap-2.5 md:mt-6 md:grid-cols-2 md:gap-3">
                     <input
                       placeholder="Nombre y apellido"
                       value={customerData.name || ""}
                       onChange={(e) => updateCustomerField("name", e.target.value)}
-                      className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400"
+                      className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
                     />
 
                     <input
                       placeholder="Teléfono"
                       value={customerData.phone || ""}
                       onChange={(e) => updateCustomerField("phone", e.target.value)}
-                      className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400"
+                      className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
                     />
 
                     <input
@@ -2196,7 +2233,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       type="email"
                       value={customerData.email || ""}
                       onChange={(e) => updateCustomerField("email", e.target.value)}
-                      className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400 md:col-span-2"
+                      className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:h-12 md:rounded-2xl md:px-4"
                     />
 
                     {isVeterinaria && (
@@ -2319,7 +2356,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                               updateCustomerField("pet_name", e.target.value)
                             }
                             disabled={petMode === "existing" && pets.length > 0}
-                            className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400"
+                            className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400 md:h-12 md:rounded-2xl md:px-4"
                           />
 
                           <input
@@ -2329,7 +2366,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                               updateCustomerField("pet_species", e.target.value)
                             }
                             disabled={petMode === "existing" && pets.length > 0}
-                            className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400"
+                            className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400 md:h-12 md:rounded-2xl md:px-4"
                           />
                         </div>
                       </div>
@@ -2361,7 +2398,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                   onChange={(e) =>
                                     updateCustomerField(field.key, e.target.value)
                                   }
-                                  className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400"
+                                  className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
                                 >
                                   <option value="">
                                     {field.required
@@ -2389,7 +2426,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                 onChange={(e) =>
                                   updateCustomerField(field.key, e.target.value)
                                 }
-                                className="min-h-[96px] rounded-2xl border border-indigo-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-400 md:col-span-2"
+                                className="min-h-[88px] rounded-xl border border-indigo-100 bg-white px-3.5 py-3 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:min-h-[96px] md:rounded-2xl md:px-4"
                               />
                             ) : (
                               <input
@@ -2403,7 +2440,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                 onChange={(e) =>
                                   updateCustomerField(field.key, e.target.value)
                                 }
-                                className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400"
+                                className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
                               />
                             );
                           })}
@@ -2419,7 +2456,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         onChange={(e) =>
                           updateCustomerField(field.key, e.target.value)
                         }
-                        className="h-12 rounded-2xl border border-indigo-100 bg-white px-4 text-sm outline-none transition focus:border-indigo-400 md:col-span-2"
+                        className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:h-12 md:rounded-2xl md:px-4"
                       />
                     ))}
                   </div>
@@ -2430,8 +2467,8 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     </div>
                   ) : null}
 
-                  <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <p className="text-sm text-slate-500">
+                  <div className="sticky bottom-3 z-20 -mx-1 mt-5 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.75)] backdrop-blur md:static md:mx-0 md:flex-row md:items-center md:justify-between md:gap-3 md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-0">
+                    <p className="px-1 text-xs text-slate-500 md:px-0 md:text-sm">
                       Revisa bien tus datos antes de confirmar.
                     </p>
 
@@ -2439,7 +2476,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       type="button"
                       onClick={handleSubmitBooking}
                       disabled={submitting}
-                      className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto md:font-medium md:shadow-none"
                     >
                       {submitting ? "Confirmando..." : "Confirmar hora"}
                     </button>
