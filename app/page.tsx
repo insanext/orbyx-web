@@ -328,33 +328,37 @@ export default function OrbyxLandingPage() {
         <div className="relative mx-auto grid max-w-[1360px] gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div className="relative">
             <div className="absolute -inset-3 rounded-[34px] bg-cyan-500/10 blur-3xl" />
-            <div className="relative overflow-hidden rounded-[32px] border border-white/12 bg-white/[0.055] p-3 shadow-[0_28px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-              <Image
-                src="/images/mockup-dashboard.png"
-                alt="Dashboard real de Orbyx con agenda y reservas"
-                width={980}
-                height={650}
-                className="w-full rounded-[22px] border border-white/10 bg-slate-950"
-              />
-              <div className="absolute bottom-5 right-4 hidden w-[220px] overflow-hidden rounded-[24px] border border-emerald-300/40 bg-[#061623]/88 p-4 text-white shadow-[0_0_44px_rgba(16,185,129,0.22),0_24px_60px_rgba(0,0,0,0.45)] ring-1 ring-cyan-300/15 backdrop-blur-xl sm:block md:bottom-7 md:right-6 md:w-[250px]">
+            <div className="relative overflow-hidden rounded-[32px] border border-white/12 bg-white/[0.055] p-3 shadow-[0_28px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4">
+              <div className="relative h-[300px] overflow-hidden rounded-[24px] border border-white/10 bg-[#020817] sm:h-[410px] lg:h-[520px]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_36%_45%,rgba(34,211,238,0.20),transparent_34%),radial-gradient(circle_at_78%_58%,rgba(16,185,129,0.18),transparent_30%)]" />
+                <Image
+                  src="/images/mockup-dashboard.png"
+                  alt="Dashboard real de Orbyx con agenda y reservas"
+                  width={980}
+                  height={650}
+                  className="absolute bottom-[2%] left-[-13%] w-[88%] max-w-none scale-[1.24] opacity-95 drop-shadow-[0_28px_45px_rgba(8,47,73,0.55)] sm:bottom-[4%] sm:left-[-12%] sm:w-[90%] lg:bottom-[6%] lg:left-[-10%] lg:w-[88%]"
+                />
+              </div>
+
+              <div className="absolute right-5 top-1/2 hidden w-[228px] -translate-y-1/2 overflow-hidden rounded-[22px] border border-emerald-300/50 bg-[#061623]/90 p-3 text-white shadow-[0_0_34px_rgba(16,185,129,0.24),0_24px_60px_rgba(0,0,0,0.45)] ring-1 ring-cyan-300/20 backdrop-blur-xl sm:block md:right-7 md:w-[240px] lg:right-9 lg:w-[248px]">
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/80 to-transparent" />
-                <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
-                <div className="absolute -bottom-12 -left-12 h-32 w-32 rounded-full bg-cyan-400/15 blur-3xl" />
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-emerald-400/20 blur-3xl" />
+                <div className="absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-cyan-400/15 blur-3xl" />
 
                 <div className="relative">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-violet-400/12 text-violet-200 ring-1 ring-violet-300/20">
-                      <Bot className="h-4 w-4" />
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-400/12 text-violet-200 ring-1 ring-violet-300/20">
+                      <Bot className="h-3.5 w-3.5" />
                     </div>
-                    <p className="text-sm font-black tracking-tight">
+                    <p className="text-[13px] font-black tracking-tight">
                       Hoy Orbyx <span className="text-emerald-300">automatizó</span>
                     </p>
                   </div>
 
-                  <div className="mt-4 rounded-2xl bg-gradient-to-b from-emerald-300/10 to-transparent px-2 pb-1 pt-2">
+                  <div className="mt-3 rounded-2xl bg-gradient-to-b from-emerald-300/10 to-transparent px-2 pb-0.5 pt-1.5">
                     <svg
                       viewBox="0 0 190 54"
-                      className="h-14 w-full overflow-visible"
+                      className="h-10 w-full overflow-visible"
                       aria-hidden="true"
                     >
                       <path
@@ -382,7 +386,7 @@ export default function OrbyxLandingPage() {
                     </svg>
                   </div>
 
-                  <div className="mt-3 space-y-3">
+                  <div className="mt-2.5 space-y-2">
                     {[
                       {
                         icon: CalendarCheck2,
@@ -418,22 +422,23 @@ export default function OrbyxLandingPage() {
                       return (
                         <div
                           key={metric.label}
-                          className="grid grid-cols-[44px_1fr_auto] items-center gap-3 border-b border-white/8 pb-3 last:border-b-0 last:pb-0"
+                          className="grid grid-cols-[38px_1fr_auto] items-center gap-2.5 border-b border-white/8 pb-2 last:border-b-0 last:pb-0"
                         >
-                          <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${metric.tone}`}>
-                            <Icon className="h-5 w-5" />
+                          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${metric.tone}`}>
+                            <Icon className="h-[18px] w-[18px]" />
                           </div>
                           <div className="min-w-0">
-                            <div className="flex items-baseline gap-2">
-                              <p className="text-2xl font-black leading-none text-white">
+                            <div className="flex items-baseline gap-2 whitespace-nowrap">
+                              <p className="text-xl font-black leading-none text-white">
                                 {metric.value}
                               </p>
-                              <p className="truncate text-[11px] text-slate-300">
+                              <p className="text-[10px] text-slate-300">
                                 {metric.label}
                               </p>
                             </div>
                           </div>
-                          <p className="text-xs font-black text-emerald-300">
+                          <p className="text-[0px] font-black text-emerald-300">
+                            <span className="text-[10px]">+{metric.delta}</span>
                             ↑ {metric.delta}
                           </p>
                         </div>
@@ -441,12 +446,12 @@ export default function OrbyxLandingPage() {
                     })}
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between rounded-2xl border border-emerald-300/12 bg-emerald-300/8 px-4 py-3 text-emerald-300">
+                  <div className="mt-3 flex items-center justify-between rounded-2xl border border-emerald-300/12 bg-emerald-300/8 px-3 py-2.5 text-emerald-300">
                     <div className="flex items-center gap-2">
                       <Zap className="h-4 w-4" />
                       <span className="text-sm font-black">IA activa ahora</span>
                     </div>
-                    <span className="h-3 w-3 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(45,212,191,0.95)]" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(45,212,191,0.95)]" />
                   </div>
                 </div>
               </div>
