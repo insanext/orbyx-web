@@ -704,25 +704,44 @@ function PlanesPageContent() {
       <style jsx>{`
         @keyframes borderTravel {
           0% {
-            transform: translate3d(-120%, -120%, 0) rotate(0deg);
-            opacity: 0;
+            left: 20px;
+            top: 0;
+            opacity: 0.95;
           }
-          12% {
-            opacity: 0.9;
-          }
-          34% {
-            transform: translate3d(120%, -120%, 0) rotate(18deg);
+          24% {
+            left: calc(100% - 20px);
+            top: 0;
             opacity: 1;
           }
-          50% {
-            transform: translate3d(120%, 120%, 0) rotate(90deg);
+          25% {
+            left: calc(100% - 8px);
+            top: 8px;
+            opacity: 1;
           }
-          82% {
-            opacity: 0.75;
+          49% {
+            left: calc(100% - 8px);
+            top: calc(100% - 20px);
+            opacity: 0.95;
+          }
+          50% {
+            left: calc(100% - 20px);
+            top: calc(100% - 8px);
+            opacity: 1;
+          }
+          74% {
+            left: 20px;
+            top: calc(100% - 8px);
+            opacity: 0.95;
+          }
+          75% {
+            left: 8px;
+            top: calc(100% - 20px);
+            opacity: 1;
           }
           100% {
-            transform: translate3d(-120%, 120%, 0) rotate(160deg);
-            opacity: 0;
+            left: 8px;
+            top: 20px;
+            opacity: 0.95;
           }
         }
 
@@ -739,11 +758,18 @@ function PlanesPageContent() {
         .selected-plan-neon::before {
           content: "";
           position: absolute;
-          inset: -2px;
+          inset: 0;
           border-radius: 22px;
           pointer-events: none;
-          background: linear-gradient(135deg, rgba(34, 211, 238, 0.95), rgba(168, 85, 247, 0.9), rgba(34, 211, 238, 0.75));
-          opacity: 0.72;
+          background:
+            linear-gradient(135deg, rgba(34, 211, 238, 1), rgba(168, 85, 247, 0.98) 45%, rgba(34, 211, 238, 0.95)),
+            radial-gradient(circle at 16% 0%, rgba(255,255,255,0.9), transparent 12%),
+            radial-gradient(circle at 100% 92%, rgba(34,211,238,0.9), transparent 16%);
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+            0 0 18px rgba(34, 211, 238, 0.46),
+            0 0 34px rgba(168, 85, 247, 0.28);
+          opacity: 0.95;
           z-index: 0;
           animation: activeGlowPulse 3.4s ease-in-out infinite;
         }
@@ -751,23 +777,30 @@ function PlanesPageContent() {
         .selected-plan-neon::after {
           content: "";
           position: absolute;
-          left: 50%;
-          top: 50%;
-          width: 44%;
-          height: 3px;
+          left: 20px;
+          top: 0;
+          width: 10px;
+          height: 10px;
           border-radius: 999px;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.98), rgba(34,211,238,0.95), transparent);
-          box-shadow: 0 0 18px rgba(34, 211, 238, 0.75), 0 0 26px rgba(168, 85, 247, 0.42);
+          background: radial-gradient(circle, #ffffff 0%, #67f8ff 38%, rgba(168,85,247,0.72) 68%, transparent 72%);
+          box-shadow:
+            0 0 10px rgba(255,255,255,0.95),
+            0 0 22px rgba(34, 211, 238, 0.95),
+            0 0 36px rgba(168, 85, 247, 0.7);
           pointer-events: none;
-          z-index: 1;
-          animation: borderTravel 4.2s linear infinite;
+          z-index: 3;
+          transform: translate(-50%, -50%);
+          animation: borderTravel 5.2s linear infinite;
         }
 
         .selected-plan-surface {
           position: relative;
           z-index: 2;
           border-radius: 20px;
-          background: linear-gradient(180deg, rgba(5, 20, 34, 0.98), rgba(3, 11, 23, 0.985));
+          box-shadow:
+            inset 0 0 34px rgba(34, 211, 238, 0.08),
+            inset 0 0 0 1px rgba(255,255,255,0.04);
+          background: linear-gradient(180deg, rgba(5, 20, 34, 0.985), rgba(3, 11, 23, 0.99));
         }
       `}</style>
 
@@ -869,7 +902,7 @@ function PlanesPageContent() {
                     transition={{ type: "spring", stiffness: 260, damping: 24 }}
                     className={`relative isolate flex min-h-[350px] overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:min-h-[370px] 2xl:min-h-[390px] ${
                       isSelected
-                        ? `selected-plan-neon ${plan.borderClass} bg-cyan-300/25 shadow-[0_0_0_1px_rgba(34,211,238,0.28),0_18px_54px_rgba(34,211,238,0.16)]`
+                        ? `selected-plan-neon ${plan.borderClass} bg-cyan-300/25 shadow-[0_0_0_1px_rgba(34,211,238,0.42),0_0_26px_rgba(34,211,238,0.24),0_0_42px_rgba(168,85,247,0.18),0_18px_54px_rgba(34,211,238,0.16)]`
                         : "border-white/12 bg-white/[0.035] shadow-[0_18px_50px_rgba(0,0,0,0.18)] hover:border-white/25 hover:bg-white/[0.055]"
                     }`}
                   >
