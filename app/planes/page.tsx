@@ -17,6 +17,7 @@ import {
   MessageCircle,
   Minus,
   ShieldCheck,
+  ShoppingCart,
   Sparkles,
   Store,
   Users,
@@ -81,6 +82,7 @@ type ExtraConfig = {
   detail: string;
   unitPrice: number;
   unitLabel: string;
+  usageLabel: string;
   icon: ReactNode;
   glow: string;
   iconClass: string;
@@ -243,6 +245,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     detail: "por profesional",
     unitPrice: 6000,
     unitLabel: "profesional",
+    usageLabel: "unidad",
     icon: <Users className="h-5 w-5" />,
     glow: "from-violet-500/20 to-violet-500/5",
     iconClass: "bg-violet-500/18 text-violet-200",
@@ -253,6 +256,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     detail: "por 50 conversaciones",
     unitPrice: 5000,
     unitLabel: "pack",
+    usageLabel: "800 conversaciones / mes",
     icon: <MessageCircle className="h-5 w-5" />,
     glow: "from-emerald-500/20 to-emerald-500/5",
     iconClass: "bg-emerald-500/18 text-emerald-200",
@@ -263,6 +267,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     detail: "por 50 conversaciones",
     unitPrice: 9000,
     unitLabel: "pack",
+    usageLabel: "500 conversaciones / mes",
     icon: <Megaphone className="h-5 w-5" />,
     glow: "from-amber-500/20 to-amber-500/5",
     iconClass: "bg-amber-500/18 text-amber-200",
@@ -273,6 +278,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     detail: "por sucursal",
     unitPrice: 15000,
     unitLabel: "sucursal",
+    usageLabel: "unidad",
     icon: <Store className="h-5 w-5" />,
     glow: "from-blue-500/20 to-blue-500/5",
     iconClass: "bg-blue-500/18 text-blue-200",
@@ -650,12 +656,7 @@ function PlanesPageContent() {
   const publicReferenceTotal =
     selectedPlan.price + publicPlanIva + extrasSubtotal + publicExtrasIva;
 
-  const summaryBaseLabel =
-    hasBillingContext && previewType === "upgrade"
-      ? "Cambio inmediato de plan"
-      : hasBillingContext && previewType === "downgrade"
-      ? "Cambio de plan hoy"
-      : "Plan base";
+  const summaryBaseLabel = "Plan base";
 
   const summaryBaseAmount = hasBillingContext
     ? previewType === "downgrade"
@@ -670,6 +671,10 @@ function PlanesPageContent() {
   const summaryTotal = hasBillingContext ? payTodayTotal : publicReferenceTotal;
 
   const availableAddons: ExtraKey[] = ["staff", "reminders", "campaigns", "branches"];
+  const selectedAddonsCount = extraItems.reduce((total, item) => total + item.count, 0);
+  const addableAddons = availableAddons.filter(
+    (extraKey) => extraSupported(extraKey) && extraValue(extraKey) === 0
+  );
 
   function extraValue(extraKey: ExtraKey) {
     if (extraKey === "staff") return staffExtras;
@@ -682,61 +687,87 @@ function PlanesPageContent() {
     return selectedPlan.extras.includes(extraKey);
   }
 
+  function extraUnitLabel(extraKey: ExtraKey, count: number) {
+    if (extraKey === "reminders" || extraKey === "campaigns") {
+      return count === 1 ? "pack" : "packs";
+    }
+
+    if (extraKey === "branches") {
+      return count === 1 ? "unidad" : "unidades";
+    }
+
+    return count === 1 ? "unidad" : "unidades";
+  }
+
   return (
     <main className="min-h-screen overflow-hidden bg-[#020814] text-white">
       <style jsx>{`
-        @keyframes orbyx-orbit {
+        @keyframes borderTravel {
           0% {
-            transform: translateX(-8%) scaleX(0.92);
+            transform: translate3d(-120%, -120%, 0) rotate(0deg);
+            opacity: 0;
+          }
+          12% {
+            opacity: 0.9;
+          }
+          34% {
+            transform: translate3d(120%, -120%, 0) rotate(18deg);
+            opacity: 1;
+          }
+          50% {
+            transform: translate3d(120%, 120%, 0) rotate(90deg);
+          }
+          82% {
+            opacity: 0.75;
+          }
+          100% {
+            transform: translate3d(-120%, 120%, 0) rotate(160deg);
+            opacity: 0;
+          }
+        }
+
+        @keyframes activeGlowPulse {
+          0%,
+          100% {
             opacity: 0.45;
           }
           50% {
-            transform: translateX(8%) scaleX(1.03);
-            opacity: 0.9;
-          }
-          100% {
-            transform: translateX(-8%) scaleX(0.92);
-            opacity: 0.45;
+            opacity: 0.85;
           }
         }
 
-        @keyframes orbyx-electric {
-          0%,
-          100% {
-            opacity: 0.2;
-            transform: translateY(0);
-          }
-          45% {
-            opacity: 0.75;
-            transform: translateY(-2px);
-          }
-          70% {
-            opacity: 0.38;
-          }
-        }
-
-        .selected-plan-electric::before,
-        .selected-plan-electric::after {
+        .selected-plan-neon::before {
           content: "";
           position: absolute;
-          inset: 0;
+          inset: -2px;
           border-radius: 22px;
           pointer-events: none;
-          background:
-            linear-gradient(105deg, transparent 10%, rgba(34, 211, 238, 0.42) 16%, transparent 23%),
-            linear-gradient(255deg, transparent 62%, rgba(45, 212, 191, 0.28) 69%, transparent 76%);
-          mask-image: linear-gradient(#000, #000);
-          animation: orbyx-electric 2.8s ease-in-out infinite;
+          background: linear-gradient(135deg, rgba(34, 211, 238, 0.95), rgba(168, 85, 247, 0.9), rgba(34, 211, 238, 0.75));
+          opacity: 0.72;
+          z-index: 0;
+          animation: activeGlowPulse 3.4s ease-in-out infinite;
         }
 
-        .selected-plan-electric::after {
-          animation-delay: 1.15s;
-          opacity: 0.45;
-          filter: blur(2px);
+        .selected-plan-neon::after {
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 44%;
+          height: 3px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.98), rgba(34,211,238,0.95), transparent);
+          box-shadow: 0 0 18px rgba(34, 211, 238, 0.75), 0 0 26px rgba(168, 85, 247, 0.42);
+          pointer-events: none;
+          z-index: 1;
+          animation: borderTravel 4.2s linear infinite;
         }
 
-        .selected-plan-orbit {
-          animation: orbyx-orbit 3.8s ease-in-out infinite;
+        .selected-plan-surface {
+          position: relative;
+          z-index: 2;
+          border-radius: 20px;
+          background: linear-gradient(180deg, rgba(5, 20, 34, 0.98), rgba(3, 11, 23, 0.985));
         }
       `}</style>
 
@@ -745,13 +776,13 @@ function PlanesPageContent() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/50 to-transparent" />
       </div>
 
-      <section className="relative mx-auto w-full max-w-[1840px] px-4 pb-8 pt-4 sm:px-6 lg:px-8">
-        <header className="flex items-center justify-between gap-4 border-b border-white/8 pb-4">
+      <section className="relative mx-auto w-full max-w-[1760px] px-3 pb-6 pt-3 sm:px-5 lg:px-7">
+        <header className="flex items-center justify-between gap-3 border-b border-white/8 pb-3">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.22)]">
               <Sparkles className="h-4 w-4" />
             </span>
-            <span className="text-xl font-bold tracking-tight">Orbyx</span>
+            <span className="text-lg font-bold tracking-tight sm:text-xl">Orbyx</span>
           </Link>
 
           <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-200 lg:flex">
@@ -769,61 +800,61 @@ function PlanesPageContent() {
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="hidden h-10 items-center justify-center rounded-lg border border-white/15 px-4 text-sm font-semibold text-white transition hover:border-white/35 hover:bg-white/8 sm:inline-flex"
+              className="hidden h-9 items-center justify-center rounded-lg border border-white/15 px-3 text-xs font-semibold text-white transition hover:border-white/35 hover:bg-white/8 sm:inline-flex lg:px-4 lg:text-sm"
             >
               Iniciar sesion
             </Link>
             <Link
               href="/register"
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-[#21d6c5] px-4 text-sm font-bold text-slate-950 shadow-[0_14px_38px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb]"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-[#21d6c5] px-3 text-xs font-bold text-slate-950 shadow-[0_14px_38px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] lg:px-4 lg:text-sm"
             >
               Probar gratis
             </Link>
           </div>
         </header>
 
-        <div className="grid gap-7 pt-7 xl:grid-cols-[minmax(0,1fr)_430px]">
+        <div className="grid gap-5 pt-5 xl:grid-cols-[minmax(0,1fr)_430px] 2xl:grid-cols-[minmax(0,1fr)_470px]">
           <div className="min-w-0">
-            <div className="mx-auto max-w-4xl text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/8 px-4 py-1.5 text-xs font-semibold text-cyan-200 shadow-[0_0_34px_rgba(34,211,238,0.12)]">
+            <div className="mx-auto max-w-3xl text-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/8 px-3 py-1.5 text-[11px] font-semibold text-cyan-200 shadow-[0_0_34px_rgba(34,211,238,0.12)]">
                 <Sparkles className="h-3.5 w-3.5" />
                 Planes simples, sin complicaciones
                 <Sparkles className="h-3.5 w-3.5" />
               </div>
 
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-[3.35rem] lg:leading-[1.02]">
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-[2.65rem] lg:leading-[1.04] 2xl:text-[2.95rem]">
                 Elige el plan ideal para hacer{" "}
                 <span className="text-[#24e0d0]">crecer tu negocio</span>
               </h1>
 
-              <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-300">
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-300 lg:text-[15px]">
                 La IA atiende clientes. Orbyx organiza el negocio con agenda,
                 campanas, WhatsApp y automatizacion.
               </p>
 
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-                <div className="inline-flex rounded-full border border-white/10 bg-white/6 p-1 text-sm font-semibold text-slate-300">
-                  <span className="rounded-full bg-cyan-400/12 px-8 py-2 text-cyan-200">
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+                <div className="inline-flex rounded-full border border-white/10 bg-white/6 p-1 text-xs font-semibold text-slate-300">
+                  <span className="rounded-full bg-cyan-400/12 px-6 py-1.5 text-cyan-200">
                     Mensual
                   </span>
-                  <span className="px-8 py-2">Anual</span>
-                  <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-cyan-200">
+                  <span className="px-6 py-1.5">Anual</span>
+                  <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-cyan-200">
                     -20%
                   </span>
                 </div>
-                <span className="text-sm font-semibold text-cyan-300">
+                <span className="text-xs font-semibold text-cyan-300">
                   Ahorra 2 meses con anual
                 </span>
               </div>
 
               {from === "staff" ? (
-                <div className="mx-auto mt-5 max-w-xl rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                <div className="mx-auto mt-4 max-w-xl rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-2.5 text-sm text-amber-100">
                   Llegaste aqui porque alcanzaste el limite de profesionales de tu plan.
                 </div>
               ) : null}
             </div>
 
-            <div id="planes" className="mt-8 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+            <div id="planes" className="mt-6 grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
               {plans.map((plan) => {
                 const isSelected = selectedPlan.key === plan.key;
                 const isCurrentCard = hasBillingContext && initialPlan === plan.key;
@@ -833,24 +864,18 @@ function PlanesPageContent() {
                     key={plan.key}
                     type="button"
                     onClick={() => handleSelectPlan(plan.key)}
-                    whileHover={{ y: isSelected ? -8 : -4 }}
-                    animate={{ y: isSelected ? -8 : 0, scale: isSelected ? 1.018 : 1 }}
+                    whileHover={{ y: isSelected ? -5 : -3 }}
+                    animate={{ y: isSelected ? -5 : 0, scale: isSelected ? 1.01 : 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                    className={`relative isolate flex min-h-[430px] overflow-hidden rounded-[22px] border px-6 py-6 text-left transition ${
+                    className={`relative isolate flex min-h-[350px] overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:min-h-[370px] 2xl:min-h-[390px] ${
                       isSelected
-                        ? `selected-plan-electric ${plan.borderClass} bg-[linear-gradient(180deg,rgba(11,35,45,0.96),rgba(3,13,25,0.98))] shadow-[0_0_0_1px_rgba(34,211,238,0.16),0_22px_70px_rgba(34,211,238,0.18)]`
+                        ? `selected-plan-neon ${plan.borderClass} bg-cyan-300/25 shadow-[0_0_0_1px_rgba(34,211,238,0.28),0_18px_54px_rgba(34,211,238,0.16)]`
                         : "border-white/12 bg-white/[0.035] shadow-[0_18px_50px_rgba(0,0,0,0.18)] hover:border-white/25 hover:bg-white/[0.055]"
                     }`}
                   >
-                    <div className={`absolute inset-0 -z-10 bg-gradient-to-b ${plan.gradientClass} opacity-${isSelected ? "100" : "40"}`} />
+                    <div className={`${isSelected ? "selected-plan-surface" : "relative z-10 rounded-[21px]"} flex h-full w-full flex-col overflow-hidden px-5 py-5`}>
+                    <div className={`absolute inset-0 -z-10 bg-gradient-to-b ${plan.gradientClass} ${isSelected ? "opacity-100" : "opacity-40"}`} />
                     <div className="absolute inset-x-5 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-
-                    {isSelected ? (
-                      <>
-                        <div className="pointer-events-none absolute inset-x-7 bottom-1 h-8 rounded-[100%] border border-cyan-300/45 bg-cyan-300/10 blur-[0.2px] selected-plan-orbit shadow-[0_0_32px_rgba(34,211,238,0.5)]" />
-                        <div className="pointer-events-none absolute inset-x-10 bottom-4 h-px bg-gradient-to-r from-transparent via-cyan-200/80 to-transparent" />
-                      </>
-                    ) : null}
 
                     {plan.badge ? (
                       <span className="absolute right-5 top-0 rounded-b-lg bg-[#22d6c8] px-5 py-2 text-[11px] font-black uppercase tracking-wide text-slate-950">
@@ -866,7 +891,7 @@ function PlanesPageContent() {
 
                     <div className="flex w-full flex-col">
                       <span
-                        className={`inline-flex h-14 w-14 items-center justify-center rounded-full border ${
+                        className={`inline-flex h-12 w-12 items-center justify-center rounded-full border ${
                           isSelected
                             ? "border-cyan-300/25 bg-cyan-300/14 text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,0.28)]"
                             : "border-white/10 bg-white/7"
@@ -875,29 +900,29 @@ function PlanesPageContent() {
                         <PlanIcon type={plan.icon} />
                       </span>
 
-                      <p className="mt-5 text-2xl font-semibold text-white">{plan.name}</p>
-                      <p className="mt-2 min-h-[52px] text-sm leading-6 text-slate-300">
+                      <p className="mt-4 text-xl font-semibold text-white">{plan.name}</p>
+                      <p className="mt-2 min-h-[44px] text-sm leading-6 text-slate-300">
                         {plan.subtitle}
                       </p>
 
-                      <div className="mt-4 flex items-end gap-1">
-                        <span className="text-[2rem] font-semibold leading-none tracking-tight text-white">
+                      <div className="mt-3 flex items-end gap-1">
+                        <span className="text-[1.75rem] font-semibold leading-none tracking-tight text-white">
                           {plan.priceLabel}
                         </span>
                         <span className="pb-1 text-sm text-slate-400">{plan.ivaLabel}</span>
                       </div>
 
                       <div
-                        className={`mt-5 inline-flex h-11 items-center justify-center rounded-lg border px-4 text-sm font-bold transition ${
+                        className={`mt-4 inline-flex h-10 items-center justify-center rounded-lg border px-4 text-sm font-bold transition ${
                           isSelected
                             ? "border-cyan-300/20 bg-[#21d6c5] text-slate-950 shadow-[0_14px_34px_rgba(34,211,238,0.2)]"
                             : "border-white/15 bg-white/[0.035] text-white"
                         }`}
                       >
-                        Elegir plan
+                        {isSelected ? "Plan seleccionado" : "Elegir plan"}
                       </div>
 
-                      <div className="mt-5 space-y-3 pb-3">
+                      <div className="mt-4 space-y-2.5 pb-1">
                         {plan.features.map((feature) => (
                           <div key={`${plan.key}-${feature.title}`} className="flex items-start gap-3">
                             <Check
@@ -906,7 +931,7 @@ function PlanesPageContent() {
                               }`}
                             />
                             <span
-                              className={`text-sm leading-5 ${
+                              className={`text-[13px] leading-5 ${
                                 feature.highlight ? "font-semibold text-cyan-100" : "text-slate-300"
                               }`}
                             >
@@ -916,33 +941,34 @@ function PlanesPageContent() {
                         ))}
                       </div>
                     </div>
+                    </div>
                   </motion.button>
                 );
               })}
             </div>
 
-            <section className="mt-7 rounded-[18px] border border-white/12 bg-white/[0.035] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <section className="mt-5 rounded-[18px] border border-white/12 bg-white/[0.035] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-white">
+                  <h2 className="text-lg font-semibold text-white">
                     Potencia tu plan con <span className="text-[#24e0d0]">add-ons</span>
                   </h2>
                   <p className="mt-1 text-sm leading-6 text-slate-300">
-                    Contrata solo lo que necesitas. Escala cuando quieras.
+                    Agrega extras cuando quieras y escala tu negocio sin limites.
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Link
                     href="/planes/comparar"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
                   >
                     <BarChart3 className="h-4 w-4" />
                     Comparar planes
                   </Link>
                   <button
                     type="button"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
                   >
                     <Megaphone className="h-4 w-4" />
                     Ver todos los add-ons
@@ -951,73 +977,48 @@ function PlanesPageContent() {
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {availableAddons.map((extraKey) => {
-                  const config = extraConfig[extraKey];
-                  const value = extraValue(extraKey);
-                  const supported = extraSupported(extraKey);
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                  {
+                    key: "staff" as ExtraKey,
+                    title: "Mas profesionales",
+                    text: "Agrega miembros a tu equipo y atiende mas clientes.",
+                  },
+                  {
+                    key: "reminders" as ExtraKey,
+                    title: "WhatsApp ilimitado",
+                    text: "Mas conversaciones, mas recordatorios, mas impacto.",
+                  },
+                  {
+                    key: "campaigns" as ExtraKey,
+                    title: "Campanas efectivas",
+                    text: "Promociona, fideliza y recupera clientes automaticamente.",
+                  },
+                  {
+                    key: "branches" as ExtraKey,
+                    title: "Mas sucursales",
+                    text: "Gestiona multiples sedes desde una sola cuenta.",
+                  },
+                ].map((addon) => {
+                  const config = extraConfig[addon.key];
 
                   return (
                     <div
-                      key={extraKey}
-                      className={`relative overflow-hidden rounded-xl border p-4 transition ${
-                        supported
-                          ? "border-white/12 bg-white/[0.04] hover:border-cyan-300/25"
-                          : "border-white/8 bg-white/[0.025] opacity-55"
-                      }`}
+                      key={addon.key}
+                      className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-4"
                     >
                       <div className={`absolute inset-0 -z-10 bg-gradient-to-br ${config.glow}`} />
-                      <div className="flex min-h-[92px] items-start gap-3">
+                      <div className="flex items-start gap-3">
                         <span
-                          className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${config.iconClass}`}
+                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${config.iconClass}`}
                         >
                           {config.icon}
                         </span>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-white">{config.title}</p>
-                          <p className="mt-1 text-sm leading-5 text-slate-300">{config.short}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-end justify-between gap-3">
                         <div>
-                          <p className="text-2xl font-semibold text-white">
-                            {formatCLP(config.unitPrice)}
-                            <span className="text-sm font-normal text-slate-400"> /mes</span>
-                          </p>
-                          <p className="mt-1 text-xs text-slate-400">{config.detail}</p>
-                        </div>
-
-                        <div className="flex items-center rounded-lg border border-white/12 bg-black/20">
-                          <button
-                            type="button"
-                            onClick={() => decreaseExtra(extraKey)}
-                            disabled={!supported || value <= 0}
-                            className="inline-flex h-9 w-9 items-center justify-center text-slate-200 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-35"
-                            aria-label={`Quitar ${config.title}`}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </button>
-                          <span className="min-w-8 text-center text-sm font-semibold text-white">
-                            {value}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => increaseExtra(extraKey)}
-                            disabled={!supported}
-                            className="inline-flex h-9 w-9 items-center justify-center text-slate-200 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-35"
-                            aria-label={`Agregar ${config.title}`}
-                          >
-                            +
-                          </button>
+                          <p className="text-sm font-semibold text-white">{addon.title}</p>
+                          <p className="mt-1 text-sm leading-5 text-slate-300">{addon.text}</p>
                         </div>
                       </div>
-
-                      {!supported ? (
-                        <p className="mt-3 rounded-lg border border-white/8 bg-black/20 px-3 py-2 text-xs text-slate-400">
-                          Disponible en planes superiores.
-                        </p>
-                      ) : null}
                     </div>
                   );
                 })}
@@ -1051,17 +1052,17 @@ function PlanesPageContent() {
             </p>
           </div>
 
-          <aside className="xl:sticky xl:top-5 xl:self-start">
+          <aside className="xl:sticky xl:top-4 xl:self-start">
             <div className="overflow-hidden rounded-[18px] border border-white/12 bg-[#06101d]/90 shadow-[0_24px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl">
-              <div className="border-b border-white/10 p-5">
+              <div className="border-b border-white/10 p-4">
                 <div className="flex items-center gap-3">
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-300">
-                    <Sparkles className="h-4 w-4" />
+                    <ShoppingCart className="h-4 w-4" />
                   </span>
                   <h2 className="text-lg font-semibold text-white">Tu seleccion</h2>
                 </div>
 
-                <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] p-3.5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-xs text-slate-400">Plan seleccionado</p>
@@ -1076,7 +1077,7 @@ function PlanesPageContent() {
                 </div>
               </div>
 
-              <div className="p-5">
+              <div className="p-4">
                 {hasBillingContext && previewLoading ? (
                   <div className="mb-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
                     Calculando cambio de plan...
@@ -1115,7 +1116,6 @@ function PlanesPageContent() {
                       <SummaryLine label="Plan seleccionado" value={selectedPlan.name} />
                     </>
                   ) : null}
-                  <SummaryLine label={summaryBaseLabel} value={summaryBaseAmount} />
                 </div>
 
                 {previewType === "upgrade" ? (
@@ -1146,7 +1146,7 @@ function PlanesPageContent() {
                       Add-ons seleccionados
                     </span>
                     <span className="rounded-full bg-violet-500/25 px-3 py-1 text-xs font-bold text-violet-100">
-                      {extraItems.length}
+                      {selectedAddonsCount}
                     </span>
                   </div>
 
@@ -1155,54 +1155,121 @@ function PlanesPageContent() {
                       Aun no has agregado adicionales.
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                       {extraItems.map((item) => (
                         <div
                           key={item.label}
-                          className="rounded-xl border border-white/8 bg-white/[0.035] px-4 py-3"
+                          className="rounded-xl border border-white/8 bg-white/[0.035] p-3"
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${extraConfig[item.key].iconClass}`}>
+                          <div className="flex items-start gap-3">
+                            <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${extraConfig[item.key].iconClass}`}>
                                 {extraConfig[item.key].icon}
-                              </span>
-                              <div>
-                                <p className="text-sm font-semibold text-white">{item.label}</p>
-                                <p className="text-xs text-slate-400">
-                                  {item.count} {extraConfig[item.key].unitLabel}
-                                  {item.count === 1 ? "" : "es"}
-                                </p>
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-white">
+                                    {extraConfig[item.key].title}
+                                  </p>
+                                  <p className="mt-1 text-xs text-slate-400">
+                                    {item.count} {extraUnitLabel(item.key, item.count)}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-slate-400">
+                                    {extraConfig[item.key].usageLabel}
+                                  </p>
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <p className="text-xs text-slate-400">
+                                    {formatCLP(extraConfig[item.key].unitPrice)} c/u
+                                  </p>
+                                  <p className="mt-2 text-xs text-slate-300">Subtotal:</p>
+                                  <p className="text-sm font-semibold text-white">
+                                    {formatCLP(item.amount)}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="mt-3 flex items-center justify-end">
+                                <div className="flex items-center rounded-lg border border-white/12 bg-black/25">
+                                  <button
+                                    type="button"
+                                    onClick={() => decreaseExtra(item.key)}
+                                    className="inline-flex h-8 w-8 items-center justify-center text-slate-200 transition hover:bg-white/8"
+                                    aria-label={`Quitar ${extraConfig[item.key].title}`}
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </button>
+                                  <span className="min-w-8 text-center text-sm font-semibold text-white">
+                                    {item.count}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => increaseExtra(item.key)}
+                                    className="inline-flex h-8 w-8 items-center justify-center text-slate-200 transition hover:bg-white/8"
+                                    aria-label={`Agregar ${extraConfig[item.key].title}`}
+                                  >
+                                    +
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                            <span className="text-sm font-semibold text-white">
-                              {formatCLP(item.amount)}
-                            </span>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
+
+                  {addableAddons.length > 0 ? (
+                    <div className="mt-3 rounded-xl border border-white/8 bg-black/15 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        Agregar add-ons
+                      </p>
+                      <div className="mt-3 grid gap-2">
+                        {addableAddons.map((extraKey) => {
+                          const config = extraConfig[extraKey];
+
+                          return (
+                            <button
+                              key={extraKey}
+                              type="button"
+                              onClick={() => increaseExtra(extraKey)}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.025] px-3 py-2 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/8"
+                            >
+                              <span className="flex items-center gap-2">
+                                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${config.iconClass}`}>
+                                  {config.icon}
+                                </span>
+                                <span>
+                                  <span className="block text-xs font-semibold text-white">
+                                    {config.title}
+                                  </span>
+                                  <span className="block text-xs text-slate-400">
+                                    {formatCLP(config.unitPrice)} /mes
+                                  </span>
+                                </span>
+                              </span>
+                              <span className="text-lg leading-none text-cyan-300">+</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="mt-5 space-y-3 border-t border-white/10 pt-5">
+                <div className="mt-5 space-y-2.5 border-t border-white/10 pt-4">
+                  <SummaryLine label={summaryBaseLabel} value={summaryBaseAmount} />
+                  {extraItems.map((item) => (
+                    <SummaryLine
+                      key={`summary-${item.label}`}
+                      label={`${extraConfig[item.key].title} (${item.count})`}
+                      value={formatCLP(item.amount)}
+                    />
+                  ))}
+                  <div className="h-px bg-white/10" />
                   <SummaryLine label="Subtotal" value={formatCLP(summarySubtotal)} />
                   <SummaryLine label="IVA (19%)" value={formatCLP(summaryIva)} />
                   <SummaryLine label="Total mensual" value={formatCLP(summaryTotal)} strong />
-                </div>
-
-                <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.035] p-4">
-                  <div className="flex items-start gap-3">
-                    <Zap className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
-                    <p className="text-sm leading-6 text-slate-300">
-                      {hasBillingContext
-                        ? previewType === "downgrade"
-                          ? "Seguiras con tu plan actual hasta el cierre del periodo."
-                          : previewType === "same_plan"
-                          ? "Tu plan base no se cobra de nuevo. Solo se suman adicionales visuales."
-                          : "Cobro inmediato con prorrateo por los dias restantes del ciclo actual."
-                        : "Referencia mensual con IVA. La contratacion final puede ajustarse al cerrar el pago."}
-                    </p>
-                  </div>
                 </div>
 
                 {applyError ? (
@@ -1217,24 +1284,40 @@ function PlanesPageContent() {
                   </div>
                 ) : null}
 
-                <div className="mt-5 space-y-3">
+                <div className="mt-4 space-y-3">
                   {hasBillingContext ? (
                     <button
                       type="button"
                       onClick={handleApplyPlanChange}
                       disabled={applying || previewLoading || !tenantId}
-                      className="inline-flex h-14 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {applying ? "Procesando..." : ctaLabel}
                     </button>
                   ) : (
                     <Link
                       href="/"
-                      className="inline-flex h-14 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb]"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb]"
                     >
                       {ctaLabel}
                     </Link>
                   )}
+
+                  <p className="flex items-center justify-center gap-2 text-center text-xs text-slate-400">
+                    <Lock className="h-3.5 w-3.5 text-cyan-300" />
+                    Cancela o cambia de plan cuando quieras.
+                  </p>
+
+                  {hasBillingContext ? (
+                    <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                      <div className="flex items-start gap-3">
+                        <Zap className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+                        <p className="text-sm leading-5 text-slate-300">
+                          El cobro se prorratea segun los dias restantes de tu ciclo actual.
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
 
                   {showTenantWarning ? (
                     <div className="rounded-xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
