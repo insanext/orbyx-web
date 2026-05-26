@@ -3,21 +3,28 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import {
+  ArrowRight,
+  BarChart3,
+  CalendarDays,
   Check,
   Crown,
   Gem,
+  Lock,
   Mail,
   Megaphone,
   MessageCircle,
+  Minus,
+  ShieldCheck,
   Sparkles,
+  Store,
   Users,
-  Building2,
-  ArrowRight,
+  Zap,
 } from "lucide-react";
 
 type PlanKey = "pro" | "premium" | "vip" | "platinum";
-type ExtraKey = "staff" | "reminders" | "campaigns";
+type ExtraKey = "staff" | "reminders" | "campaigns" | "branches";
 
 type FeatureItem = {
   title: string;
@@ -68,8 +75,18 @@ type BillingPreviewResponse = {
   error?: string;
 };
 
+type ExtraConfig = {
+  title: string;
+  short: string;
+  detail: string;
+  unitPrice: number;
+  unitLabel: string;
+  icon: ReactNode;
+  glow: string;
+  iconClass: string;
+};
+
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
-const SERVICES_PER_STAFF_EXTRA = 5;
 
 const plans: Plan[] = [
   {
@@ -77,10 +94,10 @@ const plans: Plan[] = [
     name: "Pro",
     price: 19990,
     priceLabel: "$19.990",
-    ivaLabel: "+ iva / mes",
-    subtitle: "Ordena tu negocio y empieza a reservar online",
+    ivaLabel: "/mes + IVA",
+    subtitle: "Pequeno negocio con agenda profesional",
     benefit:
-      "La base para profesionalizar tu agenda, ordenar tu operación y empezar a convertir reservas con una experiencia más clara.",
+      "Agenda online, reservas y una base clara para ordenar la operacion diaria.",
     includedBranches: 1,
     includedStaff: 2,
     includedServices: 10,
@@ -88,88 +105,70 @@ const plans: Plan[] = [
     includedWhatsappResponseConversations: 0,
     includedAiConversations: 0,
     emailCampaignsIncluded: false,
-    extras: ["staff"],
+    extras: ["staff", "branches"],
     summaryTitle: "Plan Pro",
     summaryIntro:
-      "Ideal para dar el primer paso: agenda online, reservas y operación básica bien ordenada.",
+      "Para comenzar con reservas online, confirmaciones y control operativo.",
     features: [
-      {
-        title: "Agenda online y reservas públicas",
-        description:
-          "Permite que tus clientes reserven fácil, sin depender de mensajes manuales para cada hora.",
-      },
-      {
-        title: "Gestión inicial del negocio",
-        description:
-          "Administra servicios, profesionales, horarios y clientes desde un mismo lugar.",
-      },
-      {
-        title: "Emails de confirmación y notificación",
-        description:
-          "Mantén informados a tus clientes con correos automáticos en cada movimiento importante.",
-      },
+      { title: "Agenda y reservas online" },
+      { title: "Confirmaciones automaticas" },
+      { title: "IA de WhatsApp basica" },
+      { title: "2 profesionales incluidos" },
+      { title: "1 sucursal incluida" },
+      { title: "Soporte por chat" },
     ],
     icon: "mail",
-    accentClass: "text-sky-300",
-    softBgClass: "bg-sky-500/10",
-    borderClass: "border-sky-400/25",
-    ringClass: "ring-sky-400/30",
-    gradientClass: "from-sky-500/18 via-slate-900/0 to-slate-900/0",
+    accentClass: "text-violet-300",
+    softBgClass: "bg-violet-500/10",
+    borderClass: "border-violet-400/30",
+    ringClass: "ring-violet-400/30",
+    gradientClass: "from-violet-500/18 via-cyan-500/8 to-transparent",
   },
   {
     key: "premium",
     name: "Premium",
     price: 29990,
     priceLabel: "$29.990",
-    ivaLabel: "+ iva / mes",
-    subtitle: "Más control, mejor seguimiento y menos ausencias",
+    ivaLabel: "/mes + IVA",
+    subtitle: "Mas automatizacion para crecer con orden",
     benefit:
-      "Para negocios que necesitan una operación más sólida, mejor comunicación y menos horas perdidas por falta de seguimiento.",
+      "Mas capacidad, seguimiento y campanas por email para negocios en crecimiento.",
     includedBranches: 2,
     includedStaff: 5,
     includedServices: 25,
     includedReminderConversations: 0,
     includedWhatsappResponseConversations: 0,
     includedAiConversations: 0,
-    emailCampaignsIncluded: false,
-    extras: ["staff"],
+    emailCampaignsIncluded: true,
+    extras: ["staff", "branches"],
     summaryTitle: "Plan Premium",
     summaryIntro:
-      "Perfecto para ordenar mejor tu operación, reducir ausencias y dar una experiencia más profesional.",
+      "Mayor control comercial, mas profesionales y seguimiento mas consistente.",
     features: [
-      {
-        title: "Recordatorios automáticos por email",
-        description:
-          "Reduce ausencias recordando cada cita antes de que se pierda una hora valiosa.",
-      },
-      {
-        title: "Operación más profesional",
-        description:
-          "Mejora el seguimiento del negocio con más capacidad para servicios, staff y sucursales.",
-      },
-      {
-        title: "Más control para crecer",
-        description:
-          "Escala tu operación sin desorden, manteniendo una experiencia más consistente para tus clientes.",
-      },
+      { title: "Todo lo de Pro" },
+      { title: "5 profesionales incluidos" },
+      { title: "Campanas por email" },
+      { title: "Recordatorios por email" },
+      { title: "2 sucursales incluidas" },
+      { title: "Soporte prioritario" },
     ],
     icon: "sparkles",
-    accentClass: "text-violet-300",
-    softBgClass: "bg-violet-500/10",
-    borderClass: "border-violet-400/25",
-    ringClass: "ring-violet-400/30",
-    gradientClass: "from-violet-500/18 via-slate-900/0 to-slate-900/0",
+    accentClass: "text-sky-300",
+    softBgClass: "bg-sky-500/10",
+    borderClass: "border-sky-400/30",
+    ringClass: "ring-sky-400/30",
+    gradientClass: "from-sky-500/20 via-cyan-500/10 to-transparent",
   },
   {
     key: "vip",
     name: "VIP",
     price: 79990,
     priceLabel: "$79.990",
-    ivaLabel: "+ iva / mes",
-    subtitle: "Activa clientes y responde más rápido por WhatsApp",
+    ivaLabel: "/mes + IVA",
+    subtitle: "WhatsApp real, IA y recuperacion de clientes",
     benefit:
-      "El plan ideal para reactivar clientes, reducir ausencias y atender mejor por WhatsApp sin cargar todo manualmente.",
-    badge: "Más elegido",
+      "Automatiza, recupera y responde mas rapido por WhatsApp con una experiencia seria.",
+    badge: "Mas elegido",
     includedBranches: 3,
     includedStaff: 10,
     includedServices: 50,
@@ -177,44 +176,35 @@ const plans: Plan[] = [
     includedWhatsappResponseConversations: 200,
     includedAiConversations: 200,
     emailCampaignsIncluded: true,
-    extras: ["staff", "reminders", "campaigns"],
+    extras: ["staff", "reminders", "campaigns", "branches"],
     summaryTitle: "Plan VIP",
     summaryIntro:
-      "Da un salto en activación y atención: campañas por email, recordatorios por WhatsApp e IA que responde consultas.",
+      "Para activar clientes, responder por WhatsApp y convertir conversaciones en reservas.",
     features: [
-      {
-        title: "Campañas por email incluidas",
-        description:
-          "Vuelve a hablarle a tu base de clientes para activar la agenda y mover promociones o novedades.",
-        highlight: true,
-      },
-      {
-        title: "Recordatorios por WhatsApp",
-        description:
-          "Reduce ausencias desde un canal mucho más directo y efectivo para tus clientes.",
-      },
-      {
-        title: "IA que responde consultas por WhatsApp",
-        description:
-          "Responde preguntas frecuentes, orienta al cliente y lo deriva a tu página de reservas para que agende online.",
-      },
+      { title: "Todo lo de Premium" },
+      { title: "10 profesionales incluidos" },
+      { title: "Campanas por WhatsApp" },
+      { title: "Recordatorios WhatsApp 200 conversaciones / mes" },
+      { title: "IA responde y deriva a reserva", highlight: true },
+      { title: "3 sucursales incluidas" },
+      { title: "Soporte prioritario 24/7" },
     ],
     icon: "crown",
-    accentClass: "text-amber-300",
-    softBgClass: "bg-amber-500/10",
-    borderClass: "border-amber-400/25",
-    ringClass: "ring-amber-400/30",
-    gradientClass: "from-amber-500/18 via-slate-900/0 to-slate-900/0",
+    accentClass: "text-cyan-200",
+    softBgClass: "bg-cyan-400/10",
+    borderClass: "border-cyan-300/55",
+    ringClass: "ring-cyan-300/45",
+    gradientClass: "from-cyan-400/24 via-teal-400/12 to-transparent",
   },
   {
     key: "platinum",
     name: "Platinum",
     price: 189990,
     priceLabel: "$189.990",
-    ivaLabel: "+ iva / mes",
-    subtitle: "Automatiza tu negocio y convierte más reservas",
+    ivaLabel: "/mes + IVA",
+    subtitle: "IA avanzada, multi sucursal y SLA premium",
     benefit:
-      "Pensado para negocios que quieren que Orbyx responda, haga seguimiento y trabaje por su agenda incluso cuando no están disponibles.",
+      "Para negocios que quieren escalar sin limites visuales y operar con IA avanzada.",
     badge: "IA avanzada",
     includedBranches: 10,
     includedStaff: 20,
@@ -223,65 +213,82 @@ const plans: Plan[] = [
     includedWhatsappResponseConversations: 800,
     includedAiConversations: 800,
     emailCampaignsIncluded: true,
-    extras: ["staff", "reminders", "campaigns"],
+    extras: ["staff", "reminders", "campaigns", "branches"],
     summaryTitle: "Plan Platinum",
     summaryIntro:
-      "La capa premium para automatizar atención, recuperar clientes y hacer crecer tu negocio con IA avanzada.",
+      "Automatizaciones avanzadas, onboarding premium, SLA y seguimiento inteligente.",
     features: [
-      {
-        title: "Automatizaciones avanzadas",
-        description:
-          "Recupera clientes inactivos, da seguimiento automático y trabaja mejor los no-show sin mover un dedo.",
-        highlight: true,
-      },
-      {
-        title: "IA avanzada en WhatsApp",
-        description:
-          "Responde, propone horarios, ayuda a concretar reservas y hace seguimiento automático de conversaciones.",
-      },
-      {
-        title: "Encuestas inteligentes post atención",
-        description:
-          "Mide satisfacción por email, detecta clientes insatisfechos y convierte buenas experiencias en mejores oportunidades.",
-      },
+      { title: "Todo lo de VIP" },
+      { title: "20 profesionales incluidos" },
+      { title: "Recordatorios WhatsApp 800 conversaciones / mes" },
+      { title: "IA responde, sigue y automatiza", highlight: true },
+      { title: "10 sucursales incluidas" },
+      { title: "Automatizaciones avanzadas" },
+      { title: "Onboarding personalizado" },
+      { title: "SLA y soporte premium" },
     ],
     icon: "gem",
-    accentClass: "text-emerald-300",
-    softBgClass: "bg-emerald-500/10",
-    borderClass: "border-emerald-400/25",
-    ringClass: "ring-emerald-400/30",
-    gradientClass: "from-emerald-500/18 via-slate-900/0 to-slate-900/0",
+    accentClass: "text-fuchsia-300",
+    softBgClass: "bg-fuchsia-500/10",
+    borderClass: "border-fuchsia-400/35",
+    ringClass: "ring-fuchsia-400/30",
+    gradientClass: "from-fuchsia-500/20 via-violet-500/10 to-transparent",
   },
 ];
 
-const extraConfig = {
+const extraConfig: Record<ExtraKey, ExtraConfig> = {
   staff: {
-    title: "Profesionales extra",
-    short: "$6.000 + iva · 1 profesional + 5 servicios",
+    title: "+ Profesionales",
+    short: "Agrega mas miembros a tu equipo.",
+    detail: "por profesional",
     unitPrice: 6000,
+    unitLabel: "profesional",
+    icon: <Users className="h-5 w-5" />,
+    glow: "from-violet-500/20 to-violet-500/5",
+    iconClass: "bg-violet-500/18 text-violet-200",
   },
   reminders: {
     title: "Pack recordatorios WhatsApp",
-    short: "$5.000 + iva · 50 conversaciones",
+    short: "Envia recordatorios automaticos.",
+    detail: "por 50 conversaciones",
     unitPrice: 5000,
+    unitLabel: "pack",
+    icon: <MessageCircle className="h-5 w-5" />,
+    glow: "from-emerald-500/20 to-emerald-500/5",
+    iconClass: "bg-emerald-500/18 text-emerald-200",
   },
   campaigns: {
-    title: "Campañas WhatsApp bajo consumo",
-    short: "$9.000 + iva · 50 conversaciones",
+    title: "Campanas WhatsApp",
+    short: "Envia promociones y recupera clientes.",
+    detail: "por 50 conversaciones",
     unitPrice: 9000,
+    unitLabel: "pack",
+    icon: <Megaphone className="h-5 w-5" />,
+    glow: "from-amber-500/20 to-amber-500/5",
+    iconClass: "bg-amber-500/18 text-amber-200",
   },
-} as const;
+  branches: {
+    title: "+ Sucursales",
+    short: "Gestiona mas sedes desde tu cuenta.",
+    detail: "por sucursal",
+    unitPrice: 15000,
+    unitLabel: "sucursal",
+    icon: <Store className="h-5 w-5" />,
+    glow: "from-blue-500/20 to-blue-500/5",
+    iconClass: "bg-blue-500/18 text-blue-200",
+  },
+};
 
 function formatCLP(value: number) {
   return `$${value.toLocaleString("es-CL")}`;
 }
 
 function formatDate(dateString?: string | null) {
-  if (!dateString) return "—";
+  if (!dateString) return "-";
 
   const date = new Date(dateString);
 
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "-";
 
   return date.toLocaleDateString("es-CL", {
     day: "2-digit",
@@ -291,8 +298,8 @@ function formatDate(dateString?: string | null) {
 }
 
 function formatRemainingDays(value?: number | null) {
-  if (value == null || Number.isNaN(Number(value))) return "—";
-  return `${Math.max(0, Math.round(Number(value)))} días`;
+  if (value == null || Number.isNaN(Number(value))) return "-";
+  return `${Math.max(0, Math.round(Number(value)))} dias`;
 }
 
 function normalizePlanFromUrl(rawValue: string | null): PlanKey {
@@ -308,7 +315,7 @@ function normalizePlanFromUrl(rawValue: string | null): PlanKey {
 }
 
 function planNameFromKey(planKey?: string | null) {
-  if (!planKey) return "—";
+  if (!planKey) return "-";
   const found = plans.find((plan) => plan.key === planKey);
   return found?.name || String(planKey);
 }
@@ -320,115 +327,35 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
   return <Gem className="h-5 w-5" />;
 }
 
-function getExtraAccent(extraKey: ExtraKey) {
-  if (extraKey === "staff") {
-    return {
-      icon: "bg-indigo-500/15 text-indigo-200",
-      control: "border-indigo-400/25 text-indigo-100 hover:bg-indigo-500/15",
-      info: "border-indigo-400/20 bg-indigo-500/10 text-indigo-100",
-    };
-  }
-
-  if (extraKey === "reminders") {
-    return {
-      icon: "bg-emerald-500/15 text-emerald-200",
-      control:
-        "border-emerald-400/25 text-emerald-100 hover:bg-emerald-500/15",
-      info: "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
-    };
-  }
-
-  return {
-    icon: "bg-amber-500/15 text-amber-200",
-    control: "border-amber-400/25 text-amber-100 hover:bg-amber-500/15",
-    info: "border-amber-400/20 bg-amber-500/10 text-amber-100",
-  };
-}
-
-function CompactExtraRow({
-  title,
-  shortText,
-  infoText,
-  value,
-  onDecrease,
-  onIncrease,
-  icon,
-  accent,
-}: {
-  title: string;
-  shortText: string;
-  infoText: string;
-  value: number;
-  onDecrease: () => void;
-  onIncrease: () => void;
-  icon: ReactNode;
-  accent: {
-    icon: string;
-    control: string;
-    info: string;
-  };
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_150px] lg:items-center">
-        <div className="min-w-0">
-          <div className="flex items-start gap-3">
-            <div
-              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${accent.icon}`}
-            >
-              {icon}
-            </div>
-
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white">{title}</p>
-              <p className="mt-1 text-sm text-slate-300">{shortText}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center gap-3 lg:justify-end">
-          <button
-            type="button"
-            onClick={onDecrease}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl text-slate-200 transition hover:bg-white/10"
-          >
-            −
-          </button>
-
-          <span className="min-w-[24px] text-center text-lg font-semibold text-white">
-            {value}
-          </span>
-
-          <button
-            type="button"
-            onClick={onIncrease}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border bg-white/5 text-xl transition ${accent.control}`}
-          >
-            +
-          </button>
-        </div>
-      </div>
-
-      <div
-        className={`mt-3 rounded-xl border px-3 py-2 text-sm leading-6 ${accent.info}`}
-      >
-        {infoText}
-      </div>
-    </div>
-  );
-}
-
-function IncludeRow({
+function SummaryLine({
   label,
   value,
+  strong = false,
 }: {
   label: string;
-  value: string | number;
+  value: string;
+  strong?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-white/8 py-2 last:border-b-0">
-      <span className="text-sm text-slate-300">{label}</span>
-      <span className="text-right text-sm font-semibold text-white">{value}</span>
+    <div className="flex items-center justify-between gap-4">
+      <span
+        className={
+          strong
+            ? "text-sm font-semibold text-white"
+            : "text-sm text-slate-300"
+        }
+      >
+        {label}
+      </span>
+      <span
+        className={
+          strong
+            ? "text-right text-xl font-semibold text-cyan-300"
+            : "text-right text-sm font-semibold text-white"
+        }
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -455,6 +382,7 @@ function PlanesPageContent() {
   const [staffExtras, setStaffExtras] = useState(0);
   const [reminderExtras, setReminderExtras] = useState(0);
   const [campaignExtras, setCampaignExtras] = useState(0);
+  const [branchExtras, setBranchExtras] = useState(0);
 
   const [preview, setPreview] = useState<BillingPreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -478,6 +406,7 @@ function PlanesPageContent() {
   const supportsStaffExtra = selectedPlan.extras.includes("staff");
   const supportsReminderExtra = selectedPlan.extras.includes("reminders");
   const supportsCampaignExtra = selectedPlan.extras.includes("campaigns");
+  const supportsBranchExtra = selectedPlan.extras.includes("branches");
 
   const extrasSubtotal = useMemo(() => {
     let total = 0;
@@ -489,12 +418,17 @@ function PlanesPageContent() {
     if (supportsCampaignExtra) {
       total += campaignExtras * extraConfig.campaigns.unitPrice;
     }
+    if (supportsBranchExtra) {
+      total += branchExtras * extraConfig.branches.unitPrice;
+    }
 
     return total;
   }, [
+    branchExtras,
     campaignExtras,
     reminderExtras,
     staffExtras,
+    supportsBranchExtra,
     supportsCampaignExtra,
     supportsReminderExtra,
     supportsStaffExtra,
@@ -506,41 +440,57 @@ function PlanesPageContent() {
   const payTodayTotal = payTodaySubtotal + payTodayIva;
 
   const currentStaffTotal = selectedPlan.includedStaff + staffExtras;
-  const currentServicesTotal =
-    selectedPlan.includedServices + staffExtras * SERVICES_PER_STAFF_EXTRA;
   const currentReminderTotal =
     selectedPlan.includedReminderConversations + reminderExtras * 50;
   const currentCampaignTotal = campaignExtras * 50;
+  const currentBranchTotal = selectedPlan.includedBranches + branchExtras;
 
   const extraItems = useMemo(() => {
-    const items: { label: string; amount: number }[] = [];
+    const items: { key: ExtraKey; label: string; amount: number; count: number }[] = [];
 
     if (supportsStaffExtra && staffExtras > 0) {
       items.push({
-        label: `Profesional extra x${staffExtras}`,
+        key: "staff",
+        label: `+ Profesionales x${staffExtras}`,
         amount: staffExtras * extraConfig.staff.unitPrice,
+        count: staffExtras,
       });
     }
 
     if (supportsReminderExtra && reminderExtras > 0) {
       items.push({
+        key: "reminders",
         label: `Pack recordatorios WhatsApp x${reminderExtras}`,
         amount: reminderExtras * extraConfig.reminders.unitPrice,
+        count: reminderExtras,
       });
     }
 
     if (supportsCampaignExtra && campaignExtras > 0) {
       items.push({
-        label: `Campañas WhatsApp x${campaignExtras}`,
+        key: "campaigns",
+        label: `Campanas WhatsApp x${campaignExtras}`,
         amount: campaignExtras * extraConfig.campaigns.unitPrice,
+        count: campaignExtras,
+      });
+    }
+
+    if (supportsBranchExtra && branchExtras > 0) {
+      items.push({
+        key: "branches",
+        label: `+ Sucursales x${branchExtras}`,
+        amount: branchExtras * extraConfig.branches.unitPrice,
+        count: branchExtras,
       });
     }
 
     return items;
   }, [
+    branchExtras,
     campaignExtras,
     reminderExtras,
     staffExtras,
+    supportsBranchExtra,
     supportsCampaignExtra,
     supportsReminderExtra,
     supportsStaffExtra,
@@ -572,9 +522,11 @@ function PlanesPageContent() {
         }
 
         setPreview(data);
-      } catch (error: any) {
+      } catch (error: unknown) {
         setPreviewError(
-          error?.message || "No se pudo calcular el cambio de plan"
+          error instanceof Error
+            ? error.message
+            : "No se pudo calcular el cambio de plan"
         );
       } finally {
         setPreviewLoading(false);
@@ -589,6 +541,7 @@ function PlanesPageContent() {
     setStaffExtras(0);
     setReminderExtras(0);
     setCampaignExtras(0);
+    setBranchExtras(0);
     setApplyError("");
     setApplyOk("");
   }
@@ -603,6 +556,9 @@ function PlanesPageContent() {
     if (extraKey === "campaigns" && supportsCampaignExtra) {
       setCampaignExtras((prev) => prev + 1);
     }
+    if (extraKey === "branches" && supportsBranchExtra) {
+      setBranchExtras((prev) => prev + 1);
+    }
   }
 
   function decreaseExtra(extraKey: ExtraKey) {
@@ -614,6 +570,9 @@ function PlanesPageContent() {
     }
     if (extraKey === "campaigns" && supportsCampaignExtra) {
       setCampaignExtras((prev) => Math.max(0, prev - 1));
+    }
+    if (extraKey === "branches" && supportsBranchExtra) {
+      setBranchExtras((prev) => Math.max(0, prev - 1));
     }
   }
 
@@ -654,8 +613,12 @@ function PlanesPageContent() {
       } else {
         setApplyOk("Cambio aplicado correctamente.");
       }
-    } catch (error: any) {
-      setApplyError(error?.message || "No se pudo aplicar el cambio de plan");
+    } catch (error: unknown) {
+      setApplyError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo aplicar el cambio de plan"
+      );
     } finally {
       setApplying(false);
     }
@@ -673,7 +636,7 @@ function PlanesPageContent() {
 
   const ctaLabel =
     !hasBillingContext
-      ? "Quiero este plan"
+      ? "Comenzar ahora"
       : previewType === "same_plan"
       ? "Mantener este plan"
       : previewType === "downgrade"
@@ -687,426 +650,569 @@ function PlanesPageContent() {
   const publicReferenceTotal =
     selectedPlan.price + publicPlanIva + extrasSubtotal + publicExtrasIva;
 
+  const summaryBaseLabel =
+    hasBillingContext && previewType === "upgrade"
+      ? "Cambio inmediato de plan"
+      : hasBillingContext && previewType === "downgrade"
+      ? "Cambio de plan hoy"
+      : "Plan base";
+
+  const summaryBaseAmount = hasBillingContext
+    ? previewType === "downgrade"
+      ? "$0"
+      : formatCLP(previewAmountToday)
+    : selectedPlan.priceLabel;
+
+  const summarySubtotal = hasBillingContext
+    ? payTodaySubtotal
+    : selectedPlan.price + extrasSubtotal;
+  const summaryIva = hasBillingContext ? payTodayIva : Math.round(summarySubtotal * 0.19);
+  const summaryTotal = hasBillingContext ? payTodayTotal : publicReferenceTotal;
+
+  const availableAddons: ExtraKey[] = ["staff", "reminders", "campaigns", "branches"];
+
+  function extraValue(extraKey: ExtraKey) {
+    if (extraKey === "staff") return staffExtras;
+    if (extraKey === "reminders") return reminderExtras;
+    if (extraKey === "campaigns") return campaignExtras;
+    return branchExtras;
+  }
+
+  function extraSupported(extraKey: ExtraKey) {
+    return selectedPlan.extras.includes(extraKey);
+  }
+
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
-      <section className="mx-auto w-full max-w-[1600px] px-4 py-6 lg:px-8 2xl:px-10">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <div>
-            <div className="rounded-[34px] border border-white/10 bg-white/6 p-5 shadow-[0_30px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl lg:p-7">
-              <div className="max-w-4xl">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
-                    Planes Orbyx
-                  </span>
+    <main className="min-h-screen overflow-hidden bg-[#020814] text-white">
+      <style jsx>{`
+        @keyframes orbyx-orbit {
+          0% {
+            transform: translateX(-8%) scaleX(0.92);
+            opacity: 0.45;
+          }
+          50% {
+            transform: translateX(8%) scaleX(1.03);
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(-8%) scaleX(0.92);
+            opacity: 0.45;
+          }
+        }
 
-                  <Link
-                    href="/"
-                    className="text-xs font-medium text-slate-400 transition hover:text-white"
-                  >
-                    Volver al inicio
-                  </Link>
-                </div>
+        @keyframes orbyx-electric {
+          0%,
+          100% {
+            opacity: 0.2;
+            transform: translateY(0);
+          }
+          45% {
+            opacity: 0.75;
+            transform: translateY(-2px);
+          }
+          70% {
+            opacity: 0.38;
+          }
+        }
 
-                <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-white lg:text-[2.8rem] lg:leading-[1.05]">
-                  Elige el plan ideal para llenar tu agenda y hacer crecer tu negocio
-                </h1>
+        .selected-plan-electric::before,
+        .selected-plan-electric::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: 22px;
+          pointer-events: none;
+          background:
+            linear-gradient(105deg, transparent 10%, rgba(34, 211, 238, 0.42) 16%, transparent 23%),
+            linear-gradient(255deg, transparent 62%, rgba(45, 212, 191, 0.28) 69%, transparent 76%);
+          mask-image: linear-gradient(#000, #000);
+          animation: orbyx-electric 2.8s ease-in-out infinite;
+        }
 
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 lg:text-base">
-                  Empieza ordenando tu operación y avanza hacia recordatorios,
-                  campañas, automatizaciones e IA según la etapa en la que está tu negocio.
-                </p>
+        .selected-plan-electric::after {
+          animation-delay: 1.15s;
+          opacity: 0.45;
+          filter: blur(2px);
+        }
 
-                {from === "staff" ? (
-                  <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                    Llegaste aquí porque alcanzaste el límite de profesionales de tu
-                    plan.
-                  </div>
-                ) : null}
+        .selected-plan-orbit {
+          animation: orbyx-orbit 3.8s ease-in-out infinite;
+        }
+      `}</style>
+
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.18),transparent_28%),radial-gradient(circle_at_78%_14%,rgba(168,85,247,0.15),transparent_24%),linear-gradient(180deg,#020814_0%,#030b18_48%,#020814_100%)]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/50 to-transparent" />
+      </div>
+
+      <section className="relative mx-auto w-full max-w-[1840px] px-4 pb-8 pt-4 sm:px-6 lg:px-8">
+        <header className="flex items-center justify-between gap-4 border-b border-white/8 pb-4">
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.22)]">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <span className="text-xl font-bold tracking-tight">Orbyx</span>
+          </Link>
+
+          <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-200 lg:flex">
+            <Link href="/#funciones" className="transition hover:text-white">
+              Funciones
+            </Link>
+            <span className="border-b border-cyan-300 pb-2 text-cyan-300">
+              Precios
+            </span>
+            <Link href="/#casos" className="transition hover:text-white">
+              Casos de uso
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/login"
+              className="hidden h-10 items-center justify-center rounded-lg border border-white/15 px-4 text-sm font-semibold text-white transition hover:border-white/35 hover:bg-white/8 sm:inline-flex"
+            >
+              Iniciar sesion
+            </Link>
+            <Link
+              href="/register"
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-[#21d6c5] px-4 text-sm font-bold text-slate-950 shadow-[0_14px_38px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb]"
+            >
+              Probar gratis
+            </Link>
+          </div>
+        </header>
+
+        <div className="grid gap-7 pt-7 xl:grid-cols-[minmax(0,1fr)_430px]">
+          <div className="min-w-0">
+            <div className="mx-auto max-w-4xl text-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/8 px-4 py-1.5 text-xs font-semibold text-cyan-200 shadow-[0_0_34px_rgba(34,211,238,0.12)]">
+                <Sparkles className="h-3.5 w-3.5" />
+                Planes simples, sin complicaciones
+                <Sparkles className="h-3.5 w-3.5" />
               </div>
 
-              <div className="mt-7 grid gap-4 xl:grid-cols-4">
-                {plans.map((plan) => {
-                  const isSelected = selectedPlan.key === plan.key;
-                  const isCurrentCard =
-                    hasBillingContext && initialPlan === plan.key;
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-[3.35rem] lg:leading-[1.02]">
+                Elige el plan ideal para hacer{" "}
+                <span className="text-[#24e0d0]">crecer tu negocio</span>
+              </h1>
 
-                  return (
-                    <button
-                      key={plan.key}
-                      type="button"
-                      onClick={() => handleSelectPlan(plan.key)}
-                      className={`relative flex min-h-[420px] flex-col rounded-3xl border px-5 py-5 text-left transition ${
-                        isSelected
-                          ? `scale-[1.02] bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] ${plan.borderClass} ${plan.softBgClass} ring-1 ring-white/20 shadow-[0_18px_45px_rgba(0,0,0,0.35)]`
-                          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
-                      }`}
-                    >
-                      {plan.badge ? (
-                        <span className="absolute right-4 top-4 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-900">
-                          {plan.badge}
-                        </span>
-                      ) : null}
+              <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-300">
+                La IA atiende clientes. Orbyx organiza el negocio con agenda,
+                campanas, WhatsApp y automatizacion.
+              </p>
 
-                      {isCurrentCard ? (
-                        <span className="absolute left-4 top-4 rounded-full border border-emerald-400/25 bg-emerald-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">
-                          Plan actual
-                        </span>
-                      ) : null}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <div className="inline-flex rounded-full border border-white/10 bg-white/6 p-1 text-sm font-semibold text-slate-300">
+                  <span className="rounded-full bg-cyan-400/12 px-8 py-2 text-cyan-200">
+                    Mensual
+                  </span>
+                  <span className="px-8 py-2">Anual</span>
+                  <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-cyan-200">
+                    -20%
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-cyan-300">
+                  Ahorra 2 meses con anual
+                </span>
+              </div>
 
+              {from === "staff" ? (
+                <div className="mx-auto mt-5 max-w-xl rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                  Llegaste aqui porque alcanzaste el limite de profesionales de tu plan.
+                </div>
+              ) : null}
+            </div>
+
+            <div id="planes" className="mt-8 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+              {plans.map((plan) => {
+                const isSelected = selectedPlan.key === plan.key;
+                const isCurrentCard = hasBillingContext && initialPlan === plan.key;
+
+                return (
+                  <motion.button
+                    key={plan.key}
+                    type="button"
+                    onClick={() => handleSelectPlan(plan.key)}
+                    whileHover={{ y: isSelected ? -8 : -4 }}
+                    animate={{ y: isSelected ? -8 : 0, scale: isSelected ? 1.018 : 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                    className={`relative isolate flex min-h-[430px] overflow-hidden rounded-[22px] border px-6 py-6 text-left transition ${
+                      isSelected
+                        ? `selected-plan-electric ${plan.borderClass} bg-[linear-gradient(180deg,rgba(11,35,45,0.96),rgba(3,13,25,0.98))] shadow-[0_0_0_1px_rgba(34,211,238,0.16),0_22px_70px_rgba(34,211,238,0.18)]`
+                        : "border-white/12 bg-white/[0.035] shadow-[0_18px_50px_rgba(0,0,0,0.18)] hover:border-white/25 hover:bg-white/[0.055]"
+                    }`}
+                  >
+                    <div className={`absolute inset-0 -z-10 bg-gradient-to-b ${plan.gradientClass} opacity-${isSelected ? "100" : "40"}`} />
+                    <div className="absolute inset-x-5 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+                    {isSelected ? (
+                      <>
+                        <div className="pointer-events-none absolute inset-x-7 bottom-1 h-8 rounded-[100%] border border-cyan-300/45 bg-cyan-300/10 blur-[0.2px] selected-plan-orbit shadow-[0_0_32px_rgba(34,211,238,0.5)]" />
+                        <div className="pointer-events-none absolute inset-x-10 bottom-4 h-px bg-gradient-to-r from-transparent via-cyan-200/80 to-transparent" />
+                      </>
+                    ) : null}
+
+                    {plan.badge ? (
+                      <span className="absolute right-5 top-0 rounded-b-lg bg-[#22d6c8] px-5 py-2 text-[11px] font-black uppercase tracking-wide text-slate-950">
+                        {plan.badge}
+                      </span>
+                    ) : null}
+
+                    {isCurrentCard ? (
+                      <span className="absolute left-5 top-5 rounded-full border border-emerald-300/25 bg-emerald-400/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">
+                        Plan actual
+                      </span>
+                    ) : null}
+
+                    <div className="flex w-full flex-col">
                       <span
-                        className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${
-                          isSelected ? "bg-white/12" : "bg-white/8"
-                        } ${plan.accentClass} ${isCurrentCard ? "mt-6" : ""}`}
+                        className={`inline-flex h-14 w-14 items-center justify-center rounded-full border ${
+                          isSelected
+                            ? "border-cyan-300/25 bg-cyan-300/14 text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,0.28)]"
+                            : "border-white/10 bg-white/7"
+                        } ${plan.accentClass} ${isCurrentCard ? "mt-8" : ""}`}
                       >
                         <PlanIcon type={plan.icon} />
                       </span>
 
-                      <p className="mt-4 text-xl font-semibold text-white">{plan.name}</p>
-
-                      <p className="mt-2 text-sm leading-7 text-slate-200">
+                      <p className="mt-5 text-2xl font-semibold text-white">{plan.name}</p>
+                      <p className="mt-2 min-h-[52px] text-sm leading-6 text-slate-300">
                         {plan.subtitle}
                       </p>
 
-                      <p className="mt-4 text-sm leading-7 text-slate-400">
-                        {plan.benefit}
-                      </p>
+                      <div className="mt-4 flex items-end gap-1">
+                        <span className="text-[2rem] font-semibold leading-none tracking-tight text-white">
+                          {plan.priceLabel}
+                        </span>
+                        <span className="pb-1 text-sm text-slate-400">{plan.ivaLabel}</span>
+                      </div>
 
-                      <div className="mt-auto pt-6">
-                        <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-4">
-                          <p className="text-[1.95rem] font-semibold leading-none tracking-tight text-white lg:text-[2.05rem]">
-                            {plan.priceLabel}
-                          </p>
-                          <p className="mt-2 text-sm text-slate-400">
-                            {plan.ivaLabel}
-                          </p>
-                        </div>
+                      <div
+                        className={`mt-5 inline-flex h-11 items-center justify-center rounded-lg border px-4 text-sm font-bold transition ${
+                          isSelected
+                            ? "border-cyan-300/20 bg-[#21d6c5] text-slate-950 shadow-[0_14px_34px_rgba(34,211,238,0.2)]"
+                            : "border-white/15 bg-white/[0.035] text-white"
+                        }`}
+                      >
+                        Elegir plan
+                      </div>
 
-                        <div className="mt-5 flex items-center gap-2 text-sm font-medium text-slate-200">
-                          <ArrowRight className="h-4 w-4" />
-                          Seleccionar plan
+                      <div className="mt-5 space-y-3 pb-3">
+                        {plan.features.map((feature) => (
+                          <div key={`${plan.key}-${feature.title}`} className="flex items-start gap-3">
+                            <Check
+                              className={`mt-0.5 h-4 w-4 shrink-0 ${
+                                feature.highlight ? "text-cyan-300" : plan.accentClass
+                              }`}
+                            />
+                            <span
+                              className={`text-sm leading-5 ${
+                                feature.highlight ? "font-semibold text-cyan-100" : "text-slate-300"
+                              }`}
+                            >
+                              {feature.title}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            <section className="mt-7 rounded-[18px] border border-white/12 bg-white/[0.035] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-white">
+                    Potencia tu plan con <span className="text-[#24e0d0]">add-ons</span>
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-300">
+                    Contrata solo lo que necesitas. Escala cuando quieras.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Link
+                    href="/planes/comparar"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    Comparar planes
+                  </Link>
+                  <button
+                    type="button"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
+                  >
+                    <Megaphone className="h-4 w-4" />
+                    Ver todos los add-ons
+                    <ArrowRight className="h-4 w-4 text-cyan-300" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {availableAddons.map((extraKey) => {
+                  const config = extraConfig[extraKey];
+                  const value = extraValue(extraKey);
+                  const supported = extraSupported(extraKey);
+
+                  return (
+                    <div
+                      key={extraKey}
+                      className={`relative overflow-hidden rounded-xl border p-4 transition ${
+                        supported
+                          ? "border-white/12 bg-white/[0.04] hover:border-cyan-300/25"
+                          : "border-white/8 bg-white/[0.025] opacity-55"
+                      }`}
+                    >
+                      <div className={`absolute inset-0 -z-10 bg-gradient-to-br ${config.glow}`} />
+                      <div className="flex min-h-[92px] items-start gap-3">
+                        <span
+                          className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${config.iconClass}`}
+                        >
+                          {config.icon}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-white">{config.title}</p>
+                          <p className="mt-1 text-sm leading-5 text-slate-300">{config.short}</p>
                         </div>
                       </div>
-                    </button>
+
+                      <div className="mt-4 flex items-end justify-between gap-3">
+                        <div>
+                          <p className="text-2xl font-semibold text-white">
+                            {formatCLP(config.unitPrice)}
+                            <span className="text-sm font-normal text-slate-400"> /mes</span>
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">{config.detail}</p>
+                        </div>
+
+                        <div className="flex items-center rounded-lg border border-white/12 bg-black/20">
+                          <button
+                            type="button"
+                            onClick={() => decreaseExtra(extraKey)}
+                            disabled={!supported || value <= 0}
+                            className="inline-flex h-9 w-9 items-center justify-center text-slate-200 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-35"
+                            aria-label={`Quitar ${config.title}`}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <span className="min-w-8 text-center text-sm font-semibold text-white">
+                            {value}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => increaseExtra(extraKey)}
+                            disabled={!supported}
+                            className="inline-flex h-9 w-9 items-center justify-center text-slate-200 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-35"
+                            aria-label={`Agregar ${config.title}`}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      {!supported ? (
+                        <p className="mt-3 rounded-lg border border-white/8 bg-black/20 px-3 py-2 text-xs text-slate-400">
+                          Disponible en planes superiores.
+                        </p>
+                      ) : null}
+                    </div>
                   );
                 })}
               </div>
+            </section>
 
-              <div className="mt-8 rounded-[26px] border border-white/10 bg-white/6 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
-                    <p className="text-lg font-semibold text-white">
-                      Adicionales y consumo
-                    </p>
-                    <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-300">
-                      Los adicionales se habilitan según el plan. Las campañas por
-                      WhatsApp funcionan bajo consumo y no vienen incluidas por defecto.
-                    </p>
-                    <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                      Los bloques mensuales incluidos y adicionales no son acumulables y
-                      deben utilizarse dentro del mes.
-                    </p>
+            <div className="mt-5 grid gap-3 rounded-[16px] border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-300 md:grid-cols-2 xl:grid-cols-4">
+              {[
+                ["7 dias gratis", "Prueba sin riesgos.", CalendarDays],
+                ["Sin tarjeta de credito", "Comienza en segundos.", Lock],
+                ["Cambia cuando quieras", "Upgrade, downgrade o cancela.", Zap],
+                ["Siempre seguro", "Tus datos estan protegidos.", ShieldCheck],
+              ].map(([title, text, Icon]) => {
+                const SafeIcon = Icon as typeof CalendarDays;
+                return (
+                  <div key={String(title)} className="flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/10 text-cyan-200">
+                      <SafeIcon className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="font-semibold text-white">{title as string}</p>
+                      <p>{text as string}</p>
+                    </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  <div className="flex flex-col items-end gap-2">
-                    <Link
-                      href="/planes/comparar"
-                      className="text-sm font-semibold text-indigo-300 underline underline-offset-4 transition hover:text-white hover:drop-shadow-[0_0_6px_rgba(99,102,241,0.6)]"
-                    >
-                      Ver cuadro comparativo de planes
-                    </Link>
+            <p className="mt-3 text-center text-sm text-slate-500">
+              Todos los planes incluyen actualizaciones constantes. Los precios no incluyen IVA.
+            </p>
+          </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        Selección actual
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-white">
+          <aside className="xl:sticky xl:top-5 xl:self-start">
+            <div className="overflow-hidden rounded-[18px] border border-white/12 bg-[#06101d]/90 shadow-[0_24px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl">
+              <div className="border-b border-white/10 p-5">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-300">
+                    <Sparkles className="h-4 w-4" />
+                  </span>
+                  <h2 className="text-lg font-semibold text-white">Tu seleccion</h2>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs text-slate-400">Plan seleccionado</p>
+                      <p className="mt-1 text-lg font-semibold text-[#24e0d0]">
                         {selectedPlan.name}
                       </p>
                     </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {supportsStaffExtra ? (
-                    <CompactExtraRow
-                      title={extraConfig.staff.title}
-                      shortText={extraConfig.staff.short}
-                      infoText={`Tu plan ahora cuenta con ${currentStaffTotal} profesionales y ${currentServicesTotal} servicios.`}
-                      value={staffExtras}
-                      onDecrease={() => decreaseExtra("staff")}
-                      onIncrease={() => increaseExtra("staff")}
-                      accent={getExtraAccent("staff")}
-                      icon={<Users className="h-5 w-5" />}
-                    />
-                  ) : null}
-
-                  {supportsReminderExtra ? (
-                    <CompactExtraRow
-                      title={extraConfig.reminders.title}
-                      shortText={extraConfig.reminders.short}
-                      infoText={`Tu plan ahora cuenta con ${currentReminderTotal} conversaciones de recordatorio.`}
-                      value={reminderExtras}
-                      onDecrease={() => decreaseExtra("reminders")}
-                      onIncrease={() => increaseExtra("reminders")}
-                      accent={getExtraAccent("reminders")}
-                      icon={<MessageCircle className="h-5 w-5" />}
-                    />
-                  ) : null}
-
-                  {supportsCampaignExtra ? (
-                    <CompactExtraRow
-                      title={extraConfig.campaigns.title}
-                      shortText={extraConfig.campaigns.short}
-                      infoText={`Llevas ${currentCampaignTotal} conversaciones de campañas WhatsApp seleccionadas como extra. No son acumulables y deben usarse dentro del mes.`}
-                      value={campaignExtras}
-                      onDecrease={() => decreaseExtra("campaigns")}
-                      onIncrease={() => increaseExtra("campaigns")}
-                      accent={getExtraAccent("campaigns")}
-                      icon={<Megaphone className="h-5 w-5" />}
-                    />
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="xl:sticky xl:top-6 xl:self-start">
-            <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/8 shadow-[0_28px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl">
-              <div
-                className={`border-b p-6 ${selectedPlan.borderClass} ${selectedPlan.softBgClass} bg-gradient-to-br ${selectedPlan.gradientClass}`}
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ${selectedPlan.accentClass}`}
-                  >
-                    <PlanIcon type={selectedPlan.icon} />
-                  </span>
-                  <div>
-                    <p className="text-xl font-semibold text-white">
-                      {selectedPlan.summaryTitle}
-                    </p>
-                    <p className="text-sm text-slate-300">
-                      {selectedPlan.summaryIntro}
-                    </p>
+                    <span className="text-cyan-300">
+                      <PlanIcon type={selectedPlan.icon} />
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-5">
                 {hasBillingContext && previewLoading ? (
-                  <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+                  <div className="mb-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
                     Calculando cambio de plan...
                   </div>
                 ) : null}
 
                 {hasBillingContext && previewError ? (
-                  <div className="mb-4 rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                  <div className="mb-4 rounded-xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
                     {previewError}
                   </div>
                 ) : null}
 
                 {hasBillingContext && !previewLoading && !previewError && previewType ? (
                   <div
-                    className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+                    className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
                       previewType === "same_plan"
                         ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
                         : previewType === "downgrade"
                         ? "border-amber-300/20 bg-amber-500/10 text-amber-100"
-                        : "border-sky-300/20 bg-sky-500/10 text-sky-100"
+                        : "border-cyan-300/20 bg-cyan-500/10 text-cyan-100"
                     }`}
                   >
                     {preview?.message ||
                       (previewType === "downgrade"
-                        ? "Este cambio quedará programado para el siguiente ciclo."
+                        ? "Este cambio quedara programado para el siguiente ciclo."
                         : previewType === "same_plan"
-                        ? "Ya estás en este plan."
-                        : "Este cambio se aplicará de inmediato.")}
+                        ? "Ya estas en este plan."
+                        : "Este cambio se aplicara de inmediato.")}
                   </div>
                 ) : null}
 
                 <div className="space-y-3">
+                  {hasBillingContext ? (
+                    <>
+                      <SummaryLine label="Plan actual" value={planNameFromKey(initialPlan)} />
+                      <SummaryLine label="Plan seleccionado" value={selectedPlan.name} />
+                    </>
+                  ) : null}
+                  <SummaryLine label={summaryBaseLabel} value={summaryBaseAmount} />
+                </div>
+
+                {previewType === "upgrade" ? (
+                  <div className="mt-4 space-y-3 rounded-xl border border-cyan-300/15 bg-cyan-400/8 p-4">
+                    <SummaryLine label="Dias restantes del ciclo" value={remainingDaysLabel} />
+                    <SummaryLine
+                      label="Credito proporcional plan actual"
+                      value={`- ${formatCLP(Number(preview?.credit || 0))}`}
+                    />
+                    <SummaryLine
+                      label="Cargo proporcional nuevo plan"
+                      value={formatCLP(Number(preview?.charge || 0))}
+                    />
+                  </div>
+                ) : null}
+
+                {previewType === "downgrade" ? (
+                  <div className="mt-4 rounded-xl border border-amber-300/15 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                    El downgrade comenzara el{" "}
+                    <span className="font-semibold">{billingEndLabel}</span>. Mantendras
+                    tu plan actual hasta esa fecha.
+                  </div>
+                ) : null}
+
+                <div className="mt-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-white">
+                      Add-ons seleccionados
+                    </span>
+                    <span className="rounded-full bg-violet-500/25 px-3 py-1 text-xs font-bold text-violet-100">
+                      {extraItems.length}
+                    </span>
+                  </div>
+
                   {extraItems.length === 0 ? (
-                    <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-300">
-                      Aún no has agregado adicionales.
+                    <div className="rounded-xl border border-white/8 bg-white/[0.035] px-4 py-3 text-sm text-slate-400">
+                      Aun no has agregado adicionales.
                     </div>
                   ) : (
-                    extraItems.map((item) => (
-                      <div
-                        key={item.label}
-                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-                      >
-                        <span className="text-sm text-slate-200">
-                          {item.label}
-                        </span>
-                        <span className="text-sm font-semibold text-white">
-                          {formatCLP(item.amount)}
-                        </span>
-                      </div>
-                    ))
+                    <div className="space-y-3">
+                      {extraItems.map((item) => (
+                        <div
+                          key={item.label}
+                          className="rounded-xl border border-white/8 bg-white/[0.035] px-4 py-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${extraConfig[item.key].iconClass}`}>
+                                {extraConfig[item.key].icon}
+                              </span>
+                              <div>
+                                <p className="text-sm font-semibold text-white">{item.label}</p>
+                                <p className="text-xs text-slate-400">
+                                  {item.count} {extraConfig[item.key].unitLabel}
+                                  {item.count === 1 ? "" : "es"}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-sm font-semibold text-white">
+                              {formatCLP(item.amount)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
 
-                {hasBillingContext ? (
-                  <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">Plan actual</span>
-                      <span className="text-sm font-semibold text-white">
-                        {planNameFromKey(initialPlan)}
-                      </span>
-                    </div>
+                <div className="mt-5 space-y-3 border-t border-white/10 pt-5">
+                  <SummaryLine label="Subtotal" value={formatCLP(summarySubtotal)} />
+                  <SummaryLine label="IVA (19%)" value={formatCLP(summaryIva)} />
+                  <SummaryLine label="Total mensual" value={formatCLP(summaryTotal)} strong />
+                </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">Plan seleccionado</span>
-                      <span className="text-sm font-semibold text-white">
-                        {selectedPlan.name}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">
-                        {previewType === "same_plan"
-                          ? "Plan base a pagar hoy"
-                          : previewType === "downgrade"
-                          ? "Cambio de plan hoy"
-                          : "Cambio inmediato de plan"}
-                      </span>
-                      <span className="text-sm font-semibold text-white">
-                        {previewType === "downgrade"
-                          ? "$0"
-                          : formatCLP(previewAmountToday)}
-                      </span>
-                    </div>
-
-                    {previewType === "upgrade" ? (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-300">
-                            Días restantes del ciclo
-                          </span>
-                          <span className="text-sm font-semibold text-white">
-                            {remainingDaysLabel}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-300">
-                            Crédito proporcional plan actual
-                          </span>
-                          <span className="text-sm font-semibold text-emerald-300">
-                            - {formatCLP(Number(preview?.credit || 0))}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-300">
-                            Cargo proporcional nuevo plan
-                          </span>
-                          <span className="text-sm font-semibold text-white">
-                            {formatCLP(Number(preview?.charge || 0))}
-                          </span>
-                        </div>
-
-                        <div className="rounded-2xl border border-sky-300/15 bg-sky-500/10 px-3 py-3 text-sm text-sky-100">
-                          Te quedan <span className="font-semibold">{remainingDaysLabel}</span>{" "}
-                          en tu ciclo actual. El crédito y el cobro se calcularon solo
-                          sobre ese período.
-                        </div>
-                      </>
-                    ) : null}
-
-                    {previewType === "downgrade" ? (
-                      <div className="rounded-2xl border border-amber-300/15 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
-                        El downgrade comenzará el{" "}
-                        <span className="font-semibold">{billingEndLabel}</span>.
-                        <div className="mt-1 text-xs text-amber-50/90">
-                          Mantendrás tu plan actual hasta esa fecha.
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">
-                        Adicionales seleccionados
-                      </span>
-                      <span className="text-sm font-semibold text-white">
-                        {extrasSubtotal > 0 ? formatCLP(extrasSubtotal) : "$0"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">IVA</span>
-                      <span className="text-sm font-semibold text-white">
-                        {payTodaySubtotal > 0 ? formatCLP(payTodayIva) : "$0"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                      <span className="text-sm font-semibold text-white">
-                        Pagar hoy
-                      </span>
-                      <span className="text-sm font-semibold text-emerald-300">
-                        {payTodaySubtotal > 0 ? formatCLP(payTodayTotal) : "$0"}
-                      </span>
-                    </div>
+                <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                  <div className="flex items-start gap-3">
+                    <Zap className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+                    <p className="text-sm leading-6 text-slate-300">
+                      {hasBillingContext
+                        ? previewType === "downgrade"
+                          ? "Seguiras con tu plan actual hasta el cierre del periodo."
+                          : previewType === "same_plan"
+                          ? "Tu plan base no se cobra de nuevo. Solo se suman adicionales visuales."
+                          : "Cobro inmediato con prorrateo por los dias restantes del ciclo actual."
+                        : "Referencia mensual con IVA. La contratacion final puede ajustarse al cerrar el pago."}
+                    </p>
                   </div>
-                ) : (
-                  <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">Plan seleccionado</span>
-                      <span className="text-sm font-semibold text-white">
-                        {selectedPlan.name}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">Valor mensual neto</span>
-                      <span className="text-sm font-semibold text-white">
-                        {selectedPlan.priceLabel}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">IVA del plan</span>
-                      <span className="text-sm font-semibold text-white">
-                        {formatCLP(publicPlanIva)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">
-                        Adicionales seleccionados
-                      </span>
-                      <span className="text-sm font-semibold text-white">
-                        {extrasSubtotal > 0 ? formatCLP(extrasSubtotal) : "$0"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">IVA adicionales</span>
-                      <span className="text-sm font-semibold text-white">
-                        {extrasSubtotal > 0 ? formatCLP(publicExtrasIva) : "$0"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                      <span className="text-sm font-semibold text-white">
-                        Referencia mensual total
-                      </span>
-                      <span className="text-sm font-semibold text-emerald-300">
-                        {formatCLP(publicReferenceTotal)}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 {applyError ? (
-                  <div className="mt-4 rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                  <div className="mt-4 rounded-xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
                     {applyError}
                   </div>
                 ) : null}
 
                 {applyOk ? (
-                  <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                  <div className="mt-4 rounded-xl border border-emerald-300/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
                     {applyOk}
                   </div>
                 ) : null}
@@ -1117,176 +1223,103 @@ function PlanesPageContent() {
                       type="button"
                       onClick={handleApplyPlanChange}
                       disabled={applying || previewLoading || !tenantId}
-                      className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-14 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {applying ? "Procesando..." : ctaLabel}
                     </button>
                   ) : (
                     <Link
                       href="/"
-                      className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 px-5 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_rgba(79,70,229,0.38)] transition hover:scale-[1.01] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_22px_50px_rgba(79,70,229,0.46)]"
+                      className="inline-flex h-14 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb]"
                     >
                       {ctaLabel}
                     </Link>
                   )}
 
                   {showTenantWarning ? (
-                    <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                    <div className="rounded-xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                       Falta <span className="font-semibold">tenant_id</span> en la URL
                       para aplicar el cambio real.
                     </div>
                   ) : null}
 
-                  {hasBillingContext ? (
-                    <p className="text-center text-xs leading-5 text-slate-400">
-                      {previewType === "downgrade"
-                        ? "Seguirás con tu plan actual hasta el cierre del período."
-                        : previewType === "same_plan"
-                        ? "Tu plan base no se cobra de nuevo. Solo se suman adicionales."
-                        : "El upgrade se activa de inmediato con prorrateo del período restante."}
-                    </p>
-                  ) : (
-                    <p className="text-center text-xs leading-5 text-slate-400">
-                      Selecciona un plan para revisar lo que incluye y su referencia mensual total con iva.
-                    </p>
-                  )}
-
                   {slug ? (
                     <Link
                       href={`/dashboard/${slug}/staff`}
-                      className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 text-sm font-medium text-white transition hover:bg-white/10"
+                      className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-white/10 bg-white/[0.035] px-5 text-sm font-semibold text-white transition hover:bg-white/8"
                     >
                       Volver al panel
                     </Link>
                   ) : null}
                 </div>
 
-                <div className="mt-5 rounded-[22px] border border-white/10 bg-white/5 p-4">
-                  <p className="text-sm font-semibold text-white">
-                    Qué incluye este plan
-                  </p>
-
+                <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                  <p className="text-sm font-semibold text-white">Que incluye este plan</p>
                   <div className="mt-4 space-y-3">
-                    {selectedPlan.features.map((feature) => (
+                    {selectedPlan.features.slice(0, 6).map((feature) => (
                       <div
-                        key={`${selectedPlan.key}-${feature.title}`}
+                        key={`${selectedPlan.key}-summary-${feature.title}`}
                         className="flex items-start gap-3"
                       >
                         <Check
-                          className={`mt-1 h-4 w-4 shrink-0 ${
-                            feature.highlight
-                              ? "text-violet-300"
-                              : selectedPlan.accentClass
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${
+                            feature.highlight ? "text-cyan-300" : selectedPlan.accentClass
                           }`}
                         />
-                        <div>
-                          <p
-                            className={`text-sm font-semibold ${
-                              feature.highlight ? "text-violet-200" : "text-white"
-                            }`}
-                          >
-                            {feature.title}
-                          </p>
-                          {feature.description ? (
-                            <p className="mt-1 text-sm leading-6 text-slate-300">
-                              {feature.description}
-                            </p>
-                          ) : null}
-                        </div>
+                        <span className="text-sm leading-5 text-slate-300">{feature.title}</span>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <IncludeRow
-                      label="Sucursales incluidas"
-                      value={selectedPlan.includedBranches}
+                  <div className="mt-4 space-y-2 rounded-xl border border-white/8 bg-black/20 px-4 py-3">
+                    <SummaryLine label="Sucursales incluidas" value={String(currentBranchTotal)} />
+                    <SummaryLine label="Profesionales incluidos" value={String(currentStaffTotal)} />
+                    <SummaryLine
+                      label="Campanas por email"
+                      value={selectedPlan.emailCampaignsIncluded ? "Incluidas" : "No incluidas"}
                     />
-                    <IncludeRow
-                      label="Profesionales incluidos"
-                      value={currentStaffTotal}
-                    />
-                    <IncludeRow
-                      label="Servicios incluidos"
-                      value={currentServicesTotal}
-                    />
-                    <IncludeRow
-                      label="Campañas por email"
+                    <SummaryLine
+                      label="Recordatorios WhatsApp"
                       value={
-                        selectedPlan.emailCampaignsIncluded
-                          ? "Incluidas"
-                          : "No incluidas"
+                        currentReminderTotal > 0 ? `${currentReminderTotal} / mes` : "No incluidos"
                       }
                     />
-                    <IncludeRow
-                      label="Recordatorios por WhatsApp"
-                      value={
-                        selectedPlan.includedReminderConversations > 0
-                          ? `${selectedPlan.includedReminderConversations} / mes`
-                          : "No incluidos"
-                      }
-                    />
-                    <IncludeRow
-                      label="Respuestas por WhatsApp"
+                    <SummaryLine
+                      label="Respuestas WhatsApp"
                       value={
                         selectedPlan.includedWhatsappResponseConversations > 0
                           ? `${selectedPlan.includedWhatsappResponseConversations} / mes`
                           : "No incluidas"
                       }
                     />
-                    <IncludeRow
-                      label="Campañas por WhatsApp"
+                    <SummaryLine
+                      label="Campanas WhatsApp"
                       value={
-                        supportsCampaignExtra
-                          ? "Disponibles como adicional"
+                        currentCampaignTotal > 0
+                          ? `${currentCampaignTotal} conversaciones`
+                          : supportsCampaignExtra
+                          ? "Disponible como adicional"
                           : "No incluidas"
                       }
                     />
-                    <IncludeRow
-                      label="IA integrada en WhatsApp"
-                      value={
-                        selectedPlan.key === "vip"
-                          ? "Incluida para responder y derivar a reserva"
-                          : selectedPlan.key === "platinum"
-                          ? "Incluida para responder, seguir y automatizar"
-                          : "No incluida"
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-[22px] border border-white/10 bg-white/5 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-slate-200">
-                      <Building2 className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-white">
-                        Multi-sucursal incluida
-                      </p>
-                      <p className="text-sm text-slate-300">
-                        Hasta {selectedPlan.includedBranches} sucursal
-                        {selectedPlan.includedBranches === 1 ? "" : "es"}.
-                      </p>
-                    </div>
                   </div>
                 </div>
 
                 {hasBillingContext && previewType === "downgrade" ? (
-                  <div className="mt-5 rounded-[22px] border border-amber-300/20 bg-amber-500/10 p-4">
+                  <div className="mt-5 rounded-xl border border-amber-300/20 bg-amber-500/10 p-4">
                     <p className="text-sm font-semibold text-amber-100">
                       Importante para el downgrade
                     </p>
                     <p className="mt-2 text-sm leading-6 text-amber-50/90">
-                      Antes de la fecha de cambio, el panel deberá permitirte elegir
-                      qué profesionales, servicios o sucursales quieres mantener activos
-                      dentro del nuevo límite.
+                      Antes de la fecha de cambio, el panel debera permitirte elegir
+                      que profesionales o sucursales quieres mantener activos dentro
+                      del nuevo limite.
                     </p>
                   </div>
                 ) : null}
               </div>
             </div>
-          </div>
+          </aside>
         </div>
       </section>
     </main>
