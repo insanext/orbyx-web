@@ -483,6 +483,12 @@ next_control_custom_unit: "days",
     };
   }
 
+  function getAppointmentInteractionClass(selected: boolean) {
+    return selected
+      ? "relative z-20 scale-[1.02] cursor-pointer shadow-2xl"
+      : "relative z-0 cursor-pointer hover:z-10 hover:scale-[1.01] hover:-translate-y-0.5";
+  }
+
   function formatLongDate(dateString: string) {
     const text = new Date(dateString).toLocaleDateString("es-CL", {
       weekday: "long",
@@ -700,38 +706,38 @@ function generateSlotsFromWindows(
     const visualStatus = getVisualStatus(appt);
 
     if (selected) {
-      return "border-cyan-300/80 bg-[linear-gradient(135deg,rgba(8,47,73,0.70),rgba(15,23,42,0.82))] text-white shadow-[0_0_0_1px_rgba(34,211,238,0.24),0_0_22px_-8px_rgba(34,211,238,0.95)]";
+      return "border-cyan-200 bg-[linear-gradient(135deg,rgba(14,116,144,0.92),rgba(8,145,178,0.68))] text-white shadow-[0_0_0_1px_rgba(103,232,249,0.34),0_0_26px_-6px_rgba(34,211,238,0.95),0_14px_26px_-18px_rgba(8,47,73,0.9)]";
     }
 
     if (visualStatus === "pending_close") {
-      return "border-red-400/75 bg-[linear-gradient(135deg,rgba(127,29,29,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(248,113,113,0.98)] hover:border-red-300";
+      return "border-red-300/80 bg-[linear-gradient(135deg,rgba(127,29,29,0.90),rgba(220,38,38,0.58))] text-white shadow-[0_0_18px_-10px_rgba(248,113,113,0.85)] hover:border-red-200 hover:shadow-[0_0_24px_-9px_rgba(248,113,113,0.95)]";
     }
 
     if (visualStatus === "completed") {
-      return "border-emerald-400/75 bg-[linear-gradient(135deg,rgba(6,95,70,0.62),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(52,211,153,0.98)] hover:border-emerald-300";
+      return "border-emerald-300/80 bg-[linear-gradient(135deg,rgba(6,95,70,0.90),rgba(16,185,129,0.56))] text-white shadow-[0_0_18px_-10px_rgba(52,211,153,0.85)] hover:border-emerald-200 hover:shadow-[0_0_24px_-9px_rgba(52,211,153,0.95)]";
     }
 
     if (visualStatus === "no_show") {
-      return "border-slate-400/65 bg-[linear-gradient(135deg,rgba(71,85,105,0.66),rgba(15,23,42,0.76))] text-white shadow-[0_0_18px_-12px_rgba(148,163,184,0.9)] opacity-90 hover:border-slate-300";
+      return "border-slate-300/65 bg-[linear-gradient(135deg,rgba(51,65,85,0.88),rgba(100,116,139,0.54))] text-white shadow-[0_0_16px_-11px_rgba(148,163,184,0.72)] opacity-90 hover:border-slate-200 hover:shadow-[0_0_22px_-10px_rgba(148,163,184,0.82)]";
     }
 
     if (visualStatus === "canceled") {
-      return "border-slate-500/60 bg-[linear-gradient(135deg,rgba(51,65,85,0.62),rgba(15,23,42,0.76))] text-slate-200 opacity-80 hover:border-slate-400";
+      return "border-slate-400/60 bg-[linear-gradient(135deg,rgba(30,41,59,0.90),rgba(100,116,139,0.45))] text-slate-100 opacity-80 hover:border-slate-300 hover:shadow-[0_0_20px_-11px_rgba(148,163,184,0.7)]";
     }
 
     if (visualStatus === "rescheduled") {
-      return "border-violet-400/75 bg-[linear-gradient(135deg,rgba(91,33,182,0.62),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(167,139,250,0.98)] hover:border-violet-300";
+      return "border-violet-300/80 bg-[linear-gradient(135deg,rgba(91,33,182,0.90),rgba(139,92,246,0.56))] text-white shadow-[0_0_18px_-10px_rgba(167,139,250,0.85)] hover:border-violet-200 hover:shadow-[0_0_24px_-9px_rgba(167,139,250,0.95)]";
     }
 
     if (visualStatus === "pending") {
-      return "border-orange-400/75 bg-[linear-gradient(135deg,rgba(154,52,18,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(251,146,60,0.98)] hover:border-orange-300";
+      return "border-orange-300/80 bg-[linear-gradient(135deg,rgba(154,52,18,0.90),rgba(245,158,11,0.56))] text-white shadow-[0_0_18px_-10px_rgba(251,146,60,0.85)] hover:border-orange-200 hover:shadow-[0_0_24px_-9px_rgba(251,146,60,0.95)]";
     }
 
     if (visualStatus === "in_progress") {
-      return "border-cyan-300/80 bg-[linear-gradient(135deg,rgba(8,89,117,0.66),rgba(15,23,42,0.72))] text-white shadow-[0_0_22px_-10px_rgba(34,211,238,0.98)] hover:border-cyan-200";
+      return "border-cyan-200/85 bg-[linear-gradient(135deg,rgba(14,116,144,0.92),rgba(34,211,238,0.54))] text-white shadow-[0_0_20px_-9px_rgba(34,211,238,0.90)] hover:border-cyan-100 hover:shadow-[0_0_26px_-8px_rgba(34,211,238,0.98)]";
     }
 
-    return "border-blue-400/75 bg-[linear-gradient(135deg,rgba(30,64,175,0.62),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(96,165,250,0.98)] hover:border-blue-300";
+    return "border-blue-300/80 bg-[linear-gradient(135deg,rgba(30,64,175,0.90),rgba(59,130,246,0.56))] text-white shadow-[0_0_18px_-10px_rgba(96,165,250,0.85)] hover:border-blue-200 hover:shadow-[0_0_24px_-9px_rgba(96,165,250,0.95)]";
   }
 
   function getAppointmentGroupKey(appt: Appointment) {
@@ -839,7 +845,7 @@ function generateSlotsFromWindows(
   ): { card: string; icon: string; stateBadge: string; countBadge: string } {
     if (selected) {
       return {
-        card: "border-cyan-300/80 bg-[linear-gradient(135deg,rgba(8,47,73,0.70),rgba(15,23,42,0.82))] text-white shadow-[0_0_0_1px_rgba(34,211,238,0.24),0_0_22px_-8px_rgba(34,211,238,0.95)]",
+        card: "border-cyan-200 bg-[linear-gradient(135deg,rgba(14,116,144,0.92),rgba(8,145,178,0.68))] text-white shadow-[0_0_0_1px_rgba(103,232,249,0.34),0_0_26px_-6px_rgba(34,211,238,0.95),0_14px_26px_-18px_rgba(8,47,73,0.9)]",
         icon: "text-white",
         stateBadge: "border-white/20 bg-white/10 text-white",
         countBadge: "border-white/20 bg-white/10 text-white",
@@ -851,37 +857,37 @@ function generateSlotsFromWindows(
       { card: string; icon: string; stateBadge: string; countBadge: string }
     > = {
       scheduled: {
-        card: "border-violet-400/75 bg-[linear-gradient(135deg,rgba(91,33,182,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(167,139,250,0.98)] hover:border-violet-300",
+        card: "border-violet-300/80 bg-[linear-gradient(135deg,rgba(91,33,182,0.90),rgba(139,92,246,0.56))] text-white shadow-[0_0_18px_-10px_rgba(167,139,250,0.85)] hover:border-violet-200 hover:shadow-[0_0_24px_-9px_rgba(167,139,250,0.95)]",
         icon: "text-violet-200",
         stateBadge: "border-violet-300/30 bg-violet-400/10 text-violet-100",
         countBadge: "border-violet-300/35 bg-violet-400/15 text-violet-50",
       },
       pending: {
-        card: "border-red-400/75 bg-[linear-gradient(135deg,rgba(127,29,29,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(248,113,113,0.98)] hover:border-red-300",
+        card: "border-red-300/80 bg-[linear-gradient(135deg,rgba(127,29,29,0.90),rgba(220,38,38,0.58))] text-white shadow-[0_0_18px_-10px_rgba(248,113,113,0.85)] hover:border-red-200 hover:shadow-[0_0_24px_-9px_rgba(248,113,113,0.95)]",
         icon: "text-red-200",
         stateBadge: "border-red-300/30 bg-red-400/10 text-red-100",
         countBadge: "border-red-300/35 bg-red-400/15 text-red-50",
       },
       partial: {
-        card: "border-orange-400/75 bg-[linear-gradient(135deg,rgba(154,52,18,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(251,146,60,0.98)] hover:border-orange-300",
+        card: "border-orange-300/80 bg-[linear-gradient(135deg,rgba(154,52,18,0.90),rgba(245,158,11,0.56))] text-white shadow-[0_0_18px_-10px_rgba(251,146,60,0.85)] hover:border-orange-200 hover:shadow-[0_0_24px_-9px_rgba(251,146,60,0.95)]",
         icon: "text-orange-200",
         stateBadge: "border-orange-300/30 bg-orange-400/10 text-orange-100",
         countBadge: "border-orange-300/35 bg-orange-400/15 text-orange-50",
       },
       closed: {
-        card: "border-emerald-400/75 bg-[linear-gradient(135deg,rgba(6,95,70,0.62),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(52,211,153,0.98)] hover:border-emerald-300",
+        card: "border-emerald-300/80 bg-[linear-gradient(135deg,rgba(6,95,70,0.90),rgba(16,185,129,0.56))] text-white shadow-[0_0_18px_-10px_rgba(52,211,153,0.85)] hover:border-emerald-200 hover:shadow-[0_0_24px_-9px_rgba(52,211,153,0.95)]",
         icon: "text-emerald-200",
         stateBadge: "border-emerald-300/30 bg-emerald-400/10 text-emerald-100",
         countBadge: "border-emerald-300/35 bg-emerald-400/15 text-emerald-50",
       },
       canceled: {
-        card: "border-slate-500/60 bg-[linear-gradient(135deg,rgba(51,65,85,0.62),rgba(15,23,42,0.76))] text-slate-200 opacity-85 hover:border-slate-400",
+        card: "border-slate-400/60 bg-[linear-gradient(135deg,rgba(30,41,59,0.90),rgba(100,116,139,0.45))] text-slate-100 opacity-85 hover:border-slate-300 hover:shadow-[0_0_20px_-11px_rgba(148,163,184,0.7)]",
         icon: "text-slate-300",
         stateBadge: "border-slate-300/25 bg-slate-400/10 text-slate-200",
         countBadge: "border-slate-300/25 bg-slate-400/10 text-slate-200",
       },
       in_progress: {
-        card: "border-cyan-300/80 bg-[linear-gradient(135deg,rgba(8,89,117,0.66),rgba(15,23,42,0.72))] text-white shadow-[0_0_22px_-10px_rgba(34,211,238,0.98)] hover:border-cyan-200",
+        card: "border-cyan-200/85 bg-[linear-gradient(135deg,rgba(14,116,144,0.92),rgba(34,211,238,0.54))] text-white shadow-[0_0_20px_-9px_rgba(34,211,238,0.90)] hover:border-cyan-100 hover:shadow-[0_0_26px_-8px_rgba(34,211,238,0.98)]",
         icon: "text-cyan-200",
         stateBadge: "border-cyan-300/30 bg-cyan-400/10 text-cyan-100",
         countBadge: "border-cyan-300/35 bg-cyan-400/15 text-cyan-50",
@@ -3614,9 +3620,11 @@ onClick={() => {
                                             setHoveredTimeKey("");
                                             handleAppointmentMouseLeave();
                                           }}
-                                          className={`w-full overflow-hidden rounded-lg border py-0.5 text-left transition ${
+                                          className={`w-full overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
                                             isGroupSlot ? "px-1" : "px-1.5"
-                                          } ${
+                                          } ${getAppointmentInteractionClass(
+                                            isSelected
+                                          )} ${
                                             isGroupSlot && groupStyles
                                               ? groupStyles.card
                                               : getCardClass(appt, isSelected)
@@ -4022,7 +4030,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     setHoveredTimeKey("");
                                     handleAppointmentMouseLeave();
                                   }}
-                                  className={`w-full overflow-hidden rounded-lg border px-1.5 py-0.5 text-left transition ${getCardClass(
+                                  className={`w-full overflow-hidden rounded-lg border px-1.5 py-0.5 text-left transition duration-200 ease-out ${getAppointmentInteractionClass(
+                                    isSelected
+                                  )} ${getCardClass(
                                     appt,
                                     isSelected
                                   )}`}
@@ -4301,9 +4311,11 @@ const appt = slotGroups[0]?.[0];
                                   setHoveredTimeKey("");
                                   handleAppointmentMouseLeave();
                                 }}
-                                className={`w-full overflow-hidden rounded-lg border py-0.5 text-left transition ${
+                                className={`w-full overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
                                   isGroupSlot ? "px-1" : "px-1.5"
-                                } ${
+                                } ${getAppointmentInteractionClass(
+                                  isSelected
+                                )} ${
                                   isGroupSlot && groupStyles
                                     ? groupStyles.card
                                     : getCardClass(appt, isSelected)
