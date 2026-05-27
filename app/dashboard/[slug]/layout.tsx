@@ -11,9 +11,15 @@ import {
   Users,
   GitBranch,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Megaphone,
   CreditCard,
+  FileText,
+  HelpCircle,
   Menu,
+  Settings,
+  Store,
   X,
 } from "lucide-react";
 import clsx from "clsx";
@@ -85,6 +91,37 @@ const navItems = [
   },
 ];
 
+const navSections = [
+  {
+    title: "Principal",
+    items: [
+      { label: "Agenda", href: "/agenda", icon: CalendarDays },
+      { label: "Clientes", href: "/customers", icon: Users },
+      { label: "Campañas", href: "/campaigns", icon: Megaphone },
+      { label: "Servicios", href: "/services", icon: Layers3 },
+      { label: "Staff", href: "/staff", icon: Users },
+      { label: "Sucursales", href: "/branches", icon: Store },
+      { label: "Negocio", href: "/business", icon: Briefcase },
+      { label: "Billing", href: "/billing", icon: CreditCard },
+    ],
+  },
+  {
+    title: "Análisis",
+    items: [
+      { label: "Métricas", href: "", icon: BarChart3 },
+      { label: "Reportes", href: "", icon: FileText },
+    ],
+  },
+  {
+    title: "Soporte",
+    items: [{ label: "Ayuda", href: "", icon: HelpCircle }],
+  },
+  {
+    title: "Ajustes",
+    items: [{ label: "Configuración", href: "/business", icon: Settings }],
+  },
+];
+
 export default function DashboardLayout({
   children,
 }: {
@@ -100,10 +137,12 @@ export default function DashboardLayout({
     "";
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
+  const [businessName, setBusinessName] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [branchesError, setBranchesError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
@@ -165,6 +204,7 @@ export default function DashboardLayout({
         }
 
         const currentTenantId = businessData.business.id;
+        setBusinessName(businessData.business.name || slug);
 
         const branchesRes = await fetch(
           `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
@@ -237,13 +277,24 @@ export default function DashboardLayout({
   const showBranchSelector = branches.length > 1;
   const hasSingleBranch = branches.length === 1;
 
-  const sidebarBg = "var(--bg-card)";
-  const sidebarBorder = "var(--border-color)";
-  const softBg = "var(--bg-soft)";
-  const cardBg = "var(--bg-card)";
+  const isNocturno = theme === "nocturno";
+  const sidebarBg = isNocturno
+    ? "linear-gradient(180deg, rgba(15,23,42,0.98), rgba(2,6,23,0.98))"
+    : "linear-gradient(180deg, #f3f7ff, #eaf1ff 46%, #eef4ff)";
+  const sidebarBorder = isNocturno
+    ? "rgba(56,189,248,0.20)"
+    : "rgba(59,130,246,0.18)";
+  const softBg = isNocturno
+    ? "rgba(15,23,42,0.72)"
+    : "rgba(220,232,255,0.72)";
+  const cardBg = isNocturno
+    ? "rgba(15,23,42,0.78)"
+    : "rgba(243,247,255,0.86)";
   const textMain = "var(--text-main)";
   const textMuted = "var(--text-muted)";
-  const mainBg = "var(--bg-main)";
+  const mainBg = isNocturno
+    ? "var(--bg-main)"
+    : "linear-gradient(180deg, #f8fbff, #eef4ff)";
 
   function BranchSelectorBlock({ compact = false }: { compact?: boolean }) {
     if (loadingBranches) {
@@ -339,87 +390,104 @@ export default function DashboardLayout({
     );
   }
 
-  function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  function NavLinks({
+    onNavigate,
+    collapsed = false,
+  }: {
+    onNavigate?: () => void;
+    collapsed?: boolean;
+  }) {
     return (
-      <nav className="space-y-1.5">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const fullHref = `/dashboard/${slug}${item.href}`;
-          const active = isItemActive(fullHref);
-          const hasAccent = Boolean(item.accent);
-
-          const itemBackground = active
-            ? "var(--text-main)"
-            : hasAccent
-            ? "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(168,85,247,0.06))"
-            : "transparent";
-
-          const itemBorder = !active && hasAccent
-            ? "1px solid rgba(37,99,235,0.14)"
-            : "1px solid transparent";
-
-          const itemColor = active ? "var(--bg-card)" : textMuted;
-
-          const iconBackground = active
-            ? "rgba(255,255,255,0.14)"
-            : hasAccent
-            ? "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(168,85,247,0.14))"
-            : softBg;
-
-          const iconColor = active
-            ? "var(--bg-card)"
-            : hasAccent
-            ? "#2563eb"
-            : textMuted;
-
-          const iconShadow =
-            !active && hasAccent
-              ? "0 8px 18px rgba(37,99,235,0.12)"
-              : "none";
-
-          return (
-            <Link
-              key={item.label}
-              href={fullHref}
-              onClick={onNavigate}
-              className={clsx(
-                "group flex items-center justify-between rounded-2xl px-3.5 py-3 text-sm font-medium transition-all",
-                active ? "shadow-sm" : ""
-              )}
-              style={{
-                background: itemBackground,
-                color: itemColor,
-                border: itemBorder,
-                boxShadow:
-                  !active && hasAccent
-                    ? "0 8px 24px rgba(37,99,235,0.04)"
-                    : "none",
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex h-9 w-9 items-center justify-center rounded-xl transition-all"
-                  style={{
-                    background: iconBackground,
-                    color: iconColor,
-                    boxShadow: iconShadow,
-                  }}
-                >
-                  <Icon size={18} />
-                </div>
-                <span>{item.label}</span>
+      <nav className={clsx("space-y-3", collapsed && "space-y-2")}>
+        {navSections.map((section) => (
+          <div key={section.title}>
+            {!collapsed ? (
+              <div
+                className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                style={{ color: textMuted }}
+              >
+                {section.title}
               </div>
-
-              <ChevronRight
-                size={16}
-                className={clsx(
-                  "transition-opacity",
-                  active ? "opacity-100" : "opacity-0 group-hover:opacity-50"
-                )}
+            ) : section.title !== "Principal" ? (
+              <div
+                className="mx-auto mb-2 h-px w-10"
+                style={{ background: sidebarBorder }}
               />
-            </Link>
-          );
-        })}
+            ) : null}
+
+            <div className="space-y-1.5">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const fullHref = `/dashboard/${slug}${item.href}`;
+                const active =
+                  item.label === "Métricas"
+                    ? isItemActive(fullHref)
+                    : item.href
+                    ? isItemActive(fullHref)
+                    : false;
+
+                return (
+                  <Link
+                    key={`${section.title}-${item.label}`}
+                    href={fullHref}
+                    title={collapsed ? item.label : undefined}
+                    onClick={onNavigate}
+                    className={clsx(
+                      "group flex items-center rounded-xl border text-sm font-semibold transition-all duration-200 hover:!border-cyan-300/30 hover:!bg-blue-500/10",
+                      collapsed
+                        ? "h-11 w-11 justify-center p-0"
+                        : "h-11 justify-between px-3",
+                      active
+                        ? "translate-x-0"
+                        : "hover:translate-x-0.5"
+                    )}
+                    style={{
+                      background: active
+                        ? "linear-gradient(135deg, rgb(79 70 229), rgb(37 99 235) 45%, rgb(14 165 233))"
+                        : "transparent",
+                      borderColor: active
+                        ? "rgba(103,232,249,0.58)"
+                        : "rgba(59,130,246,0)",
+                      color: active ? "white" : textMuted,
+                      boxShadow: active
+                        ? "0 0 0 1px rgba(103,232,249,0.16), 0 14px 30px -18px rgba(14,165,233,0.95), inset 0 1px 0 rgba(255,255,255,0.18)"
+                        : "none",
+                    }}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:text-cyan-300"
+                        style={{
+                          background: active
+                            ? "rgba(255,255,255,0.12)"
+                            : isNocturno
+                            ? "rgba(15,23,42,0.36)"
+                            : "rgba(220,232,255,0.62)",
+                          color: active ? "white" : "currentColor",
+                        }}
+                      >
+                        <Icon size={17} />
+                      </div>
+                      {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                    </div>
+
+                    {!collapsed ? (
+                      <ChevronRight
+                        size={15}
+                        className={clsx(
+                          "transition-opacity",
+                          active
+                            ? "opacity-90"
+                            : "opacity-0 group-hover:opacity-45"
+                        )}
+                      />
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
     );
   }
@@ -428,21 +496,25 @@ export default function DashboardLayout({
     <div className="min-h-screen" style={{ background: mainBg }}>
       <div className="flex min-h-screen">
         <aside
-          className="hidden w-72 shrink-0 border-r xl:block"
+          className={clsx(
+            "hidden shrink-0 border-r transition-[width] duration-200 xl:block",
+            sidebarCollapsed ? "w-20" : "w-72"
+          )}
           style={{
             background: sidebarBg,
             borderColor: sidebarBorder,
           }}
         >
-          <div className="sticky top-0 flex h-screen flex-col overflow-y-auto">
+          <div className="sticky top-0 flex h-screen flex-col overflow-y-auto px-3 py-4">
             <div
-              className="border-b px-6 py-6"
+              className="mb-4 flex items-center justify-between rounded-2xl border p-3"
               style={{ borderColor: sidebarBorder }}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 text-sm font-semibold text-white shadow-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[conic-gradient(from_180deg,rgb(14,165,233),rgb(79,70,229),rgb(34,211,238),rgb(14,165,233))] text-sm font-semibold text-white shadow-[0_12px_28px_-18px_rgba(14,165,233,0.9)]">
                   O
                 </div>
+                {!sidebarCollapsed ? (
                 <div>
                   <h1
                     className="text-lg font-semibold tracking-tight"
@@ -454,10 +526,104 @@ export default function DashboardLayout({
                     Panel de negocio
                   </p>
                 </div>
+                ) : null}
               </div>
+              <button
+                type="button"
+                aria-label={sidebarCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+                onClick={() => setSidebarCollapsed((value) => !value)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border transition hover:shadow-[0_0_18px_-10px_rgba(34,211,238,0.95)]"
+                style={{
+                  background: softBg,
+                  borderColor: sidebarBorder,
+                  color: textMain,
+                }}
+              >
+                {sidebarCollapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
+              </button>
             </div>
 
-            <div className="px-4 pt-5">
+            <div className={clsx("flex-1", sidebarCollapsed ? "px-1" : "px-1")}>
+              <NavLinks collapsed={sidebarCollapsed} />
+            </div>
+
+            <div className="mt-auto space-y-3">
+              {!sidebarCollapsed ? (
+                <>
+                  <div
+                    className="rounded-2xl border px-3 py-2.5"
+                    style={{ background: softBg, borderColor: sidebarBorder }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.75)]" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-medium" style={{ color: textMuted }}>
+                          Sucursal activa
+                        </p>
+                        <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
+                          {selectedBranchName || branches[0]?.name || "Sin sucursal"}
+                        </p>
+                        <p className="truncate text-xs" style={{ color: textMuted }}>
+                          Casa Matriz
+                        </p>
+                      </div>
+                      <ChevronRight className="ml-auto shrink-0" size={16} style={{ color: textMuted }} />
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/dashboard/${slug}`}
+                    className="group flex items-center gap-3 rounded-2xl border px-3 py-3 transition-all hover:translate-x-0.5"
+                    style={{ background: softBg, borderColor: sidebarBorder, color: textMain }}
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgb(37,99,235),rgb(14,165,233))] text-white shadow-[0_12px_24px_-18px_rgba(14,165,233,0.95)]">
+                      <HelpCircle size={17} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">¿Necesitas ayuda?</p>
+                      <p className="truncate text-xs" style={{ color: textMuted }}>Centro de ayuda y soporte</p>
+                    </div>
+                    <ChevronRight className="ml-auto transition-transform group-hover:translate-x-0.5" size={17} />
+                  </Link>
+
+                  <div
+                    className="flex items-center gap-3 rounded-2xl border px-3 py-3"
+                    style={{ background: cardBg, borderColor: sidebarBorder }}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(14,165,233),rgb(79,70,229))] text-xs font-bold text-white">
+                      {businessName
+                        ? businessName.slice(0, 2).toUpperCase()
+                        : slug.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
+                        {businessName || slug || "Usuario Orbyx"}
+                      </p>
+                      <p className="truncate text-xs" style={{ color: textMuted }}>
+                        Administrador
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-px w-10" style={{ background: sidebarBorder }} />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border text-emerald-400" title={selectedBranchName || "Sucursal activa"} style={{ background: softBg, borderColor: sidebarBorder }}>
+                    <Store size={18} />
+                  </div>
+                  <Link href={`/dashboard/${slug}`} title="Ayuda" className="flex h-11 w-11 items-center justify-center rounded-xl border transition hover:shadow-[0_0_18px_-10px_rgba(34,211,238,0.95)]" style={{ background: softBg, borderColor: sidebarBorder, color: textMain }}>
+                    <HelpCircle size={18} />
+                  </Link>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(14,165,233),rgb(79,70,229))] text-xs font-bold text-white" title={businessName || slug}>
+                    {businessName
+                      ? businessName.slice(0, 2).toUpperCase()
+                      : slug.slice(0, 2).toUpperCase()}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="hidden">
               {loadingBranches ? (
                 <div
                   className="rounded-3xl border p-4 text-sm"
@@ -540,7 +706,7 @@ export default function DashboardLayout({
               )}
             </div>
 
-            <div className="px-4 py-5">
+            <div className="hidden">
               <div
                 className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.18em]"
                 style={{ color: textMuted }}
@@ -629,7 +795,7 @@ export default function DashboardLayout({
               </nav>
             </div>
 
-            <div className="mt-auto p-4">
+            <div className="hidden">
               <div
                 className="rounded-3xl border p-4"
                 style={{
