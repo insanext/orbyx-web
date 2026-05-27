@@ -119,6 +119,58 @@ const subtypeFieldKeys = new Set([
   "observations",
 ]);
 
+const lockedBookingFieldKeys = new Set([
+  "name",
+  "phone",
+  "email",
+  "pet_name",
+  "pet_species",
+]);
+
+const configurableBookingFieldKeys = new Set([
+  "rut",
+  "address",
+  "company",
+  "visit_reason",
+]);
+
+const configurableBookingFields: BookingField[] = [
+  { key: "rut", label: "RUT", enabled: false, required: false },
+  { key: "address", label: "Dirección", enabled: false, required: false },
+  { key: "company", label: "Empresa", enabled: false, required: false },
+  {
+    key: "visit_reason",
+    label: "Motivo de consulta",
+    enabled: false,
+    required: false,
+  },
+];
+
+function normalizeBookingFieldsConfig(fields?: unknown): BookingField[] {
+  const savedFields = Array.isArray(fields) ? fields : [];
+
+  return configurableBookingFields.map((baseField) => {
+    const savedField = savedFields.find((item) => {
+      if (!item || typeof item !== "object") return false;
+      return (item as { key?: unknown }).key === baseField.key;
+    }) as Partial<BookingField> | undefined;
+
+    const enabled =
+      typeof savedField?.enabled === "boolean"
+        ? savedField.enabled
+        : baseField.enabled;
+
+    return {
+      ...baseField,
+      enabled,
+      required:
+        enabled && typeof savedField?.required === "boolean"
+          ? savedField.required
+          : false,
+    };
+  }).filter((field) => configurableBookingFieldKeys.has(field.key));
+}
+
 
 function formatDate(date: Date) {
   const local = new Date(date);
@@ -474,7 +526,9 @@ const nextAvailableDays = useMemo(() => {
 }, [nextAvailableSlots]);
 
   const showBranchSelector = branches.length > 1;
-  const visibleBookingFields = bookingFields.filter((field) => field.enabled);
+  const visibleBookingFields = bookingFields.filter(
+    (field) => field.enabled && !lockedBookingFieldKeys.has(field.key)
+  );
   const visibleSubtypeBookingFields = useMemo(() => {
     if (
       business?.business_category !== "generic" ||
@@ -700,11 +754,9 @@ const nextAvailableDays = useMemo(() => {
         setSelectedBranchId(initialBranchId);
         setServices(initialServices);
 
-        const config = Array.isArray(data.business?.booking_fields_config)
-          ? data.business.booking_fields_config
-          : [];
-
-        setBookingFields(config);
+        setBookingFields(
+          normalizeBookingFieldsConfig(data.business?.booking_fields_config)
+        );
       } catch (error) {
         console.error("Error cargando página pública:", error);
         setBusiness(null);
@@ -1165,8 +1217,10 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
       setSelectedPetId("");
       setPets([]);
-    } catch (error: any) {
-      setSubmitError(error?.message || "No se pudo crear la reserva.");
+    } catch (error: unknown) {
+      setSubmitError(
+        error instanceof Error ? error.message : "No se pudo crear la reserva."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -1722,7 +1776,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                   <div className="absolute left-0 top-14 z-40 w-[310px] overflow-hidden rounded-[26px] border border-slate-200 bg-white p-3 shadow-[0_28px_90px_-38px_rgba(15,23,42,0.55)] [&_.react-calendar]:w-full [&_.react-calendar]:max-w-full [&_.react-calendar]:border-0">
                     <Calendar
                       minDate={new Date()}
-                      onChange={(value: any) => {
+                      onChange={(value: unknown) => {
                         const picked = Array.isArray(value) ? value[0] : value;
                         if (!picked) return;
                         const nextPickedDate = new Date(picked);
@@ -2215,22 +2269,25 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
 
                   <div className="mt-4 grid gap-2.5 md:mt-6 md:grid-cols-2 md:gap-3">
                     <input
-                      placeholder="Nombre y apellido"
+                      placeholder="Nombre completo *"
+                      required
                       value={customerData.name || ""}
                       onChange={(e) => updateCustomerField("name", e.target.value)}
                       className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
                     />
 
                     <input
-                      placeholder="Teléfono"
+                      placeholder="Teléfono *"
+                      required
                       value={customerData.phone || ""}
                       onChange={(e) => updateCustomerField("phone", e.target.value)}
                       className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
                     />
 
                     <input
-                      placeholder="Email"
+                      placeholder="Correo electrónico *"
                       type="email"
+                      required
                       value={customerData.email || ""}
                       onChange={(e) => updateCustomerField("email", e.target.value)}
                       className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:h-12 md:rounded-2xl md:px-4"
@@ -2350,7 +2407,8 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
 
                         <div className="grid gap-3 md:grid-cols-2">
                           <input
-                            placeholder="Nombre de la mascota"
+                            placeholder="Nombre de la mascota *"
+                            required
                             value={customerData.pet_name || ""}
                             onChange={(e) =>
                               updateCustomerField("pet_name", e.target.value)
@@ -2360,7 +2418,8 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                           />
 
                           <input
-                            placeholder="Especie (perro, gato, etc)"
+                            placeholder="Especie *"
+                            required
                             value={customerData.pet_species || ""}
                             onChange={(e) =>
                               updateCustomerField("pet_species", e.target.value)
@@ -2395,6 +2454,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                 <select
                                   key={field.key}
                                   value={customerData[field.key] || ""}
+                                  required={field.required}
                                   onChange={(e) =>
                                     updateCustomerField(field.key, e.target.value)
                                   }
@@ -2423,6 +2483,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                     : field.label
                                 }
                                 value={customerData[field.key] || ""}
+                                required={field.required}
                                 onChange={(e) =>
                                   updateCustomerField(field.key, e.target.value)
                                 }
@@ -2437,6 +2498,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                     : field.label
                                 }
                                 value={customerData[field.key] || ""}
+                                required={field.required}
                                 onChange={(e) =>
                                   updateCustomerField(field.key, e.target.value)
                                 }
@@ -2451,7 +2513,8 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     {visibleBookingFields.map((field) => (
                       <input
                         key={field.key}
-                        placeholder={field.label}
+                        placeholder={`${field.label}${field.required ? " *" : ""}`}
+                        required={field.required}
                         value={customerData[field.key] || ""}
                         onChange={(e) =>
                           updateCustomerField(field.key, e.target.value)

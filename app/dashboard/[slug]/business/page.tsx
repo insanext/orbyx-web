@@ -281,6 +281,62 @@ const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
   },
 ];
 
+const lockedCustomerFields = [
+  { key: "name", label: "Nombre completo" },
+  { key: "phone", label: "Teléfono" },
+  { key: "email", label: "Correo electrónico" },
+];
+
+const lockedPetFields = [
+  { key: "pet_name", label: "Nombre de la mascota" },
+  { key: "pet_species", label: "Especie" },
+];
+
+const configurableBookingFields: BookingField[] = [
+  { key: "rut", label: "RUT", enabled: false, required: false },
+  { key: "address", label: "Dirección", enabled: false, required: false },
+  { key: "company", label: "Empresa", enabled: false, required: false },
+  {
+    key: "visit_reason",
+    label: "Motivo de consulta",
+    enabled: false,
+    required: false,
+  },
+];
+
+const lockedBookingFieldKeys = new Set([
+  "name",
+  "phone",
+  "email",
+  "pet_name",
+  "pet_species",
+]);
+
+function normalizeBookingFieldsConfig(fields?: unknown): BookingField[] {
+  const savedFields = Array.isArray(fields) ? fields : [];
+
+  return configurableBookingFields.map((baseField) => {
+    const savedField = savedFields.find((item) => {
+      if (!item || typeof item !== "object") return false;
+      return (item as { key?: unknown }).key === baseField.key;
+    }) as Partial<BookingField> | undefined;
+
+    const enabled =
+      typeof savedField?.enabled === "boolean"
+        ? savedField.enabled
+        : baseField.enabled;
+
+    return {
+      ...baseField,
+      enabled,
+      required:
+        enabled && typeof savedField?.required === "boolean"
+          ? savedField.required
+          : false,
+    };
+  });
+}
+
 function normalizeSubtypeBookingFields(
   fields?: unknown
 ): SubtypeBookingField[] {
@@ -452,6 +508,14 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     () => groupSpecialDates(specialDates),
     [specialDates]
   );
+  const isVeterinaryCategory =
+    businessCategory === "veterinaria" || businessCategory === "vet";
+  const isMechanicSubtype =
+    businessCategory === "generic" &&
+    form.business_subtype === "taller_automotriz";
+  const previewLockedFields = isVeterinaryCategory
+    ? [...lockedCustomerFields, ...lockedPetFields]
+    : lockedCustomerFields;
 
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
@@ -661,13 +725,11 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
       }
 
       setBookingFields(
-        Array.isArray(data.booking_fields_config)
-          ? data.booking_fields_config
-          : []
+        normalizeBookingFieldsConfig(data.booking_fields_config)
       );
     } catch (err) {
       console.error("Error cargando booking fields", err);
-      setBookingFields([]);
+      setBookingFields(normalizeBookingFieldsConfig([]));
     }
   }
 
@@ -1252,8 +1314,7 @@ async function saveSlotMinutes() {
           body: JSON.stringify({
             ...form,
             business_subtype_config:
-              businessCategory === "generic" &&
-              form.business_subtype === "taller_automotriz"
+              isMechanicSubtype
                 ? businessSubtypeConfig
                 : {},
           }),
@@ -1296,7 +1357,17 @@ function updateHourByIndex(
     value: boolean
   ) {
     setBookingFields((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+      prev.map((item, i) => {
+        if (i !== index || lockedBookingFieldKeys.has(item.key)) return item;
+
+        const nextItem = { ...item, [field]: value };
+
+        if (field === "enabled" && value === false) {
+          nextItem.required = false;
+        }
+
+        return nextItem;
+      })
     );
   }
 
@@ -2615,95 +2686,46 @@ function updateHourByIndex(
         }`}
       >
         <div
-          className="space-y-3 rounded-2xl border border-dashed p-3"
+          className="mx-auto max-w-[360px] rounded-[34px] border p-3 shadow-[0_22px_70px_rgba(15,23,42,0.18)]"
           style={{
-            borderColor: "rgba(37,99,235,0.35)",
-            background: "rgba(37,99,235,0.04)",
+            borderColor: "rgba(15,23,42,0.24)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.98))",
           }}
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span
-              className="rounded-full border px-3 py-1 text-xs font-semibold"
-              style={{
-                borderColor: "rgba(37,99,235,0.35)",
-                background: "rgba(37,99,235,0.08)",
-                color: "var(--text-main)",
-              }}
-            >
-              Vista previa
-            </span>
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Así lo verá el cliente
-            </span>
-          </div>
-
           <div
-            className="rounded-2xl border p-4"
+            className="space-y-3 rounded-[26px] border p-4"
             style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-card)",
+              borderColor: "rgba(203,213,225,0.9)",
+              background: "white",
             }}
           >
             <p
-              className="text-sm font-semibold"
-              style={{ color: "var(--text-main)" }}
+              className="text-sm font-semibold text-slate-950"
             >
-              Completa tus datos
+              Reserva tu hora
             </p>
-            <div className="mt-3 space-y-3">
-              {["Nombre y apellido", "Teléfono", "Email"].map((label) => (
-                <div key={label}>
-                  <label
-                    className="mb-1 block text-xs font-medium"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {label} *
-                  </label>
-                  <input
-                    disabled
-                    placeholder={label}
-                    className="h-10 w-full cursor-not-allowed rounded-xl border px-3 text-sm opacity-80"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+            <p className="text-[11px] text-slate-500">
+              Completa la información para continuar con tu reserva.
+            </p>
 
-          {bookingFields.filter((field) => field.enabled).map((field) => (
-            <div key={field.key}>
-              <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                {field.label}{field.required ? " *" : ""}
-              </label>
-              <input
-                disabled
-                placeholder={field.label}
-                className="h-10 w-full cursor-not-allowed rounded-xl border px-3 text-sm opacity-80"
-                style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
-              />
-            </div>
-          ))}
-
-          {form.business_subtype === "taller_automotriz"
-            ? businessSubtypeConfig.booking_fields.filter((field) => field.enabled).map((field) => {
+            {isMechanicSubtype ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-900">
+                  Datos del vehículo/equipo
+                </p>
+                {businessSubtypeConfig.booking_fields.filter((field) => field.enabled).map((field) => {
                 const label = `${field.label}${field.required ? " *" : ""}`;
 
                 if (field.type === "select" && (field.options || []).length > 0) {
                   return (
                     <div key={field.key}>
-                      <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                        {label}
-                      </label>
                       <select
+                        disabled
                         defaultValue=""
-                        className="h-10 w-full rounded-xl border px-3 text-sm"
-                        style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                        className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500"
                       >
-                        <option value="">{field.label}</option>
+                        <option value="">{label}</option>
                         {(field.options || []).map((option) => (
                           <option key={option} value={option}>{option}</option>
                         ))}
@@ -2715,14 +2737,10 @@ function updateHourByIndex(
                 if (field.type === "textarea") {
                   return (
                     <div key={field.key}>
-                      <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                        {label}
-                      </label>
                       <textarea
                         disabled
-                        placeholder={field.label}
-                        className="min-h-[82px] w-full cursor-not-allowed rounded-xl border px-3 py-2 text-sm opacity-80"
-                        style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                        placeholder={label}
+                        className="min-h-[68px] w-full cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500"
                       />
                     </div>
                   );
@@ -2730,20 +2748,49 @@ function updateHourByIndex(
 
                 return (
                   <div key={field.key}>
-                    <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                      {label}
-                    </label>
                     <input
                       disabled
-                      placeholder={field.label}
-                      className="h-10 w-full cursor-not-allowed rounded-xl border px-3 text-sm opacity-80"
-                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                      placeholder={label}
+                      className="h-9 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500"
                     />
                   </div>
                 );
-              })
-            : null}
+                })}
+              </div>
+            ) : null}
 
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-slate-900">Tus datos</p>
+              {previewLockedFields.map((field) => (
+                <input
+                  key={field.key}
+                  disabled
+                  placeholder={`${field.label} *`}
+                  className="h-9 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500"
+                />
+              ))}
+            </div>
+
+            {bookingFields.filter((field) => field.enabled).length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-900">
+                  Información adicional
+                </p>
+                {bookingFields.filter((field) => field.enabled).map((field) => (
+                  <input
+                    key={field.key}
+                    disabled
+                    placeholder={`${field.label}${field.required ? " *" : ""}`}
+                    className="h-9 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500"
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            <div className="h-10 rounded-lg bg-[linear-gradient(135deg,rgb(79,70,229),rgb(37,99,235))] text-center text-xs font-semibold leading-10 text-white">
+              Confirmar reserva
+            </div>
+          </div>
         </div>
       </Panel>
     </div>
