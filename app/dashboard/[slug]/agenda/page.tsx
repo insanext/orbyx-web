@@ -1020,7 +1020,7 @@ next_control_custom_unit: "days",
 
   function getEmptySlotClass(isSelected: boolean) {
     return isSelected
-      ? "border-cyan-300/75 bg-cyan-400/10 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.22),0_0_18px_-10px_rgba(34,211,238,0.82)]"
+      ? "border-cyan-200/85 bg-cyan-400/15 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.34),0_0_22px_-9px_rgba(34,211,238,0.95)]"
       : "";
   }
 
@@ -3022,27 +3022,25 @@ const hasPendingClose = pendingCloseCount > 0;
               >
                 {agendaView === "week" ? "Calendario semanal" : "Día por profesional"}
               </h2>
-              {agendaView === "week" ? (
-                <div
-                  className="mt-1 flex max-w-[520px] flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] font-medium"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {[
-                    ["Confirmado", "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"],
-                    ["Falta cierre", "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"],
-                    ["Agendado", "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"],
-                    ["Pendiente", "bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.8)]"],
-                    ["En curso", "bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.8)]"],
-                    ["No-show", "bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.55)]"],
-                    ["Actividad grupal", "bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]"],
-                  ].map(([label, dotClass]) => (
-                    <span key={label} className="inline-flex items-center gap-1.5 leading-none">
-                      <span className={`h-2 w-2 rounded-full ${dotClass}`} />
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
+              <div
+                className="mt-1 flex max-w-[520px] flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] font-medium"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {[
+                  ["Confirmado", "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"],
+                  ["Falta cierre", "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"],
+                  ["Agendado", "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"],
+                  ["Pendiente", "bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.8)]"],
+                  ["En curso", "bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.8)]"],
+                  ["No-show", "bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.55)]"],
+                  ["Actividad grupal", "bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]"],
+                ].map(([label, dotClass]) => (
+                  <span key={label} className="inline-flex items-center gap-1.5 leading-none">
+                    <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+                    {label}
+                  </span>
+                ))}
+              </div>
               </div>
 
               <div className="flex flex-wrap items-center justify-end gap-2">
@@ -3052,14 +3050,14 @@ const hasPendingClose = pendingCloseCount > 0;
 onClick={() => {
   setShowPendingPanel(true);
 }}
-                    className={`inline-flex h-11 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-100 ${
+                    className={`inline-flex h-11 min-w-[128px] items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-100 ${
   pendingCloseCount > 0 ? "animate-pulse" : ""
 }`}
                   >
                     Pendientes: {pendingCloseCount}
                   </button>
                 ) : (
-                  <div className="inline-flex h-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700">
+                  <div className="inline-flex h-11 min-w-[128px] items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700">
                     Sin pendientes
                   </div>
                 )}
@@ -3084,7 +3082,7 @@ onClick={() => {
 
                       goPrevWeek();
                     }}
-                    className="orbyx-nav-energy inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold"
+                    className="orbyx-nav-energy inline-flex h-11 min-w-[118px] items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold"
                     style={{
                       borderColor: "rgba(37,99,235,0.28)",
                       background: "var(--bg-card)",
@@ -3097,7 +3095,7 @@ onClick={() => {
                   <button
                     type="button"
                     onClick={goToday}
-                    className="orbyx-nav-energy inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-semibold text-white shadow-[0_14px_30px_-18px_rgba(37,99,235,0.9)]"
+                    className="orbyx-nav-energy inline-flex h-11 min-w-[72px] items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-semibold text-white shadow-[0_14px_30px_-18px_rgba(37,99,235,0.9)]"
                     style={{
                       borderColor: "rgba(147,197,253,0.34)",
                       background:
@@ -3120,7 +3118,7 @@ onClick={() => {
 
                       goNextWeek();
                     }}
-                    className="orbyx-nav-energy inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold"
+                    className="orbyx-nav-energy inline-flex h-11 min-w-[118px] items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold"
                     style={{
                       borderColor: "rgba(37,99,235,0.28)",
                       background: "var(--bg-card)",
@@ -3132,7 +3130,7 @@ onClick={() => {
                 </div>
 
                 <div
-                  className="inline-flex h-10 items-center justify-center rounded-xl border px-3.5 text-sm font-semibold"
+                  className="inline-flex h-10 min-w-[210px] items-center justify-center rounded-xl border px-3.5 text-sm font-semibold"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -3585,7 +3583,7 @@ onClick={() => {
                                               ? "linear-gradient(180deg, rgba(127,29,29,0.28), rgba(88,28,46,0.18))"
                                               : "linear-gradient(180deg, rgba(127,29,29,0.22), rgba(88,28,46,0.14))"
                                             : isEmptySlotSelected
-                                            ? "linear-gradient(180deg, rgba(14,165,233,0.16), rgba(37,99,235,0.08))"
+                                            ? "linear-gradient(180deg, rgba(34,211,238,0.22), rgba(37,99,235,0.12))"
                                             : hoveredTimeKey === slotTimeKey
                                             ? "rgba(59,130,246,0.08)"
                                             : "transparent",
@@ -4305,7 +4303,7 @@ const appt = slotGroups[0]?.[0];
                                           ? "linear-gradient(180deg, rgba(127,29,29,0.28), rgba(88,28,46,0.18))"
                                           : "linear-gradient(180deg, rgba(127,29,29,0.22), rgba(88,28,46,0.14))"
                                         : isEmptySlotSelected
-                                        ? "linear-gradient(180deg, rgba(14,165,233,0.16), rgba(37,99,235,0.08))"
+                                        ? "linear-gradient(180deg, rgba(34,211,238,0.22), rgba(37,99,235,0.12))"
                                         : hoveredTimeKey === slotTimeKey
                                         ? "rgba(59,130,246,0.08)"
                                         : "transparent",
