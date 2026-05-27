@@ -607,6 +607,10 @@ function generateSlotsFromWindows(
 
   function getVisualStatus(appt: Appointment) {
     if (isPastPendingClosure(appt)) return "pending_close";
+    const now = Date.now();
+    const start = new Date(appt.start_at).getTime();
+    const end = new Date(appt.end_at).getTime();
+    if (appt.status === "booked" && start <= now && now <= end) return "in_progress";
     return appt.status;
   }
 
@@ -616,6 +620,10 @@ function generateSlotsFromWindows(
     switch (visualStatus) {
       case "booked":
         return "Agendada";
+      case "in_progress":
+        return "En curso";
+      case "pending":
+        return "Pendiente";
       case "completed":
         return "Atendida";
       case "no_show":
@@ -637,6 +645,10 @@ function generateSlotsFromWindows(
     switch (visualStatus) {
       case "booked":
         return "Agendada";
+      case "in_progress":
+        return "En curso";
+      case "pending":
+        return "Pendiente";
       case "completed":
         return "Atendida";
       case "no_show":
@@ -658,6 +670,10 @@ function generateSlotsFromWindows(
     switch (visualStatus) {
       case "booked":
         return "border-sky-200 bg-sky-50 text-sky-700";
+      case "in_progress":
+        return "border-cyan-200 bg-cyan-50 text-cyan-700";
+      case "pending":
+        return "border-orange-200 bg-orange-50 text-orange-700";
       case "completed":
         return "border-emerald-200 bg-emerald-50 text-emerald-700";
       case "no_show":
@@ -677,30 +693,38 @@ function generateSlotsFromWindows(
     const visualStatus = getVisualStatus(appt);
 
     if (selected) {
-      return "border-slate-900 bg-slate-900 text-white shadow-lg";
+      return "border-cyan-300/70 bg-slate-950 text-white shadow-[0_0_0_1px_rgba(34,211,238,0.22),0_0_22px_-8px_rgba(34,211,238,0.95)]";
     }
 
     if (visualStatus === "pending_close") {
-      return "border-rose-200 bg-rose-50 text-slate-900 hover:border-rose-300 hover:bg-rose-100";
+      return "border-red-400/70 bg-[linear-gradient(135deg,rgba(127,29,29,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(248,113,113,0.95)] hover:border-red-300";
     }
 
     if (visualStatus === "completed") {
-      return "border-emerald-200 bg-emerald-50 text-slate-900 hover:border-emerald-300";
+      return "border-emerald-400/70 bg-[linear-gradient(135deg,rgba(6,78,59,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(52,211,153,0.95)] hover:border-emerald-300";
     }
 
     if (visualStatus === "no_show") {
-      return "border-amber-200 bg-amber-50 text-slate-900 hover:border-amber-300";
+      return "border-slate-400/60 bg-[linear-gradient(135deg,rgba(51,65,85,0.48),rgba(15,23,42,0.88))] text-white shadow-[0_0_16px_-12px_rgba(148,163,184,0.85)] opacity-90 hover:border-slate-300";
     }
 
     if (visualStatus === "canceled") {
-      return "border-slate-200 bg-slate-100 text-slate-600 opacity-80 hover:border-slate-300";
+      return "border-slate-500/55 bg-[linear-gradient(135deg,rgba(30,41,59,0.56),rgba(15,23,42,0.88))] text-slate-200 opacity-80 hover:border-slate-400";
     }
 
     if (visualStatus === "rescheduled") {
-      return "border-violet-200 bg-violet-50 text-slate-900 hover:border-violet-300";
+      return "border-violet-400/70 bg-[linear-gradient(135deg,rgba(76,29,149,0.40),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(167,139,250,0.95)] hover:border-violet-300";
     }
 
-    return "border-sky-200 bg-sky-50 text-slate-900 hover:border-sky-300 hover:bg-sky-100";
+    if (visualStatus === "pending") {
+      return "border-orange-400/75 bg-[linear-gradient(135deg,rgba(124,45,18,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(251,146,60,0.95)] hover:border-orange-300";
+    }
+
+    if (visualStatus === "in_progress") {
+      return "border-cyan-300/75 bg-[linear-gradient(135deg,rgba(8,47,73,0.50),rgba(15,23,42,0.88))] text-white shadow-[0_0_20px_-10px_rgba(34,211,238,0.95)] hover:border-cyan-200";
+    }
+
+    return "border-blue-400/70 bg-[linear-gradient(135deg,rgba(30,64,175,0.38),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(96,165,250,0.95)] hover:border-blue-300";
   }
 
   function getAppointmentGroupKey(appt: Appointment) {
@@ -775,6 +799,18 @@ function generateSlotsFromWindows(
       };
     }
 
+    if (
+      first &&
+      new Date(first.start_at).getTime() <= now &&
+      now <= new Date(first.end_at).getTime()
+    ) {
+      return {
+        key: "in_progress",
+        label: "En curso",
+        tooltip: "La actividad estÃ¡ en curso.",
+      };
+    }
+
     if (first && new Date(first.end_at).getTime() < now) {
       return {
         key: "pending",
@@ -796,7 +832,7 @@ function generateSlotsFromWindows(
   ): { card: string; icon: string; stateBadge: string; countBadge: string } {
     if (selected) {
       return {
-        card: "border-slate-900 bg-slate-900 text-white shadow-lg",
+        card: "border-cyan-300/70 bg-slate-950 text-white shadow-[0_0_0_1px_rgba(34,211,238,0.22),0_0_22px_-8px_rgba(34,211,238,0.95)]",
         icon: "text-white",
         stateBadge: "border-white/20 bg-white/10 text-white",
         countBadge: "border-white/20 bg-white/10 text-white",
@@ -808,34 +844,40 @@ function generateSlotsFromWindows(
       { card: string; icon: string; stateBadge: string; countBadge: string }
     > = {
       scheduled: {
-        card: "border-sky-200 bg-sky-50 text-slate-900 hover:border-sky-300",
-        icon: "text-sky-600",
-        stateBadge: "border-sky-200 bg-sky-100 text-sky-700",
-        countBadge: "border-sky-200 bg-white/70 text-sky-700",
+        card: "border-violet-400/70 bg-[linear-gradient(135deg,rgba(76,29,149,0.44),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(167,139,250,0.95)] hover:border-violet-300",
+        icon: "text-violet-200",
+        stateBadge: "border-violet-300/30 bg-violet-400/10 text-violet-100",
+        countBadge: "border-violet-300/35 bg-violet-400/15 text-violet-50",
       },
       pending: {
-        card: "border-rose-200 bg-rose-50 text-slate-900 hover:border-rose-300",
-        icon: "text-rose-600",
-        stateBadge: "border-rose-200 bg-rose-100 text-rose-700",
-        countBadge: "border-rose-200 bg-white/70 text-rose-700",
+        card: "border-red-400/70 bg-[linear-gradient(135deg,rgba(127,29,29,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(248,113,113,0.95)] hover:border-red-300",
+        icon: "text-red-200",
+        stateBadge: "border-red-300/30 bg-red-400/10 text-red-100",
+        countBadge: "border-red-300/35 bg-red-400/15 text-red-50",
       },
       partial: {
-        card: "border-orange-200 bg-orange-50 text-slate-900 hover:border-orange-300",
-        icon: "text-orange-600",
-        stateBadge: "border-orange-200 bg-orange-100 text-orange-700",
-        countBadge: "border-orange-200 bg-white/70 text-orange-700",
+        card: "border-orange-400/75 bg-[linear-gradient(135deg,rgba(124,45,18,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(251,146,60,0.95)] hover:border-orange-300",
+        icon: "text-orange-200",
+        stateBadge: "border-orange-300/30 bg-orange-400/10 text-orange-100",
+        countBadge: "border-orange-300/35 bg-orange-400/15 text-orange-50",
       },
       closed: {
-        card: "border-emerald-200 bg-emerald-50 text-slate-900 hover:border-emerald-300",
-        icon: "text-emerald-600",
-        stateBadge: "border-emerald-200 bg-emerald-100 text-emerald-700",
-        countBadge: "border-emerald-200 bg-white/70 text-emerald-700",
+        card: "border-emerald-400/70 bg-[linear-gradient(135deg,rgba(6,78,59,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(52,211,153,0.95)] hover:border-emerald-300",
+        icon: "text-emerald-200",
+        stateBadge: "border-emerald-300/30 bg-emerald-400/10 text-emerald-100",
+        countBadge: "border-emerald-300/35 bg-emerald-400/15 text-emerald-50",
       },
       canceled: {
-        card: "border-slate-200 bg-slate-100 text-slate-600 opacity-90 hover:border-slate-300",
-        icon: "text-slate-500",
-        stateBadge: "border-slate-200 bg-slate-100 text-slate-600",
-        countBadge: "border-slate-200 bg-white/70 text-slate-600",
+        card: "border-slate-500/55 bg-[linear-gradient(135deg,rgba(30,41,59,0.56),rgba(15,23,42,0.88))] text-slate-200 opacity-85 hover:border-slate-400",
+        icon: "text-slate-300",
+        stateBadge: "border-slate-300/25 bg-slate-400/10 text-slate-200",
+        countBadge: "border-slate-300/25 bg-slate-400/10 text-slate-200",
+      },
+      in_progress: {
+        card: "border-cyan-300/75 bg-[linear-gradient(135deg,rgba(8,47,73,0.52),rgba(15,23,42,0.88))] text-white shadow-[0_0_20px_-10px_rgba(34,211,238,0.95)] hover:border-cyan-200",
+        icon: "text-cyan-200",
+        stateBadge: "border-cyan-300/30 bg-cyan-400/10 text-cyan-100",
+        countBadge: "border-cyan-300/35 bg-cyan-400/15 text-cyan-50",
       },
     };
 
@@ -2928,12 +2970,35 @@ const hasPendingClose = pendingCloseCount > 0;
                 }
               `}</style>
 
+              <div className="-mt-1 min-w-0">
               <h2
-                className="text-base font-semibold"
+                className="text-base font-semibold leading-tight"
                 style={{ color: "var(--text-main)" }}
               >
                 {agendaView === "week" ? "Calendario semanal" : "Día por profesional"}
               </h2>
+              {agendaView === "week" ? (
+                <div
+                  className="mt-1 flex max-w-[520px] flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] font-medium"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {[
+                    ["Confirmado", "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"],
+                    ["Falta cierre", "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"],
+                    ["Agendado", "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"],
+                    ["Pendiente", "bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.8)]"],
+                    ["En curso", "bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.8)]"],
+                    ["No-show", "bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.55)]"],
+                    ["Actividad grupal", "bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]"],
+                  ].map(([label, dotClass]) => (
+                    <span key={label} className="inline-flex items-center gap-1.5 leading-none">
+                      <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              </div>
 
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {hasPendingClose ? (
@@ -3536,7 +3601,9 @@ onClick={() => {
                                             setHoveredTimeKey("");
                                             handleAppointmentMouseLeave();
                                           }}
-                                          className={`w-full overflow-hidden rounded-lg border px-1.5 py-0.5 text-left transition ${
+                                          className={`w-full overflow-hidden rounded-lg border py-0.5 text-left transition ${
+                                            isGroupSlot ? "px-1" : "px-1.5"
+                                          } ${
                                             isGroupSlot && groupStyles
                                               ? groupStyles.card
                                               : getCardClass(appt, isSelected)
@@ -3550,63 +3617,26 @@ onClick={() => {
                                           groupVisualState &&
                                           groupStyles ? (
                                             <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
-                                              <p
-                                                className={`truncate text-[10px] font-semibold leading-none ${
-                                                  isSelected
-                                                    ? "text-white"
-                                                    : "text-slate-900"
-                                                }`}
-                                              >
+                                              <p className="truncate text-[10px] font-semibold leading-none text-white">
                                                 {appt.service_name_snapshot ||
                                                   "Actividad grupal"}
                                               </p>
                                               <p
-                                                className={`truncate text-[9px] leading-none ${
-                                                  isSelected
-                                                    ? "text-slate-200"
-                                                    : "text-slate-600"
-                                                }`}
+                                                className={`inline-flex w-fit max-w-full truncate rounded-full border px-1.5 py-0.5 text-[8px] font-semibold leading-none ${groupStyles.countBadge}`}
                                               >
                                                 {activeGroupCount}/{groupCapacity} inscritos
-                                              </p>
-                                              <p
-                                                className={`truncate text-[9px] leading-none ${
-                                                  isSelected
-                                                    ? "text-slate-200"
-                                                    : "text-slate-500"
-                                                }`}
-                                              >
-                                                {groupVisualState.label}
                                               </p>
                                             </div>
                                           ) : (
                                             <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
-                                              <p
-                                                className={`truncate text-[10px] font-semibold leading-none ${
-                                                  isSelected
-                                                    ? "text-white"
-                                                    : "text-slate-900"
-                                                }`}
-                                              >
+                                              <p className="truncate text-[10px] font-semibold leading-none text-white">
                                                 {appt.customer_name}
                                               </p>
-                                              <p
-                                                className={`truncate text-[9px] leading-none ${
-                                                  isSelected
-                                                    ? "text-slate-200"
-                                                    : "text-slate-600"
-                                                }`}
-                                              >
+                                              <p className="truncate text-[9px] leading-none text-slate-200">
                                                 {appt.customer_phone ||
                                                   "Teléfono no disponible"}
                                               </p>
-                                              <p
-                                                className={`truncate text-[9px] leading-none ${
-                                                  isSelected
-                                                    ? "text-slate-200"
-                                                    : "text-slate-500"
-                                                }`}
-                                              >
+                                              <p className="truncate text-[9px] leading-none text-slate-300">
                                                 {appt.service_name_snapshot ||
                                                   "Reserva"}
                                               </p>
@@ -4006,23 +4036,11 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     </div>
                                     ) : null}
 
-                                    <p
-                                      className={`truncate text-[10px] font-semibold leading-none ${
-                                        isSelected
-                                          ? "text-white"
-                                          : "text-slate-900"
-                                      }`}
-                                    >
+                                    <p className="truncate text-[10px] font-semibold leading-none text-white">
                                       {appt.customer_name}
                                     </p>
 
-                                    <p
-                                      className={`truncate text-[9px] leading-none ${
-                                        isSelected
-                                          ? "text-slate-200"
-                                          : "text-slate-600"
-                                      }`}
-                                    >
+                                    <p className="truncate text-[9px] leading-none text-slate-200">
                                       {appt.customer_phone || "Teléfono no disponible"}
                                     </p>
 
@@ -4041,13 +4059,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                       </p>
                                     ) : null}
 
-                                    <p
-                                      className={`truncate text-[9px] leading-none ${
-                                        isSelected
-                                          ? "text-slate-200"
-                                          : "text-slate-500"
-                                      }`}
-                                    >
+                                    <p className="truncate text-[9px] leading-none text-slate-300">
                                       {appt.service_name_snapshot || "Reserva"}
                                     </p>
 
@@ -4257,7 +4269,9 @@ const appt = slotGroups[0]?.[0];
                                   setHoveredTimeKey("");
                                   handleAppointmentMouseLeave();
                                 }}
-                                className={`w-full overflow-hidden rounded-lg border px-1.5 py-0.5 text-left transition ${
+                                className={`w-full overflow-hidden rounded-lg border py-0.5 text-left transition ${
+                                  isGroupSlot ? "px-1" : "px-1.5"
+                                } ${
                                   isGroupSlot && groupStyles
                                     ? groupStyles.card
                                     : getCardClass(appt, isSelected)
@@ -4296,63 +4310,29 @@ const appt = slotGroups[0]?.[0];
 
                                   {isGroupSlot && groupVisualState && groupStyles ? (
   <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
-    <div className="flex min-w-0 items-center gap-2">
-      <div
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
-          isSelected ? "bg-white/10" : "bg-white/65"
-        }`}
-      >
-        <UsersRound className={`h-3 w-3 ${groupStyles.icon}`} />
-      </div>
-
-      <p
-        className={`min-w-0 flex-1 truncate text-[10px] font-semibold leading-none ${
-          isSelected ? "text-white" : "text-slate-900"
-        }`}
-      >
+    <div className="flex min-w-0 items-center gap-1.5">
+      <UsersRound className={`h-3 w-3 shrink-0 ${groupStyles.icon}`} />
+      <p className="min-w-0 flex-1 truncate text-[10px] font-semibold leading-none text-white">
         {appt.service_name_snapshot || "Clase"}
       </p>
     </div>
 
-    <p
-      className={`truncate text-[9px] font-medium leading-none ${
-        isSelected ? "text-slate-200" : "text-slate-600"
-      }`}
-    >
-      {formatHour(appt.start_at)} - {formatHour(appt.end_at)}
-    </p>
-
-    <div className="flex min-w-0 gap-1 overflow-hidden">
+    <div className="flex min-w-0 overflow-hidden">
       <span
-        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1 py-0 text-[8px] font-semibold leading-none ${groupStyles.stateBadge}`}
-      >
-        {groupVisualState.label}
-      </span>
-      <span
-        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1 py-0 text-[8px] font-semibold leading-none ${groupStyles.countBadge}`}
+        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1.5 py-0.5 text-[8px] font-semibold leading-none ${groupStyles.countBadge}`}
       >
         {activeGroupCount}/{groupCapacity} inscritos
       </span>
     </div>
   </div>
 ) : (
-  <p
-    className={`truncate text-[10px] font-semibold leading-none ${
-      isSelected ? "text-white" : "text-slate-900"
-    }`}
-  >
+  <p className="truncate text-[10px] font-semibold leading-none text-white">
     {appt.customer_name}
   </p>
 )}
 
                                   {!isGroupSlot ? (
-                                  <p
-                                    className={`truncate text-[9px] leading-none ${
-                                      isSelected
-                                        ? "text-slate-200"
-                                        : "text-slate-600"
-                                    }`}
-                                  >
+                                  <p className="truncate text-[9px] leading-none text-slate-200">
                                     {appt.customer_phone || "Teléfono no disponible"}
                                   </p>
                                   ) : null}
@@ -4373,13 +4353,7 @@ const appt = slotGroups[0]?.[0];
                                   ) : null}
 
                                   {!isGroupSlot ? (
-                                  <p
-  className={`truncate text-[9px] leading-none ${
-    isSelected
-      ? "text-slate-200"
-      : "text-slate-500"
-  }`}
->
+                                  <p className="truncate text-[9px] leading-none text-slate-300">
   {isGroupSlot
     ? getStaffName(appt.staff_id)
     : appt.service_name_snapshot || "Reserva"}
