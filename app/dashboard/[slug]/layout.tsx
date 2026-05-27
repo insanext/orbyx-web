@@ -494,10 +494,41 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen" style={{ background: mainBg }}>
+      <style>{`
+        .orbyx-sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #2563eb rgba(37, 99, 235, 0.1);
+        }
+
+        .orbyx-sidebar-scroll::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .orbyx-sidebar-scroll::-webkit-scrollbar-track {
+          margin: 14px 3px;
+          border-radius: 999px;
+          background: rgba(37, 99, 235, 0.08);
+        }
+
+        .orbyx-sidebar-scroll::-webkit-scrollbar-thumb {
+          border: 2px solid transparent;
+          border-radius: 999px;
+          background:
+            linear-gradient(180deg, #7c3aed 0%, #2563eb 48%, #22d3ee 100%)
+            border-box;
+          box-shadow: 0 0 10px rgba(34, 211, 238, 0.18);
+        }
+
+        .orbyx-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background:
+            linear-gradient(180deg, #8b5cf6 0%, #1d4ed8 45%, #06b6d4 100%)
+            border-box;
+        }
+      `}</style>
       <div className="flex min-h-screen">
         <aside
           className={clsx(
-            "hidden shrink-0 border-r transition-[width] duration-200 xl:block",
+            "relative hidden shrink-0 border-r transition-[width] duration-200 xl:block",
             sidebarCollapsed ? "w-20" : "w-72"
           )}
           style={{
@@ -505,9 +536,30 @@ export default function DashboardLayout({
             borderColor: sidebarBorder,
           }}
         >
-          <div className="sticky top-0 flex h-screen flex-col overflow-y-auto px-3 py-4">
+          <button
+            type="button"
+            aria-label={sidebarCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            className="absolute -right-4 top-1/2 z-30 flex h-24 w-8 -translate-y-1/2 items-center justify-center rounded-xl border transition-all duration-200 hover:shadow-[0_0_22px_-10px_rgba(34,211,238,0.95)]"
+            style={{
+              background: isNocturno
+                ? "linear-gradient(180deg, rgba(37,99,235,0.28), rgba(14,165,233,0.14))"
+                : "linear-gradient(180deg, #dbeafe, #bae6fd)",
+              borderColor: "rgba(34,211,238,0.38)",
+              color: isNocturno ? "#dff8ff" : "#0f3f8f",
+              boxShadow: isNocturno
+                ? "0 14px 34px -24px rgba(34,211,238,0.95), inset 0 1px 0 rgba(255,255,255,0.12)"
+                : "0 14px 30px -22px rgba(37,99,235,0.7), inset 0 1px 0 rgba(255,255,255,0.76)",
+            }}
+          >
+            {sidebarCollapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
+          </button>
+          <div className="orbyx-sidebar-scroll sticky top-0 flex h-screen flex-col overflow-y-auto px-3 py-4">
             <div
-              className="mb-4 flex items-center justify-between rounded-2xl border p-3"
+              className={clsx(
+                "mb-4 flex items-center rounded-2xl border p-3",
+                sidebarCollapsed ? "justify-center" : "justify-start"
+              )}
               style={{ borderColor: sidebarBorder }}
             >
               <div className="flex items-center gap-3">
@@ -528,19 +580,6 @@ export default function DashboardLayout({
                 </div>
                 ) : null}
               </div>
-              <button
-                type="button"
-                aria-label={sidebarCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
-                onClick={() => setSidebarCollapsed((value) => !value)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border transition hover:shadow-[0_0_18px_-10px_rgba(34,211,238,0.95)]"
-                style={{
-                  background: softBg,
-                  borderColor: sidebarBorder,
-                  color: textMain,
-                }}
-              >
-                {sidebarCollapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
-              </button>
             </div>
 
             <div className={clsx("flex-1", sidebarCollapsed ? "px-1" : "px-1")}>
@@ -571,21 +610,6 @@ export default function DashboardLayout({
                     </div>
                   </div>
 
-                  <Link
-                    href={`/dashboard/${slug}`}
-                    className="group flex items-center gap-3 rounded-2xl border px-3 py-3 transition-all hover:translate-x-0.5"
-                    style={{ background: softBg, borderColor: sidebarBorder, color: textMain }}
-                  >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgb(37,99,235),rgb(14,165,233))] text-white shadow-[0_12px_24px_-18px_rgba(14,165,233,0.95)]">
-                      <HelpCircle size={17} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">¿Necesitas ayuda?</p>
-                      <p className="truncate text-xs" style={{ color: textMuted }}>Centro de ayuda y soporte</p>
-                    </div>
-                    <ChevronRight className="ml-auto transition-transform group-hover:translate-x-0.5" size={17} />
-                  </Link>
-
                   <div
                     className="flex items-center gap-3 rounded-2xl border px-3 py-3"
                     style={{ background: cardBg, borderColor: sidebarBorder }}
@@ -611,9 +635,6 @@ export default function DashboardLayout({
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl border text-emerald-400" title={selectedBranchName || "Sucursal activa"} style={{ background: softBg, borderColor: sidebarBorder }}>
                     <Store size={18} />
                   </div>
-                  <Link href={`/dashboard/${slug}`} title="Ayuda" className="flex h-11 w-11 items-center justify-center rounded-xl border transition hover:shadow-[0_0_18px_-10px_rgba(34,211,238,0.95)]" style={{ background: softBg, borderColor: sidebarBorder, color: textMain }}>
-                    <HelpCircle size={18} />
-                  </Link>
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(14,165,233),rgb(79,70,229))] text-xs font-bold text-white" title={businessName || slug}>
                     {businessName
                       ? businessName.slice(0, 2).toUpperCase()
