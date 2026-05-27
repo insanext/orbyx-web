@@ -3,6 +3,7 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { Copy, Pencil, Plus, RefreshCw, Store } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -25,6 +26,7 @@ type BranchItem = {
   phone?: string | null;
   is_active?: boolean;
   created_at?: string;
+  updated_at?: string;
 };
 
 type BranchesResponse = {
@@ -704,12 +706,13 @@ export default function BranchesPage() {
                   );
                 });
             }}
-            className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition"
             style={{
               background:
                 "linear-gradient(135deg, rgb(139 92 246), rgb(99 102 241))",
             }}
           >
+            <RefreshCw className="h-4 w-4" />
             Recargar
           </button>
         </div>
@@ -747,11 +750,55 @@ export default function BranchesPage() {
       ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel
-          title="Sucursales actuales"
-          description="Estas son las sucursales registradas en el negocio."
-          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
-        >
+        <Panel className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]">
+          <div
+            className="mb-5 flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between"
+            style={{ borderColor: "var(--border-color)" }}
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <div
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border"
+                style={{
+                  borderColor: "rgba(139,92,246,0.35)",
+                  background:
+                    "linear-gradient(135deg, rgba(139,92,246,0.22), rgba(59,130,246,0.10))",
+                  color: "rgb(167 139 250)",
+                }}
+              >
+                <Store className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3
+                  className="text-base font-semibold tracking-tight"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Sucursales
+                </h3>
+                <p
+                  className="mt-1 text-sm leading-6"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Administra las sucursales registradas en el negocio.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => document.getElementById("new-branch-name")?.focus()}
+              disabled={saving || loading || reachedLimit || hasExcess}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+              style={{
+                background:
+                  reachedLimit || hasExcess
+                    ? "linear-gradient(135deg, rgba(100,116,139,0.9), rgba(71,85,105,0.9))"
+                    : "linear-gradient(135deg, rgb(139 92 246), rgb(59 130 246))",
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Nueva sucursal
+            </button>
+          </div>
           {loading ? (
             <div
               className="rounded-2xl border border-dashed px-4 py-8 text-sm"
@@ -776,7 +823,148 @@ export default function BranchesPage() {
               pero si quieres probar multi-sucursal, crea la primera aquí.
             </div>
           ) : (
-            <div className="space-y-4">
+            <div
+              className="overflow-hidden rounded-2xl border"
+              style={{ borderColor: "var(--border-color)" }}
+            >
+              <div
+                className="hidden grid-cols-[1.35fr_0.65fr_0.85fr_0.95fr_0.6fr] border-b px-4 py-3 text-xs font-semibold md:grid"
+                style={{
+                  borderColor: "var(--border-color)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <span>Sucursal</span>
+                <span>Estado</span>
+                <span>Creada</span>
+                <span>Última actualización</span>
+                <span>Editar</span>
+              </div>
+              {branches.map((branch) => {
+                const isActive = branch.is_active !== false;
+                const isMarkedToKeep = selectedBranchesToKeep.includes(branch.id);
+                const isEditing = editingBranchId === branch.id;
+                const isMainBranch = branches[0]?.id === branch.id;
+
+                return (
+                  <div
+                    key={branch.id}
+                    className="grid gap-4 border-b p-4 transition last:border-b-0 md:grid-cols-[1.35fr_0.65fr_0.85fr_0.95fr_0.6fr] md:items-center"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: isEditing
+                        ? "linear-gradient(135deg, rgba(139,92,246,0.10), var(--bg-card))"
+                        : "linear-gradient(135deg, rgba(37,99,235,0.04), var(--bg-card))",
+                    }}
+                  >
+                    {hasExcess && isActive ? (
+                      <label
+                        className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium md:col-span-5"
+                        style={{
+                          borderColor: isMarkedToKeep
+                            ? "rgba(16,185,129,0.34)"
+                            : "rgba(244,63,94,0.34)",
+                          background: isMarkedToKeep
+                            ? "rgba(16,185,129,0.10)"
+                            : "rgba(244,63,94,0.10)",
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isMarkedToKeep}
+                          onChange={() => toggleBranchSelection(branch.id)}
+                          className="h-4 w-4 rounded"
+                        />
+                        Mantener activa
+                      </label>
+                    ) : null}
+
+                    <div className="min-w-0">
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
+                        Sucursal
+                      </p>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.24), rgba(59,130,246,0.12))", color: "rgb(167 139 250)" }}>
+                          <Store className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editForm.name}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            />
+                          ) : (
+                            <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                              {branch.name}
+                            </p>
+                          )}
+                          {isMainBranch ? (
+                            <span className="mt-1 inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ background: "rgba(139,92,246,0.18)", color: "rgb(196 181 253)" }}>
+                              Sucursal principal
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
+                        Estado
+                      </p>
+                      <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold" style={{ borderColor: isActive ? (hasExcess ? "rgba(249,115,22,0.34)" : "rgba(16,185,129,0.28)") : "rgba(148,163,184,0.22)", background: isActive ? (hasExcess ? "rgba(249,115,22,0.12)" : "rgba(16,185,129,0.12)") : "rgba(148,163,184,0.12)", color: isActive ? (hasExcess ? "rgb(251 146 60)" : "rgb(52 211 153)") : "var(--text-muted)" }}>
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        {isActive ? (hasExcess ? "Exceso" : "Activa") : "Inactiva"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
+                        Creada
+                      </p>
+                      <p className="text-sm" style={{ color: "var(--text-main)" }}>
+                        {formatBranchDate(branch.created_at)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
+                        Última actualización
+                      </p>
+                      <p className="text-sm" style={{ color: "var(--text-main)" }}>
+                        {formatBranchDate(branch.updated_at || branch.created_at)}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 md:justify-end">
+                      <p className="w-full text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
+                        Editar
+                      </p>
+                      {isEditing ? (
+                        <>
+                          <button type="button" onClick={() => handleUpdateBranch(branch.id)} disabled={saving} className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60" style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>
+                            Guardar
+                          </button>
+                          <button type="button" onClick={cancelEditBranch} disabled={saving} className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                            Cancelar
+                          </button>
+                          <button type="button" onClick={() => handleToggleBranchActive(branch)} disabled={saving || (branch.is_active === false && reachedLimit)} className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60" style={{ borderColor: isActive ? "rgba(244,63,94,0.34)" : "rgba(16,185,129,0.34)", background: "var(--bg-card)", color: isActive ? "rgb(244 63 94)" : "rgb(16 185 129)" }}>
+                            {isActive ? "Desactivar" : "Activar"}
+                          </button>
+                        </>
+                      ) : (
+                        <button type="button" onClick={() => beginEditBranch(branch)} disabled={saving} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                          <Pencil className="h-4 w-4" />
+                          Editar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
               {branches.map((branch) => {
                 const isActive = branch.is_active !== false;
                 const isMarkedToKeep = selectedBranchesToKeep.includes(branch.id);
@@ -784,17 +972,19 @@ export default function BranchesPage() {
 
                 return (
                   <div
-                    key={branch.id}
-                    className="rounded-[24px] border p-5 transition"
+                    key={`legacy-${branch.id}`}
+                    className="hidden"
                     style={{
                       borderColor: "var(--border-color)",
                       background:
-                        "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                        isEditing
+                          ? "linear-gradient(135deg, rgba(139,92,246,0.10), var(--bg-card))"
+                          : "linear-gradient(135deg, rgba(37,99,235,0.04), var(--bg-card))",
                     }}
                   >
                     {hasExcess && isActive ? (
                       <label
-                        className="mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
+                        className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium md:col-span-5"
                         style={{
                           borderColor: isMarkedToKeep
                             ? "rgba(16,185,129,0.34)"
@@ -1100,6 +1290,12 @@ export default function BranchesPage() {
                   </div>
                 );
               })}
+              <div
+                className="px-4 py-3 text-sm"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Mostrando {branches.length} de {branches.length} sucursales
+              </div>
             </div>
           )}
         </Panel>
@@ -1213,6 +1409,7 @@ export default function BranchesPage() {
                 Nombre de la sucursal
               </label>
               <input
+                id="new-branch-name"
                 type="text"
                 value={form.name}
                 onChange={(e) =>
@@ -1246,7 +1443,7 @@ export default function BranchesPage() {
               type="button"
               onClick={handleCreateBranch}
               disabled={saving || loading || reachedLimit || hasExcess}
-              className="inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 background:
                   reachedLimit || hasExcess
@@ -1254,6 +1451,9 @@ export default function BranchesPage() {
                     : "linear-gradient(135deg, rgb(139 92 246), rgb(59 130 246))",
               }}
             >
+              {!hasExcess && !reachedLimit && !saving ? (
+                <Plus className="h-4 w-4" />
+              ) : null}
               {hasExcess
                 ? "Primero ajusta tus sucursales"
                 : reachedLimit
@@ -1265,6 +1465,51 @@ export default function BranchesPage() {
           </div>
         </Panel>
       </section>
+
+      <div
+        className="flex flex-col gap-3 rounded-3xl border px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+        }}
+      >
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          La ID de tu negocio es{" "}
+          <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+            {tenantId || "cargando..."}
+          </span>
+          . Compártela con soporte si necesitas ayuda.
+        </p>
+        <button
+          type="button"
+          onClick={() => handleCopyId(tenantId)}
+          disabled={!tenantId}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+            color: "var(--text-main)",
+          }}
+        >
+          <Copy className="h-4 w-4" />
+          {copiedId === tenantId ? "ID copiada" : "Copiar ID"}
+        </button>
+      </div>
     </div>
   );
+}
+
+function formatBranchDate(dateString?: string | null) {
+  if (!dateString) return "No disponible";
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "No disponible";
+
+  return date.toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
