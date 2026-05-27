@@ -2514,11 +2514,12 @@ const hasPendingClose = pendingCloseCount > 0;
 >
   <div className="flex items-start gap-4">
     <div
-      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl border shadow-sm"
+      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl border shadow-[0_14px_30px_-16px_rgba(37,99,235,0.95),0_0_24px_-12px_rgba(56,189,248,0.95)]"
       style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-        color: "var(--text-main)",
+        borderColor: "rgba(147,197,253,0.42)",
+        background:
+          "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233) 48%, rgb(79 70 229))",
+        color: "white",
       }}
     >
       <CalendarDays className="h-6 w-6" />
@@ -2607,17 +2608,18 @@ const hasPendingClose = pendingCloseCount > 0;
       </div>
 
       <div
-        className="rounded-2xl border p-4 shadow-sm"
+        className="rounded-2xl border p-4 shadow-[0_18px_44px_-24px_rgba(37,99,235,0.95),0_0_34px_-18px_rgba(56,189,248,0.9)]"
         style={{
-          borderColor: "var(--border-color)",
-          background: "var(--bg-card)",
+          borderColor: "rgba(147,197,253,0.34)",
+          background:
+            "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233) 52%, rgb(79 70 229))",
         }}
       >
         <div className="grid gap-4 xl:grid-cols-[minmax(260px,1fr)_220px_220px_220px] xl:items-end">
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "var(--text-main)" }}
+              style={{ color: "white" }}
             >
               Buscar
             </label>
@@ -2635,9 +2637,9 @@ const hasPendingClose = pendingCloseCount > 0;
                 placeholder="Buscar cliente o reserva..."
                 className="h-11 w-full rounded-xl border py-2 pl-10 pr-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10"
                 style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
+                  borderColor: "rgba(255,255,255,0.34)",
+                  background: "rgba(15,23,42,0.18)",
+                  color: "white",
                 }}
               />
             </div>
@@ -2646,7 +2648,7 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "var(--text-main)" }}
+              style={{ color: "white" }}
             >
               Profesional
             </label>
@@ -2663,9 +2665,9 @@ const hasPendingClose = pendingCloseCount > 0;
               disabled={!selectedBranchId || loadingStaff}
               className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-main)",
+                borderColor: "rgba(255,255,255,0.34)",
+                background: "rgba(15,23,42,0.18)",
+                color: "white",
               }}
             >
               <option value="">Todos los profesionales</option>
@@ -2680,7 +2682,7 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "var(--text-main)" }}
+              style={{ color: "white" }}
             >
               Servicio
             </label>
@@ -2695,9 +2697,9 @@ const hasPendingClose = pendingCloseCount > 0;
               disabled={!selectedBranchId || loadingServices}
               className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-main)",
+                borderColor: "rgba(255,255,255,0.34)",
+                background: "rgba(15,23,42,0.18)",
+                color: "white",
               }}
             >
               <option value="">Todos los servicios</option>
@@ -2712,7 +2714,7 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "var(--text-main)" }}
+              style={{ color: "white" }}
             >
               Estado
             </label>
@@ -2726,9 +2728,9 @@ const hasPendingClose = pendingCloseCount > 0;
               }}
               className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
               style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-main)",
+                borderColor: "rgba(255,255,255,0.34)",
+                background: "rgba(15,23,42,0.18)",
+                color: "white",
               }}
             >
               {(Object.keys(filterLabels) as FilterValue[]).map((filter) => (
