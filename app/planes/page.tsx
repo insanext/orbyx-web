@@ -887,7 +887,34 @@ function PlanesPageContent() {
               ) : null}
             </div>
 
-            <div id="planes" className="mt-6 grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
+            <div className="mt-5 flex gap-2 overflow-x-auto pb-1 md:hidden">
+              {plans.map((plan) => {
+                const mobileLabel: Record<PlanKey, string> = {
+                  pro: "Individual",
+                  premium: "Basico",
+                  vip: "Premium",
+                  platinum: "Pro",
+                };
+                const isSelected = selectedPlan.key === plan.key;
+
+                return (
+                  <button
+                    key={`mobile-tab-${plan.key}`}
+                    type="button"
+                    onClick={() => handleSelectPlan(plan.key)}
+                    className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                      isSelected
+                        ? "border-violet-300/70 bg-violet-500/18 text-white shadow-[0_0_18px_rgba(168,85,247,0.26)]"
+                        : "border-white/10 bg-white/[0.035] text-slate-300"
+                    }`}
+                  >
+                    {mobileLabel[plan.key]}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div id="planes" className="mt-4 grid gap-3 md:mt-6 md:grid-cols-2 2xl:grid-cols-4">
               {plans.map((plan) => {
                 const isSelected = selectedPlan.key === plan.key;
                 const isCurrentCard = hasBillingContext && initialPlan === plan.key;
@@ -900,13 +927,13 @@ function PlanesPageContent() {
                     whileHover={{ y: isSelected ? -5 : -3 }}
                     animate={{ y: isSelected ? -5 : 0, scale: isSelected ? 1.01 : 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                    className={`relative isolate flex min-h-[350px] overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:min-h-[370px] 2xl:min-h-[390px] ${
+                    className={`relative isolate ${isSelected ? "flex" : "hidden md:flex"} min-h-[320px] overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:min-h-[370px] 2xl:min-h-[390px] ${
                       isSelected
                         ? `selected-plan-neon ${plan.borderClass} bg-cyan-300/25 shadow-[0_0_0_1px_rgba(34,211,238,0.42),0_0_26px_rgba(34,211,238,0.24),0_0_42px_rgba(168,85,247,0.18),0_18px_54px_rgba(34,211,238,0.16)]`
                         : "border-white/12 bg-white/[0.035] shadow-[0_18px_50px_rgba(0,0,0,0.18)] hover:border-white/25 hover:bg-white/[0.055]"
                     }`}
                   >
-                    <div className={`${isSelected ? "selected-plan-surface" : "relative z-10 rounded-[21px]"} flex h-full w-full flex-col overflow-hidden px-5 py-5`}>
+                    <div className={`${isSelected ? "selected-plan-surface" : "relative z-10 rounded-[21px]"} flex h-full w-full flex-col overflow-hidden px-4 py-4 sm:px-5 sm:py-5`}>
                     <div className={`absolute inset-0 -z-10 bg-gradient-to-b ${plan.gradientClass} ${isSelected ? "opacity-100" : "opacity-40"}`} />
                     <div className="absolute inset-x-5 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
