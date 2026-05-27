@@ -48,6 +48,7 @@ type BusinessResponse = {
   calendar_id?: string;
   google_connected?: boolean;
   plan_slug?: string | null;
+  slot_minutes?: number | string | null;
 };
 
 type BranchItem = {
@@ -2043,7 +2044,7 @@ next_control_custom_value:
         }
 
                 const currentTenantId = businessData.business.id;
-setSlotMinutes(Number((businessData as any).slot_minutes || 30));
+setSlotMinutes(Number(businessData.slot_minutes || 30));
 setCalendarId(businessData.calendar_id || "");
 setGoogleConnected(Boolean(businessData.google_connected));
 setTenantId(currentTenantId);
@@ -3535,7 +3536,7 @@ onClick={() => {
                                             setHoveredTimeKey("");
                                             handleAppointmentMouseLeave();
                                           }}
-                                          className={`w-full overflow-hidden rounded-lg border px-2 py-1 text-left transition ${
+                                          className={`w-full overflow-hidden rounded-lg border px-1.5 py-0.5 text-left transition ${
                                             isGroupSlot && groupStyles
                                               ? groupStyles.card
                                               : getCardClass(appt, isSelected)
@@ -3548,9 +3549,9 @@ onClick={() => {
                                           {isGroupSlot &&
                                           groupVisualState &&
                                           groupStyles ? (
-                                            <div className="min-w-0 space-y-0.5 overflow-hidden">
+                                            <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
                                               <p
-                                                className={`truncate text-[11px] font-semibold ${
+                                                className={`truncate text-[10px] font-semibold leading-none ${
                                                   isSelected
                                                     ? "text-white"
                                                     : "text-slate-900"
@@ -3560,7 +3561,7 @@ onClick={() => {
                                                   "Actividad grupal"}
                                               </p>
                                               <p
-                                                className={`truncate text-[10px] ${
+                                                className={`truncate text-[9px] leading-none ${
                                                   isSelected
                                                     ? "text-slate-200"
                                                     : "text-slate-600"
@@ -3569,7 +3570,7 @@ onClick={() => {
                                                 {activeGroupCount}/{groupCapacity} inscritos
                                               </p>
                                               <p
-                                                className={`truncate text-[10px] ${
+                                                className={`truncate text-[9px] leading-none ${
                                                   isSelected
                                                     ? "text-slate-200"
                                                     : "text-slate-500"
@@ -3579,9 +3580,9 @@ onClick={() => {
                                               </p>
                                             </div>
                                           ) : (
-                                            <div className="min-w-0 space-y-0.5 overflow-hidden">
+                                            <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
                                               <p
-                                                className={`truncate text-[11px] font-semibold ${
+                                                className={`truncate text-[10px] font-semibold leading-none ${
                                                   isSelected
                                                     ? "text-white"
                                                     : "text-slate-900"
@@ -3590,7 +3591,7 @@ onClick={() => {
                                                 {appt.customer_name}
                                               </p>
                                               <p
-                                                className={`truncate text-[10px] ${
+                                                className={`truncate text-[9px] leading-none ${
                                                   isSelected
                                                     ? "text-slate-200"
                                                     : "text-slate-600"
@@ -3600,7 +3601,7 @@ onClick={() => {
                                                   "Teléfono no disponible"}
                                               </p>
                                               <p
-                                                className={`truncate text-[10px] ${
+                                                className={`truncate text-[9px] leading-none ${
                                                   isSelected
                                                     ? "text-slate-200"
                                                     : "text-slate-500"
@@ -3969,7 +3970,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     setHoveredTimeKey("");
                                     handleAppointmentMouseLeave();
                                   }}
-                                  className={`w-full overflow-hidden rounded-lg border px-2 py-1 text-left transition ${getCardClass(
+                                  className={`w-full overflow-hidden rounded-lg border px-1.5 py-0.5 text-left transition ${getCardClass(
                                     appt,
                                     isSelected
                                   )}`}
@@ -3977,7 +3978,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     height: getAppointmentBlockMinHeight(appt),
                                   }}
                                 >
-                                  <div className="min-w-0 space-y-0.5 overflow-hidden">
+                                  <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
                                     {false ? (
                                     <div
                                       className={`text-[11px] font-semibold ${
@@ -4006,7 +4007,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     ) : null}
 
                                     <p
-                                      className={`truncate text-[11px] font-semibold ${
+                                      className={`truncate text-[10px] font-semibold leading-none ${
                                         isSelected
                                           ? "text-white"
                                           : "text-slate-900"
@@ -4016,7 +4017,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     </p>
 
                                     <p
-                                      className={`truncate text-[10px] ${
+                                      className={`truncate text-[9px] leading-none ${
                                         isSelected
                                           ? "text-slate-200"
                                           : "text-slate-600"
@@ -4041,7 +4042,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     ) : null}
 
                                     <p
-                                      className={`truncate text-[10px] ${
+                                      className={`truncate text-[9px] leading-none ${
                                         isSelected
                                           ? "text-slate-200"
                                           : "text-slate-500"
@@ -4256,7 +4257,7 @@ const appt = slotGroups[0]?.[0];
                                   setHoveredTimeKey("");
                                   handleAppointmentMouseLeave();
                                 }}
-                                className={`w-full overflow-hidden rounded-lg border px-2 py-1 text-left transition ${
+                                className={`w-full overflow-hidden rounded-lg border px-1.5 py-0.5 text-left transition ${
                                   isGroupSlot && groupStyles
                                     ? groupStyles.card
                                     : getCardClass(appt, isSelected)
@@ -4265,7 +4266,7 @@ const appt = slotGroups[0]?.[0];
                                   height: getAppointmentBlockMinHeight(appt),
                                 }}
                               >
-                                <div className="min-w-0 space-y-0.5 overflow-hidden">
+                                <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
                                   {false && !isGroupSlot ? (
                                   <div
                                     className={`text-[10px] font-semibold ${
@@ -4294,7 +4295,7 @@ const appt = slotGroups[0]?.[0];
                                   ) : null}
 
                                   {isGroupSlot && groupVisualState && groupStyles ? (
-  <div className="flex min-w-0 flex-col gap-0.5 overflow-hidden">
+  <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
     <div className="flex min-w-0 items-center gap-2">
       <div
         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
@@ -4305,7 +4306,7 @@ const appt = slotGroups[0]?.[0];
       </div>
 
       <p
-        className={`min-w-0 flex-1 truncate text-[11px] font-semibold ${
+        className={`min-w-0 flex-1 truncate text-[10px] font-semibold leading-none ${
           isSelected ? "text-white" : "text-slate-900"
         }`}
       >
@@ -4314,7 +4315,7 @@ const appt = slotGroups[0]?.[0];
     </div>
 
     <p
-      className={`truncate text-[10px] font-medium ${
+      className={`truncate text-[9px] font-medium leading-none ${
         isSelected ? "text-slate-200" : "text-slate-600"
       }`}
     >
@@ -4323,12 +4324,12 @@ const appt = slotGroups[0]?.[0];
 
     <div className="flex min-w-0 gap-1 overflow-hidden">
       <span
-        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${groupStyles.stateBadge}`}
+        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1 py-0 text-[8px] font-semibold leading-none ${groupStyles.stateBadge}`}
       >
         {groupVisualState.label}
       </span>
       <span
-        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${groupStyles.countBadge}`}
+        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1 py-0 text-[8px] font-semibold leading-none ${groupStyles.countBadge}`}
       >
         {activeGroupCount}/{groupCapacity} inscritos
       </span>
@@ -4336,7 +4337,7 @@ const appt = slotGroups[0]?.[0];
   </div>
 ) : (
   <p
-    className={`truncate text-[11px] font-semibold ${
+    className={`truncate text-[10px] font-semibold leading-none ${
       isSelected ? "text-white" : "text-slate-900"
     }`}
   >
@@ -4346,7 +4347,7 @@ const appt = slotGroups[0]?.[0];
 
                                   {!isGroupSlot ? (
                                   <p
-                                    className={`truncate text-[10px] ${
+                                    className={`truncate text-[9px] leading-none ${
                                       isSelected
                                         ? "text-slate-200"
                                         : "text-slate-600"
@@ -4373,7 +4374,7 @@ const appt = slotGroups[0]?.[0];
 
                                   {!isGroupSlot ? (
                                   <p
-  className={`truncate text-[10px] ${
+  className={`truncate text-[9px] leading-none ${
     isSelected
       ? "text-slate-200"
       : "text-slate-500"
