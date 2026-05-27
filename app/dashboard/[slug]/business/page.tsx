@@ -2493,8 +2493,20 @@ function updateHourByIndex(
     </h2>
   </div>
 
-  <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-    <div className="grid gap-4 xl:col-span-2 xl:grid-cols-[1.15fr_0.85fr]">
+  <div
+    className={`grid gap-4 ${
+      isMechanicSubtype
+        ? "xl:grid-cols-[0.85fr_1.15fr]"
+        : "xl:grid-cols-[1fr_0.86fr]"
+    }`}
+  >
+    <div
+      className={`grid gap-4 ${
+        isMechanicSubtype
+          ? "xl:col-span-2 xl:grid-cols-[1.15fr_0.85fr]"
+          : "xl:col-start-2 xl:row-start-1"
+      }`}
+    >
       {form.business_subtype === "taller_automotriz" ? (
         <Panel
           title="Campos de unidad/equipo"
@@ -2682,7 +2694,7 @@ function updateHourByIndex(
         title="Vista previa del formulario público"
         description="Así se verán los campos configurados cuando el cliente reserve."
         className={`bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)] ${
-          form.business_subtype === "taller_automotriz" ? "" : "xl:col-span-2"
+          isMechanicSubtype ? "" : ""
         }`}
       >
         <div
@@ -2795,7 +2807,11 @@ function updateHourByIndex(
       </Panel>
     </div>
 
-    <div className="xl:col-span-2">
+    <div
+      className={
+        isMechanicSubtype ? "xl:col-span-2" : "xl:col-start-1 xl:row-start-1"
+      }
+    >
     <Panel
       title="Campos de reserva"
       description="Define qué información solicitar al cliente al reservar."
