@@ -369,6 +369,7 @@ const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<A
   const [error, setError] = useState("");
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+  const [selectedEmptySlotKey, setSelectedEmptySlotKey] = useState("");
   const [cancelConfirmAppointment, setCancelConfirmAppointment] =
     useState<Appointment | null>(null);
   const [manualBookingDraft, setManualBookingDraft] =
@@ -987,6 +988,7 @@ next_control_custom_unit: "days",
 
   function handleSelectAppointment(appt: Appointment) {
     setSelectedAppointment(appt);
+    setSelectedEmptySlotKey("");
     setIsEditingReservation(false);
     syncEditForm(appt);
 
@@ -996,6 +998,30 @@ next_control_custom_unit: "days",
         block: "start",
       });
     }, 80);
+  }
+
+  function getEmptySlotKey(slotStart: string, staffId?: string | null) {
+    return `${slotStart}|${staffId || selectedStaffId || "no_staff"}`;
+  }
+
+  function selectEmptySlot(slotStart: string, staffId?: string | null) {
+    setSelectedAppointment(null);
+    setIsEditingReservation(false);
+    setHoverCard(null);
+    setSelectedEmptySlotKey(getEmptySlotKey(slotStart, staffId));
+  }
+
+  function clearCalendarSelection() {
+    setSelectedAppointment(null);
+    setSelectedEmptySlotKey("");
+    setIsEditingReservation(false);
+    setHoverCard(null);
+  }
+
+  function getEmptySlotClass(isSelected: boolean) {
+    return isSelected
+      ? "border-cyan-300/75 bg-cyan-400/10 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.22),0_0_18px_-10px_rgba(34,211,238,0.82)]"
+      : "";
   }
 
   function handleOpenSelectedGroup() {
@@ -2656,14 +2682,12 @@ const hasPendingClose = pendingCloseCount > 0;
               value={selectedStaffId}
               onChange={(e) => {
                 setSelectedStaffId(e.target.value);
-                setSelectedAppointment(null);
-                setIsEditingReservation(false);
                 setHoverCard(null);
                 setSearchResults([]);
                 setSearchError("");
               }}
               disabled={!selectedBranchId || loadingStaff}
-              className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+              className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 borderColor: "rgba(255,255,255,0.34)",
                 background: "rgba(15,23,42,0.18)",
@@ -2690,12 +2714,10 @@ const hasPendingClose = pendingCloseCount > 0;
               value={selectedServiceId}
               onChange={(e) => {
                 setSelectedServiceId(e.target.value);
-                setSelectedAppointment(null);
-                setIsEditingReservation(false);
                 setHoverCard(null);
               }}
               disabled={!selectedBranchId || loadingServices}
-              className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+              className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 borderColor: "rgba(255,255,255,0.34)",
                 background: "rgba(15,23,42,0.18)",
@@ -2722,11 +2744,9 @@ const hasPendingClose = pendingCloseCount > 0;
               value={activeFilter}
               onChange={(e) => {
                 setActiveFilter(e.target.value as FilterValue);
-                setSelectedAppointment(null);
-                setIsEditingReservation(false);
                 setHoverCard(null);
               }}
-              className="h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
+              className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
               style={{
                 borderColor: "rgba(255,255,255,0.34)",
                 background: "rgba(15,23,42,0.18)",
@@ -2958,13 +2978,23 @@ const hasPendingClose = pendingCloseCount > 0;
                   transform: translateY(0) scale(0.98);
                 }
 
-                .orbyx-nav-tab-active {
+                  .orbyx-nav-tab-active {
                   border-color: rgba(147,197,253,0.72) !important;
                   box-shadow:
                     0 0 0 1px rgba(147,197,253,0.2),
                     0 12px 28px -18px rgba(37,99,235,0.9),
                     0 0 24px -12px rgba(56,189,248,0.9);
-                }
+                  }
+
+                  .orbyx-agenda-filter-select option {
+                    background: #0f3fcf;
+                    color: #ffffff;
+                  }
+
+                  .orbyx-agenda-filter-select option:checked {
+                    background: #2563eb;
+                    color: #ffffff;
+                  }
 
                 @keyframes orbyx-nav-pulse {
                   0% {
@@ -3464,6 +3494,11 @@ onClick={() => {
                         return (
                           <div
                             key={staff.id}
+                            onClick={(event) => {
+                              if (event.target === event.currentTarget) {
+                                clearCalendarSelection();
+                              }
+                            }}
                             className="w-[260px] border-r last:border-r-0"
                             style={{ borderColor: "var(--border-color)" }}
                           >
@@ -3487,6 +3522,9 @@ onClick={() => {
                                 const isSlotClosed =
                                   selectedDayIsUnavailable ||
                                   !selectedDayAvailableSlotKeys.has(slotTimeKey);
+                                const isEmptySlotSelected =
+                                  selectedEmptySlotKey ===
+                                  getEmptySlotKey(slot, staff.id);
 
                                 if (isCoveredByLongAppointment) {
                                   return null;
@@ -3498,23 +3536,28 @@ onClick={() => {
                                       key={slot}
                                       role="button"
                                       tabIndex={0}
-                                      onClick={() =>
-                                        isSlotClosed
-                                          ? openClosedScheduleActions(
-                                              staff.id,
-                                              selectedDayIsUnavailable ? "day" : "block"
-                                            )
-                                          : openFreeSlotActions(slot, staff.id)
-                                      }
+                                      onClick={() => {
+                                        selectEmptySlot(slot, staff.id);
+                                        if (isSlotClosed) {
+                                          openClosedScheduleActions(
+                                            staff.id,
+                                            selectedDayIsUnavailable ? "day" : "block"
+                                          );
+                                        } else {
+                                          openFreeSlotActions(slot, staff.id);
+                                        }
+                                      }}
                                       onKeyDown={(event) => {
                                         if (event.key === "Enter" || event.key === " ") {
                                           event.preventDefault();
                                           if (isSlotClosed) {
+                                            selectEmptySlot(slot, staff.id);
                                             openClosedScheduleActions(
                                               staff.id,
                                               selectedDayIsUnavailable ? "day" : "block"
                                             );
                                           } else {
+                                            selectEmptySlot(slot, staff.id);
                                             openFreeSlotActions(slot, staff.id);
                                           }
                                         }
@@ -3523,20 +3566,26 @@ onClick={() => {
                                         setHoveredTimeKey(slotTimeKey)
                                       }
                                       onMouseLeave={() => setHoveredTimeKey("")}
-                                      className="flex h-[54px] cursor-pointer items-center justify-center border-t px-2 text-[10px] font-semibold transition"
+                                      className={`flex h-[54px] cursor-pointer items-center justify-center border-t px-2 text-[10px] font-semibold transition ${getEmptySlotClass(isEmptySlotSelected)}`}
                                       style={{
                                         borderColor: isHourStart
                                           ? isSlotClosed
                                             ? "rgba(248,113,113,0.24)"
+                                            : isEmptySlotSelected
+                                            ? "rgba(103,232,249,0.72)"
                                             : "rgba(148,163,184,0.22)"
                                           : isSlotClosed
                                           ? "rgba(248,113,113,0.14)"
+                                          : isEmptySlotSelected
+                                          ? "rgba(103,232,249,0.58)"
                                           : "rgba(148,163,184,0.14)",
                                         background:
                                           isSlotClosed
                                             ? hoveredTimeKey === slotTimeKey
                                               ? "linear-gradient(180deg, rgba(127,29,29,0.28), rgba(88,28,46,0.18))"
                                               : "linear-gradient(180deg, rgba(127,29,29,0.22), rgba(88,28,46,0.14))"
+                                            : isEmptySlotSelected
+                                            ? "linear-gradient(180deg, rgba(14,165,233,0.16), rgba(37,99,235,0.08))"
                                             : hoveredTimeKey === slotTimeKey
                                             ? "rgba(59,130,246,0.08)"
                                             : "transparent",
@@ -3797,6 +3846,11 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                   return (
                     <div
                       key={dayKey}
+                      onClick={(event) => {
+                        if (event.target === event.currentTarget) {
+                          clearCalendarSelection();
+                        }
+                      }}
                       className="min-h-[660px] border p-3 first:xl:rounded-l-none last:xl:rounded-r-2xl md:rounded-2xl xl:rounded-none xl:border-l-0"
                       style={{
   borderColor: dayPendingCount > 0
@@ -4177,6 +4231,8 @@ const slotAppointments = dayAppointments.filter(
 );
 const slotTime = new Date(slot).getTime();
 const slotTimeKey = getTimeKey(slot);
+const isEmptySlotSelected =
+  selectedEmptySlotKey === getEmptySlotKey(slot, selectedStaffId);
 const isCoveredByLongAppointment = dayAppointments.some((a) => {
   const start = new Date(a.start_at).getTime();
   const end = new Date(a.end_at).getTime();
@@ -4202,43 +4258,54 @@ const appt = slotGroups[0]?.[0];
                                   key={slot}
                                   role="button"
                                   tabIndex={0}
-                                  onClick={() =>
-                                    isSlotClosed
-                                      ? openClosedScheduleActions(
-                                          selectedStaffId,
-                                          isClosedScheduleDay ? "day" : "block"
-                                        )
-                                      : openFreeSlotActions(slot, selectedStaffId)
-                                  }
+                                  onClick={() => {
+                                    selectEmptySlot(slot, selectedStaffId);
+                                    if (isSlotClosed) {
+                                      openClosedScheduleActions(
+                                        selectedStaffId,
+                                        isClosedScheduleDay ? "day" : "block"
+                                      );
+                                    } else {
+                                      openFreeSlotActions(slot, selectedStaffId);
+                                    }
+                                  }}
                                   onKeyDown={(event) => {
                                     if (event.key === "Enter" || event.key === " ") {
                                       event.preventDefault();
                                       if (isSlotClosed) {
+                                        selectEmptySlot(slot, selectedStaffId);
                                         openClosedScheduleActions(
                                           selectedStaffId,
                                           isClosedScheduleDay ? "day" : "block"
                                         );
                                       } else {
+                                        selectEmptySlot(slot, selectedStaffId);
                                         openFreeSlotActions(slot, selectedStaffId);
                                       }
                                     }
                                   }}
                                   onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                   onMouseLeave={() => setHoveredTimeKey("")}
-                                  className="hidden h-[54px] cursor-pointer border-t px-2 text-center text-[10px] font-semibold transition xl:flex xl:items-center xl:justify-center"
+                                  className={`hidden h-[54px] cursor-pointer border-t px-2 text-center text-[10px] font-semibold transition xl:flex xl:items-center xl:justify-center ${getEmptySlotClass(isEmptySlotSelected)}`}
                                   style={{
                                     borderColor: isHourStart
                                       ? isSlotClosed
                                         ? "rgba(248,113,113,0.26)"
+                                        : isEmptySlotSelected
+                                        ? "rgba(103,232,249,0.72)"
                                         : "rgba(148,163,184,0.22)"
                                       : isSlotClosed
                                       ? "rgba(248,113,113,0.14)"
+                                      : isEmptySlotSelected
+                                      ? "rgba(103,232,249,0.58)"
                                       : "rgba(148,163,184,0.14)",
                                     background:
                                       isSlotClosed
                                         ? hoveredTimeKey === slotTimeKey
                                           ? "linear-gradient(180deg, rgba(127,29,29,0.28), rgba(88,28,46,0.18))"
                                           : "linear-gradient(180deg, rgba(127,29,29,0.22), rgba(88,28,46,0.14))"
+                                        : isEmptySlotSelected
+                                        ? "linear-gradient(180deg, rgba(14,165,233,0.16), rgba(37,99,235,0.08))"
                                         : hoveredTimeKey === slotTimeKey
                                         ? "rgba(59,130,246,0.08)"
                                         : "transparent",
