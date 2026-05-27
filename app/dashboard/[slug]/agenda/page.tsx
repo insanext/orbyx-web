@@ -476,6 +476,13 @@ next_control_custom_unit: "days",
     return Math.max(Math.round(rows * 54) - 6, 34);
   }
 
+  function getAppointmentBlockDensity(height: number) {
+    return {
+      showPhone: height >= 56,
+      showService: height >= 42,
+    };
+  }
+
   function formatLongDate(dateString: string) {
     const text = new Date(dateString).toLocaleDateString("es-CL", {
       weekday: "long",
@@ -693,38 +700,38 @@ function generateSlotsFromWindows(
     const visualStatus = getVisualStatus(appt);
 
     if (selected) {
-      return "border-cyan-300/70 bg-slate-950 text-white shadow-[0_0_0_1px_rgba(34,211,238,0.22),0_0_22px_-8px_rgba(34,211,238,0.95)]";
+      return "border-cyan-300/80 bg-[linear-gradient(135deg,rgba(8,47,73,0.70),rgba(15,23,42,0.82))] text-white shadow-[0_0_0_1px_rgba(34,211,238,0.24),0_0_22px_-8px_rgba(34,211,238,0.95)]";
     }
 
     if (visualStatus === "pending_close") {
-      return "border-red-400/70 bg-[linear-gradient(135deg,rgba(127,29,29,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(248,113,113,0.95)] hover:border-red-300";
+      return "border-red-400/75 bg-[linear-gradient(135deg,rgba(127,29,29,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(248,113,113,0.98)] hover:border-red-300";
     }
 
     if (visualStatus === "completed") {
-      return "border-emerald-400/70 bg-[linear-gradient(135deg,rgba(6,78,59,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(52,211,153,0.95)] hover:border-emerald-300";
+      return "border-emerald-400/75 bg-[linear-gradient(135deg,rgba(6,95,70,0.62),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(52,211,153,0.98)] hover:border-emerald-300";
     }
 
     if (visualStatus === "no_show") {
-      return "border-slate-400/60 bg-[linear-gradient(135deg,rgba(51,65,85,0.48),rgba(15,23,42,0.88))] text-white shadow-[0_0_16px_-12px_rgba(148,163,184,0.85)] opacity-90 hover:border-slate-300";
+      return "border-slate-400/65 bg-[linear-gradient(135deg,rgba(71,85,105,0.66),rgba(15,23,42,0.76))] text-white shadow-[0_0_18px_-12px_rgba(148,163,184,0.9)] opacity-90 hover:border-slate-300";
     }
 
     if (visualStatus === "canceled") {
-      return "border-slate-500/55 bg-[linear-gradient(135deg,rgba(30,41,59,0.56),rgba(15,23,42,0.88))] text-slate-200 opacity-80 hover:border-slate-400";
+      return "border-slate-500/60 bg-[linear-gradient(135deg,rgba(51,65,85,0.62),rgba(15,23,42,0.76))] text-slate-200 opacity-80 hover:border-slate-400";
     }
 
     if (visualStatus === "rescheduled") {
-      return "border-violet-400/70 bg-[linear-gradient(135deg,rgba(76,29,149,0.40),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(167,139,250,0.95)] hover:border-violet-300";
+      return "border-violet-400/75 bg-[linear-gradient(135deg,rgba(91,33,182,0.62),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(167,139,250,0.98)] hover:border-violet-300";
     }
 
     if (visualStatus === "pending") {
-      return "border-orange-400/75 bg-[linear-gradient(135deg,rgba(124,45,18,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(251,146,60,0.95)] hover:border-orange-300";
+      return "border-orange-400/75 bg-[linear-gradient(135deg,rgba(154,52,18,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(251,146,60,0.98)] hover:border-orange-300";
     }
 
     if (visualStatus === "in_progress") {
-      return "border-cyan-300/75 bg-[linear-gradient(135deg,rgba(8,47,73,0.50),rgba(15,23,42,0.88))] text-white shadow-[0_0_20px_-10px_rgba(34,211,238,0.95)] hover:border-cyan-200";
+      return "border-cyan-300/80 bg-[linear-gradient(135deg,rgba(8,89,117,0.66),rgba(15,23,42,0.72))] text-white shadow-[0_0_22px_-10px_rgba(34,211,238,0.98)] hover:border-cyan-200";
     }
 
-    return "border-blue-400/70 bg-[linear-gradient(135deg,rgba(30,64,175,0.38),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(96,165,250,0.95)] hover:border-blue-300";
+    return "border-blue-400/75 bg-[linear-gradient(135deg,rgba(30,64,175,0.62),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(96,165,250,0.98)] hover:border-blue-300";
   }
 
   function getAppointmentGroupKey(appt: Appointment) {
@@ -832,7 +839,7 @@ function generateSlotsFromWindows(
   ): { card: string; icon: string; stateBadge: string; countBadge: string } {
     if (selected) {
       return {
-        card: "border-cyan-300/70 bg-slate-950 text-white shadow-[0_0_0_1px_rgba(34,211,238,0.22),0_0_22px_-8px_rgba(34,211,238,0.95)]",
+        card: "border-cyan-300/80 bg-[linear-gradient(135deg,rgba(8,47,73,0.70),rgba(15,23,42,0.82))] text-white shadow-[0_0_0_1px_rgba(34,211,238,0.24),0_0_22px_-8px_rgba(34,211,238,0.95)]",
         icon: "text-white",
         stateBadge: "border-white/20 bg-white/10 text-white",
         countBadge: "border-white/20 bg-white/10 text-white",
@@ -844,37 +851,37 @@ function generateSlotsFromWindows(
       { card: string; icon: string; stateBadge: string; countBadge: string }
     > = {
       scheduled: {
-        card: "border-violet-400/70 bg-[linear-gradient(135deg,rgba(76,29,149,0.44),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(167,139,250,0.95)] hover:border-violet-300",
+        card: "border-violet-400/75 bg-[linear-gradient(135deg,rgba(91,33,182,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(167,139,250,0.98)] hover:border-violet-300",
         icon: "text-violet-200",
         stateBadge: "border-violet-300/30 bg-violet-400/10 text-violet-100",
         countBadge: "border-violet-300/35 bg-violet-400/15 text-violet-50",
       },
       pending: {
-        card: "border-red-400/70 bg-[linear-gradient(135deg,rgba(127,29,29,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(248,113,113,0.95)] hover:border-red-300",
+        card: "border-red-400/75 bg-[linear-gradient(135deg,rgba(127,29,29,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(248,113,113,0.98)] hover:border-red-300",
         icon: "text-red-200",
         stateBadge: "border-red-300/30 bg-red-400/10 text-red-100",
         countBadge: "border-red-300/35 bg-red-400/15 text-red-50",
       },
       partial: {
-        card: "border-orange-400/75 bg-[linear-gradient(135deg,rgba(124,45,18,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(251,146,60,0.95)] hover:border-orange-300",
+        card: "border-orange-400/75 bg-[linear-gradient(135deg,rgba(154,52,18,0.64),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(251,146,60,0.98)] hover:border-orange-300",
         icon: "text-orange-200",
         stateBadge: "border-orange-300/30 bg-orange-400/10 text-orange-100",
         countBadge: "border-orange-300/35 bg-orange-400/15 text-orange-50",
       },
       closed: {
-        card: "border-emerald-400/70 bg-[linear-gradient(135deg,rgba(6,78,59,0.42),rgba(15,23,42,0.88))] text-white shadow-[0_0_18px_-12px_rgba(52,211,153,0.95)] hover:border-emerald-300",
+        card: "border-emerald-400/75 bg-[linear-gradient(135deg,rgba(6,95,70,0.62),rgba(15,23,42,0.74))] text-white shadow-[0_0_20px_-11px_rgba(52,211,153,0.98)] hover:border-emerald-300",
         icon: "text-emerald-200",
         stateBadge: "border-emerald-300/30 bg-emerald-400/10 text-emerald-100",
         countBadge: "border-emerald-300/35 bg-emerald-400/15 text-emerald-50",
       },
       canceled: {
-        card: "border-slate-500/55 bg-[linear-gradient(135deg,rgba(30,41,59,0.56),rgba(15,23,42,0.88))] text-slate-200 opacity-85 hover:border-slate-400",
+        card: "border-slate-500/60 bg-[linear-gradient(135deg,rgba(51,65,85,0.62),rgba(15,23,42,0.76))] text-slate-200 opacity-85 hover:border-slate-400",
         icon: "text-slate-300",
         stateBadge: "border-slate-300/25 bg-slate-400/10 text-slate-200",
         countBadge: "border-slate-300/25 bg-slate-400/10 text-slate-200",
       },
       in_progress: {
-        card: "border-cyan-300/75 bg-[linear-gradient(135deg,rgba(8,47,73,0.52),rgba(15,23,42,0.88))] text-white shadow-[0_0_20px_-10px_rgba(34,211,238,0.95)] hover:border-cyan-200",
+        card: "border-cyan-300/80 bg-[linear-gradient(135deg,rgba(8,89,117,0.66),rgba(15,23,42,0.72))] text-white shadow-[0_0_22px_-10px_rgba(34,211,238,0.98)] hover:border-cyan-200",
         icon: "text-cyan-200",
         stateBadge: "border-cyan-300/30 bg-cyan-400/10 text-cyan-100",
         countBadge: "border-cyan-300/35 bg-cyan-400/15 text-cyan-50",
@@ -3583,6 +3590,12 @@ onClick={() => {
                                         Number(appt.service_capacity || 0) ||
                                         activeGroupCount ||
                                         group.length;
+                                      const appointmentBlockHeight =
+                                        getAppointmentBlockMinHeight(appt);
+                                      const appointmentDensity =
+                                        getAppointmentBlockDensity(
+                                          appointmentBlockHeight
+                                        );
 
                                       return (
                                         <button
@@ -3609,8 +3622,7 @@ onClick={() => {
                                               : getCardClass(appt, isSelected)
                                           }`}
                                           style={{
-                                            height:
-                                              getAppointmentBlockMinHeight(appt),
+                                            height: appointmentBlockHeight,
                                           }}
                                         >
                                           {isGroupSlot &&
@@ -3632,14 +3644,18 @@ onClick={() => {
                                               <p className="truncate text-[10px] font-semibold leading-none text-white">
                                                 {appt.customer_name}
                                               </p>
+                                              {appointmentDensity.showPhone ? (
                                               <p className="truncate text-[9px] leading-none text-slate-200">
                                                 {appt.customer_phone ||
                                                   "Teléfono no disponible"}
                                               </p>
+                                              ) : null}
+                                              {appointmentDensity.showService ? (
                                               <p className="truncate text-[9px] leading-none text-slate-300">
                                                 {appt.service_name_snapshot ||
                                                   "Reserva"}
                                               </p>
+                                              ) : null}
                                             </div>
                                           )}
                                         </button>
@@ -3986,6 +4002,12 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             dayAppointments.map((appt) => {
                               const isSelected =
                                 selectedAppointment?.id === appt.id;
+                              const appointmentBlockHeight =
+                                getAppointmentBlockMinHeight(appt);
+                              const appointmentDensity =
+                                getAppointmentBlockDensity(
+                                  appointmentBlockHeight
+                                );
 
                               return (
                                 <button
@@ -4005,7 +4027,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     isSelected
                                   )}`}
                                   style={{
-                                    height: getAppointmentBlockMinHeight(appt),
+                                    height: appointmentBlockHeight,
                                   }}
                                 >
                                   <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
@@ -4040,9 +4062,11 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                       {appt.customer_name}
                                     </p>
 
+                                    {appointmentDensity.showPhone ? (
                                     <p className="truncate text-[9px] leading-none text-slate-200">
                                       {appt.customer_phone || "Teléfono no disponible"}
                                     </p>
+                                    ) : null}
 
                                     {false && appt.customer_data?.pet_name ? (
                                       <p
@@ -4059,9 +4083,11 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                       </p>
                                     ) : null}
 
+                                    {appointmentDensity.showService ? (
                                     <p className="truncate text-[9px] leading-none text-slate-300">
                                       {appt.service_name_snapshot || "Reserva"}
                                     </p>
+                                    ) : null}
 
                                     {false ? (
                                     <p
@@ -4255,6 +4281,12 @@ const appt = slotGroups[0]?.[0];
                                     Number(appt.service_capacity || 0) ||
                                     activeGroupCount ||
                                     group.length;
+                                  const appointmentBlockHeight =
+                                    getAppointmentBlockMinHeight(appt);
+                                  const appointmentDensity =
+                                    getAppointmentBlockDensity(
+                                      appointmentBlockHeight
+                                    );
 
                                   return (
                               <button
@@ -4277,7 +4309,7 @@ const appt = slotGroups[0]?.[0];
                                     : getCardClass(appt, isSelected)
                                 }`}
                                 style={{
-                                  height: getAppointmentBlockMinHeight(appt),
+                                  height: appointmentBlockHeight,
                                 }}
                               >
                                 <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
@@ -4331,7 +4363,7 @@ const appt = slotGroups[0]?.[0];
   </p>
 )}
 
-                                  {!isGroupSlot ? (
+                                  {!isGroupSlot && appointmentDensity.showPhone ? (
                                   <p className="truncate text-[9px] leading-none text-slate-200">
                                     {appt.customer_phone || "Teléfono no disponible"}
                                   </p>
@@ -4352,7 +4384,7 @@ const appt = slotGroups[0]?.[0];
                                     </p>
                                   ) : null}
 
-                                  {!isGroupSlot ? (
+                                  {!isGroupSlot && appointmentDensity.showService ? (
                                   <p className="truncate text-[9px] leading-none text-slate-300">
   {isGroupSlot
     ? getStaffName(appt.staff_id)
@@ -4372,17 +4404,6 @@ const appt = slotGroups[0]?.[0];
                                   </p>
                                   ) : null}
 
-                                  {!isGroupSlot && isPastPendingClosure(appt) ? (
-                                    <div
-                                      className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${
-                                        isSelected
-                                          ? "bg-white/10 text-white"
-                                          : "bg-rose-100 text-rose-700"
-                                      }`}
-                                    >
-                                      Requiere cierre
-                                    </div>
-                                  ) : null}
                                 </div>
                               </button>
                                   );
