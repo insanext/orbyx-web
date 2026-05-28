@@ -138,6 +138,16 @@ type HoverCardState = {
   y: number;
 } | null;
 
+type WeekGroupedAppointmentsPopover = {
+  key: string;
+  appointments: Appointment[];
+  dayLabel: string;
+  timeLabel: string;
+  targetDate: Date;
+  x: number;
+  y: number;
+} | null;
+
 type NoticeTone =
   | "info"
   | "success"
@@ -368,6 +378,8 @@ const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<A
   const [error, setError] = useState("");
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+  const [selectedWeekGroup, setSelectedWeekGroup] =
+    useState<WeekGroupedAppointmentsPopover>(null);
   const [selectedEmptySlotKey, setSelectedEmptySlotKey] = useState("");
   const [cancelConfirmAppointment, setCancelConfirmAppointment] =
     useState<Appointment | null>(null);
@@ -495,6 +507,16 @@ next_control_custom_unit: "days",
       day: "numeric",
       month: "long",
       year: "numeric",
+    });
+
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  function formatPopoverDay(date: Date) {
+    const text = date.toLocaleDateString("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
     });
 
     return text.charAt(0).toUpperCase() + text.slice(1);
@@ -775,6 +797,31 @@ function generateSlotsFromWindows(
       );
   }
 
+  function groupAppointmentsByTimeRange(items: Appointment[]) {
+    const map = new Map<string, Appointment[]>();
+
+    for (const appt of items) {
+      const key = `${new Date(appt.start_at).toISOString()}|${new Date(
+        appt.end_at
+      ).toISOString()}`;
+      const current = map.get(key) || [];
+      current.push(appt);
+      map.set(key, current);
+    }
+
+    return Array.from(map.values())
+      .map((group) =>
+        [...group].sort((a, b) =>
+          getStaffName(a.staff_id).localeCompare(getStaffName(b.staff_id), "es")
+        )
+      )
+      .sort(
+        (a, b) =>
+          new Date(a[0]?.start_at || 0).getTime() -
+          new Date(b[0]?.start_at || 0).getTime()
+      );
+  }
+
   function isGroupAppointment(appt?: Appointment | null) {
     return appt?.service_is_group === true;
   }
@@ -987,6 +1034,7 @@ next_control_custom_unit: "days",
 
   function handleSelectAppointment(appt: Appointment) {
     setSelectedAppointment(appt);
+    setSelectedWeekGroup(null);
     setSelectedEmptySlotKey("");
     setIsEditingReservation(false);
     syncEditForm(appt);
@@ -1005,6 +1053,7 @@ next_control_custom_unit: "days",
 
   function selectEmptySlot(slotStart: string, staffId?: string | null) {
     setSelectedAppointment(null);
+    setSelectedWeekGroup(null);
     setIsEditingReservation(false);
     setHoverCard(null);
     setSelectedEmptySlotKey(getEmptySlotKey(slotStart, staffId));
@@ -1012,6 +1061,7 @@ next_control_custom_unit: "days",
 
   function clearCalendarSelection() {
     setSelectedAppointment(null);
+    setSelectedWeekGroup(null);
     setSelectedEmptySlotKey("");
     setIsEditingReservation(false);
     setHoverCard(null);
@@ -1023,6 +1073,7 @@ next_control_custom_unit: "days",
 
       if (!(target instanceof Element)) return;
       if (target.closest("[data-calendar-selectable='true']")) return;
+      if (target.closest("[data-calendar-group-popover='true']")) return;
 
       clearCalendarSelection();
     }
@@ -1030,6 +1081,56 @@ next_control_custom_unit: "days",
     document.addEventListener("click", handleDocumentClick);
     return () => document.removeEventListener("click", handleDocumentClick);
   }, []);
+
+  function openWeekGroupedAppointments(
+    event: React.MouseEvent<HTMLButtonElement>,
+    group: Appointment[]
+  ) {
+    const first = group[0];
+    if (!first) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const popoverWidth = 320;
+    const popoverHeight = 260;
+    const gap = 10;
+    const viewportPadding = 12;
+    const belowY = rect.bottom + gap;
+    const x = Math.min(
+      Math.max(viewportPadding, rect.left + rect.width / 2 - popoverWidth / 2),
+      window.innerWidth - popoverWidth - viewportPadding
+    );
+    const y =
+      belowY + popoverHeight > window.innerHeight
+        ? Math.max(viewportPadding, rect.top - popoverHeight - gap)
+        : belowY;
+
+    setSelectedAppointment(null);
+    setSelectedEmptySlotKey("");
+    setIsEditingReservation(false);
+    setHoverCard(null);
+    setSelectedWeekGroup({
+      key: `${new Date(first.start_at).toISOString()}|${new Date(
+        first.end_at
+      ).toISOString()}`,
+      appointments: group,
+      dayLabel: formatPopoverDay(new Date(first.start_at)),
+      timeLabel: `${formatHour(first.start_at)} - ${formatHour(first.end_at)}`,
+      targetDate: new Date(first.start_at),
+      x,
+      y,
+    });
+  }
+
+  function goToWeekGroupDetail() {
+    if (!selectedWeekGroup) return;
+
+    setWeekBaseDate(selectedWeekGroup.targetDate);
+    setAgendaView("day");
+    setSelectedWeekGroup(null);
+    setSelectedAppointment(null);
+    setSelectedEmptySlotKey("");
+    setHoverCard(null);
+  }
 
   function getEmptySlotClass(isSelected: boolean) {
     return isSelected
@@ -4311,7 +4412,9 @@ const isCoveredByLongAppointment = dayAppointments.some((a) => {
   return start < slotTime && end > slotTime;
 });
 
-const slotGroups = groupAppointmentsByBlock(slotAppointments);
+const slotGroups = selectedStaffId
+  ? groupAppointmentsByBlock(slotAppointments)
+  : groupAppointmentsByTimeRange(slotAppointments);
 const appt = slotGroups[0]?.[0];
 
                             const isHourStart = index % 2 === 0;
@@ -4422,6 +4525,8 @@ const appt = slotGroups[0]?.[0];
                               >
                                 {slotGroups.map((group) => {
                                   const appt = group[0];
+                                  const isWeekAggregate =
+                                    !selectedStaffId && group.length > 1;
                                   const isGroupSlot = isGroupAppointment(appt);
                                   const selectedKey = selectedAppointment
                                     ? getAppointmentGroupKey(selectedAppointment)
@@ -4453,6 +4558,61 @@ const appt = slotGroups[0]?.[0];
                                       appointmentBlockHeight
                                     );
 
+                                  if (isWeekAggregate) {
+                                    const aggregateKey = `${new Date(
+                                      appt.start_at
+                                    ).toISOString()}|${new Date(
+                                      appt.end_at
+                                    ).toISOString()}|${group.length}`;
+                                    const isAggregateSelected =
+                                      selectedWeekGroup?.key ===
+                                      `${new Date(
+                                        appt.start_at
+                                      ).toISOString()}|${new Date(
+                                        appt.end_at
+                                      ).toISOString()}`;
+
+                                    return (
+                                      <button
+                                        key={aggregateKey}
+                                        type="button"
+                                        data-calendar-selectable="true"
+                                        onClick={(event) =>
+                                          openWeekGroupedAppointments(event, group)
+                                        }
+                                        onMouseEnter={() =>
+                                          setHoveredTimeKey(
+                                            getTimeKey(appt.start_at)
+                                          )
+                                        }
+                                        onMouseLeave={() =>
+                                          setHoveredTimeKey("")
+                                        }
+                                        className={`absolute inset-x-0 top-0 overflow-hidden rounded-sm border px-1.5 py-0.5 text-left text-white transition duration-200 ease-out ${
+                                          isAggregateSelected
+                                            ? "z-20 cursor-pointer border-blue-200/90 bg-[linear-gradient(135deg,rgba(29,78,216,0.94),rgba(14,165,233,0.62))] shadow-[0_0_28px_-9px_rgba(56,189,248,0.92)]"
+                                            : "z-10 cursor-pointer border-blue-300/75 bg-[linear-gradient(135deg,rgba(30,64,175,0.90),rgba(37,99,235,0.58))] shadow-[0_0_18px_-10px_rgba(96,165,250,0.85)] hover:z-20 hover:border-blue-200 hover:shadow-[0_0_24px_-9px_rgba(96,165,250,0.95)]"
+                                        }`}
+                                        style={{
+                                          height: appointmentBlockHeight,
+                                        }}
+                                      >
+                                        <div className="flex h-full min-w-0 flex-col justify-center gap-1 overflow-hidden leading-none">
+                                          <div className="flex min-w-0 items-center gap-1.5">
+                                            <UsersRound className="h-3 w-3 shrink-0 text-cyan-100" />
+                                            <p className="min-w-0 flex-1 truncate text-[10px] font-semibold leading-none text-white">
+                                              {group.length} Agendamientos
+                                            </p>
+                                          </div>
+                                          <p className="truncate text-[9px] font-medium leading-none text-blue-100">
+                                            {formatHour(appt.start_at)} -{" "}
+                                            {formatHour(appt.end_at)}
+                                          </p>
+                                        </div>
+                                      </button>
+                                    );
+                                  }
+
                                   return (
                               <button
                                 key={getAppointmentGroupKey(appt)}
@@ -4461,7 +4621,9 @@ const appt = slotGroups[0]?.[0];
                                 onClick={() => handleSelectAppointment(appt)}
                                 onMouseEnter={(e) => {
                                   setHoveredTimeKey(getTimeKey(appt.start_at));
-                                  handleAppointmentMouseEnter(e, appt);
+                                  if (selectedStaffId) {
+                                    handleAppointmentMouseEnter(e, appt);
+                                  }
                                 }}
                                 onMouseLeave={() => {
                                   setHoveredTimeKey("");
@@ -4588,6 +4750,106 @@ const appt = slotGroups[0]?.[0];
             )}
           </div>
         </section>
+
+        {selectedWeekGroup ? (
+          <div
+            data-calendar-group-popover="true"
+            className="fixed z-[78] w-[320px] max-w-[calc(100vw-24px)] rounded-2xl border p-3 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.72)] backdrop-blur"
+            style={{
+              left: selectedWeekGroup.x,
+              top: selectedWeekGroup.y,
+              borderColor: "rgba(96,165,250,0.28)",
+              background:
+                "color-mix(in srgb, var(--bg-card) 94%, rgba(15,23,42,0.55))",
+            }}
+          >
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-blue-300/35 bg-blue-500/15 text-blue-200 shadow-[0_0_18px_-9px_rgba(59,130,246,0.9)]">
+                  <UsersRound className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className="truncate text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {selectedWeekGroup.appointments.length} Agendamientos
+                  </p>
+                  <p
+                    className="mt-0.5 truncate text-[11px]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {selectedWeekGroup.dayLabel} · {selectedWeekGroup.timeLabel}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedWeekGroup(null)}
+                className="rounded-lg border p-1 transition hover:border-blue-300/50 hover:bg-blue-500/10"
+                style={{
+                  borderColor: "var(--border-color)",
+                  color: "var(--text-muted)",
+                }}
+                aria-label="Cerrar detalle agrupado"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <div
+              className="grid grid-cols-[1fr_1fr] gap-2 border-b pb-2 text-[10px] font-semibold uppercase tracking-[0.08em]"
+              style={{
+                borderColor: "var(--border-color)",
+                color: "var(--text-muted)",
+              }}
+            >
+              <span>Profesional</span>
+              <span>Servicio</span>
+            </div>
+
+            <div className="max-h-36 overflow-y-auto py-1">
+              {selectedWeekGroup.appointments.map((appt) => (
+                <div
+                  key={appt.id}
+                  className="grid grid-cols-[1fr_1fr] gap-2 rounded-lg px-1.5 py-2 text-[11px] transition hover:bg-blue-500/10"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  <span className="truncate font-semibold">
+                    {getStaffName(appt.staff_id)}
+                  </span>
+                  <span className="truncate" style={{ color: "var(--text-muted)" }}>
+                    {appt.service_name_snapshot || "Reserva"}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={goToWeekGroupDetail}
+              className="mt-3 flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition hover:border-blue-300/65 hover:bg-blue-500/12"
+              style={{
+                borderColor: "rgba(96,165,250,0.32)",
+                background:
+                  "linear-gradient(135deg, rgba(37,99,235,0.13), rgba(14,165,233,0.08))",
+              }}
+            >
+              <span>
+                <span className="block text-xs font-semibold text-blue-200">
+                  Ir al detalle
+                </span>
+                <span
+                  className="block text-[11px]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Ver en Día por profesional
+                </span>
+              </span>
+              <CalendarDays className="h-4 w-4 text-blue-200" />
+            </button>
+          </div>
+        ) : null}
 
         {selectedAppointment ? (
         <div
