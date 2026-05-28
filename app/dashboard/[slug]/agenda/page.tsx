@@ -3513,7 +3513,7 @@ onClick={() => {
                         return (
                           <div
                             key={slot}
-                            className="flex h-[54px] items-start justify-end px-3 pt-1.5 text-[11px]"
+                            className="flex h-[54px] items-start justify-end border-t px-3 pt-1.5 text-[11px]"
                             style={{
                               borderColor: "rgba(148,163,184,0.18)",
                               color:
@@ -3581,7 +3581,21 @@ onClick={() => {
                                   getEmptySlotKey(slot, staff.id);
 
                                 if (isCoveredByLongAppointment) {
-                                  return null;
+                                  return (
+                                    <div
+                                      key={slot}
+                                      className="h-[54px] border-t"
+                                      style={{
+                                        borderColor: isHourStart
+                                          ? "rgba(148,163,184,0.22)"
+                                          : "rgba(148,163,184,0.14)",
+                                        background:
+                                          hoveredTimeKey === slotTimeKey
+                                            ? "rgba(59,130,246,0.08)"
+                                            : "transparent",
+                                      }}
+                                    />
+                                  );
                                 }
 
                                 if (slotGroups.length === 0) {
@@ -3659,9 +3673,8 @@ onClick={() => {
                                       setHoveredTimeKey(slotTimeKey)
                                     }
                                     onMouseLeave={() => setHoveredTimeKey("")}
-                                    className="border-t p-1.5"
+                                    className="relative h-[54px] border-t"
                                     style={{
-                                      minHeight: 54,
                                       borderColor: isHourStart
                                         ? "rgba(148,163,184,0.22)"
                                         : "rgba(148,163,184,0.14)",
@@ -3727,7 +3740,7 @@ onClick={() => {
                                             setHoveredTimeKey("");
                                             handleAppointmentMouseLeave();
                                           }}
-                                          className={`w-full overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
+                                          className={`absolute inset-x-1.5 top-0 z-10 overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
                                             isGroupSlot ? "px-1" : "px-1.5"
                                           } ${getAppointmentInteractionClass(
                                             isSelected
@@ -3790,13 +3803,13 @@ onClick={() => {
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))] xl:gap-0">
                 <div
-                  className="hidden rounded-l-2xl border border-r-0 p-3 xl:block"
+                  className="hidden rounded-l-2xl border border-r-0 xl:block"
                   style={{
                     borderColor: "var(--agenda-calendar-line)",
                     background: "var(--agenda-calendar-time-bg)",
                   }}
                 >
-                  <div className="h-[58px]" />
+                    <div className="h-[58px]" />
                   <div className="space-y-0">
                     {calendarTimeSlots.map((time) => (
                       <div
@@ -3907,7 +3920,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                           clearCalendarSelection();
                         }
                       }}
-                      className="min-h-[660px] border p-3 first:xl:rounded-l-none last:xl:rounded-r-2xl md:rounded-2xl xl:rounded-none xl:border-l-0"
+                      className="min-h-[660px] border first:xl:rounded-l-none last:xl:rounded-r-2xl md:rounded-2xl xl:rounded-none xl:border-l-0"
                       style={{
   borderColor: dayPendingCount > 0
     ? "rgba(244,63,94,0.28)"
@@ -3929,7 +3942,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
 }}
                     >
                       <div
-  className="sticky z-20 -mx-2.5 flex h-[58px] items-center px-2.5"
+  className="sticky z-20 flex h-[58px] items-center px-2.5"
   style={{
     top: "78px",
     borderBottom: `1px solid ${
@@ -4308,7 +4321,21 @@ const appt = slotGroups[0]?.[0];
                               !availableSlotKeys.has(slotTimeKey);
 
                             if (isCoveredByLongAppointment) {
-                              return null;
+                              return (
+                                <div
+                                  key={slot}
+                                  className="hidden h-[54px] border-t xl:block"
+                                  style={{
+                                    borderColor: isHourStart
+                                      ? "rgba(148,163,184,0.22)"
+                                      : "rgba(148,163,184,0.14)",
+                                    background:
+                                      hoveredTimeKey === slotTimeKey
+                                        ? "rgba(59,130,246,0.08)"
+                                        : "transparent",
+                                  }}
+                                />
+                              );
                             }
 
                             if (!appt || slotGroups.length === 0) {
@@ -4440,7 +4467,7 @@ const appt = slotGroups[0]?.[0];
                                   setHoveredTimeKey("");
                                   handleAppointmentMouseLeave();
                                 }}
-                                className={`absolute inset-x-1 top-1 z-10 overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
+                                className={`absolute inset-x-1 top-0 z-10 overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
                                   isGroupSlot ? "px-1" : "px-1.5"
                                 } ${getAppointmentInteractionClass(
                                   isSelected
