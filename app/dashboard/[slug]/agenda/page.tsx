@@ -485,8 +485,8 @@ next_control_custom_unit: "days",
 
   function getAppointmentInteractionClass(selected: boolean) {
     return selected
-      ? "relative z-20 scale-[1.02] cursor-pointer shadow-2xl"
-      : "relative z-0 cursor-pointer hover:z-10 hover:scale-[1.01] hover:-translate-y-0.5";
+      ? "z-20 cursor-pointer shadow-2xl"
+      : "z-10 cursor-pointer hover:z-20";
   }
 
   function formatLongDate(dateString: string) {
