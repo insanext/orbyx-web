@@ -3,6 +3,7 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Layers3 } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 
 type BusinessResponse = {
@@ -987,32 +988,34 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
       `}</style>
 
       <section
-        className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
+        className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
         style={{
-          borderColor: "rgba(59,130,246,0.25)",
+          borderColor: "var(--agenda-hero-border, rgba(37,99,235,0.42))",
           background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+            "var(--agenda-hero-bg, linear-gradient(135deg, rgba(248,251,255,0.98), rgba(224,238,255,0.9) 48%, rgba(241,248,255,0.98)))",
         }}
       >
+        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-3xl">
-            <p
-              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
-              style={{ color: "var(--text-muted)" }}
-            >
+          <div className="flex max-w-3xl items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
+              <Layers3 className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">
               Servicios
             </p>
 
             <h1
-  className="text-2xl font-semibold tracking-tight sm:text-3xl"
-              style={{ color: "var(--text-main)" }}
+  className="mt-0.5 text-xl font-semibold tracking-tight"
+              style={{ color: "var(--agenda-hero-title, var(--text-main))" }}
             >
               Servicios del negocio
             </h1>
 
             <p
-              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
-              style={{ color: "var(--text-muted)" }}
+              className="mt-0.5 max-w-2xl text-sm leading-5"
+              style={{ color: "var(--agenda-hero-muted, var(--text-muted))" }}
             >
               {selectedBranchName
                 ? `Gestiona los servicios de la sucursal ${selectedBranchName}.`
@@ -1020,6 +1023,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                     loading ? "tu negocio" : businessName
                   }.`}
             </p>
+            </div>
 
             <div className="mt-4">
               <Link

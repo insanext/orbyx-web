@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import { BarChart3 } from "lucide-react";
 import { PageHeader } from "../../../components/dashboard/page-header";
 import { Panel } from "../../../components/dashboard/panel";
 
@@ -459,6 +460,7 @@ export default function DashboardHomePage() {
         eyebrow="Dashboard"
         title={loading ? "Cargando..." : businessName || "Mi negocio"}
         description="Vista general de rendimiento, operación y crecimiento del negocio."
+        icon={<BarChart3 className="h-5 w-5" />}
         actions={
           <div className="flex flex-wrap gap-2">
             <select

@@ -2712,28 +2712,35 @@ export default function CampaignsPage() {
   return (
     <div className="space-y-5 pb-6">
 <section
-  className="relative overflow-hidden rounded-[20px] border p-4 shadow-sm sm:p-5"
+  className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
   style={{
-    borderColor: "rgba(59,130,246,0.22)",
+    borderColor: "rgba(37,99,235,0.42)",
     background:
-      "linear-gradient(135deg, var(--bg-card) 0%, rgba(37,99,235,0.08) 35%, rgba(14,165,233,0.10) 65%, var(--bg-card) 100%)",
+      "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
   }}
 >
-<div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-  <div>
+<div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
+<div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div className="flex items-center gap-4">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
+      <Sparkles className="h-5 w-5" />
+    </div>
+  <div className="min-w-0">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">Campañas</p>
     <h1
-      className="relative text-xl font-semibold tracking-tight"
+      className="relative mt-0.5 text-xl font-semibold tracking-tight"
       style={{ color: "var(--text-main)" }}
     >
       Campañas y recuperación
     </h1>
 
     <p
-      className="mt-1 max-w-2xl text-sm leading-6"
+      className="mt-0.5 max-w-2xl text-sm leading-5"
       style={{ color: "var(--text-muted)" }}
     >
       Planifica campañas automatizadas por email y WhatsApp para reactivar tu audiencia.
     </p>
+  </div>
   </div>
 
   <button

@@ -2,6 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import { UsersRound } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 
 type BusinessResponse = {
@@ -1800,37 +1801,38 @@ function validateStaffHours() {
       `}</style>
 
       <section
-  className="overflow-hidden rounded-[24px] border p-4 shadow-sm"
+  className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
         style={{
           borderColor: "rgba(59,130,246,0.25)",
           background:
             "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
         }}
       >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p
-              className="mb-2 text-xs font-semibold uppercase tracking-[0.22em]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Equipo
-            </p>
+        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex max-w-3xl items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
+              <UsersRound className="h-5 w-5" />
+            </div>
+            <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">Equipo</p>
 
             <h1
-  className="text-2xl font-semibold tracking-tight sm:text-3xl"
+  className="mt-0.5 text-xl font-semibold tracking-tight"
               style={{ color: "var(--text-main)" }}
             >
               Staff
             </h1>
 
             <p
-              className="mt-3 max-w-2xl text-sm leading-6 sm:text-[15px]"
+              className="mt-0.5 max-w-2xl text-sm leading-5"
               style={{ color: "var(--text-muted)" }}
             >
               {selectedBranchName
                 ? `Administra el staff de la sucursal ${selectedBranchName}, sus servicios, horarios y días/horarios excepcionales.`
                 : "Administra las personas que atienden en tu negocio, sus servicios, horarios y días/horarios excepcionales."}
             </p>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

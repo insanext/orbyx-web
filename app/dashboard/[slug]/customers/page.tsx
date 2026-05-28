@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { UsersRound } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -166,6 +167,7 @@ export default function CustomersPage() {
       <PageHeader
         eyebrow={isVeterinaria ? "Tutores y mascotas" : "Clientes"}
         title="Base de clientes"
+        icon={<UsersRound className="h-5 w-5" />}
         description={
           selectedBranchId
             ? "Clientes con actividad en la sucursal seleccionada."

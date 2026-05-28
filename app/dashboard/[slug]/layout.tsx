@@ -540,7 +540,7 @@ export default function DashboardLayout({
             type="button"
             aria-label={sidebarCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
             onClick={() => setSidebarCollapsed((value) => !value)}
-            className="absolute -right-4 top-[350px] z-30 flex h-28 w-8 -translate-y-1/2 items-center justify-center rounded-xl border transition-all duration-200 hover:shadow-[0_0_22px_-10px_rgba(34,211,238,0.95)]"
+            className="absolute right-0 top-[350px] z-30 flex h-28 w-8 translate-x-full -translate-y-1/2 items-center justify-center rounded-r-xl rounded-l-none border border-l-0 transition-all duration-200 hover:shadow-[0_0_22px_-10px_rgba(34,211,238,0.95)]"
             style={{
               background: isNocturno
                 ? "linear-gradient(180deg, rgba(37,99,235,0.28), rgba(14,165,233,0.14))"
@@ -554,7 +554,7 @@ export default function DashboardLayout({
           >
             {sidebarCollapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
           </button>
-          <div className="orbyx-sidebar-scroll sticky top-0 flex h-screen flex-col overflow-y-auto px-3 py-4">
+          <div className="orbyx-sidebar-scroll sticky top-0 flex h-screen flex-col overflow-y-auto py-4 pl-3 pr-5">
             <div
               className={clsx(
                 "mb-4 flex items-center rounded-2xl border p-3",
