@@ -2530,13 +2530,63 @@ const hasPendingClose = pendingCloseCount > 0;
   }
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="orbyx-agenda-page space-y-6 pb-6">
+      <style>{`
+        .orbyx-agenda-page {
+          --agenda-hero-bg: linear-gradient(135deg, rgba(248,251,255,0.98), rgba(224,238,255,0.9) 48%, rgba(241,248,255,0.98));
+          --agenda-hero-border: rgba(37,99,235,0.42);
+          --agenda-hero-title: #0f172a;
+          --agenda-hero-muted: #334155;
+          --agenda-filter-bg: linear-gradient(135deg, rgba(248,251,255,0.92), rgba(238,242,248,0.86), rgba(230,236,245,0.82));
+          --agenda-filter-label: #1e293b;
+          --agenda-filter-control-bg: rgba(255,255,255,0.72);
+          --agenda-filter-control-text: #0f172a;
+          --agenda-calendar-column-bg: linear-gradient(180deg, #eef2f8, #e6ecf5 52%, #d7e0ec);
+          --agenda-calendar-header-bg: linear-gradient(180deg, #eef2f8, #e6ecf5);
+          --agenda-calendar-time-bg: linear-gradient(180deg, #eef2f8, #e6ecf5 54%, #dce5f0);
+          --agenda-calendar-line: rgba(148,163,184,0.22);
+          --agenda-calendar-line-soft: rgba(148,163,184,0.14);
+          --agenda-calendar-hover: rgba(59,130,246,0.08);
+          --agenda-today-bg: linear-gradient(180deg, rgba(219,234,254,0.98), rgba(226,232,240,0.92), rgba(215,224,236,0.86));
+          --agenda-today-header-bg: linear-gradient(180deg, rgba(219,234,254,0.96), rgba(226,232,240,0.86));
+          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.035) 8px, rgba(255,255,255,0.035) 18px), linear-gradient(180deg, rgba(220,38,38,0.92), rgba(185,28,28,0.84) 48%, rgba(239,68,68,0.76));
+          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.045) 8px, rgba(255,255,255,0.045) 18px), linear-gradient(180deg, rgba(239,68,68,0.96), rgba(220,38,38,0.88), rgba(248,113,113,0.78));
+          --agenda-closed-border: rgba(254,202,202,0.34);
+          --agenda-closed-line: rgba(254,202,202,0.24);
+          --agenda-closed-line-soft: rgba(254,202,202,0.14);
+          --agenda-closed-text: #ffffff;
+          --agenda-closed-muted: rgba(255,255,255,0.82);
+        }
+
+        :root[data-theme="nocturno"] .orbyx-agenda-page {
+          --agenda-hero-bg: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(12,32,66,0.92) 50%, rgba(17,24,39,0.96));
+          --agenda-hero-border: rgba(56,189,248,0.28);
+          --agenda-hero-title: #f8fafc;
+          --agenda-hero-muted: #cbd5e1;
+          --agenda-filter-bg: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(17,24,39,0.86), rgba(30,41,59,0.72));
+          --agenda-filter-label: #e2e8f0;
+          --agenda-filter-control-bg: rgba(15,23,42,0.62);
+          --agenda-filter-control-text: #f8fafc;
+          --agenda-calendar-column-bg: linear-gradient(180deg, rgba(15,23,42,0.96), rgba(17,24,39,0.94) 52%, rgba(30,41,59,0.9));
+          --agenda-calendar-header-bg: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(17,24,39,0.92));
+          --agenda-calendar-time-bg: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(17,24,39,0.94), rgba(30,41,59,0.9));
+          --agenda-calendar-line: rgba(148,163,184,0.18);
+          --agenda-calendar-line-soft: rgba(148,163,184,0.1);
+          --agenda-calendar-hover: rgba(56,189,248,0.08);
+          --agenda-today-bg: linear-gradient(180deg, rgba(30,64,175,0.28), rgba(14,116,144,0.14), rgba(15,23,42,0.94));
+          --agenda-today-header-bg: linear-gradient(180deg, rgba(30,64,175,0.28), rgba(15,23,42,0.92));
+          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.032) 8px, rgba(255,255,255,0.032) 18px), linear-gradient(180deg, rgba(220,38,38,0.84), rgba(185,28,28,0.74) 48%, rgba(127,29,29,0.7));
+          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.045) 8px, rgba(255,255,255,0.045) 18px), linear-gradient(180deg, rgba(239,68,68,0.9), rgba(220,38,38,0.8), rgba(153,27,27,0.74));
+          --agenda-closed-border: rgba(248,113,113,0.42);
+          --agenda-closed-line: rgba(254,202,202,0.2);
+          --agenda-closed-line-soft: rgba(254,202,202,0.12);
+        }
+      `}</style>
 <div
   className="relative overflow-hidden rounded-2xl border p-5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
   style={{
-    borderColor: "rgba(37,99,235,0.42)",
-    background:
-      "linear-gradient(135deg, rgba(248,251,255,0.98), rgba(224,238,255,0.9) 48%, rgba(241,248,255,0.98))",
+    borderColor: "var(--agenda-hero-border)",
+    background: "var(--agenda-hero-bg)",
   }}
 >
   <div
@@ -2569,12 +2619,12 @@ const hasPendingClose = pendingCloseCount > 0;
 
     <h1
       className="mt-1 text-2xl font-semibold"
-      style={{ color: "#0f172a" }}
+      style={{ color: "var(--agenda-hero-title)" }}
     >
       Agenda semanal
     </h1>
 
-    <p className="mt-1 text-sm" style={{ color: "#334155" }}>
+    <p className="mt-1 text-sm" style={{ color: "var(--agenda-hero-muted)" }}>
       {selectedBranchName && selectedStaffName
         ? `Vista filtrada por sucursal ${selectedBranchName} y profesional ${selectedStaffName}.`
         : selectedBranchName
@@ -2647,15 +2697,14 @@ const hasPendingClose = pendingCloseCount > 0;
         className="rounded-2xl border p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.45)]"
         style={{
           borderColor: "rgba(148,163,184,0.22)",
-          background:
-            "linear-gradient(135deg, rgba(248,251,255,0.92), rgba(238,242,248,0.86), rgba(230,236,245,0.82))",
+          background: "var(--agenda-filter-bg)",
         }}
       >
         <div className="grid gap-4 xl:grid-cols-[minmax(260px,1fr)_220px_220px_220px] xl:items-end">
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "#1e293b" }}
+              style={{ color: "var(--agenda-filter-label)" }}
             >
               Buscar
             </label>
@@ -2674,8 +2723,8 @@ const hasPendingClose = pendingCloseCount > 0;
                 className="h-11 w-full rounded-xl border py-2 pl-10 pr-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10"
                 style={{
                   borderColor: "rgba(148,163,184,0.28)",
-                  background: "rgba(255,255,255,0.72)",
-                  color: "#0f172a",
+                  background: "var(--agenda-filter-control-bg)",
+                  color: "var(--agenda-filter-control-text)",
                 }}
               />
             </div>
@@ -2684,7 +2733,7 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "#1e293b" }}
+              style={{ color: "var(--agenda-filter-label)" }}
             >
               Profesional
             </label>
@@ -2700,8 +2749,8 @@ const hasPendingClose = pendingCloseCount > 0;
               className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 borderColor: "rgba(148,163,184,0.28)",
-                background: "rgba(255,255,255,0.72)",
-                color: "#0f172a",
+                background: "var(--agenda-filter-control-bg)",
+                color: "var(--agenda-filter-control-text)",
               }}
             >
               <option value="">Todos los profesionales</option>
@@ -2716,7 +2765,7 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "#1e293b" }}
+              style={{ color: "var(--agenda-filter-label)" }}
             >
               Servicio
             </label>
@@ -2730,8 +2779,8 @@ const hasPendingClose = pendingCloseCount > 0;
               className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 borderColor: "rgba(148,163,184,0.28)",
-                background: "rgba(255,255,255,0.72)",
-                color: "#0f172a",
+                background: "var(--agenda-filter-control-bg)",
+                color: "var(--agenda-filter-control-text)",
               }}
             >
               <option value="">Todos los servicios</option>
@@ -2746,7 +2795,7 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "#1e293b" }}
+              style={{ color: "var(--agenda-filter-label)" }}
             >
               Estado
             </label>
@@ -2759,8 +2808,8 @@ const hasPendingClose = pendingCloseCount > 0;
               className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
               style={{
                 borderColor: "rgba(148,163,184,0.28)",
-                background: "rgba(255,255,255,0.72)",
-                color: "#0f172a",
+                background: "var(--agenda-filter-control-bg)",
+                color: "var(--agenda-filter-control-text)",
               }}
             >
               {(Object.keys(filterLabels) as FilterValue[]).map((filter) => (
@@ -3156,7 +3205,7 @@ onClick={() => {
                   className="flex items-center rounded-2xl border p-1"
                   style={{
                     borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
+                    background: "var(--agenda-calendar-header-bg)",
                   }}
                 >
                   <button
@@ -3361,7 +3410,7 @@ onClick={() => {
                       className="sticky left-0 z-[22] flex h-[64px] items-center justify-center border-r px-3 text-xs font-semibold"
                       style={{
                         borderColor: "var(--border-color)",
-                        background: "var(--bg-soft)",
+                        background: "var(--agenda-calendar-time-bg)",
                         color: "var(--text-muted)",
                       }}
                     >
@@ -3382,7 +3431,7 @@ onClick={() => {
                           className="flex h-[64px] items-center gap-3 border-r px-2.5 last:border-r-0"
                           style={{
                             borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
+                            background: "var(--agenda-calendar-header-bg)",
                           }}
                         >
                           <div
@@ -3452,14 +3501,14 @@ onClick={() => {
                         dayStaffColumns.length,
                         1
                       )}, 260px)`,
-                      background: "var(--bg-card)",
+                      background: "var(--agenda-calendar-column-bg)",
                     }}
                   >
                     <div
                       className="sticky left-0 z-[2] border-r"
                       style={{
                         borderColor: "var(--border-color)",
-                        background: "var(--bg-soft)",
+                        background: "var(--agenda-calendar-time-bg)",
                       }}
                     >
                       {dayViewSlots.map((slot) => {
@@ -3578,20 +3627,20 @@ onClick={() => {
                                       style={{
                                         borderColor: isHourStart
                                           ? isSlotClosed
-                                            ? "rgba(248,113,113,0.24)"
+                                             ? "var(--agenda-closed-line)"
                                             : isEmptySlotSelected
                                             ? "rgba(103,232,249,0.72)"
                                             : "rgba(148,163,184,0.22)"
                                           : isSlotClosed
-                                          ? "rgba(248,113,113,0.14)"
+                                           ? "var(--agenda-closed-line-soft)"
                                           : isEmptySlotSelected
                                           ? "rgba(103,232,249,0.58)"
                                           : "rgba(148,163,184,0.14)",
                                         background:
                                           isSlotClosed
                                             ? hoveredTimeKey === slotTimeKey
-                                              ? "linear-gradient(180deg, rgba(127,29,29,0.28), rgba(88,28,46,0.18))"
-                                              : "linear-gradient(180deg, rgba(127,29,29,0.22), rgba(88,28,46,0.14))"
+                                              ? "var(--agenda-closed-bg-hover)"
+                                              : "var(--agenda-closed-bg)"
                                             : isEmptySlotSelected
                                             ? "linear-gradient(180deg, rgba(34,211,238,0.22), rgba(37,99,235,0.12))"
                                             : hoveredTimeKey === slotTimeKey
@@ -3744,9 +3793,8 @@ onClick={() => {
                 <div
                   className="hidden rounded-l-2xl border border-r-0 p-3 xl:block"
                   style={{
-                    borderColor: "rgba(148,163,184,0.22)",
-                    background:
-                      "linear-gradient(180deg, #eef2f8, #e6ecf5 54%, #dce5f0)",
+                    borderColor: "var(--agenda-calendar-line)",
+                    background: "var(--agenda-calendar-time-bg)",
                   }}
                 >
                   <div className="h-[58px]" />
@@ -3865,17 +3913,17 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
   borderColor: dayPendingCount > 0
     ? "rgba(244,63,94,0.28)"
     : isClosedScheduleDay
-    ? "rgba(220,38,38,0.48)"
+    ? "var(--agenda-closed-border)"
     : isToday
     ? "rgba(37,99,235,0.42)"
     : "var(--border-color)",
   background: dayPendingCount > 0
     ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
     : isClosedScheduleDay
-    ? "linear-gradient(180deg, rgba(220,38,38,0.92), rgba(185,28,28,0.84) 48%, rgba(239,68,68,0.76))"
+    ? "var(--agenda-closed-bg)"
     : isToday
-    ? "linear-gradient(180deg, rgba(219,234,254,0.98), rgba(226,232,240,0.92), rgba(215,224,236,0.86))"
-    : "linear-gradient(180deg, #eef2f8, #e6ecf5 52%, #d7e0ec)",
+    ? "var(--agenda-today-bg)"
+    : "var(--agenda-calendar-column-bg)",
   boxShadow: isToday
     ? "0 0 0 1px rgba(37,99,235,0.14), 0 10px 30px -18px rgba(37,99,235,0.45)"
     : "none",
@@ -3889,7 +3937,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
       dayPendingCount > 0
         ? "rgba(244,63,94,0.24)"
         : isClosedScheduleDay
-        ? "rgba(254,202,202,0.34)"
+        ? "var(--agenda-closed-border)"
         : isToday
         ? "rgba(56,189,248,0.24)"
         : "var(--border-color)"
@@ -3897,10 +3945,10 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
     background: dayPendingCount > 0
       ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
       : isClosedScheduleDay
-      ? "linear-gradient(180deg, rgba(220,38,38,0.78), rgba(185,28,28,0.34))"
+      ? "var(--agenda-closed-bg)"
       : isToday
-      ? "linear-gradient(180deg, rgba(219,234,254,0.96), rgba(226,232,240,0.86))"
-      : "linear-gradient(180deg, #eef2f8, #e6ecf5)",
+      ? "var(--agenda-today-header-bg)"
+      : "var(--agenda-calendar-header-bg)",
     backdropFilter: "blur(8px)",
   }}
 >
@@ -3910,7 +3958,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
       className="text-xs font-semibold"
       style={{
         color: isToday ? "#60a5fa" : "var(--text-main)",
-        ...(isClosedScheduleDay ? { color: "white" } : {}),
+        ...(isClosedScheduleDay ? { color: "var(--agenda-closed-text)" } : {}),
       }}
     >
       {getWeekdayLabel(day)}
@@ -3920,7 +3968,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
       className="text-[11px]"
       style={{
         color: isClosedScheduleDay
-          ? "rgba(255,255,255,0.82)"
+          ? "var(--agenda-closed-muted)"
           : isToday
           ? "#38bdf8"
           : "var(--text-muted)",
@@ -3970,9 +4018,8 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             }
                             className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
                             style={{
-                              borderColor: "rgba(254,202,202,0.34)",
-                              background:
-                                "repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.035) 8px, rgba(255,255,255,0.035) 18px), linear-gradient(180deg, rgba(220,38,38,0.84), rgba(185,28,28,0.72), rgba(239,68,68,0.62))",
+                              borderColor: "var(--agenda-closed-border)",
+                              background: "var(--agenda-closed-bg)",
                             }}
                           >
                             <div className="space-y-0">
@@ -3988,8 +4035,8 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     className="h-[54px] border-t transition"
                                     style={{
                                       borderColor: isHourStart
-                                        ? "rgba(254,202,202,0.24)"
-                                        : "rgba(254,202,202,0.14)",
+                                        ? "var(--agenda-closed-line)"
+                                        : "var(--agenda-closed-line-soft)",
                                       background:
                                         hoveredTimeKey === slotTimeKey
                                           ? "rgba(255,255,255,0.08)"
@@ -4000,13 +4047,13 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                               })}
                             </div>
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
-                              <div className="flex flex-col items-center gap-2 text-white">
+                              <div className="flex flex-col items-center gap-2" style={{ color: "var(--agenda-closed-text)" }}>
                                 <Lock className="h-5 w-5" />
                                 <div>
-                                  <p className="text-sm font-semibold text-white">
+                                  <p className="text-sm font-semibold" style={{ color: "var(--agenda-closed-text)" }}>
                                     {closedDayTitle}
                                   </p>
-                                  <p className="mt-1 text-xs font-medium text-white/82">
+                                  <p className="mt-1 text-xs font-medium" style={{ color: "var(--agenda-closed-muted)" }}>
                                     {closedDaySubtitle}
                                   </p>
                                 </div>
@@ -4021,9 +4068,8 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             }
                             className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
                             style={{
-                              borderColor: "rgba(254,202,202,0.34)",
-                              background:
-                                "repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.035) 8px, rgba(255,255,255,0.035) 18px), linear-gradient(180deg, rgba(220,38,38,0.84), rgba(185,28,28,0.72), rgba(239,68,68,0.62))",
+                              borderColor: "var(--agenda-closed-border)",
+                              background: "var(--agenda-closed-bg)",
                             }}
                           >
                             <div className="space-y-0">
@@ -4039,8 +4085,8 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     className="h-[54px] border-t transition"
                                     style={{
                                       borderColor: isHourStart
-                                        ? "rgba(254,202,202,0.24)"
-                                        : "rgba(254,202,202,0.14)",
+                                        ? "var(--agenda-closed-line)"
+                                        : "var(--agenda-closed-line-soft)",
                                       background:
                                         hoveredTimeKey === slotTimeKey
                                           ? "rgba(255,255,255,0.08)"
@@ -4051,13 +4097,13 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                               })}
                             </div>
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
-                              <div className="flex flex-col items-center gap-2 text-white">
+                              <div className="flex flex-col items-center gap-2" style={{ color: "var(--agenda-closed-text)" }}>
                                 <Lock className="h-5 w-5" />
                                 <div>
-                                  <p className="text-sm font-semibold text-white">
+                                  <p className="text-sm font-semibold" style={{ color: "var(--agenda-closed-text)" }}>
                                     {closedDayTitle}
                                   </p>
-                                  <p className="mt-1 text-xs font-medium text-white/82">
+                                  <p className="mt-1 text-xs font-medium" style={{ color: "var(--agenda-closed-muted)" }}>
                                     {closedDaySubtitle}
                                   </p>
                                 </div>
@@ -4193,9 +4239,8 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             }
                             className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
                             style={{
-                              borderColor: "rgba(127,29,29,0.36)",
-                              background:
-                                "repeating-linear-gradient(135deg, rgba(127,29,29,0.16) 0px, rgba(127,29,29,0.16) 8px, rgba(127,29,29,0.08) 8px, rgba(127,29,29,0.08) 18px), linear-gradient(180deg, rgba(127,29,29,0.18), rgba(88,28,46,0.12))",
+                              borderColor: "var(--agenda-closed-border)",
+                              background: "var(--agenda-closed-bg)",
                             }}
                           >
                             <div className="space-y-0">
@@ -4211,11 +4256,11 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     className="h-[54px] border-t transition"
                                     style={{
                                       borderColor: isHourStart
-                                        ? "rgba(248,113,113,0.16)"
-                                        : "rgba(248,113,113,0.09)",
+                                        ? "var(--agenda-closed-line)"
+                                        : "var(--agenda-closed-line-soft)",
                                       background:
                                         hoveredTimeKey === slotTimeKey
-                                          ? "rgba(127,29,29,0.18)"
+                                          ? "rgba(255,255,255,0.08)"
                                           : "transparent",
                                     }}
                                   />
@@ -4223,13 +4268,13 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                               })}
                             </div>
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
-                              <div className="flex flex-col items-center gap-2 text-rose-300">
+                              <div className="flex flex-col items-center gap-2" style={{ color: "var(--agenda-closed-text)" }}>
                                 <Lock className="h-5 w-5" />
                                 <div>
-                                  <p className="text-sm font-semibold text-rose-300">
+                                  <p className="text-sm font-semibold" style={{ color: "var(--agenda-closed-text)" }}>
                                     {closedDayTitle}
                                   </p>
-                                  <p className="mt-1 text-xs font-medium text-rose-200/85">
+                                  <p className="mt-1 text-xs font-medium" style={{ color: "var(--agenda-closed-muted)" }}>
                                     {closedDaySubtitle}
                                   </p>
                                 </div>
@@ -4304,20 +4349,20 @@ const appt = slotGroups[0]?.[0];
                                   style={{
                                     borderColor: isHourStart
                                       ? isSlotClosed
-                                        ? "rgba(248,113,113,0.26)"
+                                        ? "var(--agenda-closed-line)"
                                         : isEmptySlotSelected
                                         ? "rgba(103,232,249,0.72)"
                                         : "rgba(148,163,184,0.22)"
                                       : isSlotClosed
-                                      ? "rgba(248,113,113,0.14)"
+                                      ? "var(--agenda-closed-line-soft)"
                                       : isEmptySlotSelected
                                       ? "rgba(103,232,249,0.58)"
                                       : "rgba(148,163,184,0.14)",
                                     background:
                                       isSlotClosed
                                         ? hoveredTimeKey === slotTimeKey
-                                          ? "linear-gradient(180deg, rgba(127,29,29,0.28), rgba(88,28,46,0.18))"
-                                          : "linear-gradient(180deg, rgba(127,29,29,0.22), rgba(88,28,46,0.14))"
+                                          ? "var(--agenda-closed-bg-hover)"
+                                          : "var(--agenda-closed-bg)"
                                         : isEmptySlotSelected
                                         ? "linear-gradient(180deg, rgba(34,211,238,0.22), rgba(37,99,235,0.12))"
                                         : hoveredTimeKey === slotTimeKey
