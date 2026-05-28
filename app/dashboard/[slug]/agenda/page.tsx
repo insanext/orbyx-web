@@ -341,7 +341,6 @@ const [slotMinutes, setSlotMinutes] = useState(30);
   const [businessName, setBusinessName] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
 const [calendarId, setCalendarId] = useState("");
-const [googleConnected, setGoogleConnected] = useState(false);
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -2127,7 +2126,6 @@ next_control_custom_value:
                 const currentTenantId = businessData.business.id;
 setSlotMinutes(Number(businessData.slot_minutes || 30));
 setCalendarId(businessData.calendar_id || "");
-setGoogleConnected(Boolean(businessData.google_connected));
 setTenantId(currentTenantId);
 setBusinessName(businessData.business.name || slug || "");
 setBusinessCategory(
@@ -2583,7 +2581,7 @@ const hasPendingClose = pendingCloseCount > 0;
         }
       `}</style>
 <div
-  className="relative overflow-hidden rounded-2xl border p-5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
+  className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
   style={{
     borderColor: "var(--agenda-hero-border)",
     background: "var(--agenda-hero-bg)",
@@ -2596,10 +2594,10 @@ const hasPendingClose = pendingCloseCount > 0;
         "linear-gradient(90deg, transparent, rgba(37,99,235,0.42), rgba(34,211,238,0.35), transparent)",
     }}
   />
-  <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-  <div className="flex items-start gap-4">
+  <div className="relative flex items-center">
+  <div className="flex items-center gap-4">
     <div
-      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]"
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]"
       style={{
         borderColor: "rgba(147,197,253,0.72)",
         background:
@@ -2607,7 +2605,7 @@ const hasPendingClose = pendingCloseCount > 0;
         color: "white",
       }}
     >
-      <CalendarDays className="h-6 w-6" />
+      <CalendarDays className="h-5 w-5" />
     </div>
     <div>
     <p
@@ -2618,13 +2616,13 @@ const hasPendingClose = pendingCloseCount > 0;
     </p>
 
     <h1
-      className="mt-1 text-2xl font-semibold"
+      className="mt-0.5 text-xl font-semibold"
       style={{ color: "var(--agenda-hero-title)" }}
     >
       Agenda semanal
     </h1>
 
-    <p className="mt-1 text-sm" style={{ color: "var(--agenda-hero-muted)" }}>
+    <p className="mt-0.5 text-sm" style={{ color: "var(--agenda-hero-muted)" }}>
       {selectedBranchName && selectedStaffName
         ? `Vista filtrada por sucursal ${selectedBranchName} y profesional ${selectedStaffName}.`
         : selectedBranchName
@@ -2636,21 +2634,6 @@ const hasPendingClose = pendingCloseCount > 0;
   </div>
   </div>
 
-  <button
-    type="button"
-    disabled={!calendarId}
-    onClick={() => {
-      if (!calendarId) return;
-      window.location.href = `/dashboard/${slug}/connect-calendar?calendar_id=${calendarId}`;
-    }}
-    className={`inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-      googleConnected
-        ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-        : "border border-blue-500 bg-white/70 text-blue-700 shadow-[0_14px_26px_-20px_rgba(37,99,235,0.75)] hover:bg-blue-50"
-    }`}
-  >
-    {googleConnected ? "Google Calendar conectado" : "Conecta tu calendario"}
-  </button>
   </div>
 </div>
 
