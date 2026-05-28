@@ -2532,17 +2532,26 @@ const hasPendingClose = pendingCloseCount > 0;
   return (
     <div className="space-y-6 pb-6">
 <div
-  className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+  className="relative overflow-hidden rounded-2xl border p-5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
   style={{
-    borderColor: "transparent",
-    background: "transparent",
+    borderColor: "rgba(37,99,235,0.42)",
+    background:
+      "linear-gradient(135deg, rgba(248,251,255,0.98), rgba(224,238,255,0.9) 48%, rgba(241,248,255,0.98))",
   }}
 >
+  <div
+    className="pointer-events-none absolute inset-x-8 top-0 h-px"
+    style={{
+      background:
+        "linear-gradient(90deg, transparent, rgba(37,99,235,0.42), rgba(34,211,238,0.35), transparent)",
+    }}
+  />
+  <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
   <div className="flex items-start gap-4">
     <div
-      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl border shadow-[0_14px_30px_-16px_rgba(37,99,235,0.95),0_0_24px_-12px_rgba(56,189,248,0.95)]"
+      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]"
       style={{
-        borderColor: "rgba(147,197,253,0.42)",
+        borderColor: "rgba(147,197,253,0.72)",
         background:
           "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233) 48%, rgb(79 70 229))",
         color: "white",
@@ -2553,19 +2562,19 @@ const hasPendingClose = pendingCloseCount > 0;
     <div>
     <p
       className="text-[11px] font-semibold uppercase tracking-[0.24em]"
-      style={{ color: "var(--text-muted)" }}
+      style={{ color: "#2563eb" }}
     >
       Agenda
     </p>
 
     <h1
       className="mt-1 text-2xl font-semibold"
-      style={{ color: "var(--text-main)" }}
+      style={{ color: "#0f172a" }}
     >
       Agenda semanal
     </h1>
 
-    <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+    <p className="mt-1 text-sm" style={{ color: "#334155" }}>
       {selectedBranchName && selectedStaffName
         ? `Vista filtrada por sucursal ${selectedBranchName} y profesional ${selectedStaffName}.`
         : selectedBranchName
@@ -2587,11 +2596,12 @@ const hasPendingClose = pendingCloseCount > 0;
     className={`inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
       googleConnected
         ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-        : "border border-slate-950 bg-slate-950 text-white shadow-[0_12px_30px_-16px_rgba(15,23,42,0.8)] hover:bg-slate-800"
+        : "border border-blue-500 bg-white/70 text-blue-700 shadow-[0_14px_26px_-20px_rgba(37,99,235,0.75)] hover:bg-blue-50"
     }`}
   >
     {googleConnected ? "Google Calendar conectado" : "Conecta tu calendario"}
   </button>
+  </div>
 </div>
 
       <div className="hidden grid-cols-2 gap-3 xl:grid-cols-4">
@@ -2634,18 +2644,18 @@ const hasPendingClose = pendingCloseCount > 0;
       </div>
 
       <div
-        className="rounded-2xl border p-4 shadow-[0_18px_44px_-24px_rgba(37,99,235,0.95),0_0_34px_-18px_rgba(56,189,248,0.9)]"
+        className="rounded-2xl border p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.45)]"
         style={{
-          borderColor: "rgba(147,197,253,0.34)",
+          borderColor: "rgba(148,163,184,0.22)",
           background:
-            "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233) 52%, rgb(79 70 229))",
+            "linear-gradient(135deg, rgba(248,251,255,0.92), rgba(238,242,248,0.86), rgba(230,236,245,0.82))",
         }}
       >
         <div className="grid gap-4 xl:grid-cols-[minmax(260px,1fr)_220px_220px_220px] xl:items-end">
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "white" }}
+              style={{ color: "#1e293b" }}
             >
               Buscar
             </label>
@@ -2663,9 +2673,9 @@ const hasPendingClose = pendingCloseCount > 0;
                 placeholder="Buscar cliente o reserva..."
                 className="h-11 w-full rounded-xl border py-2 pl-10 pr-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10"
                 style={{
-                  borderColor: "rgba(255,255,255,0.34)",
-                  background: "rgba(15,23,42,0.18)",
-                  color: "white",
+                  borderColor: "rgba(148,163,184,0.28)",
+                  background: "rgba(255,255,255,0.72)",
+                  color: "#0f172a",
                 }}
               />
             </div>
@@ -2674,7 +2684,7 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "white" }}
+              style={{ color: "#1e293b" }}
             >
               Profesional
             </label>
@@ -2689,9 +2699,9 @@ const hasPendingClose = pendingCloseCount > 0;
               disabled={!selectedBranchId || loadingStaff}
               className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
-                borderColor: "rgba(255,255,255,0.34)",
-                background: "rgba(15,23,42,0.18)",
-                color: "white",
+                borderColor: "rgba(148,163,184,0.28)",
+                background: "rgba(255,255,255,0.72)",
+                color: "#0f172a",
               }}
             >
               <option value="">Todos los profesionales</option>
@@ -2706,7 +2716,7 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "white" }}
+              style={{ color: "#1e293b" }}
             >
               Servicio
             </label>
@@ -2719,9 +2729,9 @@ const hasPendingClose = pendingCloseCount > 0;
               disabled={!selectedBranchId || loadingServices}
               className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
-                borderColor: "rgba(255,255,255,0.34)",
-                background: "rgba(15,23,42,0.18)",
-                color: "white",
+                borderColor: "rgba(148,163,184,0.28)",
+                background: "rgba(255,255,255,0.72)",
+                color: "#0f172a",
               }}
             >
               <option value="">Todos los servicios</option>
@@ -2736,7 +2746,7 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <label
               className="mb-2 block text-xs font-semibold"
-              style={{ color: "white" }}
+              style={{ color: "#1e293b" }}
             >
               Estado
             </label>
@@ -2748,9 +2758,9 @@ const hasPendingClose = pendingCloseCount > 0;
               }}
               className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
               style={{
-                borderColor: "rgba(255,255,255,0.34)",
-                background: "rgba(15,23,42,0.18)",
-                color: "white",
+                borderColor: "rgba(148,163,184,0.28)",
+                background: "rgba(255,255,255,0.72)",
+                color: "#0f172a",
               }}
             >
               {(Object.keys(filterLabels) as FilterValue[]).map((filter) => (
@@ -3734,8 +3744,9 @@ onClick={() => {
                 <div
                   className="hidden rounded-l-2xl border border-r-0 p-3 xl:block"
                   style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
+                    borderColor: "rgba(148,163,184,0.22)",
+                    background:
+                      "linear-gradient(180deg, #eef2f8, #e6ecf5 54%, #dce5f0)",
                   }}
                 >
                   <div className="h-[58px]" />
@@ -3854,17 +3865,17 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
   borderColor: dayPendingCount > 0
     ? "rgba(244,63,94,0.28)"
     : isClosedScheduleDay
-    ? "rgba(127,29,29,0.34)"
+    ? "rgba(220,38,38,0.48)"
     : isToday
     ? "rgba(37,99,235,0.42)"
     : "var(--border-color)",
   background: dayPendingCount > 0
     ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
     : isClosedScheduleDay
-    ? "linear-gradient(180deg, rgba(127,29,29,0.20), rgba(88,28,46,0.14), var(--bg-card))"
+    ? "linear-gradient(180deg, rgba(220,38,38,0.92), rgba(185,28,28,0.84) 48%, rgba(239,68,68,0.76))"
     : isToday
-    ? "linear-gradient(180deg, rgba(37,99,235,0.16), rgba(56,189,248,0.08), var(--bg-card))"
-    : "var(--bg-soft)",
+    ? "linear-gradient(180deg, rgba(219,234,254,0.98), rgba(226,232,240,0.92), rgba(215,224,236,0.86))"
+    : "linear-gradient(180deg, #eef2f8, #e6ecf5 52%, #d7e0ec)",
   boxShadow: isToday
     ? "0 0 0 1px rgba(37,99,235,0.14), 0 10px 30px -18px rgba(37,99,235,0.45)"
     : "none",
@@ -3878,7 +3889,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
       dayPendingCount > 0
         ? "rgba(244,63,94,0.24)"
         : isClosedScheduleDay
-        ? "rgba(127,29,29,0.30)"
+        ? "rgba(254,202,202,0.34)"
         : isToday
         ? "rgba(56,189,248,0.24)"
         : "var(--border-color)"
@@ -3886,10 +3897,10 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
     background: dayPendingCount > 0
       ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
       : isClosedScheduleDay
-      ? "linear-gradient(180deg, rgba(127,29,29,0.16), var(--bg-card))"
+      ? "linear-gradient(180deg, rgba(220,38,38,0.78), rgba(185,28,28,0.34))"
       : isToday
-      ? "linear-gradient(180deg, rgba(56,189,248,0.08), var(--bg-card))"
-      : "var(--bg-soft)",
+      ? "linear-gradient(180deg, rgba(219,234,254,0.96), rgba(226,232,240,0.86))"
+      : "linear-gradient(180deg, #eef2f8, #e6ecf5)",
     backdropFilter: "blur(8px)",
   }}
 >
@@ -3899,6 +3910,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
       className="text-xs font-semibold"
       style={{
         color: isToday ? "#60a5fa" : "var(--text-main)",
+        ...(isClosedScheduleDay ? { color: "white" } : {}),
       }}
     >
       {getWeekdayLabel(day)}
@@ -3907,7 +3919,11 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
     <span
       className="text-[11px]"
       style={{
-        color: isToday ? "#38bdf8" : "var(--text-muted)",
+        color: isClosedScheduleDay
+          ? "rgba(255,255,255,0.82)"
+          : isToday
+          ? "#38bdf8"
+          : "var(--text-muted)",
       }}
     >
       {formatDayMonthLabel(day)}
@@ -3954,9 +3970,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             }
                             className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
                             style={{
-                              borderColor: "rgba(127,29,29,0.36)",
+                              borderColor: "rgba(254,202,202,0.34)",
                               background:
-                                "repeating-linear-gradient(135deg, rgba(127,29,29,0.16) 0px, rgba(127,29,29,0.16) 8px, rgba(127,29,29,0.08) 8px, rgba(127,29,29,0.08) 18px), linear-gradient(180deg, rgba(127,29,29,0.18), rgba(88,28,46,0.12))",
+                                "repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.035) 8px, rgba(255,255,255,0.035) 18px), linear-gradient(180deg, rgba(220,38,38,0.84), rgba(185,28,28,0.72), rgba(239,68,68,0.62))",
                             }}
                           >
                             <div className="space-y-0">
@@ -3972,11 +3988,11 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     className="h-[54px] border-t transition"
                                     style={{
                                       borderColor: isHourStart
-                                        ? "rgba(248,113,113,0.16)"
-                                        : "rgba(248,113,113,0.09)",
+                                        ? "rgba(254,202,202,0.24)"
+                                        : "rgba(254,202,202,0.14)",
                                       background:
                                         hoveredTimeKey === slotTimeKey
-                                          ? "rgba(127,29,29,0.18)"
+                                          ? "rgba(255,255,255,0.08)"
                                           : "transparent",
                                     }}
                                   />
@@ -3984,13 +4000,13 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                               })}
                             </div>
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
-                              <div className="flex flex-col items-center gap-2 text-rose-300">
+                              <div className="flex flex-col items-center gap-2 text-white">
                                 <Lock className="h-5 w-5" />
                                 <div>
-                                  <p className="text-sm font-semibold text-rose-300">
+                                  <p className="text-sm font-semibold text-white">
                                     {closedDayTitle}
                                   </p>
-                                  <p className="mt-1 text-xs font-medium text-rose-200/85">
+                                  <p className="mt-1 text-xs font-medium text-white/82">
                                     {closedDaySubtitle}
                                   </p>
                                 </div>
@@ -4005,9 +4021,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             }
                             className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
                             style={{
-                              borderColor: "rgba(127,29,29,0.36)",
+                              borderColor: "rgba(254,202,202,0.34)",
                               background:
-                                "repeating-linear-gradient(135deg, rgba(127,29,29,0.16) 0px, rgba(127,29,29,0.16) 8px, rgba(127,29,29,0.08) 8px, rgba(127,29,29,0.08) 18px), linear-gradient(180deg, rgba(127,29,29,0.18), rgba(88,28,46,0.12))",
+                                "repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.035) 8px, rgba(255,255,255,0.035) 18px), linear-gradient(180deg, rgba(220,38,38,0.84), rgba(185,28,28,0.72), rgba(239,68,68,0.62))",
                             }}
                           >
                             <div className="space-y-0">
@@ -4023,11 +4039,11 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     className="h-[54px] border-t transition"
                                     style={{
                                       borderColor: isHourStart
-                                        ? "rgba(248,113,113,0.16)"
-                                        : "rgba(248,113,113,0.09)",
+                                        ? "rgba(254,202,202,0.24)"
+                                        : "rgba(254,202,202,0.14)",
                                       background:
                                         hoveredTimeKey === slotTimeKey
-                                          ? "rgba(127,29,29,0.18)"
+                                          ? "rgba(255,255,255,0.08)"
                                           : "transparent",
                                     }}
                                   />
@@ -4035,13 +4051,13 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                               })}
                             </div>
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
-                              <div className="flex flex-col items-center gap-2 text-rose-300">
+                              <div className="flex flex-col items-center gap-2 text-white">
                                 <Lock className="h-5 w-5" />
                                 <div>
-                                  <p className="text-sm font-semibold text-rose-300">
+                                  <p className="text-sm font-semibold text-white">
                                     {closedDayTitle}
                                   </p>
-                                  <p className="mt-1 text-xs font-medium text-rose-200/85">
+                                  <p className="mt-1 text-xs font-medium text-white/82">
                                     {closedDaySubtitle}
                                   </p>
                                 </div>
