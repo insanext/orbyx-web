@@ -3740,7 +3740,7 @@ onClick={() => {
                                             setHoveredTimeKey("");
                                             handleAppointmentMouseLeave();
                                           }}
-                                          className={`absolute inset-x-1.5 top-0 z-10 overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
+                                          className={`absolute inset-x-0 top-0 z-10 overflow-hidden rounded-sm border py-0.5 text-left transition duration-200 ease-out ${
                                             isGroupSlot ? "px-1" : "px-1.5"
                                           } ${getAppointmentInteractionClass(
                                             isSelected
@@ -3803,7 +3803,7 @@ onClick={() => {
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))] xl:gap-0">
                 <div
-                  className="hidden rounded-l-2xl border border-r-0 xl:block"
+                  className="hidden rounded-l-2xl border xl:block"
                   style={{
                     borderColor: "var(--agenda-calendar-line)",
                     background: "var(--agenda-calendar-time-bg)",
@@ -4467,7 +4467,7 @@ const appt = slotGroups[0]?.[0];
                                   setHoveredTimeKey("");
                                   handleAppointmentMouseLeave();
                                 }}
-                                className={`absolute inset-x-1 top-0 z-10 overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
+                                className={`absolute inset-x-0 top-0 z-10 overflow-hidden rounded-sm border py-0.5 text-left transition duration-200 ease-out ${
                                   isGroupSlot ? "px-1" : "px-1.5"
                                 } ${getAppointmentInteractionClass(
                                   isSelected
