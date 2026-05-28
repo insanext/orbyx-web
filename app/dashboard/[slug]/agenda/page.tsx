@@ -473,7 +473,7 @@ next_control_custom_unit: "days",
     const durationMinutes = Math.max((end - start) / 60000, 15);
     const rows = Math.max(durationMinutes / 30, 0.5);
 
-    return Math.max(Math.round(rows * 54) - 6, 34);
+    return Math.max(Math.round(rows * 54), 27);
   }
 
   function getAppointmentBlockDensity(height: number) {
@@ -4159,7 +4159,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     setHoveredTimeKey("");
                                     handleAppointmentMouseLeave();
                                   }}
-                                  className={`w-full overflow-hidden rounded-lg border px-1.5 py-0.5 text-left transition duration-200 ease-out ${getAppointmentInteractionClass(
+                                  className={`w-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-left transition duration-200 ease-out ${getAppointmentInteractionClass(
                                     isSelected
                                   )} ${getCardClass(
                                     appt,
