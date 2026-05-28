@@ -140,13 +140,24 @@ type HoverCardState = {
 
 type WeekGroupedAppointmentsPopover = {
   key: string;
-  appointments: Appointment[];
+  appointmentGroups: Appointment[][];
   dayLabel: string;
   timeLabel: string;
   targetDate: Date;
   x: number;
   y: number;
+  lineLeft: number;
+  lineTop: number;
+  lineWidth: number;
+  lineAngle: number;
 } | null;
+
+type WeekSlotDisplayGroup = {
+  key: string;
+  appointmentGroups: Appointment[][];
+  appointments: Appointment[];
+  isWeekSummary: boolean;
+};
 
 type NoticeTone =
   | "info"
@@ -214,6 +225,7 @@ const filterLabels: Record<FilterValue, string> = {
   no_show: "No asistió",
   canceled: "Canceladas",
 };
+const filterValues = Object.keys(filterLabels) as FilterValue[];
 
 function getNoticeStyles(tone: NoticeTone): {
   wrapper: CSSProperties;
@@ -345,6 +357,7 @@ export default function AgendaPage() {
   const slug =
     ((params as { slug?: string })?.slug as string) ||
     ((params as { Slug?: string })?.Slug as string);
+  const agendaStateStorageKey = slug ? `orbyx-agenda-state-${slug}` : "";
 
     const [tenantId, setTenantId] = useState("");
 const [slotMinutes, setSlotMinutes] = useState(30);
@@ -414,6 +427,8 @@ next_control_custom_unit: "days",
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [searchResults, setSearchResults] = useState<Appointment[]>([]);
+  const restoredAgendaStateKeyRef = useRef("");
+  const skipNextAgendaStateSaveRef = useRef(false);
   const [hoveredTimeKey, setHoveredTimeKey] = useState("");
 
   const [isEditingReservation, setIsEditingReservation] = useState(false);
@@ -797,28 +812,47 @@ function generateSlotsFromWindows(
       );
   }
 
-  function groupAppointmentsByTimeRange(items: Appointment[]) {
-    const map = new Map<string, Appointment[]>();
+  function getWeekSlotDisplayGroups(items: Appointment[]): WeekSlotDisplayGroup[] {
+    const blockGroups = groupAppointmentsByBlock(items);
+    const rangeMap = new Map<string, Appointment[][]>();
 
-    for (const appt of items) {
-      const key = `${new Date(appt.start_at).toISOString()}|${new Date(
-        appt.end_at
+    for (const blockGroup of blockGroups) {
+      const first = blockGroup[0];
+      if (!first) continue;
+      const key = `${new Date(first.start_at).toISOString()}|${new Date(
+        first.end_at
       ).toISOString()}`;
-      const current = map.get(key) || [];
-      current.push(appt);
-      map.set(key, current);
+      const current = rangeMap.get(key) || [];
+      current.push(blockGroup);
+      rangeMap.set(key, current);
     }
 
-    return Array.from(map.values())
-      .map((group) =>
-        [...group].sort((a, b) =>
-          getStaffName(a.staff_id).localeCompare(getStaffName(b.staff_id), "es")
-        )
-      )
+    return Array.from(rangeMap.entries())
+      .map(([key, appointmentGroups]) => {
+        const firstGroup = appointmentGroups[0] || [];
+        const first = firstGroup[0];
+        const isSingleGroupBlock =
+          appointmentGroups.length === 1 && Boolean(first?.service_is_group);
+        const appointments =
+          appointmentGroups.length > 1
+            ? appointmentGroups.flatMap((group) => {
+                const appointment = group[0];
+                return appointment ? [appointment] : [];
+              })
+            : firstGroup;
+
+        return {
+          key,
+          appointmentGroups,
+          appointments,
+          isWeekSummary: appointmentGroups.length > 1 || isSingleGroupBlock,
+        };
+      })
+      .filter((group) => group.appointments.length > 0)
       .sort(
         (a, b) =>
-          new Date(a[0]?.start_at || 0).getTime() -
-          new Date(b[0]?.start_at || 0).getTime()
+          new Date(a.appointments[0]?.start_at || 0).getTime() -
+          new Date(b.appointments[0]?.start_at || 0).getTime()
       );
   }
 
@@ -1084,9 +1118,9 @@ next_control_custom_unit: "days",
 
   function openWeekGroupedAppointments(
     event: React.MouseEvent<HTMLButtonElement>,
-    group: Appointment[]
+    appointmentGroups: Appointment[][]
   ) {
-    const first = group[0];
+    const first = appointmentGroups[0]?.[0];
     if (!first) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
@@ -1103,6 +1137,13 @@ next_control_custom_unit: "days",
       belowY + popoverHeight > window.innerHeight
         ? Math.max(viewportPadding, rect.top - popoverHeight - gap)
         : belowY;
+    const sourceX = rect.left + rect.width / 2;
+    const sourceY = y < rect.top ? rect.top : rect.bottom;
+    const targetX = x + popoverWidth / 2;
+    const targetY = y < rect.top ? y + popoverHeight : y;
+    const dx = targetX - sourceX;
+    const dy = targetY - sourceY;
+    const lineWidth = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
 
     setSelectedAppointment(null);
     setSelectedEmptySlotKey("");
@@ -1112,12 +1153,16 @@ next_control_custom_unit: "days",
       key: `${new Date(first.start_at).toISOString()}|${new Date(
         first.end_at
       ).toISOString()}`,
-      appointments: group,
+      appointmentGroups,
       dayLabel: formatPopoverDay(new Date(first.start_at)),
       timeLabel: `${formatHour(first.start_at)} - ${formatHour(first.end_at)}`,
       targetDate: new Date(first.start_at),
       x,
       y,
+      lineLeft: sourceX,
+      lineTop: sourceY,
+      lineWidth,
+      lineAngle: (Math.atan2(dy, dx) * 180) / Math.PI,
     });
   }
 
@@ -1211,6 +1256,26 @@ next_control_custom_unit: "days",
     return (
       staffList.find((staff) => staff.id === staffId)?.name || "Profesional"
     );
+  }
+
+  function getStaffItem(staffId?: string | null) {
+    if (!staffId) return null;
+    return staffList.find((staff) => staff.id === staffId) || null;
+  }
+
+  function getStaffAvatar(staffId?: string | null) {
+    const staff = getStaffItem(staffId);
+    return staff?.photo_url || staff?.avatar || "";
+  }
+
+  function getStaffInitials(staffId?: string | null) {
+    const name = getStaffName(staffId);
+    return name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("");
   }
 
   function getWeekdayForAgenda(date: Date) {
@@ -2218,6 +2283,86 @@ next_control_custom_value:
   }
 
   useEffect(() => {
+    if (!agendaStateStorageKey || typeof window === "undefined") return;
+    if (restoredAgendaStateKeyRef.current === agendaStateStorageKey) return;
+
+    restoredAgendaStateKeyRef.current = agendaStateStorageKey;
+
+    try {
+      const raw = sessionStorage.getItem(agendaStateStorageKey);
+      if (!raw) return;
+
+      skipNextAgendaStateSaveRef.current = true;
+      const parsed = JSON.parse(raw) as {
+        agendaView?: "week" | "day";
+        weekBaseDate?: string;
+        selectedStaffId?: string;
+        selectedServiceId?: string;
+        activeFilter?: FilterValue;
+        searchQuery?: string;
+      };
+
+      if (parsed.agendaView === "week" || parsed.agendaView === "day") {
+        setAgendaView(parsed.agendaView);
+      }
+
+      if (parsed.weekBaseDate) {
+        const restoredDate = new Date(parsed.weekBaseDate);
+        if (!Number.isNaN(restoredDate.getTime())) {
+          setWeekBaseDate(restoredDate);
+        }
+      }
+
+      if (typeof parsed.selectedStaffId === "string") {
+        setSelectedStaffId(parsed.selectedStaffId);
+      }
+
+      if (typeof parsed.selectedServiceId === "string") {
+        setSelectedServiceId(parsed.selectedServiceId);
+      }
+
+      if (parsed.activeFilter && filterValues.includes(parsed.activeFilter)) {
+        setActiveFilter(parsed.activeFilter);
+      }
+
+      if (typeof parsed.searchQuery === "string") {
+        setSearchQuery(parsed.searchQuery);
+      }
+    } catch {
+      sessionStorage.removeItem(agendaStateStorageKey);
+    }
+  }, [agendaStateStorageKey]);
+
+  useEffect(() => {
+    if (!agendaStateStorageKey || typeof window === "undefined") return;
+    if (restoredAgendaStateKeyRef.current !== agendaStateStorageKey) return;
+    if (skipNextAgendaStateSaveRef.current) {
+      skipNextAgendaStateSaveRef.current = false;
+      return;
+    }
+
+    sessionStorage.setItem(
+      agendaStateStorageKey,
+      JSON.stringify({
+        agendaView,
+        weekBaseDate: weekBaseDate.toISOString(),
+        selectedStaffId,
+        selectedServiceId,
+        activeFilter,
+        searchQuery,
+      })
+    );
+  }, [
+    activeFilter,
+    agendaStateStorageKey,
+    agendaView,
+    searchQuery,
+    selectedServiceId,
+    selectedStaffId,
+    weekBaseDate,
+  ]);
+
+  useEffect(() => {
     if (!slug) return;
 
     async function loadInitial() {
@@ -2307,6 +2452,7 @@ loadPendingCloseAppointments();
       setSelectedStaffId("");
       setSelectedServiceId("");
       setSelectedAppointment(null);
+      setSelectedWeekGroup(null);
       setManualBookingDraft(null);
       setFreeSlotActionDraft(null);
       setIsEditingReservation(false);
@@ -2324,6 +2470,7 @@ loadPendingCloseAppointments();
       setSelectedStaffId("");
       setSelectedServiceId("");
       setSelectedAppointment(null);
+      setSelectedWeekGroup(null);
       setManualBookingDraft(null);
       setFreeSlotActionDraft(null);
       setIsEditingReservation(false);
@@ -4412,10 +4559,15 @@ const isCoveredByLongAppointment = dayAppointments.some((a) => {
   return start < slotTime && end > slotTime;
 });
 
-const slotGroups = selectedStaffId
-  ? groupAppointmentsByBlock(slotAppointments)
-  : groupAppointmentsByTimeRange(slotAppointments);
-const appt = slotGroups[0]?.[0];
+const slotDisplayGroups = selectedStaffId
+  ? groupAppointmentsByBlock(slotAppointments).map((group) => ({
+      key: getAppointmentGroupKey(group[0]),
+      appointmentGroups: [group],
+      appointments: group,
+      isWeekSummary: false,
+    }))
+  : getWeekSlotDisplayGroups(slotAppointments);
+const appt = slotDisplayGroups[0]?.appointments[0];
 
                             const isHourStart = index % 2 === 0;
                             const isEvenBand = Math.floor(index / 2) % 2 === 0;
@@ -4441,7 +4593,7 @@ const appt = slotGroups[0]?.[0];
                               );
                             }
 
-                            if (!appt || slotGroups.length === 0) {
+                            if (!appt || slotDisplayGroups.length === 0) {
                               return (
                                 <div
                                   key={slot}
@@ -4523,10 +4675,12 @@ const appt = slotGroups[0]?.[0];
                                       : "transparent",
                                 }}
                               >
-                                {slotGroups.map((group) => {
+                                {slotDisplayGroups.map((displayGroup) => {
+                                  const group = displayGroup.appointments;
                                   const appt = group[0];
                                   const isWeekAggregate =
-                                    !selectedStaffId && group.length > 1;
+                                    !selectedStaffId &&
+                                    displayGroup.isWeekSummary;
                                   const isGroupSlot = isGroupAppointment(appt);
                                   const selectedKey = selectedAppointment
                                     ? getAppointmentGroupKey(selectedAppointment)
@@ -4559,18 +4713,12 @@ const appt = slotGroups[0]?.[0];
                                     );
 
                                   if (isWeekAggregate) {
-                                    const aggregateKey = `${new Date(
-                                      appt.start_at
-                                    ).toISOString()}|${new Date(
-                                      appt.end_at
-                                    ).toISOString()}|${group.length}`;
+                                    const aggregateCount =
+                                      displayGroup.appointmentGroups.length;
+                                    const aggregateKey = `${displayGroup.key}|${aggregateCount}`;
                                     const isAggregateSelected =
                                       selectedWeekGroup?.key ===
-                                      `${new Date(
-                                        appt.start_at
-                                      ).toISOString()}|${new Date(
-                                        appt.end_at
-                                      ).toISOString()}`;
+                                      displayGroup.key;
 
                                     return (
                                       <button
@@ -4578,7 +4726,10 @@ const appt = slotGroups[0]?.[0];
                                         type="button"
                                         data-calendar-selectable="true"
                                         onClick={(event) =>
-                                          openWeekGroupedAppointments(event, group)
+                                          openWeekGroupedAppointments(
+                                            event,
+                                            displayGroup.appointmentGroups
+                                          )
                                         }
                                         onMouseEnter={() =>
                                           setHoveredTimeKey(
@@ -4601,7 +4752,7 @@ const appt = slotGroups[0]?.[0];
                                           <div className="flex min-w-0 items-center gap-1.5">
                                             <UsersRound className="h-3 w-3 shrink-0 text-cyan-100" />
                                             <p className="min-w-0 flex-1 truncate text-[10px] font-semibold leading-none text-white">
-                                              {group.length} Agendamientos
+                                              {aggregateCount} Agendamiento{aggregateCount === 1 ? "" : "s"}
                                             </p>
                                           </div>
                                           <p className="truncate text-[9px] font-medium leading-none text-blue-100">
@@ -4752,6 +4903,16 @@ const appt = slotGroups[0]?.[0];
         </section>
 
         {selectedWeekGroup ? (
+          <>
+          <div
+            className="pointer-events-none fixed z-[77] h-px origin-left rounded-full bg-gradient-to-r from-cyan-300/70 via-blue-400/55 to-transparent shadow-[0_0_14px_rgba(56,189,248,0.55)]"
+            style={{
+              left: selectedWeekGroup.lineLeft,
+              top: selectedWeekGroup.lineTop,
+              width: selectedWeekGroup.lineWidth,
+              transform: `rotate(${selectedWeekGroup.lineAngle}deg)`,
+            }}
+          />
           <div
             data-calendar-group-popover="true"
             className="fixed z-[78] w-[320px] max-w-[calc(100vw-24px)] rounded-2xl border p-3 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.72)] backdrop-blur"
@@ -4773,7 +4934,8 @@ const appt = slotGroups[0]?.[0];
                     className="truncate text-sm font-semibold"
                     style={{ color: "var(--text-main)" }}
                   >
-                    {selectedWeekGroup.appointments.length} Agendamientos
+                    {selectedWeekGroup.appointmentGroups.length} Agendamiento
+                    {selectedWeekGroup.appointmentGroups.length === 1 ? "" : "s"}
                   </p>
                   <p
                     className="mt-0.5 truncate text-[11px]"
@@ -4798,7 +4960,7 @@ const appt = slotGroups[0]?.[0];
             </div>
 
             <div
-              className="grid grid-cols-[1fr_1fr] gap-2 border-b pb-2 text-[10px] font-semibold uppercase tracking-[0.08em]"
+              className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] gap-2 border-b pb-2 text-[10px] font-semibold uppercase tracking-[0.08em]"
               style={{
                 borderColor: "var(--border-color)",
                 color: "var(--text-muted)",
@@ -4806,23 +4968,55 @@ const appt = slotGroups[0]?.[0];
             >
               <span>Profesional</span>
               <span>Servicio</span>
+              <span>Inscritos</span>
             </div>
 
             <div className="max-h-36 overflow-y-auto py-1">
-              {selectedWeekGroup.appointments.map((appt) => (
+              {selectedWeekGroup.appointmentGroups.map((group) => {
+                const appt = group[0];
+                if (!appt) return null;
+                const avatarUrl = getStaffAvatar(appt?.staff_id);
+                const activeGroupCount = group.filter(
+                  (attendee) => attendee.status !== "canceled"
+                ).length;
+                const groupCapacity =
+                  Number(appt?.service_capacity || 0) ||
+                  activeGroupCount ||
+                  group.length;
+
+                return (
                 <div
-                  key={appt.id}
-                  className="grid grid-cols-[1fr_1fr] gap-2 rounded-lg px-1.5 py-2 text-[11px] transition hover:bg-blue-500/10"
+                  key={getAppointmentGroupKey(appt)}
+                  className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-1.5 py-2 text-[11px] transition hover:bg-blue-500/10"
                   style={{ color: "var(--text-main)" }}
                 >
-                  <span className="truncate font-semibold">
-                    {getStaffName(appt.staff_id)}
+                  <span className="flex min-w-0 items-center gap-2">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt=""
+                        className="h-6 w-6 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-[9px] font-semibold text-blue-100">
+                        {getStaffInitials(appt?.staff_id) || "PR"}
+                      </span>
+                    )}
+                    <span className="truncate font-semibold">
+                      {getStaffName(appt?.staff_id)}
+                    </span>
                   </span>
                   <span className="truncate" style={{ color: "var(--text-muted)" }}>
-                    {appt.service_name_snapshot || "Reserva"}
+                    {appt?.service_name_snapshot || "Reserva"}
+                  </span>
+                  <span className="whitespace-nowrap text-right text-[10px]" style={{ color: "var(--text-muted)" }}>
+                    {appt?.service_is_group
+                      ? `${activeGroupCount}/${groupCapacity}`
+                      : "-"}
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <button
@@ -4849,6 +5043,7 @@ const appt = slotGroups[0]?.[0];
               <CalendarDays className="h-4 w-4 text-blue-200" />
             </button>
           </div>
+          </>
         ) : null}
 
         {selectedAppointment ? (
