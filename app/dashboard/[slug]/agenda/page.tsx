@@ -1017,6 +1017,20 @@ next_control_custom_unit: "days",
     setHoverCard(null);
   }
 
+  useEffect(() => {
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Element)) return;
+      if (target.closest("[data-calendar-selectable='true']")) return;
+
+      clearCalendarSelection();
+    }
+
+    document.addEventListener("click", handleDocumentClick);
+    return () => document.removeEventListener("click", handleDocumentClick);
+  }, []);
+
   function getEmptySlotClass(isSelected: boolean) {
     return isSelected
       ? "border-cyan-200/85 bg-cyan-400/15 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.34),0_0_22px_-9px_rgba(34,211,238,0.95)]"
@@ -2547,11 +2561,11 @@ const hasPendingClose = pendingCloseCount > 0;
           --agenda-calendar-hover: rgba(59,130,246,0.08);
           --agenda-today-bg: linear-gradient(180deg, rgba(219,234,254,0.98), rgba(226,232,240,0.92), rgba(215,224,236,0.86));
           --agenda-today-header-bg: linear-gradient(180deg, rgba(219,234,254,0.96), rgba(226,232,240,0.86));
-          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 8px, rgba(255,255,255,0.026) 8px, rgba(255,255,255,0.026) 18px), linear-gradient(180deg, rgba(220,38,38,0.68), rgba(185,28,28,0.58) 48%, rgba(239,68,68,0.44));
-          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.035) 8px, rgba(255,255,255,0.035) 18px), linear-gradient(180deg, rgba(220,38,38,0.74), rgba(185,28,28,0.64), rgba(239,68,68,0.5));
-          --agenda-closed-border: rgba(248,113,113,0.26);
-          --agenda-closed-line: rgba(254,202,202,0.18);
-          --agenda-closed-line-soft: rgba(254,202,202,0.1);
+          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.035) 8px, rgba(255,255,255,0.035) 18px), linear-gradient(180deg, rgba(220,38,38,0.92), rgba(185,28,28,0.84) 48%, rgba(239,68,68,0.76));
+          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.045) 8px, rgba(255,255,255,0.045) 18px), linear-gradient(180deg, rgba(239,68,68,0.96), rgba(220,38,38,0.88), rgba(248,113,113,0.78));
+          --agenda-closed-border: rgba(254,202,202,0.34);
+          --agenda-closed-line: rgba(254,202,202,0.24);
+          --agenda-closed-line-soft: rgba(254,202,202,0.14);
           --agenda-closed-text: #ffffff;
           --agenda-closed-muted: rgba(255,255,255,0.82);
         }
@@ -2573,11 +2587,11 @@ const hasPendingClose = pendingCloseCount > 0;
           --agenda-calendar-hover: rgba(56,189,248,0.08);
           --agenda-today-bg: linear-gradient(180deg, rgba(30,64,175,0.28), rgba(14,116,144,0.14), rgba(15,23,42,0.94));
           --agenda-today-header-bg: linear-gradient(180deg, rgba(30,64,175,0.28), rgba(15,23,42,0.92));
-          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 8px, rgba(255,255,255,0.026) 8px, rgba(255,255,255,0.026) 18px), linear-gradient(180deg, rgba(220,38,38,0.62), rgba(185,28,28,0.52) 48%, rgba(127,29,29,0.5));
-          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.035) 8px, rgba(255,255,255,0.035) 18px), linear-gradient(180deg, rgba(220,38,38,0.7), rgba(185,28,28,0.58), rgba(153,27,27,0.54));
-          --agenda-closed-border: rgba(248,113,113,0.3);
-          --agenda-closed-line: rgba(254,202,202,0.16);
-          --agenda-closed-line-soft: rgba(254,202,202,0.09);
+          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.032) 8px, rgba(255,255,255,0.032) 18px), linear-gradient(180deg, rgba(220,38,38,0.84), rgba(185,28,28,0.74) 48%, rgba(127,29,29,0.7));
+          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.045) 8px, rgba(255,255,255,0.045) 18px), linear-gradient(180deg, rgba(239,68,68,0.9), rgba(220,38,38,0.8), rgba(153,27,27,0.74));
+          --agenda-closed-border: rgba(248,113,113,0.42);
+          --agenda-closed-line: rgba(254,202,202,0.2);
+          --agenda-closed-line-soft: rgba(254,202,202,0.12);
         }
       `}</style>
 <div
@@ -3572,9 +3586,10 @@ onClick={() => {
 
                                 if (slotGroups.length === 0) {
                                   return (
-                                    <div
-                                      key={slot}
-                                      role="button"
+                                        <div
+                                          key={slot}
+                                          data-calendar-selectable="true"
+                                          role="button"
                                       tabIndex={0}
                                       onClick={() => {
                                         selectEmptySlot(slot, staff.id);
@@ -3695,9 +3710,10 @@ onClick={() => {
                                         );
 
                                       return (
-                                        <button
-                                          key={getAppointmentGroupKey(appt)}
-                                          type="button"
+                                          <button
+                                            key={getAppointmentGroupKey(appt)}
+                                            type="button"
+                                            data-calendar-selectable="true"
                                           onClick={() =>
                                             handleSelectAppointment(appt)
                                           }
@@ -3913,7 +3929,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
 }}
                     >
                       <div
-  className="sticky z-20 -mx-2.5 mb-2.5 px-2.5 pb-2.5 pt-2"
+  className="sticky z-20 -mx-2.5 flex h-[58px] items-center px-2.5"
   style={{
     top: "78px",
     borderBottom: `1px solid ${
@@ -4120,6 +4136,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                 <button
                                   key={appt.id}
                                   type="button"
+                                  data-calendar-selectable="true"
                                   onClick={() => handleSelectAppointment(appt)}
                                   onMouseEnter={(e) => {
                                     setHoveredTimeKey(getTimeKey(appt.start_at));
@@ -4298,6 +4315,7 @@ const appt = slotGroups[0]?.[0];
                               return (
                                 <div
                                   key={slot}
+                                  data-calendar-selectable="true"
                                   role="button"
                                   tabIndex={0}
                                   onClick={() => {
@@ -4364,9 +4382,8 @@ const appt = slotGroups[0]?.[0];
                                 key={slot}
                                 onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                 onMouseLeave={() => setHoveredTimeKey("")}
-                                className="border-t py-1"
+                                className="relative h-[54px] border-t"
                                 style={{
-                                  minHeight: 54,
                                   borderColor: isHourStart
                                     ? "rgba(148,163,184,0.22)"
                                     : "rgba(148,163,184,0.14)",
@@ -4413,6 +4430,7 @@ const appt = slotGroups[0]?.[0];
                               <button
                                 key={getAppointmentGroupKey(appt)}
                                 type="button"
+                                data-calendar-selectable="true"
                                 onClick={() => handleSelectAppointment(appt)}
                                 onMouseEnter={(e) => {
                                   setHoveredTimeKey(getTimeKey(appt.start_at));
@@ -4422,7 +4440,7 @@ const appt = slotGroups[0]?.[0];
                                   setHoveredTimeKey("");
                                   handleAppointmentMouseLeave();
                                 }}
-                                className={`w-full overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
+                                className={`absolute inset-x-1 top-1 z-10 overflow-hidden rounded-lg border py-0.5 text-left transition duration-200 ease-out ${
                                   isGroupSlot ? "px-1" : "px-1.5"
                                 } ${getAppointmentInteractionClass(
                                   isSelected
