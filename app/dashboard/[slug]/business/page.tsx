@@ -685,6 +685,7 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
             data.business.max_booking_days_ahead || 60
           ),
         });
+        console.log("[business-logo] loaded business logo_url:", data.business.logo_url || "");
 
         await loadBookingFields();
       } catch (error: unknown) {
@@ -1273,7 +1274,7 @@ const cleanedHours = Object.values(grouped);
   }
 
   async function handleLogoUpload(file?: File | null) {
-    if (!file) return;
+    if (!file) return "";
 
     try {
       setLogoUploading(true);
@@ -1298,14 +1299,20 @@ const cleanedHours = Object.values(grouped);
         throw new Error(data?.error || "No se pudo subir el logo");
       }
 
+      const uploadedUrl = data.public_url || "";
+      console.log("[business-logo] uploaded URL:", uploadedUrl);
+
       setForm((prev) => ({
         ...prev,
-        logo_url: data.public_url || "",
+        logo_url: uploadedUrl,
       }));
+
+      return uploadedUrl;
     } catch (err: unknown) {
       setLogoUploadError(
         err instanceof Error ? err.message : "No se pudo subir el logo"
       );
+      return "";
     } finally {
       setLogoUploading(false);
     }
@@ -1394,13 +1401,18 @@ const cleanedHours = Object.values(grouped);
       const file = await renderLogoDraft(selectedLogoFile);
       if (!file) return;
 
-      await handleLogoUpload(file);
+      const uploadedUrl = await handleLogoUpload(file);
 
-      const finalPreviewUrl = URL.createObjectURL(file);
+      if (!uploadedUrl) {
+        throw new Error("El upload no devolvió una URL válida");
+      }
+
       resetLogoDraft();
-      setLogoDraftUrl(finalPreviewUrl);
-      setLogoDraftName("business-logo.png");
-      setSelectedLogoFile(null);
+      setForm((prev) => ({
+        ...prev,
+        logo_url: uploadedUrl,
+      }));
+      console.log("[business-logo] form logo_url set:", uploadedUrl);
     } catch (err: unknown) {
       setLogoUploadError(
         err instanceof Error ? err.message : "No se pudo guardar el logo"
@@ -1416,7 +1428,11 @@ const cleanedHours = Object.values(grouped);
       logoFileInputRef.current.value = "";
     }
     setLogoUploadError("");
-    setForm((prev) => ({ ...prev, logo_url: "" }));
+    setForm((prev) => {
+      const next = { ...prev, logo_url: "" };
+      console.log("[business-logo] logo removed, form logo_url:", next.logo_url);
+      return next;
+    });
   }
 
   async function saveBookingFields() {
@@ -1523,6 +1539,17 @@ async function saveSlotMinutes() {
         throw new Error("La dirección global del negocio es obligatoria.");
       }
 
+      const tenantPayload = {
+        ...form,
+        logo_url: form.logo_url || "",
+        business_subtype_config:
+          isMechanicSubtype
+            ? businessSubtypeConfig
+            : {},
+      };
+
+      console.log("[business-logo] PATCH /tenants payload logo_url:", tenantPayload.logo_url);
+
       const res = await fetch(
         `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
         {
@@ -1530,17 +1557,12 @@ async function saveSlotMinutes() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            ...form,
-            business_subtype_config:
-              isMechanicSubtype
-                ? businessSubtypeConfig
-                : {},
-          }),
+          body: JSON.stringify(tenantPayload),
         }
       );
 
       const data = await res.json();
+      console.log("[business-logo] PATCH /tenants response logo_url:", data?.tenant?.logo_url);
 
       if (!res.ok) {
         throw new Error(data?.error || "No se pudo guardar");

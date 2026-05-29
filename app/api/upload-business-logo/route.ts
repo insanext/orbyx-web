@@ -41,8 +41,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const fileExt = file.name.split(".").pop() || "png";
-    const fileName = `tenants/${tenantId}/logo.${fileExt}`;
+    const fileExt = (file.name.split(".").pop() || "png").toLowerCase();
+    const safeExt = ["jpg", "jpeg", "png", "webp"].includes(fileExt)
+      ? fileExt
+      : "png";
+    const version = `${Date.now()}-${crypto.randomUUID()}`;
+    const fileName = `tenants/${tenantId}/logo-${version}.${safeExt}`;
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
