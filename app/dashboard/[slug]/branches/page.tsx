@@ -3,7 +3,7 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Copy, Pencil, Plus, RefreshCw, Store } from "lucide-react";
+import { Copy, Crown, Pencil, Plus, RefreshCw, Store, Users } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -377,7 +377,13 @@ export default function BranchesPage() {
 
   const [form, setForm] = useState({
     name: "",
+    address: "",
+    phone: "",
+    whatsapp: "",
+    use_global_contact: true,
+    use_global_hours: true,
   });
+  const [createOpen, setCreateOpen] = useState(false);
 
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
@@ -727,6 +733,11 @@ export default function BranchesPage() {
         body: JSON.stringify({
           tenant_id: tenantId,
           name: form.name.trim(),
+          address: form.use_global_contact ? "" : form.address,
+          phone: form.use_global_contact ? "" : form.phone,
+          whatsapp: form.use_global_contact ? "" : form.whatsapp,
+          use_global_contact: form.use_global_contact,
+          use_global_hours: form.use_global_hours,
         }),
       });
 
@@ -736,7 +747,15 @@ export default function BranchesPage() {
         throw new Error(data?.error || "No se pudo crear la sucursal");
       }
 
-      setForm({ name: "" });
+      setForm({
+        name: "",
+        address: "",
+        phone: "",
+        whatsapp: "",
+        use_global_contact: true,
+        use_global_hours: true,
+      });
+      setCreateOpen(false);
       setSaveOk("Sucursal creada correctamente.");
       const rows = await loadBranches(tenantId);
       syncStoredActiveBranch(rows);
@@ -1013,6 +1032,7 @@ export default function BranchesPage() {
   const planLabel = PLAN_LABELS[plan] || "Pro";
   const nextPlan = NEXT_PLAN_BY_CURRENT[plan] || null;
   const nextPlanLabel = nextPlan ? PLAN_LABELS[nextPlan] || nextPlan : null;
+  const usersCount = 7;
 
   return (
     <div className="space-y-6 pb-6">
@@ -1031,14 +1051,18 @@ export default function BranchesPage() {
               <Store className="h-5 w-5" />
             </div>
             <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">Sucursales</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">Dashboard</p>
 
             <h1
               className="mt-0.5 text-xl font-semibold tracking-tight"
               style={{ color: "var(--text-main)" }}
             >
-              Sucursales del negocio
+              Gestión del negocio
             </h1>
+            <span className="mt-2 inline-flex h-9 items-center gap-2 rounded-full border px-4 text-sm font-semibold" style={{ borderColor: "rgba(139,92,246,0.46)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
+              <Crown className="h-4 w-4" />
+              Plan {planLabel}
+            </span>
 
             <p
               className="mt-0.5 max-w-2xl text-sm leading-5"
@@ -1046,12 +1070,12 @@ export default function BranchesPage() {
             >
               {loading
                 ? "Cargando información del negocio..."
-                : `Gestiona las sucursales de ${businessName}.`}
+                : businessName}
             </p>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div
               className="rounded-2xl border px-4 py-3"
               style={{
@@ -1063,7 +1087,7 @@ export default function BranchesPage() {
                 className="text-[11px] font-semibold uppercase tracking-[0.16em]"
                 style={{ color: "var(--text-muted)" }}
               >
-                Total sucursales
+                Sucursales actuales
               </p>
               <p
                 className="mt-2 text-sm font-semibold"
@@ -1071,6 +1095,7 @@ export default function BranchesPage() {
               >
                 {loading ? "..." : branches.length}
               </p>
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Total creadas</p>
             </div>
 
             <div
@@ -1084,14 +1109,15 @@ export default function BranchesPage() {
                 className="text-[11px] font-semibold uppercase tracking-[0.16em]"
                 style={{ color: "var(--text-muted)" }}
               >
-                Activas
+                Límite de tu plan
               </p>
               <p
                 className="mt-2 text-sm font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
-                {loading ? "..." : activeBranchesCount}
+                {maxBranches}
               </p>
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Sucursales permitidas</p>
             </div>
 
             <div
@@ -1105,18 +1131,19 @@ export default function BranchesPage() {
                 className="text-[11px] font-semibold uppercase tracking-[0.16em]"
                 style={{ color: "var(--text-muted)" }}
               >
-                Inactivas
+                Usuarios actuales
               </p>
               <p
                 className="mt-2 text-sm font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
-                {loading ? "..." : inactiveBranchesCount}
+                {usersCount}
               </p>
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Usuarios activos</p>
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="hidden"
               style={{
                 borderColor: "rgba(139,92,246,0.24)",
                 background: "rgba(255,255,255,0.08)",
@@ -1140,7 +1167,7 @@ export default function BranchesPage() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
-            href={`/dashboard/${slug}/agenda`}
+            href={`/planes?current_plan=${plan}&from=branches&slug=${slug}&tenant_id=${tenantId}`}
             className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
             style={{
               borderColor: "var(--border-color)",
@@ -1148,7 +1175,8 @@ export default function BranchesPage() {
               color: "var(--text-main)",
             }}
           >
-            Ver agenda
+            <Crown className="h-4 w-4" />
+            Ver planes
           </Link>
 
           <button
@@ -1165,7 +1193,7 @@ export default function BranchesPage() {
                   );
                 });
             }}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition"
+            className="hidden"
             style={{
               background:
                 "linear-gradient(135deg, rgb(139 92 246), rgb(99 102 241))",
@@ -1208,7 +1236,7 @@ export default function BranchesPage() {
         </Notice>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="grid gap-6">
         <Panel className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]">
           <div
             className="mb-5 flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between"
@@ -1244,7 +1272,7 @@ export default function BranchesPage() {
 
             <button
               type="button"
-              onClick={() => document.getElementById("new-branch-name")?.focus()}
+              onClick={() => setCreateOpen((prev) => !prev)}
               disabled={saving || loading || reachedLimit || hasExcess}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
@@ -1255,9 +1283,95 @@ export default function BranchesPage() {
               }}
             >
               <Plus className="h-4 w-4" />
-              Nueva sucursal
+              Crear sucursal
             </button>
           </div>
+          {createOpen ? (
+            <div
+              className="mb-5 rounded-2xl border p-4"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "linear-gradient(135deg, rgba(139,92,246,0.10), var(--bg-soft))",
+              }}
+            >
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nombre sucursal"
+                  disabled={saving || loading || reachedLimit || hasExcess}
+                  className="h-11 rounded-xl border px-3 text-sm outline-none disabled:opacity-60"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                />
+                <input
+                  type="text"
+                  value={form.address}
+                  onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+                  placeholder="Dirección"
+                  disabled={saving || loading || form.use_global_contact}
+                  className="h-11 rounded-xl border px-3 text-sm outline-none disabled:opacity-60"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                />
+                <input
+                  type="text"
+                  value={form.phone}
+                  onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Teléfono"
+                  disabled={saving || loading || form.use_global_contact}
+                  className="h-11 rounded-xl border px-3 text-sm outline-none disabled:opacity-60"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                />
+                <input
+                  type="text"
+                  value={form.whatsapp}
+                  onChange={(e) => setForm((prev) => ({ ...prev, whatsapp: e.target.value }))}
+                  placeholder="WhatsApp"
+                  disabled={saving || loading || form.use_global_contact}
+                  className="h-11 rounded-xl border px-3 text-sm outline-none disabled:opacity-60"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                />
+                <label className="flex h-11 items-center justify-between gap-3 rounded-xl border px-3 text-sm font-medium" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+                  Usar contacto global
+                  <input
+                    type="checkbox"
+                    checked={form.use_global_contact}
+                    onChange={(e) => setForm((prev) => ({ ...prev, use_global_contact: e.target.checked }))}
+                    className="h-4 w-4"
+                  />
+                </label>
+                <label className="flex h-11 items-center justify-between gap-3 rounded-xl border px-3 text-sm font-medium" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+                  Usar horario global
+                  <input
+                    type="checkbox"
+                    checked={form.use_global_hours}
+                    onChange={(e) => setForm((prev) => ({ ...prev, use_global_hours: e.target.checked }))}
+                    className="h-4 w-4"
+                  />
+                </label>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleCreateBranch}
+                  disabled={saving || loading || reachedLimit || hasExcess}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg, rgb(139 92 246), rgb(59 130 246))" }}
+                >
+                  <Plus className="h-4 w-4" />
+                  {saving ? "Creando..." : "Crear sucursal"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(false)}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border px-5 text-sm font-medium"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : null}
           {loading ? (
             <div
               className="rounded-2xl border border-dashed px-4 py-8 text-sm"
@@ -1283,11 +1397,11 @@ export default function BranchesPage() {
             </div>
           ) : (
             <div
-              className="overflow-hidden rounded-2xl border"
+              className="overflow-x-auto rounded-2xl border"
               style={{ borderColor: "var(--border-color)" }}
             >
               <div
-                className="hidden grid-cols-[1.35fr_0.65fr_0.85fr_0.95fr_0.6fr] border-b px-4 py-3 text-xs font-semibold md:grid"
+                className="hidden min-w-[1080px] grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.75fr_0.65fr] border-b px-4 py-3 text-xs font-semibold md:grid"
                 style={{
                   borderColor: "var(--border-color)",
                   color: "var(--text-muted)",
@@ -1295,8 +1409,12 @@ export default function BranchesPage() {
               >
                 <span>Sucursal</span>
                 <span>Estado</span>
+                <span>Dirección</span>
                 <span>Creada</span>
                 <span>Última actualización</span>
+                <span>Servicios</span>
+                <span>Staff</span>
+                <span>Reservas (mes)</span>
                 <span>Editar</span>
               </div>
               {branches.map((branch) => {
@@ -1308,7 +1426,7 @@ export default function BranchesPage() {
                 return (
                   <div
                     key={branch.id}
-                    className="grid gap-4 border-b p-4 transition last:border-b-0 md:grid-cols-[1.35fr_0.65fr_0.85fr_0.95fr_0.6fr] md:items-center"
+                    className="grid min-w-[1080px] gap-4 border-b p-4 transition last:border-b-0 md:grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.75fr_0.65fr] md:items-center"
                     style={{
                       borderColor: "var(--border-color)",
                       background: isEditing
@@ -1318,7 +1436,7 @@ export default function BranchesPage() {
                   >
                     {hasExcess && isActive ? (
                       <label
-                        className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium md:col-span-5"
+                        className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium md:col-span-9"
                         style={{
                           borderColor: isMarkedToKeep
                             ? "rgba(16,185,129,0.34)"
@@ -1382,6 +1500,17 @@ export default function BranchesPage() {
 
                     <div>
                       <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
+                        Dirección
+                      </p>
+                      <p className="text-sm leading-6" style={{ color: "var(--text-main)" }}>
+                        {branch.use_global_contact !== false
+                          ? globalAddress || "Contacto global"
+                          : branch.address || "Sin dirección"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
                         Creada
                       </p>
                       <p className="text-sm" style={{ color: "var(--text-main)" }}>
@@ -1395,6 +1524,33 @@ export default function BranchesPage() {
                       </p>
                       <p className="text-sm" style={{ color: "var(--text-main)" }}>
                         {formatBranchDate(branch.updated_at || branch.created_at)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
+                        Servicios
+                      </p>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                        0
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
+                        Staff
+                      </p>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                        0
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
+                        Reservas (mes)
+                      </p>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                        0
                       </p>
                     </div>
 
@@ -1423,7 +1579,7 @@ export default function BranchesPage() {
                     </div>
 
                     {isEditing ? (
-                      <div className="space-y-4 rounded-2xl border p-4 md:col-span-5" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
+                      <div className="space-y-4 rounded-2xl border p-4 md:col-span-9" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
                         <div className="grid gap-3 md:grid-cols-2">
                           <div>
                             <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
@@ -2173,7 +2329,7 @@ export default function BranchesPage() {
         <Panel
           title="Crear nueva sucursal"
           description="Agrega una sucursal para operar varias ubicaciones desde la misma cuenta."
-          className="bg-[linear-gradient(180deg,rgba(139,92,246,0.08),transparent_40%)]"
+          className="hidden"
         >
           <div className="space-y-5">
             <div
@@ -2337,7 +2493,7 @@ export default function BranchesPage() {
       </section>
 
       <div
-        className="flex flex-col gap-3 rounded-3xl border px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+        className="hidden"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
