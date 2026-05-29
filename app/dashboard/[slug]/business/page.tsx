@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -185,6 +185,44 @@ function groupSpecialDates(items: SpecialDate[]) {
   }
 
   return groups;
+}
+
+function MapPreview({ address }: { address: string }) {
+  const cleanAddress = address.trim();
+
+  if (!cleanAddress) {
+    return (
+      <div
+        className="flex min-h-[180px] items-center justify-center rounded-2xl border border-dashed px-4 text-center text-sm"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-soft)",
+          color: "var(--text-muted)",
+        }}
+      >
+        Ingresa una dirección para previsualizar el mapa.
+      </div>
+    );
+  }
+
+  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
+    cleanAddress
+  )}&output=embed`;
+
+  return (
+    <div
+      className="overflow-hidden rounded-2xl border"
+      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+    >
+      <iframe
+        title="Mapa de la dirección"
+        src={mapUrl}
+        className="h-[220px] w-full"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+    </div>
+  );
 }
 
 const genericBusinessSubtypes = [
@@ -405,6 +443,7 @@ export default function BusinessPage() {
     "";
 
   const [tenantId, setTenantId] = useState("");
+  const logoFileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedBranchId, setSelectedBranchId] = useState("");
 const [calendarId, setCalendarId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -415,6 +454,11 @@ const [slotMinutesOk, setSlotMinutesOk] = useState("");
 const [slotMinutesError, setSlotMinutesError] = useState("");
 const [logoUploading, setLogoUploading] = useState(false);
 const [logoUploadError, setLogoUploadError] = useState("");
+const [logoDraftUrl, setLogoDraftUrl] = useState("");
+const [logoDraftName, setLogoDraftName] = useState("");
+const [logoScale, setLogoScale] = useState(1);
+const [logoOffsetX, setLogoOffsetX] = useState(0);
+const [logoOffsetY, setLogoOffsetY] = useState(0);
   const [savingFields, setSavingFields] = useState(false);
   const [savingSpecialDates, setSavingSpecialDates] = useState(false);
 
@@ -657,6 +701,12 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
       loadBusiness();
     }
   }, [slug]);
+
+  useEffect(() => {
+    return () => {
+      if (logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
+    };
+  }, [logoDraftUrl]);
 
   useEffect(() => {
     function handleBranchChanged(event: Event) {
@@ -1249,6 +1299,108 @@ const cleanedHours = Object.values(grouped);
     }
   }
 
+  function handleLogoFileSelected(file?: File | null) {
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setLogoUploadError("Formato inválido. Usa JPG, PNG o WebP");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoUploadError("El logo supera el máximo permitido de 2 MB");
+      return;
+    }
+
+    if (logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
+
+    setLogoUploadError("");
+    setLogoDraftUrl(URL.createObjectURL(file));
+    setLogoDraftName(file.name || "logo");
+    setLogoScale(1);
+    setLogoOffsetX(0);
+    setLogoOffsetY(0);
+  }
+
+  async function renderLogoDraft() {
+    if (!logoDraftUrl) return;
+
+    const image = new Image();
+    image.src = logoDraftUrl;
+
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("No se pudo procesar el logo"));
+    });
+
+    const size = 512;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      throw new Error("No se pudo preparar el editor de logo");
+    }
+
+    ctx.clearRect(0, 0, size, size);
+
+    const baseScale = Math.min(size / image.width, size / image.height);
+    const drawWidth = image.width * baseScale * logoScale;
+    const drawHeight = image.height * baseScale * logoScale;
+    const drawX = (size - drawWidth) / 2 + (logoOffsetX / 100) * size;
+    const drawY = (size - drawHeight) / 2 + (logoOffsetY / 100) * size;
+
+    ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/png", 0.92)
+    );
+
+    if (!blob) {
+      throw new Error("No se pudo generar el logo ajustado");
+    }
+
+    return new File([blob], "business-logo.png", { type: "image/png" });
+  }
+
+  async function uploadAdjustedLogo() {
+    try {
+      setLogoUploading(true);
+      setLogoUploadError("");
+
+      const file = await renderLogoDraft();
+      if (!file) return;
+
+      await handleLogoUpload(file);
+
+      if (logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
+      setLogoDraftUrl("");
+      setLogoDraftName("");
+      setLogoScale(1);
+      setLogoOffsetX(0);
+      setLogoOffsetY(0);
+    } catch (err: unknown) {
+      setLogoUploadError(
+        err instanceof Error ? err.message : "No se pudo guardar el logo"
+      );
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
+  function removeLogo() {
+    if (logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
+
+    setLogoDraftUrl("");
+    setLogoDraftName("");
+    setLogoUploadError("");
+    setLogoScale(1);
+    setLogoOffsetX(0);
+    setLogoOffsetY(0);
+    setForm((prev) => ({ ...prev, logo_url: "" }));
+  }
+
   async function saveBookingFields() {
     try {
       setSavingFields(true);
@@ -1348,6 +1500,10 @@ async function saveSlotMinutes() {
       setSaving(true);
       setSaveError("");
       setSaveOk("");
+
+      if (!form.address.trim()) {
+        throw new Error("La dirección global del negocio es obligatoria.");
+      }
 
       const res = await fetch(
         `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
@@ -1809,19 +1965,26 @@ function updateHourByIndex(
             background: "var(--bg-soft)",
           }}
         >
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
             <div
-              className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
+              className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-card)",
               }}
             >
-              {form.logo_url ? (
+              {logoDraftUrl || form.logo_url ? (
                 <img
-                  src={form.logo_url}
+                  src={logoDraftUrl || form.logo_url}
                   alt={form.name || "Logo del negocio"}
                   className="h-full w-full object-contain"
+                  style={
+                    logoDraftUrl
+                      ? {
+                          transform: `translate(${logoOffsetX}%, ${logoOffsetY}%) scale(${logoScale})`,
+                        }
+                      : undefined
+                  }
                 />
               ) : (
                 <Building2 className="h-8 w-8" style={{ color: "var(--text-muted)" }} />
@@ -1829,27 +1992,116 @@ function updateHourByIndex(
             </div>
 
             <div className="min-w-0 flex-1">
-              <label
-                className="mb-2 block text-sm font-medium"
-                style={{ color: "var(--text-main)" }}
-              >
+              <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
                 Logo del negocio
-              </label>
+              </p>
+              <p className="mt-1 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                Este logo queda guardado a nivel global para identidad, sidebar, reservas y campañas futuras.
+              </p>
+
               <input
+                ref={logoFileInputRef}
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
-                disabled={logoUploading || !tenantId}
-                onChange={(e) => handleLogoUpload(e.target.files?.[0])}
-                className="block w-full text-sm file:mr-4 file:h-10 file:rounded-xl file:border-0 file:px-4 file:text-sm file:font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                style={{ color: "var(--text-muted)" }}
+                className="hidden"
+                onChange={(e) => {
+                  handleLogoFileSelected(e.target.files?.[0]);
+                  e.currentTarget.value = "";
+                }}
               />
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => logoFileInputRef.current?.click()}
+                  disabled={logoUploading || !tenantId}
+                  className={secondaryButtonClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Subir logo
+                </button>
+
+                <button
+                  type="button"
+                  onClick={removeLogo}
+                  disabled={logoUploading || (!form.logo_url && !logoDraftUrl)}
+                  className="orbyx-business-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Eliminar logo
+                </button>
+              </div>
+
+              {logoDraftUrl ? (
+                <div className="mt-4 space-y-3">
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Ajustando: {logoDraftName}
+                  </p>
+
+                  <label className="block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                    Zoom
+                    <input
+                      type="range"
+                      min="0.6"
+                      max="2"
+                      step="0.05"
+                      value={logoScale}
+                      onChange={(e) => setLogoScale(Number(e.target.value))}
+                      className="mt-2 w-full"
+                    />
+                  </label>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                      Posición horizontal
+                      <input
+                        type="range"
+                        min="-35"
+                        max="35"
+                        step="1"
+                        value={logoOffsetX}
+                        onChange={(e) => setLogoOffsetX(Number(e.target.value))}
+                        className="mt-2 w-full"
+                      />
+                    </label>
+
+                    <label className="block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                      Posición vertical
+                      <input
+                        type="range"
+                        min="-35"
+                        max="35"
+                        step="1"
+                        value={logoOffsetY}
+                        onChange={(e) => setLogoOffsetY(Number(e.target.value))}
+                        className="mt-2 w-full"
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={uploadAdjustedLogo}
+                    disabled={logoUploading}
+                    className={primaryButtonClass}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                    }}
+                  >
+                    {logoUploading ? "Guardando logo..." : "Aplicar ajuste"}
+                  </button>
+                </div>
+              ) : null}
+
               {logoUploadError ? (
                 <p className="mt-2 text-xs text-rose-300">{logoUploadError}</p>
               ) : (
                 <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-                  {logoUploading
-                    ? "Subiendo logo..."
-                    : "JPG, PNG o WebP. Se guardará con los cambios del negocio."}
+                  JPG, PNG o WebP. Máximo 2 MB.
                 </p>
               )}
             </div>
@@ -1936,6 +2188,7 @@ function updateHourByIndex(
           </label>
           <input
             type="text"
+            required
             value={form.address}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, address: e.target.value }))
@@ -1948,6 +2201,9 @@ function updateHourByIndex(
               color: "var(--text-main)",
             }}
           />
+          <div className="mt-3">
+            <MapPreview address={form.address} />
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">

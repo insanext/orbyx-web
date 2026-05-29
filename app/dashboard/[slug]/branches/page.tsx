@@ -13,6 +13,7 @@ type BusinessResponse = {
     id: string;
     name: string;
     slug: string;
+    address?: string | null;
     plan_slug?: string | null;
   };
 };
@@ -180,6 +181,37 @@ function Notice({
   );
 }
 
+function MapPreview({ address }: { address: string }) {
+  const cleanAddress = address.trim();
+
+  if (!cleanAddress) {
+    return (
+      <div
+        className="flex min-h-[160px] items-center justify-center rounded-xl border border-dashed px-4 text-center text-sm"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+          color: "var(--text-muted)",
+        }}
+      >
+        Ingresa una dirección para previsualizar el mapa.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border" style={{ borderColor: "var(--border-color)" }}>
+      <iframe
+        title="Mapa de la sucursal"
+        src={`https://maps.google.com/maps?q=${encodeURIComponent(cleanAddress)}&output=embed`}
+        className="h-[190px] w-full"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+    </div>
+  );
+}
+
 export default function BranchesPage() {
   const params = useParams();
   const slug =
@@ -189,6 +221,7 @@ export default function BranchesPage() {
 
   const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [globalAddress, setGlobalAddress] = useState("");
   const [plan, setPlan] = useState("pro");
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
@@ -307,6 +340,7 @@ export default function BranchesPage() {
 
       setTenantId(currentTenantId);
       setBusinessName(businessData.business.name || slug);
+      setGlobalAddress(businessData.business.address || "");
       setPlan(normalizePlanSlug(businessData.business.plan_slug));
 
       await loadBranches(currentTenantId);
@@ -458,6 +492,10 @@ export default function BranchesPage() {
         throw new Error("No se encontro el negocio");
       }
 
+      if (!editForm.use_global_contact && !editForm.address.trim()) {
+        throw new Error("La dirección local es obligatoria cuando la sucursal usa contacto propio");
+      }
+
       const response = await fetch(`${BACKEND_URL}/branches/${branchId}`, {
         method: "PATCH",
         headers: {
@@ -467,16 +505,16 @@ export default function BranchesPage() {
           tenant_id: tenantId,
           name: editForm.name,
           slug: editForm.slug,
-          address: editForm.address,
+          address: editForm.use_global_contact ? "" : editForm.address,
           phone: editForm.use_global_contact ? "" : editForm.phone,
           whatsapp: editForm.use_global_contact ? "" : editForm.whatsapp,
           email: editForm.use_global_contact ? "" : editForm.email,
           description: editForm.description,
           city: editForm.city,
           commune: editForm.commune,
-          map_url: editForm.map_url,
-          latitude: editForm.latitude,
-          longitude: editForm.longitude,
+          map_url: "",
+          latitude: "",
+          longitude: "",
           instagram_url: editForm.use_global_socials ? "" : editForm.instagram_url,
           facebook_url: editForm.use_global_socials ? "" : editForm.facebook_url,
           tiktok_url: editForm.use_global_socials ? "" : editForm.tiktok_url,
@@ -1067,9 +1105,16 @@ export default function BranchesPage() {
                             </label>
                             <input
                               type="text"
-                              value={editForm.address}
+                              value={editForm.use_global_contact ? globalAddress : editForm.address}
+                              disabled={editForm.use_global_contact}
+                              required={!editForm.use_global_contact}
                               onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))}
-                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                              placeholder={
+                                editForm.use_global_contact
+                                  ? "Usando dirección global del negocio"
+                                  : "Dirección local de la sucursal"
+                              }
+                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
                               style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                             />
                           </div>
@@ -1111,6 +1156,12 @@ export default function BranchesPage() {
                           />
                         </label>
 
+                        <MapPreview
+                          address={
+                            editForm.use_global_contact ? globalAddress : editForm.address
+                          }
+                        />
+
                         <div className="grid gap-3 md:grid-cols-3">
                           <input
                             type="text"
@@ -1148,33 +1199,6 @@ export default function BranchesPage() {
                           className="min-h-[92px] w-full rounded-xl border px-3 py-3 text-sm outline-none transition"
                           style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                         />
-
-                        <div className="grid gap-3 md:grid-cols-[1fr_120px_120px]">
-                          <input
-                            type="text"
-                            value={editForm.map_url}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, map_url: e.target.value }))}
-                            placeholder="URL de mapa"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                          <input
-                            type="text"
-                            value={editForm.latitude}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, latitude: e.target.value }))}
-                            placeholder="Latitud"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                          <input
-                            type="text"
-                            value={editForm.longitude}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, longitude: e.target.value }))}
-                            placeholder="Longitud"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                        </div>
 
                         <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm font-medium" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
                           Usar redes globales
