@@ -30,6 +30,7 @@ type BusinessResponse = {
     address?: string | null;
     email?: string | null;
     whatsapp?: string | null;
+    logo_url?: string | null;
     instagram_url?: string | null;
     facebook_url?: string | null;
     description?: string | null;
@@ -412,6 +413,8 @@ const [calendarId, setCalendarId] = useState("");
 const [savingSlotMinutes, setSavingSlotMinutes] = useState(false);
 const [slotMinutesOk, setSlotMinutesOk] = useState("");
 const [slotMinutesError, setSlotMinutesError] = useState("");
+const [logoUploading, setLogoUploading] = useState(false);
+const [logoUploadError, setLogoUploadError] = useState("");
   const [savingFields, setSavingFields] = useState(false);
   const [savingSpecialDates, setSavingSpecialDates] = useState(false);
 
@@ -464,6 +467,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     address: "",
     email: "",
     whatsapp: "",
+    logo_url: "",
     instagram_url: "",
     facebook_url: "",
     description: "",
@@ -624,6 +628,7 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
           address: data.business.address || "",
           email: data.business.email || "",
           whatsapp: data.business.whatsapp || "",
+          logo_url: data.business.logo_url || "",
           instagram_url: data.business.instagram_url || "",
           facebook_url: data.business.facebook_url || "",
           description: data.business.description || "",
@@ -1205,6 +1210,45 @@ const cleanedHours = Object.values(grouped);
     }
   }
 
+  async function handleLogoUpload(file?: File | null) {
+    if (!file) return;
+
+    try {
+      setLogoUploading(true);
+      setLogoUploadError("");
+
+      if (!tenantId) {
+        throw new Error("No se encontró el negocio");
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("tenant_id", tenantId);
+
+      const res = await fetch("/api/upload-business-logo", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo subir el logo");
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        logo_url: data.public_url || "",
+      }));
+    } catch (err: unknown) {
+      setLogoUploadError(
+        err instanceof Error ? err.message : "No se pudo subir el logo"
+      );
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
   async function saveBookingFields() {
     try {
       setSavingFields(true);
@@ -1756,6 +1800,60 @@ function updateHourByIndex(
               color: "var(--text-main)",
             }}
           />
+        </div>
+
+        <div
+          className="rounded-2xl border p-4"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+          }}
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div
+              className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+              }}
+            >
+              {form.logo_url ? (
+                <img
+                  src={form.logo_url}
+                  alt={form.name || "Logo del negocio"}
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <Building2 className="h-8 w-8" style={{ color: "var(--text-muted)" }} />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <label
+                className="mb-2 block text-sm font-medium"
+                style={{ color: "var(--text-main)" }}
+              >
+                Logo del negocio
+              </label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={logoUploading || !tenantId}
+                onChange={(e) => handleLogoUpload(e.target.files?.[0])}
+                className="block w-full text-sm file:mr-4 file:h-10 file:rounded-xl file:border-0 file:px-4 file:text-sm file:font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ color: "var(--text-muted)" }}
+              />
+              {logoUploadError ? (
+                <p className="mt-2 text-xs text-rose-300">{logoUploadError}</p>
+              ) : (
+                <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                  {logoUploading
+                    ? "Subiendo logo..."
+                    : "JPG, PNG o WebP. Se guardará con los cambios del negocio."}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">

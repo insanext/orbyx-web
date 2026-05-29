@@ -24,6 +24,20 @@ type BranchItem = {
   slug?: string | null;
   address?: string | null;
   phone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  description?: string | null;
+  city?: string | null;
+  commune?: string | null;
+  map_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  instagram_url?: string | null;
+  facebook_url?: string | null;
+  tiktok_url?: string | null;
+  website_url?: string | null;
+  use_global_socials?: boolean;
+  use_global_contact?: boolean;
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -192,6 +206,22 @@ export default function BranchesPage() {
   const [editForm, setEditForm] = useState({
     name: "",
     slug: "",
+    address: "",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    description: "",
+    city: "",
+    commune: "",
+    map_url: "",
+    latitude: "",
+    longitude: "",
+    instagram_url: "",
+    facebook_url: "",
+    tiktok_url: "",
+    website_url: "",
+    use_global_contact: true,
+    use_global_socials: true,
   });
 
   const [form, setForm] = useState({
@@ -373,6 +403,22 @@ export default function BranchesPage() {
     setEditForm({
       name: branch.name || "",
       slug: branch.slug || "",
+      address: branch.address || "",
+      phone: branch.phone || "",
+      whatsapp: branch.whatsapp || "",
+      email: branch.email || "",
+      description: branch.description || "",
+      city: branch.city || "",
+      commune: branch.commune || "",
+      map_url: branch.map_url || "",
+      latitude: branch.latitude === null || branch.latitude === undefined ? "" : String(branch.latitude),
+      longitude: branch.longitude === null || branch.longitude === undefined ? "" : String(branch.longitude),
+      instagram_url: branch.instagram_url || "",
+      facebook_url: branch.facebook_url || "",
+      tiktok_url: branch.tiktok_url || "",
+      website_url: branch.website_url || "",
+      use_global_contact: branch.use_global_contact !== false,
+      use_global_socials: branch.use_global_socials !== false,
     });
     setSaveError("");
     setSaveOk("");
@@ -380,7 +426,26 @@ export default function BranchesPage() {
 
   function cancelEditBranch() {
     setEditingBranchId("");
-    setEditForm({ name: "", slug: "" });
+    setEditForm({
+      name: "",
+      slug: "",
+      address: "",
+      phone: "",
+      whatsapp: "",
+      email: "",
+      description: "",
+      city: "",
+      commune: "",
+      map_url: "",
+      latitude: "",
+      longitude: "",
+      instagram_url: "",
+      facebook_url: "",
+      tiktok_url: "",
+      website_url: "",
+      use_global_contact: true,
+      use_global_socials: true,
+    });
   }
 
   async function handleUpdateBranch(branchId: string) {
@@ -402,6 +467,22 @@ export default function BranchesPage() {
           tenant_id: tenantId,
           name: editForm.name,
           slug: editForm.slug,
+          address: editForm.address,
+          phone: editForm.use_global_contact ? "" : editForm.phone,
+          whatsapp: editForm.use_global_contact ? "" : editForm.whatsapp,
+          email: editForm.use_global_contact ? "" : editForm.email,
+          description: editForm.description,
+          city: editForm.city,
+          commune: editForm.commune,
+          map_url: editForm.map_url,
+          latitude: editForm.latitude,
+          longitude: editForm.longitude,
+          instagram_url: editForm.use_global_socials ? "" : editForm.instagram_url,
+          facebook_url: editForm.use_global_socials ? "" : editForm.facebook_url,
+          tiktok_url: editForm.use_global_socials ? "" : editForm.tiktok_url,
+          website_url: editForm.use_global_socials ? "" : editForm.website_url,
+          use_global_contact: editForm.use_global_contact,
+          use_global_socials: editForm.use_global_socials,
         }),
       });
 
@@ -963,6 +1044,188 @@ export default function BranchesPage() {
                         </button>
                       )}
                     </div>
+
+                    {isEditing ? (
+                      <div className="space-y-4 rounded-2xl border p-4 md:col-span-5" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                              Slug
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.slug}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, slug: e.target.value }))}
+                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                              Dirección
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.address}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))}
+                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                              Comuna
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.commune}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, commune: e.target.value }))}
+                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                              Ciudad
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.city}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, city: e.target.value }))}
+                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            />
+                          </div>
+                        </div>
+
+                        <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm font-medium" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+                          Usar contacto global
+                          <input
+                            type="checkbox"
+                            checked={editForm.use_global_contact}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, use_global_contact: e.target.checked }))}
+                            className="h-4 w-4"
+                          />
+                        </label>
+
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <input
+                            type="text"
+                            value={editForm.phone}
+                            disabled={editForm.use_global_contact}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
+                            placeholder="Teléfono local"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                          <input
+                            type="text"
+                            value={editForm.whatsapp}
+                            disabled={editForm.use_global_contact}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, whatsapp: e.target.value }))}
+                            placeholder="WhatsApp local"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                          <input
+                            type="email"
+                            value={editForm.email}
+                            disabled={editForm.use_global_contact}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                            placeholder="Correo local"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                        </div>
+
+                        <textarea
+                          value={editForm.description}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                          placeholder="Descripción local de la sucursal"
+                          className="min-h-[92px] w-full rounded-xl border px-3 py-3 text-sm outline-none transition"
+                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                        />
+
+                        <div className="grid gap-3 md:grid-cols-[1fr_120px_120px]">
+                          <input
+                            type="text"
+                            value={editForm.map_url}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, map_url: e.target.value }))}
+                            placeholder="URL de mapa"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                          <input
+                            type="text"
+                            value={editForm.latitude}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, latitude: e.target.value }))}
+                            placeholder="Latitud"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                          <input
+                            type="text"
+                            value={editForm.longitude}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, longitude: e.target.value }))}
+                            placeholder="Longitud"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                        </div>
+
+                        <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm font-medium" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
+                          Usar redes globales
+                          <input
+                            type="checkbox"
+                            checked={editForm.use_global_socials}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, use_global_socials: e.target.checked }))}
+                            className="h-4 w-4"
+                          />
+                        </label>
+
+                        <div className="grid gap-3 md:grid-cols-4">
+                          <input
+                            type="text"
+                            value={editForm.instagram_url}
+                            disabled={editForm.use_global_socials}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, instagram_url: e.target.value }))}
+                            placeholder="Instagram"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                          <input
+                            type="text"
+                            value={editForm.facebook_url}
+                            disabled={editForm.use_global_socials}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, facebook_url: e.target.value }))}
+                            placeholder="Facebook"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                          <input
+                            type="text"
+                            value={editForm.tiktok_url}
+                            disabled={editForm.use_global_socials}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, tiktok_url: e.target.value }))}
+                            placeholder="TikTok"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                          <input
+                            type="text"
+                            value={editForm.website_url}
+                            disabled={editForm.use_global_socials}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, website_url: e.target.value }))}
+                            placeholder="Web"
+                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
