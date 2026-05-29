@@ -2401,7 +2401,7 @@ function validateStaffHours() {
                     Horarios
                   </p>
                   <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-                    Define si este profesional hereda la disponibilidad general o tendrá un horario propio.
+                    Define si este profesional hereda el horario efectivo de la sucursal o tendrá un horario propio.
                   </p>
                 </div>
 
@@ -2409,8 +2409,8 @@ function validateStaffHours() {
                   {[
                     {
                       value: true,
-                      title: "Usar horario del negocio",
-                      description: "Este staff heredará los horarios generales del negocio.",
+                      title: "Usar horario efectivo de la sucursal",
+                      description: "Si está activo, el profesional hereda el horario global o propio de la sucursal seleccionada.",
                     },
                     {
                       value: false,
@@ -2462,7 +2462,7 @@ function validateStaffHours() {
 {form.use_business_hours ? (
   <Notice
     tone="info"
-    title="Este staff usará el horario general del negocio."
+    title="Este staff usará el horario efectivo de la sucursal."
     description="El editor de horarios propios queda oculto para evitar configuraciones duplicadas."
   />
 ) : (

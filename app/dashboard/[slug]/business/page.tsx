@@ -763,11 +763,11 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
   }, [slug, branchStorageKey]);
 
   useEffect(() => {
-    if (!tenantId || !selectedBranchId) return;
+    if (!tenantId) return;
 
-    loadBusinessHours(tenantId, selectedBranchId);
-    loadSpecialDates(tenantId, selectedBranchId);
-  }, [tenantId, selectedBranchId]);
+    loadBusinessHours(tenantId);
+    loadSpecialDates(tenantId);
+  }, [tenantId]);
 
   function getDefaultHours(): BusinessHour[] {
     return [
@@ -802,10 +802,10 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
     }
   }
 
-  async function loadBusinessHours(id: string, currentBranchId: string) {
+  async function loadBusinessHours(id: string) {
     try {
       const res = await fetch(
-        `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}&branch_id=${currentBranchId}`
+        `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}&scope=global`
       );
 
       const data = await res.json();
@@ -855,10 +855,10 @@ setBusinessHours(result);
     }
   }
 
-  async function loadSpecialDates(id: string, currentBranchId: string) {
+  async function loadSpecialDates(id: string) {
     try {
       const res = await fetch(
-        `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}&branch_id=${currentBranchId}`
+        `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}&scope=global`
       );
 
       const data = await res.json();
@@ -1046,10 +1046,6 @@ setBusinessHours(result);
       setSpecialDatesError("");
       setSpecialDatesOk("");
 
-      if (!selectedBranchId) {
-        throw new Error("No hay sucursal activa seleccionada");
-      }
-
       const items = buildSpecialDateRangeItems();
 
       if (editingSpecialDateId) {
@@ -1063,7 +1059,8 @@ setBusinessHours(result);
             },
             body: JSON.stringify({
               tenant_id: tenantId,
-              branch_id: selectedBranchId,
+              branch_id: null,
+              scope: "global",
               date: item.date,
               label: item.label,
               is_closed: item.is_closed,
@@ -1079,7 +1076,7 @@ setBusinessHours(result);
           throw new Error(data?.error || "Error actualizando fecha especial");
         }
 
-        await loadSpecialDates(tenantId, selectedBranchId);
+        await loadSpecialDates(tenantId);
         resetSpecialDateDraft();
         setSpecialDatesOk("Fecha especial actualizada correctamente");
         return;
@@ -1095,7 +1092,8 @@ setBusinessHours(result);
             },
             body: JSON.stringify({
               tenant_id: tenantId,
-              branch_id: selectedBranchId,
+              branch_id: null,
+              scope: "global",
               date: item.date,
               label: item.label,
               is_closed: item.is_closed,
@@ -1112,7 +1110,7 @@ setBusinessHours(result);
         }
       }
 
-      await loadSpecialDates(tenantId, selectedBranchId);
+      await loadSpecialDates(tenantId);
       resetSpecialDateDraft();
       setSpecialDatesOk(
         items.length === 1
@@ -1210,10 +1208,6 @@ function editSpecialDateGroup(group: SpecialDateGroup) {
       setHoursError("");
       setHoursOk("");
 
-if (!selectedBranchId) {
-  throw new Error("No hay sucursal activa seleccionada");
-}
-
 const grouped: Record<
   number,
   {
@@ -1251,7 +1245,8 @@ const cleanedHours = Object.values(grouped);
           },
           body: JSON.stringify({
             tenant_id: tenantId,
-            branch_id: selectedBranchId,
+            branch_id: null,
+            scope: "global",
             hours: cleanedHours,
           }),
         }
@@ -3522,8 +3517,8 @@ function updateHourByIndex(
   </div>
 
   <Panel
-    title="Horarios de atención"
-    description="Define cuándo tu negocio está disponible para recibir reservas en la sucursal activa."
+    title="Horario global del negocio"
+    description="Se aplicará a todas las sucursales que usen horario global."
     className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
   >
     <div className="space-y-3">
@@ -3739,7 +3734,7 @@ onClick={() => {
             "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
         }}
       >
-        {savingHours ? "Guardando..." : "Guardar horarios"}
+        {savingHours ? "Guardando..." : "Guardar horario global"}
       </button>
     </div>
 
@@ -3763,26 +3758,26 @@ onClick={() => {
 <section className="space-y-3">
   <div>
     <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-      4. Fechas especiales
+      4. Fechas especiales globales
     </p>
     <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
-      Excepciones del calendario
+      Fechas especiales globales
     </h2>
   </div>
 
   <Panel
-    title="Fechas especiales"
-    description="Configura feriados, vísperas, vacaciones, cierres y horarios especiales por fecha."
+    title="Fechas especiales globales"
+    description="Aplican a todo el negocio, salvo ajustes propios de una sucursal."
     className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
   >
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
-            Excepciones del calendario
+            Fechas especiales globales
           </p>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            Ejemplos: 18 septiembre cerrado, 24 diciembre 09:00 a 13:00.
+            Ejemplos: feriados generales, cierres corporativos o días con horario especial global.
           </p>
         </div>
 
@@ -3801,7 +3796,7 @@ onClick={() => {
               Agregar fecha especial
             </button>
             <p className="max-w-md text-xs" style={{ color: "var(--text-muted)" }}>
-              Agrega una fecha o rango que quieras bloquear o ajustar para desactivar bloques de agenda.
+              Agrega una fecha o rango global que quieras bloquear o ajustar para todas las sucursales.
             </p>
           </div>
         ) : null}
@@ -4235,10 +4230,10 @@ onClick={() => {
             className="text-sm font-semibold"
             style={{ color: "var(--text-main)" }}
           >
-            Historial de excepciones
+            Historial global
           </h4>
           <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-            Días libres u horarios especiales configurados para el negocio.
+            Días libres u horarios especiales configurados como base del negocio.
           </p>
         </div>
 
