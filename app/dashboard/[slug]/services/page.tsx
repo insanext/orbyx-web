@@ -985,10 +985,31 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
               0 0 24px rgba(37, 99, 235, 0.12);
           }
         }
+
+        html[data-theme="nocturno"] .orbyx-services-hero {
+          border-color: rgba(56, 189, 248, 0.24) !important;
+          background:
+            linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.88) 54%, rgba(8, 47, 73, 0.78)) !important;
+          box-shadow:
+            0 24px 60px -34px rgba(14, 165, 233, 0.58),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06),
+            inset 0 0 0 1px rgba(59, 130, 246, 0.12) !important;
+        }
+
+        html[data-theme="nocturno"] .orbyx-services-hero-kicker {
+          color: rgb(125, 211, 252) !important;
+        }
+
+        html[data-theme="nocturno"] .orbyx-services-hero-stat,
+        html[data-theme="nocturno"] .orbyx-services-hero-link {
+          border-color: rgba(56, 189, 248, 0.18) !important;
+          background: rgba(15, 23, 42, 0.66) !important;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
       `}</style>
 
       <section
-        className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
+        className="orbyx-services-hero relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
         style={{
           borderColor: "var(--agenda-hero-border, rgba(37,99,235,0.42))",
           background:
@@ -1002,7 +1023,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
               <Layers3 className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">
+            <p className="orbyx-services-hero-kicker text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">
               Servicios
             </p>
 
@@ -1029,7 +1050,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
               <Link
                 href={publicUrl}
                 target="_blank"
-                className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+                className="orbyx-services-energy orbyx-services-hero-link inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
                 style={{
                   borderColor: "rgba(59,130,246,0.24)",
                   background: "rgba(255,255,255,0.08)",
@@ -1043,7 +1064,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div
-              className="rounded-xl border px-3 py-2"
+              className="orbyx-services-hero-stat rounded-xl border px-3 py-2"
 
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
@@ -1065,7 +1086,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
             </div>
 
             <div
-              className="rounded-xl border px-3 py-2"
+              className="orbyx-services-hero-stat rounded-xl border px-3 py-2"
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
                 background: "rgba(255,255,255,0.08)",
@@ -1086,7 +1107,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
             </div>
 
             <div
-              className="rounded-2xl border px-3 py-2"
+              className="orbyx-services-hero-stat rounded-2xl border px-3 py-2"
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
                 background: "rgba(255,255,255,0.08)",
@@ -1107,7 +1128,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
             </div>
 
             <div
-              className="rounded-2xl border px-3 py-2"
+              className="orbyx-services-hero-stat rounded-2xl border px-3 py-2"
               style={{
                 borderColor: "rgba(59,130,246,0.24)",
                 background: "rgba(255,255,255,0.08)",

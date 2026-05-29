@@ -454,6 +454,7 @@ const [slotMinutesOk, setSlotMinutesOk] = useState("");
 const [slotMinutesError, setSlotMinutesError] = useState("");
 const [logoUploading, setLogoUploading] = useState(false);
 const [logoUploadError, setLogoUploadError] = useState("");
+const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
 const [logoDraftUrl, setLogoDraftUrl] = useState("");
 const [logoDraftName, setLogoDraftName] = useState("");
 const [logoScale, setLogoScale] = useState(1);
@@ -707,6 +708,17 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
       if (logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
     };
   }, [logoDraftUrl]);
+
+  function resetLogoDraft(revokeUrl = true) {
+    if (revokeUrl && logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
+
+    setSelectedLogoFile(null);
+    setLogoDraftUrl("");
+    setLogoDraftName("");
+    setLogoScale(1);
+    setLogoOffsetX(0);
+    setLogoOffsetY(0);
+  }
 
   useEffect(() => {
     function handleBranchChanged(event: Event) {
@@ -1312,56 +1324,62 @@ const cleanedHours = Object.values(grouped);
       return;
     }
 
-    if (logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
+    resetLogoDraft();
 
+    const nextPreviewUrl = URL.createObjectURL(file);
     setLogoUploadError("");
-    setLogoDraftUrl(URL.createObjectURL(file));
+    setSelectedLogoFile(file);
+    setLogoDraftUrl(nextPreviewUrl);
     setLogoDraftName(file.name || "logo");
     setLogoScale(1);
     setLogoOffsetX(0);
     setLogoOffsetY(0);
   }
 
-  async function renderLogoDraft() {
-    if (!logoDraftUrl) return;
+  async function renderLogoDraft(file: File) {
+    const sourceUrl = URL.createObjectURL(file);
 
     const image = new Image();
-    image.src = logoDraftUrl;
+    image.src = sourceUrl;
 
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error("No se pudo procesar el logo"));
-    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("No se pudo procesar el logo"));
+      });
 
-    const size = 512;
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d");
+      const size = 512;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
 
-    if (!ctx) {
-      throw new Error("No se pudo preparar el editor de logo");
+      if (!ctx) {
+        throw new Error("No se pudo preparar el editor de logo");
+      }
+
+      ctx.clearRect(0, 0, size, size);
+
+      const baseScale = Math.min(size / image.width, size / image.height);
+      const drawWidth = image.width * baseScale * logoScale;
+      const drawHeight = image.height * baseScale * logoScale;
+      const drawX = (size - drawWidth) / 2 + (logoOffsetX / 100) * size;
+      const drawY = (size - drawHeight) / 2 + (logoOffsetY / 100) * size;
+
+      ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png", 0.92)
+      );
+
+      if (!blob) {
+        throw new Error("No se pudo generar el logo ajustado");
+      }
+
+      return new File([blob], "business-logo.png", { type: "image/png" });
+    } finally {
+      URL.revokeObjectURL(sourceUrl);
     }
-
-    ctx.clearRect(0, 0, size, size);
-
-    const baseScale = Math.min(size / image.width, size / image.height);
-    const drawWidth = image.width * baseScale * logoScale;
-    const drawHeight = image.height * baseScale * logoScale;
-    const drawX = (size - drawWidth) / 2 + (logoOffsetX / 100) * size;
-    const drawY = (size - drawHeight) / 2 + (logoOffsetY / 100) * size;
-
-    ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/png", 0.92)
-    );
-
-    if (!blob) {
-      throw new Error("No se pudo generar el logo ajustado");
-    }
-
-    return new File([blob], "business-logo.png", { type: "image/png" });
   }
 
   async function uploadAdjustedLogo() {
@@ -1369,17 +1387,20 @@ const cleanedHours = Object.values(grouped);
       setLogoUploading(true);
       setLogoUploadError("");
 
-      const file = await renderLogoDraft();
+      if (!selectedLogoFile || !logoDraftUrl) {
+        throw new Error("Selecciona un logo antes de aplicar el ajuste");
+      }
+
+      const file = await renderLogoDraft(selectedLogoFile);
       if (!file) return;
 
       await handleLogoUpload(file);
 
-      if (logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
-      setLogoDraftUrl("");
-      setLogoDraftName("");
-      setLogoScale(1);
-      setLogoOffsetX(0);
-      setLogoOffsetY(0);
+      const finalPreviewUrl = URL.createObjectURL(file);
+      resetLogoDraft();
+      setLogoDraftUrl(finalPreviewUrl);
+      setLogoDraftName("business-logo.png");
+      setSelectedLogoFile(null);
     } catch (err: unknown) {
       setLogoUploadError(
         err instanceof Error ? err.message : "No se pudo guardar el logo"
@@ -1390,14 +1411,11 @@ const cleanedHours = Object.values(grouped);
   }
 
   function removeLogo() {
-    if (logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
-
-    setLogoDraftUrl("");
-    setLogoDraftName("");
+    resetLogoDraft();
+    if (logoFileInputRef.current) {
+      logoFileInputRef.current.value = "";
+    }
     setLogoUploadError("");
-    setLogoScale(1);
-    setLogoOffsetX(0);
-    setLogoOffsetY(0);
     setForm((prev) => ({ ...prev, logo_url: "" }));
   }
 
@@ -1979,7 +1997,7 @@ function updateHourByIndex(
                   alt={form.name || "Logo del negocio"}
                   className="h-full w-full object-contain"
                   style={
-                    logoDraftUrl
+                    selectedLogoFile && logoDraftUrl
                       ? {
                           transform: `translate(${logoOffsetX}%, ${logoOffsetY}%) scale(${logoScale})`,
                         }
@@ -2035,7 +2053,7 @@ function updateHourByIndex(
                 </button>
               </div>
 
-              {logoDraftUrl ? (
+              {selectedLogoFile && logoDraftUrl ? (
                 <div className="mt-4 space-y-3">
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                     Ajustando: {logoDraftName}
@@ -2085,7 +2103,7 @@ function updateHourByIndex(
                   <button
                     type="button"
                     onClick={uploadAdjustedLogo}
-                    disabled={logoUploading}
+                    disabled={logoUploading || !selectedLogoFile || !logoDraftUrl}
                     className={primaryButtonClass}
                     style={{
                       background:
