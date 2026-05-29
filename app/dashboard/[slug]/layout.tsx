@@ -20,6 +20,8 @@ import {
   Menu,
   Settings,
   Store,
+  Crown,
+  Bell,
   X,
 } from "lucide-react";
 import clsx from "clsx";
@@ -32,6 +34,7 @@ type BusinessResponse = {
     id: string;
     name: string;
     slug: string;
+    plan_slug?: string | null;
   };
 };
 
@@ -138,11 +141,21 @@ export default function DashboardLayout({
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [businessName, setBusinessName] = useState("");
+  const [plan, setPlan] = useState("pro");
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [branchesError, setBranchesError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const planLabel =
+    plan === "platinum"
+      ? "Platinum"
+      : plan === "vip"
+      ? "VIP"
+      : plan === "premium"
+      ? "Premium"
+      : "Pro";
 
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
@@ -205,6 +218,7 @@ export default function DashboardLayout({
 
         const currentTenantId = businessData.business.id;
         setBusinessName(businessData.business.name || slug);
+        setPlan(String(businessData.business.plan_slug || "pro").toLowerCase());
 
         const branchesRes = await fetch(
           `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
@@ -966,12 +980,18 @@ export default function DashboardLayout({
                 >
                   Dashboard
                 </p>
-                <h2
-                  className="truncate text-lg font-semibold tracking-tight sm:text-xl"
-                  style={{ color: textMain }}
-                >
-                  Gestión de negocio
-                </h2>
+                <div className="mt-1 flex min-w-0 flex-wrap items-center gap-3">
+                  <h2
+                    className="truncate text-lg font-semibold tracking-tight sm:text-xl"
+                    style={{ color: textMain }}
+                  >
+                    Gestión del negocio
+                  </h2>
+                  <span className="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-semibold sm:text-sm" style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
+                    <Crown size={15} />
+                    Plan {planLabel}
+                  </span>
+                </div>
                 </div>
               </div>
 
@@ -988,20 +1008,44 @@ export default function DashboardLayout({
                 >
                   {mounted
                     ? theme === "clasico"
-                      ? "Cambiar a Nocturno"
-                      : "Cambiar a Clásico"
+                      ? "Cambiar a nocturno"
+                      : "Cambiar a clásico"
                     : "Cambiar tema"}
                 </button>
 
-                <div
-                  className="rounded-2xl border px-4 py-2 text-sm"
+                <button
+                  type="button"
+                  aria-label="Notificaciones"
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition"
                   style={{
                     background: softBg,
                     borderColor: sidebarBorder,
-                    color: textMuted,
+                    color: textMain,
                   }}
                 >
-                  /dashboard/{slug}
+                  <Bell size={18} />
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                    3
+                  </span>
+                </button>
+
+                <div
+                  className="flex items-center gap-3 border-l pl-3"
+                  style={{ borderColor: sidebarBorder }}
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(37,99,235),rgb(79,70,229))] text-xs font-bold text-white">
+                    {businessName
+                      ? businessName.slice(0, 2).toUpperCase()
+                      : slug.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
+                      {businessName || slug || "Orbyx"}
+                    </p>
+                    <p className="truncate text-xs" style={{ color: textMuted }}>
+                      Administrador
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

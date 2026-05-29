@@ -3,7 +3,7 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Copy, Crown, Pencil, Plus, RefreshCw, Store, Users } from "lucide-react";
+import { Copy, Pencil, Plus, Store, Users } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -1036,175 +1036,6 @@ export default function BranchesPage() {
 
   return (
     <div className="space-y-6 pb-6">
-      <section
-        className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
-        style={{
-          borderColor: "rgba(37,99,235,0.42)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-        }}
-      >
-        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex max-w-3xl items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
-              <Store className="h-5 w-5" />
-            </div>
-            <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">Dashboard</p>
-
-            <h1
-              className="mt-0.5 text-xl font-semibold tracking-tight"
-              style={{ color: "var(--text-main)" }}
-            >
-              Gestión del negocio
-            </h1>
-            <span className="mt-2 inline-flex h-9 items-center gap-2 rounded-full border px-4 text-sm font-semibold" style={{ borderColor: "rgba(139,92,246,0.46)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
-              <Crown className="h-4 w-4" />
-              Plan {planLabel}
-            </span>
-
-            <p
-              className="mt-0.5 max-w-2xl text-sm leading-5"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {loading
-                ? "Cargando información del negocio..."
-                : businessName}
-            </p>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(139,92,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Sucursales actuales
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : branches.length}
-              </p>
-              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Total creadas</p>
-            </div>
-
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(139,92,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Límite de tu plan
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {maxBranches}
-              </p>
-              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Sucursales permitidas</p>
-            </div>
-
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(139,92,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Usuarios actuales
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {usersCount}
-              </p>
-              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Usuarios activos</p>
-            </div>
-
-            <div
-              className="hidden"
-              style={{
-                borderColor: "rgba(139,92,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Plan actual
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : `${planLabel} · ${activeBranchesCount}/${maxBranches}`}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href={`/planes?current_plan=${plan}&from=branches&slug=${slug}&tenant_id=${tenantId}`}
-            className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-card)",
-              color: "var(--text-main)",
-            }}
-          >
-            <Crown className="h-4 w-4" />
-            Ver planes
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (!tenantId) return;
-              loadBranches(tenantId)
-                .then(syncStoredActiveBranch)
-                .catch((error: unknown) => {
-                  setLoadError(
-                    error instanceof Error
-                      ? error.message
-                      : "No se pudieron recargar las sucursales"
-                  );
-                });
-            }}
-            className="hidden"
-            style={{
-              background:
-                "linear-gradient(135deg, rgb(139 92 246), rgb(99 102 241))",
-            }}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Recargar
-          </button>
-        </div>
-      </section>
-
       {loadError ? <Notice tone="danger" title={loadError} /> : null}
       {saveError ? <Notice tone="danger" title={saveError} /> : null}
       {saveOk ? <Notice tone="success" title={saveOk} /> : null}
@@ -1239,52 +1070,72 @@ export default function BranchesPage() {
       <section className="grid gap-6">
         <Panel className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]">
           <div
-            className="mb-5 flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between"
-            style={{ borderColor: "var(--border-color)" }}
+            className="mb-5 flex flex-col gap-5 rounded-2xl border px-5 py-5 lg:flex-row lg:items-center lg:justify-between"
+            style={{
+              borderColor: "rgba(37,99,235,0.32)",
+              background: "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(139,92,246,0.07), var(--bg-card))",
+            }}
           >
             <div className="flex min-w-0 items-start gap-3">
               <div
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border shadow-[0_16px_34px_-20px_rgba(59,130,246,0.9)]"
                 style={{
-                  borderColor: "rgba(139,92,246,0.35)",
+                  borderColor: "rgba(59,130,246,0.58)",
                   background:
-                    "linear-gradient(135deg, rgba(139,92,246,0.22), rgba(59,130,246,0.10))",
-                  color: "rgb(167 139 250)",
+                    "linear-gradient(135deg, rgb(79 70 229), rgb(14 165 233))",
+                  color: "white",
                 }}
               >
                 <Store className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <h3
-                  className="text-base font-semibold tracking-tight"
+                  className="text-xl font-semibold tracking-tight"
                   style={{ color: "var(--text-main)" }}
                 >
-                  Sucursales
+                  Sucursales del negocio
                 </h3>
                 <p
                   className="mt-1 text-sm leading-6"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  Administra las sucursales registradas en el negocio.
+                  Gestiona las sucursales de {businessName || slug}.
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setCreateOpen((prev) => !prev)}
-              disabled={saving || loading || reachedLimit || hasExcess}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-              style={{
-                background:
-                  reachedLimit || hasExcess
-                    ? "linear-gradient(135deg, rgba(100,116,139,0.9), rgba(71,85,105,0.9))"
-                    : "linear-gradient(135deg, rgb(139 92 246), rgb(59 130 246))",
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Crear sucursal
-            </button>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="min-w-[130px] border-l pl-4" style={{ borderColor: "var(--border-color)" }}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Total sucursales</p>
+                  <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text-main)" }}>{branches.length}</p>
+                </div>
+                <div className="min-w-[160px] border-l pl-4" style={{ borderColor: "var(--border-color)" }}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Disponibles según plan</p>
+                  <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text-main)" }}>{Math.max(maxBranches - activeBranchesCount, 0)} de {maxBranches}</p>
+                </div>
+                <div className="min-w-[150px] border-l pl-4" style={{ borderColor: "var(--border-color)" }}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Plan actual</p>
+                  <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text-main)" }}>{planLabel} - {activeBranchesCount}/{maxBranches}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCreateOpen((prev) => !prev)}
+                disabled={saving || loading || reachedLimit || hasExcess}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background:
+                    reachedLimit || hasExcess
+                      ? "linear-gradient(135deg, rgba(100,116,139,0.9), rgba(71,85,105,0.9))"
+                      : "linear-gradient(135deg, rgb(99 102 241), rgb(139 92 246))",
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Nueva sucursal
+              </button>
+            </div>
           </div>
           {createOpen ? (
             <div
@@ -1401,7 +1252,7 @@ export default function BranchesPage() {
               style={{ borderColor: "var(--border-color)" }}
             >
               <div
-                className="hidden min-w-[1080px] grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.75fr_0.65fr] border-b px-4 py-3 text-xs font-semibold md:grid"
+                className="hidden min-w-[1000px] grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.65fr] border-b px-4 py-3 text-xs font-semibold md:grid"
                 style={{
                   borderColor: "var(--border-color)",
                   color: "var(--text-muted)",
@@ -1414,7 +1265,6 @@ export default function BranchesPage() {
                 <span>Última actualización</span>
                 <span>Servicios</span>
                 <span>Staff</span>
-                <span>Reservas (mes)</span>
                 <span>Editar</span>
               </div>
               {branches.map((branch) => {
@@ -1426,7 +1276,7 @@ export default function BranchesPage() {
                 return (
                   <div
                     key={branch.id}
-                    className="grid min-w-[1080px] gap-4 border-b p-4 transition last:border-b-0 md:grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.75fr_0.65fr] md:items-center"
+                    className="grid min-w-[1000px] gap-4 border-b p-4 transition last:border-b-0 md:grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.65fr] md:items-center"
                     style={{
                       borderColor: "var(--border-color)",
                       background: isEditing
@@ -1436,7 +1286,7 @@ export default function BranchesPage() {
                   >
                     {hasExcess && isActive ? (
                       <label
-                        className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium md:col-span-9"
+                        className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium md:col-span-8"
                         style={{
                           borderColor: isMarkedToKeep
                             ? "rgba(16,185,129,0.34)"
@@ -1545,15 +1395,6 @@ export default function BranchesPage() {
                       </p>
                     </div>
 
-                    <div>
-                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
-                        Reservas (mes)
-                      </p>
-                      <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                        0
-                      </p>
-                    </div>
-
                     <div className="flex flex-wrap gap-2 md:justify-end">
                       <p className="w-full text-[11px] font-semibold uppercase tracking-[0.16em] md:hidden" style={{ color: "var(--text-muted)" }}>
                         Editar
@@ -1579,7 +1420,7 @@ export default function BranchesPage() {
                     </div>
 
                     {isEditing ? (
-                      <div className="space-y-4 rounded-2xl border p-4 md:col-span-9" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
+                      <div className="space-y-4 rounded-2xl border p-4 md:col-span-8" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
                         <div className="grid gap-3 md:grid-cols-2">
                           <div>
                             <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
