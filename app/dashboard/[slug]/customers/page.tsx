@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { UsersRound } from "lucide-react";
+import { Search, UsersRound } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -61,19 +61,28 @@ function formatDate(value?: string | null) {
   }).format(d);
 }
 
-function getSegment(segment?: string) {
-  if (segment === "frequent") return "text-emerald-600";
-  if (segment === "recurrent") return "text-sky-600";
-  if (segment === "inactive") return "text-rose-600";
-  return "text-amber-600";
+function Stat({ title, value, accent }: { title: string; value: number; accent?: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] px-4 py-3.5">
+      <p className="text-xs text-slate-500 dark:text-slate-400">{title}</p>
+      <p className="mt-1 text-2xl font-bold text-[var(--text-main)]">{value}</p>
+      {accent && <div className={`mt-2 h-0.5 w-8 rounded-full ${accent} opacity-60`} />}
+    </div>
+  );
 }
 
-function Stat({ title, value }: any) {
+function SegmentBadge({ segment }: { segment?: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    frequent: { label: "Frecuente", cls: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400" },
+    recurrent: { label: "Recurrente", cls: "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400" },
+    inactive: { label: "Inactivo", cls: "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400" },
+    new: { label: "Nuevo", cls: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400" },
+  };
+  const { label, cls } = map[segment ?? "new"] ?? map.new;
   return (
-    <div className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
-      <p className="text-xs text-slate-500">{title}</p>
-      <p className="text-lg font-semibold">{value}</p>
-    </div>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
+      {label}
+    </span>
   );
 }
 
@@ -99,6 +108,7 @@ export default function CustomersPage() {
     frecuentes: 0,
     inactivos: 0,
   });
+
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
   }, [slug]);
@@ -156,9 +166,7 @@ export default function CustomersPage() {
   }, [slug, search, segment, inactiveDays, selectedBranchId]);
 
   const activeSegmentLabel = useMemo(() => {
-    return (
-      SEGMENT_OPTIONS.find((i) => i.key === segment)?.label || "Todos"
-    );
+    return SEGMENT_OPTIONS.find((i) => i.key === segment)?.label || "Todos";
   }, [segment]);
 
   return (
@@ -177,27 +185,28 @@ export default function CustomersPage() {
 
       {/* STATS */}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
-        <Stat title="Total" value={summary.total} />
-        <Stat title="Nuevos" value={summary.nuevos} />
-        <Stat title="Recurrentes" value={summary.recurrentes} />
-        <Stat title="Frecuentes" value={summary.frecuentes} />
-        <Stat title="Inactivos" value={summary.inactivos} />
+        <Stat title="Total"       value={summary.total}       accent="bg-slate-400"   />
+        <Stat title="Nuevos"      value={summary.nuevos}      accent="bg-amber-400"   />
+        <Stat title="Recurrentes" value={summary.recurrentes} accent="bg-sky-400"     />
+        <Stat title="Frecuentes"  value={summary.frecuentes}  accent="bg-emerald-400" />
+        <Stat title="Inactivos"   value={summary.inactivos}   accent="bg-rose-400"    />
       </div>
 
       {/* FILTROS */}
-      <section>
-        <h2 className="text-base font-semibold mb-3">
-          Filtros de clientes
-        </h2>
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] p-4 space-y-4">
+        <h2 className="text-sm font-semibold text-[var(--text-main)]">Filtros</h2>
 
         <div className="grid gap-3 xl:grid-cols-[1.2fr_1fr_220px]">
 
-          <input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Buscar cliente..."
-            className="rounded-xl border px-4 py-2"
-          />
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Buscar cliente..."
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-soft)] text-[var(--text-main)] placeholder:text-slate-400 pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 transition"
+            />
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {SEGMENT_OPTIONS.map((o) => {
@@ -206,11 +215,11 @@ export default function CustomersPage() {
                 <button
                   key={o.key}
                   onClick={() => setSegment(o.key)}
-                  className="px-3 py-2 rounded-xl text-sm border"
-                  style={{
-                    background: active ? "#0f172a" : "transparent",
-                    color: active ? "#fff" : "inherit",
-                  }}
+                  className={`px-3 py-1.5 rounded-lg text-sm border font-medium transition ${
+                    active
+                      ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100"
+                      : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  }`}
                 >
                   {o.label}
                 </button>
@@ -221,150 +230,161 @@ export default function CustomersPage() {
           <select
             value={inactiveDays}
             onChange={(e) => setInactiveDays(e.target.value)}
-            className="rounded-xl border px-3 py-2"
+            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-soft)] text-[var(--text-main)] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 transition"
           >
-            <option value="30">30 días</option>
-            <option value="60">60 días</option>
-            <option value="90">90 días</option>
-            <option value="120">120 días</option>
+            <option value="30">Inactivos: 30 días</option>
+            <option value="60">Inactivos: 60 días</option>
+            <option value="90">Inactivos: 90 días</option>
+            <option value="120">Inactivos: 120 días</option>
           </select>
 
         </div>
 
-        <p className="text-sm text-slate-500 mt-2">
-          Viendo: <b>{activeSegmentLabel}</b>
-          {search && <> · {search}</>}
+        <p className="text-xs text-slate-500">
+          Viendo: <b className="text-[var(--text-main)] font-semibold">{activeSegmentLabel}</b>
+          {search && <> · <span className="italic">{search}</span></>}
         </p>
       </section>
 
       {/* LISTADO */}
       <section>
-        <h2 className="text-base font-semibold mb-3">
+        <h2 className="text-sm font-semibold text-[var(--text-main)] mb-3">
           {isVeterinaria ? "Listado de tutores" : "Listado de clientes"}
+          {customers.length > 0 && (
+            <span className="ml-2 text-xs font-normal text-slate-500">
+              {customers.length} resultado{customers.length !== 1 ? "s" : ""}
+            </span>
+          )}
         </h2>
 
-        <div className="space-y-3 md:hidden">
-          {customers.map((c) => (
-            <article
-              key={c.id}
-              className="rounded-xl border border-slate-200 p-4 shadow-sm dark:border-slate-700"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="break-words text-sm font-semibold">
-                    {c.name}
-                  </h3>
+        {/* Estado vacío */}
+        {customers.length === 0 && (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] py-16 text-center">
+            <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-4 mb-4">
+              <UsersRound className="h-7 w-7 text-slate-400" />
+            </div>
+            <p className="text-sm font-semibold text-[var(--text-main)]">
+              {search ? "Sin resultados" : "Sin clientes aún"}
+            </p>
+            <p className="mt-1 text-xs text-slate-500 max-w-xs">
+              {search
+                ? `No se encontraron clientes para "${search}".`
+                : "Cuando se registren reservas, los clientes aparecerán aquí."}
+            </p>
+          </div>
+        )}
 
-                  {isVeterinaria &&
-                    Array.isArray(c.pets) &&
-                    c.pets.length > 0 && (
-                      <p className="mt-1 break-words text-xs text-emerald-600">
+        {/* Cards móvil */}
+        {customers.length > 0 && (
+          <div className="space-y-3 md:hidden">
+            {customers.map((c) => (
+              <article
+                key={c.id}
+                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="break-words text-sm font-semibold text-[var(--text-main)]">
+                      {c.name}
+                    </h3>
+                    {isVeterinaria && Array.isArray(c.pets) && c.pets.length > 0 && (
+                      <p className="mt-0.5 break-words text-xs text-emerald-600 dark:text-emerald-400">
                         {c.pets.map((p) => p.name).join(", ")}
                       </p>
                     )}
-                </div>
-
-                <span className={`shrink-0 text-xs font-medium ${getSegment(c.segment)}`}>
-                  {c.segment || "new"}
-                </span>
-              </div>
-
-              <div className="mt-4 space-y-3 text-sm">
-                <div>
-                  <p className="text-xs text-slate-500">Contacto</p>
-                  <p className="mt-1 break-words text-slate-700 dark:text-slate-200">
-                    {c.email || c.phone || "Sin contacto"}
-                  </p>
-                  {c.email && c.phone ? (
-                    <p className="mt-1 break-words text-slate-500">{c.phone}</p>
-                  ) : null}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800">
-                    <p className="text-xs text-slate-500">Visitas</p>
-                    <p className="mt-1 font-semibold">{c.total_visits}</p>
                   </div>
+                  <SegmentBadge segment={c.segment} />
+                </div>
 
-                  <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800">
-                    <p className="text-xs text-slate-500">Última visita</p>
-                    <p className="mt-1 text-xs font-medium text-slate-700 dark:text-slate-200">
-                      {formatDate(c.last_visit_at)}
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <p className="text-xs text-slate-500">Contacto</p>
+                    <p className="mt-0.5 break-words text-xs text-slate-700 dark:text-slate-200">
+                      {c.email || c.phone || "Sin contacto"}
                     </p>
+                    {c.email && c.phone && (
+                      <p className="break-words text-xs text-slate-500">{c.phone}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2">
+                      <p className="text-xs text-slate-500">Visitas</p>
+                      <p className="mt-0.5 text-sm font-semibold text-[var(--text-main)]">{c.total_visits}</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2">
+                      <p className="text-xs text-slate-500">Última visita</p>
+                      <p className="mt-0.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                        {formatDate(c.last_visit_at)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
-                className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
-              >
-                Ver detalle
-              </button>
-            </article>
-          ))}
-        </div>
-
-        <div className="hidden border rounded-xl overflow-hidden md:block">
-
-          <table className="w-full text-sm">
-
-            <thead className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-              <tr>
-    <th className="px-4 py-2 text-left text-xs font-semibold">Cliente</th>
-    <th className="px-4 py-2 text-left text-xs font-semibold">Contacto</th>
-    <th className="px-4 py-2 text-left text-xs font-semibold">Visitas</th>
-    <th className="px-4 py-2 text-left text-xs font-semibold">Segmento</th>
-    <th className="px-4 py-2 text-left text-xs font-semibold">Última</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {customers.map((c) => (
-                <tr
-                  key={c.id}
-                  onClick={() =>
-                    router.push(`/dashboard/${slug}/customers/${c.id}`)
-                  }
-                  className="border-t cursor-pointer hover:bg-slate-50"
+                <button
+                  type="button"
+                  onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
+                  className="mt-4 w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium transition hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  <td className="px-4 py-3">
-                    {c.name}
+                  Ver detalle →
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
 
-                    {isVeterinaria &&
-                      Array.isArray(c.pets) &&
-                      c.pets.length > 0 && (
-                        <div className="text-xs text-emerald-600">
+        {/* Tabla desktop */}
+        {customers.length > 0 && (
+          <div className="hidden rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden md:block">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Contacto</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Visitas</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Segmento</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Última visita</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-[var(--bg-card)]">
+                {customers.map((c) => (
+                  <tr
+                    key={c.id}
+                    onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
+                    className="cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  >
+                    <td className="px-4 py-3.5 font-medium text-[var(--text-main)]">
+                      {c.name}
+                      {isVeterinaria && Array.isArray(c.pets) && c.pets.length > 0 && (
+                        <div className="text-xs font-normal text-emerald-600 dark:text-emerald-400">
                           {c.pets.map((p) => p.name).join(", ")}
                         </div>
                       )}
-                  </td>
+                    </td>
 
-                  <td className="px-4 py-3 text-slate-500">
-                    {c.email}<br />{c.phone}
-                  </td>
+                    <td className="px-4 py-3.5">
+                      <span className="block text-xs text-slate-600 dark:text-slate-300">{c.email || "—"}</span>
+                      <span className="block text-xs text-slate-400">{c.phone || "—"}</span>
+                    </td>
 
-                  <td className="px-4 py-3 font-semibold">
-                    {c.total_visits}
-                  </td>
+                    <td className="px-4 py-3.5 font-semibold text-[var(--text-main)]">
+                      {c.total_visits}
+                    </td>
 
-                  <td className="px-4 py-3">
-                    <span className={getSegment(c.segment)}>
-                      {c.segment}
-                    </span>
-                  </td>
+                    <td className="px-4 py-3.5">
+                      <SegmentBadge segment={c.segment} />
+                    </td>
 
-                  <td className="px-4 py-3 text-slate-500">
-                    {formatDate(c.last_visit_at)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-
-          </table>
-
-        </div>
+                    <td className="px-4 py-3.5 text-xs text-slate-500">
+                      {formatDate(c.last_visit_at)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
     </div>
