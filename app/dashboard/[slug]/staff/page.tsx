@@ -410,6 +410,9 @@ const [photoUrl, setPhotoUrl] = useState("");
   >([]);
   const [specialDateForm, setSpecialDateForm] =
     useState<StaffSpecialDateItem>(emptySpecialDateForm);
+  const [specialDateMode, setSpecialDateMode] = useState<
+    "all_day_closed" | "block_time" | "special_open"
+  >("all_day_closed");
   const [specialRangeForm, setSpecialRangeForm] =
     useState<SpecialRangeForm>(emptySpecialRangeForm);
   const [specialDateDisplay, setSpecialDateDisplay] = useState("");
@@ -948,6 +951,7 @@ async function loadStaffHours(id: string, staffId: string) {
 
   function resetSpecialDateForm() {
     setSpecialDateForm(emptySpecialDateForm);
+    setSpecialDateMode("all_day_closed");
     setSpecialRangeForm(emptySpecialRangeForm);
     setSpecialDateDisplay("");
     setSpecialRangeDateFromDisplay("");
@@ -959,6 +963,7 @@ async function loadStaffHours(id: string, staffId: string) {
 
   function openSpecialDateForm() {
     setSpecialDateForm(emptySpecialDateForm);
+    setSpecialDateMode("all_day_closed");
     setSpecialRangeForm(emptySpecialRangeForm);
     setSpecialDateDisplay("");
     setSpecialRangeDateFromDisplay("");
@@ -1121,7 +1126,7 @@ function getStaffHourDayError(dayOfWeek: number) {
 }
 
 function getStaffSpecialDateTimeError() {
-  if (specialDateForm.is_closed) return "";
+  if (specialDateMode === "all_day_closed") return "";
 
   const startTime = String(specialDateForm.start_time || "").trim();
   const endTime = String(specialDateForm.end_time || "").trim();
@@ -1288,7 +1293,7 @@ function validateStaffHours() {
       throw new Error("Usa formato dd-mm-yyyy válido.");
     }
 
-    if (!specialDateForm.is_closed) {
+    if (specialDateMode !== "all_day_closed") {
       const timeError = getStaffSpecialDateTimeError();
 
       if (timeError) {
@@ -1482,6 +1487,12 @@ function validateStaffHours() {
 
   function handleEditSpecialDate(item: StaffSpecialDateItem) {
     setEditingSpecialDateId(item.id || null);
+    const derivedMode = !item.is_closed
+      ? "special_open"
+      : item.start_time
+      ? "block_time"
+      : "all_day_closed";
+    setSpecialDateMode(derivedMode as "all_day_closed" | "block_time" | "special_open");
     setSpecialDateForm({
       id: item.id,
       tenant_id: item.tenant_id,
@@ -1557,10 +1568,10 @@ function validateStaffHours() {
               date,
               label,
               is_closed: specialDateForm.is_closed,
-              start_time: specialDateForm.is_closed
+              start_time: specialDateMode === "all_day_closed"
                 ? null
                 : specialDateForm.start_time || null,
-              end_time: specialDateForm.is_closed
+              end_time: specialDateMode === "all_day_closed"
                 ? null
                 : specialDateForm.end_time || null,
             }),
@@ -1585,10 +1596,10 @@ function validateStaffHours() {
         date: parseDateDisplay(specialDateDisplay),
         label: getStaffSpecialDateLabel() || null,
         is_closed: specialDateForm.is_closed,
-        start_time: specialDateForm.is_closed
+        start_time: specialDateMode === "all_day_closed"
           ? null
           : specialDateForm.start_time || null,
-        end_time: specialDateForm.is_closed
+        end_time: specialDateMode === "all_day_closed"
           ? null
           : specialDateForm.end_time || null,
       };
@@ -3070,13 +3081,18 @@ function validateStaffHours() {
                             Tipo de cobertura
                           </label>
                           <select
-                            value={specialDateForm.is_closed ? "all_day" : "time_range"}
-                            onChange={(e) =>
+                            value={specialDateMode}
+                            onChange={(e) => {
+                              const mode = e.target.value as
+                                | "all_day_closed"
+                                | "block_time"
+                                | "special_open";
+                              setSpecialDateMode(mode);
                               setSpecialDateForm((prev) => ({
                                 ...prev,
-                                is_closed: e.target.value === "all_day",
-                              }))
-                            }
+                                is_closed: mode !== "special_open",
+                              }));
+                            }}
                             className={specialInputClass}
                             style={{
                               borderColor: "var(--border-color)",
@@ -3084,12 +3100,13 @@ function validateStaffHours() {
                               color: "var(--text-main)",
                             }}
                           >
-                            <option value="all_day">Todo el día</option>
-                            <option value="time_range">Rango de horario</option>
+                            <option value="all_day_closed">Todo el día cerrado</option>
+                            <option value="block_time">Bloquear horario específico</option>
+                            <option value="special_open">Apertura especial</option>
                           </select>
                         </div>
 
-                        {!specialDateForm.is_closed ? (
+                        {specialDateMode !== "all_day_closed" ? (
                           <>
                             <div className="space-y-1">
                               <label
@@ -3199,7 +3216,7 @@ function validateStaffHours() {
                         </div>
                       </div>
 
-                      {!specialDateForm.is_closed ? (
+                      {specialDateMode !== "all_day_closed" ? (
                         getStaffSpecialDateTimeError() ? (
                           <p className="mt-2 text-xs font-semibold text-rose-500">
                             {getStaffSpecialDateTimeError()}
