@@ -3119,7 +3119,7 @@ function validateStaffHours() {
                                 type="text"
                                 inputMode="numeric"
                                 placeholder="HH:mm"
-                                value={normalizeTimeValue(specialDateForm.start_time) || "09:00"}
+                                value={normalizeTimeValue(specialDateForm.start_time)}
                                 aria-invalid={!isValidHHmm(specialDateForm.start_time)}
                                 onChange={(e) =>
                                   setSpecialDateForm((prev) => ({
@@ -3149,7 +3149,7 @@ function validateStaffHours() {
                                 type="text"
                                 inputMode="numeric"
                                 placeholder="HH:mm"
-                                value={normalizeTimeValue(specialDateForm.end_time) || "18:00"}
+                                value={normalizeTimeValue(specialDateForm.end_time)}
                                 aria-invalid={!isValidHHmm(specialDateForm.end_time)}
                                 onChange={(e) =>
                                   setSpecialDateForm((prev) => ({
