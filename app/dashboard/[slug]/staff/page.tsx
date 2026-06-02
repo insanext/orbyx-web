@@ -3287,11 +3287,11 @@ function validateStaffHours() {
                             const dateLabel = group.isRange
                               ? `${formatDateDisplay(group.startDate)} al ${formatDateDisplay(group.endDate)}`
                               : formatDateDisplay(group.startDate);
-                            const timeLabel = item.is_closed
-                              ? "Cerrado todo el día"
-                              : `${normalizeTimeValue(item.start_time) || "--:--"} a ${
-                                  normalizeTimeValue(item.end_time) || "--:--"
-                                }`;
+                            const timeLabel = !item.is_closed
+                              ? `Apertura especial · ${normalizeTimeValue(item.start_time) || "--:--"} a ${normalizeTimeValue(item.end_time) || "--:--"}`
+                              : item.start_time
+                              ? `Bloqueado · ${normalizeTimeValue(item.start_time)} a ${normalizeTimeValue(item.end_time) || "--:--"}`
+                              : "Cerrado todo el día";
 
                             return (
                             <div
