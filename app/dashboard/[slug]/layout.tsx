@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -11,6 +11,7 @@ import {
   Users,
   GitBranch,
   ChevronRight,
+  ChevronUp,
   ChevronsLeft,
   ChevronsRight,
   Megaphone,
@@ -156,6 +157,19 @@ export default function DashboardLayout({
   const [branchesError, setBranchesError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const branchDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!branchDropdownOpen) return;
+    function handleOutsideClick(e: MouseEvent) {
+      if (branchDropdownRef.current && !branchDropdownRef.current.contains(e.target as Node)) {
+        setBranchDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [branchDropdownOpen]);
 
   const planLabel =
     plan === "platinum"
@@ -612,25 +626,118 @@ export default function DashboardLayout({
             <div className="mt-auto space-y-3">
               {!sidebarCollapsed ? (
                 <>
-                  <div
-                    className="rounded-2xl border px-3 py-2.5"
-                    style={{ background: softBg, borderColor: sidebarBorder }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.75)]" />
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-medium" style={{ color: textMuted }}>
-                          Sucursal activa
-                        </p>
-                        <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
-                          {selectedBranchName || branches[0]?.name || "Sin sucursal"}
-                        </p>
-                        <p className="truncate text-xs" style={{ color: textMuted }}>
-                          Casa Matriz
-                        </p>
+                  <div ref={branchDropdownRef} className="relative">
+                    {/* Dropdown — abre hacia arriba */}
+                    {branchDropdownOpen && branches.length > 0 ? (
+                      <div
+                        className="absolute bottom-[calc(100%+6px)] left-0 right-0 z-50 overflow-hidden rounded-2xl border"
+                        style={{
+                          background: softBg,
+                          borderColor: sidebarBorder,
+                          boxShadow: "0 -12px 40px -8px rgba(0,0,0,0.28), 0 -4px 16px -4px rgba(0,0,0,0.18)",
+                          animation: "branchDropIn 150ms ease-out forwards",
+                        }}
+                      >
+                        <div className="px-3 pt-3 pb-1">
+                          <p
+                            className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+                            style={{ color: textMuted }}
+                          >
+                            Cambiar sucursal
+                          </p>
+                        </div>
+                        <div className="py-1">
+                          {branches.map((branch) => {
+                            const isSelected = branch.id === selectedBranchId || (!selectedBranchId && branch.id === branches[0]?.id);
+                            const subtitle = branch.address || branch.slug || "";
+                            return (
+                              <button
+                                key={branch.id}
+                                type="button"
+                                onClick={() => {
+                                  persistSelectedBranch(branch.id);
+                                  setBranchDropdownOpen(false);
+                                }}
+                                className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors duration-150"
+                                style={{
+                                  background: isSelected ? "rgba(37,99,235,0.10)" : "transparent",
+                                  cursor: "pointer",
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isSelected) (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.08)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  (e.currentTarget as HTMLElement).style.background = isSelected ? "rgba(37,99,235,0.10)" : "transparent";
+                                }}
+                              >
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full"
+                                  style={{
+                                    background: isSelected ? "rgb(52 211 153)" : "transparent",
+                                    border: isSelected ? "none" : `1.5px solid ${sidebarBorder}`,
+                                    boxShadow: isSelected ? "0 0 8px rgba(52,211,153,0.7)" : "none",
+                                  }}
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className="truncate text-sm font-semibold"
+                                    style={{ color: isSelected ? textMain : textMain }}
+                                  >
+                                    {branch.name}
+                                  </p>
+                                  {subtitle ? (
+                                    <p className="truncate text-[11px]" style={{ color: textMuted }}>
+                                      {subtitle}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <ChevronRight className="ml-auto shrink-0" size={16} style={{ color: textMuted }} />
-                    </div>
+                    ) : null}
+
+                    {/* Selector — botón trigger */}
+                    <button
+                      type="button"
+                      onClick={() => setBranchDropdownOpen((prev) => !prev)}
+                      className="w-full rounded-2xl border px-3 py-2.5 text-left transition-colors duration-150"
+                      style={{
+                        background: branchDropdownOpen ? "rgba(37,99,235,0.08)" : softBg,
+                        borderColor: branchDropdownOpen ? "rgba(37,99,235,0.40)" : sidebarBorder,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.75)]" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-medium" style={{ color: textMuted }}>
+                            Sucursal activa
+                          </p>
+                          <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
+                            {selectedBranchName || branches[0]?.name || "Sin sucursal"}
+                          </p>
+                          <p className="truncate text-xs" style={{ color: textMuted }}>
+                            {branches.find((b) => b.id === selectedBranchId)?.address ||
+                              branches.find((b) => b.id === selectedBranchId)?.slug ||
+                              "Casa Matriz"}
+                          </p>
+                        </div>
+                        {branchDropdownOpen ? (
+                          <ChevronUp className="ml-auto shrink-0" size={15} style={{ color: textMuted }} />
+                        ) : (
+                          <ChevronRight className="ml-auto shrink-0" size={15} style={{ color: textMuted }} />
+                        )}
+                      </div>
+                    </button>
+
+                    <style>{`
+                      @keyframes branchDropIn {
+                        from { opacity: 0; transform: translateY(4px); }
+                        to   { opacity: 1; transform: translateY(0); }
+                      }
+                    `}</style>
                   </div>
 
                   <div
