@@ -45,6 +45,8 @@ type BranchItem = {
   id: string;
   tenant_id?: string;
   name: string;
+  slug?: string | null;
+  address?: string | null;
   is_active?: boolean;
 };
 
