@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname, useParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
   BarChart3,
@@ -17,6 +17,7 @@ import {
   CreditCard,
   FileText,
   HelpCircle,
+  LogOut,
   Menu,
   Settings,
   Store,
@@ -26,6 +27,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
+import { createClient } from "../../../lib/supabase/client";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -132,12 +134,19 @@ export default function DashboardLayout({
 }) {
   const params = useParams();
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, toggleTheme, mounted } = useTheme();
 
   const slug =
     ((params as { slug?: string })?.slug as string) ||
     ((params as { Slug?: string })?.Slug as string) ||
     "";
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [businessName, setBusinessName] = useState("");
@@ -642,6 +651,29 @@ export default function DashboardLayout({
                       </p>
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex h-11 w-full items-center gap-3 rounded-xl border px-3 text-sm font-semibold transition-all duration-200 hover:!border-rose-400/40 hover:!bg-rose-500/10"
+                    style={{
+                      background: "transparent",
+                      borderColor: "rgba(59,130,246,0)",
+                      color: textMuted,
+                    }}
+                  >
+                    <div
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                      style={{
+                        background: isNocturno
+                          ? "rgba(15,23,42,0.36)"
+                          : "rgba(220,232,255,0.62)",
+                      }}
+                    >
+                      <LogOut size={17} />
+                    </div>
+                    <span>Cerrar sesión</span>
+                  </button>
                 </>
               ) : (
                 <div className="flex flex-col items-center gap-3">
@@ -654,6 +686,19 @@ export default function DashboardLayout({
                       ? businessName.slice(0, 2).toUpperCase()
                       : slug.slice(0, 2).toUpperCase()}
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    title="Cerrar sesión"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border transition-all duration-200 hover:!border-rose-400/40 hover:!bg-rose-500/10"
+                    style={{
+                      background: softBg,
+                      borderColor: sidebarBorder,
+                      color: textMuted,
+                    }}
+                  >
+                    <LogOut size={18} />
+                  </button>
                 </div>
               )}
             </div>
