@@ -903,7 +903,7 @@ function ChannelCard({
       type="button"
       onClick={onClick}
       aria-current={active ? "true" : undefined}
-      className={`orbyx-campaign-energy w-full cursor-pointer rounded-2xl border p-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 sm:p-4 ${
+      className={`orbyx-campaign-energy w-full cursor-pointer rounded-2xl border p-2.5 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 sm:p-3 ${
         active ? "orbyx-campaign-energy-active" : ""
       }`}
       style={{
@@ -918,7 +918,7 @@ function ChannelCard({
     >
       <div className="flex items-start gap-3">
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
           style={{
             background: active ? "rgb(37 99 235)" : "var(--bg-soft)",
             color: active ? "#ffffff" : "var(--text-muted)",
@@ -938,7 +938,7 @@ function ChannelCard({
 
             {active ? (
               <span
-                className="inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold"
+                className="inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold"
                 style={{
                   borderColor: "rgba(37,99,235,0.24)",
                   background: "rgba(37,99,235,0.08)",
@@ -949,13 +949,6 @@ function ChannelCard({
               </span>
             ) : null}
           </div>
-
-          <p
-            className="mt-1 text-sm leading-5"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {description}
-          </p>
         </div>
       </div>
     </button>
@@ -2779,7 +2772,7 @@ export default function CampaignsPage() {
           ].map((item) => (
             <div
               key={item.label}
-              className="rounded-xl border px-3 py-2"
+              className="rounded-xl border px-3 py-1"
               style={{
                 borderColor: "rgba(148,163,184,0.18)",
                 background: "var(--bg-soft)",
@@ -2792,7 +2785,7 @@ export default function CampaignsPage() {
                 {item.label}
               </p>
               <p
-                className="mt-1 truncate text-sm font-semibold"
+                className="truncate text-sm font-semibold"
                 style={{ color: "var(--text-main)" }}
                 title={String(item.value)}
               >
@@ -3044,66 +3037,62 @@ export default function CampaignsPage() {
           }
         >
           <div className="space-y-5">
-            <div className="grid gap-5 lg:grid-cols-2">
-              <div>
-                <p
-                  className="mb-3 text-sm font-semibold"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Canal
-                </p>
+            <div>
+              <p
+                className="mb-3 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Canal
+              </p>
 
-                <div className="space-y-3">
-                  {CHANNEL_OPTIONS.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <ChannelCard
-                        key={item.key}
-                        active={channel === item.key}
-                        title={item.label}
-                        description={item.description}
-                        icon={<Icon size={20} />}
-                        onClick={() => setChannel(item.key)}
-                      />
-                    );
-                  })}
-                </div>
+              <div className="flex gap-3">
+                {CHANNEL_OPTIONS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <ChannelCard
+                      key={item.key}
+                      active={channel === item.key}
+                      title={item.label}
+                      description={item.description}
+                      icon={<Icon size={18} />}
+                      onClick={() => setChannel(item.key)}
+                    />
+                  );
+                })}
               </div>
+            </div>
+
+            <div>
+              <p
+                className="mb-3 text-sm font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                Segmento
+              </p>
 
               <div>
-                <p
-                  className="mb-3 text-sm font-semibold"
-                  style={{ color: "var(--text-main)" }}
+                <select
+                  value={segment}
+                  onChange={(e) => setSegment(e.target.value as CustomerSegment)}
+                  className={selectClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
                 >
-                  Segmento
+                  {SEGMENT_OPTIONS.map((item) => (
+                    <option key={item.key} value={item.key}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+
+                <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
+                  {SEGMENT_OPTIONS.find((s) => s.key === segment)?.description}
                 </p>
-
-                <div>
-  <select
-    value={segment}
-    onChange={(e) => setSegment(e.target.value as CustomerSegment)}
-    className={selectClass}
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-card)",
-      color: "var(--text-main)",
-    }}
-  >
-    {SEGMENT_OPTIONS.map((item) => (
-      <option key={item.key} value={item.key}>
-        {item.label}
-      </option>
-    ))}
-  </select>
-
-  <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
-    {
-      SEGMENT_OPTIONS.find((s) => s.key === segment)?.description
-    }
-  </p>
-</div>
-                </div>
               </div>
+            </div>
 
             <div className="grid gap-3 md:grid-cols-3">
               {segment === "inactive" ? (
@@ -3205,9 +3194,9 @@ export default function CampaignsPage() {
                   ))}
                 </select>
               </div>
-                          </div>
-              </div>
-                               </SectionCard>
+            </div>
+          </div>
+        </SectionCard>
 
         <div className="space-y-5">
           <SectionCard
