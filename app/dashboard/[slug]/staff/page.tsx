@@ -404,6 +404,24 @@ export default function StaffPage() {
 
   const [form, setForm] = useState(emptyForm);
 const [photoUrl, setPhotoUrl] = useState("");
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxVisible, setLightboxVisible] = useState(false);
+  const [lightboxClosing, setLightboxClosing] = useState(false);
+
+  function openLightbox(url: string) {
+    setLightboxUrl(url);
+    setLightboxClosing(false);
+    setLightboxVisible(true);
+  }
+
+  function closeLightbox() {
+    setLightboxClosing(true);
+    setTimeout(() => {
+      setLightboxVisible(false);
+      setLightboxClosing(false);
+      setLightboxUrl(null);
+    }, 150);
+  }
   const [staffHours, setStaffHours] = useState<StaffHourItem[]>(defaultHours);
   const [staffSpecialDates, setStaffSpecialDates] = useState<
     StaffSpecialDateItem[]
@@ -3551,57 +3569,24 @@ function validateStaffHours() {
                     <div className="flex min-w-0 flex-col gap-3">
 
 
-<div className="group relative">
-  {/* FOTO PEQUEÑA */}
-  <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border bg-slate-200 shadow-sm">
+<div>
+  {/* FOTO — click abre lightbox */}
+  <div
+    className="mx-auto h-24 w-24 overflow-hidden rounded-full border bg-slate-200 shadow-sm"
+    style={{ cursor: item.photo_url ? "pointer" : "default" }}
+    onClick={() => { if (item.photo_url) openLightbox(item.photo_url); }}
+  >
     {item.photo_url ? (
       <img
         src={item.photo_url}
         className="h-full w-full object-cover"
+        alt={item.name}
       />
     ) : (
       <div className="flex h-full w-full items-center justify-center text-xl font-semibold text-slate-500">
         👤
       </div>
     )}
-  </div>
-
-  {/* HOVER CARD */}
-  <div
-    className={`pointer-events-none absolute top-full z-[9999] mt-4 hidden opacity-0 transition-all duration-200 lg:block lg:group-hover:opacity-100 ${
-      opensPreviewLeft ? "right-0" : "left-0"
-    }`}
-  >
-    <div
-      className="w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-3xl border shadow-2xl"
-      style={{
-        borderColor: "var(--border-color)",
-        background: "var(--bg-card)",
-      }}
-    >
-      <div className="flex flex-col items-center gap-3">
-        <div className="h-[280px] overflow-hidden bg-slate-200">
-          {item.photo_url ? (
-            <img
-              src={item.photo_url}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-slate-400">
-              👤
-            </div>
-          )}
-        </div>
-
-        <p
-          className="text-base font-semibold text-center"
-          style={{ color: "var(--text-main)" }}
-        >
-          {item.name}
-        </p>
-
-       </div>
-    </div>
   </div>
 </div>
 
@@ -3903,6 +3888,78 @@ function validateStaffHours() {
         ) : null}
 
       </section>
+
+      {/* LIGHTBOX */}
+      {lightboxVisible && lightboxUrl ? (
+        <div
+          onClick={closeLightbox}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(0,0,0,0.75)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            animation: lightboxClosing
+              ? "lbFadeOut 150ms ease-in forwards"
+              : "lbFadeIn 200ms ease-out forwards",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: "relative" }}
+          >
+            <img
+              src={lightboxUrl}
+              alt="Foto staff"
+              style={{
+                width: 420,
+                height: 420,
+                borderRadius: "50%",
+                objectFit: "cover",
+                display: "block",
+                animation: lightboxClosing
+                  ? "lbScaleOut 150ms ease-in forwards"
+                  : "lbScaleIn 200ms ease-out forwards",
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={closeLightbox}
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.22)",
+                background: "rgba(15,23,42,0.60)",
+                color: "#ffffff",
+                fontSize: 16,
+                lineHeight: 1,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <style>{`
+        @keyframes lbFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes lbFadeOut { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes lbScaleIn  { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+        @keyframes lbScaleOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.85); } }
+      `}</style>
     </div>
   );
 }
