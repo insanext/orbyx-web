@@ -1400,17 +1400,9 @@ export default function BranchesPage() {
                         Editar
                       </p>
                       {isEditing ? (
-                        <>
-                          <button type="button" onClick={() => handleUpdateBranch(branch.id)} disabled={saving} className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60" style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>
-                            Guardar
-                          </button>
-                          <button type="button" onClick={cancelEditBranch} disabled={saving} className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
-                            Cancelar
-                          </button>
-                          <button type="button" onClick={() => handleToggleBranchActive(branch)} disabled={saving || (branch.is_active === false && reachedLimit)} className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60" style={{ borderColor: isActive ? "rgba(244,63,94,0.34)" : "rgba(16,185,129,0.34)", background: "var(--bg-card)", color: isActive ? "rgb(244 63 94)" : "rgb(16 185 129)" }}>
-                            {isActive ? "Desactivar" : "Activar"}
-                          </button>
-                        </>
+                        <span className="inline-flex h-10 items-center rounded-2xl border px-3 text-xs font-medium" style={{ borderColor: "rgba(37,99,235,0.28)", background: "rgba(37,99,235,0.08)", color: "rgb(37 99 235)" }}>
+                          Editando…
+                        </span>
                       ) : (
                         <button type="button" onClick={() => beginEditBranch(branch)} disabled={saving} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
                           <Pencil className="h-4 w-4" />
@@ -1420,196 +1412,173 @@ export default function BranchesPage() {
                     </div>
 
                     {isEditing ? (
-                      <div className="space-y-4 rounded-2xl border p-4 md:col-span-8" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <div>
-                            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Slug
-                            </label>
-                            <input
-                              type="text"
-                              value={editForm.slug}
-                              onChange={(e) => setEditForm((prev) => ({ ...prev, slug: e.target.value }))}
-                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                            />
-                          </div>
+                      <div className="space-y-4 md:col-span-8">
 
-                          <div>
-                            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Dirección
-                            </label>
-                            <input
-                              type="text"
-                              value={editForm.use_global_contact ? globalAddress : editForm.address}
-                              disabled={editForm.use_global_contact}
-                              required={!editForm.use_global_contact}
-                              onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))}
-                              placeholder={
-                                editForm.use_global_contact
-                                  ? "Usando dirección global del negocio"
-                                  : "Dirección local de la sucursal"
-                              }
-                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Comuna
-                            </label>
-                            <input
-                              type="text"
-                              value={editForm.commune}
-                              onChange={(e) => setEditForm((prev) => ({ ...prev, commune: e.target.value }))}
-                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Ciudad
-                            </label>
-                            <input
-                              type="text"
-                              value={editForm.city}
-                              onChange={(e) => setEditForm((prev) => ({ ...prev, city: e.target.value }))}
-                              className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                            />
+                        {/* ── Datos básicos ── */}
+                        <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
+                          <p className="mb-4 text-sm font-semibold" style={{ color: "var(--text-main)" }}>Datos básicos</p>
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <div>
+                              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Nombre de la sucursal</label>
+                              <input type="text" value={editForm.name} onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                            </div>
+                            <div>
+                              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Slug (URL)</label>
+                              <input type="text" value={editForm.slug} onChange={(e) => setEditForm((prev) => ({ ...prev, slug: e.target.value }))} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Descripción</label>
+                              <textarea value={editForm.description} onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Descripción local de la sucursal" className="min-h-[80px] w-full rounded-xl border px-3 py-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                            </div>
                           </div>
                         </div>
 
-                        <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm font-medium" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-                          Usar contacto global
-                          <input
-                            type="checkbox"
-                            checked={editForm.use_global_contact}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, use_global_contact: e.target.checked }))}
-                            className="h-4 w-4"
-                          />
-                        </label>
-
-                        <MapPreview
-                          address={
-                            editForm.use_global_contact ? globalAddress : editForm.address
-                          }
-                        />
-
-                        <div className="grid gap-3 md:grid-cols-3">
-                          <input
-                            type="text"
-                            value={editForm.phone}
-                            disabled={editForm.use_global_contact}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
-                            placeholder="Teléfono local"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                          <input
-                            type="text"
-                            value={editForm.whatsapp}
-                            disabled={editForm.use_global_contact}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, whatsapp: e.target.value }))}
-                            placeholder="WhatsApp local"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                          <input
-                            type="email"
-                            value={editForm.email}
-                            disabled={editForm.use_global_contact}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
-                            placeholder="Correo local"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                        </div>
-
-                        <textarea
-                          value={editForm.description}
-                          onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
-                          placeholder="Descripción local de la sucursal"
-                          className="min-h-[92px] w-full rounded-xl border px-3 py-3 text-sm outline-none transition"
-                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                        />
-
-                        <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm font-medium" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-                          Usar redes globales
-                          <input
-                            type="checkbox"
-                            checked={editForm.use_global_socials}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, use_global_socials: e.target.checked }))}
-                            className="h-4 w-4"
-                          />
-                        </label>
-
-                        <div className="grid gap-3 md:grid-cols-4">
-                          <input
-                            type="text"
-                            value={editForm.instagram_url}
-                            disabled={editForm.use_global_socials}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, instagram_url: e.target.value }))}
-                            placeholder="Instagram"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                          <input
-                            type="text"
-                            value={editForm.facebook_url}
-                            disabled={editForm.use_global_socials}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, facebook_url: e.target.value }))}
-                            placeholder="Facebook"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                          <input
-                            type="text"
-                            value={editForm.tiktok_url}
-                            disabled={editForm.use_global_socials}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, tiktok_url: e.target.value }))}
-                            placeholder="TikTok"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                          <input
-                            type="text"
-                            value={editForm.website_url}
-                            disabled={editForm.use_global_socials}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, website_url: e.target.value }))}
-                            placeholder="Web"
-                            className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                        </div>
-
-                        <div className="space-y-4 rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
-                          <div>
-                            <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                              Horario de la sucursal
-                            </p>
-                            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-                              Define si esta sucursal hereda el horario global o usa bloques propios.
-                            </p>
+                        {/* ── Ubicación ── */}
+                        <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
+                          <p className="mb-4 text-sm font-semibold" style={{ color: "var(--text-main)" }}>Ubicación</p>
+                          <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
+                            <div className="space-y-3">
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Dirección</label>
+                                <input type="text" value={editForm.use_global_contact ? globalAddress : editForm.address} disabled={editForm.use_global_contact} required={!editForm.use_global_contact} onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))} placeholder={editForm.use_global_contact ? "Usando dirección global del negocio" : "Dirección local de la sucursal"} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-40" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Comuna</label>
+                                <input type="text" value={editForm.commune} onChange={(e) => setEditForm((prev) => ({ ...prev, commune: e.target.value }))} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Ciudad</label>
+                                <input type="text" value={editForm.city} onChange={(e) => setEditForm((prev) => ({ ...prev, city: e.target.value }))} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>URL del mapa</label>
+                                <input type="text" value={editForm.map_url} onChange={(e) => setEditForm((prev) => ({ ...prev, map_url: e.target.value }))} placeholder="https://maps.google.com/..." className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                            </div>
+                            <div className="overflow-hidden rounded-xl border" style={{ borderColor: "var(--border-color)", minHeight: 240 }}>
+                              {(editForm.use_global_contact ? globalAddress : editForm.address).trim() ? (
+                                <iframe
+                                  title="Mapa de la sucursal"
+                                  src={`https://maps.google.com/maps?q=${encodeURIComponent((editForm.use_global_contact ? globalAddress : editForm.address).trim())}&output=embed`}
+                                  className="h-full w-full"
+                                  style={{ minHeight: 240, border: 0 }}
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer-when-downgrade"
+                                />
+                              ) : (
+                                <div className="flex h-full min-h-[240px] items-center justify-center px-4 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+                                  Ingresa una dirección para previsualizar el mapa.
+                                </div>
+                              )}
+                            </div>
                           </div>
+                        </div>
 
-                          <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm font-medium" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-                            Usar horario global del negocio
-                            <input
-                              type="checkbox"
-                              checked={editForm.use_global_hours}
-                              onChange={(e) => setEditForm((prev) => ({ ...prev, use_global_hours: e.target.checked }))}
-                              className="h-4 w-4"
-                            />
-                          </label>
+                        {/* ── Contacto ── */}
+                        <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
+                          <div className="mb-4 flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Contacto</p>
+                              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Usar los datos de contacto del negocio principal</p>
+                            </div>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={editForm.use_global_contact}
+                              onClick={() => setEditForm((prev) => ({ ...prev, use_global_contact: !prev.use_global_contact }))}
+                              className="inline-flex h-7 w-12 shrink-0 items-center rounded-full border p-0.5 transition-colors duration-200"
+                              style={{ background: editForm.use_global_contact ? "rgb(37 99 235)" : "rgba(100,116,139,0.35)", borderColor: editForm.use_global_contact ? "rgba(37,99,235,0.5)" : "var(--border-color)" }}
+                            >
+                              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200" style={{ transform: editForm.use_global_contact ? "translateX(20px)" : "translateX(0)" }} />
+                            </button>
+                          </div>
+                          {editForm.use_global_contact ? (
+                            <div className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}>
+                              Heredando contacto del negocio principal. Desactiva para ingresar uno propio.
+                            </div>
+                          ) : (
+                            <div className="grid gap-3 md:grid-cols-3">
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Teléfono</label>
+                                <input type="text" value={editForm.phone} onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="Teléfono local" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>WhatsApp</label>
+                                <input type="text" value={editForm.whatsapp} onChange={(e) => setEditForm((prev) => ({ ...prev, whatsapp: e.target.value }))} placeholder="WhatsApp local" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Correo</label>
+                                <input type="email" value={editForm.email} onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))} placeholder="Correo local" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
+                        {/* ── Redes sociales ── */}
+                        <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
+                          <div className="mb-4 flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Redes sociales</p>
+                              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Usar las redes sociales del negocio principal</p>
+                            </div>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={editForm.use_global_socials}
+                              onClick={() => setEditForm((prev) => ({ ...prev, use_global_socials: !prev.use_global_socials }))}
+                              className="inline-flex h-7 w-12 shrink-0 items-center rounded-full border p-0.5 transition-colors duration-200"
+                              style={{ background: editForm.use_global_socials ? "rgb(37 99 235)" : "rgba(100,116,139,0.35)", borderColor: editForm.use_global_socials ? "rgba(37,99,235,0.5)" : "var(--border-color)" }}
+                            >
+                              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200" style={{ transform: editForm.use_global_socials ? "translateX(20px)" : "translateX(0)" }} />
+                            </button>
+                          </div>
+                          {editForm.use_global_socials ? (
+                            <div className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}>
+                              Heredando redes del negocio principal. Desactiva para ingresar las propias.
+                            </div>
+                          ) : (
+                            <div className="grid gap-3 md:grid-cols-4">
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Instagram</label>
+                                <input type="text" value={editForm.instagram_url} onChange={(e) => setEditForm((prev) => ({ ...prev, instagram_url: e.target.value }))} placeholder="Instagram" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Facebook</label>
+                                <input type="text" value={editForm.facebook_url} onChange={(e) => setEditForm((prev) => ({ ...prev, facebook_url: e.target.value }))} placeholder="Facebook" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>TikTok</label>
+                                <input type="text" value={editForm.tiktok_url} onChange={(e) => setEditForm((prev) => ({ ...prev, tiktok_url: e.target.value }))} placeholder="TikTok" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Sitio web</label>
+                                <input type="text" value={editForm.website_url} onChange={(e) => setEditForm((prev) => ({ ...prev, website_url: e.target.value }))} placeholder="Web" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* ── Horario de atención ── */}
+                        <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
+                          <div className="mb-4 flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Horario de atención</p>
+                              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Usar el horario del negocio principal</p>
+                            </div>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={editForm.use_global_hours}
+                              onClick={() => setEditForm((prev) => ({ ...prev, use_global_hours: !prev.use_global_hours }))}
+                              className="inline-flex h-7 w-12 shrink-0 items-center rounded-full border p-0.5 transition-colors duration-200"
+                              style={{ background: editForm.use_global_hours ? "rgb(37 99 235)" : "rgba(100,116,139,0.35)", borderColor: editForm.use_global_hours ? "rgba(37,99,235,0.5)" : "var(--border-color)" }}
+                            >
+                              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200" style={{ transform: editForm.use_global_hours ? "translateX(20px)" : "translateX(0)" }} />
+                            </button>
+                          </div>
                           {editForm.use_global_hours ? (
                             <div className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}>
-                              <p className="font-medium" style={{ color: "var(--text-main)" }}>
-                                Esta sucursal usa el horario global configurado en Negocio.
-                              </p>
+                              <p className="font-medium" style={{ color: "var(--text-main)" }}>Esta sucursal usa el horario global configurado en Negocio.</p>
                               <p className="mt-1">{scheduleLoading ? "Cargando horario global..." : summarizeHours(globalHours)}</p>
                             </div>
                           ) : (
@@ -1617,7 +1586,6 @@ export default function BranchesPage() {
                               {displayOrder.map((day) => {
                                 const dayBlocks = branchHours.filter((item) => item.day_of_week === day);
                                 const enabled = dayBlocks.some((item) => item.enabled);
-
                                 return (
                                   <div key={day} className="grid gap-3 rounded-xl border p-3 sm:grid-cols-[130px_minmax(0,1fr)]" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
                                     <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-start">
@@ -1626,76 +1594,27 @@ export default function BranchesPage() {
                                         <p className="text-xs" style={{ color: "var(--text-muted)" }}>{enabled ? `${dayBlocks.length} bloque${dayBlocks.length === 1 ? "" : "s"}` : "Cerrado"}</p>
                                       </div>
                                       <label className="inline-flex items-center gap-2 text-xs" style={{ color: "var(--text-main)" }}>
-                                        <input
-                                          type="checkbox"
-                                          checked={enabled}
-                                          onChange={(e) => setBranchDayEnabled(day, e.target.checked)}
-                                          className="h-4 w-4"
-                                        />
+                                        <input type="checkbox" checked={enabled} onChange={(e) => setBranchDayEnabled(day, e.target.checked)} className="h-4 w-4" />
                                         Activo
                                       </label>
                                     </div>
-
                                     <div className="space-y-2">
                                       {enabled ? (
                                         dayBlocks.map((block) => {
-                                          const realIndex = branchHours.findIndex(
-                                            (item) =>
-                                              item.day_of_week === day &&
-                                              item.start_time === block.start_time &&
-                                              item.end_time === block.end_time
-                                          );
-
+                                          const realIndex = branchHours.findIndex((item) => item.day_of_week === day && item.start_time === block.start_time && item.end_time === block.end_time);
                                           return (
                                             <div key={`${day}-${realIndex}`} className="flex flex-wrap items-center gap-2">
-                                              <input
-                                                type="text"
-                                                value={block.start_time}
-                                                onChange={(e) => updateBranchHour(realIndex, "start_time", normalizeTimeInput(e.target.value))}
-                                                className="h-10 w-[120px] rounded-xl border px-3 text-sm"
-                                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                                              />
+                                              <input type="text" value={block.start_time} onChange={(e) => updateBranchHour(realIndex, "start_time", normalizeTimeInput(e.target.value))} className="h-10 w-[120px] rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                                               <span style={{ color: "var(--text-muted)" }}>-</span>
-                                              <input
-                                                type="text"
-                                                value={block.end_time}
-                                                onChange={(e) => updateBranchHour(realIndex, "end_time", normalizeTimeInput(e.target.value))}
-                                                className="h-10 w-[120px] rounded-xl border px-3 text-sm"
-                                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                                              />
-                                              <button
-                                                type="button"
-                                                onClick={() => setBranchHours((prev) => prev.filter((_, index) => index !== realIndex))}
-                                                className="h-9 rounded-xl border px-3 text-xs font-semibold text-rose-400"
-                                                style={{ borderColor: "rgba(244,63,94,0.34)", background: "rgba(244,63,94,0.08)" }}
-                                              >
-                                                Eliminar
-                                              </button>
+                                              <input type="text" value={block.end_time} onChange={(e) => updateBranchHour(realIndex, "end_time", normalizeTimeInput(e.target.value))} className="h-10 w-[120px] rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                              <button type="button" onClick={() => setBranchHours((prev) => prev.filter((_, index) => index !== realIndex))} className="h-9 rounded-xl border px-3 text-xs font-semibold text-rose-400" style={{ borderColor: "rgba(244,63,94,0.34)", background: "rgba(244,63,94,0.08)" }}>Eliminar</button>
                                             </div>
                                           );
                                         })
                                       ) : (
                                         <p className="text-sm" style={{ color: "var(--text-muted)" }}>No disponible</p>
                                       )}
-
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setBranchHours((prev) => [
-                                            ...prev,
-                                            {
-                                              day_of_week: day,
-                                              enabled: true,
-                                              start_time: "09:00",
-                                              end_time: "18:00",
-                                            },
-                                          ])
-                                        }
-                                        className="rounded-xl border px-3 py-2 text-xs font-medium"
-                                        style={{ borderColor: "rgba(37,99,235,0.24)", background: "rgba(37,99,235,0.06)", color: "var(--text-main)" }}
-                                      >
-                                        + Agregar bloque
-                                      </button>
+                                      <button type="button" onClick={() => setBranchHours((prev) => [...prev, { day_of_week: day, enabled: true, start_time: "09:00", end_time: "18:00" }])} className="rounded-xl border px-3 py-2 text-xs font-medium" style={{ borderColor: "rgba(37,99,235,0.24)", background: "rgba(37,99,235,0.06)", color: "var(--text-main)" }}>+ Agregar bloque</button>
                                     </div>
                                   </div>
                                 );
@@ -1704,39 +1623,33 @@ export default function BranchesPage() {
                           )}
                         </div>
 
-                        <div className="space-y-4 rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
-                          <div>
-                            <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                              Fechas especiales de la sucursal
-                            </p>
-                            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-                              Define cierres o horarios especiales que aplican solo a esta sucursal.
-                            </p>
+                        {/* ── Fechas especiales ── */}
+                        <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
+                          <div className="mb-4 flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Fechas especiales</p>
+                              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Usar las fechas especiales del negocio principal</p>
+                            </div>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={editForm.use_global_special_dates}
+                              onClick={() => setEditForm((prev) => ({ ...prev, use_global_special_dates: !prev.use_global_special_dates }))}
+                              className="inline-flex h-7 w-12 shrink-0 items-center rounded-full border p-0.5 transition-colors duration-200"
+                              style={{ background: editForm.use_global_special_dates ? "rgb(37 99 235)" : "rgba(100,116,139,0.35)", borderColor: editForm.use_global_special_dates ? "rgba(37,99,235,0.5)" : "var(--border-color)" }}
+                            >
+                              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200" style={{ transform: editForm.use_global_special_dates ? "translateX(20px)" : "translateX(0)" }} />
+                            </button>
                           </div>
-
-                          <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm font-medium" style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}>
-                            Usar fechas especiales globales
-                            <input
-                              type="checkbox"
-                              checked={editForm.use_global_special_dates}
-                              onChange={(e) => setEditForm((prev) => ({ ...prev, use_global_special_dates: e.target.checked }))}
-                              className="h-4 w-4"
-                            />
-                          </label>
-
                           {editForm.use_global_special_dates ? (
                             <div className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}>
-                              <p className="font-medium" style={{ color: "var(--text-main)" }}>
-                                Esta sucursal usa las fechas especiales globales del negocio.
-                              </p>
+                              <p className="font-medium" style={{ color: "var(--text-main)" }}>Esta sucursal usa las fechas especiales globales del negocio.</p>
                               <div className="mt-2 space-y-1">
                                 {scheduleLoading ? (
                                   <p>Cargando fechas globales...</p>
                                 ) : globalSpecialDates.length ? (
                                   globalSpecialDates.slice(0, 5).map((item) => (
-                                    <p key={item.id || item.date}>
-                                      {formatDateDisplay(item.date)} · {item.label || "Sin etiqueta"} · {item.is_closed ? "Cerrado todo el día" : `${normalizeSpecialTime(item.start_time)}-${normalizeSpecialTime(item.end_time)}`}
-                                    </p>
+                                    <p key={item.id || item.date}>{formatDateDisplay(item.date)} · {item.label || "Sin etiqueta"} · {item.is_closed ? "Cerrado todo el día" : `${normalizeSpecialTime(item.start_time)}-${normalizeSpecialTime(item.end_time)}`}</p>
                                   ))
                                 ) : (
                                   <p>Sin fechas especiales globales.</p>
@@ -1746,87 +1659,71 @@ export default function BranchesPage() {
                           ) : (
                             <div className="space-y-3">
                               <div className="grid gap-2 md:grid-cols-[150px_minmax(0,1fr)_150px_120px_120px_auto] md:items-end">
-                                <input
-                                  type="date"
-                                  value={specialDateDraft.date}
-                                  onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, date: e.target.value }))}
-                                  className="h-10 rounded-xl border px-3 text-sm"
-                                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                                />
-                                <input
-                                  type="text"
-                                  value={specialDateDraft.label}
-                                  onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, label: e.target.value }))}
-                                  placeholder="Motivo"
-                                  className="h-10 rounded-xl border px-3 text-sm"
-                                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                                />
-                                <select
-                                  value={specialDateDraft.is_closed ? "closed" : "partial"}
-                                  onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, is_closed: e.target.value === "closed" }))}
-                                  className="h-10 rounded-xl border px-3 text-sm"
-                                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                                >
+                                <input type="date" value={specialDateDraft.date} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, date: e.target.value }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                                <input type="text" value={specialDateDraft.label} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, label: e.target.value }))} placeholder="Motivo" className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                                <select value={specialDateDraft.is_closed ? "closed" : "partial"} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, is_closed: e.target.value === "closed" }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}>
                                   <option value="closed">Todo el día</option>
                                   <option value="partial">Horario especial</option>
                                 </select>
                                 {!specialDateDraft.is_closed ? (
                                   <>
-                                    <input
-                                      type="text"
-                                      value={specialDateDraft.start_time}
-                                      onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, start_time: normalizeTimeInput(e.target.value) }))}
-                                      className="h-10 rounded-xl border px-3 text-sm"
-                                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                                    />
-                                    <input
-                                      type="text"
-                                      value={specialDateDraft.end_time}
-                                      onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, end_time: normalizeTimeInput(e.target.value) }))}
-                                      className="h-10 rounded-xl border px-3 text-sm"
-                                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                                    />
+                                    <input type="text" value={specialDateDraft.start_time} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, start_time: normalizeTimeInput(e.target.value) }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                                    <input type="text" value={specialDateDraft.end_time} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, end_time: normalizeTimeInput(e.target.value) }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
                                   </>
                                 ) : (
                                   <div className="hidden md:block" />
                                 )}
-                                <button
-                                  type="button"
-                                  onClick={() => addBranchSpecialDate(branch.id)}
-                                  disabled={saving}
-                                  className="h-10 rounded-xl px-3 text-sm font-semibold text-white disabled:opacity-60"
-                                  style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
-                                >
-                                  Agregar
-                                </button>
+                                <button type="button" onClick={() => addBranchSpecialDate(branch.id)} disabled={saving} className="h-10 rounded-xl px-3 text-sm font-semibold text-white disabled:opacity-60" style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>Agregar</button>
                               </div>
-
                               <div className="space-y-2">
                                 {branchSpecialDates.length ? (
                                   branchSpecialDates.map((item) => (
                                     <div key={item.id || item.date} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}>
-                                      <span>
-                                        {formatDateDisplay(item.date)} · {item.label || "Sin etiqueta"} · {item.is_closed ? "Cerrado todo el día" : `${normalizeSpecialTime(item.start_time)}-${normalizeSpecialTime(item.end_time)}`}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => removeBranchSpecialDate(item.id)}
-                                        className="rounded-xl border px-3 py-1 text-xs font-semibold text-rose-400"
-                                        style={{ borderColor: "rgba(244,63,94,0.34)", background: "rgba(244,63,94,0.08)" }}
-                                      >
-                                        Eliminar
-                                      </button>
+                                      <span>{formatDateDisplay(item.date)} · {item.label || "Sin etiqueta"} · {item.is_closed ? "Cerrado todo el día" : `${normalizeSpecialTime(item.start_time)}-${normalizeSpecialTime(item.end_time)}`}</span>
+                                      <button type="button" onClick={() => removeBranchSpecialDate(item.id)} className="rounded-xl border px-3 py-1 text-xs font-semibold text-rose-400" style={{ borderColor: "rgba(244,63,94,0.34)", background: "rgba(244,63,94,0.08)" }}>Eliminar</button>
                                     </div>
                                   ))
                                 ) : (
-                                  <p className="rounded-xl border border-dashed px-3 py-3 text-sm" style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}>
-                                    Sin fechas especiales locales.
-                                  </p>
+                                  <p className="rounded-xl border border-dashed px-3 py-3 text-sm" style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}>Sin fechas especiales locales.</p>
                                 )}
                               </div>
                             </div>
                           )}
                         </div>
+
+                        {/* ── Botones al fondo ── */}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleBranchActive(branch)}
+                            disabled={saving || (branch.is_active === false && reachedLimit)}
+                            className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{ borderColor: isActive ? "rgba(244,63,94,0.34)" : "rgba(16,185,129,0.34)", background: "var(--bg-card)", color: isActive ? "rgb(244 63 94)" : "rgb(16 185 129)" }}
+                          >
+                            {isActive ? "Desactivar sucursal" : "Activar sucursal"}
+                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={cancelEditBranch}
+                              disabled={saving}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateBranch(branch.id)}
+                              disabled={saving}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{ background: saving ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
+                            >
+                              {saving ? "Guardando..." : "Guardar cambios"}
+                            </button>
+                          </div>
+                        </div>
+
                       </div>
                     ) : null}
                   </div>
