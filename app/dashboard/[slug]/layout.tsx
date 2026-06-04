@@ -326,6 +326,7 @@ export default function DashboardLayout({
   const softBg = isNocturno
     ? "rgba(15,23,42,0.72)"
     : "rgba(220,232,255,0.72)";
+  const dropdownBg = isNocturno ? "rgb(15,23,42)" : "rgb(236,244,255)";
   const cardBg = isNocturno
     ? "rgba(15,23,42,0.78)"
     : "rgba(243,247,255,0.86)";
@@ -634,10 +635,12 @@ export default function DashboardLayout({
                       <div
                         className="absolute bottom-[calc(100%+6px)] left-0 right-0 z-50 overflow-hidden rounded-2xl border"
                         style={{
-                          background: softBg,
+                          background: dropdownBg,
                           borderColor: sidebarBorder,
+                          border: `0.5px solid ${sidebarBorder}`,
                           boxShadow: "0 -12px 40px -8px rgba(0,0,0,0.28), 0 -4px 16px -4px rgba(0,0,0,0.18)",
                           animation: "branchDropIn 150ms ease-out forwards",
+                          zIndex: 200,
                         }}
                       >
                         <div className="px-3 pt-3 pb-1">
@@ -740,25 +743,6 @@ export default function DashboardLayout({
                         to   { opacity: 1; transform: translateY(0); }
                       }
                     `}</style>
-                  </div>
-
-                  <div
-                    className="flex items-center gap-3 rounded-2xl border px-3 py-3"
-                    style={{ background: cardBg, borderColor: sidebarBorder }}
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(14,165,233),rgb(79,70,229))] text-xs font-bold text-white">
-                      {businessName
-                        ? businessName.slice(0, 2).toUpperCase()
-                        : slug.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
-                        {businessName || slug || "Usuario Orbyx"}
-                      </p>
-                      <p className="truncate text-xs" style={{ color: textMuted }}>
-                        Administrador
-                      </p>
-                    </div>
                   </div>
 
                   <button
