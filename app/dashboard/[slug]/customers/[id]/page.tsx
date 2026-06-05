@@ -1076,453 +1076,302 @@ const lastValidAppointment = validAppointments[0] || null;
         {viewingPetId === pet.id ? (
           <div
             className="mt-4 rounded-2xl border p-4 sm:p-5"
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-soft)",
-            }}
+            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
           >
-            <p
-              className="text-xs font-semibold uppercase tracking-[0.18em]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Ficha clínica veterinaria
-            </p>
-
-            <h3
-              className="mt-1 text-xl font-semibold"
-              style={{ color: "var(--text-main)" }}
-            >
-              {pet.name}
-            </h3>
-
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-              Responsable: {customer.name}
-            </p>
-
-            <div className="mt-3 flex justify-end">
-              {editingPetId === pet.id ? null : (
-                <button
-                  type="button"
-                  onClick={() => handleOpenEdit(pet.id, validAppointments)}
-                  className="rounded-xl border px-4 py-2 text-xs font-medium transition hover:bg-slate-100"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    color: "var(--text-main)",
-                  }}
+            {/* ── Header mascota ── */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
+                  style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)" }}
                 >
-                  Editar ficha
-                </button>
-              )}
-            </div>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div
-                className="rounded-xl border p-3"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-card)",
-                }}
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
-                  Datos de mascota
-                </p>
-                <dl className="mt-3 grid max-w-[360px] gap-2 text-sm">
-                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
-                    <dt style={{ color: "var(--text-muted)" }}>Especie</dt>
-                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{getPetSpeciesLabel(pet)}</dd>
+                  {pet.species_base === "perro" ? "🐕" : pet.species_base === "gato" ? "🐈" : "🐾"}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[15px] font-medium" style={{ color: "var(--text-main)" }}>
+                    {pet.name}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span
+                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                      style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
+                    >
+                      {getPetSpeciesLabel(pet)}{pet.breed ? ` · ${pet.breed}` : ""}
+                    </span>
+                    {(pet.sex || pet.weight_kg) ? (
+                      <span
+                        className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"
+                        style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                      >
+                        {[pet.sex, pet.weight_kg ? `${pet.weight_kg} kg` : ""].filter(Boolean).join(" · ")}
+                      </span>
+                    ) : null}
+                    {pet.is_sterilized ? (
+                      <span
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                        style={{ background: "rgba(239,159,39,0.12)", color: "#EF9F27" }}
+                      >
+                        Esterilizado
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
-                    <dt style={{ color: "var(--text-muted)" }}>Sexo</dt>
-                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{pet.sex || "Sin informar"}</dd>
-                  </div>
-                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
-                    <dt style={{ color: "var(--text-muted)" }}>Peso</dt>
-                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{pet.weight_kg ? `${pet.weight_kg} kg` : "Sin informar"}</dd>
-                  </div>
-                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
-                    <dt style={{ color: "var(--text-muted)" }}>Esterilizado</dt>
-                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{pet.is_sterilized ? "Sí" : "No"}</dd>
-                  </div>
-                </dl>
+                  <p className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                    <span>👤</span>
+                    <span>{customer.name}</span>
+                    {customer.phone ? <span>· {customer.phone}</span> : null}
+                  </p>
+                </div>
               </div>
-
-              <div
-                className="rounded-xl border p-3"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-card)",
-                }}
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
-                  Datos del cliente
-                </p>
-                <dl className="mt-3 grid max-w-[440px] gap-2 text-sm">
-                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
-                    <dt style={{ color: "var(--text-muted)" }}>Nombre</dt>
-                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{customer.name}</dd>
-                  </div>
-                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
-                    <dt style={{ color: "var(--text-muted)" }}>Teléfono</dt>
-                    <dd className="font-medium" style={{ color: "var(--text-main)" }}>{customer.phone || "Sin teléfono"}</dd>
-                  </div>
-                  <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
-                    <dt style={{ color: "var(--text-muted)" }}>Email</dt>
-                    <dd className="truncate font-medium" style={{ color: "var(--text-main)" }}>{customer.email || "Sin email"}</dd>
-                  </div>
-                </dl>
+              {/* Botones Editar + PDF */}
+              <div className="flex shrink-0 items-center gap-2">
+                {editingPetId === pet.id ? null : (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEdit(pet.id, validAppointments)}
+                    className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                  >
+                    Editar
+                  </button>
+                )}
+                <a
+                  href={`${BACKEND_URL}/pets/${pet.id}/clinical-pdf?slug=${slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition"
+                  style={{ borderColor: "rgba(29,158,117,0.30)", background: "rgba(29,158,117,0.08)", color: "#1D9E75" }}
+                >
+                  PDF
+                </a>
               </div>
             </div>
 
+            {/* ── Datos de mascota ── */}
+            <div
+              className="mt-4 rounded-xl border p-3"
+              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+            >
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                Datos de mascota
+              </p>
+              <div className="grid grid-cols-2 text-sm">
+                {[
+                  { label: "Especie",      value: getPetSpeciesLabel(pet) },
+                  { label: "Raza",         value: pet.breed || "—" },
+                  { label: "Sexo",         value: pet.sex || "—" },
+                  { label: "Peso",         value: pet.weight_kg ? `${pet.weight_kg} kg` : "—" },
+                  { label: "Esterilizado", value: pet.is_sterilized ? "Sí" : "No" },
+                  { label: "Notas",        value: pet.notes || "—" },
+                ].map((item, idx) => (
+                  <div
+                    key={item.label}
+                    className={`py-2 ${idx % 2 === 0 ? "pr-3" : "pl-3"}`}
+                    style={idx < 4 ? { borderBottom: "0.5px solid var(--border-color)" } : undefined}
+                  >
+                    <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{item.label}</p>
+                    <p className="mt-0.5 font-medium" style={{ color: "var(--text-main)" }}>{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Historial clínico ── */}
             <div className="mt-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
                 Historial clínico
               </p>
             </div>
 
             <div className="mt-3 space-y-3">
-              {validAppointments.filter((appt) => appt.pet_id === pet.id).length === 0 ? (
-                <EmptyState
-                  title="Sin atenciones registradas"
-                  description="Cuando cierres una atención desde Agenda para esta mascota, aparecerá aquí."
-                />
-              ) : (
-                validAppointments
-  .filter((appt) => appt.pet_id === pet.id)
-                  .map((appt, index) => {
-  const isLatest = index === 0;
-
-  return (
-                    !isLatest || editingPetId !== pet.id ? (
-                      <div
-                        key={appt.id}
-                        className="rounded-xl border px-4 py-3"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                        }}
-                      >
-                        <div className="grid gap-3 md:grid-cols-[160px_1fr]">
-                          <div>
-                            
-<p
-  className="text-sm font-semibold"
-  style={{ color: "var(--text-main)" }}
->
-  {formatDateLong(appt.start_at)}
-</p>
-
-<p
-  className="text-xs"
-  style={{ color: "var(--text-muted)" }}
->
-  {appt.service_name_snapshot || "Atención"}
-</p>
-
-                          </div>
-
-                          <div>
-                            <p
-                              className="text-sm font-semibold"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {appt.reason || "Sin motivo registrado"}
-                            </p>
-
-                            <div
-                            className="mt-2 rounded-xl border p-3 text-sm"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-soft)",
-                              color: "var(--text-muted)",
-                            }}
-                          >
-                            <p>
-                              <strong>Notas:</strong>{" "}
-                              {appt.notes || "Sin notas clínicas."}
-                            </p>
-
-                            <p className="mt-2">
-                              <strong>Próximo control:</strong>{" "}
-{appt.next_control_at
-  ? formatDateLong(appt.next_control_at)
-  : "Sin próximo control."}
-                            </p>
-                        </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                    <div
-                      key={appt.id}
-                      className="rounded-2xl border p-4 space-y-3"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
-                      }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p
-                            className="text-sm font-semibold"
-                            style={{ color: "var(--text-main)" }}
-                          >
-                            {appt.service_name_snapshot || "Atención"}
-                          </p>
-
-                          <p
-                            className="text-xs"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            {formatDateLong(appt.start_at)}
-                          </p>
-                        </div>
-                      </div>
-
-                      
-<div className="mt-3 space-y-3">
-                        <input
-                          type="text"
-                          placeholder="Motivo / control realizado"
-                          value={clinicalFormState[appt.id]?.reason ?? ""}
-                          onChange={(e) =>
-                            setClinicalFormState((prev) => ({
-                              ...prev,
-                              [appt.id]: { ...prev[appt.id], reason: e.target.value },
-                            }))
-                          }
-                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-
-                        <textarea
-                          placeholder="Diagnóstico"
-                          value={clinicalFormState[appt.id]?.diagnosis ?? ""}
-                          onChange={(e) =>
-                            setClinicalFormState((prev) => ({
-                              ...prev,
-                              [appt.id]: { ...prev[appt.id], diagnosis: e.target.value },
-                            }))
-                          }
-                          rows={2}
-                          className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-
-                        <textarea
-                          placeholder="Tratamiento indicado"
-                          value={clinicalFormState[appt.id]?.treatment ?? ""}
-                          onChange={(e) =>
-                            setClinicalFormState((prev) => ({
-                              ...prev,
-                              [appt.id]: { ...prev[appt.id], treatment: e.target.value },
-                            }))
-                          }
-                          rows={2}
-                          className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-
-                        <textarea
-                          placeholder="Observaciones / notas clínicas..."
-                          value={clinicalFormState[appt.id]?.notes ?? ""}
-                          onChange={(e) =>
-                            setClinicalFormState((prev) => ({
-                              ...prev,
-                              [appt.id]: { ...prev[appt.id], notes: e.target.value },
-                            }))
-                          }
-                          rows={3}
-                          className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-card)",
-                            color: "var(--text-main)",
-                          }}
-                        />
-
-                        <div className="grid gap-2">
-  <p className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-    Próximo control
-  </p>
-
-  <div className="flex flex-wrap gap-2">
-    {[7, 15, 30, 60].map((days) => {
-      const base = appt.start_at ? new Date(appt.start_at) : new Date();
-      const target = new Date(base.getTime());
-      target.setDate(target.getDate() + days);
-      const targetStr = target.toISOString().slice(0, 10);
-      const isSelected = (clinicalFormState[appt.id]?.controlDate ?? "") === targetStr;
-
-      return (
-      <button
-        key={days}
-        type="button"
-        aria-pressed={isSelected}
-        onClick={() =>
-          setClinicalFormState((prev) => ({
-            ...prev,
-            [appt.id]: { ...prev[appt.id], controlDate: targetStr },
-          }))
-        }
-        className="rounded-full border px-3 py-1 text-xs font-medium transition"
-        style={{
-          borderColor: isSelected ? "rgba(37,99,235,0.72)" : "var(--border-color)",
-          background: isSelected ? "rgba(37,99,235,0.16)" : "transparent",
-          color: isSelected ? "rgb(96 165 250)" : "var(--text-main)",
-        }}
-      >
-        {days} días
-      </button>
-      );
-    })}
-  </div>
-
-  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-    Selecciona fecha de su próximo control.
-  </p>
-
-  <input
-    type="date"
-    value={clinicalFormState[appt.id]?.controlDate ?? ""}
-    onChange={(e) =>
-      setClinicalFormState((prev) => ({
-        ...prev,
-        [appt.id]: { ...prev[appt.id], controlDate: e.target.value },
-      }))
-    }
-    className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-card)",
-      color: "var(--text-main)",
-      colorScheme: "dark",
-    }}
-  />
-</div>
-</div>
-
-                      <div className="mt-4 flex justify-end gap-2">
-                        <button
-  type="button"
-  onClick={() => setEditingPetId(null)}
-  className="rounded-xl border px-4 py-2 text-xs font-medium"
->
-  Cancelar
-</button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const form = clinicalFormState[appt.id];
-                            handleSaveClinical(
-                              appt.id,
-                              form?.reason ?? "",
-                              form?.notes ?? "",
-                              form?.diagnosis ?? "",
-                              form?.treatment ?? "",
-                              form?.reason ?? "",
-                              form?.notes ?? "",
-                              form?.controlDate ?? null
-                            );
-                          }}
-                          disabled={savingClinicalId === appt.id}
-                          className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-                        >
-                          {savingClinicalId === appt.id ? "Guardando..." : "Guardar"}
-                        </button>
-                                            </div>
-                    </div>
-                  )
-  );
-})
-              )}
-            </div>
-
-            {Array.isArray(clinicalNotes[pet.id]) && clinicalNotes[pet.id].length > 0 ? (
-              <div className="mt-5">
-                <p
-                  className="text-xs font-semibold uppercase tracking-[0.14em]"
-                  style={{ color: "var(--text-muted)" }}
+              {!Array.isArray(clinicalNotes[pet.id]) || clinicalNotes[pet.id].length === 0 ? (
+                <div
+                  className="flex flex-col items-center gap-2 rounded-2xl border border-dashed px-4 py-6 text-center"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
                 >
-                  Notas clínicas registradas
-                </p>
-                <div className="mt-3 space-y-3">
-                  {clinicalNotes[pet.id].map((note) => (
+                  <span className="text-2xl">📋</span>
+                  <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>Sin atenciones registradas</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Cuando cierres una atención desde Agenda para esta mascota, aparecerá aquí.
+                  </p>
+                </div>
+              ) : (
+                clinicalNotes[pet.id].map((note) => {
+                  const accentColor =
+                    note.control_type === "Vacuna"          ? "#B4B2A9" :
+                    note.control_type === "Desparasitación" ? "#EF9F27" :
+                    "#1D9E75";
+                  return (
                     <div
                       key={note.id}
-                      className="rounded-xl border px-4 py-3"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
-                      }}
+                      className="overflow-hidden rounded-xl border"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", borderLeftWidth: "3px", borderLeftColor: accentColor }}
                     >
-                      <div className="grid gap-3 md:grid-cols-[160px_1fr]">
-                        <div>
-                          <p
-                            className="text-sm font-semibold"
-                            style={{ color: "var(--text-main)" }}
+                      {/* Header nota */}
+                      <div className="flex items-start justify-between gap-2 px-3 pt-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span
+                            className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                            style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
                           >
-                            {formatDateLong(note.date)}
-                          </p>
-                          {note.control_type ? (
-                            <p
-                              className="mt-1 text-xs"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              {note.control_type}
-                            </p>
-                          ) : null}
-                        </div>
-                        <div className="space-y-1 text-sm">
+                            {note.control_type || "Atención"}
+                          </span>
                           {note.reason ? (
-                            <p style={{ color: "var(--text-muted)" }}>
-                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Motivo:</span>{" "}
+                            <p className="truncate text-[13px] font-medium" style={{ color: "var(--text-main)" }}>
                               {note.reason}
                             </p>
                           ) : null}
-                          {note.diagnosis ? (
-                            <p style={{ color: "var(--text-muted)" }}>
-                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Diagnóstico:</span>{" "}
-                              {note.diagnosis}
-                            </p>
-                          ) : null}
-                          {note.treatment ? (
-                            <p style={{ color: "var(--text-muted)" }}>
-                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Tratamiento:</span>{" "}
-                              {note.treatment}
-                            </p>
-                          ) : null}
-                          {note.observations ? (
-                            <p style={{ color: "var(--text-muted)" }}>
-                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Observaciones:</span>{" "}
-                              {note.observations}
-                            </p>
-                          ) : null}
-                          {note.next_control_at ? (
-                            <p style={{ color: "var(--text-muted)" }}>
-                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Próximo control:</span>{" "}
-                              {formatDateLong(note.next_control_at)}
-                            </p>
-                          ) : null}
                         </div>
+                        <p className="shrink-0 text-xs" style={{ color: "var(--text-muted)" }}>
+                          {formatDateLong(note.date)}
+                        </p>
+                      </div>
+                      {/* Cuerpo */}
+                      <div className="space-y-2 px-3 pb-3 pt-2">
+                        {(note.diagnosis || note.treatment) ? (
+                          <div
+                            className={`grid gap-2 rounded-lg p-2 ${note.diagnosis && note.treatment ? "grid-cols-2" : "grid-cols-1"}`}
+                            style={{ background: "var(--bg-soft)" }}
+                          >
+                            {note.diagnosis ? (
+                              <div>
+                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Diagnóstico</p>
+                                <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.diagnosis}</p>
+                              </div>
+                            ) : null}
+                            {note.treatment ? (
+                              <div>
+                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Tratamiento</p>
+                                <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.treatment}</p>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {note.observations ? (
+                          <div>
+                            <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Observaciones</p>
+                            <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.observations}</p>
+                          </div>
+                        ) : null}
+                        {note.next_control_at ? (
+                          <p className="flex items-center gap-1 text-xs font-medium" style={{ color: "#1D9E75" }}>
+                            <span>📅</span>
+                            <span>{formatDateLong(note.next_control_at)}</span>
+                          </p>
+                        ) : null}
                       </div>
                     </div>
-                  ))}
+                  );
+                })
+              )}
+            </div>
+
+            {/* ── Formulario de edición ── */}
+            {editingPetId === pet.id
+              ? validAppointments.filter((a) => a.pet_id === pet.id).slice(0, 1).map((latestAppt) => (
+                <div
+                  key="edit-form"
+                  className="mt-5 rounded-xl border p-4"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+                >
+                  <p className="mb-3 text-[13px] font-medium" style={{ color: "var(--text-main)" }}>
+                    Editar ficha clínica — {latestAppt.service_name_snapshot || "Atención"}
+                  </p>
+                  <div className="space-y-3">
+                    {[
+                      { key: "reason",    label: "Motivo",      rows: 1,  placeholder: "Control realizado / motivo" },
+                      { key: "diagnosis", label: "Diagnóstico", rows: 2,  placeholder: "Diagnóstico" },
+                      { key: "treatment", label: "Tratamiento", rows: 2,  placeholder: "Tratamiento indicado" },
+                      { key: "notes",     label: "Observaciones", rows: 3, placeholder: "Observaciones / notas clínicas..." },
+                    ].map(({ key, label, rows, placeholder }) => (
+                      <div key={key}>
+                        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                          {label}
+                        </label>
+                        {rows === 1 ? (
+                          <input
+                            type="text"
+                            placeholder={placeholder}
+                            value={(clinicalFormState[latestAppt.id] as any)?.[key] ?? ""}
+                            onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [latestAppt.id]: { ...prev[latestAppt.id], [key]: e.target.value } }))}
+                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                        ) : (
+                          <textarea
+                            rows={rows}
+                            placeholder={placeholder}
+                            value={(clinicalFormState[latestAppt.id] as any)?.[key] ?? ""}
+                            onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [latestAppt.id]: { ...prev[latestAppt.id], [key]: e.target.value } }))}
+                            className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                    {/* Próximo control */}
+                    <div>
+                      <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                        Próximo control
+                      </label>
+                      <div className="mb-2 flex flex-wrap gap-1.5">
+                        {[7, 15, 30, 60].map((days) => {
+                          const base = latestAppt.start_at ? new Date(latestAppt.start_at) : new Date();
+                          const target = new Date(base.getTime());
+                          target.setDate(target.getDate() + days);
+                          const targetStr = target.toISOString().slice(0, 10);
+                          const isSelected = (clinicalFormState[latestAppt.id]?.controlDate ?? "") === targetStr;
+                          return (
+                            <button
+                              key={days}
+                              type="button"
+                              onClick={() => setClinicalFormState((prev) => ({ ...prev, [latestAppt.id]: { ...prev[latestAppt.id], controlDate: targetStr } }))}
+                              className="rounded-full border px-2.5 py-1 text-xs font-medium transition"
+                              style={{
+                                borderColor: isSelected ? "rgba(29,158,117,0.60)" : "var(--border-color)",
+                                background:  isSelected ? "rgba(29,158,117,0.12)" : "transparent",
+                                color:       isSelected ? "#1D9E75" : "var(--text-muted)",
+                              }}
+                            >
+                              +{days}d
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <input
+                        type="date"
+                        value={clinicalFormState[latestAppt.id]?.controlDate ?? ""}
+                        onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [latestAppt.id]: { ...prev[latestAppt.id], controlDate: e.target.value } }))}
+                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }}
+                      />
+                    </div>
+                  </div>
+                  {/* Botones */}
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingPetId(null)}
+                      className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const form = clinicalFormState[latestAppt.id];
+                        handleSaveClinical(latestAppt.id, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.reason ?? "", form?.notes ?? "", form?.controlDate ?? null);
+                      }}
+                      disabled={savingClinicalId === latestAppt.id}
+                      className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{ background: savingClinicalId === latestAppt.id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
+                    >
+                      {savingClinicalId === latestAppt.id ? "Guardando..." : "Guardar"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ))
+              : null}
           </div>
         ) : null}
       </div>
