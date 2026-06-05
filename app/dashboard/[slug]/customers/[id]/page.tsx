@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Panel } from "../../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -212,6 +212,7 @@ function EmptyState({
 
 export default function CustomerDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params?.slug as string;
   const customerId = params?.id as string;
 
@@ -1057,10 +1058,13 @@ const lastValidAppointment = validAppointments[0] || null;
     Editar
   </button>
 
-  <a
-    href={`${BACKEND_URL}/pets/${pet.id}/clinical-pdf?slug=${slug}`}
-    target="_blank"
-    rel="noreferrer"
+  <button
+    type="button"
+    onClick={() =>
+      router.push(
+        `/dashboard/${slug}/customers/${customerId}/clinical-report/${pet.id}`
+      )
+    }
     className="rounded-xl border px-4 py-2 text-center text-xs font-medium transition hover:bg-slate-100"
     style={{
       borderColor: "var(--border-color)",
@@ -1068,7 +1072,7 @@ const lastValidAppointment = validAppointments[0] || null;
     }}
   >
     PDF
-  </a>
+  </button>
 </div>
 </div>
 
@@ -1134,15 +1138,18 @@ const lastValidAppointment = validAppointments[0] || null;
                     Editar
                   </button>
                 )}
-                <a
-                  href={`${BACKEND_URL}/pets/${pet.id}/clinical-pdf?slug=${slug}`}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/${slug}/customers/${customerId}/clinical-report/${pet.id}`
+                    )
+                  }
                   className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition"
                   style={{ borderColor: "rgba(29,158,117,0.30)", background: "rgba(29,158,117,0.08)", color: "#1D9E75" }}
                 >
                   PDF
-                </a>
+                </button>
               </div>
             </div>
 
