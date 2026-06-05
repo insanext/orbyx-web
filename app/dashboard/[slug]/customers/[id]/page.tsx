@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Panel } from "../../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -57,6 +57,8 @@ type Appointment = {
 type BusinessResponse = {
   business?: {
     business_category?: string | null;
+    name?: string | null;
+    logo_url?: string | null;
   };
 };
 
@@ -212,7 +214,6 @@ function EmptyState({
 
 export default function CustomerDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const slug = params?.slug as string;
   const customerId = params?.id as string;
 
@@ -238,6 +239,8 @@ export default function CustomerDetailPage() {
   const [clinicalNotes, setClinicalNotes] = useState<Record<string, ClinicalNote[]>>({});
   const [clinicalFormState, setClinicalFormState] = useState<Record<string, ClinicalFormEntry>>({});
   const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [tenant, setTenant] = useState<{ name: string; logo_url?: string | null } | null>(null);
+  const [printingPetId, setPrintingPetId] = useState<string | null>(null);
 
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
@@ -330,6 +333,10 @@ export default function CustomerDetailPage() {
               .trim()
               .toLowerCase()
           );
+          setTenant({
+            name: String(businessData?.business?.name || slug),
+            logo_url: businessData?.business?.logo_url || null,
+          });
         } catch {
           setBusinessCategory("");
         }
@@ -548,6 +555,202 @@ const lastValidAppointment = validAppointments[0] || null;
       setClinicalMessage("error: " + (err?.message || "No se pudo guardar la ficha clínica."));
     } finally {
       setSavingClinicalId(null);
+    }
+  }
+
+  function buildClinicalReportHTML(
+    tenantName: string,
+    tenantLogoUrl: string | null | undefined,
+    cust: Customer,
+    pet: Pet,
+    notes: ClinicalNote[]
+  ): string {
+    function esc(s: string | null | undefined): string {
+      if (!s) return "";
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    const now = new Date();
+    const emissionDate = (() => {
+      const t = now.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      return t.charAt(0).toUpperCase() + t.slice(1);
+    })();
+    function fmtDate(value?: string | null): string {
+      if (!value) return "—";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" });
+    }
+    function speciesLabel(p: Pet): string {
+      if (p.species_base === "otro") return esc(p.species_custom) || "Otro";
+      return esc(p.species_base) || "—";
+    }
+    function accentColor(ct?: string | null): string {
+      if (ct === "Vacuna") return "#B4B2A9";
+      if (ct === "Desparasitación") return "#EF9F27";
+      return "#1D9E75";
+    }
+    function badgeStyle(ct?: string | null): string {
+      if (ct === "Vacuna") return "background:#f1f5f9;color:#64748b";
+      if (ct === "Desparasitación") return "background:#FAEEDA;color:#854F0B";
+      return "background:#E1F5EE;color:#0F6E56";
+    }
+    function pillStyle(ct?: string | null): string {
+      if (ct === "Vacuna") return "background:#f1f5f9;color:#64748b";
+      return "background:#E1F5EE;color:#0F6E56";
+    }
+
+    const logoHtml = tenantLogoUrl
+      ? `<img src="${esc(tenantLogoUrl)}" alt="Logo" style="height:44px;object-fit:contain;border-radius:6px;" />`
+      : "";
+
+    const petTagsHtml = [
+      `<span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;background:#E1F5EE;color:#0F6E56;">${speciesLabel(pet)}</span>`,
+      (pet.sex || pet.weight_kg)
+        ? `<span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;background:#f1f5f9;color:#64748b;">${[esc(pet.sex), pet.weight_kg ? `${pet.weight_kg} kg` : null].filter(Boolean).join(" · ")}</span>`
+        : "",
+      pet.is_sterilized
+        ? `<span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;background:#FAEEDA;color:#854F0B;">Esterilizado</span>`
+        : "",
+    ].join(" ");
+
+    const notesHtml = notes.length === 0
+      ? `<p style="font-size:13px;color:#94a3b8;text-align:center;padding:24px 0;margin:0;">Sin atenciones registradas.</p>`
+      : notes.map((note, idx) => {
+          const isLast = idx === notes.length - 1;
+          const accent = accentColor(note.control_type);
+          const badge = badgeStyle(note.control_type);
+          const pill = pillStyle(note.control_type);
+          const diagTreat = (note.diagnosis || note.treatment) ? `
+            <div style="display:grid;grid-template-columns:${note.diagnosis && note.treatment ? "1fr 1fr" : "1fr"};gap:16px;margin-bottom:${note.observations || note.next_control_at ? "10px" : "0"};">
+              ${note.diagnosis ? `<div><p style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Diagnóstico</p><p style="font-size:12px;color:#334155;line-height:1.5;margin:0;">${esc(note.diagnosis)}</p></div>` : ""}
+              ${note.treatment ? `<div><p style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Tratamiento</p><p style="font-size:12px;color:#334155;line-height:1.5;margin:0;">${esc(note.treatment)}</p></div>` : ""}
+            </div>` : "";
+          const obs = note.observations ? `
+            <div style="margin-bottom:${note.next_control_at ? "10px" : "0"};">
+              <p style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Observaciones</p>
+              <p style="font-size:12px;color:#334155;line-height:1.5;margin:0;">${esc(note.observations)}</p>
+            </div>` : "";
+          const nextCtrl = note.next_control_at ? `
+            <div style="display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:500;padding:4px 12px;border-radius:99px;${pill}">
+              <span>📅</span>
+              <span>Próximo control: ${fmtDate(note.next_control_at)}${note.next_control_label ? ` · ${esc(note.next_control_label)}` : ""}</span>
+            </div>` : "";
+          return `<div style="border-bottom:${isLast ? "none" : "1px solid #cbd5e1"};padding-bottom:${isLast ? "0" : "20px"};margin-bottom:${isLast ? "0" : "20px"};">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;">
+              <div style="display:flex;align-items:flex-start;gap:10px;">
+                <div style="width:3px;height:40px;border-radius:99px;background:${accent};flex-shrink:0;"></div>
+                <div>
+                  <span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;display:inline-block;margin-bottom:4px;${badge}">${esc(note.control_type) || "Atención"}</span>
+                  ${note.reason ? `<p style="font-size:13px;font-weight:500;color:#0f172a;margin:0;">${esc(note.reason)}</p>` : ""}
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <p style="font-size:12px;font-weight:500;color:#334155;margin:0;">${fmtDate(note.date)}</p>
+              </div>
+            </div>
+            <div style="padding-left:13px;">${diagTreat}${obs}${nextCtrl}</div>
+          </div>`;
+        }).join("");
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ficha clínica — ${esc(pet.name)}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; }
+    @media print {
+      @page { margin: 0; size: A4 portrait; }
+      html, body { margin: 0; padding: 0; background: white; }
+    }
+  </style>
+</head>
+<body>
+  <div style="padding:32px 16px;background:#f1f5f9;">
+    <div style="max-width:760px;margin:0 auto;background:#ffffff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
+      <div style="background:#0F6E56;padding:22px 32px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <p style="font-size:9px;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:4px;">Ficha clínica veterinaria</p>
+          <p style="font-size:20px;font-weight:500;color:#ffffff;margin:0;">${esc(tenantName)}</p>
+        </div>
+        ${logoHtml}
+      </div>
+      <div style="background:#f8fafc;border-bottom:1px solid #cbd5e1;padding:9px 32px;">
+        <span style="font-size:10px;color:#64748b;">Emitida el ${emissionDate}</span>
+      </div>
+      <div style="padding:24px 32px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:24px;">
+          <div>
+            <p style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.16em;margin-bottom:6px;">Cliente</p>
+            <div style="border-bottom:1px solid #cbd5e1;margin-bottom:10px;"></div>
+            <p style="font-size:14px;font-weight:500;color:#0f172a;margin-bottom:6px;">${esc(cust.name) || "—"}</p>
+            <p style="font-size:13px;color:#475569;margin:0;">${esc(cust.phone) || "Sin teléfono"} · ${esc(cust.email) || "Sin email"}</p>
+          </div>
+          <div>
+            <p style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.16em;margin-bottom:6px;">Paciente</p>
+            <div style="border-bottom:1px solid #cbd5e1;margin-bottom:10px;"></div>
+            <p style="font-size:15px;font-weight:500;color:#0f172a;margin-bottom:8px;">${esc(pet.name)}</p>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">${petTagsHtml}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
+              <div>
+                <p style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Raza</p>
+                <p style="font-size:12px;color:#334155;margin:0;">${esc(pet.breed) || "—"}</p>
+              </div>
+              <div>
+                <p style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Responsable</p>
+                <p style="font-size:12px;color:#334155;margin:0;">${esc(cust.name) || "—"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="height:2px;background:#e2e8f0;margin-bottom:24px;"></div>
+        <div>
+          <p style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.16em;margin-bottom:6px;">Historial clínico</p>
+          <div style="border-bottom:1px solid #cbd5e1;margin-bottom:20px;"></div>
+          ${notesHtml}
+        </div>
+        <div style="border-top:2px solid #e2e8f0;margin-top:32px;padding-top:14px;display:flex;justify-content:space-between;">
+          <span style="font-size:10px;color:#94a3b8;">${esc(tenantName)}</span>
+          <span style="font-size:10px;color:#94a3b8;">${emissionDate}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+  }
+
+  async function openPrintReport(pet: Pet) {
+    if (!customer) return;
+    setPrintingPetId(pet.id);
+    try {
+      const res = await fetch(`${BACKEND_URL}/clinical-notes/${slug}?pet_id=${pet.id}&limit=100`);
+      const data = await res.json();
+      const notes: ClinicalNote[] = Array.isArray(data?.notes) ? data.notes : [];
+      notes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const html = buildClinicalReportHTML(
+        tenant?.name || slug,
+        tenant?.logo_url,
+        customer,
+        pet,
+        notes
+      );
+      const newWindow = window.open("", "_blank");
+      if (!newWindow) return;
+      newWindow.document.write(html);
+      newWindow.document.close();
+      newWindow.focus();
+      if (newWindow.document.readyState === "complete") {
+        newWindow.print();
+      } else {
+        newWindow.addEventListener("load", () => newWindow.print());
+      }
+    } catch {
+      // silencioso
+    } finally {
+      setPrintingPetId(null);
     }
   }
 
@@ -1060,18 +1263,15 @@ const lastValidAppointment = validAppointments[0] || null;
 
   <button
     type="button"
-    onClick={() =>
-      router.push(
-        `/dashboard/${slug}/customers/${customerId}/clinical-report/${pet.id}`
-      )
-    }
-    className="rounded-xl border px-4 py-2 text-center text-xs font-medium transition hover:bg-slate-100"
+    onClick={() => openPrintReport(pet)}
+    disabled={printingPetId === pet.id}
+    className="rounded-xl border px-4 py-2 text-center text-xs font-medium transition hover:bg-slate-100 disabled:opacity-60"
     style={{
       borderColor: "var(--border-color)",
       color: "var(--text-main)",
     }}
   >
-    PDF
+    {printingPetId === pet.id ? "Cargando..." : "PDF"}
   </button>
 </div>
 </div>
@@ -1140,15 +1340,12 @@ const lastValidAppointment = validAppointments[0] || null;
                 )}
                 <button
                   type="button"
-                  onClick={() =>
-                    router.push(
-                      `/dashboard/${slug}/customers/${customerId}/clinical-report/${pet.id}`
-                    )
-                  }
-                  className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition"
+                  onClick={() => openPrintReport(pet)}
+                  disabled={printingPetId === pet.id}
+                  className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:opacity-60"
                   style={{ borderColor: "rgba(29,158,117,0.30)", background: "rgba(29,158,117,0.08)", color: "#1D9E75" }}
                 >
-                  PDF
+                  {printingPetId === pet.id ? "Cargando..." : "PDF"}
                 </button>
               </div>
             </div>
