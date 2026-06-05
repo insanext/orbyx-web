@@ -365,9 +365,26 @@ export default function CustomerDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "No se pudo actualizar");
-      if (data?.pet) {
-        setPets((prev) => prev.map((p) => (p.id === petId ? data.pet : p)));
-      }
+      // Actualizar estado local: preferir la respuesta del servidor,
+      // con fallback a los valores del formulario si el backend no devuelve el objeto.
+      setPets((prev) =>
+        prev.map((p) => {
+          if (p.id !== petId) return p;
+          const updated = data?.pet ?? {
+            ...p,
+            name: editPetForm.name,
+            species_base: editPetForm.species_base,
+            species_custom:
+              editPetForm.species_base === "otro" ? editPetForm.species_custom : "",
+            breed: editPetForm.breed,
+            sex: editPetForm.sex,
+            weight_kg: editPetForm.weight_kg ? Number(editPetForm.weight_kg) : null,
+            is_sterilized: editPetForm.is_sterilized,
+            notes: editPetForm.notes,
+          };
+          return updated;
+        })
+      );
       setEditingPetDataId(null);
     } catch (err: any) {
       setPetError(err?.message || "Error actualizando mascota");
@@ -1356,34 +1373,23 @@ const lastValidAppointment = validAppointments[0] || null;
                               style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
                             >
                               {/* Top header */}
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-start gap-3">
-                                  <div
-                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
-                                    style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)" }}
-                                  >
-                                    {pet.species_base === "perro" ? "🐕" : pet.species_base === "gato" ? "🐈" : "🐾"}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-[15px] font-medium" style={{ color: "var(--text-main)" }}>
-                                      {pet.name}
-                                    </p>
-                                    <p className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--text-muted)" }}>
-                                      <span>👤</span>
-                                      <span>{customer.name}</span>
-                                      {customer.phone ? <span>· {customer.phone}</span> : null}
-                                    </p>
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => openPrintReport(pet)}
-                                  disabled={printingPetId === pet.id}
-                                  className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:opacity-60"
-                                  style={{ borderColor: "rgba(29,158,117,0.30)", background: "rgba(29,158,117,0.08)", color: "#1D9E75" }}
+                              <div className="flex items-start gap-3">
+                                <div
+                                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
+                                  style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)" }}
                                 >
-                                  {printingPetId === pet.id ? "Cargando..." : "PDF"}
-                                </button>
+                                  {pet.species_base === "perro" ? "🐕" : pet.species_base === "gato" ? "🐈" : "🐾"}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[15px] font-medium" style={{ color: "var(--text-main)" }}>
+                                    {pet.name}
+                                  </p>
+                                  <p className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                                    <span>👤</span>
+                                    <span>{customer.name}</span>
+                                    {customer.phone ? <span>· {customer.phone}</span> : null}
+                                  </p>
+                                </div>
                               </div>
 
                               {/* ── Sección A: Datos de la mascota ── */}
@@ -1599,7 +1605,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                       <button
                                         type="button"
                                         onClick={() => setEditingPetDataId(null)}
-                                        className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+                                        className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700"
                                         style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                       >
                                         Cancelar
@@ -1608,7 +1614,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                         type="button"
                                         onClick={() => handleUpdatePet(pet.id)}
                                         disabled={savingPet}
-                                        className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-60"
+                                        className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60"
                                         style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
                                       >
                                         {savingPet ? "Guardando..." : "Guardar cambios"}
@@ -1874,7 +1880,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                   <button
                                                     type="button"
                                                     onClick={() => setEditingNoteId(null)}
-                                                    className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+                                                    className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700"
                                                     style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                                   >
                                                     Cancelar
@@ -1895,7 +1901,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                       );
                                                     }}
                                                     disabled={savingClinicalId === note.appointment_id}
-                                                    className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-60"
+                                                    className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60"
                                                     style={{
                                                       background:
                                                         savingClinicalId === note.appointment_id
