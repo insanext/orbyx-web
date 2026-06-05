@@ -139,6 +139,10 @@ export default function DashboardLayout({
   const params = useParams();
   const pathname = usePathname();
   const router = useRouter();
+
+  if (pathname?.includes("/clinical-report/")) {
+    return <>{children}</>;
+  }
   const { theme, toggleTheme, mounted } = useTheme();
 
   const slug =

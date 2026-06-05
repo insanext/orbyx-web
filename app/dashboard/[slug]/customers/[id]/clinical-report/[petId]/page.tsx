@@ -236,7 +236,7 @@ export default function ClinicalReportPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f1f5f9", paddingBottom: 48 }}>
+    <div style={{ background: "#f1f5f9", paddingBottom: 48 }}>
       {/* ── Barra de acción (solo en pantalla) ── */}
       <div
         className="no-print"
@@ -858,11 +858,11 @@ export default function ClinicalReportPage() {
             padding: 0 !important;
             margin: 0 !important;
             min-height: unset !important;
+            height: auto !important;
           }
           .report-container {
             box-shadow: none !important;
             margin: 0 !important;
-            padding: 0 !important;
             max-width: 100% !important;
             width: 100% !important;
             border-radius: 0 !important;
