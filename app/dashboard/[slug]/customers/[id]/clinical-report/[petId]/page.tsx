@@ -841,12 +841,14 @@ export default function ClinicalReportPage() {
         @media print {
           @page {
             margin: 0;
-            size: A4;
+            size: A4 portrait;
           }
           html, body {
-            margin: 0;
-            padding: 0;
+            height: auto !important;
+            overflow: visible !important;
             background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           .no-print {
             display: none !important;
@@ -855,10 +857,12 @@ export default function ClinicalReportPage() {
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
+            min-height: unset !important;
           }
           .report-container {
             box-shadow: none !important;
             margin: 0 !important;
+            padding: 0 !important;
             max-width: 100% !important;
             width: 100% !important;
             border-radius: 0 !important;
