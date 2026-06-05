@@ -242,6 +242,23 @@ export default function CustomerDetailPage() {
   const [tenant, setTenant] = useState<{ name: string; logo_url?: string | null } | null>(null);
   const [printingPetId, setPrintingPetId] = useState<string | null>(null);
 
+  // Pendiente 1: toggle agregar mascota
+  const [showPetForm, setShowPetForm] = useState(false);
+  // Sección A: edición de datos de mascota
+  const [editingPetDataId, setEditingPetDataId] = useState<string | null>(null);
+  const [editPetForm, setEditPetForm] = useState<PetFormState>({
+    name: "",
+    species_base: "perro",
+    species_custom: "",
+    breed: "",
+    sex: "",
+    weight_kg: "",
+    is_sterilized: false,
+    notes: "",
+  });
+  // Sección C: edición inline de nota clínica
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
     species_base: "perro",
@@ -300,6 +317,63 @@ export default function CustomerDetailPage() {
       },
     }));
     setEditingPetId(petId);
+  }
+
+  function handleOpenNoteEdit(note: ClinicalNote) {
+    if (!note.appointment_id) return;
+    const formKey = note.appointment_id;
+    if (editingNoteId === note.id) {
+      setEditingNoteId(null);
+      return;
+    }
+    setClinicalFormState((prev) => ({
+      ...prev,
+      [formKey]: {
+        reason: note.reason || "",
+        notes: note.observations || "",
+        diagnosis: note.diagnosis || "",
+        treatment: note.treatment || "",
+        controlDate: note.next_control_at
+          ? new Date(note.next_control_at).toISOString().slice(0, 10)
+          : "",
+        controlType: note.control_type || "",
+      },
+    }));
+    setEditingNoteId(note.id);
+  }
+
+  async function handleUpdatePet(petId: string) {
+    if (!editPetForm.name.trim()) return;
+    try {
+      setSavingPet(true);
+      setPetError("");
+      const res = await fetch(`${BACKEND_URL}/pets/${petId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug,
+          name: editPetForm.name,
+          species_base: editPetForm.species_base,
+          species_custom:
+            editPetForm.species_base === "otro" ? editPetForm.species_custom : "",
+          breed: editPetForm.breed,
+          sex: editPetForm.sex,
+          weight_kg: editPetForm.weight_kg ? Number(editPetForm.weight_kg) : null,
+          is_sterilized: editPetForm.is_sterilized,
+          notes: editPetForm.notes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "No se pudo actualizar");
+      if (data?.pet) {
+        setPets((prev) => prev.map((p) => (p.id === petId ? data.pet : p)));
+      }
+      setEditingPetDataId(null);
+    } catch (err: any) {
+      setPetError(err?.message || "Error actualizando mascota");
+    } finally {
+      setSavingPet(false);
+    }
   }
 
   useEffect(() => {
@@ -458,6 +532,7 @@ export default function CustomerDetailPage() {
         notes: "",
       });
 
+      setShowPetForm(false);
       setPetSuccess("Mascota creada correctamente.");
 
       setTimeout(() => {
@@ -547,6 +622,7 @@ const lastValidAppointment = validAppointments[0] || null;
 
       setClinicalMessage("success: Ficha clínica guardada correctamente.");
       setEditingPetId(null);
+      setEditingNoteId(null);
 
       setTimeout(() => {
         setClinicalMessage("");
@@ -780,12 +856,8 @@ const lastValidAppointment = validAppointments[0] || null;
         </Panel>
       ) : (
 
-
-
         <div className="grid gap-4 xl:grid-cols-[1.45fr_0.8fr]">
           <div className={`space-y-4 ${isVeterinaria ? "xl:col-span-2" : ""}`}>
-            
-
 
 <div
   className="rounded-3xl p-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
@@ -887,701 +959,969 @@ const lastValidAppointment = validAppointments[0] || null;
               </div>
             ) : null}
 
-
-
             {isVeterinaria && activeVetTab === "pets" ? (
               <Panel
                 title="Mascotas"
-                description="Agrega mascotas del cliente y construye una ficha veterinaria liviana."
+                description="Mascotas registradas y ficha veterinaria del cliente."
               >
-                <form
-                  onSubmit={handleCreatePet}
-                  className="mb-6 rounded-2xl border p-4"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background:
-                      "linear-gradient(180deg, rgba(37,99,235,0.05), var(--bg-soft))",
-                  }}
-                >
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <div>
-                      <label
-                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Nombre
-                      </label>
-                      <input
-                        type="text"
-                        value={petForm.name}
-                        onChange={(e) =>
-                          setPetForm((prev) => ({
-                            ...prev,
-                            name: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                          color: "var(--text-main)",
-                        }}
-                        placeholder="Ej: Luna"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Tipo
-                      </label>
-                      <select
-                        value={petForm.species_base}
-                        onChange={(e) =>
-                          setPetForm((prev) => ({
-                            ...prev,
-                            species_base: e.target.value as
-                              | "perro"
-                              | "gato"
-                              | "otro",
-                          }))
-                        }
-                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                          color: "var(--text-main)",
-                        }}
-                      >
-                        <option value="perro">Perro</option>
-                        <option value="gato">Gato</option>
-                        <option value="otro">Otro</option>
-                      </select>
-                    </div>
-
-                    {petForm.species_base === "otro" ? (
-                      <div>
-                        <label
-                          className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          Especificar tipo
-                        </label>
-                        <input
-                          type="text"
-                          value={petForm.species_custom}
-                          onChange={(e) =>
-                            setPetForm((prev) => ({
-                              ...prev,
-                              species_custom: e.target.value,
-                            }))
+                {/* ── Botón toggle agregar mascota ── */}
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPetForm((prev) => !prev);
+                      setPetError("");
+                    }}
+                    className="rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200"
+                    style={
+                      showPetForm
+                        ? {
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-muted)",
                           }
-                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                        : {
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }
+                    }
+                  >
+                    {showPetForm ? "✕ Cancelar" : "＋ Agregar mascota"}
+                  </button>
+                </div>
+
+                {/* ── Formulario agregar mascota (colapsable) ── */}
+                <div
+                  className="overflow-hidden transition-all duration-200 ease-in-out"
+                  style={{ maxHeight: showPetForm ? "600px" : "0" }}
+                >
+                  <div className="mt-3">
+                    <form
+                      onSubmit={handleCreatePet}
+                      className="rounded-2xl border p-4"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background:
+                          "linear-gradient(180deg, rgba(37,99,235,0.05), var(--bg-soft))",
+                      }}
+                    >
+                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <div>
+                          <label
+                            className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Nombre
+                          </label>
+                          <input
+                            type="text"
+                            value={petForm.name}
+                            onChange={(e) =>
+                              setPetForm((prev) => ({ ...prev, name: e.target.value }))
+                            }
+                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                            placeholder="Ej: Luna"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Tipo
+                          </label>
+                          <select
+                            value={petForm.species_base}
+                            onChange={(e) =>
+                              setPetForm((prev) => ({
+                                ...prev,
+                                species_base: e.target.value as "perro" | "gato" | "otro",
+                              }))
+                            }
+                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            <option value="perro">Perro</option>
+                            <option value="gato">Gato</option>
+                            <option value="otro">Otro</option>
+                          </select>
+                        </div>
+
+                        {petForm.species_base === "otro" ? (
+                          <div>
+                            <label
+                              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Especificar tipo
+                            </label>
+                            <input
+                              type="text"
+                              value={petForm.species_custom}
+                              onChange={(e) =>
+                                setPetForm((prev) => ({ ...prev, species_custom: e.target.value }))
+                              }
+                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
+                              placeholder="Ej: conejo"
+                              required
+                            />
+                          </div>
+                        ) : null}
+
+                        <div>
+                          <label
+                            className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Raza
+                          </label>
+                          <input
+                            type="text"
+                            value={petForm.breed}
+                            onChange={(e) =>
+                              setPetForm((prev) => ({ ...prev, breed: e.target.value }))
+                            }
+                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                            placeholder="Ej: Labrador"
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Sexo
+                          </label>
+                          <select
+                            value={petForm.sex}
+                            onChange={(e) =>
+                              setPetForm((prev) => ({ ...prev, sex: e.target.value }))
+                            }
+                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            <option value="">Seleccionar</option>
+                            <option value="macho">Macho</option>
+                            <option value="hembra">Hembra</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label
+                            className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Peso (kg)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            value={petForm.weight_kg}
+                            onChange={(e) =>
+                              setPetForm((prev) => ({ ...prev, weight_kg: e.target.value }))
+                            }
+                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                            placeholder="Ej: 12.5"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
+                        <label
+                          className="flex items-center gap-3 rounded-xl border px-3 py-3 text-sm"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-card)",
                             color: "var(--text-main)",
                           }}
-                          placeholder="Ej: conejo"
-                          required
-                        />
-                      </div>
-                    ) : null}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={petForm.is_sterilized}
+                            onChange={(e) =>
+                              setPetForm((prev) => ({ ...prev, is_sterilized: e.target.checked }))
+                            }
+                          />
+                          Esterilizado
+                        </label>
 
-
-
-                    <div>
-                      <label
-                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Raza
-                      </label>
-                      <input
-                        type="text"
-                        value={petForm.breed}
-                        onChange={(e) =>
-                          setPetForm((prev) => ({
-                            ...prev,
-                            breed: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                          color: "var(--text-main)",
-                        }}
-                        placeholder="Ej: Labrador"
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Sexo
-                      </label>
-                      <select
-                        value={petForm.sex}
-                        onChange={(e) =>
-                          setPetForm((prev) => ({
-                            ...prev,
-                            sex: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                          color: "var(--text-main)",
-                        }}
-                      >
-                        <option value="">Seleccionar</option>
-                        <option value="macho">Macho</option>
-                        <option value="hembra">Hembra</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label
-                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Peso (kg)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={petForm.weight_kg}
-                        onChange={(e) =>
-                          setPetForm((prev) => ({
-                            ...prev,
-                            weight_kg: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                          color: "var(--text-main)",
-                        }}
-                        placeholder="Ej: 12.5"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
-                    <label
-                      className="flex items-center gap-3 rounded-xl border px-3 py-3 text-sm"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-card)",
-                        color: "var(--text-main)",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={petForm.is_sterilized}
-                        onChange={(e) =>
-                          setPetForm((prev) => ({
-                            ...prev,
-                            is_sterilized: e.target.checked,
-                          }))
-                        }
-                      />
-                      Esterilizado
-                    </label>
-
-                    <div>
-                      <label
-                        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Notas
-                      </label>
-                      <textarea
-                        value={petForm.notes}
-                        onChange={(e) =>
-                          setPetForm((prev) => ({
-                            ...prev,
-                            notes: e.target.value,
-                          }))
-                        }
-                        className="min-h-[110px] w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                          color: "var(--text-main)",
-                        }}
-                        placeholder="Notas rápidas de la mascota"
-                      />
-                    </div>
-                  </div>
-
-                  {petError ? (
-                    <div
-                      className="mt-4 rounded-xl border px-3 py-2 text-sm"
-                      style={{
-                        borderColor: "rgba(244,63,94,0.28)",
-                        background: "rgba(244,63,94,0.08)",
-                        color: "#be123c",
-                      }}
-                    >
-                      {petError}
-                    </div>
-                  ) : null}
-
-                  {petSuccess ? (
-                    <div
-                      className="mt-4 rounded-xl border px-3 py-2 text-sm"
-                      style={{
-                        borderColor: "rgba(16,185,129,0.28)",
-                        background: "rgba(16,185,129,0.08)",
-                        color: "#047857",
-                      }}
-                    >
-                      {petSuccess}
-                    </div>
-                  ) : null}
-
-                  <div className="mt-4">
-                    <button
-                      type="submit"
-                      disabled={savingPet}
-                      className="rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                      }}
-                    >
-                      {savingPet ? "Guardando..." : "Agregar mascota"}
-                    </button>
-                  </div>
-                </form>
-
-
-
-
-{pets.length === 0 ? (
-  <EmptyState
-    title="Sin mascotas todavía"
-    description="Agrega la primera mascota del cliente."
-  />
-) : (
-  <div className="space-y-4">
-    {pets.map((pet) => (
-      <div
-        key={pet.id}
-        className="rounded-2xl border p-3 sm:p-4"
-        style={{
-          borderColor: "var(--border-color)",
-          background: "var(--bg-card)",
-        }}
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="h-16 w-16 rounded-full bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
-          🐾
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p
-            className="text-lg font-semibold"
-            style={{ color: "var(--text-main)" }}
-          >
-            {pet.name}
-          </p>
-
-          <p
-            className="text-sm"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {getPetSpeciesLabel(pet)}
-            {pet.breed ? ` · ${pet.breed}` : ""}
-            {pet.weight_kg ? ` · ${pet.weight_kg} kg` : ""}
-          </p>
-
-          <p
-            className="mt-1 text-xs"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {pet.is_sterilized ? "Esterilizado" : "No esterilizado"}
-          </p>
-
-          {pet.notes ? (
-            <p
-              className="mt-2 text-xs italic"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {pet.notes}
-            </p>
-          ) : null}
-        </div>
-
-<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-  <button
-    type="button"
-    onClick={() => {
-      const newId = viewingPetId === pet.id ? null : pet.id;
-      if (newId && !clinicalNotes[newId]) {
-        loadClinicalNotes(newId);
-      }
-      setViewingPetId(newId);
-      setEditingPetId(null);
-    }}
-    className="rounded-xl px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
-    style={{
-      background:
-        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-    }}
-  >
-    {viewingPetId === pet.id ? "Cerrar ficha" : "Ver ficha"}
-  </button>
-
-  <button
-    type="button"
-    onClick={() => {
-      if (!clinicalNotes[pet.id]) {
-        loadClinicalNotes(pet.id);
-      }
-      setViewingPetId(pet.id);
-      handleOpenEdit(pet.id, validAppointments);
-    }}
-    className="rounded-xl border px-4 py-2 text-xs font-medium transition hover:bg-slate-100"
-    style={{
-      borderColor: "var(--border-color)",
-      color: "var(--text-main)",
-    }}
-  >
-    Editar
-  </button>
-
-  <button
-    type="button"
-    onClick={() => openPrintReport(pet)}
-    disabled={printingPetId === pet.id}
-    className="rounded-xl border px-4 py-2 text-center text-xs font-medium transition hover:bg-slate-100 disabled:opacity-60"
-    style={{
-      borderColor: "var(--border-color)",
-      color: "var(--text-main)",
-    }}
-  >
-    {printingPetId === pet.id ? "Cargando..." : "PDF"}
-  </button>
-</div>
-</div>
-
-
-        {viewingPetId === pet.id ? (
-          <div
-            className="mt-4 rounded-2xl border p-4 sm:p-5"
-            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
-          >
-            {/* ── Header mascota ── */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
-                  style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)" }}
-                >
-                  {pet.species_base === "perro" ? "🐕" : pet.species_base === "gato" ? "🐈" : "🐾"}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[15px] font-medium" style={{ color: "var(--text-main)" }}>
-                    {pet.name}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span
-                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
-                      style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
-                    >
-                      {getPetSpeciesLabel(pet)}{pet.breed ? ` · ${pet.breed}` : ""}
-                    </span>
-                    {(pet.sex || pet.weight_kg) ? (
-                      <span
-                        className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"
-                        style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
-                      >
-                        {[pet.sex, pet.weight_kg ? `${pet.weight_kg} kg` : ""].filter(Boolean).join(" · ")}
-                      </span>
-                    ) : null}
-                    {pet.is_sterilized ? (
-                      <span
-                        className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
-                        style={{ background: "rgba(239,159,39,0.12)", color: "#EF9F27" }}
-                      >
-                        Esterilizado
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--text-muted)" }}>
-                    <span>👤</span>
-                    <span>{customer.name}</span>
-                    {customer.phone ? <span>· {customer.phone}</span> : null}
-                  </p>
-                </div>
-              </div>
-              {/* Botones Editar + PDF */}
-              <div className="flex shrink-0 items-center gap-2">
-                {editingPetId === pet.id ? null : (
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEdit(pet.id, validAppointments)}
-                    className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                  >
-                    Editar
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => openPrintReport(pet)}
-                  disabled={printingPetId === pet.id}
-                  className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:opacity-60"
-                  style={{ borderColor: "rgba(29,158,117,0.30)", background: "rgba(29,158,117,0.08)", color: "#1D9E75" }}
-                >
-                  {printingPetId === pet.id ? "Cargando..." : "PDF"}
-                </button>
-              </div>
-            </div>
-
-            {/* ── Datos de mascota ── */}
-            <div
-              className="mt-4 rounded-xl border p-3"
-              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
-            >
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
-                Datos de mascota
-              </p>
-              <div className="grid grid-cols-2 text-sm">
-                {[
-                  { label: "Especie",      value: getPetSpeciesLabel(pet) },
-                  { label: "Raza",         value: pet.breed || "—" },
-                  { label: "Sexo",         value: pet.sex || "—" },
-                  { label: "Peso",         value: pet.weight_kg ? `${pet.weight_kg} kg` : "—" },
-                  { label: "Esterilizado", value: pet.is_sterilized ? "Sí" : "No" },
-                  { label: "Notas",        value: pet.notes || "—" },
-                ].map((item, idx) => (
-                  <div
-                    key={item.label}
-                    className={`py-2 ${idx % 2 === 0 ? "pr-3" : "pl-3"}`}
-                    style={idx < 4 ? { borderBottom: "0.5px solid var(--border-color)" } : undefined}
-                  >
-                    <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{item.label}</p>
-                    <p className="mt-0.5 font-medium" style={{ color: "var(--text-main)" }}>{item.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Historial clínico ── */}
-            <div className="mt-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
-                Historial clínico
-              </p>
-            </div>
-
-            <div className="mt-3 space-y-3">
-              {!Array.isArray(clinicalNotes[pet.id]) || clinicalNotes[pet.id].length === 0 ? (
-                <div
-                  className="flex flex-col items-center gap-2 rounded-2xl border border-dashed px-4 py-6 text-center"
-                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
-                >
-                  <span className="text-2xl">📋</span>
-                  <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>Sin atenciones registradas</p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    Cuando cierres una atención desde Agenda para esta mascota, aparecerá aquí.
-                  </p>
-                </div>
-              ) : (
-                clinicalNotes[pet.id].map((note) => {
-                  const accentColor =
-                    note.control_type === "Vacuna"          ? "#B4B2A9" :
-                    note.control_type === "Desparasitación" ? "#EF9F27" :
-                    "#1D9E75";
-                  return (
-                    <div
-                      key={note.id}
-                      className="overflow-hidden rounded-xl border"
-                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", borderLeftWidth: "3px", borderLeftColor: accentColor }}
-                    >
-                      {/* Header nota */}
-                      <div className="flex items-start justify-between gap-2 px-3 pt-3">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span
-                            className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
-                            style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
+                        <div>
+                          <label
+                            className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                            style={{ color: "var(--text-muted)" }}
                           >
-                            {note.control_type || "Atención"}
-                          </span>
-                          {note.reason ? (
-                            <p className="truncate text-[13px] font-medium" style={{ color: "var(--text-main)" }}>
-                              {note.reason}
-                            </p>
+                            Notas
+                          </label>
+                          <textarea
+                            value={petForm.notes}
+                            onChange={(e) =>
+                              setPetForm((prev) => ({ ...prev, notes: e.target.value }))
+                            }
+                            className="min-h-[110px] w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                            placeholder="Notas rápidas de la mascota"
+                          />
+                        </div>
+                      </div>
+
+                      {petError ? (
+                        <div
+                          className="mt-4 rounded-xl border px-3 py-2 text-sm"
+                          style={{
+                            borderColor: "rgba(244,63,94,0.28)",
+                            background: "rgba(244,63,94,0.08)",
+                            color: "#be123c",
+                          }}
+                        >
+                          {petError}
+                        </div>
+                      ) : null}
+
+                      {petSuccess ? (
+                        <div
+                          className="mt-4 rounded-xl border px-3 py-2 text-sm"
+                          style={{
+                            borderColor: "rgba(16,185,129,0.28)",
+                            background: "rgba(16,185,129,0.08)",
+                            color: "#047857",
+                          }}
+                        >
+                          {petSuccess}
+                        </div>
+                      ) : null}
+
+                      <div className="mt-4">
+                        <button
+                          type="submit"
+                          disabled={savingPet}
+                          className="rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                          }}
+                        >
+                          {savingPet ? "Guardando..." : "Agregar mascota"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+
+                {/* ── Lista de mascotas ── */}
+                {pets.length === 0 ? (
+                  <EmptyState
+                    title="Sin mascotas todavía"
+                    description="Agrega la primera mascota del cliente."
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {pets.map((pet) => {
+                      const petNotes = clinicalNotes[pet.id] || [];
+
+                      function noteBadgeStyle(ct?: string | null) {
+                        if (ct === "Vacuna") return { background: "rgba(100,116,139,0.12)", color: "#64748b" };
+                        if (ct === "Desparasitación") return { background: "rgba(239,159,39,0.12)", color: "#EF9F27" };
+                        return { background: "rgba(29,158,117,0.12)", color: "#1D9E75" };
+                      }
+
+                      function noteAccentColor(ct?: string | null) {
+                        if (ct === "Vacuna") return "#B4B2A9";
+                        if (ct === "Desparasitación") return "#EF9F27";
+                        return "#1D9E75";
+                      }
+
+                      return (
+                        <div
+                          key={pet.id}
+                          className="rounded-2xl border p-3 sm:p-4"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                          }}
+                        >
+                          {/* Pet summary row */}
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <div className="h-16 w-16 rounded-full bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
+                              🐾
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className="text-lg font-semibold"
+                                style={{ color: "var(--text-main)" }}
+                              >
+                                {pet.name}
+                              </p>
+                              <p
+                                className="text-sm"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                {getPetSpeciesLabel(pet)}
+                                {pet.breed ? ` · ${pet.breed}` : ""}
+                                {pet.weight_kg ? ` · ${pet.weight_kg} kg` : ""}
+                              </p>
+                              <p
+                                className="mt-1 text-xs"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                {pet.is_sterilized ? "Esterilizado" : "No esterilizado"}
+                              </p>
+                              {pet.notes ? (
+                                <p
+                                  className="mt-2 text-xs italic"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  {pet.notes}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newId = viewingPetId === pet.id ? null : pet.id;
+                                  if (newId && !clinicalNotes[newId]) {
+                                    loadClinicalNotes(newId);
+                                  }
+                                  setViewingPetId(newId);
+                                  setEditingPetDataId(null);
+                                  setEditingNoteId(null);
+                                }}
+                                className="rounded-xl px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+                                style={{
+                                  background:
+                                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                                }}
+                              >
+                                {viewingPetId === pet.id ? "Cerrar ficha" : "Ver ficha"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => openPrintReport(pet)}
+                                disabled={printingPetId === pet.id}
+                                className="rounded-xl border px-4 py-2 text-center text-xs font-medium transition hover:bg-slate-100 disabled:opacity-60"
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  color: "var(--text-main)",
+                                }}
+                              >
+                                {printingPetId === pet.id ? "Cargando..." : "PDF"}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* ── Ficha expandida ── */}
+                          {viewingPetId === pet.id ? (
+                            <div
+                              className="mt-4 rounded-2xl border p-4 sm:p-5"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+                            >
+                              {/* Top header */}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-3">
+                                  <div
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
+                                    style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)" }}
+                                  >
+                                    {pet.species_base === "perro" ? "🐕" : pet.species_base === "gato" ? "🐈" : "🐾"}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-[15px] font-medium" style={{ color: "var(--text-main)" }}>
+                                      {pet.name}
+                                    </p>
+                                    <p className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                                      <span>👤</span>
+                                      <span>{customer.name}</span>
+                                      {customer.phone ? <span>· {customer.phone}</span> : null}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => openPrintReport(pet)}
+                                  disabled={printingPetId === pet.id}
+                                  className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:opacity-60"
+                                  style={{ borderColor: "rgba(29,158,117,0.30)", background: "rgba(29,158,117,0.08)", color: "#1D9E75" }}
+                                >
+                                  {printingPetId === pet.id ? "Cargando..." : "PDF"}
+                                </button>
+                              </div>
+
+                              {/* ── Sección A: Datos de la mascota ── */}
+                              <div
+                                className="mt-4 rounded-xl border p-3"
+                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                              >
+                                {/* Section A header */}
+                                <div className="mb-3 flex items-start justify-between gap-2">
+                                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                                    <span className="text-[14px] font-semibold" style={{ color: "var(--text-main)" }}>
+                                      {pet.name}
+                                    </span>
+                                    <span
+                                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                      style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75" }}
+                                    >
+                                      {getPetSpeciesLabel(pet)}{pet.breed ? ` · ${pet.breed}` : ""}
+                                    </span>
+                                    {(pet.sex || pet.weight_kg) ? (
+                                      <span
+                                        className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"
+                                        style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                                      >
+                                        {[pet.sex, pet.weight_kg ? `${pet.weight_kg} kg` : ""].filter(Boolean).join(" · ")}
+                                      </span>
+                                    ) : null}
+                                    {pet.is_sterilized ? (
+                                      <span
+                                        className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                        style={{ background: "rgba(239,159,39,0.12)", color: "#EF9F27" }}
+                                      >
+                                        Esterilizado
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  {editingPetDataId !== pet.id ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingPetDataId(pet.id);
+                                        setEditPetForm({
+                                          name: pet.name,
+                                          species_base: (pet.species_base as "perro" | "gato" | "otro") || "perro",
+                                          species_custom: pet.species_custom || "",
+                                          breed: pet.breed || "",
+                                          sex: pet.sex || "",
+                                          weight_kg: pet.weight_kg ? String(pet.weight_kg) : "",
+                                          is_sterilized: pet.is_sterilized || false,
+                                          notes: pet.notes || "",
+                                        });
+                                      }}
+                                      className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
+                                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                                    >
+                                      Editar mascota
+                                    </button>
+                                  ) : null}
+                                </div>
+
+                                {/* Read mode */}
+                                <div
+                                  className="overflow-hidden transition-all duration-200 ease-in-out"
+                                  style={{ maxHeight: editingPetDataId === pet.id ? "0" : "400px" }}
+                                >
+                                  <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+                                    {[
+                                      { label: "Especie",      value: getPetSpeciesLabel(pet) },
+                                      { label: "Raza",         value: pet.breed || null },
+                                      { label: "Sexo",         value: pet.sex || null },
+                                      { label: "Peso",         value: pet.weight_kg ? `${pet.weight_kg} kg` : null },
+                                      { label: "Esterilizado", value: pet.is_sterilized ? "Sí" : "No" },
+                                    ].map((item) => (
+                                      <div key={item.label}>
+                                        <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                                          {item.label}
+                                        </p>
+                                        <p
+                                          className="mt-0.5 text-[14px]"
+                                          style={{ color: item.value ? "var(--text-main)" : "var(--text-muted)" }}
+                                        >
+                                          {item.value || "—"}
+                                        </p>
+                                      </div>
+                                    ))}
+                                    <div className="sm:col-span-2">
+                                      <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                                        Notas
+                                      </p>
+                                      <p
+                                        className="mt-0.5 text-[14px]"
+                                        style={{ color: pet.notes ? "var(--text-main)" : "var(--text-muted)" }}
+                                      >
+                                        {pet.notes || "—"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Edit mode */}
+                                <div
+                                  className="overflow-hidden transition-all duration-200 ease-in-out"
+                                  style={{ maxHeight: editingPetDataId === pet.id ? "700px" : "0" }}
+                                >
+                                  <div className="space-y-3 pt-1">
+                                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                      <div>
+                                        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                                          Nombre
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={editPetForm.name}
+                                          onChange={(e) => setEditPetForm((prev) => ({ ...prev, name: e.target.value }))}
+                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                                          Tipo
+                                        </label>
+                                        <select
+                                          value={editPetForm.species_base}
+                                          onChange={(e) => setEditPetForm((prev) => ({ ...prev, species_base: e.target.value as "perro" | "gato" | "otro" }))}
+                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                        >
+                                          <option value="perro">Perro</option>
+                                          <option value="gato">Gato</option>
+                                          <option value="otro">Otro</option>
+                                        </select>
+                                      </div>
+                                      {editPetForm.species_base === "otro" ? (
+                                        <div>
+                                          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                                            Especificar tipo
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={editPetForm.species_custom}
+                                            onChange={(e) => setEditPetForm((prev) => ({ ...prev, species_custom: e.target.value }))}
+                                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                          />
+                                        </div>
+                                      ) : null}
+                                      <div>
+                                        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                                          Raza
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={editPetForm.breed}
+                                          onChange={(e) => setEditPetForm((prev) => ({ ...prev, breed: e.target.value }))}
+                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                                          Sexo
+                                        </label>
+                                        <select
+                                          value={editPetForm.sex}
+                                          onChange={(e) => setEditPetForm((prev) => ({ ...prev, sex: e.target.value }))}
+                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                        >
+                                          <option value="">Seleccionar</option>
+                                          <option value="macho">Macho</option>
+                                          <option value="hembra">Hembra</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                                          Peso (kg)
+                                        </label>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          min="0"
+                                          value={editPetForm.weight_kg}
+                                          onChange={(e) => setEditPetForm((prev) => ({ ...prev, weight_kg: e.target.value }))}
+                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                        />
+                                      </div>
+                                    </div>
+                                    <label
+                                      className="flex items-center gap-3 rounded-xl border px-3 py-3 text-sm"
+                                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={editPetForm.is_sterilized}
+                                        onChange={(e) => setEditPetForm((prev) => ({ ...prev, is_sterilized: e.target.checked }))}
+                                      />
+                                      Esterilizado
+                                    </label>
+                                    <div>
+                                      <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                                        Notas
+                                      </label>
+                                      <textarea
+                                        value={editPetForm.notes}
+                                        onChange={(e) => setEditPetForm((prev) => ({ ...prev, notes: e.target.value }))}
+                                        className="min-h-[80px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                      />
+                                    </div>
+                                    <div className="flex justify-end gap-2 pt-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingPetDataId(null)}
+                                        className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+                                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                      >
+                                        Cancelar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdatePet(pet.id)}
+                                        disabled={savingPet}
+                                        className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-60"
+                                        style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
+                                      >
+                                        {savingPet ? "Guardando..." : "Guardar cambios"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* ── Sección B: Historial clínico ── */}
+                              <div className="mt-5">
+                                <div className="border-t pt-4" style={{ borderColor: "var(--border-color)" }}>
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                                    Historial clínico
+                                  </p>
+                                </div>
+                                <div className="mt-3 space-y-3">
+                                  {!Array.isArray(petNotes) || petNotes.length === 0 ? (
+                                    <div
+                                      className="flex flex-col items-center gap-2 rounded-2xl border border-dashed px-4 py-6 text-center"
+                                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                                    >
+                                      <span className="text-2xl">📋</span>
+                                      <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>Sin atenciones registradas</p>
+                                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                                        Cuando cierres una atención desde Agenda para esta mascota, aparecerá aquí.
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    petNotes.map((note) => {
+                                      const accent = noteAccentColor(note.control_type);
+                                      const badge = noteBadgeStyle(note.control_type);
+                                      const isEditingThisNote = editingNoteId === note.id;
+                                      const apptForNote = note.appointment_id
+                                        ? appointments.find((a) => a.id === note.appointment_id)
+                                        : null;
+                                      const formKey = note.appointment_id || note.id;
+
+                                      return (
+                                        <div key={note.id}>
+                                          {/* Note card */}
+                                          <div
+                                            className="overflow-hidden rounded-xl border transition-all duration-200"
+                                            style={{
+                                              borderColor: isEditingThisNote
+                                                ? "rgba(37,99,235,0.45)"
+                                                : "var(--border-color)",
+                                              background: "var(--bg-card)",
+                                              borderLeftWidth: "3px",
+                                              borderLeftColor: accent,
+                                              boxShadow: isEditingThisNote
+                                                ? "0 0 0 2px rgba(37,99,235,0.10)"
+                                                : "none",
+                                            }}
+                                          >
+                                            {/* Header */}
+                                            <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-3">
+                                              <div className="flex min-w-0 items-center gap-2">
+                                                <span
+                                                  className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                                  style={badge}
+                                                >
+                                                  {note.control_type || "Atención"}
+                                                </span>
+                                                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                                                  {formatDate(note.date)}
+                                                </p>
+                                              </div>
+                                              {note.appointment_id ? (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleOpenNoteEdit(note)}
+                                                  className="shrink-0 rounded-lg border px-2.5 py-1 text-sm font-medium transition"
+                                                  style={{
+                                                    borderColor: "var(--border-color)",
+                                                    background: "transparent",
+                                                    color: "var(--text-muted)",
+                                                  }}
+                                                >
+                                                  {isEditingThisNote ? "Cerrar" : "Editar"}
+                                                </button>
+                                              ) : null}
+                                            </div>
+
+                                            {/* Body */}
+                                            <div className="space-y-2 px-3 pb-3">
+                                              {(note.reason || note.diagnosis || note.treatment || note.observations) ? (
+                                                <div
+                                                  className={`grid gap-2 ${note.diagnosis && note.treatment ? "grid-cols-2" : "grid-cols-1"}`}
+                                                >
+                                                  {note.reason ? (
+                                                    <div className={note.diagnosis && note.treatment ? "col-span-2" : ""}>
+                                                      <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Motivo</p>
+                                                      <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.reason}</p>
+                                                    </div>
+                                                  ) : null}
+                                                  {note.diagnosis ? (
+                                                    <div>
+                                                      <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Diagnóstico</p>
+                                                      <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.diagnosis}</p>
+                                                    </div>
+                                                  ) : null}
+                                                  {note.treatment ? (
+                                                    <div>
+                                                      <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Tratamiento</p>
+                                                      <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.treatment}</p>
+                                                    </div>
+                                                  ) : null}
+                                                  {note.observations ? (
+                                                    <div className="col-span-2">
+                                                      <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Observaciones</p>
+                                                      <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.observations}</p>
+                                                    </div>
+                                                  ) : null}
+                                                </div>
+                                              ) : null}
+                                              {note.next_control_at ? (
+                                                <p className="flex items-center gap-1 text-xs font-medium" style={{ color: "#1D9E75" }}>
+                                                  <span>📅</span>
+                                                  <span>
+                                                    {formatDateLong(note.next_control_at)}
+                                                    {note.next_control_label ? ` · ${note.next_control_label}` : ""}
+                                                  </span>
+                                                </p>
+                                              ) : null}
+                                            </div>
+                                          </div>
+
+                                          {/* Sección C: formulario inline de edición clínica */}
+                                          <div
+                                            className="overflow-hidden transition-all duration-200 ease-in-out"
+                                            style={{ maxHeight: isEditingThisNote ? "900px" : "0" }}
+                                          >
+                                            {isEditingThisNote && note.appointment_id ? (
+                                              <div
+                                                className="mt-2 rounded-xl border p-4"
+                                                style={{
+                                                  borderColor: "rgba(37,99,235,0.25)",
+                                                  background: "var(--bg-soft)",
+                                                }}
+                                              >
+                                                {/* Form header */}
+                                                <div className="mb-3 border-b pb-3" style={{ borderColor: "var(--border-color)" }}>
+                                                  <p className="text-[14px] font-medium" style={{ color: "var(--text-main)" }}>
+                                                    Editando nota clínica
+                                                  </p>
+                                                  <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-muted)" }}>
+                                                    {apptForNote?.service_name_snapshot || "Atención"} · {formatDate(note.date)}
+                                                  </p>
+                                                  <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-muted)" }}>
+                                                    Estás editando la nota de{" "}
+                                                    <span className="font-medium">{pet.name}</span>
+                                                  </p>
+                                                </div>
+
+                                                {/* Fields */}
+                                                <div className="space-y-3">
+                                                  {[
+                                                    { key: "reason",    label: "Motivo",        rows: 1, placeholder: "Control realizado / motivo" },
+                                                    { key: "diagnosis", label: "Diagnóstico",   rows: 2, placeholder: "Diagnóstico" },
+                                                    { key: "treatment", label: "Tratamiento",   rows: 2, placeholder: "Tratamiento indicado" },
+                                                    { key: "notes",     label: "Observaciones", rows: 3, placeholder: "Observaciones / notas clínicas..." },
+                                                  ].map(({ key, label, rows, placeholder }) => (
+                                                    <div key={key}>
+                                                      <label
+                                                        className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]"
+                                                        style={{ color: "var(--text-muted)" }}
+                                                      >
+                                                        {label}
+                                                      </label>
+                                                      {rows === 1 ? (
+                                                        <input
+                                                          type="text"
+                                                          placeholder={placeholder}
+                                                          value={(clinicalFormState[formKey] as any)?.[key] ?? ""}
+                                                          onChange={(e) =>
+                                                            setClinicalFormState((prev) => ({
+                                                              ...prev,
+                                                              [formKey]: { ...prev[formKey], [key]: e.target.value },
+                                                            }))
+                                                          }
+                                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                                        />
+                                                      ) : (
+                                                        <textarea
+                                                          rows={rows}
+                                                          placeholder={placeholder}
+                                                          value={(clinicalFormState[formKey] as any)?.[key] ?? ""}
+                                                          onChange={(e) =>
+                                                            setClinicalFormState((prev) => ({
+                                                              ...prev,
+                                                              [formKey]: { ...prev[formKey], [key]: e.target.value },
+                                                            }))
+                                                          }
+                                                          className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                                        />
+                                                      )}
+                                                    </div>
+                                                  ))}
+
+                                                  {/* Próximo control */}
+                                                  <div>
+                                                    <label
+                                                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]"
+                                                      style={{ color: "var(--text-muted)" }}
+                                                    >
+                                                      Próximo control
+                                                    </label>
+                                                    <div className="mb-2 flex flex-wrap gap-1.5">
+                                                      {[7, 15, 30, 60].map((days) => {
+                                                        const base = note.date ? new Date(note.date) : new Date();
+                                                        const target = new Date(base.getTime());
+                                                        target.setDate(target.getDate() + days);
+                                                        const targetStr = target.toISOString().slice(0, 10);
+                                                        const isSelected =
+                                                          (clinicalFormState[formKey]?.controlDate ?? "") === targetStr;
+                                                        return (
+                                                          <button
+                                                            key={days}
+                                                            type="button"
+                                                            onClick={() =>
+                                                              setClinicalFormState((prev) => ({
+                                                                ...prev,
+                                                                [formKey]: { ...prev[formKey], controlDate: targetStr },
+                                                              }))
+                                                            }
+                                                            className="rounded-full border px-2.5 py-1 text-xs font-medium transition"
+                                                            style={{
+                                                              borderColor: isSelected ? "rgba(29,158,117,0.60)" : "var(--border-color)",
+                                                              background: isSelected ? "rgba(29,158,117,0.12)" : "transparent",
+                                                              color: isSelected ? "#1D9E75" : "var(--text-muted)",
+                                                            }}
+                                                          >
+                                                            +{days}d
+                                                          </button>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                    <input
+                                                      type="date"
+                                                      value={clinicalFormState[formKey]?.controlDate ?? ""}
+                                                      onChange={(e) =>
+                                                        setClinicalFormState((prev) => ({
+                                                          ...prev,
+                                                          [formKey]: { ...prev[formKey], controlDate: e.target.value },
+                                                        }))
+                                                      }
+                                                      className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
+                                                      style={{
+                                                        borderColor: "var(--border-color)",
+                                                        background: "var(--bg-card)",
+                                                        color: "var(--text-main)",
+                                                        colorScheme: "dark",
+                                                      }}
+                                                    />
+                                                  </div>
+                                                </div>
+
+                                                {/* Footer */}
+                                                <div className="mt-4 flex justify-end gap-2">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setEditingNoteId(null)}
+                                                    className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+                                                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                                  >
+                                                    Cancelar
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const form = clinicalFormState[formKey];
+                                                      handleSaveClinical(
+                                                        note.appointment_id!,
+                                                        form?.reason ?? "",
+                                                        form?.notes ?? "",
+                                                        form?.diagnosis ?? "",
+                                                        form?.treatment ?? "",
+                                                        form?.reason ?? "",
+                                                        form?.notes ?? "",
+                                                        form?.controlDate ?? null
+                                                      );
+                                                    }}
+                                                    disabled={savingClinicalId === note.appointment_id}
+                                                    className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-60"
+                                                    style={{
+                                                      background:
+                                                        savingClinicalId === note.appointment_id
+                                                          ? "rgba(37,99,235,0.5)"
+                                                          : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))",
+                                                    }}
+                                                  >
+                                                    {savingClinicalId === note.appointment_id ? "Guardando..." : "Guardar"}
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            ) : null}
+                                          </div>
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           ) : null}
                         </div>
-                        <p className="shrink-0 text-xs" style={{ color: "var(--text-muted)" }}>
-                          {formatDateLong(note.date)}
-                        </p>
-                      </div>
-                      {/* Cuerpo */}
-                      <div className="space-y-2 px-3 pb-3 pt-2">
-                        {(note.diagnosis || note.treatment) ? (
-                          <div
-                            className={`grid gap-2 rounded-lg p-2 ${note.diagnosis && note.treatment ? "grid-cols-2" : "grid-cols-1"}`}
-                            style={{ background: "var(--bg-soft)" }}
-                          >
-                            {note.diagnosis ? (
-                              <div>
-                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Diagnóstico</p>
-                                <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.diagnosis}</p>
-                              </div>
-                            ) : null}
-                            {note.treatment ? (
-                              <div>
-                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Tratamiento</p>
-                                <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.treatment}</p>
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : null}
-                        {note.observations ? (
-                          <div>
-                            <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Observaciones</p>
-                            <p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.observations}</p>
-                          </div>
-                        ) : null}
-                        {note.next_control_at ? (
-                          <p className="flex items-center gap-1 text-xs font-medium" style={{ color: "#1D9E75" }}>
-                            <span>📅</span>
-                            <span>{formatDateLong(note.next_control_at)}</span>
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* ── Formulario de edición ── */}
-            {editingPetId === pet.id
-              ? validAppointments.filter((a) => a.pet_id === pet.id).slice(0, 1).map((latestAppt) => (
-                <div
-                  key="edit-form"
-                  className="mt-5 rounded-xl border p-4"
-                  style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
-                >
-                  <p className="mb-3 text-[13px] font-medium" style={{ color: "var(--text-main)" }}>
-                    Editar ficha clínica — {latestAppt.service_name_snapshot || "Atención"}
-                  </p>
-                  <div className="space-y-3">
-                    {[
-                      { key: "reason",    label: "Motivo",      rows: 1,  placeholder: "Control realizado / motivo" },
-                      { key: "diagnosis", label: "Diagnóstico", rows: 2,  placeholder: "Diagnóstico" },
-                      { key: "treatment", label: "Tratamiento", rows: 2,  placeholder: "Tratamiento indicado" },
-                      { key: "notes",     label: "Observaciones", rows: 3, placeholder: "Observaciones / notas clínicas..." },
-                    ].map(({ key, label, rows, placeholder }) => (
-                      <div key={key}>
-                        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
-                          {label}
-                        </label>
-                        {rows === 1 ? (
-                          <input
-                            type="text"
-                            placeholder={placeholder}
-                            value={(clinicalFormState[latestAppt.id] as any)?.[key] ?? ""}
-                            onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [latestAppt.id]: { ...prev[latestAppt.id], [key]: e.target.value } }))}
-                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                        ) : (
-                          <textarea
-                            rows={rows}
-                            placeholder={placeholder}
-                            value={(clinicalFormState[latestAppt.id] as any)?.[key] ?? ""}
-                            onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [latestAppt.id]: { ...prev[latestAppt.id], [key]: e.target.value } }))}
-                            className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                          />
-                        )}
-                      </div>
-                    ))}
-                    {/* Próximo control */}
-                    <div>
-                      <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
-                        Próximo control
-                      </label>
-                      <div className="mb-2 flex flex-wrap gap-1.5">
-                        {[7, 15, 30, 60].map((days) => {
-                          const base = latestAppt.start_at ? new Date(latestAppt.start_at) : new Date();
-                          const target = new Date(base.getTime());
-                          target.setDate(target.getDate() + days);
-                          const targetStr = target.toISOString().slice(0, 10);
-                          const isSelected = (clinicalFormState[latestAppt.id]?.controlDate ?? "") === targetStr;
-                          return (
-                            <button
-                              key={days}
-                              type="button"
-                              onClick={() => setClinicalFormState((prev) => ({ ...prev, [latestAppt.id]: { ...prev[latestAppt.id], controlDate: targetStr } }))}
-                              className="rounded-full border px-2.5 py-1 text-xs font-medium transition"
-                              style={{
-                                borderColor: isSelected ? "rgba(29,158,117,0.60)" : "var(--border-color)",
-                                background:  isSelected ? "rgba(29,158,117,0.12)" : "transparent",
-                                color:       isSelected ? "#1D9E75" : "var(--text-muted)",
-                              }}
-                            >
-                              +{days}d
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <input
-                        type="date"
-                        value={clinicalFormState[latestAppt.id]?.controlDate ?? ""}
-                        onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [latestAppt.id]: { ...prev[latestAppt.id], controlDate: e.target.value } }))}
-                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
-                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }}
-                      />
-                    </div>
+                      );
+                    })}
                   </div>
-                  {/* Botones */}
-                  <div className="mt-4 flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditingPetId(null)}
-                      className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const form = clinicalFormState[latestAppt.id];
-                        handleSaveClinical(latestAppt.id, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.reason ?? "", form?.notes ?? "", form?.controlDate ?? null);
-                      }}
-                      disabled={savingClinicalId === latestAppt.id}
-                      className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                      style={{ background: savingClinicalId === latestAppt.id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
-                    >
-                      {savingClinicalId === latestAppt.id ? "Guardando..." : "Guardar"}
-                    </button>
-                  </div>
-                </div>
-              ))
-              : null}
-          </div>
-        ) : null}
-      </div>
-    ))}
-  </div>
-)}
+                )}
               </Panel>
             ) : null}
 
@@ -1762,7 +2102,7 @@ const lastValidAppointment = validAppointments[0] || null;
                             </p>
                           ) : null}
 
-                      
+
                         </div>
                       );
                     })}
