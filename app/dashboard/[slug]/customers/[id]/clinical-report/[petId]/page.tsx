@@ -304,7 +304,7 @@ export default function ClinicalReportPage() {
       </div>
 
       {/* ── Reporte ── */}
-      <div style={{ padding: "32px 16px" }}>
+      <div className="report-wrapper" style={{ padding: "32px 16px" }}>
         <div
           className="report-container"
           style={{
@@ -839,10 +839,30 @@ export default function ClinicalReportPage() {
       {/* CSS de impresión */}
       <style>{`
         @media print {
-          .no-print { display: none !important; }
-          body { margin: 0; }
-          .report-container { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; }
-          .note-block:last-child { border-bottom: none; }
+          @page {
+            margin: 0;
+            size: A4;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: white !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .report-wrapper {
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .report-container {
+            box-shadow: none !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            border-radius: 0 !important;
+          }
         }
       `}</style>
     </div>
