@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { apiFetch } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -1556,7 +1557,7 @@ function getSelectedStaffDayWindow(day: Date) {
     try {
       setLoadingBranches(true);
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
       );
       const data = await response.json();
@@ -1613,7 +1614,7 @@ function getSelectedStaffDayWindow(day: Date) {
         active: "true",
       });
 
-      const response = await fetch(`${BACKEND_URL}/staff?${query.toString()}`);
+      const response = await apiFetch(`${BACKEND_URL}/staff?${query.toString()}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -1647,7 +1648,7 @@ function getSelectedStaffDayWindow(day: Date) {
         active: "true",
       });
 
-      const response = await fetch(`${BACKEND_URL}/services?${query.toString()}`);
+      const response = await apiFetch(`${BACKEND_URL}/services?${query.toString()}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -1678,7 +1679,7 @@ function getSelectedStaffDayWindow(day: Date) {
   currentBranchId: string
 ) {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
     );
     const data = await response.json();
@@ -1699,7 +1700,7 @@ function getSelectedStaffDayWindow(day: Date) {
 
   async function loadStaffHours(currentTenantId: string) {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${BACKEND_URL}/staff-hours?tenant_id=${currentTenantId}`
       );
       const data = await response.json();
@@ -1723,7 +1724,7 @@ function getSelectedStaffDayWindow(day: Date) {
   currentBranchId: string
 ) {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${BACKEND_URL}/business-special-dates?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
     );
     const data = await response.json();
@@ -1748,7 +1749,7 @@ function getSelectedStaffDayWindow(day: Date) {
 
   async function loadStaffSpecialDates(currentTenantId: string) {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${BACKEND_URL}/staff-special-dates?tenant_id=${currentTenantId}`
       );
       const data = await response.json();
@@ -1853,7 +1854,7 @@ function getSelectedStaffDayWindow(day: Date) {
         query.set("staff_id", selectedStaffId);
       }
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/appointments/by-range/${slug}?${query.toString()}`
       );
 
@@ -1910,7 +1911,7 @@ async function loadPendingCloseAppointments() {
       query.set("staff_id", selectedStaffId);
     }
 
-    const res = await fetch(
+    const res = await apiFetch(
       `${BACKEND_URL}/appointments/pending-close/${slug}?${query.toString()}`
     );
 
@@ -1938,7 +1939,7 @@ async function loadPendingCloseAppointments() {
       setStatusSaving(true);
       setError("");
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/appointments/${appointmentId}/status`,
         {
           method: "PATCH",
@@ -1995,7 +1996,7 @@ async function loadPendingCloseAppointments() {
       setCloseError("");
       setError("");
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/appointments/${selectedAppointment.id}/close`,
         {
           method: "POST",
@@ -2069,7 +2070,7 @@ next_control_custom_value:
         query.set("staff_id", selectedStaffId);
       }
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/appointments/search/${slug}?${query.toString()}`
       );
 
@@ -2105,7 +2106,7 @@ next_control_custom_value:
       setEditSaving(true);
       setError("");
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/appointments/${selectedAppointment.id}`,
         {
           method: "PATCH",
@@ -2256,7 +2257,7 @@ next_control_custom_value:
           Object.keys(customerData).length > 0 ? customerData : null,
       };
 
-      const res = await fetch("/api/appointments/slot", {
+      const res = await apiFetch("/api/appointments/slot", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2367,7 +2368,7 @@ next_control_custom_value:
 
     async function loadInitial() {
       try {
-        const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+        const businessRes = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
         const businessData: BusinessResponse | { error?: string } =
           await businessRes.json();
 

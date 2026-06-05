@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useParams, useRouter } from "next/navigation";
 import {
@@ -225,7 +226,7 @@ export default function DashboardLayout({
         setLoadingBranches(true);
         setBranchesError("");
 
-        const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+        const businessRes = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
         const businessData: BusinessResponse | { error?: string } =
           await businessRes.json();
 
@@ -245,7 +246,7 @@ export default function DashboardLayout({
         setBusinessName(businessData.business.name || slug);
         setPlan(String(businessData.business.plan_slug || "pro").toLowerCase());
 
-        const branchesRes = await fetch(
+        const branchesRes = await apiFetch(
           `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
         );
         const branchesData = await branchesRes.json();
