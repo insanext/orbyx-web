@@ -76,6 +76,31 @@ type PetFollowup = {
 
 type VetCustomerTab = "pets" | "summary" | "followups";
 
+type ClinicalNote = {
+  id: string;
+  pet_id: string;
+  appointment_id?: string | null;
+  staff_id?: string | null;
+  date: string;
+  control_type?: string | null;
+  reason?: string | null;
+  diagnosis?: string | null;
+  treatment?: string | null;
+  observations?: string | null;
+  next_control_at?: string | null;
+  next_control_label?: string | null;
+  created_at?: string | null;
+};
+
+type ClinicalFormEntry = {
+  reason: string;
+  notes: string;
+  diagnosis: string;
+  treatment: string;
+  controlDate: string;
+  controlType: string;
+};
+
 /* ================= HELPERS ================= */
 
 function formatDate(value?: string | null) {
@@ -209,6 +234,8 @@ export default function CustomerDetailPage() {
   const [viewingPetId, setViewingPetId] = useState<string | null>(null);
   const [activeVetTab, setActiveVetTab] = useState<VetCustomerTab>("pets");
   const [selectedControlPreset, setSelectedControlPreset] = useState<Record<string, number>>({});
+  const [clinicalNotes, setClinicalNotes] = useState<Record<string, ClinicalNote[]>>({});
+  const [clinicalFormState, setClinicalFormState] = useState<Record<string, ClinicalFormEntry>>({});
   const [selectedBranchId, setSelectedBranchId] = useState("");
 
   const [petForm, setPetForm] = useState<PetFormState>({
@@ -228,6 +255,47 @@ export default function CustomerDetailPage() {
   function readStoredBranchId() {
     if (typeof window === "undefined" || !branchStorageKey) return "";
     return localStorage.getItem(branchStorageKey) || "";
+  }
+
+  async function loadClinicalNotes(petId: string) {
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/clinical-notes/${slug}?pet_id=${petId}&limit=50`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      setClinicalNotes((prev) => ({
+        ...prev,
+        [petId]: Array.isArray(data.notes) ? data.notes : [],
+      }));
+    } catch {
+      // silencioso
+    }
+  }
+
+  function handleOpenEdit(petId: string, currentAppointments: Appointment[]) {
+    const latestAppt = currentAppointments.filter((a) => a.pet_id === petId)[0];
+    if (!latestAppt) {
+      setEditingPetId(petId);
+      return;
+    }
+    const existingNote = clinicalNotes[petId]?.[0];
+    setClinicalFormState((prev) => ({
+      ...prev,
+      [latestAppt.id]: {
+        reason: String(latestAppt.reason || existingNote?.reason || ""),
+        notes: String(latestAppt.notes || existingNote?.observations || ""),
+        diagnosis: String(existingNote?.diagnosis || ""),
+        treatment: String(existingNote?.treatment || ""),
+        controlDate: latestAppt.next_control_at
+          ? new Date(latestAppt.next_control_at).toISOString().slice(0, 10)
+          : existingNote?.next_control_at
+            ? new Date(existingNote.next_control_at).toISOString().slice(0, 10)
+            : "",
+        controlType: String(existingNote?.control_type || latestAppt.reason || ""),
+      },
+    }));
+    setEditingPetId(petId);
   }
 
   useEffect(() => {
@@ -415,13 +483,15 @@ const lastValidAppointment = validAppointments[0] || null;
   }, [pets]);
 
   async function handleSaveClinical(
-  appointmentId: string,
-  reason: string,
-  notes: string,
-  control_type?: string,
-  control_note?: string,
-  next_control_at?: string | null
-) {
+    appointmentId: string,
+    reason: string,
+    notes: string,
+    diagnosis: string,
+    treatment: string,
+    control_type?: string,
+    control_note?: string,
+    next_control_at?: string | null
+  ) {
     try {
       setSavingClinicalId(appointmentId);
       setClinicalMessage("");
@@ -430,16 +500,16 @@ const lastValidAppointment = validAppointments[0] || null;
         `${BACKEND_URL}/appointments/${appointmentId}/clinical`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-  reason,
-  notes,
-  control_type,
-  control_note,
-  next_control_at,
-}),
+            reason,
+            notes,
+            diagnosis,
+            treatment,
+            control_type,
+            control_note,
+            next_control_at,
+          }),
         }
       );
 
@@ -455,22 +525,26 @@ const lastValidAppointment = validAppointments[0] || null;
             ? {
                 ...appt,
                 reason: data?.appointment?.reason ?? null,
-notes: data?.appointment?.notes ?? null,
-next_control_at: data?.appointment?.next_control_at ?? null,
+                notes: data?.appointment?.notes ?? null,
+                next_control_at: data?.appointment?.next_control_at ?? null,
               }
             : appt
         )
       );
 
-      setClinicalMessage("Ficha clínica guardada correctamente.");
-	setEditingPetId(null);
+      const apptForPet = appointments.find((a) => a.id === appointmentId);
+      if (apptForPet?.pet_id) {
+        await loadClinicalNotes(apptForPet.pet_id);
+      }
 
+      setClinicalMessage("success: Ficha clínica guardada correctamente.");
+      setEditingPetId(null);
 
       setTimeout(() => {
         setClinicalMessage("");
       }, 2500);
     } catch (err: any) {
-      setClinicalMessage(err?.message || "No se pudo guardar la ficha clínica.");
+      setClinicalMessage("error: " + (err?.message || "No se pudo guardar la ficha clínica."));
     } finally {
       setSavingClinicalId(null);
     }
@@ -482,11 +556,13 @@ next_control_at: data?.appointment?.next_control_at ?? null,
       <div
         className="fixed right-6 top-6 z-50 rounded-xl px-4 py-3 text-sm font-medium shadow-lg"
         style={{
-          background: "rgba(22,163,74,0.95)",
+          background: clinicalMessage.startsWith("error:")
+            ? "rgba(220,38,38,0.95)"
+            : "rgba(22,163,74,0.95)",
           color: "white",
         }}
       >
-        {clinicalMessage}
+        {clinicalMessage.replace(/^(error:|success:)\s*/, "")}
       </div>
     ) : null}
 
@@ -616,7 +692,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
               >
                 <form
                   onSubmit={handleCreatePet}
-                  className="hidden mb-6 rounded-2xl border p-4"
+                  className="mb-6 rounded-2xl border p-4"
                   style={{
                     borderColor: "var(--border-color)",
                     background:
@@ -947,7 +1023,11 @@ next_control_at: data?.appointment?.next_control_at ?? null,
   <button
     type="button"
     onClick={() => {
-      setViewingPetId((prev) => (prev === pet.id ? null : pet.id));
+      const newId = viewingPetId === pet.id ? null : pet.id;
+      if (newId && !clinicalNotes[newId]) {
+        loadClinicalNotes(newId);
+      }
+      setViewingPetId(newId);
       setEditingPetId(null);
     }}
     className="rounded-xl px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
@@ -962,8 +1042,11 @@ next_control_at: data?.appointment?.next_control_at ?? null,
   <button
     type="button"
     onClick={() => {
+      if (!clinicalNotes[pet.id]) {
+        loadClinicalNotes(pet.id);
+      }
       setViewingPetId(pet.id);
-      setEditingPetId(pet.id);
+      handleOpenEdit(pet.id, validAppointments);
     }}
     className="rounded-xl border px-4 py-2 text-xs font-medium transition hover:bg-slate-100"
     style={{
@@ -1020,7 +1103,7 @@ next_control_at: data?.appointment?.next_control_at ?? null,
               {editingPetId === pet.id ? null : (
                 <button
                   type="button"
-                  onClick={() => setEditingPetId(pet.id)}
+                  onClick={() => handleOpenEdit(pet.id, validAppointments)}
                   className="rounded-xl border px-4 py-2 text-xs font-medium transition hover:bg-slate-100"
                   style={{
                     borderColor: "var(--border-color)",
@@ -1199,9 +1282,14 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 <div className="mt-3 space-y-3">
                         <input
                           type="text"
-                          placeholder="Control realizado / motivo"
-                          defaultValue={appt.reason || ""}
-                          id={`pet-reason-${appt.id}`}
+                          placeholder="Motivo / control realizado"
+                          value={clinicalFormState[appt.id]?.reason ?? ""}
+                          onChange={(e) =>
+                            setClinicalFormState((prev) => ({
+                              ...prev,
+                              [appt.id]: { ...prev[appt.id], reason: e.target.value },
+                            }))
+                          }
                           className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
                           style={{
                             borderColor: "var(--border-color)",
@@ -1211,10 +1299,52 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                         />
 
                         <textarea
-                          placeholder="Notas clínicas..."
-                          defaultValue={appt.notes || ""}
-                          id={`pet-notes-${appt.id}`}
-                          className="min-h-[90px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+                          placeholder="Diagnóstico"
+                          value={clinicalFormState[appt.id]?.diagnosis ?? ""}
+                          onChange={(e) =>
+                            setClinicalFormState((prev) => ({
+                              ...prev,
+                              [appt.id]: { ...prev[appt.id], diagnosis: e.target.value },
+                            }))
+                          }
+                          rows={2}
+                          className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        />
+
+                        <textarea
+                          placeholder="Tratamiento indicado"
+                          value={clinicalFormState[appt.id]?.treatment ?? ""}
+                          onChange={(e) =>
+                            setClinicalFormState((prev) => ({
+                              ...prev,
+                              [appt.id]: { ...prev[appt.id], treatment: e.target.value },
+                            }))
+                          }
+                          rows={2}
+                          className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        />
+
+                        <textarea
+                          placeholder="Observaciones / notas clínicas..."
+                          value={clinicalFormState[appt.id]?.notes ?? ""}
+                          onChange={(e) =>
+                            setClinicalFormState((prev) => ({
+                              ...prev,
+                              [appt.id]: { ...prev[appt.id], notes: e.target.value },
+                            }))
+                          }
+                          rows={3}
+                          className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-card)",
@@ -1229,30 +1359,23 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
   <div className="flex flex-wrap gap-2">
     {[7, 15, 30, 60].map((days) => {
-      const isSelected = selectedControlPreset[appt.id] === days;
+      const base = appt.start_at ? new Date(appt.start_at) : new Date();
+      const target = new Date(base.getTime());
+      target.setDate(target.getDate() + days);
+      const targetStr = target.toISOString().slice(0, 10);
+      const isSelected = (clinicalFormState[appt.id]?.controlDate ?? "") === targetStr;
 
       return (
       <button
         key={days}
         type="button"
         aria-pressed={isSelected}
-        onClick={() => {
-          const date = new Date();
-          date.setDate(date.getDate() + days);
-
-          const input = document.getElementById(
-            `pet-control-date-${appt.id}`
-          ) as HTMLInputElement | null;
-
-          if (input) {
-            input.value = date.toISOString().slice(0, 10);
-          }
-
-          setSelectedControlPreset((prev) => ({
+        onClick={() =>
+          setClinicalFormState((prev) => ({
             ...prev,
-            [appt.id]: days,
-          }));
-        }}
+            [appt.id]: { ...prev[appt.id], controlDate: targetStr },
+          }))
+        }
         className="rounded-full border px-3 py-1 text-xs font-medium transition"
         style={{
           borderColor: isSelected ? "rgba(37,99,235,0.72)" : "var(--border-color)",
@@ -1272,18 +1395,12 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 
   <input
     type="date"
-    defaultValue={
-      appt.next_control_at
-        ? new Date(appt.next_control_at).toISOString().slice(0, 10)
-        : ""
-    }
-    id={`pet-control-date-${appt.id}`}
-    onChange={() =>
-      setSelectedControlPreset((prev) => {
-        const next = { ...prev };
-        delete next[appt.id];
-        return next;
-      })
+    value={clinicalFormState[appt.id]?.controlDate ?? ""}
+    onChange={(e) =>
+      setClinicalFormState((prev) => ({
+        ...prev,
+        [appt.id]: { ...prev[appt.id], controlDate: e.target.value },
+      }))
     }
     className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
     style={{
@@ -1308,25 +1425,16 @@ next_control_at: data?.appointment?.next_control_at ?? null,
                         <button
                           type="button"
                           onClick={() => {
-                            const reasonInput = document.getElementById(
-                              `pet-reason-${appt.id}`
-                            ) as HTMLInputElement | null;
-
-                            const notesInput = document.getElementById(
-                              `pet-notes-${appt.id}`
-                            ) as HTMLTextAreaElement | null;
-
-                            const controlDateInput = document.getElementById(
-                              `pet-control-date-${appt.id}`
-                            ) as HTMLInputElement | null;
-
+                            const form = clinicalFormState[appt.id];
                             handleSaveClinical(
                               appt.id,
-                              reasonInput?.value || "",
-                              notesInput?.value || "",
-                              reasonInput?.value || "",
-                              notesInput?.value || "",
-                              controlDateInput?.value || null
+                              form?.reason ?? "",
+                              form?.notes ?? "",
+                              form?.diagnosis ?? "",
+                              form?.treatment ?? "",
+                              form?.reason ?? "",
+                              form?.notes ?? "",
+                              form?.controlDate ?? null
                             );
                           }}
                           disabled={savingClinicalId === appt.id}
@@ -1341,6 +1449,80 @@ next_control_at: data?.appointment?.next_control_at ?? null,
 })
               )}
             </div>
+
+            {Array.isArray(clinicalNotes[pet.id]) && clinicalNotes[pet.id].length > 0 ? (
+              <div className="mt-5">
+                <p
+                  className="text-xs font-semibold uppercase tracking-[0.14em]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Notas clínicas registradas
+                </p>
+                <div className="mt-3 space-y-3">
+                  {clinicalNotes[pet.id].map((note) => (
+                    <div
+                      key={note.id}
+                      className="rounded-xl border px-4 py-3"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                      }}
+                    >
+                      <div className="grid gap-3 md:grid-cols-[160px_1fr]">
+                        <div>
+                          <p
+                            className="text-sm font-semibold"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            {formatDateLong(note.date)}
+                          </p>
+                          {note.control_type ? (
+                            <p
+                              className="mt-1 text-xs"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              {note.control_type}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          {note.reason ? (
+                            <p style={{ color: "var(--text-muted)" }}>
+                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Motivo:</span>{" "}
+                              {note.reason}
+                            </p>
+                          ) : null}
+                          {note.diagnosis ? (
+                            <p style={{ color: "var(--text-muted)" }}>
+                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Diagnóstico:</span>{" "}
+                              {note.diagnosis}
+                            </p>
+                          ) : null}
+                          {note.treatment ? (
+                            <p style={{ color: "var(--text-muted)" }}>
+                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Tratamiento:</span>{" "}
+                              {note.treatment}
+                            </p>
+                          ) : null}
+                          {note.observations ? (
+                            <p style={{ color: "var(--text-muted)" }}>
+                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Observaciones:</span>{" "}
+                              {note.observations}
+                            </p>
+                          ) : null}
+                          {note.next_control_at ? (
+                            <p style={{ color: "var(--text-muted)" }}>
+                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>Próximo control:</span>{" "}
+                              {formatDateLong(note.next_control_at)}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

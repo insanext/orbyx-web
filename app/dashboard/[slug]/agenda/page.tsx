@@ -184,6 +184,8 @@ type VeterinaryCloseForm = {
   control_type: string;
   custom_control_type: string;
   control_note: string;
+  diagnosis: string;
+  treatment: string;
   next_control_mode: VeterinaryNextControlMode;
   next_control_exact_date: string;
   next_control_custom_value: string;
@@ -418,6 +420,8 @@ const [showPendingPanel, setShowPendingPanel] = useState(false);
     control_type: "Control general",
     custom_control_type: "",
     control_note: "",
+    diagnosis: "",
+    treatment: "",
 next_control_mode: "none",
 next_control_exact_date: "",
 next_control_custom_value: "",
@@ -1040,6 +1044,8 @@ function generateSlotsFromWindows(
       control_type: "Control general",
       custom_control_type: "",
       control_note: "",
+      diagnosis: "",
+      treatment: "",
 next_control_mode: "none",
 next_control_exact_date: "",
 next_control_custom_value: "",
@@ -2006,6 +2012,8 @@ async function loadPendingCloseAppointments() {
           body: JSON.stringify({
             control_type: resolvedControlType,
             control_note: closeForm.control_note.trim(),
+            diagnosis: closeForm.diagnosis.trim() || null,
+            treatment: closeForm.treatment.trim() || null,
 next_control_mode: closeForm.next_control_mode,
 next_control_exact_date:
   closeForm.next_control_mode === "exact_date"
@@ -6817,6 +6825,60 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     }))
                   }
                   rows={3}
+                  placeholder="Opcional"
+                  className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Diagnóstico
+                </label>
+
+                <textarea
+                  value={closeForm.diagnosis}
+                  onChange={(e) =>
+                    setCloseForm((prev) => ({
+                      ...prev,
+                      diagnosis: e.target.value,
+                    }))
+                  }
+                  rows={2}
+                  placeholder="Opcional"
+                  className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Tratamiento indicado
+                </label>
+
+                <textarea
+                  value={closeForm.treatment}
+                  onChange={(e) =>
+                    setCloseForm((prev) => ({
+                      ...prev,
+                      treatment: e.target.value,
+                    }))
+                  }
+                  rows={2}
                   placeholder="Opcional"
                   className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
                   style={{
