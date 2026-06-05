@@ -221,6 +221,8 @@ export default function CustomerDetailPage() {
   const [businessCategory, setBusinessCategory] = useState("");
   const isVeterinaria =
     businessCategory === "veterinaria" || businessCategory === "vet";
+  const isVet = isVeterinaria;
+  const isClinica = businessCategory === "clinica";
 
   const [pets, setPets] = useState<Pet[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -1930,6 +1932,9 @@ const lastValidAppointment = validAppointments[0] || null;
                 )}
               </Panel>
             ) : null}
+
+            {/* Paso 4: ficha clínica de personas */}
+            {isClinica ? null : null}
 
             {!isVeterinaria ? (
               <Panel
