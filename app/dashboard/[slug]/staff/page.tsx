@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { UsersRound } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -533,7 +534,7 @@ async function uploadStaffImage(file: File, staffId: string) {
   formData.append("file", file);
   formData.append("staff_id", staffId);
 
-  const res = await fetch("/api/upload-staff-photo", {
+  const res = await apiFetch("/api/upload-staff-photo", {
     method: "POST",
     body: formData,
   });
@@ -567,7 +568,7 @@ async function uploadStaffImage(file: File, staffId: string) {
         setLoading(true);
         setLoadError("");
 
-        const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+        const res = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
         const data: BusinessResponse | { error?: string } = await res.json();
 
         if (!res.ok) {
@@ -685,7 +686,7 @@ async function uploadStaffImage(file: File, staffId: string) {
       return;
     }
 
-    const res = await fetch(
+    const res = await apiFetch(
       `${BACKEND_URL}/staff?tenant_id=${id}&branch_id=${selectedBranchId}`
     );
     const data = await res.json();
@@ -701,7 +702,7 @@ async function uploadStaffImage(file: File, staffId: string) {
     try {
       setLoadingStaffCalendarConnection(true);
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/calendar-connections?tenant_id=${id}&staff_id=${staffId}`
       );
       const data = await res.json();
@@ -730,7 +731,7 @@ async function uploadStaffImage(file: File, staffId: string) {
 
   async function loadStaffCalendarConnections(id: string) {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/calendar-connections?tenant_id=${id}`
       );
       const data = await res.json();
@@ -764,7 +765,7 @@ async function uploadStaffImage(file: File, staffId: string) {
 
 
 async function loadStaffHours(id: string, staffId: string) {
-  const res = await fetch(
+  const res = await apiFetch(
     `${BACKEND_URL}/staff-hours?tenant_id=${id}&staff_id=${staffId}`
   );
 
@@ -823,7 +824,7 @@ async function loadStaffHours(id: string, staffId: string) {
 
 
   async function loadStaffSpecialDates(id: string, staffId: string) {
-    const res = await fetch(
+    const res = await apiFetch(
       `${BACKEND_URL}/staff-special-dates?tenant_id=${id}&staff_id=${staffId}`
     );
 
@@ -844,7 +845,7 @@ async function loadStaffHours(id: string, staffId: string) {
       return;
     }
 
-    const res = await fetch(
+    const res = await apiFetch(
       `${BACKEND_URL}/services?tenant_id=${id}&branch_id=${selectedBranchId}&active=true`
     );
     const data = await res.json();
@@ -860,7 +861,7 @@ async function loadStaffHours(id: string, staffId: string) {
     try {
       setLoadingBranches(true);
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
       );
 
@@ -919,7 +920,7 @@ async function loadStaffHours(id: string, staffId: string) {
       params.set("branch_id", selectedBranchId);
     }
 
-    const res = await fetch(`${BACKEND_URL}/staff-services?${params}`);
+    const res = await apiFetch(`${BACKEND_URL}/staff-services?${params}`);
 
     const data = await res.json();
 
@@ -944,7 +945,7 @@ async function loadStaffHours(id: string, staffId: string) {
       service_ids: selectedServiceIds,
     };
 
-    const res = await fetch(`${BACKEND_URL}/staff-services`, {
+    const res = await apiFetch(`${BACKEND_URL}/staff-services`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -1017,7 +1018,7 @@ async function loadStaffHours(id: string, staffId: string) {
       if (!confirmAction) return;
 
       for (const staffItem of toDeactivate) {
-        const res = await fetch(`${BACKEND_URL}/staff/${staffItem.id}`, {
+        const res = await apiFetch(`${BACKEND_URL}/staff/${staffItem.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1213,7 +1214,7 @@ async function saveStaffHours(staffId: string) {
     })),
   };
 
-  const res = await fetch(`${BACKEND_URL}/staff-hours`, {
+  const res = await apiFetch(`${BACKEND_URL}/staff-hours`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -1381,7 +1382,7 @@ function validateStaffHours() {
 
       const method = editingId ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -1429,7 +1430,7 @@ function validateStaffHours() {
     if (!ok) return;
 
     try {
-      const res = await fetch(`${BACKEND_URL}/staff/${id}`, {
+      const res = await apiFetch(`${BACKEND_URL}/staff/${id}`, {
         method: "DELETE",
       });
 
@@ -1464,7 +1465,7 @@ function validateStaffHours() {
       setSaveError("");
       setSaveOk("");
 
-      const res = await fetch(`${BACKEND_URL}/staff/${item.id}`, {
+      const res = await apiFetch(`${BACKEND_URL}/staff/${item.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1574,7 +1575,7 @@ function validateStaffHours() {
         }
 
         for (const date of rangeDays) {
-          const res = await fetch(`${BACKEND_URL}/staff-special-dates`, {
+          const res = await apiFetch(`${BACKEND_URL}/staff-special-dates`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -1630,7 +1631,7 @@ function validateStaffHours() {
 
       const method = isEditing ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -1675,7 +1676,7 @@ function validateStaffHours() {
       setSaveError("");
       setSaveOk("");
 
-      const res = await fetch(`${BACKEND_URL}/staff-special-dates/${id}`, {
+      const res = await apiFetch(`${BACKEND_URL}/staff-special-dates/${id}`, {
         method: "DELETE",
       });
 
@@ -1718,7 +1719,7 @@ function validateStaffHours() {
       setSaveOk("");
 
       for (const id of ids) {
-        const res = await fetch(`${BACKEND_URL}/staff-special-dates/${id}`, {
+        const res = await apiFetch(`${BACKEND_URL}/staff-special-dates/${id}`, {
           method: "DELETE",
         });
 

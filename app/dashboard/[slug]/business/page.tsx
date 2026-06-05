@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -590,7 +591,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
         setLoading(true);
         setLoadError("");
 
-        const res = await fetch(
+        const res = await apiFetch(
           `https://orbyx-backend.onrender.com/public/business/${slug}`
         );
 
@@ -611,7 +612,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
         setTenantId(data.business.id);
 	setCalendarId(data.calendar_id);
 
-        const branchesRes = await fetch(
+        const branchesRes = await apiFetch(
           `https://orbyx-backend.onrender.com/branches?tenant_id=${data.business.id}`
         );
 
@@ -783,7 +784,7 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
 
   async function loadBookingFields() {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `https://orbyx-backend.onrender.com/booking-fields/${slug}`
       );
 
@@ -804,7 +805,7 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
 
   async function loadBusinessHours(id: string) {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}&scope=global`
       );
 
@@ -857,7 +858,7 @@ setBusinessHours(result);
 
   async function loadSpecialDates(id: string) {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}&scope=global`
       );
 
@@ -1050,7 +1051,7 @@ setBusinessHours(result);
 
       if (editingSpecialDateId) {
         const item = items[0];
-        const res = await fetch(
+        const res = await apiFetch(
           `https://orbyx-backend.onrender.com/business-special-dates/${editingSpecialDateId}`,
           {
             method: "PUT",
@@ -1083,7 +1084,7 @@ setBusinessHours(result);
       }
 
       for (const item of items) {
-        const res = await fetch(
+        const res = await apiFetch(
           "https://orbyx-backend.onrender.com/business-special-dates",
           {
             method: "POST",
@@ -1146,7 +1147,7 @@ async function removeSpecialDateGroup(group: SpecialDateGroup) {
     setSpecialDatesOk("");
 
     for (const id of ids) {
-      const res = await fetch(
+      const res = await apiFetch(
         `https://orbyx-backend.onrender.com/business-special-dates/${id}`,
         {
           method: "DELETE",
@@ -1236,7 +1237,7 @@ for (const h of businessHours) {
 
 const cleanedHours = Object.values(grouped);
 
-      const res = await fetch(
+      const res = await apiFetch(
         "https://orbyx-backend.onrender.com/business-hours",
         {
           method: "PUT",
@@ -1283,7 +1284,7 @@ const cleanedHours = Object.values(grouped);
       formData.append("file", file);
       formData.append("tenant_id", tenantId);
 
-      const res = await fetch("/api/upload-business-logo", {
+      const res = await apiFetch("/api/upload-business-logo", {
         method: "POST",
         body: formData,
       });
@@ -1434,7 +1435,7 @@ const cleanedHours = Object.values(grouped);
     try {
       setSavingFields(true);
 
-      const res = await fetch(
+      const res = await apiFetch(
         `https://orbyx-backend.onrender.com/booking-fields/${slug}`,
         {
           method: "PUT",
@@ -1452,7 +1453,7 @@ const cleanedHours = Object.values(grouped);
       }
 
       if (businessCategory === "generic") {
-        const tenantRes = await fetch(
+        const tenantRes = await apiFetch(
           `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
           {
             method: "PATCH",
@@ -1496,7 +1497,7 @@ async function saveSlotMinutes() {
 
     const value = Number(slotMinutes || 30);
 
-    const res = await fetch(
+    const res = await apiFetch(
       `https://orbyx-backend.onrender.com/calendars/${calendarId}/slot-minutes`,
       {
         method: "PATCH",
@@ -1545,7 +1546,7 @@ async function saveSlotMinutes() {
 
       console.log("[business-logo] PATCH /tenants payload logo_url:", tenantPayload.logo_url);
 
-      const res = await fetch(
+      const res = await apiFetch(
         `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
         {
           method: "PATCH",

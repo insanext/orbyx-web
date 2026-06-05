@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Copy, Pencil, Plus, Store, Users } from "lucide-react";
@@ -390,7 +391,7 @@ export default function BranchesPage() {
   }, [slug]);
 
   async function loadBranches(currentTenantId: string) {
-    const response = await fetch(
+    const response = await apiFetch(
       `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
     );
     const data: BranchesResponse | { error?: string } = await response.json();
@@ -414,7 +415,7 @@ export default function BranchesPage() {
     const url = branchId
       ? `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&branch_id=${branchId}`
       : `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&scope=global`;
-    const response = await fetch(url);
+    const response = await apiFetch(url);
     const data = await response.json();
 
     if (!response.ok) {
@@ -428,7 +429,7 @@ export default function BranchesPage() {
     const url = branchId
       ? `${BACKEND_URL}/business-special-dates?tenant_id=${currentTenantId}&branch_id=${branchId}`
       : `${BACKEND_URL}/business-special-dates?tenant_id=${currentTenantId}&scope=global`;
-    const response = await fetch(url);
+    const response = await apiFetch(url);
     const data = await response.json();
 
     if (!response.ok) {
@@ -502,7 +503,7 @@ export default function BranchesPage() {
       }
     }
 
-    const response = await fetch(`${BACKEND_URL}/business-hours`, {
+    const response = await apiFetch(`${BACKEND_URL}/business-hours`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -544,7 +545,7 @@ export default function BranchesPage() {
         throw new Error("Debes seleccionar una fecha especial");
       }
 
-      const response = await fetch(`${BACKEND_URL}/business-special-dates`, {
+      const response = await apiFetch(`${BACKEND_URL}/business-special-dates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -589,7 +590,7 @@ export default function BranchesPage() {
       setSaveError("");
       setSaveOk("");
 
-      const response = await fetch(`${BACKEND_URL}/business-special-dates/${id}`, {
+      const response = await apiFetch(`${BACKEND_URL}/business-special-dates/${id}`, {
         method: "DELETE",
       });
       const data = await response.json();
@@ -643,7 +644,7 @@ export default function BranchesPage() {
       setLoading(true);
       setLoadError("");
 
-      const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+      const businessRes = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
       const businessData: BusinessResponse | { error?: string } =
         await businessRes.json();
 
@@ -725,7 +726,7 @@ export default function BranchesPage() {
         throw new Error("Ya alcanzaste el límite de sucursales de tu plan");
       }
 
-      const response = await fetch(`${BACKEND_URL}/branches`, {
+      const response = await apiFetch(`${BACKEND_URL}/branches`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -848,7 +849,7 @@ export default function BranchesPage() {
         throw new Error("La dirección local es obligatoria cuando la sucursal usa contacto propio");
       }
 
-      const response = await fetch(`${BACKEND_URL}/branches/${branchId}`, {
+      const response = await apiFetch(`${BACKEND_URL}/branches/${branchId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -919,7 +920,7 @@ export default function BranchesPage() {
         throw new Error("Ya alcanzaste el limite de sucursales de tu plan");
       }
 
-      const response = await fetch(`${BACKEND_URL}/branches/${branch.id}`, {
+      const response = await apiFetch(`${BACKEND_URL}/branches/${branch.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -987,7 +988,7 @@ export default function BranchesPage() {
       setSaveOk("");
 
       for (const branch of toDeactivate) {
-        const response = await fetch(`${BACKEND_URL}/branches/${branch.id}`, {
+        const response = await apiFetch(`${BACKEND_URL}/branches/${branch.id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",

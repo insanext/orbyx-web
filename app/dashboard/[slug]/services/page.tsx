@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/api";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Layers3 } from "lucide-react";
@@ -420,7 +421,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
       setSaveOk("");
 
       for (const service of toDeactivate) {
-        const response = await fetch(`${BACKEND_URL}/services/${service.id}`, {
+        const response = await apiFetch(`${BACKEND_URL}/services/${service.id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -459,7 +460,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
     try {
       setLoadingBranches(true);
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
       );
 
@@ -511,7 +512,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
       setLoading(true);
       setLoadError("");
 
-      const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+      const businessRes = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
       const businessData: BusinessResponse | { error?: string } =
         await businessRes.json();
 
@@ -678,7 +679,7 @@ setForm({
 
       const uniqueServiceIds = [...new Set(serviceIdsForStaff)];
 
-      const response = await fetch(`${BACKEND_URL}/staff-services`, {
+      const response = await apiFetch(`${BACKEND_URL}/staff-services`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -727,7 +728,7 @@ setForm({
         throw new Error("Debes ingresar la duración");
       }
 
-      const response = await fetch(`${BACKEND_URL}/services`, {
+      const response = await apiFetch(`${BACKEND_URL}/services`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -825,7 +826,7 @@ function startEditing(service: Service) {
         throw new Error("Debes ingresar la duración");
       }
 
-      const response = await fetch(`${BACKEND_URL}/services/${serviceId}`, {
+      const response = await apiFetch(`${BACKEND_URL}/services/${serviceId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -880,7 +881,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
 
       setSaving(true);
 
-      const response = await fetch(`${BACKEND_URL}/services/${serviceId}`, {
+      const response = await apiFetch(`${BACKEND_URL}/services/${serviceId}`, {
         method: "DELETE",
       });
 

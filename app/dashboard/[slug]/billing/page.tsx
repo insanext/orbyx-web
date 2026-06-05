@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/api";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CreditCard } from "lucide-react";
@@ -314,7 +315,7 @@ export default function BillingPage() {
       setLoading(true);
       setLoadError("");
 
-      const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+      const businessRes = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
       const businessData: BusinessResponse | { error?: string } =
         await businessRes.json();
 
@@ -344,7 +345,7 @@ export default function BillingPage() {
       setScheduledChangeAt(businessData.business.scheduled_change_at || null);
       setPendingChangeType(businessData.business.pending_change_type || null);
 
-      const branchesRes = await fetch(
+      const branchesRes = await apiFetch(
         `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
       );
       const branchesData = await branchesRes.json();
@@ -498,7 +499,7 @@ export default function BillingPage() {
       if (!confirmed) return;
 
       for (const branch of branchesToDeactivate) {
-        const response = await fetch(`${BACKEND_URL}/branches/${branch.id}`, {
+        const response = await apiFetch(`${BACKEND_URL}/branches/${branch.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -517,7 +518,7 @@ export default function BillingPage() {
       }
 
       for (const item of staffToDeactivate) {
-        const response = await fetch(`${BACKEND_URL}/staff/${item.id}`, {
+        const response = await apiFetch(`${BACKEND_URL}/staff/${item.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -537,7 +538,7 @@ export default function BillingPage() {
       }
 
       for (const item of servicesToDeactivate) {
-        const response = await fetch(`${BACKEND_URL}/services/${item.id}`, {
+        const response = await apiFetch(`${BACKEND_URL}/services/${item.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

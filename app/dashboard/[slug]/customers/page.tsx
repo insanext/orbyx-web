@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import { Search, UsersRound } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 
@@ -142,7 +143,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     async function load() {
-      const business = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+      const business = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
       const b = await business.json();
 
       setBusinessCategory(b?.business?.business_category || "");
@@ -153,7 +154,7 @@ export default function CustomersPage() {
       params.set("inactive_days", inactiveDays);
       if (selectedBranchId) params.set("branch_id", selectedBranchId);
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/customers/${slug}?${params.toString()}`
       );
       const data: CustomersResponse = await res.json();

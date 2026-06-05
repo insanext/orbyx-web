@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import {
   ArrowRight,
   ChevronRight,
@@ -1673,7 +1674,7 @@ export default function CampaignsPage() {
   useEffect(() => {
     async function loadBusinessPlan() {
       try {
-        const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+        const res = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
         const data: BusinessResponse | { error?: string } = await res.json();
 
         if (res.ok && "business" in data) {
@@ -1719,7 +1720,7 @@ export default function CampaignsPage() {
           params.set("branch_id", selectedBranchId);
         }
 
-        const res = await fetch(
+        const res = await apiFetch(
           `${BACKEND_URL}/customers/${slug}?${params.toString()}`
         );
 
@@ -1751,7 +1752,7 @@ export default function CampaignsPage() {
       setCampaignLogs([]);
       setLogsError("");
 
-      const res = await fetch(`${BACKEND_URL}/campaigns/history/${currentSlug}`);
+      const res = await apiFetch(`${BACKEND_URL}/campaigns/history/${currentSlug}`);
       const data: CampaignHistoryResponse = await res.json();
 
       if (!res.ok) {
@@ -1772,7 +1773,7 @@ export default function CampaignsPage() {
       setLoadingLogs(true);
       setLogsError("");
 
-      const res = await fetch(`${BACKEND_URL}/campaigns/logs/${campaignId}`);
+      const res = await apiFetch(`${BACKEND_URL}/campaigns/logs/${campaignId}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -1796,7 +1797,7 @@ export default function CampaignsPage() {
         setImageLibraryMessage("");
       }
 
-      const res = await fetch(`${BACKEND_URL}/campaign-images/${currentSlug}`);
+      const res = await apiFetch(`${BACKEND_URL}/campaign-images/${currentSlug}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -1856,7 +1857,7 @@ export default function CampaignsPage() {
 
       setImageUploading(true);
 
-      const res = await fetch(`${BACKEND_URL}/upload/campaign-image`, {
+      const res = await apiFetch(`${BACKEND_URL}/upload/campaign-image`, {
         method: "POST",
         body: formData,
       });
@@ -1887,7 +1888,7 @@ export default function CampaignsPage() {
       setImageLibraryError("");
       setImageLibraryMessage("");
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/campaign-images/${imageId}?slug=${encodeURIComponent(slug)}`,
         {
           method: "DELETE",
@@ -2349,7 +2350,7 @@ export default function CampaignsPage() {
         const simulatedSent = recipientsWithPhone.length;
         const simulatedFailed = Math.max(finalRecipients.length - simulatedSent, 0);
 
-        const res = await fetch(`${BACKEND_URL}/campaigns/save-whatsapp`, {
+        const res = await apiFetch(`${BACKEND_URL}/campaigns/save-whatsapp`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -2417,7 +2418,7 @@ export default function CampaignsPage() {
         return;
       }
 
-      const res = await fetch(`${BACKEND_URL}/campaigns/send-email`, {
+      const res = await apiFetch(`${BACKEND_URL}/campaigns/send-email`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
