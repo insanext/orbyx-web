@@ -294,6 +294,28 @@ export default function CustomerDetailPage() {
   // Notas clínicas de paciente (clave = "customer_${customerId}")
   const PATIENT_NOTES_KEY = `customer_${customerId}`;
 
+  function todayISO() {
+    return new Date().toISOString().split("T")[0];
+  }
+
+  const [showNewNoteForm, setShowNewNoteForm] = useState(false);
+  const [newNoteForm, setNewNoteForm] = useState({
+    date: todayISO(),
+    control_type: "Control general",
+    reason: "",
+    symptoms: "",
+    diagnosis: "",
+    treatment: "",
+    medications: "",
+    referrals: "",
+    observations: "",
+    follow_up_notes: "",
+    next_control_at: "",
+    next_control_label: "",
+  });
+  const [savingNewNote, setSavingNewNote] = useState(false);
+  const [newNoteError, setNewNoteError] = useState("");
+
   const [petForm, setPetForm] = useState<PetFormState>({
     name: "",
     species_base: "perro",
@@ -495,6 +517,64 @@ export default function CustomerDetailPage() {
       setPetError(err?.message || "Error actualizando paciente");
     } finally {
       setSavingPet(false);
+    }
+  }
+
+  async function handleCreateNote() {
+    if (!customerId || !newNoteForm.date) return;
+    try {
+      setSavingNewNote(true);
+      setNewNoteError("");
+
+      const res = await fetch(`${BACKEND_URL}/clinical-notes/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_id: customerId,
+          branch_id: selectedBranchId || null,
+          date: newNoteForm.date,
+          control_type: newNoteForm.control_type || null,
+          reason: newNoteForm.reason || null,
+          symptoms: newNoteForm.symptoms || null,
+          diagnosis: newNoteForm.diagnosis || null,
+          treatment: newNoteForm.treatment || null,
+          medications: newNoteForm.medications || null,
+          referrals: newNoteForm.referrals || null,
+          observations: newNoteForm.observations || null,
+          follow_up_notes: newNoteForm.follow_up_notes || null,
+          next_control_at: newNoteForm.next_control_at || null,
+          next_control_label: newNoteForm.next_control_label || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "No se pudo crear la nota");
+
+      // Prepend to local notes list
+      setClinicalNotes((prev) => ({
+        ...prev,
+        [PATIENT_NOTES_KEY]: [data.note, ...(prev[PATIENT_NOTES_KEY] ?? [])],
+      }));
+
+      setShowNewNoteForm(false);
+      setNewNoteForm({
+        date: todayISO(),
+        control_type: "Control general",
+        reason: "",
+        symptoms: "",
+        diagnosis: "",
+        treatment: "",
+        medications: "",
+        referrals: "",
+        observations: "",
+        follow_up_notes: "",
+        next_control_at: "",
+        next_control_label: "",
+      });
+    } catch (err: any) {
+      setNewNoteError(err?.message || "Error guardando la nota");
+    } finally {
+      setSavingNewNote(false);
     }
   }
 
@@ -2350,19 +2430,134 @@ const lastValidAppointment = validAppointments[0] || null;
                 {/* ── Sección B: Historial de atenciones ── */}
                 <div className="mt-5">
                   <div className="border-t pt-4" style={{ borderColor: "var(--border-color)" }}>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
                         Historial de atenciones
                       </p>
-                      {!clinicalNotes[PATIENT_NOTES_KEY] ? (
+                      <div className="flex items-center gap-2">
+                        {!clinicalNotes[PATIENT_NOTES_KEY] ? (
+                          <button
+                            type="button"
+                            onClick={loadPatientNotes}
+                            className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
+                            style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                          >
+                            Cargar
+                          </button>
+                        ) : null}
                         <button
                           type="button"
-                          onClick={loadPatientNotes}
+                          onClick={() => setShowNewNoteForm((v) => !v)}
                           className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
-                          style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                          style={{ borderColor: "var(--border-color)", background: showNewNoteForm ? "var(--bg-soft)" : "transparent", color: "var(--text-muted)" }}
                         >
-                          Cargar
+                          {showNewNoteForm ? "Cerrar" : "＋ Nueva atención"}
                         </button>
+                      </div>
+                    </div>
+
+                    {/* Formulario inline nueva atención */}
+                    <div
+                      className="overflow-hidden transition-all duration-200 ease-in-out"
+                      style={{ maxHeight: showNewNoteForm ? "900px" : "0" }}
+                    >
+                      {showNewNoteForm ? (
+                        <div className="mt-3 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-soft)" }}>
+                          <p className="mb-3 text-[14px] font-medium" style={{ color: "var(--text-main)" }}>Nueva atención clínica</p>
+
+                          <div className="space-y-3">
+                            {/* Fecha + Tipo */}
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Fecha de atención</label>
+                                <input type="date" value={newNoteForm.date} onChange={(e) => setNewNoteForm((p) => ({ ...p, date: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Tipo de control</label>
+                                <select value={newNoteForm.control_type} onChange={(e) => setNewNoteForm((p) => ({ ...p, control_type: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                                  {["Control general", "Primera consulta", "Control", "Urgencia", "Cirugía", "Procedimiento", "Revisión post-op", "Vacuna", "Desparasitación", "Otro"].map((opt) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* Motivo + Síntomas */}
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Motivo</label>
+                                <textarea rows={2} placeholder="Motivo de la consulta" value={newNoteForm.reason} onChange={(e) => setNewNoteForm((p) => ({ ...p, reason: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Síntomas</label>
+                                <textarea rows={2} placeholder="Síntomas referidos" value={newNoteForm.symptoms} onChange={(e) => setNewNoteForm((p) => ({ ...p, symptoms: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                              </div>
+                            </div>
+
+                            {/* Diagnóstico col-span-2 */}
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Diagnóstico</label>
+                              <textarea rows={2} placeholder="Diagnóstico" value={newNoteForm.diagnosis} onChange={(e) => setNewNoteForm((p) => ({ ...p, diagnosis: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                            </div>
+
+                            {/* Tratamiento + Medicamentos */}
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Tratamiento</label>
+                                <textarea rows={2} placeholder="Tratamiento indicado" value={newNoteForm.treatment} onChange={(e) => setNewNoteForm((p) => ({ ...p, treatment: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Medicamentos</label>
+                                <textarea rows={2} placeholder="Fármacos indicados, dosis…" value={newNoteForm.medications} onChange={(e) => setNewNoteForm((p) => ({ ...p, medications: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                              </div>
+                            </div>
+
+                            {/* Derivaciones + Notas de seguimiento */}
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Derivaciones</label>
+                                <textarea rows={2} placeholder="Interconsultas, derivaciones…" value={newNoteForm.referrals} onChange={(e) => setNewNoteForm((p) => ({ ...p, referrals: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Notas de seguimiento</label>
+                                <textarea rows={2} placeholder="Indicaciones para el próximo control…" value={newNoteForm.follow_up_notes} onChange={(e) => setNewNoteForm((p) => ({ ...p, follow_up_notes: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                              </div>
+                            </div>
+
+                            {/* Observaciones col-span-2 */}
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Observaciones</label>
+                              <textarea rows={2} placeholder="Observaciones adicionales" value={newNoteForm.observations} onChange={(e) => setNewNoteForm((p) => ({ ...p, observations: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                            </div>
+
+                            {/* Próximo control */}
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Próximo control</label>
+                              <div className="mb-2 flex flex-wrap gap-1.5">
+                                {[7, 15, 30, 60].map((days) => {
+                                  const base = newNoteForm.date ? new Date(newNoteForm.date) : new Date();
+                                  const target = new Date(base.getTime());
+                                  target.setDate(target.getDate() + days);
+                                  const targetStr = target.toISOString().slice(0, 10);
+                                  const isSelected = newNoteForm.next_control_at === targetStr;
+                                  return (
+                                    <button key={days} type="button" onClick={() => setNewNoteForm((p) => ({ ...p, next_control_at: targetStr }))} className="rounded-full border px-2.5 py-1 text-xs font-medium transition" style={{ borderColor: isSelected ? "rgba(29,158,117,0.60)" : "var(--border-color)", background: isSelected ? "rgba(29,158,117,0.12)" : "transparent", color: isSelected ? "#1D9E75" : "var(--text-muted)" }}>+{days}d</button>
+                                  );
+                                })}
+                              </div>
+                              <input type="date" value={newNoteForm.next_control_at} onChange={(e) => setNewNoteForm((p) => ({ ...p, next_control_at: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                            </div>
+                          </div>
+
+                          {newNoteError ? (
+                            <p className="mt-2 text-xs font-medium text-red-600">{newNoteError}</p>
+                          ) : null}
+
+                          <div className="mt-4 flex justify-end gap-2">
+                            <button type="button" onClick={() => { setShowNewNoteForm(false); setNewNoteError(""); }} className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>Cancelar</button>
+                            <button type="button" onClick={handleCreateNote} disabled={savingNewNote} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingNewNote ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingNewNote ? "Guardando..." : "Guardar atención"}</button>
+                          </div>
+                        </div>
                       ) : null}
                     </div>
                   </div>
@@ -2512,8 +2707,12 @@ const lastValidAppointment = validAppointments[0] || null;
                                       {(note.reason || note.diagnosis || note.treatment || note.observations) ? (
                                         <div className={`grid gap-2 ${note.diagnosis && note.treatment ? "grid-cols-2" : "grid-cols-1"}`}>
                                           {note.reason ? <div className={note.diagnosis && note.treatment ? "col-span-2" : ""}><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Motivo</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.reason}</p></div> : null}
+                                          {(note as any).symptoms ? <div className="col-span-2"><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Síntomas</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{(note as any).symptoms}</p></div> : null}
                                           {note.diagnosis ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Diagnóstico</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.diagnosis}</p></div> : null}
                                           {note.treatment ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Tratamiento</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.treatment}</p></div> : null}
+                                          {(note as any).medications ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Medicamentos</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{(note as any).medications}</p></div> : null}
+                                          {(note as any).referrals ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Derivaciones</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{(note as any).referrals}</p></div> : null}
+                                          {(note as any).follow_up_notes ? <div className="col-span-2"><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Notas de seguimiento</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{(note as any).follow_up_notes}</p></div> : null}
                                           {note.observations ? <div className="col-span-2"><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Observaciones</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.observations}</p></div> : null}
                                         </div>
                                       ) : null}

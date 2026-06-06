@@ -187,6 +187,10 @@ type VeterinaryCloseForm = {
   control_note: string;
   diagnosis: string;
   treatment: string;
+  symptoms: string;
+  medications: string;
+  referrals: string;
+  follow_up_notes: string;
   next_control_mode: VeterinaryNextControlMode;
   next_control_exact_date: string;
   next_control_custom_value: string;
@@ -427,6 +431,10 @@ const [showPendingPanel, setShowPendingPanel] = useState(false);
     control_note: "",
     diagnosis: "",
     treatment: "",
+    symptoms: "",
+    medications: "",
+    referrals: "",
+    follow_up_notes: "",
 next_control_mode: "none",
 next_control_exact_date: "",
 next_control_custom_value: "",
@@ -1052,6 +1060,10 @@ function generateSlotsFromWindows(
       control_note: "",
       diagnosis: "",
       treatment: "",
+      symptoms: "",
+      medications: "",
+      referrals: "",
+      follow_up_notes: "",
 next_control_mode: "none",
 next_control_exact_date: "",
 next_control_custom_value: "",
@@ -2067,6 +2079,10 @@ async function loadPendingCloseAppointments() {
             control_note: closeForm.control_note.trim(),
             diagnosis: closeForm.diagnosis.trim() || null,
             treatment: closeForm.treatment.trim() || null,
+            symptoms: closeForm.symptoms.trim() || null,
+            medications: closeForm.medications.trim() || null,
+            referrals: closeForm.referrals.trim() || null,
+            follow_up_notes: closeForm.follow_up_notes.trim() || null,
 next_control_mode: closeForm.next_control_mode,
 next_control_exact_date:
   closeForm.next_control_mode === "exact_date"
@@ -6794,7 +6810,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
               className="text-lg font-semibold"
               style={{ color: "var(--text-main)" }}
             >
-              ¿Completar ficha clínica?
+              ¿Completar ficha / atención?
             </h3>
             <p
               className="mt-2 text-sm leading-6"
@@ -6838,7 +6854,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                 }}
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700"
               >
-                Completar ficha clínica
+                Completar ficha / atención
               </button>
             </div>
           </div>
@@ -7097,6 +7113,37 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     color: "var(--text-main)",
                   }}
                 />
+              </div>
+
+              {/* ── Campos nuevos: síntomas, medicamentos, derivaciones, seguimiento ── */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  { key: "symptoms",       label: "Síntomas",             placeholder: "Síntomas referidos" },
+                  { key: "medications",    label: "Medicamentos",         placeholder: "Fármacos, dosis…" },
+                  { key: "referrals",      label: "Derivaciones",         placeholder: "Interconsultas, derivaciones…" },
+                  { key: "follow_up_notes", label: "Notas de seguimiento", placeholder: "Indicaciones para próximo control…" },
+                ].map(({ key, label, placeholder }) => (
+                  <div key={key}>
+                    <label
+                      className="mb-1 block text-sm font-semibold"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {label}
+                    </label>
+                    <textarea
+                      value={(closeForm as any)[key]}
+                      onChange={(e) => setCloseForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                      rows={2}
+                      placeholder={placeholder}
+                      className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+                ))}
               </div>
 
               <div
