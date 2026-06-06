@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -28,6 +28,9 @@ function Field({
 const INPUT_CLASS =
   "w-full rounded-xl border px-3 py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500";
 
+const TEXTAREA_CLASS =
+  "w-full rounded-xl border px-3 py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none";
+
 function inputStyle() {
   return {
     borderColor: "var(--border-color)",
@@ -36,10 +39,31 @@ function inputStyle() {
   };
 }
 
+function todayISO() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function formatDate(iso: string) {
+  try {
+    return new Date(iso + "T12:00:00").toLocaleDateString("es-CL", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
+
 export default function NewCustomerPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slug = (params as any)?.slug as string;
+
+  // Query params for appointment context
+  const appointmentId = searchParams.get("appointment_id") ?? "";
+  const appointmentDateParam = searchParams.get("date") ?? "";
 
   const [businessCategory, setBusinessCategory] = useState("");
   const [businessSubcategory, setBusinessSubcategory] = useState("");
@@ -55,6 +79,19 @@ export default function NewCustomerPage() {
   const [rut, setRut] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [sex, setSex] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [healthInsurance, setHealthInsurance] = useState("");
+  const [emergencyContactName, setEmergencyContactName] = useState("");
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
+  const [knownAllergies, setKnownAllergies] = useState("");
+  const [chronicConditions, setChronicConditions] = useState("");
+  const [familyHistory, setFamilyHistory] = useState("");
+  const [habits, setHabits] = useState("");
+
+  // ─── Date field ────────────────────────────────────────────────
+  // If appointment_id is present → date locked (from query param or appointment fetch)
+  const [appointmentDate, setAppointmentDate] = useState(appointmentDateParam);
+  const [attendanceDate, setAttendanceDate] = useState(todayISO());
 
   // ─── Subcategory conditional fields ────────────────────────────
   const [treatmentZone, setTreatmentZone] = useState("");
@@ -97,6 +134,22 @@ export default function NewCustomerPage() {
       .catch(() => {});
   }, [slug]);
 
+  // If appointment_id present but no date in query params, try to fetch the date
+  useEffect(() => {
+    if (!appointmentId || appointmentDateParam) return;
+    fetch(`${BACKEND_URL}/appointments/by-range/${slug}?from=2020-01-01&to=2099-12-31`)
+      .then((r) => r.json())
+      .then((data) => {
+        const found = Array.isArray(data?.appointments)
+          ? data.appointments.find((a: any) => a.id === appointmentId)
+          : null;
+        if (found?.start_at) {
+          setAppointmentDate(found.start_at.split("T")[0]);
+        }
+      })
+      .catch(() => {});
+  }, [appointmentId, appointmentDateParam, slug]);
+
   // Build intake_notes from subcategory fields
   const intakeNotesValue = useMemo(() => {
     const parts: string[] = [];
@@ -132,20 +185,14 @@ export default function NewCustomerPage() {
       return;
     }
 
-    if (isVeterinaria && petName.trim()) {
-      if (
-        petSpeciesBase === "otro" &&
-        !petSpeciesCustom.trim()
-      ) {
-        setError("Indica la especie del paciente.");
-        return;
-      }
+    if (isVeterinaria && petName.trim() && petSpeciesBase === "otro" && !petSpeciesCustom.trim()) {
+      setError("Indica la especie del paciente.");
+      return;
     }
 
     try {
       setSaving(true);
 
-      // 1. Create customer
       const res = await fetch(`${BACKEND_URL}/customers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -157,6 +204,14 @@ export default function NewCustomerPage() {
           rut: rut.trim() || null,
           birth_date: birthDate || null,
           sex: sex || null,
+          occupation: occupation.trim() || null,
+          health_insurance: healthInsurance || null,
+          emergency_contact_name: emergencyContactName.trim() || null,
+          emergency_contact_phone: emergencyContactPhone.trim() || null,
+          known_allergies: knownAllergies.trim() || null,
+          chronic_conditions: chronicConditions.trim() || null,
+          family_history: familyHistory.trim() || null,
+          habits: habits.trim() || null,
           intake_notes: intakeNotesValue || null,
         }),
       });
@@ -166,7 +221,6 @@ export default function NewCustomerPage() {
 
       const customerId: string = data.customer.id;
 
-      // 2. Create pet if vet and pet name provided
       if (isVeterinaria && petName.trim()) {
         await fetch(`${BACKEND_URL}/pets`, {
           method: "POST",
@@ -183,7 +237,6 @@ export default function NewCustomerPage() {
             is_sterilized: petSterilized,
           }),
         });
-        // Pet errors are non-fatal — customer was already created
       }
 
       router.push(`/dashboard/${slug}/customers/${customerId}`);
@@ -208,7 +261,7 @@ export default function NewCustomerPage() {
           className="text-xs font-semibold uppercase tracking-widest"
           style={{ color: "var(--text-muted)" }}
         >
-          {isVeterinaria ? "Pacientes" : isClinica ? "Pacientes" : "Clientes"}
+          {isVeterinaria || isClinica ? "Pacientes" : "Clientes"}
         </p>
         <h1
           className="mt-1 text-2xl font-bold"
@@ -216,22 +269,55 @@ export default function NewCustomerPage() {
         >
           Nueva ficha{isVeterinaria ? " de paciente" : ""}
         </h1>
-        <p
-          className="mt-1 text-sm"
-          style={{ color: "var(--text-muted)" }}
-        >
+        <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
           Completa los datos del{" "}
           {isVeterinaria ? "tutor y su mascota" : "paciente"}.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* ─── FECHA DE ATENCIÓN ─── */}
+        <div className={sectionCard} style={sectionCardStyle}>
+          <h2 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+            Fecha de atención
+          </h2>
+          {appointmentId ? (
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                Fecha de la cita
+              </p>
+              <p
+                className="rounded-xl border px-3 py-2.5 text-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                  opacity: 0.75,
+                }}
+              >
+                {appointmentDate ? formatDate(appointmentDate) : "Cargando…"}
+              </p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                Fecha asociada a la cita vinculada.
+              </p>
+            </div>
+          ) : (
+            <Field label="Fecha">
+              <input
+                className={INPUT_CLASS}
+                style={inputStyle()}
+                type="date"
+                value={attendanceDate}
+                onChange={(e) => setAttendanceDate(e.target.value)}
+              />
+            </Field>
+          )}
+        </div>
+
         {/* ─── SECCIÓN BASE ─── */}
         <div className={sectionCard} style={sectionCardStyle}>
-          <h2
-            className="text-sm font-semibold"
-            style={{ color: "var(--text-main)" }}
-          >
+          <h2 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
             {isVeterinaria ? "Datos del tutor" : "Datos del paciente"}
           </h2>
 
@@ -302,16 +388,108 @@ export default function NewCustomerPage() {
                 <option value="otro">Otro</option>
               </select>
             </Field>
+
+            <Field label="Ocupación">
+              <input
+                className={INPUT_CLASS}
+                style={inputStyle()}
+                value={occupation}
+                onChange={(e) => setOccupation(e.target.value)}
+                placeholder="ej. profesora"
+              />
+            </Field>
+
+            <Field label="Previsión de salud">
+              <select
+                className={INPUT_CLASS}
+                style={inputStyle()}
+                value={healthInsurance}
+                onChange={(e) => setHealthInsurance(e.target.value)}
+              >
+                <option value="">Sin especificar</option>
+                <option value="Fonasa">Fonasa</option>
+                <option value="Isapre">Isapre</option>
+                <option value="Capredena">Capredena</option>
+                <option value="Dipreca">Dipreca</option>
+                <option value="Particular / Ninguna">Particular / Ninguna</option>
+              </select>
+            </Field>
+
+            {/* Contacto de emergencia — misma fila */}
+            <Field label="Contacto de emergencia — nombre">
+              <input
+                className={INPUT_CLASS}
+                style={inputStyle()}
+                value={emergencyContactName}
+                onChange={(e) => setEmergencyContactName(e.target.value)}
+                placeholder="ej. María González"
+              />
+            </Field>
+
+            <Field label="Contacto de emergencia — teléfono">
+              <input
+                className={INPUT_CLASS}
+                style={inputStyle()}
+                value={emergencyContactPhone}
+                onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                placeholder="+56 9 8765 4321"
+                type="tel"
+              />
+            </Field>
+          </div>
+
+          {/* Textareas en columna completa */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Alergias conocidas">
+              <textarea
+                className={TEXTAREA_CLASS}
+                style={inputStyle()}
+                value={knownAllergies}
+                onChange={(e) => setKnownAllergies(e.target.value)}
+                rows={3}
+                placeholder="ej. penicilina, látex…"
+              />
+            </Field>
+
+            <Field label="Patologías crónicas">
+              <textarea
+                className={TEXTAREA_CLASS}
+                style={inputStyle()}
+                value={chronicConditions}
+                onChange={(e) => setChronicConditions(e.target.value)}
+                rows={3}
+                placeholder="ej. hipertensión, diabetes…"
+              />
+            </Field>
+
+            <Field label="Antecedentes familiares relevantes">
+              <textarea
+                className={TEXTAREA_CLASS}
+                style={inputStyle()}
+                value={familyHistory}
+                onChange={(e) => setFamilyHistory(e.target.value)}
+                rows={3}
+                placeholder="ej. diabetes materna, cáncer…"
+              />
+            </Field>
+
+            <Field label="Hábitos">
+              <textarea
+                className={TEXTAREA_CLASS}
+                style={inputStyle()}
+                value={habits}
+                onChange={(e) => setHabits(e.target.value)}
+                rows={3}
+                placeholder="ej. fumador, sedentario, alcohol ocasional…"
+              />
+            </Field>
           </div>
         </div>
 
         {/* ─── SECCIÓN REHABILITACION ─── */}
         {businessSubcategory === "rehabilitacion" ? (
           <div className={sectionCard} style={sectionCardStyle}>
-            <h2
-              className="text-sm font-semibold"
-              style={{ color: "var(--text-main)" }}
-            >
+            <h2 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
               Rehabilitación — ingreso
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -340,31 +518,28 @@ export default function NewCustomerPage() {
         {/* ─── SECCIÓN SALUD MENTAL ─── */}
         {businessSubcategory === "salud_mental" ? (
           <div className={sectionCard} style={sectionCardStyle}>
-            <h2
-              className="text-sm font-semibold"
-              style={{ color: "var(--text-main)" }}
-            >
+            <h2 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
               Salud mental — ingreso
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Motivo de consulta inicial">
                 <textarea
-                  className={INPUT_CLASS}
+                  className={TEXTAREA_CLASS}
                   style={inputStyle()}
                   value={consultReason}
                   onChange={(e) => setConsultReason(e.target.value)}
                   rows={3}
-                  placeholder="Describe el motivo principal..."
+                  placeholder="Describe el motivo principal…"
                 />
               </Field>
               <Field label="Antecedentes relevantes">
                 <textarea
-                  className={INPUT_CLASS}
+                  className={TEXTAREA_CLASS}
                   style={inputStyle()}
                   value={relevantHistory}
                   onChange={(e) => setRelevantHistory(e.target.value)}
                   rows={3}
-                  placeholder="Historial clínico relevante..."
+                  placeholder="Historial clínico relevante…"
                 />
               </Field>
             </div>
@@ -374,21 +549,18 @@ export default function NewCustomerPage() {
         {/* ─── SECCIÓN DENTAL ─── */}
         {businessSubcategory === "dental" ? (
           <div className={sectionCard} style={sectionCardStyle}>
-            <h2
-              className="text-sm font-semibold"
-              style={{ color: "var(--text-main)" }}
-            >
+            <h2 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
               Dental — ingreso
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Antecedentes dentales">
                 <textarea
-                  className={INPUT_CLASS}
+                  className={TEXTAREA_CLASS}
                   style={inputStyle()}
                   value={dentalHistory}
                   onChange={(e) => setDentalHistory(e.target.value)}
                   rows={3}
-                  placeholder="Tratamientos previos, extracciones..."
+                  placeholder="Tratamientos previos, extracciones…"
                 />
               </Field>
               <Field label="Alergias a anestesia">
@@ -407,10 +579,7 @@ export default function NewCustomerPage() {
         {/* ─── SECCIÓN NUTRICIÓN ─── */}
         {businessSubcategory === "nutricion" ? (
           <div className={sectionCard} style={sectionCardStyle}>
-            <h2
-              className="text-sm font-semibold"
-              style={{ color: "var(--text-main)" }}
-            >
+            <h2 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
               Nutrición — ingreso
             </h2>
             <div className="grid gap-4 sm:grid-cols-3">
@@ -454,16 +623,10 @@ export default function NewCustomerPage() {
         {/* ─── SECCIÓN MASCOTA (vet) ─── */}
         {isVeterinaria ? (
           <div className={sectionCard} style={sectionCardStyle}>
-            <h2
-              className="text-sm font-semibold"
-              style={{ color: "var(--text-main)" }}
-            >
+            <h2 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
               Mascota
             </h2>
-            <p
-              className="text-xs"
-              style={{ color: "var(--text-muted)" }}
-            >
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               Opcional — puedes agregar mascotas después desde la ficha del tutor.
             </p>
 
