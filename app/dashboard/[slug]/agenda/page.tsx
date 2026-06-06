@@ -464,6 +464,7 @@ next_control_custom_unit: "days",
 
   const isVeterinaria =
     businessCategory === "veterinaria" || businessCategory === "vet";
+  const isClinica = businessCategory === "clinica";
 
   function startOfWeek(date: Date) {
     const d = new Date(date);
@@ -5414,7 +5415,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             <button
                               type="button"
                               onClick={() => {
-                                if (isVeterinaria) {
+                                if (isVeterinaria || isClinica) {
                                   openVeterinaryCloseModal();
                                   return;
                                 }
@@ -5570,7 +5571,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                           <button
                             type="button"
                             onClick={() => {
-                              if (isVeterinaria) {
+                              if (isVeterinaria || isClinica) {
                                 openVeterinaryCloseModal();
                                 return;
                               }
@@ -5789,7 +5790,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                                     <button
                             type="button"
                             onClick={() => {
-                              if (isVeterinaria) {
+                              if (isVeterinaria || isClinica) {
                                 openVeterinaryCloseModal();
                                 return;
                               }
@@ -6701,7 +6702,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                 className="text-lg font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
-                Cerrar atención veterinaria
+                {isClinica ? "Cerrar atención clínica" : "Cerrar atención veterinaria"}
               </h3>
               <p
                 className="mt-1 text-sm leading-6"
