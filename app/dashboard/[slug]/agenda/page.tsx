@@ -24,6 +24,7 @@ type Appointment = {
   branch_id?: string | null;
   service_id?: string | null;
   staff_id?: string | null;
+  customer_id?: string | null;
   start_at: string;
   end_at: string;
   customer_name: string;
@@ -390,6 +391,8 @@ const [calendarId, setCalendarId] = useState("");
   const [weekBaseDate, setWeekBaseDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<Appointment[]>([]);
+const [pendingClinicalNotes, setPendingClinicalNotes] = useState<Appointment[]>([]);
+const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedAppointment, setSelectedAppointment] =
@@ -412,6 +415,8 @@ const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<A
   const [agendaView, setAgendaView] = useState<"week" | "day">("week");
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
 const [showPendingPanel, setShowPendingPanel] = useState(false);
+  const [clinicalPendingModal, setClinicalPendingModal] =
+    useState<Appointment | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closeSaving, setCloseSaving] = useState(false);
@@ -1938,6 +1943,26 @@ async function loadPendingCloseAppointments() {
 }
 
 
+  async function loadPendingClinicalNotes() {
+    try {
+      if (!slug || !selectedBranchId || !(isVeterinaria || isClinica)) {
+        setPendingClinicalNotes([]);
+        return;
+      }
+
+      const query = new URLSearchParams({ branch_id: selectedBranchId });
+      if (selectedStaffId) query.set("staff_id", selectedStaffId);
+
+      const res = await apiFetch(
+        `${BACKEND_URL}/appointments/clinical-pending/${slug}?${query.toString()}`
+      );
+      const data = await res.json();
+      setPendingClinicalNotes(Array.isArray(data.appointments) ? data.appointments : []);
+    } catch {
+      setPendingClinicalNotes([]);
+    }
+  }
+
   async function handleUpdateStatus(
     appointmentId: string,
     newStatus: "completed" | "no_show" | "rescheduled" | "canceled"
@@ -1974,6 +1999,33 @@ async function loadPendingCloseAppointments() {
       setError(
         err instanceof Error ? err.message : "Error actualizando estado"
       );
+    } finally {
+      setStatusSaving(false);
+    }
+  }
+
+  async function handleAsistioClinico(appt: Appointment) {
+    try {
+      setStatusSaving(true);
+      setError("");
+
+      const res = await apiFetch(
+        `${BACKEND_URL}/appointments/${appt.id}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "completed" }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "No se pudo actualizar el estado");
+
+      if (data?.appointment) applyAppointmentUpdate(data.appointment);
+      await loadAppointments({ preserveSelected: true });
+      setClinicalPendingModal(appt);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error actualizando estado");
     } finally {
       setStatusSaving(false);
     }
@@ -2445,6 +2497,7 @@ setBusinessCategory(
 
     loadAppointments();
 loadPendingCloseAppointments();
+loadPendingClinicalNotes();
   }, [slug, weekStart.getTime(), selectedBranchId, selectedStaffId]);
 
   useEffect(() => {
@@ -3158,6 +3211,25 @@ const hasPendingClose = pendingCloseCount > 0;
         />
       ) : null}
 
+      {(isVeterinaria || isClinica) && pendingClinicalNotes.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => setShowPendingClinicalPanel(true)}
+          className="w-full rounded-2xl border px-4 py-3 text-left transition hover:shadow-sm"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+          }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+            📋 {pendingClinicalNotes.length} ficha{pendingClinicalNotes.length === 1 ? "" : "s"} clínica{pendingClinicalNotes.length === 1 ? "" : "s"} pendiente{pendingClinicalNotes.length === 1 ? "" : "s"}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+            Toca para ver los pacientes con ficha sin completar.
+          </p>
+        </button>
+      ) : null}
+
       {error ? <Notice tone="danger" title={error} /> : null}
 
 
@@ -3229,6 +3301,79 @@ const hasPendingClose = pendingCloseCount > 0;
                 className="mt-2 w-full rounded-lg bg-slate-900 px-3 py-1.5 text-xs text-white"
               >
                 Ir a atención
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  </div>
+) : null}
+
+{showPendingClinicalPanel ? (
+  <div
+    className="fixed inset-0 z-50 flex items-start justify-end bg-black/40"
+    onClick={() => setShowPendingClinicalPanel(false)}
+  >
+    <div
+      className="h-full w-full max-w-md p-5 shadow-xl"
+      style={{ background: "var(--bg-card)" }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+          Fichas clínicas pendientes
+        </h3>
+        <button
+          onClick={() => setShowPendingClinicalPanel(false)}
+          className="text-sm"
+          style={{ color: "var(--text-muted)" }}
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="mt-4 max-h-[80vh] space-y-3 overflow-y-auto">
+        {pendingClinicalNotes.length === 0 ? (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            No hay fichas pendientes.
+          </p>
+        ) : (
+          pendingClinicalNotes.map((appt) => (
+            <div
+              key={appt.id}
+              className="rounded-xl border p-3"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+              }}
+            >
+              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                {appt.customer_name}
+              </p>
+
+              {appt.customer_data?.pet_name ? (
+                <p className="text-xs text-emerald-600">
+                  🐶 {appt.customer_data.pet_name}
+                </p>
+              ) : null}
+
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                {formatLongDate(appt.start_at)} · {formatHour(appt.start_at)}
+              </p>
+
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                {appt.service_name_snapshot ?? ""}
+              </p>
+
+              <button
+                onClick={() => {
+                  setShowPendingClinicalPanel(false);
+                  router.push(`/dashboard/${slug}/customers/${appt.customer_id}`);
+                }}
+                className="mt-2 w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+              >
+                Completar ficha
               </button>
             </div>
           ))
@@ -5416,7 +5561,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               type="button"
                               onClick={() => {
                                 if (isVeterinaria || isClinica) {
-                                  openVeterinaryCloseModal();
+                                  handleAsistioClinico(selectedAppointment);
                                   return;
                                 }
 
@@ -5572,7 +5717,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             type="button"
                             onClick={() => {
                               if (isVeterinaria || isClinica) {
-                                openVeterinaryCloseModal();
+                                handleAsistioClinico(selectedAppointment!);
                                 return;
                               }
 
@@ -6630,6 +6775,70 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   : manualBookingStep === "confirm"
                   ? "Confirmar reserva"
                   : "Continuar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {clinicalPendingModal ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
+          <div
+            className="w-full max-w-md rounded-3xl border p-5 shadow-2xl"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              ¿Completar ficha clínica?
+            </h3>
+            <p
+              className="mt-2 text-sm leading-6"
+              style={{ color: "var(--text-muted)" }}
+            >
+              La cita fue marcada como atendida. ¿Deseas completar la ficha clínica ahora?
+            </p>
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={async () => {
+                  const appt = clinicalPendingModal;
+                  setClinicalPendingModal(null);
+                  try {
+                    await apiFetch(
+                      `${BACKEND_URL}/appointments/${appt.id}/clinical-pending`,
+                      {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ pending: true, slug }),
+                      }
+                    );
+                  } catch {}
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Más tarde
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const appt = clinicalPendingModal;
+                  setClinicalPendingModal(null);
+                  router.push(`/dashboard/${slug}/customers/${appt.customer_id}`);
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              >
+                Completar ficha clínica
               </button>
             </div>
           </div>

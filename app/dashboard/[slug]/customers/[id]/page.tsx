@@ -718,6 +718,14 @@ const lastValidAppointment = validAppointments[0] || null;
       setEditingPetId(null);
       setEditingNoteId(null);
 
+      try {
+        await fetch(`${BACKEND_URL}/appointments/${appointmentId}/clinical-pending`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pending: false, slug }),
+        });
+      } catch {}
+
       setTimeout(() => {
         setClinicalMessage("");
       }, 2500);
