@@ -39,6 +39,7 @@ type BusinessResponse = {
     name: string;
     slug: string;
     plan_slug?: string | null;
+    business_category?: string | null;
   };
 };
 
@@ -162,6 +163,8 @@ export default function DashboardLayout({
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [branchesError, setBranchesError] = useState("");
+  const [businessCategory, setBusinessCategory] = useState("");
+  const isPacientes = ["veterinaria", "vet", "clinica"].includes(businessCategory);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
@@ -249,6 +252,7 @@ export default function DashboardLayout({
         const currentTenantId = businessData.business.id;
         setBusinessName(businessData.business.name || slug);
         setPlan(String(businessData.business.plan_slug || "pro").toLowerCase());
+        setBusinessCategory(String(businessData.business.business_category || "").trim().toLowerCase());
 
         const branchesRes = await apiFetch(
           `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
@@ -513,7 +517,7 @@ export default function DashboardLayout({
                       >
                         <Icon size={17} />
                       </div>
-                      {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                      {!collapsed ? <span className="truncate">{item.href === "/customers" && isPacientes ? "Pacientes" : item.label}</span> : null}
                     </div>
 
                     {!collapsed ? (
@@ -957,7 +961,7 @@ export default function DashboardLayout({
                         >
                           <Icon size={18} />
                         </div>
-                        <span>{item.label}</span>
+                        <span>{item.href === "/customers" && isPacientes ? "Pacientes" : item.label}</span>
                       </div>
 
                       <ChevronRight

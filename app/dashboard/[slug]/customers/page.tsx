@@ -94,7 +94,8 @@ export default function CustomersPage() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [businessCategory, setBusinessCategory] = useState("");
-  const isVeterinaria = businessCategory === "veterinaria";
+  const isVeterinaria = businessCategory === "veterinaria" || businessCategory === "vet";
+  const isClinica = businessCategory === "clinica";
   const [selectedBranchId, setSelectedBranchId] = useState("");
 
   const [searchInput, setSearchInput] = useState("");
@@ -195,7 +196,19 @@ export default function CustomersPage() {
 
       {/* FILTROS */}
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] p-4 space-y-4">
-        <h2 className="text-sm font-semibold text-[var(--text-main)]">Filtros</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-[var(--text-main)]">Filtros</h2>
+          {(isVeterinaria || isClinica) ? (
+            <button
+              type="button"
+              onClick={() => router.push(`/dashboard/${slug}/customers/new`)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 shrink-0"
+            >
+              <span className="text-base leading-none">＋</span>
+              Crear ficha paciente
+            </button>
+          ) : null}
+        </div>
 
         <div className="grid gap-3 xl:grid-cols-[1.2fr_1fr_220px]">
 
