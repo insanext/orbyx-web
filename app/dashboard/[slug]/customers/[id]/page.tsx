@@ -17,6 +17,15 @@ type Customer = {
   total_visits: number;
   rut?: string | null;
   birth_date?: string | null;
+  sex?: string | null;
+  occupation?: string | null;
+  health_insurance?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  known_allergies?: string | null;
+  chronic_conditions?: string | null;
+  family_history?: string | null;
+  habits?: string | null;
 };
 
 type Pet = {
@@ -271,6 +280,15 @@ export default function CustomerDetailPage() {
     email: "",
     rut: "",
     birth_date: "",
+    sex: "",
+    occupation: "",
+    health_insurance: "",
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
+    known_allergies: "",
+    chronic_conditions: "",
+    family_history: "",
+    habits: "",
   });
   // Notas clínicas de paciente (clave = "customer_${customerId}")
   const PATIENT_NOTES_KEY = `customer_${customerId}`;
@@ -446,6 +464,15 @@ export default function CustomerDetailPage() {
           email: editPatientForm.email,
           rut: editPatientForm.rut,
           birth_date: editPatientForm.birth_date || null,
+          sex: editPatientForm.sex || null,
+          occupation: editPatientForm.occupation || null,
+          health_insurance: editPatientForm.health_insurance || null,
+          emergency_contact_name: editPatientForm.emergency_contact_name || null,
+          emergency_contact_phone: editPatientForm.emergency_contact_phone || null,
+          known_allergies: editPatientForm.known_allergies || null,
+          chronic_conditions: editPatientForm.chronic_conditions || null,
+          family_history: editPatientForm.family_history || null,
+          habits: editPatientForm.habits || null,
         }),
       });
       const data = await res.json();
@@ -2045,6 +2072,15 @@ const lastValidAppointment = validAppointments[0] || null;
                             birth_date: customer?.birth_date
                               ? new Date(customer.birth_date).toISOString().slice(0, 10)
                               : "",
+                            sex: customer?.sex || "",
+                            occupation: customer?.occupation || "",
+                            health_insurance: customer?.health_insurance || "",
+                            emergency_contact_name: customer?.emergency_contact_name || "",
+                            emergency_contact_phone: customer?.emergency_contact_phone || "",
+                            known_allergies: customer?.known_allergies || "",
+                            chronic_conditions: customer?.chronic_conditions || "",
+                            family_history: customer?.family_history || "",
+                            habits: customer?.habits || "",
                           });
                         }}
                         className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
@@ -2086,32 +2122,173 @@ const lastValidAppointment = validAppointments[0] || null;
                   {/* Edit mode */}
                   <div
                     className="overflow-hidden transition-all duration-200 ease-in-out"
-                    style={{ maxHeight: editingPatient ? "600px" : "0" }}
+                    style={{ maxHeight: editingPatient ? "2400px" : "0" }}
                   >
-                    <div className="space-y-3 pt-1">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {[
-                          { key: "name",       label: "Nombre",             type: "text",  placeholder: "Nombre completo" },
-                          { key: "phone",      label: "Teléfono",           type: "text",  placeholder: "+56 9 1234 5678" },
-                          { key: "email",      label: "Email",              type: "email", placeholder: "correo@ejemplo.com" },
-                          { key: "rut",        label: "RUT",                type: "text",  placeholder: "12.345.678-9" },
-                          { key: "birth_date", label: "Fecha de nacimiento", type: "date",  placeholder: "" },
-                        ].map(({ key, label, type, placeholder }) => (
-                          <div key={key}>
+                    <div className="space-y-5 pt-1">
+
+                      {/* ── Datos de contacto ── */}
+                      <div>
+                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                          Datos de contacto
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {[
+                            { key: "name",  label: "Nombre *",  type: "text",  placeholder: "Nombre completo" },
+                            { key: "phone", label: "Teléfono",  type: "text",  placeholder: "+56 9 1234 5678" },
+                            { key: "email", label: "Email",     type: "email", placeholder: "correo@ejemplo.com" },
+                            { key: "rut",   label: "RUT",       type: "text",  placeholder: "12.345.678-9" },
+                          ].map(({ key, label, type, placeholder }) => (
+                            <div key={key}>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                                {label}
+                              </label>
+                              <input
+                                type={type}
+                                placeholder={placeholder}
+                                value={(editPatientForm as any)[key] ?? ""}
+                                onChange={(e) => setEditPatientForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                                className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* ── Datos personales ── */}
+                      <div>
+                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                          Datos personales
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
                             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              {label}
+                              Fecha de nacimiento
                             </label>
                             <input
-                              type={type}
-                              placeholder={placeholder}
-                              value={(editPatientForm as any)[key] ?? ""}
-                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                              type="date"
+                              value={editPatientForm.birth_date}
+                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, birth_date: e.target.value }))}
                               className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
                               style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }}
                             />
                           </div>
-                        ))}
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                              Sexo
+                            </label>
+                            <select
+                              value={editPatientForm.sex}
+                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, sex: e.target.value }))}
+                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            >
+                              <option value="">Sin especificar</option>
+                              <option value="masculino">Masculino</option>
+                              <option value="femenino">Femenino</option>
+                              <option value="otro">Otro</option>
+                              <option value="prefiero no decir">Prefiero no decir</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                              Ocupación
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="ej. profesora"
+                              value={editPatientForm.occupation}
+                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, occupation: e.target.value }))}
+                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                              Previsión de salud
+                            </label>
+                            <select
+                              value={editPatientForm.health_insurance}
+                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, health_insurance: e.target.value }))}
+                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            >
+                              <option value="">Sin especificar</option>
+                              <option value="Fonasa">Fonasa</option>
+                              <option value="Isapre">Isapre</option>
+                              <option value="Capredena">Capredena</option>
+                              <option value="Dipreca">Dipreca</option>
+                              <option value="Particular / Ninguna">Particular / Ninguna</option>
+                            </select>
+                          </div>
+                        </div>
                       </div>
+
+                      {/* ── Contacto de emergencia ── */}
+                      <div>
+                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                          Contacto de emergencia
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                              Nombre
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="ej. María González"
+                              value={editPatientForm.emergency_contact_name}
+                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_name: e.target.value }))}
+                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                              Teléfono
+                            </label>
+                            <input
+                              type="tel"
+                              placeholder="+56 9 8765 4321"
+                              value={editPatientForm.emergency_contact_phone}
+                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── Antecedentes médicos ── */}
+                      <div>
+                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                          Antecedentes médicos
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {[
+                            { key: "known_allergies",   label: "Alergias conocidas",           placeholder: "ej. penicilina, látex…" },
+                            { key: "chronic_conditions", label: "Patologías crónicas",          placeholder: "ej. hipertensión, diabetes…" },
+                            { key: "family_history",    label: "Antecedentes familiares",       placeholder: "ej. diabetes materna, cáncer…" },
+                            { key: "habits",            label: "Hábitos",                       placeholder: "ej. fumador, sedentario…" },
+                          ].map(({ key, label, placeholder }) => (
+                            <div key={key}>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                                {label}
+                              </label>
+                              <textarea
+                                rows={2}
+                                placeholder={placeholder}
+                                value={(editPatientForm as any)[key] ?? ""}
+                                onChange={(e) => setEditPatientForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                                className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* ── Acciones ── */}
                       <div className="flex justify-end gap-2 pt-1">
                         <button
                           type="button"
@@ -2131,6 +2308,7 @@ const lastValidAppointment = validAppointments[0] || null;
                           {savingPet ? "Guardando..." : "Guardar cambios"}
                         </button>
                       </div>
+
                     </div>
                   </div>
                 </div>
