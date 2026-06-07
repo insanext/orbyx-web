@@ -419,14 +419,19 @@ export default function CustomerDetailPage() {
     setClinicalFormState((prev) => ({
       ...prev,
       [formKey]: {
-        reason: note.reason || "",
-        notes: note.observations || "",
-        diagnosis: note.diagnosis || "",
-        treatment: note.treatment || "",
-        controlDate: note.next_control_at
+        reason:         note.reason       || "",
+        notes:          note.observations || "",
+        diagnosis:      note.diagnosis    || "",
+        treatment:      note.treatment    || "",
+        controlDate:    note.next_control_at
           ? new Date(note.next_control_at).toISOString().slice(0, 10)
           : "",
-        controlType: note.control_type || "",
+        controlType:    note.control_type || "",
+        symptoms:       (note as any).symptoms       || "",
+        medications:    (note as any).medications    || "",
+        referrals:      (note as any).referrals      || "",
+        follow_up_notes:(note as any).follow_up_notes || "",
+        extra_fields:   (note as any).extra_fields   ?? undefined,
       },
     }));
     setEditingNoteId(note.id);
@@ -2912,12 +2917,17 @@ const lastValidAppointment = validAppointments[0] || null;
                                               setClinicalFormState((prev) => ({
                                                 ...prev,
                                                 [formKey]: {
-                                                  reason:      note.reason       || "",
-                                                  notes:       note.observations || "",
-                                                  diagnosis:   note.diagnosis    || "",
-                                                  treatment:   note.treatment    || "",
-                                                  controlDate: note.next_control_at ? new Date(note.next_control_at).toISOString().slice(0, 10) : "",
-                                                  controlType: note.control_type || "",
+                                                  reason:          note.reason       || "",
+                                                  notes:           note.observations || "",
+                                                  diagnosis:       note.diagnosis    || "",
+                                                  treatment:       note.treatment    || "",
+                                                  controlDate:     note.next_control_at ? new Date(note.next_control_at).toISOString().slice(0, 10) : "",
+                                                  controlType:     note.control_type || "",
+                                                  symptoms:        (note as any).symptoms        || "",
+                                                  medications:     (note as any).medications     || "",
+                                                  referrals:       (note as any).referrals       || "",
+                                                  follow_up_notes: (note as any).follow_up_notes || "",
+                                                  extra_fields:    (note as any).extra_fields    ?? undefined,
                                                 },
                                               }));
                                               setEditingNoteId(note.id);
