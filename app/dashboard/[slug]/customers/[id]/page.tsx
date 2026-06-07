@@ -251,6 +251,7 @@ export default function CustomerDetailPage() {
     businessCategory === "veterinaria" || businessCategory === "vet";
   const isVet = isVeterinaria;
   const isClinica = businessCategory === "clinica";
+  const isOdontologia = businessCategory === "odontologia";
 
   const CONTROL_TYPES_VET = [
     "Control general", "Primera consulta", "Control",
@@ -264,7 +265,16 @@ export default function CustomerDetailPage() {
     "Examen / Diagnóstico", "Resultado de exámenes",
     "Certificado médico", "Otro",
   ];
-  const CONTROL_TYPES = isVeterinaria ? CONTROL_TYPES_VET : CONTROL_TYPES_CLINICA;
+  const CONTROL_TYPES_DENTAL = [
+    "Consulta inicial", "Control", "Extracción", "Endodoncia",
+    "Obturación", "Limpieza", "Ortodoncia", "Blanqueamiento",
+    "Implante", "Corona", "Otro",
+  ];
+  const CONTROL_TYPES = isVeterinaria
+    ? CONTROL_TYPES_VET
+    : isOdontologia
+    ? CONTROL_TYPES_DENTAL
+    : CONTROL_TYPES_CLINICA;
 
   const [pets, setPets] = useState<Pet[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -2675,6 +2685,67 @@ const lastValidAppointment = validAppointments[0] || null;
                         </div>
                       </div>
 
+                      {/* ── Antecedentes dentales ── */}
+                      {isOdontologia && (
+                        <div>
+                          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+                            Antecedentes dentales
+                          </p>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Grupo sanguíneo</label>
+                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.grupo_sanguineo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, grupo_sanguineo: e.target.value } }))}>
+                                <option value="">Seleccionar...</option>
+                                {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((g) => <option key={g}>{g}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Riesgo cariogénico</label>
+                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.riesgo_cariogenico ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, riesgo_cariogenico: e.target.value } }))}>
+                                <option value="">Seleccionar...</option>
+                                <option>Bajo</option><option>Medio</option><option>Alto</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Higiene oral</label>
+                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.higiene_oral ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, higiene_oral: e.target.value } }))}>
+                                <option value="">Seleccionar...</option>
+                                <option>Buena</option><option>Regular</option><option>Mala</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Bruxismo</label>
+                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.bruxismo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, bruxismo: e.target.value } }))}>
+                                <option value="">Seleccionar...</option>
+                                <option>Sí</option><option>No</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Sangrado de encías</label>
+                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.sangrado_encias ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, sangrado_encias: e.target.value } }))}>
+                                <option value="">Seleccionar...</option>
+                                <option>Sí</option><option>No</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Ortodoncia previa</label>
+                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.ortodoncia_previa ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, ortodoncia_previa: e.target.value } }))}>
+                                <option value="">Seleccionar...</option>
+                                <option>Sí</option><option>No</option>
+                              </select>
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Prótesis / Implantes</label>
+                              <input type="text" placeholder="Descripción" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.protesis ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, protesis: e.target.value } }))} />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Historia de tratamientos</label>
+                              <textarea rows={3} placeholder="Resumen de tratamientos anteriores" className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.historia_tratamientos ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, historia_tratamientos: e.target.value } }))} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* ── Acciones ── */}
                       <div className="flex justify-end gap-2 pt-1">
                         <button
@@ -3011,36 +3082,82 @@ const lastValidAppointment = validAppointments[0] || null;
                                             </div>
                                           ))}
                                           {/* Campos clínicos adicionales */}
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Síntomas</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
-                                          </div>
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Medicamentos recetados</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
-                                          </div>
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Derivaciones</p>
-                                            <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
-                                          </div>
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Notas de seguimiento</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
-                                          </div>
-                                          <div className="grid grid-cols-3 gap-2">
+                                          {!isOdontologia && (
                                             <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Peso (kg)</p>
-                                              <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Síntomas</p>
+                                              <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
                                             </div>
-                                            <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Talla (cm)</p>
-                                              <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
-                                            </div>
-                                            <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">IMC</p>
-                                              <input type="text" readOnly className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-400 cursor-not-allowed" placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
-                                            </div>
+                                          )}
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">{isOdontologia ? "Indicaciones post-operatorias" : "Medicamentos recetados"}</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder={isOdontologia ? "ej. Ibuprofeno 400mg c/8h por 3 días" : "Medicamentos, dosis e indicaciones"} value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
                                           </div>
+                                          {!isOdontologia && (
+                                            <div>
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Derivaciones</p>
+                                              <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                            </div>
+                                          )}
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">{isOdontologia ? "Plan de tratamiento" : "Notas de seguimiento"}</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder={isOdontologia ? "Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." : "Indicaciones para el próximo control"} value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                          </div>
+                                          {!isOdontologia && (
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Peso (kg)</p>
+                                                <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Talla (cm)</p>
+                                                <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">IMC</p>
+                                                <input type="text" readOnly className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-400 cursor-not-allowed" placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
+                                              </div>
+                                            </div>
+                                          )}
+                                          {isOdontologia && (
+                                            <div className="space-y-2">
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400">Campos dentales</p>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Pieza(s) dental(es)</p>
+                                                  <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
+                                                </div>
+                                                <div>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Cuadrante</p>
+                                                  <select className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" value={clinicalFormState[formKey]?.extra_fields?.cuadrante ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, cuadrante: e.target.value } } }))}>
+                                                    <option value="">Seleccionar...</option>
+                                                    <option>Superior derecho</option><option>Superior izquierdo</option><option>Inferior derecho</option><option>Inferior izquierdo</option><option>Múltiple</option>
+                                                  </select>
+                                                </div>
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Anestesia usada</p>
+                                                <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Materiales usados</p>
+                                                <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Composite A2, amalgama" value={clinicalFormState[formKey]?.extra_fields?.materiales ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, materiales: e.target.value } } }))} />
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Radiografías / Hallazgos</p>
+                                                <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Hallazgos radiográficos" value={clinicalFormState[formKey]?.extra_fields?.hallazgos_rx ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, hallazgos_rx: e.target.value } } }))} />
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">N° de sesión</p>
+                                                  <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 2" value={clinicalFormState[formKey]?.extra_fields?.numero_sesion ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, numero_sesion: e.target.value } } }))} />
+                                                </div>
+                                                <div>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Presupuesto ($)</p>
+                                                  <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 50000" value={clinicalFormState[formKey]?.extra_fields?.presupuesto ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, presupuesto: e.target.value } } }))} />
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
                                           <div>
                                             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Próximo control</label>
                                             <div className="mb-2 flex flex-wrap gap-1.5">
@@ -3129,36 +3246,82 @@ const lastValidAppointment = validAppointments[0] || null;
                                             </div>
                                           ))}
                                           {/* Campos clínicos adicionales */}
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Síntomas</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
-                                          </div>
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Medicamentos recetados</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
-                                          </div>
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Derivaciones</p>
-                                            <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
-                                          </div>
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Notas de seguimiento</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
-                                          </div>
-                                          <div className="grid grid-cols-3 gap-2">
+                                          {!isOdontologia && (
                                             <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Peso (kg)</p>
-                                              <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Síntomas</p>
+                                              <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
                                             </div>
-                                            <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Talla (cm)</p>
-                                              <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
-                                            </div>
-                                            <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">IMC</p>
-                                              <input type="text" readOnly className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-400 cursor-not-allowed" placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
-                                            </div>
+                                          )}
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">{isOdontologia ? "Indicaciones post-operatorias" : "Medicamentos recetados"}</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder={isOdontologia ? "ej. Ibuprofeno 400mg c/8h por 3 días" : "Medicamentos, dosis e indicaciones"} value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
                                           </div>
+                                          {!isOdontologia && (
+                                            <div>
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Derivaciones</p>
+                                              <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                            </div>
+                                          )}
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">{isOdontologia ? "Plan de tratamiento" : "Notas de seguimiento"}</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder={isOdontologia ? "Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." : "Indicaciones para el próximo control"} value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                          </div>
+                                          {!isOdontologia && (
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Peso (kg)</p>
+                                                <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Talla (cm)</p>
+                                                <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">IMC</p>
+                                                <input type="text" readOnly className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-400 cursor-not-allowed" placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
+                                              </div>
+                                            </div>
+                                          )}
+                                          {isOdontologia && (
+                                            <div className="space-y-2">
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400">Campos dentales</p>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Pieza(s) dental(es)</p>
+                                                  <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
+                                                </div>
+                                                <div>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Cuadrante</p>
+                                                  <select className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" value={clinicalFormState[formKey]?.extra_fields?.cuadrante ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, cuadrante: e.target.value } } }))}>
+                                                    <option value="">Seleccionar...</option>
+                                                    <option>Superior derecho</option><option>Superior izquierdo</option><option>Inferior derecho</option><option>Inferior izquierdo</option><option>Múltiple</option>
+                                                  </select>
+                                                </div>
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Anestesia usada</p>
+                                                <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Materiales usados</p>
+                                                <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Composite A2, amalgama" value={clinicalFormState[formKey]?.extra_fields?.materiales ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, materiales: e.target.value } } }))} />
+                                              </div>
+                                              <div>
+                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Radiografías / Hallazgos</p>
+                                                <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Hallazgos radiográficos" value={clinicalFormState[formKey]?.extra_fields?.hallazgos_rx ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, hallazgos_rx: e.target.value } } }))} />
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">N° de sesión</p>
+                                                  <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 2" value={clinicalFormState[formKey]?.extra_fields?.numero_sesion ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, numero_sesion: e.target.value } } }))} />
+                                                </div>
+                                                <div>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Presupuesto ($)</p>
+                                                  <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 50000" value={clinicalFormState[formKey]?.extra_fields?.presupuesto ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, presupuesto: e.target.value } } }))} />
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
                                           <div>
                                             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Próximo control</label>
                                             <input type="date" value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
