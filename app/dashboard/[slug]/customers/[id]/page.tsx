@@ -551,35 +551,71 @@ export default function CustomerDetailPage() {
       setSavingNewNote(true);
       setNewNoteError("");
 
-      const res = await fetch(`${BACKEND_URL}/clinical-notes/${slug}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer_id: customerId,
-          branch_id: selectedBranchId || null,
-          date: newNoteForm.date,
-          control_type: newNoteForm.control_type || null,
-          reason: newNoteForm.reason || null,
-          symptoms: newNoteForm.symptoms || null,
-          diagnosis: newNoteForm.diagnosis || null,
-          treatment: newNoteForm.treatment || null,
-          medications: newNoteForm.medications || null,
-          referrals: newNoteForm.referrals || null,
-          observations: newNoteForm.observations || null,
-          follow_up_notes: newNoteForm.follow_up_notes || null,
-          next_control_at: newNoteForm.next_control_at || null,
-          next_control_label: newNoteForm.next_control_label || null,
-        }),
-      });
+      if (newNoteApptId) {
+        // Nota ligada a una cita existente: PATCH en vez de POST
+        const res = await fetch(
+          `${BACKEND_URL}/appointments/${newNoteApptId}/clinical`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              slug,
+              reason: newNoteForm.reason || null,
+              notes: newNoteForm.observations || null,
+              diagnosis: newNoteForm.diagnosis || null,
+              treatment: newNoteForm.treatment || null,
+              symptoms: newNoteForm.symptoms || null,
+              medications: newNoteForm.medications || null,
+              referrals: newNoteForm.referrals || null,
+              follow_up_notes: newNoteForm.follow_up_notes || null,
+              control_type: newNoteForm.control_type || null,
+              next_control_at: newNoteForm.next_control_at || null,
+              next_control_label: newNoteForm.next_control_label || null,
+            }),
+          }
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "No se pudo guardar la nota");
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "No se pudo crear la nota");
+        try {
+          await fetch(`${BACKEND_URL}/appointments/${newNoteApptId}/clinical-pending`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pending: false, slug }),
+          });
+        } catch {}
 
-      // Prepend to local notes list
-      setClinicalNotes((prev) => ({
-        ...prev,
-        [PATIENT_NOTES_KEY]: [data.note, ...(prev[PATIENT_NOTES_KEY] ?? [])],
-      }));
+        setNewNoteApptId(null);
+        await loadPatientNotes();
+      } else {
+        const res = await fetch(`${BACKEND_URL}/clinical-notes/${slug}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customer_id: customerId,
+            branch_id: selectedBranchId || null,
+            date: newNoteForm.date,
+            control_type: newNoteForm.control_type || null,
+            reason: newNoteForm.reason || null,
+            symptoms: newNoteForm.symptoms || null,
+            diagnosis: newNoteForm.diagnosis || null,
+            treatment: newNoteForm.treatment || null,
+            medications: newNoteForm.medications || null,
+            referrals: newNoteForm.referrals || null,
+            observations: newNoteForm.observations || null,
+            follow_up_notes: newNoteForm.follow_up_notes || null,
+            next_control_at: newNoteForm.next_control_at || null,
+            next_control_label: newNoteForm.next_control_label || null,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "No se pudo crear la nota");
+
+        setClinicalNotes((prev) => ({
+          ...prev,
+          [PATIENT_NOTES_KEY]: [data.note, ...(prev[PATIENT_NOTES_KEY] ?? [])],
+        }));
+      }
 
       setShowNewNoteForm(false);
       setNewNoteForm({
