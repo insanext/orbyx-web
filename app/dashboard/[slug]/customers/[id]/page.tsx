@@ -972,9 +972,9 @@ const lastValidAppointment = validAppointments[0] || null;
         });
       } catch {}
 
+      await loadPatientNotes();
       if (newNoteApptId === appointmentId) {
         setNewNoteApptId(null);
-        await loadPatientNotes();
       }
 
       setTimeout(() => {
@@ -3112,7 +3112,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">
                                           <button type="button" onClick={() => setNewNoteApptId(null)} className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>Cancelar</button>
-                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(appt.id, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.reason ?? "", form?.notes ?? "", form?.controlDate ?? null); setNewNoteApptId(null); }} disabled={savingClinicalId === appt.id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === appt.id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === appt.id ? "Guardando..." : "Guardar"}</button>
+                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(appt.id, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null); }} disabled={savingClinicalId === appt.id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === appt.id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === appt.id ? "Guardando..." : "Guardar"}</button>
                                         </div>
                                       </div>
                                     ) : null}
