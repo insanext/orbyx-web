@@ -312,23 +312,23 @@ export default function CustomersPage() {
 
                 <div className="mt-3 space-y-3">
                   <div>
-                    <p className="text-xs text-slate-500">Contacto</p>
-                    <p className="mt-0.5 break-words text-xs text-slate-700 dark:text-slate-200">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Contacto</p>
+                    <p className="mt-0.5 break-words text-xs text-slate-800 dark:text-slate-200">
                       {c.email || c.phone || "Sin contacto"}
                     </p>
                     {c.email && c.phone && (
-                      <p className="break-words text-xs text-slate-500">{c.phone}</p>
+                      <p className="break-words text-xs text-slate-600 dark:text-slate-400">{c.phone}</p>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2">
-                      <p className="text-xs text-slate-500">Visitas</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Visitas</p>
                       <p className="mt-0.5 text-sm font-semibold text-[var(--text-main)]">{c.total_visits}</p>
                     </div>
                     <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2">
-                      <p className="text-xs text-slate-500">Última visita</p>
-                      <p className="mt-0.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Última visita</p>
+                      <p className="mt-0.5 text-xs font-medium text-slate-800 dark:text-slate-300">
                         {formatDate(c.last_visit_at)}
                       </p>
                     </div>
@@ -378,8 +378,8 @@ export default function CustomersPage() {
                     </td>
 
                     <td className="px-4 py-3.5">
-                      <span className="block text-xs text-slate-600 dark:text-slate-300">{c.email || "—"}</span>
-                      <span className="block text-xs text-slate-400">{c.phone || "—"}</span>
+                      <span className="block text-xs text-slate-700 dark:text-slate-300">{c.email || "—"}</span>
+                      <span className="block text-xs text-slate-600 dark:text-slate-400">{c.phone || "—"}</span>
                     </td>
 
                     <td className="px-4 py-3.5 font-semibold text-[var(--text-main)]">
@@ -390,7 +390,7 @@ export default function CustomersPage() {
                       <SegmentBadge segment={c.segment} />
                     </td>
 
-                    <td className="px-4 py-3.5 text-xs text-slate-500">
+                    <td className="px-4 py-3.5 text-xs text-slate-700 dark:text-slate-300">
                       {formatDate(c.last_visit_at)}
                     </td>
                   </tr>

@@ -2877,7 +2877,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                           type="button"
                                           onClick={() => setViewingNoteId(isViewingThisNote ? null : note.id)}
                                           className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
-                                          style={{ borderColor: "var(--border-color)", background: isViewingThisNote ? "var(--bg-soft)" : "transparent", color: "var(--text-muted)" }}
+                                          style={{ borderColor: "var(--border-color)", background: isViewingThisNote ? "var(--bg-soft)" : "transparent", color: "var(--text-main)" }}
                                         >
                                           {isViewingThisNote ? "✕ Cerrar" : "Ver detalle"}
                                         </button>
@@ -2901,7 +2901,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                               setEditingNoteId(note.id);
                                             }}
                                             className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
-                                            style={{ borderColor: "var(--border-color)", background: "transparent", color: "var(--text-muted)" }}
+                                            style={{ borderColor: "var(--border-color)", background: "transparent", color: "var(--text-main)" }}
                                           >
                                             {isEditingThisNote ? "Cerrar" : "Editar"}
                                           </button>
@@ -3010,10 +3010,10 @@ const lastValidAppointment = validAppointments[0] || null;
                                     }}
                                   >
                                     <div className="flex min-w-0 items-center gap-2">
-                                      <span className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ background: "rgba(100,116,139,0.10)", color: "#94a3b8" }}>
+                                      <span className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ background: "rgba(100,116,139,0.12)", color: "#475569" }}>
                                         Sin consulta
                                       </span>
-                                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{formatDate(appt.start_at)}</p>
+                                      <p className="text-xs" style={{ color: "var(--text-main)" }}>{formatDate(appt.start_at)}</p>
                                       {appt.service_name_snapshot ? (
                                         <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>· {appt.service_name_snapshot}</p>
                                       ) : null}
@@ -3026,7 +3026,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                         setNewNoteApptId(appt.id);
                                       }}
                                       className="shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium transition"
-                                      style={{ borderColor: "var(--border-color)", background: isCreatingNew ? "var(--bg-soft)" : "transparent", color: "var(--text-muted)" }}
+                                      style={{ borderColor: "var(--border-color)", background: isCreatingNew ? "var(--bg-soft)" : "transparent", color: "var(--text-main)" }}
                                     >
                                       {isCreatingNew ? "Cerrar" : "Completar consulta"}
                                     </button>
