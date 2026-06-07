@@ -58,6 +58,7 @@ type BranchItem = {
   tenant_id?: string;
   name: string;
   is_active?: boolean;
+  use_global_hours?: boolean;
 };
 
 type StaffItem = {
@@ -1720,9 +1721,12 @@ function getSelectedStaffDayWindow(day: Date) {
   currentBranchId: string
 ) {
   try {
-    const response = await apiFetch(
-      `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
-    );
+    const activeBranch = branches.find((b) => b.id === currentBranchId);
+    const useGlobal = activeBranch ? activeBranch.use_global_hours !== false : false;
+    const hoursUrl = useGlobal
+      ? `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&scope=global`
+      : `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`;
+    const response = await apiFetch(hoursUrl);
     const data = await response.json();
 
     if (!response.ok) {
