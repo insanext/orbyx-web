@@ -108,6 +108,7 @@ type ClinicalNote = {
   next_control_at?: string | null;
   next_control_label?: string | null;
   created_at?: string | null;
+  extra_fields?: Record<string, any> | null;
 };
 
 type ClinicalFormEntry = {
@@ -2963,6 +2964,15 @@ const lastValidAppointment = validAppointments[0] || null;
                                               <p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{f.value}</p>
                                             </div>
                                           ))}
+                                          {(note.extra_fields?.peso_kg || note.extra_fields?.talla_cm) ? (
+                                            <div className="sm:col-span-2">
+                                              <div className="flex gap-6">
+                                                {note.extra_fields?.peso_kg ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Peso</p><p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{note.extra_fields.peso_kg} kg</p></div> : null}
+                                                {note.extra_fields?.talla_cm ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Talla</p><p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{note.extra_fields.talla_cm} cm</p></div> : null}
+                                                {note.extra_fields?.imc ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>IMC</p><p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{note.extra_fields.imc}</p></div> : null}
+                                              </div>
+                                            </div>
+                                          ) : null}
                                           {note.next_control_at ? (
                                             <div className="sm:col-span-2">
                                               <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Próximo control</p>
