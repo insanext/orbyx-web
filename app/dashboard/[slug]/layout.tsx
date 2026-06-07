@@ -164,7 +164,7 @@ export default function DashboardLayout({
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [branchesError, setBranchesError] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
-  const isPacientes = ["veterinaria", "vet", "clinica"].includes(businessCategory);
+  const isPacientes = ["veterinaria", "vet", "clinica", "odontologia"].includes(businessCategory);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);

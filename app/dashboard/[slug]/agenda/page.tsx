@@ -479,6 +479,7 @@ next_control_custom_unit: "days",
   const isVeterinaria =
     businessCategory === "veterinaria" || businessCategory === "vet";
   const isClinica = businessCategory === "clinica";
+  const isOdontologia = businessCategory === "odontologia";
 
   const CONTROL_TYPES_VET = [
     "Control general", "Primera consulta", "Control",
@@ -1972,7 +1973,7 @@ async function loadPendingCloseAppointments() {
 
   async function loadPendingClinicalNotes() {
     try {
-      if (!slug || !selectedBranchId || !(isVeterinaria || isClinica)) {
+      if (!slug || !selectedBranchId || !(isVeterinaria || isClinica || isOdontologia)) {
         setPendingClinicalNotes([]);
         return;
       }
@@ -3243,7 +3244,7 @@ const hasPendingClose = pendingCloseCount > 0;
         />
       ) : null}
 
-      {(isVeterinaria || isClinica) && pendingClinicalNotes.length > 0 ? (
+      {(isVeterinaria || isClinica || isOdontologia) && pendingClinicalNotes.length > 0 ? (
         <button
           type="button"
           onClick={() => setShowPendingClinicalPanel(true)}
@@ -5592,7 +5593,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             <button
                               type="button"
                               onClick={() => {
-                                if (isVeterinaria || isClinica) {
+                                if (isVeterinaria || isClinica || isOdontologia) {
                                   handleAsistioClinico(selectedAppointment);
                                   return;
                                 }
@@ -5748,7 +5749,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                           <button
                             type="button"
                             onClick={() => {
-                              if (isVeterinaria || isClinica) {
+                              if (isVeterinaria || isClinica || isOdontologia) {
                                 handleAsistioClinico(selectedAppointment!);
                                 return;
                               }
@@ -5967,7 +5968,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                                     <button
                             type="button"
                             onClick={() => {
-                              if (isVeterinaria || isClinica) {
+                              if (isVeterinaria || isClinica || isOdontologia) {
                                 openVeterinaryCloseModal();
                                 return;
                               }
@@ -6959,7 +6960,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                 className="text-lg font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
-                {isClinica ? "Cerrar atención clínica" : "Cerrar atención veterinaria"}
+                {isOdontologia ? "Cerrar atención dental" : isClinica ? "Cerrar atención clínica" : "Cerrar atención veterinaria"}
               </h3>
               <p
                 className="mt-1 text-sm leading-6"

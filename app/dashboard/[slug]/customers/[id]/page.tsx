@@ -2363,7 +2363,7 @@ const lastValidAppointment = validAppointments[0] || null;
             ) : null}
 
             {/* Paso 4: ficha clínica de personas */}
-            {isClinica && incompleteProfileBanner ? (
+            {(isClinica || isOdontologia) && incompleteProfileBanner ? (
               <div className="mb-1 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
                 <p className="text-sm" style={{ color: "#92400e" }}>
                   Este paciente no tiene ficha completa. Completa sus datos antes de registrar la atención.
@@ -2377,7 +2377,7 @@ const lastValidAppointment = validAppointments[0] || null;
                 </button>
               </div>
             ) : null}
-            {isClinica ? (
+            {(isClinica || isOdontologia) ? (
               <Panel
                 title="Ficha del paciente"
                 description="Datos del paciente e historial de atenciones clínicas."
