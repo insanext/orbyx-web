@@ -99,6 +99,10 @@ type ClinicalNote = {
   reason?: string | null;
   diagnosis?: string | null;
   treatment?: string | null;
+  symptoms?: string | null;
+  medications?: string | null;
+  referrals?: string | null;
+  follow_up_notes?: string | null;
   observations?: string | null;
   next_control_at?: string | null;
   next_control_label?: string | null;
@@ -294,6 +298,8 @@ export default function CustomerDetailPage() {
 
   // Clínica humana (isClinica): edición de datos del paciente
   const [editingPatient, setEditingPatient] = useState(false);
+  const [showPatientProfile, setShowPatientProfile] = useState(false);
+  const [showResumenModal, setShowResumenModal] = useState(false);
   const [editPatientForm, setEditPatientForm] = useState({
     name: "",
     phone: "",
@@ -696,6 +702,7 @@ export default function CustomerDetailPage() {
 
   // Auto-open note form when coming from agenda pending panel
   useEffect(() => {
+    console.log("[auto-open] effect fired — loading:", loading, "appointments:", appointments.length, "autoOpenApptId:", autoOpenApptId, "autoOpenNote:", autoOpenNote, "hasAutoOpened:", hasAutoOpenedRef.current);
     if (
       !autoOpenApptId ||
       autoOpenNote !== "true" ||
@@ -710,6 +717,9 @@ export default function CustomerDetailPage() {
     }
 
     (async () => {
+      console.log("[auto-open] appointments:", appointments.length);
+      console.log("[auto-open] autoOpenApptId:", autoOpenApptId);
+
       let notes: ClinicalNote[] = [];
       try {
         const res = await fetch(
@@ -718,12 +728,15 @@ export default function CustomerDetailPage() {
         if (res.ok) {
           const data = await res.json();
           notes = Array.isArray(data.notes) ? data.notes : [];
+          console.log("[auto-open] notes encontradas:", notes);
           setClinicalNotes((prev) => ({ ...prev, [PATIENT_NOTES_KEY]: notes }));
         }
       } catch {}
 
       const existingNote = notes.find((n) => n.appointment_id === autoOpenApptId);
+      console.log("[auto-open] existingNote:", existingNote);
       if (existingNote) {
+        console.log("[auto-open] seteando editingNoteId:", existingNote.id);
         setClinicalFormState((prev) => ({
           ...prev,
           [autoOpenApptId]: {
@@ -739,6 +752,7 @@ export default function CustomerDetailPage() {
         }));
         setEditingNoteId(existingNote.id);
       } else {
+        console.log("[auto-open] seteando newNoteApptId:", autoOpenApptId);
         setClinicalFormState((prev) => ({
           ...prev,
           [autoOpenApptId]: { reason: "", notes: "", diagnosis: "", treatment: "", controlDate: "", controlType: "" },
@@ -2228,46 +2242,65 @@ const lastValidAppointment = validAppointments[0] || null;
                   style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
                 >
                   {/* Header sección A */}
-                  <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[14px] font-semibold" style={{ color: "var(--text-main)" }}>
                       {customer?.name}
                     </p>
                     {!editingPatient ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingPatient(true);
-                          setEditPatientForm({
-                            name: customer?.name || "",
-                            phone: customer?.phone || "",
-                            email: customer?.email || "",
-                            rut: customer?.rut || "",
-                            birth_date: customer?.birth_date
-                              ? new Date(customer.birth_date).toISOString().slice(0, 10)
-                              : "",
-                            sex: customer?.sex || "",
-                            occupation: customer?.occupation || "",
-                            health_insurance: customer?.health_insurance || "",
-                            emergency_contact_name: customer?.emergency_contact_name || "",
-                            emergency_contact_phone: customer?.emergency_contact_phone || "",
-                            known_allergies: customer?.known_allergies || "",
-                            chronic_conditions: customer?.chronic_conditions || "",
-                            family_history: customer?.family_history || "",
-                            habits: customer?.habits || "",
-                          });
-                        }}
-                        className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
-                        style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
-                      >
-                        Editar paciente
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowPatientProfile((v) => !v)}
+                          className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
+                          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                        >
+                          {showPatientProfile ? "✕ Cerrar ficha" : "Ver ficha del paciente"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowPatientProfile(false);
+                            setEditingPatient(true);
+                            setEditPatientForm({
+                              name: customer?.name || "",
+                              phone: customer?.phone || "",
+                              email: customer?.email || "",
+                              rut: customer?.rut || "",
+                              birth_date: customer?.birth_date
+                                ? new Date(customer.birth_date).toISOString().slice(0, 10)
+                                : "",
+                              sex: customer?.sex || "",
+                              occupation: customer?.occupation || "",
+                              health_insurance: customer?.health_insurance || "",
+                              emergency_contact_name: customer?.emergency_contact_name || "",
+                              emergency_contact_phone: customer?.emergency_contact_phone || "",
+                              known_allergies: customer?.known_allergies || "",
+                              chronic_conditions: customer?.chronic_conditions || "",
+                              family_history: customer?.family_history || "",
+                              habits: customer?.habits || "",
+                            });
+                          }}
+                          className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
+                          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                        >
+                          Editar ficha del paciente
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowResumenModal(true)}
+                          className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
+                          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                        >
+                          Ver resumen
+                        </button>
+                      </div>
                     ) : null}
                   </div>
 
                   {/* Read mode */}
                   <div
                     className="overflow-hidden transition-all duration-200 ease-in-out"
-                    style={{ maxHeight: editingPatient ? "0" : "800px" }}
+                    style={{ maxHeight: showPatientProfile && !editingPatient ? "900px" : "0" }}
                   >
                     <div className="space-y-4">
                       {/* Datos de contacto */}
@@ -2974,63 +3007,6 @@ const lastValidAppointment = validAppointments[0] || null;
           </div>
 
           <div className={`space-y-4 ${isVeterinaria ? "xl:col-span-2" : ""} ${isVeterinaria && activeVetTab === "pets" ? "hidden" : ""}`}>
-            {(!isVeterinaria || activeVetTab === "summary") ? (
-            <Panel
-              title="Resumen clínico"
-              description="Datos clave del paciente para operación diaria."
-            >
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-
-                {/* Próximo control */}
-                {(() => {
-                  const latestNote = clinicalNotes[PATIENT_NOTES_KEY]?.[0] ?? null;
-                  const hasControl = !!latestNote?.next_control_at;
-                  return (
-                    <div className="rounded-2xl border p-3 sm:p-4" style={{ borderColor: "var(--border-color)", background: "linear-gradient(180deg, rgba(29,158,117,0.06), var(--bg-card))" }}>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Próximo control</p>
-                      <p className="mt-2 text-sm font-semibold" style={{ color: hasControl ? "#1D9E75" : "var(--text-muted)" }}>
-                        {hasControl ? formatDateLong(latestNote!.next_control_at!) : "Sin control programado"}
-                      </p>
-                      {latestNote?.next_control_label ? (
-                        <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>{latestNote.next_control_label}</p>
-                      ) : null}
-                    </div>
-                  );
-                })()}
-
-                {/* Previsión */}
-                <div className="rounded-2xl border p-3 sm:p-4" style={{ borderColor: "var(--border-color)", background: "linear-gradient(180deg, rgba(37,99,235,0.05), var(--bg-card))" }}>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Previsión</p>
-                  <p className="mt-2 text-sm font-semibold" style={{ color: customer?.health_insurance ? "var(--text-main)" : "var(--text-muted)" }}>
-                    {customer?.health_insurance || "No registrada"}
-                  </p>
-                </div>
-
-                {/* Alergias */}
-                <div
-                  className="rounded-2xl border p-3 sm:p-4"
-                  style={{
-                    borderColor: customer?.known_allergies ? "rgba(245,158,11,0.40)" : "var(--border-color)",
-                    background: customer?.known_allergies ? "rgba(245,158,11,0.05)" : "linear-gradient(180deg, rgba(37,99,235,0.05), var(--bg-card))",
-                  }}
-                >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Alergias</p>
-                  <p className="mt-2 text-sm" style={{ color: customer?.known_allergies ? "#b45309" : "var(--text-muted)" }}>
-                    {customer?.known_allergies || "Sin alergias registradas"}
-                  </p>
-                </div>
-
-                {/* Patologías crónicas */}
-                <div className="rounded-2xl border p-3 sm:p-4" style={{ borderColor: "var(--border-color)", background: "linear-gradient(180deg, rgba(37,99,235,0.05), var(--bg-card))" }}>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Patologías crónicas</p>
-                  <p className="mt-2 text-sm" style={{ color: customer?.chronic_conditions ? "var(--text-main)" : "var(--text-muted)" }}>
-                    {customer?.chronic_conditions || "Sin antecedentes"}
-                  </p>
-                </div>
-
-              </div>
-            </Panel>
-            ) : null}
 
             {isVeterinaria && activeVetTab === "followups" ? (
               <Panel
@@ -3138,6 +3114,87 @@ const lastValidAppointment = validAppointments[0] || null;
                       </div>
         </div>
       )}
+
+      {/* Modal Resumen clínico */}
+      {showResumenModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.55)" }}
+          onClick={() => setShowResumenModal(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl p-6 shadow-2xl"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-base font-semibold" style={{ color: "var(--text-main)" }}>
+                Resumen del paciente
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowResumenModal(false)}
+                className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
+                style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+              >
+                ✕ Cerrar
+              </button>
+            </div>
+            <div className="space-y-3">
+              {/* Último diagnóstico */}
+              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Último diagnóstico</p>
+                <p className="mt-1 text-sm" style={{ color: "var(--text-main)" }}>
+                  {clinicalNotes[PATIENT_NOTES_KEY]?.[0]?.diagnosis || "Sin diagnóstico registrado"}
+                </p>
+              </div>
+              {/* Alergias */}
+              <div
+                className="rounded-xl border p-3"
+                style={{
+                  borderColor: customer?.known_allergies ? "rgba(245,158,11,0.40)" : "var(--border-color)",
+                  background: customer?.known_allergies ? "rgba(245,158,11,0.05)" : "var(--bg-soft)",
+                }}
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Alergias</p>
+                <p className="mt-1 text-sm" style={{ color: customer?.known_allergies ? "#b45309" : "var(--text-muted)" }}>
+                  {customer?.known_allergies || "Sin alergias registradas"}
+                </p>
+              </div>
+              {/* Patologías crónicas */}
+              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Patologías crónicas</p>
+                <p className="mt-1 text-sm" style={{ color: customer?.chronic_conditions ? "var(--text-main)" : "var(--text-muted)" }}>
+                  {customer?.chronic_conditions || "Sin antecedentes"}
+                </p>
+              </div>
+              {/* Medicamentos recetados */}
+              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Medicamentos recetados</p>
+                <p className="mt-1 text-sm" style={{ color: "var(--text-main)" }}>
+                  {clinicalNotes[PATIENT_NOTES_KEY]?.[0]?.medications || "Sin medicamentos registrados"}
+                </p>
+              </div>
+              {/* Próximo control */}
+              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "linear-gradient(180deg, rgba(29,158,117,0.06), var(--bg-soft))" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Próximo control</p>
+                <p className="mt-1 text-sm font-medium" style={{ color: clinicalNotes[PATIENT_NOTES_KEY]?.[0]?.next_control_at ? "#1D9E75" : "var(--text-muted)" }}>
+                  {clinicalNotes[PATIENT_NOTES_KEY]?.[0]?.next_control_at
+                    ? formatDateLong(clinicalNotes[PATIENT_NOTES_KEY]![0]!.next_control_at!)
+                    : "Sin control programado"}
+                </p>
+              </div>
+              {/* Total de atenciones */}
+              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Total de atenciones</p>
+                <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                  {appointments.length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
