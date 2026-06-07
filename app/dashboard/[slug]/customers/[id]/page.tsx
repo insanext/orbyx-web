@@ -2687,61 +2687,28 @@ const lastValidAppointment = validAppointments[0] || null;
 
                       {/* ── Antecedentes dentales ── */}
                       {isOdontologia && (
-                        <div>
-                          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                            Antecedentes dentales
-                          </p>
-                          <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-3">
+                          <p className="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Antecedentes dentales</p>
+                          <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Grupo sanguíneo</label>
-                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.grupo_sanguineo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, grupo_sanguineo: e.target.value } }))}>
+                              <label className="text-[11px] uppercase tracking-wide text-gray-400">Grupo sanguíneo</label>
+                              <select className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 mt-1" value={(editPatientForm as any).extra_fields?.grupo_sanguineo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, grupo_sanguineo: e.target.value } }))}>
                                 <option value="">Seleccionar...</option>
                                 {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((g) => <option key={g}>{g}</option>)}
                               </select>
                             </div>
                             <div>
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Riesgo cariogénico</label>
-                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.riesgo_cariogenico ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, riesgo_cariogenico: e.target.value } }))}>
-                                <option value="">Seleccionar...</option>
-                                <option>Bajo</option><option>Medio</option><option>Alto</option>
-                              </select>
+                              <label className="text-[11px] uppercase tracking-wide text-gray-400">Alergias a anestesia</label>
+                              <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 mt-1" placeholder="ej. Lidocaína" value={(editPatientForm as any).extra_fields?.alergia_anestesia ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, alergia_anestesia: e.target.value } }))} />
                             </div>
-                            <div>
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Higiene oral</label>
-                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.higiene_oral ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, higiene_oral: e.target.value } }))}>
-                                <option value="">Seleccionar...</option>
-                                <option>Buena</option><option>Regular</option><option>Mala</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Bruxismo</label>
-                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.bruxismo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, bruxismo: e.target.value } }))}>
-                                <option value="">Seleccionar...</option>
-                                <option>Sí</option><option>No</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Sangrado de encías</label>
-                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.sangrado_encias ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, sangrado_encias: e.target.value } }))}>
-                                <option value="">Seleccionar...</option>
-                                <option>Sí</option><option>No</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Ortodoncia previa</label>
-                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.ortodoncia_previa ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, ortodoncia_previa: e.target.value } }))}>
-                                <option value="">Seleccionar...</option>
-                                <option>Sí</option><option>No</option>
-                              </select>
-                            </div>
-                            <div className="sm:col-span-2">
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Prótesis / Implantes</label>
-                              <input type="text" placeholder="Descripción" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.protesis ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, protesis: e.target.value } }))} />
-                            </div>
-                            <div className="sm:col-span-2">
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Historia de tratamientos</label>
-                              <textarea rows={3} placeholder="Resumen de tratamientos anteriores" className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.historia_tratamientos ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, historia_tratamientos: e.target.value } }))} />
-                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[11px] uppercase tracking-wide text-gray-400">Patologías relevantes</label>
+                            <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 mt-1" placeholder="ej. Diabetes, hipertensión, anticoagulantes" value={(editPatientForm as any).extra_fields?.patologias_dental ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, patologias_dental: e.target.value } }))} />
+                          </div>
+                          <div>
+                            <label className="text-[11px] uppercase tracking-wide text-gray-400">Observaciones generales</label>
+                            <textarea rows={3} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 mt-1 resize-none" placeholder="Notas generales del paciente" value={(editPatientForm as any).extra_fields?.obs_generales_dental ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, obs_generales_dental: e.target.value } }))} />
                           </div>
                         </div>
                       )}
@@ -3127,34 +3094,16 @@ const lastValidAppointment = validAppointments[0] || null;
                                                   <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
                                                 </div>
                                                 <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Cuadrante</p>
-                                                  <select className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" value={clinicalFormState[formKey]?.extra_fields?.cuadrante ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, cuadrante: e.target.value } } }))}>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Tipo de tratamiento</p>
+                                                  <select className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
                                                     <option value="">Seleccionar...</option>
-                                                    <option>Superior derecho</option><option>Superior izquierdo</option><option>Inferior derecho</option><option>Inferior izquierdo</option><option>Múltiple</option>
+                                                    {["Extracción","Endodoncia","Obturación","Limpieza","Ortodoncia","Blanqueamiento","Implante","Corona","Consulta inicial","Control","Otro"].map((o) => <option key={o}>{o}</option>)}
                                                   </select>
                                                 </div>
                                               </div>
                                               <div>
                                                 <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Anestesia usada</p>
                                                 <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
-                                              </div>
-                                              <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Materiales usados</p>
-                                                <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Composite A2, amalgama" value={clinicalFormState[formKey]?.extra_fields?.materiales ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, materiales: e.target.value } } }))} />
-                                              </div>
-                                              <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Radiografías / Hallazgos</p>
-                                                <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Hallazgos radiográficos" value={clinicalFormState[formKey]?.extra_fields?.hallazgos_rx ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, hallazgos_rx: e.target.value } } }))} />
-                                              </div>
-                                              <div className="grid grid-cols-2 gap-2">
-                                                <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">N° de sesión</p>
-                                                  <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 2" value={clinicalFormState[formKey]?.extra_fields?.numero_sesion ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, numero_sesion: e.target.value } } }))} />
-                                                </div>
-                                                <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Presupuesto ($)</p>
-                                                  <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 50000" value={clinicalFormState[formKey]?.extra_fields?.presupuesto ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, presupuesto: e.target.value } } }))} />
-                                                </div>
                                               </div>
                                             </div>
                                           )}
@@ -3291,34 +3240,16 @@ const lastValidAppointment = validAppointments[0] || null;
                                                   <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
                                                 </div>
                                                 <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Cuadrante</p>
-                                                  <select className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" value={clinicalFormState[formKey]?.extra_fields?.cuadrante ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, cuadrante: e.target.value } } }))}>
+                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Tipo de tratamiento</p>
+                                                  <select className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
                                                     <option value="">Seleccionar...</option>
-                                                    <option>Superior derecho</option><option>Superior izquierdo</option><option>Inferior derecho</option><option>Inferior izquierdo</option><option>Múltiple</option>
+                                                    {["Extracción","Endodoncia","Obturación","Limpieza","Ortodoncia","Blanqueamiento","Implante","Corona","Consulta inicial","Control","Otro"].map((o) => <option key={o}>{o}</option>)}
                                                   </select>
                                                 </div>
                                               </div>
                                               <div>
                                                 <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Anestesia usada</p>
                                                 <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
-                                              </div>
-                                              <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Materiales usados</p>
-                                                <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Composite A2, amalgama" value={clinicalFormState[formKey]?.extra_fields?.materiales ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, materiales: e.target.value } } }))} />
-                                              </div>
-                                              <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Radiografías / Hallazgos</p>
-                                                <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Hallazgos radiográficos" value={clinicalFormState[formKey]?.extra_fields?.hallazgos_rx ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, hallazgos_rx: e.target.value } } }))} />
-                                              </div>
-                                              <div className="grid grid-cols-2 gap-2">
-                                                <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">N° de sesión</p>
-                                                  <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 2" value={clinicalFormState[formKey]?.extra_fields?.numero_sesion ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, numero_sesion: e.target.value } } }))} />
-                                                </div>
-                                                <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Presupuesto ($)</p>
-                                                  <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 50000" value={clinicalFormState[formKey]?.extra_fields?.presupuesto ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, presupuesto: e.target.value } } }))} />
-                                                </div>
                                               </div>
                                             </div>
                                           )}
