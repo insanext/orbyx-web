@@ -269,6 +269,24 @@ const genericBusinessSubtypes = [
   },
 ];
 
+const clinicaBusinessSubtypes = [
+  { value: "salud_general",        label: "Salud General" },
+  { value: "medicina_general",     label: "Médico general / Familiar" },
+  { value: "odontologia",          label: "Dentista / Odontología" },
+  { value: "psicologia",           label: "Psicología / Psiquiatría" },
+  { value: "kinesiologia",         label: "Kinesiología / Fisioterapia" },
+  { value: "nutricion",            label: "Nutrición / Dietética" },
+  { value: "fonoaudiologia",       label: "Fonoaudiología" },
+  { value: "oftalmologia",         label: "Oftalmología" },
+  { value: "dermatologia",         label: "Dermatología" },
+  { value: "ginecologia",          label: "Ginecología" },
+  { value: "pediatria",            label: "Pediatría" },
+  { value: "medicina_estetica",    label: "Medicina Estética" },
+  { value: "podologia",            label: "Podología" },
+  { value: "terapia_ocupacional",  label: "Terapia Ocupacional" },
+  { value: "osteopatia",           label: "Osteopatía / Quiropraxia" },
+];
+
 const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
   {
     key: "unit_type",
@@ -2809,6 +2827,46 @@ function updateHourByIndex(
               )?.description
             }
           </p>
+        </div>
+      </Panel>
+    ) : null}
+
+    {businessCategory === "clinica" ? (
+      <Panel
+        title="Especialidad clínica"
+        description="Define la especialidad de tu centro de salud. Esto activa campos específicos en las fichas clínicas."
+        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+      >
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Especialidad clínica
+          </label>
+          <select
+            value={form.business_subtype}
+            onChange={(e) => {
+              const nextSubtype = e.target.value;
+              setForm((prev) => ({
+                ...prev,
+                business_subtype: nextSubtype,
+              }));
+            }}
+            className={selectClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value="">Selecciona especialidad</option>
+            {clinicaBusinessSubtypes.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
         </div>
       </Panel>
     ) : null}
