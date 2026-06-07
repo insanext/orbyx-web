@@ -2985,24 +2985,44 @@ const lastValidAppointment = validAppointments[0] || null;
                                     {isViewingThisNote && !isEditingThisNote ? (
                                       <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(29,158,117,0.25)", background: "var(--bg-soft)" }}>
                                         <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
-                                          {[
-                                            { label: "Tipo de control", value: note.control_type },
-                                            { label: "Fecha",           value: formatDate(note.date) },
-                                            { label: "Motivo",          value: note.reason,          span: true },
-                                            { label: "Síntomas",        value: note.symptoms,        span: true },
-                                            { label: "Diagnóstico",     value: note.diagnosis },
-                                            { label: "Tratamiento",     value: note.treatment },
-                                            { label: "Medicamentos",    value: note.medications },
-                                            { label: "Derivaciones",    value: note.referrals },
-                                            { label: "Observaciones",   value: note.observations,    span: true },
-                                            { label: "Notas de seguimiento", value: note.follow_up_notes, span: true },
-                                          ].filter((f) => f.value).map((f) => (
+                                          {(isOdontologia ? [
+                                            { label: "Tipo de procedimiento", value: note.control_type },
+                                            { label: "Fecha",                 value: formatDate(note.date) },
+                                            { label: "Motivo",                value: note.reason,          span: true },
+                                            { label: "Diagnóstico",           value: note.diagnosis },
+                                            { label: "Tratamiento",           value: note.treatment },
+                                            { label: "Indicaciones post-op",  value: note.medications,     span: true },
+                                            { label: "Plan de tratamiento",   value: note.follow_up_notes, span: true },
+                                            { label: "Observaciones",         value: note.observations,    span: true },
+                                          ] : [
+                                            { label: "Tipo de control",       value: note.control_type },
+                                            { label: "Fecha",                 value: formatDate(note.date) },
+                                            { label: "Motivo",                value: note.reason,          span: true },
+                                            { label: "Síntomas",              value: note.symptoms,        span: true },
+                                            { label: "Diagnóstico",           value: note.diagnosis },
+                                            { label: "Tratamiento",           value: note.treatment },
+                                            { label: "Medicamentos",          value: note.medications },
+                                            { label: "Derivaciones",          value: note.referrals },
+                                            { label: "Observaciones",         value: note.observations,    span: true },
+                                            { label: "Notas de seguimiento",  value: note.follow_up_notes, span: true },
+                                          ]).filter((f) => f.value).map((f) => (
                                             <div key={f.label} className={f.span ? "sm:col-span-2" : ""}>
                                               <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{f.label}</p>
                                               <p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{f.value}</p>
                                             </div>
                                           ))}
-                                          {(note.extra_fields?.peso_kg || note.extra_fields?.talla_cm) ? (
+                                          {/* Campos dentales (solo odontología) */}
+                                          {isOdontologia && (note.extra_fields?.pieza_dental || note.extra_fields?.tipo_tratamiento || note.extra_fields?.anestesia) ? (
+                                            <div className="sm:col-span-2">
+                                              <div className="flex flex-wrap gap-6">
+                                                {note.extra_fields?.pieza_dental ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Pieza(s) dental(es)</p><p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{note.extra_fields.pieza_dental}</p></div> : null}
+                                                {note.extra_fields?.tipo_tratamiento ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Tipo de tratamiento</p><p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{note.extra_fields.tipo_tratamiento}</p></div> : null}
+                                                {note.extra_fields?.anestesia ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Anestesia usada</p><p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{note.extra_fields.anestesia}</p></div> : null}
+                                              </div>
+                                            </div>
+                                          ) : null}
+                                          {/* Peso/Talla/IMC (solo clínica general) */}
+                                          {!isOdontologia && (note.extra_fields?.peso_kg || note.extra_fields?.talla_cm) ? (
                                             <div className="sm:col-span-2">
                                               <div className="flex gap-6">
                                                 {note.extra_fields?.peso_kg ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Peso</p><p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{note.extra_fields.peso_kg} kg</p></div> : null}
