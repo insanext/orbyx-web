@@ -486,7 +486,8 @@ export default function CustomerDetailPage() {
         return;
       }
       const res = await fetch(
-        `${BACKEND_URL}/clinical-notes/${slug}?customer_id=${customerId}&limit=50`
+        `${BACKEND_URL}/clinical-notes/${slug}?customer_id=${customerId}&limit=50`,
+        { cache: "no-store" }
       );
       if (!res.ok) return;
       const data = await res.json();
