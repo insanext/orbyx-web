@@ -382,6 +382,7 @@ const [calendarId, setCalendarId] = useState("");
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [loadingServices, setLoadingServices] = useState(false);
+  const [modalServiceIds, setModalServiceIds] = useState<string[] | null>(null);
 
   const [businessHours, setBusinessHours] = useState<BusinessHourItem[]>([]);
   const [staffHours, setStaffHours] = useState<StaffHourItem[]>([]);
@@ -2235,6 +2236,7 @@ next_control_custom_value:
     setManualBookingDraft(null);
     setManualBookingStep("form");
     setManualBookingError("");
+    setModalServiceIds(null);
     setManualBookingSaving(false);
   }
 
@@ -6545,11 +6547,27 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     </label>
                     <select
                       value={manualBookingDraft.staff_id}
-                      onChange={(event) =>
+                      onChange={async (event) => {
+                        const newStaffId = event.target.value;
                         setManualBookingDraft((prev) =>
-                          prev ? { ...prev, staff_id: event.target.value } : prev
-                        )
-                      }
+                          prev ? { ...prev, staff_id: newStaffId, service_id: "" } : prev
+                        );
+                        if (!newStaffId) {
+                          setModalServiceIds(null);
+                          return;
+                        }
+                        try {
+                          const q = new URLSearchParams({ tenant_id: tenantId, staff_id: newStaffId, branch_id: selectedBranchId });
+                          const res = await apiFetch(`${BACKEND_URL}/staff-services?${q.toString()}`);
+                          const data = await res.json();
+                          const ids: string[] = Array.isArray(data?.staff_services)
+                            ? data.staff_services.map((ss: any) => ss.service_id as string)
+                            : [];
+                          setModalServiceIds(ids);
+                        } catch {
+                          setModalServiceIds(null);
+                        }
+                      }}
                       className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
                       style={{
                         borderColor: "var(--border-color)",
@@ -6590,7 +6608,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                       }}
                     >
                       <option value="">Selecciona servicio</option>
-                      {services.map((service) => (
+                      {(modalServiceIds ? services.filter((s) => modalServiceIds.includes(s.id)) : services).map((service) => (
                         <option key={service.id} value={service.id}>
                           {service.name}
                         </option>
