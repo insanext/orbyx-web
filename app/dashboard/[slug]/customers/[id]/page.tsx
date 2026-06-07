@@ -887,6 +887,14 @@ const latestAppointments = useMemo(() => {
     (a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime()
   );
 }, [appointments]);
+
+useEffect(() => {
+  if (appointments.length > 0 && clinicalNotes[PATIENT_NOTES_KEY] === undefined) {
+    loadPatientNotes();
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [appointments.length]);
+
 const validAppointments = useMemo(() => {
   return latestAppointments.filter((appt) => !["canceled", "cancelled"].includes(String(appt.status || "").toLowerCase()));
 }, [latestAppointments]);
@@ -2672,16 +2680,6 @@ const lastValidAppointment = validAppointments[0] || null;
                         Historial de atenciones
                       </p>
                       <div className="flex items-center gap-2">
-                        {!clinicalNotes[PATIENT_NOTES_KEY] ? (
-                          <button
-                            type="button"
-                            onClick={loadPatientNotes}
-                            className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
-                            style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
-                          >
-                            Cargar
-                          </button>
-                        ) : null}
                         <button
                           type="button"
                           onClick={() => setShowNewNoteForm((v) => !v)}
@@ -2800,50 +2798,8 @@ const lastValidAppointment = validAppointments[0] || null;
                   </div>
 
                   <div className="mt-3 space-y-3">
-                    {!clinicalNotes[PATIENT_NOTES_KEY] ? (
-                      /* Notes not loaded yet — show simple appointment list */
-                      validAppointments.length === 0 ? (
-                        <div
-                          className="flex flex-col items-center gap-2 rounded-2xl border border-dashed px-4 py-6 text-center"
-                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
-                        >
-                          <span className="text-2xl">📋</span>
-                          <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>Sin atenciones registradas</p>
-                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                            Presiona "Cargar" para ver si hay fichas clínicas disponibles.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {validAppointments.map((appt) => (
-                            <div
-                              key={appt.id}
-                              className="flex items-center justify-between gap-2 rounded-xl border p-3"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
-                            >
-                              <div>
-                                <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                                  {appt.service_name_snapshot || "Atención"}
-                                </p>
-                                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                                  {formatDateLong(appt.start_at)}
-                                </p>
-                              </div>
-                              <span
-                                className="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
-                                style={{ background: "rgba(100,116,139,0.10)", color: "#64748b" }}
-                              >
-                                Sin consulta
-                              </span>
-                            </div>
-                          ))}
-                          <p className="text-center text-xs pt-1" style={{ color: "var(--text-muted)" }}>
-                            Presiona "Cargar" para ver fichas clínicas.
-                          </p>
-                        </div>
-                      )
-                    ) : (() => {
-                      /* Notes loaded — build merged view */
+                    {(() => {
+                      /* Always show merged view */
                       const notesByApptId = (clinicalNotes[PATIENT_NOTES_KEY] || []).reduce<Record<string, typeof clinicalNotes[string][0]>>(
                         (acc, n) => { if (n.appointment_id) acc[n.appointment_id] = n; return acc; },
                         {}
@@ -2951,25 +2907,6 @@ const lastValidAppointment = validAppointments[0] || null;
                                           </button>
                                         ) : null}
                                       </div>
-                                    </div>
-                                    <div className="space-y-2 px-3 pb-3">
-                                      {(note.reason || note.diagnosis || note.treatment || note.observations) ? (
-                                        <div className={`grid gap-2 ${note.diagnosis && note.treatment ? "grid-cols-2" : "grid-cols-1"}`}>
-                                          {note.reason ? <div className={note.diagnosis && note.treatment ? "col-span-2" : ""}><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Motivo</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.reason}</p></div> : null}
-                                          {(note as any).symptoms ? <div className="col-span-2"><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Síntomas</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{(note as any).symptoms}</p></div> : null}
-                                          {note.diagnosis ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Diagnóstico</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.diagnosis}</p></div> : null}
-                                          {note.treatment ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Tratamiento</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.treatment}</p></div> : null}
-                                          {(note as any).medications ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Medicamentos</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{(note as any).medications}</p></div> : null}
-                                          {(note as any).referrals ? <div><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Derivaciones</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{(note as any).referrals}</p></div> : null}
-                                          {(note as any).follow_up_notes ? <div className="col-span-2"><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Notas de seguimiento</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{(note as any).follow_up_notes}</p></div> : null}
-                                          {note.observations ? <div className="col-span-2"><p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Observaciones</p><p className="mt-0.5 text-xs" style={{ color: "var(--text-main)" }}>{note.observations}</p></div> : null}
-                                        </div>
-                                      ) : null}
-                                      {note.next_control_at ? (
-                                        <p className="flex items-center gap-1 text-xs font-medium" style={{ color: "#1D9E75" }}>
-                                          <span>📅</span><span>{formatDateLong(note.next_control_at)}{note.next_control_label ? ` · ${note.next_control_label}` : ""}</span>
-                                        </p>
-                                      ) : null}
                                     </div>
                                   </div>
                                   {/* Panel detalle lectura */}
