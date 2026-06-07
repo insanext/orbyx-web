@@ -2513,6 +2513,32 @@ const lastValidAppointment = validAppointments[0] || null;
                           <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{customer.habits}</p>
                         </div>
                       ) : null}
+                      {/* Antecedentes dentales (solo odontología) */}
+                      {isOdontologia && ((customer as any).extra_fields?.grupo_sanguineo || (customer as any).extra_fields?.alergia_anestesia || (customer as any).extra_fields?.obs_generales_dental) ? (
+                        <div className="space-y-2 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
+                          <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: "var(--text-muted)" }}>Antecedentes dentales</p>
+                          <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+                            {(customer as any).extra_fields?.grupo_sanguineo ? (
+                              <div>
+                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Grupo sanguíneo</p>
+                                <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{(customer as any).extra_fields.grupo_sanguineo}</p>
+                              </div>
+                            ) : null}
+                            {(customer as any).extra_fields?.alergia_anestesia ? (
+                              <div>
+                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Alergias a anestesia</p>
+                                <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{(customer as any).extra_fields.alergia_anestesia}</p>
+                              </div>
+                            ) : null}
+                            {(customer as any).extra_fields?.obs_generales_dental ? (
+                              <div className="sm:col-span-2">
+                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Observaciones generales</p>
+                                <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{(customer as any).extra_fields.obs_generales_dental}</p>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
 
@@ -2701,10 +2727,6 @@ const lastValidAppointment = validAppointments[0] || null;
                               <label className="text-[11px] uppercase tracking-wide text-gray-400">Alergias a anestesia</label>
                               <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition mt-1" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína" value={(editPatientForm as any).extra_fields?.alergia_anestesia ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, alergia_anestesia: e.target.value } }))} />
                             </div>
-                          </div>
-                          <div>
-                            <label className="text-[11px] uppercase tracking-wide text-gray-400">Patologías relevantes</label>
-                            <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition mt-1" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Diabetes, hipertensión, anticoagulantes" value={(editPatientForm as any).extra_fields?.patologias_dental ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, patologias_dental: e.target.value } }))} />
                           </div>
                           <div>
                             <label className="text-[11px] uppercase tracking-wide text-gray-400">Observaciones generales</label>
@@ -2981,7 +3003,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                     </div>
                                   </div>
                                   {/* Panel detalle lectura */}
-                                  <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isViewingThisNote && !isEditingThisNote ? "600px" : "0" }}>
+                                  <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isViewingThisNote && !isEditingThisNote ? "900px" : "0" }}>
                                     {isViewingThisNote && !isEditingThisNote ? (
                                       <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(29,158,117,0.25)", background: "var(--bg-soft)" }}>
                                         <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
