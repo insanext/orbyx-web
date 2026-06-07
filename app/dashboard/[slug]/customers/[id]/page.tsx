@@ -295,6 +295,7 @@ export default function CustomerDetailPage() {
   // Sección C: edición inline de nota clínica
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [newNoteApptId, setNewNoteApptId] = useState<string | null>(null);
+  const [viewingNoteId, setViewingNoteId] = useState<string | null>(null);
 
   // Clínica humana (isClinica): edición de datos del paciente
   const [editingPatient, setEditingPatient] = useState(false);
@@ -553,28 +554,33 @@ export default function CustomerDetailPage() {
 
       if (newNoteApptId) {
         // Nota ligada a una cita existente: PATCH en vez de POST
+        const patchBody = {
+          slug,
+          reason: newNoteForm.reason || null,
+          notes: newNoteForm.observations || null,
+          diagnosis: newNoteForm.diagnosis || null,
+          treatment: newNoteForm.treatment || null,
+          symptoms: newNoteForm.symptoms || null,
+          medications: newNoteForm.medications || null,
+          referrals: newNoteForm.referrals || null,
+          follow_up_notes: newNoteForm.follow_up_notes || null,
+          control_type: newNoteForm.control_type || null,
+          next_control_at: newNoteForm.next_control_at || null,
+          next_control_label: newNoteForm.next_control_label || null,
+        };
+        console.log("[save] llamando PATCH clinical con apptId:", newNoteApptId);
+        console.log("[save] body:", patchBody);
         const res = await fetch(
           `${BACKEND_URL}/appointments/${newNoteApptId}/clinical`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              slug,
-              reason: newNoteForm.reason || null,
-              notes: newNoteForm.observations || null,
-              diagnosis: newNoteForm.diagnosis || null,
-              treatment: newNoteForm.treatment || null,
-              symptoms: newNoteForm.symptoms || null,
-              medications: newNoteForm.medications || null,
-              referrals: newNoteForm.referrals || null,
-              follow_up_notes: newNoteForm.follow_up_notes || null,
-              control_type: newNoteForm.control_type || null,
-              next_control_at: newNoteForm.next_control_at || null,
-              next_control_label: newNoteForm.next_control_label || null,
-            }),
+            body: JSON.stringify(patchBody),
           }
         );
         const data = await res.json();
+        console.log("[save] respuesta status:", res.status);
+        console.log("[save] respuesta data:", data);
         if (!res.ok) throw new Error(data?.error || "No se pudo guardar la nota");
 
         try {
@@ -909,6 +915,8 @@ const lastValidAppointment = validAppointments[0] || null;
       setSavingClinicalId(appointmentId);
       setClinicalMessage("");
 
+      console.log("[save] handleSaveClinical llamado con apptId:", appointmentId);
+
       const res = await fetch(
         `${BACKEND_URL}/appointments/${appointmentId}/clinical`,
         {
@@ -927,6 +935,8 @@ const lastValidAppointment = validAppointments[0] || null;
       );
 
       const data = await res.json();
+      console.log("[save] respuesta status:", res.status);
+      console.log("[save] respuesta data:", data);
 
       if (!res.ok) {
         throw new Error(data?.error || "No se pudo guardar.");
@@ -961,6 +971,11 @@ const lastValidAppointment = validAppointments[0] || null;
           body: JSON.stringify({ pending: false, slug }),
         });
       } catch {}
+
+      if (newNoteApptId === appointmentId) {
+        setNewNoteApptId(null);
+        await loadPatientNotes();
+      }
 
       setTimeout(() => {
         setClinicalMessage("");
@@ -1969,6 +1984,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                       const accent = noteAccentColor(note.control_type);
                                       const badge = noteBadgeStyle(note.control_type);
                                       const isEditingThisNote = editingNoteId === note.id;
+                                      const isViewingThisNote = viewingNoteId === note.id;
                                       const apptForNote = note.appointment_id
                                         ? appointments.find((a) => a.id === note.appointment_id)
                                         : null;
@@ -2004,20 +2020,29 @@ const lastValidAppointment = validAppointments[0] || null;
                                                   {formatDate(note.date)}
                                                 </p>
                                               </div>
-                                              {note.appointment_id ? (
+                                              <div className="flex shrink-0 gap-1.5">
                                                 <button
                                                   type="button"
-                                                  onClick={() => handleOpenNoteEdit(note)}
-                                                  className="shrink-0 rounded-lg border px-2.5 py-1 text-sm font-medium transition"
-                                                  style={{
-                                                    borderColor: "var(--border-color)",
-                                                    background: "transparent",
-                                                    color: "var(--text-muted)",
-                                                  }}
+                                                  onClick={() => setViewingNoteId(isViewingThisNote ? null : note.id)}
+                                                  className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
+                                                  style={{ borderColor: "var(--border-color)", background: isViewingThisNote ? "var(--bg-soft)" : "transparent", color: "var(--text-muted)" }}
                                                 >
-                                                  {isEditingThisNote ? "Cerrar" : "Editar"}
+                                                  {isViewingThisNote ? "✕ Cerrar" : "Ver detalle"}
                                                 </button>
-                                              ) : null}
+                                                {note.appointment_id ? (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      setViewingNoteId(null);
+                                                      handleOpenNoteEdit(note);
+                                                    }}
+                                                    className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
+                                                    style={{ borderColor: "var(--border-color)", background: "transparent", color: "var(--text-muted)" }}
+                                                  >
+                                                    {isEditingThisNote ? "Cerrar" : "Editar"}
+                                                  </button>
+                                                ) : null}
+                                              </div>
                                             </div>
 
                                             {/* Body */}
@@ -2062,6 +2087,44 @@ const lastValidAppointment = validAppointments[0] || null;
                                                 </p>
                                               ) : null}
                                             </div>
+                                          </div>
+
+                                          {/* Panel de detalle en modo lectura */}
+                                          <div
+                                            className="overflow-hidden transition-all duration-200 ease-in-out"
+                                            style={{ maxHeight: isViewingThisNote && !isEditingThisNote ? "600px" : "0" }}
+                                          >
+                                            {isViewingThisNote && !isEditingThisNote ? (
+                                              <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(29,158,117,0.25)", background: "var(--bg-soft)" }}>
+                                                <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+                                                  {[
+                                                    { label: "Tipo de control", value: note.control_type },
+                                                    { label: "Fecha",           value: formatDate(note.date) },
+                                                    { label: "Motivo",          value: note.reason, span: true },
+                                                    { label: "Síntomas",        value: note.symptoms, span: true },
+                                                    { label: "Diagnóstico",     value: note.diagnosis },
+                                                    { label: "Tratamiento",     value: note.treatment },
+                                                    { label: "Medicamentos",    value: note.medications },
+                                                    { label: "Derivaciones",    value: note.referrals },
+                                                    { label: "Observaciones",   value: note.observations, span: true },
+                                                    { label: "Notas de seguimiento", value: note.follow_up_notes, span: true },
+                                                  ].filter((f) => f.value).map((f) => (
+                                                    <div key={f.label} className={f.span ? "sm:col-span-2" : ""}>
+                                                      <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{f.label}</p>
+                                                      <p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{f.value}</p>
+                                                    </div>
+                                                  ))}
+                                                  {note.next_control_at ? (
+                                                    <div className="sm:col-span-2">
+                                                      <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Próximo control</p>
+                                                      <p className="mt-0.5 text-sm font-medium" style={{ color: "#1D9E75" }}>
+                                                        {formatDateLong(note.next_control_at)}{note.next_control_label ? ` · ${note.next_control_label}` : ""}
+                                                      </p>
+                                                    </div>
+                                                  ) : null}
+                                                </div>
+                                              </div>
+                                            ) : null}
                                           </div>
 
                                           {/* Sección C: formulario inline de edición clínica */}
@@ -2263,7 +2326,7 @@ const lastValidAppointment = validAppointments[0] || null;
                   onClick={() => { setIncompleteProfileBanner(false); setEditingPatient(true); }}
                   className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
                 >
-                  Completar ficha
+                  Completar consulta
                 </button>
               </div>
             ) : null}
@@ -2757,7 +2820,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                 className="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
                                 style={{ background: "rgba(100,116,139,0.10)", color: "#64748b" }}
                               >
-                                Sin ficha
+                                Sin consulta
                               </span>
                             </div>
                           ))}
@@ -2815,6 +2878,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                 note.control_type === "Desparasitación" ? { background: "rgba(239,159,39,0.12)",  color: "#EF9F27" } :
                                                                           { background: "rgba(29,158,117,0.12)",  color: "#1D9E75" };
                               const isEditingThisNote = editingNoteId === note.id;
+                              const isViewingThisNote = viewingNoteId === note.id;
                               const formKey = note.appointment_id || note.id;
 
                               return (
@@ -2839,30 +2903,41 @@ const lastValidAppointment = validAppointments[0] || null;
                                           <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>· {appt.service_name_snapshot}</p>
                                         ) : null}
                                       </div>
-                                      {note.appointment_id ? (
+                                      <div className="flex shrink-0 gap-1.5">
                                         <button
                                           type="button"
-                                          onClick={() => {
-                                            if (isEditingThisNote) { setEditingNoteId(null); return; }
-                                            setClinicalFormState((prev) => ({
-                                              ...prev,
-                                              [formKey]: {
-                                                reason:      note.reason       || "",
-                                                notes:       note.observations || "",
-                                                diagnosis:   note.diagnosis    || "",
-                                                treatment:   note.treatment    || "",
-                                                controlDate: note.next_control_at ? new Date(note.next_control_at).toISOString().slice(0, 10) : "",
-                                                controlType: note.control_type || "",
-                                              },
-                                            }));
-                                            setEditingNoteId(note.id);
-                                          }}
-                                          className="shrink-0 rounded-lg border px-2.5 py-1 text-sm font-medium transition"
-                                          style={{ borderColor: "var(--border-color)", background: "transparent", color: "var(--text-muted)" }}
+                                          onClick={() => setViewingNoteId(isViewingThisNote ? null : note.id)}
+                                          className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
+                                          style={{ borderColor: "var(--border-color)", background: isViewingThisNote ? "var(--bg-soft)" : "transparent", color: "var(--text-muted)" }}
                                         >
-                                          {isEditingThisNote ? "Cerrar" : "Editar"}
+                                          {isViewingThisNote ? "✕ Cerrar" : "Ver detalle"}
                                         </button>
-                                      ) : null}
+                                        {note.appointment_id ? (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setViewingNoteId(null);
+                                              if (isEditingThisNote) { setEditingNoteId(null); return; }
+                                              setClinicalFormState((prev) => ({
+                                                ...prev,
+                                                [formKey]: {
+                                                  reason:      note.reason       || "",
+                                                  notes:       note.observations || "",
+                                                  diagnosis:   note.diagnosis    || "",
+                                                  treatment:   note.treatment    || "",
+                                                  controlDate: note.next_control_at ? new Date(note.next_control_at).toISOString().slice(0, 10) : "",
+                                                  controlType: note.control_type || "",
+                                                },
+                                              }));
+                                              setEditingNoteId(note.id);
+                                            }}
+                                            className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
+                                            style={{ borderColor: "var(--border-color)", background: "transparent", color: "var(--text-muted)" }}
+                                          >
+                                            {isEditingThisNote ? "Cerrar" : "Editar"}
+                                          </button>
+                                        ) : null}
+                                      </div>
                                     </div>
                                     <div className="space-y-2 px-3 pb-3">
                                       {(note.reason || note.diagnosis || note.treatment || note.observations) ? (
@@ -2884,6 +2959,41 @@ const lastValidAppointment = validAppointments[0] || null;
                                       ) : null}
                                     </div>
                                   </div>
+                                  {/* Panel detalle lectura */}
+                                  <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isViewingThisNote && !isEditingThisNote ? "600px" : "0" }}>
+                                    {isViewingThisNote && !isEditingThisNote ? (
+                                      <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(29,158,117,0.25)", background: "var(--bg-soft)" }}>
+                                        <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+                                          {[
+                                            { label: "Tipo de control", value: note.control_type },
+                                            { label: "Fecha",           value: formatDate(note.date) },
+                                            { label: "Motivo",          value: note.reason,          span: true },
+                                            { label: "Síntomas",        value: note.symptoms,        span: true },
+                                            { label: "Diagnóstico",     value: note.diagnosis },
+                                            { label: "Tratamiento",     value: note.treatment },
+                                            { label: "Medicamentos",    value: note.medications },
+                                            { label: "Derivaciones",    value: note.referrals },
+                                            { label: "Observaciones",   value: note.observations,    span: true },
+                                            { label: "Notas de seguimiento", value: note.follow_up_notes, span: true },
+                                          ].filter((f) => f.value).map((f) => (
+                                            <div key={f.label} className={f.span ? "sm:col-span-2" : ""}>
+                                              <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{f.label}</p>
+                                              <p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{f.value}</p>
+                                            </div>
+                                          ))}
+                                          {note.next_control_at ? (
+                                            <div className="sm:col-span-2">
+                                              <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Próximo control</p>
+                                              <p className="mt-0.5 text-sm font-medium" style={{ color: "#1D9E75" }}>
+                                                {formatDateLong(note.next_control_at)}{note.next_control_label ? ` · ${note.next_control_label}` : ""}
+                                              </p>
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                  </div>
+
                                   {/* Inline edit form */}
                                   <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isEditingThisNote ? "900px" : "0" }}>
                                     {isEditingThisNote && note.appointment_id ? (
@@ -2951,7 +3061,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                   >
                                     <div className="flex min-w-0 items-center gap-2">
                                       <span className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ background: "rgba(100,116,139,0.10)", color: "#94a3b8" }}>
-                                        Sin ficha
+                                        Sin consulta
                                       </span>
                                       <p className="text-xs" style={{ color: "var(--text-muted)" }}>{formatDate(appt.start_at)}</p>
                                       {appt.service_name_snapshot ? (
@@ -2968,7 +3078,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                       className="shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium transition"
                                       style={{ borderColor: "var(--border-color)", background: isCreatingNew ? "var(--bg-soft)" : "transparent", color: "var(--text-muted)" }}
                                     >
-                                      {isCreatingNew ? "Cerrar" : "Completar ficha"}
+                                      {isCreatingNew ? "Cerrar" : "Completar consulta"}
                                     </button>
                                   </div>
                                   {/* Inline create form */}
