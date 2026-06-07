@@ -449,6 +449,7 @@ next_control_custom_unit: "days",
   const restoredAgendaStateKeyRef = useRef("");
   const skipNextAgendaStateSaveRef = useRef(false);
   const [hoveredTimeKey, setHoveredTimeKey] = useState("");
+  const [hoveredSlotKey, setHoveredSlotKey] = useState("");
 
   const [isEditingReservation, setIsEditingReservation] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -2905,13 +2906,13 @@ const hasPendingClose = pendingCloseCount > 0;
           --agenda-calendar-hover: rgba(59,130,246,0.08);
           --agenda-today-bg: linear-gradient(180deg, rgba(219,234,254,0.98), rgba(226,232,240,0.92), rgba(215,224,236,0.86));
           --agenda-today-header-bg: linear-gradient(180deg, rgba(219,234,254,0.96), rgba(226,232,240,0.86));
-          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.035) 8px, rgba(255,255,255,0.035) 18px), linear-gradient(180deg, rgba(220,38,38,0.92), rgba(185,28,28,0.84) 48%, rgba(239,68,68,0.76));
-          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.045) 8px, rgba(255,255,255,0.045) 18px), linear-gradient(180deg, rgba(239,68,68,0.96), rgba(220,38,38,0.88), rgba(248,113,113,0.78));
-          --agenda-closed-border: rgba(254,202,202,0.34);
-          --agenda-closed-line: rgba(254,202,202,0.24);
-          --agenda-closed-line-soft: rgba(254,202,202,0.14);
-          --agenda-closed-text: #ffffff;
-          --agenda-closed-muted: rgba(255,255,255,0.82);
+          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(180,30,30,0.07) 0px, rgba(180,30,30,0.07) 8px, transparent 8px, transparent 18px), linear-gradient(180deg, rgba(180,30,30,0.14), rgba(150,20,20,0.10) 48%, rgba(180,30,30,0.12));
+          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(180,30,30,0.10) 0px, rgba(180,30,30,0.10) 8px, transparent 8px, transparent 18px), linear-gradient(180deg, rgba(200,40,40,0.20), rgba(160,25,25,0.16) 48%, rgba(200,40,40,0.18));
+          --agenda-closed-border: rgba(180,30,30,0.22);
+          --agenda-closed-line: rgba(180,30,30,0.14);
+          --agenda-closed-line-soft: rgba(180,30,30,0.08);
+          --agenda-closed-text: #c0392b;
+          --agenda-closed-muted: rgba(150,30,30,0.70);
         }
 
         :root[data-theme="nocturno"] .orbyx-agenda-page {
@@ -2931,8 +2932,8 @@ const hasPendingClose = pendingCloseCount > 0;
           --agenda-calendar-hover: rgba(56,189,248,0.08);
           --agenda-today-bg: linear-gradient(180deg, rgba(30,64,175,0.28), rgba(14,116,144,0.14), rgba(15,23,42,0.94));
           --agenda-today-header-bg: linear-gradient(180deg, rgba(30,64,175,0.28), rgba(15,23,42,0.92));
-          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.032) 8px, rgba(255,255,255,0.032) 18px), linear-gradient(180deg, rgba(220,38,38,0.84), rgba(185,28,28,0.74) 48%, rgba(127,29,29,0.7));
-          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.045) 8px, rgba(255,255,255,0.045) 18px), linear-gradient(180deg, rgba(239,68,68,0.9), rgba(220,38,38,0.8), rgba(153,27,27,0.74));
+          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,120,120,0.06) 0px, rgba(255,120,120,0.06) 8px, transparent 8px, transparent 18px), linear-gradient(180deg, rgba(160,30,30,0.28), rgba(120,20,20,0.22) 48%, rgba(140,25,25,0.24));
+          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,120,120,0.09) 0px, rgba(255,120,120,0.09) 8px, transparent 8px, transparent 18px), linear-gradient(180deg, rgba(180,40,40,0.36), rgba(140,25,25,0.30) 48%, rgba(160,30,30,0.32));
           --agenda-closed-border: rgba(248,113,113,0.42);
           --agenda-closed-line: rgba(254,202,202,0.2);
           --agenda-closed-line-soft: rgba(254,202,202,0.12);
@@ -4016,18 +4017,23 @@ onClick={() => {
                                   selectedEmptySlotKey ===
                                   getEmptySlotKey(slot, staff.id);
 
+                                const daySlotKey = slotTimeKey + '|' + staff.id;
                                 if (isCoveredByLongAppointment) {
                                   return (
                                     <div
                                       key={slot}
                                       className="h-[54px] border-t"
+                                      onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(daySlotKey); }}
+                                      onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
                                       style={{
                                         borderColor: isHourStart
                                           ? "rgba(148,163,184,0.22)"
                                           : "rgba(148,163,184,0.14)",
                                         background:
-                                          hoveredTimeKey === slotTimeKey
-                                            ? "rgba(59,130,246,0.08)"
+                                          hoveredSlotKey === daySlotKey
+                                            ? "rgba(59,130,246,0.14)"
+                                            : hoveredTimeKey === slotTimeKey
+                                            ? "rgba(59,130,246,0.04)"
                                             : "transparent",
                                       }}
                                     />
@@ -4067,10 +4073,8 @@ onClick={() => {
                                           }
                                         }
                                       }}
-                                      onMouseEnter={() =>
-                                        setHoveredTimeKey(slotTimeKey)
-                                      }
-                                      onMouseLeave={() => setHoveredTimeKey("")}
+                                      onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(daySlotKey); }}
+                                      onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
                                       className={`flex h-[54px] cursor-pointer items-center justify-center border-t px-2 text-[10px] font-semibold transition ${getEmptySlotClass(isEmptySlotSelected)}`}
                                       style={{
                                         borderColor: isHourStart
@@ -4086,13 +4090,15 @@ onClick={() => {
                                           : "rgba(148,163,184,0.14)",
                                         background:
                                           isSlotClosed
-                                            ? hoveredTimeKey === slotTimeKey
+                                            ? hoveredSlotKey === daySlotKey
                                               ? "var(--agenda-closed-bg-hover)"
                                               : "var(--agenda-closed-bg)"
                                             : isEmptySlotSelected
                                             ? "linear-gradient(180deg, rgba(34,211,238,0.22), rgba(37,99,235,0.12))"
+                                            : hoveredSlotKey === daySlotKey
+                                            ? "rgba(59,130,246,0.14)"
                                             : hoveredTimeKey === slotTimeKey
-                                            ? "rgba(59,130,246,0.08)"
+                                            ? "rgba(59,130,246,0.04)"
                                             : "transparent",
                                         color: "var(--text-muted)",
                                       }}
@@ -4105,18 +4111,18 @@ onClick={() => {
                                 return (
                                   <div
                                     key={slot}
-                                    onMouseEnter={() =>
-                                      setHoveredTimeKey(slotTimeKey)
-                                    }
-                                    onMouseLeave={() => setHoveredTimeKey("")}
+                                    onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(daySlotKey); }}
+                                    onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
                                     className="relative h-[54px] border-t"
                                     style={{
                                       borderColor: isHourStart
                                         ? "rgba(148,163,184,0.22)"
                                         : "rgba(148,163,184,0.14)",
                                       background:
-                                        hoveredTimeKey === slotTimeKey
-                                          ? "rgba(59,130,246,0.08)"
+                                        hoveredSlotKey === daySlotKey
+                                          ? "rgba(59,130,246,0.14)"
+                                          : hoveredTimeKey === slotTimeKey
+                                          ? "rgba(59,130,246,0.04)"
                                           : "transparent",
                                     }}
                                   >
@@ -4464,7 +4470,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             onClick={() =>
                               openClosedScheduleActions(selectedStaffId, "day")
                             }
-                            className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
+                            className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(180,30,30,0.30)]"
                             style={{
                               borderColor: "var(--agenda-closed-border)",
                               background: "var(--agenda-closed-bg)",
@@ -4514,7 +4520,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             onClick={() =>
                               openClosedScheduleActions(selectedStaffId, "day")
                             }
-                            className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
+                            className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(180,30,30,0.30)]"
                             style={{
                               borderColor: "var(--agenda-closed-border)",
                               background: "var(--agenda-closed-bg)",
@@ -4686,7 +4692,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             onClick={() =>
                               openClosedScheduleActions(selectedStaffId, "day")
                             }
-                            className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(248,113,113,0.85)]"
+                            className="relative block w-full overflow-hidden rounded-lg border text-center transition hover:shadow-[0_18px_40px_-26px_rgba(180,30,30,0.30)]"
                             style={{
                               borderColor: "var(--agenda-closed-border)",
                               background: "var(--agenda-closed-bg)",
@@ -4763,18 +4769,23 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               isClosedScheduleDay ||
                               !availableSlotKeys.has(slotTimeKey);
 
+                                const weekSlotKey = slotTimeKey + '|' + dayKey;
                             if (isCoveredByLongAppointment) {
                               return (
                                 <div
                                   key={slot}
                                   className="hidden h-[54px] border-t xl:block"
+                                  onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
+                                  onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
                                   style={{
                                     borderColor: isHourStart
                                       ? "rgba(148,163,184,0.22)"
                                       : "rgba(148,163,184,0.14)",
                                     background:
-                                      hoveredTimeKey === slotTimeKey
-                                        ? "rgba(59,130,246,0.08)"
+                                      hoveredSlotKey === weekSlotKey
+                                        ? "rgba(59,130,246,0.14)"
+                                        : hoveredTimeKey === slotTimeKey
+                                        ? "rgba(59,130,246,0.04)"
                                         : "transparent",
                                   }}
                                 />
@@ -4814,8 +4825,8 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                       }
                                     }
                                   }}
-                                  onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
-                                  onMouseLeave={() => setHoveredTimeKey("")}
+                                  onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
+                                  onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
                                   className={`hidden h-[54px] cursor-pointer border-t px-2 text-center text-[10px] font-semibold transition xl:flex xl:items-center xl:justify-center ${getEmptySlotClass(isEmptySlotSelected)}`}
                                   style={{
                                     borderColor: isHourStart
@@ -4831,13 +4842,15 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                       : "rgba(148,163,184,0.14)",
                                     background:
                                       isSlotClosed
-                                        ? hoveredTimeKey === slotTimeKey
+                                        ? hoveredSlotKey === weekSlotKey
                                           ? "var(--agenda-closed-bg-hover)"
                                           : "var(--agenda-closed-bg)"
                                         : isEmptySlotSelected
                                         ? "linear-gradient(180deg, rgba(34,211,238,0.22), rgba(37,99,235,0.12))"
+                                        : hoveredSlotKey === weekSlotKey
+                                        ? "rgba(59,130,246,0.14)"
                                         : hoveredTimeKey === slotTimeKey
-                                        ? "rgba(59,130,246,0.08)"
+                                        ? "rgba(59,130,246,0.04)"
                                         : "transparent",
                                     color: "var(--text-muted)",
                                   }}
@@ -4850,16 +4863,18 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             return (
                               <div
                                 key={slot}
-                                onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
-                                onMouseLeave={() => setHoveredTimeKey("")}
+                                onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
+                                onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
                                 className="relative h-[54px] border-t"
                                 style={{
                                   borderColor: isHourStart
                                     ? "rgba(148,163,184,0.22)"
                                     : "rgba(148,163,184,0.14)",
                                   background:
-                                    hoveredTimeKey === slotTimeKey
-                                      ? "rgba(59,130,246,0.08)"
+                                    hoveredSlotKey === weekSlotKey
+                                      ? "rgba(59,130,246,0.14)"
+                                      : hoveredTimeKey === slotTimeKey
+                                      ? "rgba(59,130,246,0.04)"
                                       : "transparent",
                                 }}
                               >
@@ -5526,13 +5541,6 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             ) : null}
                           </div>
 
-                          <span
-                            className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(
-                              selectedAppointment
-                            )}`}
-                          >
-                            {getStatusLabel(selectedAppointment)}
-                          </span>
                         </div>
 
                         <div className="space-y-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
@@ -5568,15 +5576,12 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             background: "var(--bg-soft)",
                           }}
                         >
-                          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                            Estado actual
-                          </p>
-                          <p
-                            className="mt-1 text-xs font-semibold"
-                            style={{ color: "var(--text-main)" }}
-                          >
-                            {getStatusLabel(selectedAppointment)}
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Estado actual</p>
+                            <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${getStatusBadgeClass(selectedAppointment)}`}>
+                              {getStatusLabel(selectedAppointment)}
+                            </span>
+                          </div>
                         </div>
 
                         <div
@@ -5644,24 +5649,33 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                           </button>
                         </div>
 
-                        <div>
-                          <label
-                            className="mb-1 block text-[11px]"
-                            style={{ color: "var(--text-muted)" }}
+                        {selectedAppointment.customer_id ? (
+                          <div
+                            className="rounded-xl border px-3 py-2.5"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
                           >
-                            Notas opcionales
-                          </label>
-                          <textarea
-                            rows={2}
-                            placeholder="Agregar nota..."
-                            className="w-full resize-none rounded-xl border px-3 py-2 text-xs outline-none transition"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-soft)",
-                              color: "var(--text-main)",
-                            }}
-                          />
-                        </div>
+                            <p className="mb-2 text-[11px]" style={{ color: "var(--text-muted)" }}>
+                              {isVeterinaria || isClinica || isOdontologia ? "Ficha clínica" : "Ficha del cliente"}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                router.push(
+                                  `/dashboard/${slug}/customers/${selectedAppointment.customer_id}?appointment_id=${selectedAppointment.id}&open_note=true`
+                                )
+                              }
+                              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm"
+                              style={{
+                                borderColor: "rgba(37,99,235,0.35)",
+                                background: "rgba(37,99,235,0.08)",
+                                color: "#2563eb",
+                              }}
+                            >
+                              <UserRound className="h-3.5 w-3.5" />
+                              {isVeterinaria || isClinica || isOdontologia ? "Llenar ficha / consulta" : "Ver ficha del cliente"}
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     ) : (
                     <div
