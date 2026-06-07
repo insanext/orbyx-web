@@ -68,6 +68,7 @@ type Appointment = {
 type BusinessResponse = {
   business?: {
     business_category?: string | null;
+    business_subtype?: string | null;
     name?: string | null;
     logo_url?: string | null;
   };
@@ -116,6 +117,11 @@ type ClinicalFormEntry = {
   treatment: string;
   controlDate: string;
   controlType: string;
+  symptoms?: string;
+  medications?: string;
+  referrals?: string;
+  follow_up_notes?: string;
+  extra_fields?: Record<string, any>;
 };
 
 /* ================= HELPERS ================= */
@@ -239,6 +245,7 @@ export default function CustomerDetailPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [incompleteProfileBanner, setIncompleteProfileBanner] = useState(false);
   const [businessCategory, setBusinessCategory] = useState("");
+  const [businessSubtype, setBusinessSubtype] = useState("");
   const isVeterinaria =
     businessCategory === "veterinaria" || businessCategory === "vet";
   const isVet = isVeterinaria;
@@ -677,6 +684,11 @@ export default function CustomerDetailPage() {
               .trim()
               .toLowerCase()
           );
+          setBusinessSubtype(
+            String(businessData?.business?.business_subtype || "")
+              .trim()
+              .toLowerCase()
+          );
           setTenant({
             name: String(businessData?.business?.name || slug),
             logo_url: businessData?.business?.logo_url || null,
@@ -918,7 +930,12 @@ const lastValidAppointment = validAppointments[0] || null;
     treatment: string,
     control_type?: string,
     control_note?: string,
-    next_control_at?: string | null
+    next_control_at?: string | null,
+    symptoms?: string | null,
+    medications?: string | null,
+    referrals?: string | null,
+    follow_up_notes?: string | null,
+    extra_fields?: Record<string, any> | null
   ) {
     try {
       setSavingClinicalId(appointmentId);
@@ -939,6 +956,11 @@ const lastValidAppointment = validAppointments[0] || null;
             control_type,
             control_note,
             next_control_at,
+            symptoms: symptoms || null,
+            medications: medications || null,
+            referrals: referrals || null,
+            follow_up_notes: follow_up_notes || null,
+            extra_fields: extra_fields ?? null,
           }),
         }
       );
@@ -2968,6 +2990,37 @@ const lastValidAppointment = validAppointments[0] || null;
                                               )}
                                             </div>
                                           ))}
+                                          {/* Campos clínicos adicionales */}
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Síntomas</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
+                                          </div>
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Medicamentos recetados</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                          </div>
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Derivaciones</p>
+                                            <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                          </div>
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Notas de seguimiento</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                          </div>
+                                          <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Peso (kg)</p>
+                                              <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                            </div>
+                                            <div>
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Talla (cm)</p>
+                                              <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
+                                            </div>
+                                            <div>
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">IMC</p>
+                                              <input type="text" readOnly className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-400 cursor-not-allowed" placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
+                                            </div>
+                                          </div>
                                           <div>
                                             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Próximo control</label>
                                             <div className="mb-2 flex flex-wrap gap-1.5">
@@ -2987,7 +3040,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">
                                           <button type="button" onClick={() => setEditingNoteId(null)} className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>Cancelar</button>
-                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(note.appointment_id!, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null); }} disabled={savingClinicalId === note.appointment_id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === note.appointment_id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === note.appointment_id ? "Guardando..." : "Guardar"}</button>
+                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(note.appointment_id!, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null, (form as any)?.symptoms ?? null, (form as any)?.medications ?? null, (form as any)?.referrals ?? null, (form as any)?.follow_up_notes ?? null, (form as any)?.extra_fields ?? null); }} disabled={savingClinicalId === note.appointment_id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === note.appointment_id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === note.appointment_id ? "Guardando..." : "Guardar"}</button>
                                         </div>
                                       </div>
                                     ) : null}
@@ -3055,6 +3108,37 @@ const lastValidAppointment = validAppointments[0] || null;
                                               )}
                                             </div>
                                           ))}
+                                          {/* Campos clínicos adicionales */}
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Síntomas</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
+                                          </div>
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Medicamentos recetados</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                          </div>
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Derivaciones</p>
+                                            <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                          </div>
+                                          <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Notas de seguimiento</p>
+                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                          </div>
+                                          <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Peso (kg)</p>
+                                              <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                            </div>
+                                            <div>
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Talla (cm)</p>
+                                              <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
+                                            </div>
+                                            <div>
+                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">IMC</p>
+                                              <input type="text" readOnly className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-400 cursor-not-allowed" placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
+                                            </div>
+                                          </div>
                                           <div>
                                             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Próximo control</label>
                                             <input type="date" value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
@@ -3062,7 +3146,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">
                                           <button type="button" onClick={() => setNewNoteApptId(null)} className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>Cancelar</button>
-                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(appt.id, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null); }} disabled={savingClinicalId === appt.id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === appt.id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === appt.id ? "Guardando..." : "Guardar"}</button>
+                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(appt.id, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null, (form as any)?.symptoms ?? null, (form as any)?.medications ?? null, (form as any)?.referrals ?? null, (form as any)?.follow_up_notes ?? null, (form as any)?.extra_fields ?? null); }} disabled={savingClinicalId === appt.id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === appt.id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === appt.id ? "Guardando..." : "Guardar"}</button>
                                         </div>
                                       </div>
                                     ) : null}
