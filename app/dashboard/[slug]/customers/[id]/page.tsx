@@ -2161,7 +2161,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                           {/* Sección C: formulario inline de edición clínica */}
                                           <div
                                             className="overflow-hidden transition-all duration-200 ease-in-out"
-                                            style={{ maxHeight: isEditingThisNote ? "900px" : "0" }}
+                                            style={{ maxHeight: isEditingThisNote ? "1800px" : "0" }}
                                           >
                                             {isEditingThisNote && note.appointment_id ? (
                                               <div
@@ -2967,7 +2967,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                   </div>
 
                                   {/* Inline edit form */}
-                                  <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isEditingThisNote ? "900px" : "0" }}>
+                                  <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isEditingThisNote ? "1800px" : "0" }}>
                                     {isEditingThisNote && note.appointment_id ? (
                                       <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-soft)" }}>
                                         <div className="mb-3 border-b pb-3" style={{ borderColor: "var(--border-color)" }}>
@@ -3085,7 +3085,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                     </button>
                                   </div>
                                   {/* Inline create form */}
-                                  <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isCreatingNew ? "900px" : "0" }}>
+                                  <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isCreatingNew ? "1800px" : "0" }}>
                                     {isCreatingNew ? (
                                       <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-soft)" }}>
                                         <div className="mb-3 border-b pb-3" style={{ borderColor: "var(--border-color)" }}>
