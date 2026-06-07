@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { Panel } from "../../../../../components/dashboard/panel";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -227,13 +227,32 @@ export default function CustomerDetailPage() {
   const params = useParams();
   const slug = params?.slug as string;
   const customerId = params?.id as string;
+  const searchParams = useSearchParams();
+  const autoOpenApptId = searchParams?.get("appointment_id") ?? null;
+  const autoOpenNote = searchParams?.get("open_note") ?? null;
+  const hasAutoOpenedRef = useRef(false);
 
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [incompleteProfileBanner, setIncompleteProfileBanner] = useState(false);
   const [businessCategory, setBusinessCategory] = useState("");
   const isVeterinaria =
     businessCategory === "veterinaria" || businessCategory === "vet";
   const isVet = isVeterinaria;
   const isClinica = businessCategory === "clinica";
+
+  const CONTROL_TYPES_VET = [
+    "Control general", "Primera consulta", "Control",
+    "Vacuna", "Desparasitación", "Urgencia",
+    "Cirugía", "Procedimiento", "Revisión post-op", "Otro",
+  ];
+  const CONTROL_TYPES_CLINICA = [
+    "Primera consulta", "Control general", "Control",
+    "Urgencia", "Cirugía", "Procedimiento",
+    "Revisión post-op", "Teleconsulta",
+    "Examen / Diagnóstico", "Resultado de exámenes",
+    "Certificado médico", "Otro",
+  ];
+  const CONTROL_TYPES = isVeterinaria ? CONTROL_TYPES_VET : CONTROL_TYPES_CLINICA;
 
   const [pets, setPets] = useState<Pet[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -674,6 +693,65 @@ export default function CustomerDetailPage() {
       loadData();
     }
   }, [slug, customerId, selectedBranchId]);
+
+  // Auto-open note form when coming from agenda pending panel
+  useEffect(() => {
+    if (
+      !autoOpenApptId ||
+      autoOpenNote !== "true" ||
+      loading ||
+      appointments.length === 0 ||
+      hasAutoOpenedRef.current
+    ) return;
+    hasAutoOpenedRef.current = true;
+
+    if (customer && !customer.phone && !customer.email) {
+      setIncompleteProfileBanner(true);
+    }
+
+    (async () => {
+      let notes: ClinicalNote[] = [];
+      try {
+        const res = await fetch(
+          `${BACKEND_URL}/clinical-notes/${slug}?customer_id=${customerId}&limit=50`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          notes = Array.isArray(data.notes) ? data.notes : [];
+          setClinicalNotes((prev) => ({ ...prev, [PATIENT_NOTES_KEY]: notes }));
+        }
+      } catch {}
+
+      const existingNote = notes.find((n) => n.appointment_id === autoOpenApptId);
+      if (existingNote) {
+        setClinicalFormState((prev) => ({
+          ...prev,
+          [autoOpenApptId]: {
+            reason: existingNote.reason || "",
+            notes: existingNote.observations || "",
+            diagnosis: existingNote.diagnosis || "",
+            treatment: existingNote.treatment || "",
+            controlDate: existingNote.next_control_at
+              ? new Date(existingNote.next_control_at).toISOString().slice(0, 10)
+              : "",
+            controlType: existingNote.control_type || "",
+          },
+        }));
+        setEditingNoteId(existingNote.id);
+      } else {
+        setClinicalFormState((prev) => ({
+          ...prev,
+          [autoOpenApptId]: { reason: "", notes: "", diagnosis: "", treatment: "", controlDate: "", controlType: "" },
+        }));
+        setNewNoteApptId(autoOpenApptId);
+      }
+
+      setTimeout(() => {
+        const el = document.getElementById("historial-atenciones");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 400);
+    })();
+  }, [loading, appointments.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleCreatePet(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -2125,6 +2203,20 @@ const lastValidAppointment = validAppointments[0] || null;
             ) : null}
 
             {/* Paso 4: ficha clínica de personas */}
+            {isClinica && incompleteProfileBanner ? (
+              <div className="mb-1 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                <p className="text-sm" style={{ color: "#92400e" }}>
+                  Este paciente no tiene ficha completa. Completa sus datos antes de registrar la atención.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setIncompleteProfileBanner(false); setEditingPatient(true); }}
+                  className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+                >
+                  Completar ficha
+                </button>
+              </div>
+            ) : null}
             {isClinica ? (
               <Panel
                 title="Ficha del paciente"
@@ -2428,7 +2520,7 @@ const lastValidAppointment = validAppointments[0] || null;
                 </div>
 
                 {/* ── Sección B: Historial de atenciones ── */}
-                <div className="mt-5">
+                <div id="historial-atenciones" className="mt-5">
                   <div className="border-t pt-4" style={{ borderColor: "var(--border-color)" }}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
@@ -2475,7 +2567,7 @@ const lastValidAppointment = validAppointments[0] || null;
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Tipo de control</label>
                                 <select value={newNoteForm.control_type} onChange={(e) => setNewNoteForm((p) => ({ ...p, control_type: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
-                                  {["Control general", "Primera consulta", "Control", "Urgencia", "Cirugía", "Procedimiento", "Revisión post-op", "Vacuna", "Desparasitación", "Otro"].map((opt) => (
+                                  {CONTROL_TYPES.map((opt) => (
                                     <option key={opt} value={opt}>{opt}</option>
                                   ))}
                                 </select>

@@ -479,6 +479,20 @@ next_control_custom_unit: "days",
     businessCategory === "veterinaria" || businessCategory === "vet";
   const isClinica = businessCategory === "clinica";
 
+  const CONTROL_TYPES_VET = [
+    "Control general", "Primera consulta", "Control",
+    "Vacuna", "Desparasitación", "Urgencia",
+    "Cirugía", "Procedimiento", "Revisión post-op", "Otro",
+  ];
+  const CONTROL_TYPES_CLINICA = [
+    "Primera consulta", "Control general", "Control",
+    "Urgencia", "Cirugía", "Procedimiento",
+    "Revisión post-op", "Teleconsulta",
+    "Examen / Diagnóstico", "Resultado de exámenes",
+    "Certificado médico", "Otro",
+  ];
+  const CONTROL_TYPES = isVeterinaria ? CONTROL_TYPES_VET : CONTROL_TYPES_CLINICA;
+
   function startOfWeek(date: Date) {
     const d = new Date(date);
     const day = d.getDay();
@@ -3385,7 +3399,7 @@ const hasPendingClose = pendingCloseCount > 0;
               <button
                 onClick={() => {
                   setShowPendingClinicalPanel(false);
-                  router.push(`/dashboard/${slug}/customers/${appt.customer_id}`);
+                  router.push(`/dashboard/${slug}/customers/${appt.customer_id}?appointment_id=${appt.id}&open_note=true`);
                 }}
                 className="mt-2 w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
               >
@@ -6850,7 +6864,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                 onClick={() => {
                   const appt = clinicalPendingModal;
                   setClinicalPendingModal(null);
-                  router.push(`/dashboard/${slug}/customers/${appt.customer_id}`);
+                  router.push(`/dashboard/${slug}/customers/${appt.customer_id}?appointment_id=${appt.id}&open_note=true`);
                 }}
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700"
               >
@@ -6996,12 +7010,9 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     color: "var(--text-main)",
                   }}
                 >
-                  <option>Control general</option>
-                  <option>Vacuna</option>
-                  <option>Desparasitación</option>
-                  <option>Baño</option>
-                  <option>Corte de pelo</option>
-                  <option>Otro</option>
+                  {CONTROL_TYPES.map((opt) => (
+                    <option key={opt}>{opt}</option>
+                  ))}
                 </select>
               </div>
 
