@@ -1722,7 +1722,7 @@ function getSelectedStaffDayWindow(day: Date) {
 ) {
   try {
     const activeBranch = branches.find((b) => b.id === currentBranchId);
-    const useGlobal = activeBranch ? activeBranch.use_global_hours !== false : false;
+    const useGlobal = activeBranch?.use_global_hours === true;
     const hoursUrl = useGlobal
       ? `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&scope=global`
       : `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`;
