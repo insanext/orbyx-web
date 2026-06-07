@@ -2454,6 +2454,18 @@ const lastValidAppointment = validAppointments[0] || null;
                           ) : null}
                         </div>
                       ) : null}
+                      {customer?.family_history ? (
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Antecedentes familiares</p>
+                          <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{customer.family_history}</p>
+                        </div>
+                      ) : null}
+                      {customer?.habits ? (
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Hábitos</p>
+                          <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{customer.habits}</p>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
 
@@ -3037,7 +3049,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">
                                           <button type="button" onClick={() => setEditingNoteId(null)} className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>Cancelar</button>
-                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(note.appointment_id!, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.reason ?? "", form?.notes ?? "", form?.controlDate ?? null); }} disabled={savingClinicalId === note.appointment_id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === note.appointment_id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === note.appointment_id ? "Guardando..." : "Guardar"}</button>
+                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(note.appointment_id!, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null); }} disabled={savingClinicalId === note.appointment_id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === note.appointment_id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === note.appointment_id ? "Guardando..." : "Guardar"}</button>
                                         </div>
                                       </div>
                                     ) : null}
@@ -3264,79 +3276,103 @@ const lastValidAppointment = validAppointments[0] || null;
       {/* Modal Resumen clínico */}
       {showResumenModal ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.55)" }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          style={{ backdropFilter: "blur(4px)" }}
           onClick={() => setShowResumenModal(false)}
         >
           <div
-            className="relative w-full max-w-md rounded-2xl p-6 shadow-2xl"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)" }}
+            className="relative w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", maxHeight: "90vh", overflowY: "auto" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <h3 className="text-base font-semibold" style={{ color: "var(--text-main)" }}>
-                Resumen del paciente
-              </h3>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border-color)" }}>
+              <div>
+                <h2 className="text-base font-semibold" style={{ color: "var(--text-main)" }}>{customer?.name}</h2>
+                <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>Resumen clínico del paciente</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowResumenModal(false)}
-                className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
-                style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
-              >
-                ✕ Cerrar
-              </button>
+                className="text-xl font-light transition"
+                style={{ color: "var(--text-muted)" }}
+              >✕</button>
             </div>
-            <div className="space-y-3">
-              {/* Último diagnóstico */}
-              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Último diagnóstico</p>
-                <p className="mt-1 text-sm" style={{ color: "var(--text-main)" }}>
-                  {clinicalNotes[PATIENT_NOTES_KEY]?.[0]?.diagnosis || "Sin diagnóstico registrado"}
-                </p>
+
+            <div className="space-y-5 p-6">
+
+              {/* Datos personales */}
+              <div className="rounded-xl p-4" style={{ background: "var(--bg-soft)", border: "1px solid var(--border-color)" }}>
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Datos personales</p>
+                <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                  {customer?.rut ? <div><span style={{ color: "var(--text-muted)" }}>RUT: </span><span style={{ color: "var(--text-main)" }}>{customer.rut}</span></div> : null}
+                  {customer?.birth_date ? <div><span style={{ color: "var(--text-muted)" }}>Fecha nac.: </span><span style={{ color: "var(--text-main)" }}>{new Date(customer.birth_date).toLocaleDateString("es-CL")}</span></div> : null}
+                  {customer?.sex ? <div><span style={{ color: "var(--text-muted)" }}>Sexo: </span><span style={{ color: "var(--text-main)" }}>{customer.sex}</span></div> : null}
+                  {customer?.occupation ? <div><span style={{ color: "var(--text-muted)" }}>Ocupación: </span><span style={{ color: "var(--text-main)" }}>{customer.occupation}</span></div> : null}
+                  {customer?.health_insurance ? <div><span style={{ color: "var(--text-muted)" }}>Previsión: </span><span style={{ color: "var(--text-main)" }}>{customer.health_insurance}</span></div> : null}
+                  {customer?.emergency_contact_name ? <div className="sm:col-span-2"><span style={{ color: "var(--text-muted)" }}>Contacto emergencia: </span><span style={{ color: "var(--text-main)" }}>{customer.emergency_contact_name}{customer.emergency_contact_phone ? ` · ${customer.emergency_contact_phone}` : ""}</span></div> : null}
+                </div>
               </div>
-              {/* Alergias */}
-              <div
-                className="rounded-xl border p-3"
-                style={{
-                  borderColor: customer?.known_allergies ? "rgba(245,158,11,0.40)" : "var(--border-color)",
-                  background: customer?.known_allergies ? "rgba(245,158,11,0.05)" : "var(--bg-soft)",
-                }}
-              >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Alergias</p>
-                <p className="mt-1 text-sm" style={{ color: customer?.known_allergies ? "#b45309" : "var(--text-muted)" }}>
-                  {customer?.known_allergies || "Sin alergias registradas"}
-                </p>
+
+              {/* Antecedentes médicos */}
+              {(customer?.known_allergies || customer?.chronic_conditions || customer?.family_history || customer?.habits) ? (
+                <div className="rounded-xl p-4" style={{ background: "var(--bg-soft)", border: "1px solid var(--border-color)" }}>
+                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Antecedentes médicos</p>
+                  <div className="space-y-3">
+                    {customer?.known_allergies ? (
+                      <div>
+                        <p className="text-[11px] font-medium" style={{ color: "#b45309" }}>⚠ Alergias conocidas</p>
+                        <p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{customer.known_allergies}</p>
+                      </div>
+                    ) : null}
+                    {customer?.chronic_conditions ? (
+                      <div>
+                        <p className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>Patologías crónicas</p>
+                        <p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{customer.chronic_conditions}</p>
+                      </div>
+                    ) : null}
+                    {customer?.family_history ? (
+                      <div>
+                        <p className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>Antecedentes familiares</p>
+                        <p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{customer.family_history}</p>
+                      </div>
+                    ) : null}
+                    {customer?.habits ? (
+                      <div>
+                        <p className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>Hábitos</p>
+                        <p className="mt-0.5 text-sm" style={{ color: "var(--text-main)" }}>{customer.habits}</p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Última atención */}
+              {(clinicalNotes[PATIENT_NOTES_KEY]?.length ?? 0) > 0 ? (
+                <div className="rounded-xl p-4" style={{ background: "var(--bg-soft)", border: "1px solid var(--border-color)" }}>
+                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Última atención</p>
+                  <div className="space-y-1.5 text-sm">
+                    <div><span style={{ color: "var(--text-muted)" }}>Fecha: </span><span style={{ color: "var(--text-main)" }}>{new Date(clinicalNotes[PATIENT_NOTES_KEY]![0].date).toLocaleDateString("es-CL")}</span></div>
+                    {clinicalNotes[PATIENT_NOTES_KEY]![0].diagnosis ? <div><span style={{ color: "var(--text-muted)" }}>Diagnóstico: </span><span style={{ color: "var(--text-main)" }}>{clinicalNotes[PATIENT_NOTES_KEY]![0].diagnosis}</span></div> : null}
+                    {clinicalNotes[PATIENT_NOTES_KEY]![0].treatment ? <div><span style={{ color: "var(--text-muted)" }}>Tratamiento: </span><span style={{ color: "var(--text-main)" }}>{clinicalNotes[PATIENT_NOTES_KEY]![0].treatment}</span></div> : null}
+                    {clinicalNotes[PATIENT_NOTES_KEY]![0].medications ? <div><span style={{ color: "var(--text-muted)" }}>Medicamentos: </span><span style={{ color: "var(--text-main)" }}>{clinicalNotes[PATIENT_NOTES_KEY]![0].medications}</span></div> : null}
+                    {clinicalNotes[PATIENT_NOTES_KEY]![0].next_control_at ? <div><span style={{ color: "var(--text-muted)" }}>Próximo control: </span><span style={{ color: "#1D9E75", fontWeight: 500 }}>{formatDateLong(clinicalNotes[PATIENT_NOTES_KEY]![0].next_control_at!)}{clinicalNotes[PATIENT_NOTES_KEY]![0].next_control_label ? ` · ${clinicalNotes[PATIENT_NOTES_KEY]![0].next_control_label}` : ""}</span></div> : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Estadísticas */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-xl p-4 text-center" style={{ background: "var(--bg-soft)", border: "1px solid var(--border-color)" }}>
+                  <p className="text-2xl font-bold" style={{ color: "var(--text-main)" }}>{appointments.length}</p>
+                  <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Total atenciones</p>
+                </div>
+                <div className="rounded-xl p-4 text-center" style={{ background: "var(--bg-soft)", border: "1px solid var(--border-color)" }}>
+                  <p className="text-2xl font-bold" style={{ color: "var(--text-main)" }}>{clinicalNotes[PATIENT_NOTES_KEY]?.length ?? 0}</p>
+                  <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Consultas registradas</p>
+                </div>
               </div>
-              {/* Patologías crónicas */}
-              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Patologías crónicas</p>
-                <p className="mt-1 text-sm" style={{ color: customer?.chronic_conditions ? "var(--text-main)" : "var(--text-muted)" }}>
-                  {customer?.chronic_conditions || "Sin antecedentes"}
-                </p>
-              </div>
-              {/* Medicamentos recetados */}
-              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Medicamentos recetados</p>
-                <p className="mt-1 text-sm" style={{ color: "var(--text-main)" }}>
-                  {clinicalNotes[PATIENT_NOTES_KEY]?.[0]?.medications || "Sin medicamentos registrados"}
-                </p>
-              </div>
-              {/* Próximo control */}
-              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "linear-gradient(180deg, rgba(29,158,117,0.06), var(--bg-soft))" }}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Próximo control</p>
-                <p className="mt-1 text-sm font-medium" style={{ color: clinicalNotes[PATIENT_NOTES_KEY]?.[0]?.next_control_at ? "#1D9E75" : "var(--text-muted)" }}>
-                  {clinicalNotes[PATIENT_NOTES_KEY]?.[0]?.next_control_at
-                    ? formatDateLong(clinicalNotes[PATIENT_NOTES_KEY]![0]!.next_control_at!)
-                    : "Sin control programado"}
-                </p>
-              </div>
-              {/* Total de atenciones */}
-              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Total de atenciones</p>
-                <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                  {appointments.length}
-                </p>
-              </div>
+
             </div>
           </div>
         </div>
