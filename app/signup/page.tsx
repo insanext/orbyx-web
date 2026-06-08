@@ -59,7 +59,7 @@ function SignupInner() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string>("");
   const turnstileRef = useRef<any>(null);
 
   const hasMinLength = password.length >= 8;
@@ -81,14 +81,18 @@ function SignupInner() {
       setMsg("Las contraseñas no coinciden.");
       return;
     }
-    if (!turnstileToken) {
+    if (!captchaToken) {
       setMsg("Completa la verificación de seguridad.");
       return;
     }
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { captchaToken },
+      });
       if (error) throw error;
 
       const userId = data.user?.id;
@@ -108,7 +112,7 @@ function SignupInner() {
     } catch (err: any) {
       setMsg(err?.message || "Error al crear la cuenta");
       turnstileRef.current?.reset();
-      setTurnstileToken(null);
+      setCaptchaToken("");
     } finally {
       setLoading(false);
     }
@@ -400,9 +404,9 @@ function SignupInner() {
           <Turnstile
             ref={turnstileRef}
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-            onSuccess={(token) => setTurnstileToken(token)}
-            onExpire={() => setTurnstileToken(null)}
-            onError={() => setTurnstileToken(null)}
+            onSuccess={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken("")}
+            onError={() => setCaptchaToken("")}
             options={{ theme: "dark" }}
           />
           </div>
@@ -434,23 +438,23 @@ function SignupInner() {
 
           <button
             type="submit"
-            disabled={loading || !passwordValid || !passwordsMatch || !turnstileToken}
+            disabled={loading || !passwordValid || !passwordsMatch || !captchaToken}
             style={{
               padding: "14px",
               borderRadius: 10,
               border: "none",
-              cursor: loading || !passwordValid || !passwordsMatch || !turnstileToken ? "not-allowed" : "pointer",
+              cursor: loading || !passwordValid || !passwordsMatch || !captchaToken ? "not-allowed" : "pointer",
               fontWeight: 700,
               fontSize: 15,
               background:
-                loading || !passwordValid || !passwordsMatch || !turnstileToken
+                loading || !passwordValid || !passwordsMatch || !captchaToken
                   ? "rgba(255,255,255,0.06)"
                   : `linear-gradient(135deg, ${planColor}ee 0%, ${planColor} 50%, ${planColor}bb 100%)`,
               color:
-                loading || !passwordValid || !passwordsMatch || !turnstileToken ? "#475569" : "#fff",
+                loading || !passwordValid || !passwordsMatch || !captchaToken ? "#475569" : "#fff",
               transition: "all 0.2s",
               boxShadow:
-                loading || !passwordValid || !passwordsMatch || !turnstileToken
+                loading || !passwordValid || !passwordsMatch || !captchaToken
                   ? "none"
                   : `0 6px 28px ${planColor}66, 0 2px 8px ${planColor}33`,
               letterSpacing: "0.3px",
