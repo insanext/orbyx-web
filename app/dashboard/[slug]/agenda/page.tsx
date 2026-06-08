@@ -3280,77 +3280,103 @@ const hasPendingClose = pendingCloseCount > 0;
 
 {showPendingPanel ? (
   <div
-    className="fixed inset-0 z-50 flex items-start justify-end bg-black/40"
+    className="fixed inset-0 z-50 flex items-start justify-end"
+    style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
     onClick={() => setShowPendingPanel(false)}
   >
     <div
-      className="h-full w-full max-w-md bg-white p-5 shadow-xl"
+      className="relative flex h-full w-full max-w-sm flex-col border-l shadow-[−20px_0_60px_-20px_rgba(0,0,0,0.55)]"
+      style={{
+        background: "var(--bg-card)",
+        borderColor: "var(--border-color)",
+        animation: "slideInRight 0.22s cubic-bezier(0.22,1,0.36,1)",
+      }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Pendientes de cierre</h3>
+      {/* Header */}
+      <div
+        className="flex shrink-0 items-center justify-between border-b px-5 py-4"
+        style={{ borderColor: "var(--border-color)" }}
+      >
+        <div>
+          <p className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>Agenda</p>
+          <h3 className="mt-0.5 text-base font-bold" style={{ color: "var(--text-main)" }}>Pendientes de cierre</h3>
+        </div>
         <button
           onClick={() => setShowPendingPanel(false)}
-          className="text-sm"
+          className="flex h-8 w-8 items-center justify-center rounded-full border text-sm transition hover:shadow-sm"
+          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
         >
           ✕
         </button>
       </div>
 
-      <div className="mt-4 space-y-3 max-h-[80vh] overflow-y-auto">
+      {/* List */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {pendingCloseAllAppointments.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No hay pendientes.
-          </p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No hay pendientes.</p>
         ) : (
           pendingCloseAllAppointments.map((appt) => (
             <div
               key={appt.id}
-              className="rounded-xl border p-3"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-              }}
+              className="rounded-2xl border p-3.5 transition hover:shadow-sm"
+              style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
             >
-              <p className="text-sm font-semibold">
-                {appt.customer_name}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                    {appt.customer_name}
+                  </p>
+                  {appt.customer_data?.pet_name ? (
+                    <p className="mt-0.5 text-xs font-medium text-emerald-500">
+                      🐶 {appt.customer_data.pet_name}
+                    </p>
+                  ) : null}
+                </div>
+                <span className="shrink-0 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold text-amber-500">
+                  Pendiente
+                </span>
+              </div>
 
-              {appt.customer_data?.pet_name ? (
-                <p className="text-xs text-emerald-600">
-                  🐶 {appt.customer_data.pet_name}
+              <div className="mt-2 space-y-0.5">
+                <p className="text-xs capitalize" style={{ color: "var(--text-muted)" }}>
+                  {formatLongDate(appt.start_at)} · {formatHour(appt.start_at)}
                 </p>
-              ) : null}
-
-              <p className="text-xs text-slate-500 mt-1">
-                {formatLongDate(appt.start_at)} ·{" "}
-                {formatHour(appt.start_at)}
-              </p>
-
-              <p className="text-xs text-slate-500">
-                {getStaffName(appt.staff_id)}
-              </p>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {getStaffName(appt.staff_id)}
+                </p>
+              </div>
 
               <button
                 onClick={() => {
                   setShowPendingPanel(false);
-
                   const date = new Date(appt.start_at);
                   setWeekBaseDate(date);
-
-                  setTimeout(() => {
-                    handleSelectAppointment(appt);
-                  }, 100);
+                  setTimeout(() => { handleSelectAppointment(appt); }, 100);
                 }}
-                className="mt-2 w-full rounded-lg bg-slate-900 px-3 py-1.5 text-xs text-white"
+                className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-xl text-xs font-semibold transition hover:opacity-90"
+                style={{
+                  background: "linear-gradient(135deg, rgba(30,64,175,0.90), rgba(37,99,235,0.70))",
+                  color: "#fff",
+                  boxShadow: "0 4px 14px -6px rgba(37,99,235,0.55)",
+                }}
               >
-                Ir a atención
+                Ir a atención →
               </button>
             </div>
           ))
         )}
       </div>
+
+      {/* Footer count */}
+      <div
+        className="shrink-0 border-t px-5 py-3 text-center text-xs"
+        style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+      >
+        {pendingCloseAllAppointments.length} atención{pendingCloseAllAppointments.length !== 1 ? "es" : ""} pendiente{pendingCloseAllAppointments.length !== 1 ? "s" : ""}
+      </div>
     </div>
+    <style>{`@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
   </div>
 ) : null}
 
