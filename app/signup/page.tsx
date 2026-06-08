@@ -161,9 +161,9 @@ function SignupInner() {
           maxWidth: 440,
           background: "rgba(15, 23, 42, 0.85)",
           backdropFilter: "blur(20px)",
-          border: "1px solid rgba(139, 92, 246, 0.3)",
+          border: "1px solid rgba(0, 229, 255, 0.4)",
           borderRadius: 20,
-          boxShadow: "0 32px 72px rgba(0,0,0,0.6), 0 0 0 1px rgba(139,92,246,0.08)",
+          boxShadow: "0 0 24px rgba(0, 229, 255, 0.25), 0 0 60px rgba(6, 182, 212, 0.15), 0 0 2px rgba(0, 229, 255, 0.6), 0 32px 72px rgba(0,0,0,0.55)",
           padding: "44px 40px",
           position: "relative",
         }}
@@ -243,9 +243,6 @@ function SignupInner() {
         >
           Crear tu cuenta
         </h1>
-        <p style={{ color: "#64748b", fontSize: 13, textAlign: "center", marginBottom: 28 }}>
-          Comienza gratis, sin tarjeta de crédito
-        </p>
 
         {/* Divider */}
         <div
@@ -373,7 +370,7 @@ function SignupInner() {
                     ? "#ef4444"
                     : confirmTouched && passwordsMatch
                     ? "#22c55e"
-                    : "rgba(255,255,255,0.1)"
+                    : "rgba(255,255,255,0.15)"
                 }`,
                 borderRadius: 10,
                 color: "#f1f5f9",
@@ -398,15 +395,17 @@ function SignupInner() {
             )}
           </div>
 
-          {/* Turnstile invisible — no renderiza widget visible */}
+          {/* Turnstile — visible y centrado */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
           <Turnstile
             ref={turnstileRef}
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
             onSuccess={(token) => setTurnstileToken(token)}
             onExpire={() => setTurnstileToken(null)}
             onError={() => setTurnstileToken(null)}
-            options={{ theme: "dark", size: "invisible" }}
+            options={{ theme: "dark" }}
           />
+          </div>
 
           {msg && (
             <p
@@ -457,7 +456,7 @@ function SignupInner() {
               letterSpacing: "0.3px",
             }}
           >
-            {loading ? "Creando cuenta..." : "Crear cuenta gratis"}
+            {loading ? "Creando cuenta..." : "Crear cuenta"}
           </button>
         </form>
 
