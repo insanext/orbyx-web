@@ -1,13 +1,39 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useRef, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { Turnstile } from "@marsidev/react-turnstile";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const PLAN_LABELS: Record<string, string> = {
+  starter: "Starter",
+  pro: "Pro",
+  enterprise: "Enterprise",
+};
+
+const PLAN_COLORS: Record<string, string> = {
+  starter: "#6366f1",
+  pro: "#0ea5e9",
+  enterprise: "#f59e0b",
+};
+
+function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
+  return (
+    <span
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 12,
+        color: met ? "#22c55e" : "#94a3b8",
+        transition: "color 0.2s",
+      }}
+    >
+      <span style={{ fontSize: 14 }}>{met ? "✓" : "○"}</span>
+      {text}
+    </span>
+  );
+}
 
 function SignupInner() {
   const router = useRouter();
@@ -19,25 +45,55 @@ function SignupInner() {
     return "starter";
   }, [searchParams]);
 
+  const supabase = useMemo(
+    () =>
+      createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      ),
+    []
+  );
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<any>(null);
+
+  const hasMinLength = password.length >= 8;
+  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const passwordValid = hasMinLength && hasLetter && hasNumber;
+  const passwordsMatch = password === confirmPassword;
+  const confirmTouched = confirmPassword.length > 0;
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
-    setLoading(true);
 
+    if (!passwordValid) {
+      setMsg("La contraseña no cumple los requisitos mínimos.");
+      return;
+    }
+    if (!passwordsMatch) {
+      setMsg("Las contraseñas no coinciden.");
+      return;
+    }
+    if (!turnstileToken) {
+      setMsg("Completa la verificación de seguridad.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      // 1) Crear usuario en Supabase Auth
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
 
       const userId = data.user?.id;
       if (!userId) throw new Error("No se pudo obtener user_id del signup");
 
-      // 2) Provisionar tenant + owner (backend Render)
       const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
       const resp = await fetch(`${backend}/tenants/provision`, {
         method: "POST",
@@ -48,56 +104,382 @@ function SignupInner() {
       const json = await resp.json();
       if (!resp.ok) throw new Error(json?.detail || json?.error || "Error provisionando tenant");
 
-      // 3) Ir a onboarding
       router.push(`/onboarding?tenant_id=${json.tenant_id}&calendar_id=${json.calendar_id}`);
     } catch (err: any) {
-      setMsg(err?.message || "Error");
+      setMsg(err?.message || "Error al crear la cuenta");
+      turnstileRef.current?.reset();
+      setTurnstileToken(null);
     } finally {
       setLoading(false);
     }
   }
 
+  const planColor = PLAN_COLORS[plan] ?? "#6366f1";
+  const planLabel = PLAN_LABELS[plan] ?? plan;
+
   return (
-    <div style={{ maxWidth: 420, margin: "40px auto", padding: 16 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700 }}>Crear cuenta</h1>
-      <p style={{ opacity: 0.8 }}>
-        Plan seleccionado: <b>{plan}</b>
-      </p>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
+        padding: "24px 16px",
+        fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+      }}
+    >
+      {/* Decorative blobs */}
+      <div
+        style={{
+          position: "fixed",
+          top: "10%",
+          left: "5%",
+          width: 300,
+          height: 300,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${planColor}22 0%, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          bottom: "15%",
+          right: "8%",
+          width: 250,
+          height: 250,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, #818cf822 0%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
 
-      <form onSubmit={handleSignup} style={{ display: "grid", gap: 12, marginTop: 16 }}>
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ padding: 12, border: "1px solid #ddd", borderRadius: 8 }}
-          required
-        />
-        <input
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ padding: 12, border: "1px solid #ddd", borderRadius: 8 }}
-          required
-        />
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 440,
+          background: "rgba(15, 23, 42, 0.85)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 20,
+          boxShadow: "0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
+          padding: "40px 36px",
+          position: "relative",
+        }}
+      >
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 8,
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: `linear-gradient(135deg, ${planColor}, ${planColor}99)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 20,
+                boxShadow: `0 4px 14px ${planColor}44`,
+              }}
+            >
+              ◆
+            </div>
+            <span
+              style={{
+                fontSize: 22,
+                fontWeight: 800,
+                color: "#f1f5f9",
+                letterSpacing: "-0.5px",
+              }}
+            >
+              Orbyx
+            </span>
+          </div>
+          <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
+            Plataforma de reservas inteligente
+          </p>
+        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ padding: 12, borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700 }}
+        {/* Plan badge */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              background: `${planColor}18`,
+              border: `1px solid ${planColor}44`,
+              color: planColor,
+              borderRadius: 999,
+              padding: "5px 14px",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.5px",
+              textTransform: "uppercase",
+            }}
+          >
+            <span style={{ fontSize: 10 }}>●</span>
+            Plan {planLabel}
+          </span>
+        </div>
+
+        <h1
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            color: "#f1f5f9",
+            marginBottom: 6,
+            textAlign: "center",
+          }}
         >
-          {loading ? "Creando..." : "Crear cuenta"}
-        </button>
+          Crear tu cuenta
+        </h1>
+        <p style={{ color: "#64748b", fontSize: 13, textAlign: "center", marginBottom: 28 }}>
+          Comienza gratis, sin tarjeta de crédito
+        </p>
 
-        {msg && <p style={{ color: "crimson" }}>{msg}</p>}
-      </form>
+        {/* Divider */}
+        <div
+          style={{
+            height: 1,
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)",
+            marginBottom: 28,
+          }}
+        />
+
+        <form onSubmit={handleSignup} style={{ display: "grid", gap: 16 }}>
+          {/* Email field */}
+          <div style={{ position: "relative" }}>
+            <span
+              style={{
+                position: "absolute",
+                left: 14,
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: 16,
+                opacity: 0.4,
+                pointerEvents: "none",
+              }}
+            >
+              ✉
+            </span>
+            <input
+              type="email"
+              placeholder="correo@empresa.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "12px 14px 12px 40px",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 10,
+                color: "#f1f5f9",
+                fontSize: 14,
+                outline: "none",
+                transition: "border-color 0.2s",
+                boxSizing: "border-box",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = `${planColor}80`)}
+              onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+            />
+          </div>
+
+          {/* Password field */}
+          <div>
+            <div style={{ position: "relative" }}>
+              <span
+                style={{
+                  position: "absolute",
+                  left: 14,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: 16,
+                  opacity: 0.4,
+                  pointerEvents: "none",
+                }}
+              >
+                🔒
+              </span>
+              <input
+                type="password"
+                placeholder="Contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px 14px 12px 40px",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 10,
+                  color: "#f1f5f9",
+                  fontSize: 14,
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                  boxSizing: "border-box",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = `${planColor}80`)}
+                onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+              />
+            </div>
+            {/* Password requirements */}
+            {password.length > 0 && (
+              <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap" }}>
+                <PasswordRequirement met={hasMinLength} text="Mín. 8 caracteres" />
+                <PasswordRequirement met={hasLetter} text="Una letra" />
+                <PasswordRequirement met={hasNumber} text="Un número" />
+              </div>
+            )}
+          </div>
+
+          {/* Confirm password field */}
+          <div style={{ position: "relative" }}>
+            <span
+              style={{
+                position: "absolute",
+                left: 14,
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: 16,
+                opacity: 0.4,
+                pointerEvents: "none",
+              }}
+            >
+              🔒
+            </span>
+            <input
+              type="password"
+              placeholder="Confirmar contraseña"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "12px 14px 12px 40px",
+                background: "rgba(255,255,255,0.04)",
+                border: `1px solid ${
+                  confirmTouched && !passwordsMatch
+                    ? "#ef4444"
+                    : confirmTouched && passwordsMatch
+                    ? "#22c55e"
+                    : "rgba(255,255,255,0.1)"
+                }`,
+                borderRadius: 10,
+                color: "#f1f5f9",
+                fontSize: 14,
+                outline: "none",
+                transition: "border-color 0.2s",
+                boxSizing: "border-box",
+              }}
+              onFocus={(e) => {
+                if (!confirmTouched || passwordsMatch)
+                  e.target.style.borderColor = `${planColor}80`;
+              }}
+              onBlur={(e) => {
+                if (confirmTouched && !passwordsMatch)
+                  e.target.style.borderColor = "#ef4444";
+              }}
+            />
+            {confirmTouched && !passwordsMatch && (
+              <p style={{ color: "#ef4444", fontSize: 12, marginTop: 5, marginBottom: 0 }}>
+                Las contraseñas no coinciden
+              </p>
+            )}
+          </div>
+
+          {/* Turnstile */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+              options={{ theme: "dark" }}
+            />
+          </div>
+
+          {msg && (
+            <p
+              style={{
+                color: "#f87171",
+                fontSize: 13,
+                background: "#ef444415",
+                border: "1px solid #ef444430",
+                borderRadius: 8,
+                padding: "10px 14px",
+                margin: 0,
+              }}
+            >
+              {msg}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !passwordValid || !passwordsMatch || !turnstileToken}
+            style={{
+              padding: "14px",
+              borderRadius: 10,
+              border: "none",
+              cursor: loading || !passwordValid || !passwordsMatch || !turnstileToken ? "not-allowed" : "pointer",
+              fontWeight: 700,
+              fontSize: 15,
+              background:
+                loading || !passwordValid || !passwordsMatch || !turnstileToken
+                  ? "rgba(255,255,255,0.06)"
+                  : `linear-gradient(135deg, ${planColor}, ${planColor}cc)`,
+              color:
+                loading || !passwordValid || !passwordsMatch || !turnstileToken ? "#475569" : "#fff",
+              transition: "all 0.2s",
+              boxShadow:
+                loading || !passwordValid || !passwordsMatch || !turnstileToken
+                  ? "none"
+                  : `0 4px 20px ${planColor}44`,
+              letterSpacing: "0.3px",
+            }}
+          >
+            {loading ? "Creando cuenta..." : "Crear cuenta gratis"}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div
+          style={{
+            height: 1,
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)",
+            margin: "24px 0",
+          }}
+        />
+
+        <p style={{ textAlign: "center", color: "#64748b", fontSize: 13, margin: 0 }}>
+          ¿Ya tienes una cuenta?{" "}
+          <a
+            href="/login"
+            style={{ color: planColor, fontWeight: 600, textDecoration: "none" }}
+          >
+            Iniciar sesión
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 16 }}>Cargando...</div>}>
+    <Suspense fallback={<div style={{ padding: 16, color: "#f1f5f9" }}>Cargando...</div>}>
       <SignupInner />
     </Suspense>
   );
