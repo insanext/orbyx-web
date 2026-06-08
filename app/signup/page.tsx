@@ -161,10 +161,10 @@ function SignupInner() {
           maxWidth: 440,
           background: "rgba(15, 23, 42, 0.85)",
           backdropFilter: "blur(20px)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          border: "1px solid rgba(139, 92, 246, 0.3)",
           borderRadius: 20,
-          boxShadow: "0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
-          padding: "40px 36px",
+          boxShadow: "0 32px 72px rgba(0,0,0,0.6), 0 0 0 1px rgba(139,92,246,0.08)",
+          padding: "44px 40px",
           position: "relative",
         }}
       >
@@ -281,8 +281,8 @@ function SignupInner() {
               style={{
                 width: "100%",
                 padding: "12px 14px 12px 40px",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.09)",
+                border: "1px solid rgba(255,255,255,0.15)",
                 borderRadius: 10,
                 color: "#f1f5f9",
                 fontSize: 14,
@@ -367,7 +367,7 @@ function SignupInner() {
               style={{
                 width: "100%",
                 padding: "12px 14px 12px 40px",
-                background: "rgba(255,255,255,0.04)",
+                background: "rgba(255,255,255,0.09)",
                 border: `1px solid ${
                   confirmTouched && !passwordsMatch
                     ? "#ef4444"
@@ -398,17 +398,15 @@ function SignupInner() {
             )}
           </div>
 
-          {/* Turnstile */}
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <Turnstile
-              ref={turnstileRef}
-              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-              onSuccess={(token) => setTurnstileToken(token)}
-              onExpire={() => setTurnstileToken(null)}
-              onError={() => setTurnstileToken(null)}
-              options={{ theme: "dark" }}
-            />
-          </div>
+          {/* Turnstile invisible — no renderiza widget visible */}
+          <Turnstile
+            ref={turnstileRef}
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+            onSuccess={(token) => setTurnstileToken(token)}
+            onExpire={() => setTurnstileToken(null)}
+            onError={() => setTurnstileToken(null)}
+            options={{ theme: "dark", size: "invisible" }}
+          />
 
           {msg && (
             <p
@@ -426,6 +424,15 @@ function SignupInner() {
             </p>
           )}
 
+          {/* Separador antes del botón */}
+          <div
+            style={{
+              height: 1,
+              background: "linear-gradient(90deg, transparent, rgba(139,92,246,0.25), transparent)",
+              margin: "4px 0",
+            }}
+          />
+
           <button
             type="submit"
             disabled={loading || !passwordValid || !passwordsMatch || !turnstileToken}
@@ -439,14 +446,14 @@ function SignupInner() {
               background:
                 loading || !passwordValid || !passwordsMatch || !turnstileToken
                   ? "rgba(255,255,255,0.06)"
-                  : `linear-gradient(135deg, ${planColor}, ${planColor}cc)`,
+                  : `linear-gradient(135deg, ${planColor}ee 0%, ${planColor} 50%, ${planColor}bb 100%)`,
               color:
                 loading || !passwordValid || !passwordsMatch || !turnstileToken ? "#475569" : "#fff",
               transition: "all 0.2s",
               boxShadow:
                 loading || !passwordValid || !passwordsMatch || !turnstileToken
                   ? "none"
-                  : `0 4px 20px ${planColor}44`,
+                  : `0 6px 28px ${planColor}66, 0 2px 8px ${planColor}33`,
               letterSpacing: "0.3px",
             }}
           >
