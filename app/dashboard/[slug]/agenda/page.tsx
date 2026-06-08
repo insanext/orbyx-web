@@ -6322,20 +6322,31 @@ const appt = slotDisplayGroups[0]?.appointments[0];
               className="mt-2 text-sm leading-6"
               style={{ color: "var(--text-muted)" }}
             >
-              Configura horarios del negocio o del profesional para habilitar este horario.
+              {(() => {
+                const ab = branches.find((b) => b.id === selectedBranchId);
+                const isGlobal = ab?.use_global_hours === true;
+                if (closedScheduleDraft.staff_id) return "Configura el horario del profesional o del negocio para habilitar este horario.";
+                if (isGlobal) return "Este bloque sigue el horario global del negocio. Configúralo en Negocio.";
+                return "Este bloque sigue el horario de la sucursal. Configúralo en Sucursales.";
+              })()}
             </p>
 
             <div className="mt-5 grid gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setClosedScheduleDraft(null);
-                  router.push(`/dashboard/${slug}/business`);
-                }}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                Configurar horario del negocio
-              </button>
+              {(() => {
+                const ab = branches.find((b) => b.id === selectedBranchId);
+                const isGlobal = ab?.use_global_hours === true;
+                const label = isGlobal ? "Configurar horario del negocio" : "Configurar horario de la sucursal";
+                const route = isGlobal ? `/dashboard/${slug}/business` : `/dashboard/${slug}/branches`;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => { setClosedScheduleDraft(null); router.push(route); }}
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    {label}
+                  </button>
+                );
+              })()}
 
               {closedScheduleDraft.staff_id ? (
                 <button
