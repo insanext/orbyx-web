@@ -1,69 +1,537 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-function OnboardingInner() {
-  const searchParams = useSearchParams();
-  const tenantId = searchParams.get("tenant_id");
-  const calendarId = searchParams.get("calendar_id");
+// ─── Shared design tokens (espeja signup) ────────────────────────────────────
+const CARD_STYLE: React.CSSProperties = {
+  width: "100%",
+  maxWidth: 480,
+  background: "rgba(15, 23, 42, 0.85)",
+  backdropFilter: "blur(20px)",
+  border: "1px solid rgba(0, 229, 255, 0.4)",
+  borderRadius: 20,
+  boxShadow:
+    "0 0 24px rgba(0, 229, 255, 0.25), 0 0 60px rgba(6, 182, 212, 0.15), 0 0 2px rgba(0, 229, 255, 0.6), 0 32px 72px rgba(0,0,0,0.55)",
+  padding: "44px 40px",
+  fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+};
 
-  const googleAuthUrl = calendarId
-    ? `https://orbyx-backend.onrender.com/auth?calendar_id=${calendarId}`
-    : null;
+const NEON = "#00e5ff";
 
+const INPUT_STYLE: React.CSSProperties = {
+  width: "100%",
+  padding: "12px 14px",
+  background: "rgba(255,255,255,0.09)",
+  border: "1px solid rgba(255,255,255,0.15)",
+  borderRadius: 10,
+  color: "#f1f5f9",
+  fontSize: 14,
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const LABEL_STYLE: React.CSSProperties = {
+  display: "block",
+  color: "#94a3b8",
+  fontSize: 12,
+  fontWeight: 600,
+  marginBottom: 6,
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+};
+
+const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const DAY_KEYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
+const CATEGORIES = [
+  { value: "generico", label: "Genérico" },
+  { value: "veterinaria", label: "Veterinaria" },
+  { value: "fitness", label: "Fitness" },
+  { value: "clases", label: "Clases" },
+  { value: "talleres", label: "Talleres" },
+  { value: "eventos", label: "Eventos" },
+];
+
+// ─── Step indicator ──────────────────────────────────────────────────────────
+function StepIndicator({ step, total }: { step: number; total: number }) {
   return (
-    <div style={{ maxWidth: 700, margin: "40px auto", padding: 16 }}>
-      <h1 style={{ fontSize: 30, fontWeight: 700 }}>Onboarding Orbyx</h1>
-
-      <p style={{ marginTop: 12 }}>Tu cuenta fue creada correctamente.</p>
-      <p>
-        Tenant ID: <b>{tenantId || "no recibido"}</b>
-      </p>
-      <p>
-        Calendar ID: <b>{calendarId || "no recibido"}</b>
-      </p>
-
+    <div style={{ marginBottom: 32 }}>
       <div
         style={{
-          marginTop: 24,
-          padding: 16,
-          border: "1px solid #ddd",
-          borderRadius: 12,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 10,
         }}
       >
-        <h2 style={{ fontSize: 22, fontWeight: 600 }}>Siguiente paso</h2>
-        <p style={{ marginTop: 8 }}>
-          Conecta Google Calendar para empezar a agendar automáticamente.
+        <span style={{ color: "#64748b", fontSize: 12, fontWeight: 600 }}>
+          PASO {step} DE {total}
+        </span>
+        <span style={{ color: NEON, fontSize: 12, fontWeight: 700 }}>
+          {Math.round((step / total) * 100)}%
+        </span>
+      </div>
+      <div
+        style={{
+          height: 4,
+          background: "rgba(255,255,255,0.06)",
+          borderRadius: 999,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${(step / total) * 100}%`,
+            background: `linear-gradient(90deg, ${NEON}, #0ea5e9)`,
+            borderRadius: 999,
+            transition: "width 0.4s ease",
+          }}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              height: 2,
+              borderRadius: 999,
+              background: i < step ? NEON : "rgba(255,255,255,0.08)",
+              transition: "background 0.3s",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Button helpers ───────────────────────────────────────────────────────────
+function PrimaryBtn({
+  children,
+  onClick,
+  disabled,
+  type = "button",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  type?: "button" | "submit";
+}) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        flex: 1,
+        padding: "13px",
+        borderRadius: 10,
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        fontWeight: 700,
+        fontSize: 15,
+        background: disabled
+          ? "rgba(255,255,255,0.06)"
+          : `linear-gradient(135deg, ${NEON}cc 0%, #0ea5e9 50%, #06b6d4bb 100%)`,
+        color: disabled ? "#475569" : "#0f172a",
+        boxShadow: disabled ? "none" : `0 6px 28px rgba(0,229,255,0.35), 0 2px 8px rgba(0,229,255,0.2)`,
+        transition: "all 0.2s",
+        letterSpacing: "0.3px",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SecondaryBtn({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: 1,
+        padding: "13px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.1)",
+        cursor: "pointer",
+        fontWeight: 600,
+        fontSize: 14,
+        background: "rgba(255,255,255,0.04)",
+        color: "#94a3b8",
+        transition: "all 0.2s",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+function OnboardingInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tenantId = searchParams.get("tenant_id") || "";
+
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Step 1
+  const [businessName, setBusinessName] = useState("");
+  const [category, setCategory] = useState("generico");
+
+  // Step 2
+  const [activeDays, setActiveDays] = useState<Record<string, boolean>>({
+    monday: true, tuesday: true, wednesday: true,
+    thursday: true, friday: true, saturday: false, sunday: false,
+  });
+  const [openTime, setOpenTime] = useState("09:00");
+  const [closeTime, setCloseTime] = useState("18:00");
+
+  // Step 3
+  const [serviceName, setServiceName] = useState("");
+  const [duration, setDuration] = useState("60");
+  const [price, setPrice] = useState("");
+
+  const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
+
+  // ── Step 1 submit ──────────────────────────────────────────────────────────
+  async function handleStep1() {
+    if (!businessName.trim()) { setError("Ingresa el nombre de tu negocio."); return; }
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`${backend}/tenants/${tenantId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: businessName.trim(), category }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || "Error guardando el negocio");
+      }
+      setStep(2);
+    } catch (e: any) {
+      setError(e.message || "Error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Step 2 submit ──────────────────────────────────────────────────────────
+  async function handleStep2() {
+    const selectedDays = DAY_KEYS.filter((k) => activeDays[k]);
+    if (selectedDays.length === 0) { setError("Selecciona al menos un día."); return; }
+    if (openTime >= closeTime) { setError("La hora de apertura debe ser antes del cierre."); return; }
+    setError(null);
+    setLoading(true);
+    try {
+      const payload = DAY_KEYS.map((day) => ({
+        day_of_week: day,
+        is_open: activeDays[day],
+        open_time: activeDays[day] ? openTime : "09:00",
+        close_time: activeDays[day] ? closeTime : "18:00",
+      }));
+      const res = await fetch(`${backend}/business-hours`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId, hours: payload }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || "Error guardando horarios");
+      }
+      setStep(3);
+    } catch (e: any) {
+      setError(e.message || "Error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Step 3 submit ──────────────────────────────────────────────────────────
+  async function handleStep3() {
+    if (!serviceName.trim()) { setError("Ingresa el nombre del servicio."); return; }
+    const dur = parseInt(duration);
+    if (!dur || dur < 5) { setError("La duración debe ser al menos 5 minutos."); return; }
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`${backend}/services`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          name: serviceName.trim(),
+          duration_minutes: dur,
+          price: price ? parseFloat(price) : 0,
+          is_active: true,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || "Error creando el servicio");
+      }
+
+      // Obtener slug del tenant para redirigir
+      const tenantRes = await fetch(`${backend}/tenants/${tenantId}`);
+      const tenantData = await tenantRes.json().catch(() => ({}));
+      const slug = tenantData?.slug || tenantData?.tenant?.slug;
+      if (slug) {
+        router.push(`/dashboard/${slug}`);
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (e: any) {
+      setError(e.message || "Error");
+      setLoading(false);
+    }
+  }
+
+  const stepTitles = ["Tu negocio", "Horario de atención", "Primer servicio"];
+  const stepSubtitles = [
+    "Cuéntanos sobre tu negocio",
+    "¿Cuándo atienden tus clientes?",
+    "Agrega tu primer servicio",
+  ];
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
+        padding: "24px 16px",
+      }}
+    >
+      {/* Decorative blobs */}
+      <div
+        style={{
+          position: "fixed", top: "10%", left: "5%", width: 300, height: 300,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(0,229,255,0.06) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "fixed", bottom: "15%", right: "8%", width: 250, height: 250,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(14,165,233,0.06) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div style={CARD_STYLE}>
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <div
+              style={{
+                width: 34, height: 34, borderRadius: 9,
+                background: `linear-gradient(135deg, ${NEON}, #0ea5e9)`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 18, boxShadow: `0 4px 14px rgba(0,229,255,0.3)`,
+                color: "#0f172a", fontWeight: 900,
+              }}
+            >
+              ◆
+            </div>
+            <span style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", letterSpacing: "-0.5px" }}>
+              Orbyx
+            </span>
+          </div>
+        </div>
+
+        <StepIndicator step={step} total={3} />
+
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "#f1f5f9", marginBottom: 4, textAlign: "center" }}>
+          {stepTitles[step - 1]}
+        </h2>
+        <p style={{ color: "#64748b", fontSize: 13, textAlign: "center", marginBottom: 28 }}>
+          {stepSubtitles[step - 1]}
         </p>
 
-        {googleAuthUrl ? (
-          <a
-            href={googleAuthUrl}
-            style={{
-              display: "inline-block",
-              marginTop: 16,
-              padding: "12px 18px",
-              borderRadius: 10,
-              textDecoration: "none",
-              border: "1px solid #ccc",
-            }}
-          >
-            Conecta tu calendario
-          </a>
-        ) : (
-          <p style={{ marginTop: 16, color: "red" }}>
-            No se recibió calendar_id.
-          </p>
+        {/* Divider */}
+        <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent)", marginBottom: 28 }} />
+
+        {/* ── STEP 1 ── */}
+        {step === 1 && (
+          <div style={{ display: "grid", gap: 18 }}>
+            <div>
+              <label style={LABEL_STYLE}>Nombre del negocio</label>
+              <input
+                style={INPUT_STYLE}
+                placeholder="Ej: Clínica Veterinaria San Juan"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleStep1()}
+              />
+            </div>
+            <div>
+              <label style={LABEL_STYLE}>Categoría</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                style={{ ...INPUT_STYLE, appearance: "none" as any }}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value} style={{ background: "#1e293b" }}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {error && <ErrorMsg text={error} />}
+            <div style={{ marginTop: 4 }}>
+              <PrimaryBtn onClick={handleStep1} disabled={loading || !businessName.trim()}>
+                {loading ? "Guardando..." : "Siguiente →"}
+              </PrimaryBtn>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 2 ── */}
+        {step === 2 && (
+          <div style={{ display: "grid", gap: 20 }}>
+            <div>
+              <label style={LABEL_STYLE}>Días de atención</label>
+              <div style={{ display: "flex", flexWrap: "wrap" as any, gap: 8 }}>
+                {DAYS.map((day, i) => {
+                  const key = DAY_KEYS[i];
+                  const active = activeDays[key];
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setActiveDays((prev) => ({ ...prev, [key]: !prev[key] }))}
+                      style={{
+                        padding: "7px 13px",
+                        borderRadius: 8,
+                        border: `1px solid ${active ? NEON + "80" : "rgba(255,255,255,0.1)"}`,
+                        background: active ? `rgba(0,229,255,0.1)` : "rgba(255,255,255,0.04)",
+                        color: active ? NEON : "#64748b",
+                        fontSize: 13,
+                        fontWeight: active ? 700 : 400,
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {day.slice(0, 3)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={LABEL_STYLE}>Apertura</label>
+                <input
+                  type="time"
+                  value={openTime}
+                  onChange={(e) => setOpenTime(e.target.value)}
+                  style={INPUT_STYLE}
+                />
+              </div>
+              <div>
+                <label style={LABEL_STYLE}>Cierre</label>
+                <input
+                  type="time"
+                  value={closeTime}
+                  onChange={(e) => setCloseTime(e.target.value)}
+                  style={INPUT_STYLE}
+                />
+              </div>
+            </div>
+            {error && <ErrorMsg text={error} />}
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <SecondaryBtn onClick={() => { setStep(1); setError(null); }}>← Atrás</SecondaryBtn>
+              <PrimaryBtn onClick={handleStep2} disabled={loading}>
+                {loading ? "Guardando..." : "Siguiente →"}
+              </PrimaryBtn>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 3 ── */}
+        {step === 3 && (
+          <div style={{ display: "grid", gap: 18 }}>
+            <div>
+              <label style={LABEL_STYLE}>Nombre del servicio</label>
+              <input
+                style={INPUT_STYLE}
+                placeholder="Ej: Consulta general, Clase de yoga"
+                value={serviceName}
+                onChange={(e) => setServiceName(e.target.value)}
+              />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={LABEL_STYLE}>Duración (min)</label>
+                <input
+                  type="number"
+                  min={5}
+                  step={5}
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  style={INPUT_STYLE}
+                />
+              </div>
+              <div>
+                <label style={LABEL_STYLE}>Precio (CLP)</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  style={INPUT_STYLE}
+                />
+              </div>
+            </div>
+            {error && <ErrorMsg text={error} />}
+
+            {/* Separador */}
+            <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent)", margin: "4px 0" }} />
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <SecondaryBtn onClick={() => { setStep(2); setError(null); }}>← Atrás</SecondaryBtn>
+              <PrimaryBtn onClick={handleStep3} disabled={loading || !serviceName.trim()}>
+                {loading ? "Finalizando..." : "Finalizar ✓"}
+              </PrimaryBtn>
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
+function ErrorMsg({ text }: { text: string }) {
+  return (
+    <p style={{
+      color: "#f87171", fontSize: 13,
+      background: "#ef444415", border: "1px solid #ef444430",
+      borderRadius: 8, padding: "10px 14px", margin: 0,
+    }}>
+      {text}
+    </p>
+  );
+}
+
 export default function OnboardingPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 16 }}>Cargando onboarding...</div>}>
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", color: "#64748b", fontFamily: "system-ui" }}>
+        Cargando...
+      </div>
+    }>
       <OnboardingInner />
     </Suspense>
   );

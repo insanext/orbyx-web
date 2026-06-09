@@ -87,12 +87,21 @@ function SignupInner() {
     }
 
     setLoading(true);
+
+    const timeout = setTimeout(() => {
+      setLoading(false);
+      setMsg("La solicitud tardó demasiado. Intenta de nuevo.");
+      turnstileRef.current?.reset();
+      setCaptchaToken("");
+    }, 10000);
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { captchaToken },
       });
+      clearTimeout(timeout);
       if (error) throw error;
 
       const userId = data.user?.id;
@@ -110,10 +119,10 @@ function SignupInner() {
 
       router.push(`/onboarding?tenant_id=${json.tenant_id}&calendar_id=${json.calendar_id}`);
     } catch (err: any) {
+      clearTimeout(timeout);
       setMsg(err?.message || "Error al crear la cuenta");
       turnstileRef.current?.reset();
       setCaptchaToken("");
-    } finally {
       setLoading(false);
     }
   }
@@ -460,7 +469,7 @@ function SignupInner() {
               letterSpacing: "0.3px",
             }}
           >
-            {loading ? "Creando cuenta..." : "Crear cuenta"}
+            {loading ? "Creando..." : "Crear cuenta"}
           </button>
         </form>
 
