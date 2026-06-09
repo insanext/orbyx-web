@@ -184,15 +184,39 @@ function OnboardingInner() {
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("generico");
 
-  // Step 2
+  // Step 2 — bloques por día: { monday: [{start,end}, ...], ... }
+  type DayBlock = { start: string; end: string };
+  const defaultBlocks = (): DayBlock[] => [{ start: "09:00", end: "18:00" }];
   const [activeDays, setActiveDays] = useState<Record<string, boolean>>({
     monday: true, tuesday: true, wednesday: true,
     thursday: true, friday: true, saturday: false, sunday: false,
   });
-  const [openTime, setOpenTime] = useState("09:00");
-  const [closeTime, setCloseTime] = useState("18:00");
+  const [dayBlocks, setDayBlocks] = useState<Record<string, DayBlock[]>>(() =>
+    Object.fromEntries(DAY_KEYS.map((k) => [k, defaultBlocks()]))
+  );
 
-  // Step 3
+  function setBlock(day: string, idx: number, field: "start" | "end", value: string) {
+    setDayBlocks((prev) => {
+      const blocks = prev[day].map((b, i) => i === idx ? { ...b, [field]: value } : b);
+      return { ...prev, [day]: blocks };
+    });
+  }
+  function addBlock(day: string) {
+    setDayBlocks((prev) => {
+      if (prev[day].length >= 2) return prev;
+      return { ...prev, [day]: [...prev[day], { start: "15:00", end: "19:00" }] };
+    });
+  }
+  function removeBlock(day: string, idx: number) {
+    setDayBlocks((prev) => ({ ...prev, [day]: prev[day].filter((_, i) => i !== idx) }));
+  }
+
+  // Step 3 — staff
+  const branchId = searchParams.get("branch_id") || "";
+  const [staffName, setStaffName] = useState("");
+  const [staffRole, setStaffRole] = useState("");
+
+  // Step 4
   const [serviceName, setServiceName] = useState("");
   const [duration, setDuration] = useState("60");
   const [price, setPrice] = useState("");
@@ -226,18 +250,29 @@ function OnboardingInner() {
   async function handleStep2() {
     const selectedDays = DAY_KEYS.filter((k) => activeDays[k]);
     if (selectedDays.length === 0) { setError("Selecciona al menos un día."); return; }
-    if (openTime >= closeTime) { setError("La hora de apertura debe ser antes del cierre."); return; }
+    // Validar que cada bloque activo tenga apertura < cierre
+    for (const day of selectedDays) {
+      for (const b of dayBlocks[day]) {
+        if (b.start >= b.end) {
+          setError("Hay un horario donde la apertura es igual o posterior al cierre.");
+          return;
+        }
+      }
+    }
     setError(null);
     setLoading(true);
     try {
-      // Backend espera PUT, day_of_week numérico (0=lunes…6=domingo),
-      // campos enabled + start_time/end_time, y scope="global" para horario sin branch
-      const payload = DAY_KEYS.map((day, i) => ({
-        day_of_week: i,
-        enabled: activeDays[day],
-        start_time: openTime,
-        end_time: closeTime,
-      }));
+      // Una fila por bloque; días inactivos envían una fila con enabled:false
+      const payload: object[] = [];
+      DAY_KEYS.forEach((day, i) => {
+        if (!activeDays[day]) {
+          payload.push({ day_of_week: i, enabled: false, start_time: "09:00", end_time: "18:00" });
+        } else {
+          dayBlocks[day].forEach((b) => {
+            payload.push({ day_of_week: i, enabled: true, start_time: b.start, end_time: b.end });
+          });
+        }
+      });
       const res = await fetch(`${backend}/business-hours`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -255,8 +290,38 @@ function OnboardingInner() {
     }
   }
 
-  // ── Step 3 submit ──────────────────────────────────────────────────────────
+  // ── Step 3 submit — staff ─────────────────────────────────────────────────
   async function handleStep3() {
+    if (!staffName.trim()) { setError("Ingresa el nombre del profesional."); return; }
+    setError(null);
+    setLoading(true);
+    try {
+      const body: Record<string, any> = {
+        tenant_id: tenantId,
+        name: staffName.trim(),
+        role: staffRole.trim() || null,
+        is_active: true,
+      };
+      if (branchId) body.branch_id = branchId;
+      const res = await fetch(`${backend}/staff`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || "Error creando el profesional");
+      }
+      setStep(4);
+    } catch (e: any) {
+      setError(e.message || "Error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Step 4 submit — servicio ──────────────────────────────────────────────
+  async function handleStep4() {
     if (!serviceName.trim()) { setError("Ingresa el nombre del servicio."); return; }
     const dur = parseInt(duration);
     if (!dur || dur < 5) { setError("La duración debe ser al menos 5 minutos."); return; }
@@ -279,25 +344,31 @@ function OnboardingInner() {
         throw new Error(j?.error || "Error creando el servicio");
       }
 
-      // Obtener slug del tenant para redirigir
-      const tenantRes = await fetch(`${backend}/tenants/${tenantId}`);
-      const tenantData = await tenantRes.json().catch(() => ({}));
-      const slug = tenantData?.slug || tenantData?.tenant?.slug;
-      if (slug) {
-        router.push(`/dashboard/${slug}`);
-      } else {
-        router.push("/dashboard");
-      }
+      await goToDashboard();
     } catch (e: any) {
       setError(e.message || "Error");
       setLoading(false);
     }
   }
 
-  const stepTitles = ["Tu negocio", "Horario de atención", "Primer servicio"];
+  async function goToDashboard() {
+    const slugParam = searchParams.get("slug");
+    if (slugParam) { router.push(`/dashboard/${slugParam}`); return; }
+    try {
+      const tenantRes = await fetch(`${backend}/tenants/${tenantId}`);
+      const tenantData = await tenantRes.json().catch(() => ({}));
+      const slug = tenantData?.slug || tenantData?.tenant?.slug;
+      router.push(slug ? `/dashboard/${slug}` : "/dashboard");
+    } catch {
+      router.push("/dashboard");
+    }
+  }
+
+  const stepTitles = ["Tu negocio", "Horario de atención", "Tu equipo", "Primer servicio"];
   const stepSubtitles = [
     "Cuéntanos sobre tu negocio",
     "¿Cuándo atienden tus clientes?",
+    "¿Quién atiende a tus clientes?",
     "Agrega tu primer servicio",
   ];
 
@@ -351,7 +422,7 @@ function OnboardingInner() {
           </div>
         </div>
 
-        <StepIndicator step={step} total={3} />
+        <StepIndicator step={step} total={4} />
 
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "#f1f5f9", marginBottom: 4, textAlign: "center" }}>
           {stepTitles[step - 1]}
@@ -401,7 +472,8 @@ function OnboardingInner() {
 
         {/* ── STEP 2 ── */}
         {step === 2 && (
-          <div style={{ display: "grid", gap: 20 }}>
+          <div style={{ display: "grid", gap: 16 }}>
+            {/* Chips de días */}
             <div>
               <label style={LABEL_STYLE}>Días de atención</label>
               <div style={{ display: "flex", flexWrap: "wrap" as any, gap: 8 }}>
@@ -414,15 +486,12 @@ function OnboardingInner() {
                       type="button"
                       onClick={() => setActiveDays((prev) => ({ ...prev, [key]: !prev[key] }))}
                       style={{
-                        padding: "7px 13px",
-                        borderRadius: 8,
+                        padding: "7px 13px", borderRadius: 8,
                         border: `1px solid ${active ? NEON + "80" : "rgba(255,255,255,0.1)"}`,
-                        background: active ? `rgba(0,229,255,0.1)` : "rgba(255,255,255,0.04)",
+                        background: active ? "rgba(0,229,255,0.1)" : "rgba(255,255,255,0.04)",
                         color: active ? NEON : "#64748b",
-                        fontSize: 13,
-                        fontWeight: active ? 700 : 400,
-                        cursor: "pointer",
-                        transition: "all 0.15s",
+                        fontSize: 13, fontWeight: active ? 700 : 400,
+                        cursor: "pointer", transition: "all 0.15s",
                       }}
                     >
                       {day.slice(0, 3)}
@@ -431,26 +500,44 @@ function OnboardingInner() {
                 })}
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <label style={LABEL_STYLE}>Apertura</label>
-                <input
-                  type="time"
-                  value={openTime}
-                  onChange={(e) => setOpenTime(e.target.value)}
-                  style={INPUT_STYLE}
-                />
-              </div>
-              <div>
-                <label style={LABEL_STYLE}>Cierre</label>
-                <input
-                  type="time"
-                  value={closeTime}
-                  onChange={(e) => setCloseTime(e.target.value)}
-                  style={INPUT_STYLE}
-                />
-              </div>
+
+            {/* Bloques por día */}
+            <div style={{ display: "grid", gap: 10 }}>
+              {DAYS.map((day, i) => {
+                const key = DAY_KEYS[i];
+                if (!activeDays[key]) return null;
+                const blocks = dayBlocks[key];
+                return (
+                  <div key={key} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700, textTransform: "uppercase" as any, letterSpacing: "0.5px" }}>{day}</span>
+                      {blocks.length < 2 && (
+                        <button type="button" onClick={() => addBlock(key)}
+                          style={{ background: "none", border: `1px solid ${NEON}66`, color: NEON, borderRadius: 6, padding: "2px 8px", fontSize: 12, cursor: "pointer" }}>
+                          ＋ Agregar bloque
+                        </button>
+                      )}
+                    </div>
+                    {blocks.map((b, bi) => (
+                      <div key={bi} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: bi < blocks.length - 1 ? 6 : 0 }}>
+                        <input type="time" value={b.start} onChange={(e) => setBlock(key, bi, "start", e.target.value)}
+                          style={{ ...INPUT_STYLE, flex: 1, padding: "8px 10px" }} />
+                        <span style={{ color: "#475569", fontSize: 12 }}>–</span>
+                        <input type="time" value={b.end} onChange={(e) => setBlock(key, bi, "end", e.target.value)}
+                          style={{ ...INPUT_STYLE, flex: 1, padding: "8px 10px" }} />
+                        {bi > 0 && (
+                          <button type="button" onClick={() => removeBlock(key, bi)}
+                            style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, padding: "0 4px" }}>
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
+
             {error && <ErrorMsg text={error} />}
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
               <SecondaryBtn onClick={() => { setStep(1); setError(null); }}>← Atrás</SecondaryBtn>
@@ -461,8 +548,46 @@ function OnboardingInner() {
           </div>
         )}
 
-        {/* ── STEP 3 ── */}
+        {/* ── STEP 3 — equipo ── */}
         {step === 3 && (
+          <div style={{ display: "grid", gap: 18 }}>
+            <div>
+              <label style={LABEL_STYLE}>Nombre del profesional</label>
+              <input
+                style={INPUT_STYLE}
+                placeholder="Ej: Dr. Martínez, Ana López"
+                value={staffName}
+                onChange={(e) => setStaffName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label style={LABEL_STYLE}>Rol / especialidad</label>
+              <input
+                style={INPUT_STYLE}
+                placeholder="Ej: Doctor, Estilista, Entrenador"
+                value={staffRole}
+                onChange={(e) => setStaffRole(e.target.value)}
+              />
+            </div>
+            {error && <ErrorMsg text={error} />}
+            <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent)", margin: "4px 0" }} />
+            <div style={{ display: "flex", gap: 10 }}>
+              <SecondaryBtn onClick={() => { setStep(2); setError(null); }}>← Atrás</SecondaryBtn>
+              <PrimaryBtn onClick={handleStep3} disabled={loading || !staffName.trim()}>
+                {loading ? "Guardando..." : "Siguiente →"}
+              </PrimaryBtn>
+            </div>
+            <p style={{ textAlign: "center", margin: 0 }}>
+              <button type="button" onClick={() => { setError(null); setStep(4); }}
+                style={{ background: "none", border: "none", color: "#475569", fontSize: 13, cursor: "pointer", textDecoration: "underline" }}>
+                Omitir por ahora
+              </button>
+            </p>
+          </div>
+        )}
+
+        {/* ── STEP 4 — servicio ── */}
+        {step === 4 && (
           <div style={{ display: "grid", gap: 18 }}>
             <div>
               <label style={LABEL_STYLE}>Nombre del servicio</label>
@@ -477,9 +602,7 @@ function OnboardingInner() {
               <div>
                 <label style={LABEL_STYLE}>Duración (min)</label>
                 <input
-                  type="number"
-                  min={5}
-                  step={5}
+                  type="number" min={5} step={5}
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   style={INPUT_STYLE}
@@ -488,9 +611,7 @@ function OnboardingInner() {
               <div>
                 <label style={LABEL_STYLE}>Precio (CLP)</label>
                 <input
-                  type="number"
-                  min={0}
-                  placeholder="0"
+                  type="number" min={0} placeholder="0"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   style={INPUT_STYLE}
@@ -498,16 +619,19 @@ function OnboardingInner() {
               </div>
             </div>
             {error && <ErrorMsg text={error} />}
-
-            {/* Separador */}
             <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent)", margin: "4px 0" }} />
-
             <div style={{ display: "flex", gap: 10 }}>
-              <SecondaryBtn onClick={() => { setStep(2); setError(null); }}>← Atrás</SecondaryBtn>
-              <PrimaryBtn onClick={handleStep3} disabled={loading || !serviceName.trim()}>
+              <SecondaryBtn onClick={() => { setStep(3); setError(null); }}>← Atrás</SecondaryBtn>
+              <PrimaryBtn onClick={handleStep4} disabled={loading || !serviceName.trim()}>
                 {loading ? "Finalizando..." : "Finalizar ✓"}
               </PrimaryBtn>
             </div>
+            <p style={{ textAlign: "center", margin: 0 }}>
+              <button type="button" onClick={() => goToDashboard()}
+                style={{ background: "none", border: "none", color: "#475569", fontSize: 13, cursor: "pointer", textDecoration: "underline" }}>
+                Omitir por ahora
+              </button>
+            </p>
           </div>
         )}
       </div>
