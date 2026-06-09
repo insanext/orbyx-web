@@ -131,6 +131,17 @@ function SignupInner() {
   const planLabel = PLAN_LABELS[plan] ?? plan;
 
   return (
+    <>
+    <style>{`
+      @keyframes orbyx-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+      @keyframes orbyx-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    `}</style>
     <div
       style={{
         minHeight: "100vh",
@@ -176,6 +187,7 @@ function SignupInner() {
           backdropFilter: "blur(20px)",
           border: "1px solid rgba(0, 229, 255, 0.4)",
           borderRadius: 20,
+          animation: loading ? "orbyx-pulse 1.4s ease-in-out infinite" : "none",
           boxShadow: "0 0 24px rgba(0, 229, 255, 0.25), 0 0 60px rgba(6, 182, 212, 0.15), 0 0 2px rgba(0, 229, 255, 0.6), 0 32px 72px rgba(0,0,0,0.55)",
           padding: "44px 40px",
           position: "relative",
@@ -287,6 +299,7 @@ function SignupInner() {
               placeholder="correo@empresa.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
               required
               style={{
                 width: "100%",
@@ -326,6 +339,7 @@ function SignupInner() {
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
                 required
                 style={{
                   width: "100%",
@@ -373,6 +387,7 @@ function SignupInner() {
               placeholder="Confirmar contraseña"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={loading}
               required
               style={{
                 width: "100%",
@@ -469,7 +484,14 @@ function SignupInner() {
               letterSpacing: "0.3px",
             }}
           >
-            {loading ? "Creando..." : "Crear cuenta"}
+            {loading ? (
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <svg style={{ animation: "orbyx-spin 0.8s linear infinite", flexShrink: 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M12 2a10 10 0 0 1 10 10" />
+                </svg>
+                Creando cuenta...
+              </span>
+            ) : "Crear cuenta"}
           </button>
         </form>
 
@@ -493,6 +515,7 @@ function SignupInner() {
         </p>
       </div>
     </div>
+    </>
   );
 }
 

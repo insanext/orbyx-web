@@ -212,7 +212,7 @@ function OnboardingInner() {
   }
 
   // Step 3 — staff
-  const branchId = searchParams.get("branch_id") || "";
+  const [resolvedBranchId, setResolvedBranchId] = useState<string>(searchParams.get("branch_id") || "");
   const [staffName, setStaffName] = useState("");
   const [staffRole, setStaffRole] = useState("");
 
@@ -296,13 +296,27 @@ function OnboardingInner() {
     setError(null);
     setLoading(true);
     try {
+      // Resolver branch_id: usar el que ya tenemos o pedir la primera sucursal activa
+      let activeBranchId = resolvedBranchId;
+      if (!activeBranchId) {
+        const branchRes = await fetch(`${backend}/branches?tenant_id=${tenantId}`);
+        if (branchRes.ok) {
+          const branchData = await branchRes.json().catch(() => ({}));
+          const branches: any[] = branchData?.branches || branchData || [];
+          const first = branches.find((b: any) => b.is_active !== false) || branches[0];
+          if (first?.id) {
+            activeBranchId = String(first.id);
+            setResolvedBranchId(activeBranchId);
+          }
+        }
+      }
       const body: Record<string, any> = {
         tenant_id: tenantId,
         name: staffName.trim(),
         role: staffRole.trim() || null,
         is_active: true,
       };
-      if (branchId) body.branch_id = branchId;
+      if (activeBranchId) body.branch_id = activeBranchId;
       const res = await fetch(`${backend}/staff`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -333,6 +347,7 @@ function OnboardingInner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tenant_id: tenantId,
+          ...(resolvedBranchId ? { branch_id: resolvedBranchId } : {}),
           name: serviceName.trim(),
           duration_minutes: dur,
           price: price ? parseFloat(price) : 0,
@@ -368,7 +383,7 @@ function OnboardingInner() {
   const stepSubtitles = [
     "Cuéntanos sobre tu negocio",
     "¿Cuándo atienden tus clientes?",
-    "¿Quién atiende a tus clientes?",
+    "Agrega tu primer profesional. Después podrás agregar más según tu plan.",
     "Agrega tu primer servicio",
   ];
 
@@ -519,12 +534,20 @@ function OnboardingInner() {
                       )}
                     </div>
                     {blocks.map((b, bi) => (
-                      <div key={bi} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: bi < blocks.length - 1 ? 6 : 0 }}>
-                        <input type="time" value={b.start} onChange={(e) => setBlock(key, bi, "start", e.target.value)}
-                          style={{ ...INPUT_STYLE, flex: 1, padding: "8px 10px" }} />
-                        <span style={{ color: "#475569", fontSize: 12 }}>–</span>
-                        <input type="time" value={b.end} onChange={(e) => setBlock(key, bi, "end", e.target.value)}
-                          style={{ ...INPUT_STYLE, flex: 1, padding: "8px 10px" }} />
+                      <div key={bi} style={{ display: "flex", gap: 8, alignItems: "flex-end", marginBottom: bi < blocks.length - 1 ? 6 : 0 }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Inicio</label>
+                          <input type="time" value={b.start} step="1800"
+                            onChange={(e) => setBlock(key, bi, "start", e.target.value)}
+                            style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
+                        </div>
+                        <span style={{ color: "#475569", fontSize: 12, paddingBottom: 10 }}>–</span>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Cierre</label>
+                          <input type="time" value={b.end} step="1800"
+                            onChange={(e) => setBlock(key, bi, "end", e.target.value)}
+                            style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
+                        </div>
                         {bi > 0 && (
                           <button type="button" onClick={() => removeBlock(key, bi)}
                             style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, padding: "0 4px" }}>
