@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "../../lib/supabase/client";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 function LoginForm() {
   const router = useRouter();
@@ -13,6 +14,8 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string>("");
+  const turnstileRef = useRef<any>(null);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -26,9 +29,12 @@ function LoginForm() {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: { captchaToken },
       });
 
       if (signInError) {
+        turnstileRef.current?.reset();
+        setCaptchaToken("");
         setError(
           signInError.message === "Invalid login credentials"
             ? "Email o contraseña incorrectos."
@@ -84,6 +90,8 @@ function LoginForm() {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Error inesperado. Intenta nuevamente.";
+      turnstileRef.current?.reset();
+      setCaptchaToken("");
       setError(message);
     } finally {
       setLoading(false);
@@ -227,9 +235,20 @@ function LoginForm() {
             </div>
           ) : null}
 
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+              onSuccess={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken("")}
+              onError={() => setCaptchaToken("")}
+              options={{ theme: "dark" }}
+            />
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !captchaToken}
             style={{
               height: 46,
               borderRadius: 14,
