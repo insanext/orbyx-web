@@ -230,16 +230,18 @@ function OnboardingInner() {
     setError(null);
     setLoading(true);
     try {
-      const payload = DAY_KEYS.map((day) => ({
-        day_of_week: day,
-        is_open: activeDays[day],
-        open_time: activeDays[day] ? openTime : "09:00",
-        close_time: activeDays[day] ? closeTime : "18:00",
+      // Backend espera PUT, day_of_week numérico (0=lunes…6=domingo),
+      // campos enabled + start_time/end_time, y scope="global" para horario sin branch
+      const payload = DAY_KEYS.map((day, i) => ({
+        day_of_week: i,
+        enabled: activeDays[day],
+        start_time: openTime,
+        end_time: closeTime,
       }));
       const res = await fetch(`${backend}/business-hours`, {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenant_id: tenantId, hours: payload }),
+        body: JSON.stringify({ tenant_id: tenantId, scope: "global", hours: payload }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
