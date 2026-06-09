@@ -117,7 +117,9 @@ function SignupInner() {
       const json = await resp.json();
       if (!resp.ok) throw new Error(json?.detail || json?.error || "Error provisionando tenant");
 
-      router.push(`/onboarding?tenant_id=${json.tenant_id}&calendar_id=${json.calendar_id}`);
+      const params = new URLSearchParams({ tenant_id: json.tenant_id, calendar_id: json.calendar_id });
+      if (json.branch_id) params.set("branch_id", json.branch_id);
+      router.push(`/onboarding?${params.toString()}`);
     } catch (err: any) {
       clearTimeout(timeout);
       setMsg(err?.message || "Error al crear la cuenta");
