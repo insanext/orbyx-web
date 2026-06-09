@@ -175,6 +175,8 @@ function OnboardingInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tenantId = searchParams.get("tenant_id") || "";
+  const calendarId = searchParams.get("calendar_id") || "";
+  const [currentSlug, setCurrentSlug] = useState<string>(searchParams.get("slug") || "");
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -232,11 +234,28 @@ function OnboardingInner() {
       const res = await fetch(`${backend}/tenants/${tenantId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: businessName.trim(), category }),
+        body: JSON.stringify({
+          name: businessName.trim(),
+          business_name: businessName.trim(),
+          category,
+          ...(category ? { business_category: category } : {}),
+        }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j?.error || "Error guardando el negocio");
+      }
+      const j = await res.json().catch(() => ({}));
+      const slug = j?.slug || j?.tenant?.slug || currentSlug;
+      if (slug) {
+        setCurrentSlug(slug);
+        const params = new URLSearchParams({
+          tenant_id: tenantId,
+          ...(calendarId ? { calendar_id: calendarId } : {}),
+          ...(resolvedBranchId ? { branch_id: resolvedBranchId } : {}),
+          slug,
+        });
+        router.replace(`/onboarding?${params.toString()}`);
       }
       setStep(2);
     } catch (e: any) {
@@ -367,8 +386,7 @@ function OnboardingInner() {
   }
 
   async function goToDashboard() {
-    const slugParam = searchParams.get("slug");
-    if (slugParam) { router.push(`/dashboard/${slugParam}`); return; }
+    if (currentSlug) { router.push(`/dashboard/${currentSlug}`); return; }
     try {
       const tenantRes = await fetch(`${backend}/tenants/${tenantId}`);
       const tenantData = await tenantRes.json().catch(() => ({}));
