@@ -375,12 +375,12 @@ function OnboardingInner() {
   }
 
   async function goToDashboard() {
-    if (currentSlug) { router.push(`/dashboard/${currentSlug}`); return; }
+    if (currentSlug) { router.push(`/welcome?slug=${currentSlug}`); return; }
     try {
       const tenantRes = await fetch(`${backend}/tenants/${tenantId}`);
       const tenantData = await tenantRes.json().catch(() => ({}));
       const slug = tenantData?.slug || tenantData?.tenant?.slug;
-      router.push(slug ? `/dashboard/${slug}` : "/dashboard");
+      router.push(slug ? `/welcome?slug=${slug}` : "/dashboard");
     } catch {
       router.push("/dashboard");
     }
