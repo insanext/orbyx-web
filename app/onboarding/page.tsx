@@ -186,31 +186,25 @@ function OnboardingInner() {
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("generico");
 
-  // Step 2 — bloques por día: { monday: [{start,end}, ...], ... }
+  // Step 2 — bloques globales + días activos como índices numéricos
   type DayBlock = { start: string; end: string };
-  const defaultBlocks = (): DayBlock[] => [{ start: "09:00", end: "18:00" }];
-  const [activeDays, setActiveDays] = useState<Record<string, boolean>>({
-    monday: true, tuesday: true, wednesday: true,
-    thursday: true, friday: true, saturday: false, sunday: false,
-  });
-  const [dayBlocks, setDayBlocks] = useState<Record<string, DayBlock[]>>(() =>
-    Object.fromEntries(DAY_KEYS.map((k) => [k, defaultBlocks()]))
-  );
+  const [blocks, setBlocks] = useState<DayBlock[]>([{ start: "09:00", end: "18:00" }]);
+  const [activeDays, setActiveDays] = useState<number[]>([0, 1, 2, 3, 4]);
 
-  function setBlock(day: string, idx: number, field: "start" | "end", value: string) {
-    setDayBlocks((prev) => {
-      const blocks = prev[day].map((b, i) => i === idx ? { ...b, [field]: value } : b);
-      return { ...prev, [day]: blocks };
-    });
+  function toggleDay(i: number) {
+    setActiveDays((prev) =>
+      prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i]
+    );
   }
-  function addBlock(day: string) {
-    setDayBlocks((prev) => {
-      if (prev[day].length >= 2) return prev;
-      return { ...prev, [day]: [...prev[day], { start: "15:00", end: "19:00" }] };
-    });
+  function updateBlock(idx: number, field: "start" | "end", value: string) {
+    setBlocks((prev) => prev.map((b, i) => i === idx ? { ...b, [field]: value } : b));
   }
-  function removeBlock(day: string, idx: number) {
-    setDayBlocks((prev) => ({ ...prev, [day]: prev[day].filter((_, i) => i !== idx) }));
+  function addBlock() {
+    if (blocks.length >= 2) return;
+    setBlocks((prev) => [...prev, { start: "15:00", end: "19:00" }]);
+  }
+  function removeBlock(idx: number) {
+    setBlocks((prev) => prev.filter((_, i) => i !== idx));
   }
 
   // Step 3 — staff
@@ -267,27 +261,22 @@ function OnboardingInner() {
 
   // ── Step 2 submit ──────────────────────────────────────────────────────────
   async function handleStep2() {
-    const selectedDays = DAY_KEYS.filter((k) => activeDays[k]);
-    if (selectedDays.length === 0) { setError("Selecciona al menos un día."); return; }
-    // Validar que cada bloque activo tenga apertura < cierre
-    for (const day of selectedDays) {
-      for (const b of dayBlocks[day]) {
-        if (b.start >= b.end) {
-          setError("Hay un horario donde la apertura es igual o posterior al cierre.");
-          return;
-        }
+    if (activeDays.length === 0) { setError("Selecciona al menos un día."); return; }
+    for (const b of blocks) {
+      if (b.start >= b.end) {
+        setError("Hay un bloque donde la apertura es igual o posterior al cierre.");
+        return;
       }
     }
     setError(null);
     setLoading(true);
     try {
-      // Una fila por bloque; días inactivos envían una fila con enabled:false
       const payload: object[] = [];
-      DAY_KEYS.forEach((day, i) => {
-        if (!activeDays[day]) {
+      DAY_KEYS.forEach((_, i) => {
+        if (!activeDays.includes(i)) {
           payload.push({ day_of_week: i, enabled: false, start_time: "09:00", end_time: "18:00" });
         } else {
-          dayBlocks[day].forEach((b) => {
+          blocks.forEach((b) => {
             payload.push({ day_of_week: i, enabled: true, start_time: b.start, end_time: b.end });
           });
         }
@@ -511,13 +500,9 @@ function OnboardingInner() {
               <label style={LABEL_STYLE}>Días de atención</label>
               <div style={{ display: "flex", flexWrap: "wrap" as any, gap: 8 }}>
                 {DAYS.map((day, i) => {
-                  const key = DAY_KEYS[i];
-                  const active = activeDays[key];
+                  const active = activeDays.includes(i);
                   return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setActiveDays((prev) => ({ ...prev, [key]: !prev[key] }))}
+                    <button key={i} type="button" onClick={() => toggleDay(i)}
                       style={{
                         padding: "7px 13px", borderRadius: 8,
                         border: `1px solid ${active ? NEON + "80" : "rgba(255,255,255,0.1)"}`,
@@ -534,50 +519,42 @@ function OnboardingInner() {
               </div>
             </div>
 
-            {/* Bloques por día */}
+            {/* Bloques globales */}
             <div style={{ display: "grid", gap: 10 }}>
-              {DAYS.map((day, i) => {
-                const key = DAY_KEYS[i];
-                if (!activeDays[key]) return null;
-                const blocks = dayBlocks[key];
-                return (
-                  <div key={key} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700, textTransform: "uppercase" as any, letterSpacing: "0.5px" }}>{day}</span>
-                      {blocks.length < 2 && (
-                        <button type="button" onClick={() => addBlock(key)}
-                          style={{ background: "none", border: `1px solid ${NEON}66`, color: NEON, borderRadius: 6, padding: "2px 8px", fontSize: 12, cursor: "pointer" }}>
-                          ＋ Agregar bloque
-                        </button>
-                      )}
-                    </div>
-                    {blocks.map((b, bi) => (
-                      <div key={bi} style={{ display: "flex", gap: 8, alignItems: "flex-end", marginBottom: bi < blocks.length - 1 ? 6 : 0 }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Inicio</label>
-                          <input type="time" value={b.start} step="1800"
-                            onChange={(e) => setBlock(key, bi, "start", e.target.value)}
-                            style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
-                        </div>
-                        <span style={{ color: "#475569", fontSize: 12, paddingBottom: 10 }}>–</span>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Cierre</label>
-                          <input type="time" value={b.end} step="1800"
-                            onChange={(e) => setBlock(key, bi, "end", e.target.value)}
-                            style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
-                        </div>
-                        {bi > 0 && (
-                          <button type="button" onClick={() => removeBlock(key, bi)}
-                            style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, padding: "0 4px" }}>
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ))}
+              {blocks.map((b, bi) => (
+                <div key={bi} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Inicio</label>
+                    <input type="time" value={b.start} step="1800"
+                      onChange={(e) => updateBlock(bi, "start", e.target.value)}
+                      style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
                   </div>
-                );
-              })}
+                  <span style={{ color: "#475569", fontSize: 12, paddingBottom: 10 }}>–</span>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Cierre</label>
+                    <input type="time" value={b.end} step="1800"
+                      onChange={(e) => updateBlock(bi, "end", e.target.value)}
+                      style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
+                  </div>
+                  {bi > 0 && (
+                    <button type="button" onClick={() => removeBlock(bi)}
+                      style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 18, paddingBottom: 8 }}>
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              {blocks.length < 2 && (
+                <button type="button" onClick={addBlock}
+                  style={{ alignSelf: "flex-start", background: "none", border: `1px solid ${NEON}66`, color: NEON, borderRadius: 8, padding: "5px 14px", fontSize: 12, cursor: "pointer" }}>
+                  ＋ Agregar bloque
+                </button>
+              )}
             </div>
+
+            <p style={{ margin: 0, color: "#475569", fontSize: 12 }}>
+              ¿Necesitas horarios distintos por día? Configúralo después desde el panel.
+            </p>
 
             {error && <ErrorMsg text={error} />}
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
