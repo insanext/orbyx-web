@@ -4,421 +4,378 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ── Design tokens (espeja onboarding/signup) ─────────────────────────────────
+// ─── Design tokens ────────────────────────────────────────────────────────────
 const NEON = "#00e5ff";
-const BG = "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)";
+const FONT = "'Inter','Segoe UI',system-ui,sans-serif";
 
-const CARD_STYLE: React.CSSProperties = {
+const cardBase: React.CSSProperties = {
   width: "100%",
   maxWidth: 480,
-  background: "rgba(15, 23, 42, 0.88)",
+  background: "rgba(15,23,42,0.9)",
   backdropFilter: "blur(20px)",
-  border: "1px solid rgba(0, 229, 255, 0.4)",
+  border: "1px solid rgba(0,229,255,0.3)",
   borderRadius: 20,
   boxShadow:
-    "0 0 24px rgba(0,229,255,0.22), 0 0 60px rgba(6,182,212,0.13), 0 0 2px rgba(0,229,255,0.55), 0 32px 72px rgba(0,0,0,0.55)",
-  padding: "44px 40px",
-  fontFamily: "'Inter','Segoe UI',system-ui,sans-serif",
+    "0 0 40px rgba(6,182,212,0.1), 0 0 2px rgba(0,229,255,0.4), 0 24px 64px rgba(0,0,0,0.55)",
+  padding: "40px 36px",
+  fontFamily: FONT,
   position: "relative",
   overflow: "hidden",
 };
 
-// ── Slide variants ────────────────────────────────────────────────────────────
-function variants(dir: number) {
-  return {
-    enter: { x: dir * 60, opacity: 0 },
-    center: { x: 0, opacity: 1, transition: { duration: 0.35, ease: [0.4, 0, 0.2, 1] } },
-    exit: { x: dir * -60, opacity: 0, transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] } },
-  };
-}
+// ─── Slide animation variants ────────────────────────────────────────────────
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir * 72, opacity: 0 }),
+  center: { x: 0, opacity: 1, transition: { duration: 0.35, ease: [0.4, 0, 0.2, 1] as any } },
+  exit: (dir: number) => ({ x: dir * -72, opacity: 0, transition: { duration: 0.22, ease: [0.4, 0, 0.2, 1] as any } }),
+};
 
-// ── Progress dots ─────────────────────────────────────────────────────────────
-function ProgressDots({ current, total }: { current: number; total: number }) {
+// ─── Progress dots ────────────────────────────────────────────────────────────
+function Dots({ cur, total }: { cur: number; total: number }) {
   return (
-    <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 32 }}>
-      {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            width: i === current ? 24 : 8,
-            height: 8,
-            borderRadius: 999,
-            background: i === current ? NEON : "rgba(255,255,255,0.1)",
-            transition: "all 0.3s ease",
-            boxShadow: i === current ? `0 0 8px ${NEON}88` : "none",
-          }}
-        />
-      ))}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginBottom: 28 }}>
+      <div style={{ display: "flex", gap: 7 }}>
+        {Array.from({ length: total }).map((_, i) => (
+          <motion.div
+            key={i}
+            animate={{ width: i === cur ? 24 : 8, background: i === cur ? NEON : "rgba(255,255,255,0.12)" }}
+            transition={{ duration: 0.3 }}
+            style={{ height: 8, borderRadius: 999, boxShadow: i === cur ? `0 0 8px ${NEON}77` : "none" }}
+          />
+        ))}
+      </div>
+      <span style={{ color: "#334155", fontSize: 11 }}>Paso {cur + 1} de {total}</span>
     </div>
   );
 }
 
-// ── Agenda SVG illustration ───────────────────────────────────────────────────
-function AgendaSVG() {
-  const colors = [NEON, "#818cf8", "#f472b6", "#34d399", "#fbbf24"];
+// ─── Slide 1 — Bienvenida ─────────────────────────────────────────────────────
+function Slide1() {
   return (
-    <svg viewBox="0 0 200 120" width="100%" style={{ maxWidth: 200, margin: "0 auto", display: "block" }}>
-      <rect x="10" y="10" width="180" height="100" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(0,229,255,0.2)" strokeWidth="1" />
-      {/* Header */}
-      <rect x="10" y="10" width="180" height="22" rx="10" fill="rgba(0,229,255,0.1)" />
-      <rect x="10" y="22" width="180" height="10" fill="rgba(0,229,255,0.1)" />
-      <circle cx="25" cy="21" r="5" fill={NEON} opacity="0.7" />
-      <rect x="35" y="17" width="60" height="8" rx="4" fill="rgba(255,255,255,0.15)" />
-      {/* Blocks */}
-      {[0, 1, 2, 3, 4].map((i) => (
-        <g key={i}>
-          <rect x={20 + i * 34} y="40" width="26" height={20 + (i % 3) * 12} rx="4" fill={colors[i]} opacity="0.7" />
-          <rect x={20 + i * 34} y="88" width="26" height="8" rx="3" fill="rgba(255,255,255,0.06)" />
-        </g>
-      ))}
-    </svg>
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 52, marginBottom: 16, lineHeight: 1 }}>🎉</div>
+      {/* Badge animado */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+        <motion.div
+          animate={{ opacity: [1, 0.6, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)",
+            borderRadius: 999, padding: "5px 14px",
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 6px #22c55e" }} />
+          <span style={{ color: "#22c55e", fontSize: 12, fontWeight: 700 }}>Negocio activo</span>
+        </motion.div>
+      </div>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9", marginBottom: 12 }}>
+        ¡Tu negocio está listo!
+      </h2>
+      <p style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.7, margin: 0 }}>
+        En minutos configuraste lo esencial. Te mostramos cómo sacarle el máximo provecho a Orbyx.
+      </p>
+    </div>
   );
 }
 
-// ── Copy button ───────────────────────────────────────────────────────────────
-function CopyButton({ text }: { text: string }) {
+// ─── Slide 2 — Agenda mockup ──────────────────────────────────────────────────
+const SLOTS = [
+  { time: "09:00", name: "María González", status: "Confirmada", color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.3)" },
+  { time: "11:00", name: "Carlos Muñoz",   status: "Atendido",   color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.3)" },
+  { time: "14:30", name: "Ana Pérez",      status: "Pendiente",  color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.3)" },
+];
+
+function Slide2() {
+  return (
+    <div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8, textAlign: "center" }}>
+        Tu agenda inteligente
+      </h2>
+      <p style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.6, textAlign: "center", marginBottom: 18 }}>
+        Ve todas tus reservas del día, cambia estados y cierra atenciones en un clic.
+      </p>
+      {/* Agenda card mockup */}
+      <div style={{ background: "#1e293b", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.07)" }}>
+        <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ color: "#f1f5f9", fontSize: 13, fontWeight: 700 }}>Hoy</span>
+          <span style={{ color: "#64748b", fontSize: 12 }}>Martes 10 Jun</span>
+        </div>
+        <div style={{ padding: "10px 14px", display: "grid", gap: 8 }}>
+          {SLOTS.map((s, i) => (
+            <motion.div
+              key={i}
+              animate={{ opacity: [0.85, 1, 0.85] }}
+              transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.6, ease: "easeInOut" }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                background: s.bg, border: `1px solid ${s.border}`,
+                borderRadius: 8, padding: "8px 12px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ color: "#64748b", fontSize: 11, fontWeight: 600, minWidth: 36 }}>{s.time}</span>
+                <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600 }}>{s.name}</span>
+              </div>
+              <span style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color, fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "2px 8px" }}>
+                {s.status}
+              </span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Slide 3 — Página pública ─────────────────────────────────────────────────
+function Slide3({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
   function copy() {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard.writeText(`https://orbyx.cl/${slug}`).then(() => {
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
     });
   }
   return (
-    <button
-      onClick={copy}
-      style={{
-        background: copied ? "rgba(34,197,94,0.15)" : "rgba(0,229,255,0.1)",
-        border: `1px solid ${copied ? "#22c55e66" : NEON + "55"}`,
-        color: copied ? "#22c55e" : NEON,
-        borderRadius: 8,
-        padding: "6px 14px",
-        fontSize: 12,
-        fontWeight: 700,
-        cursor: "pointer",
-        transition: "all 0.2s",
-        whiteSpace: "nowrap" as const,
-        flexShrink: 0,
-      }}
-    >
-      {copied ? "¡Copiado!" : "Copiar"}
-    </button>
+    <div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8, textAlign: "center" }}>
+        Tu página de reservas
+      </h2>
+      <p style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.6, textAlign: "center", marginBottom: 18 }}>
+        Tus clientes reservan en línea 24/7. Comparte el link y empieza a recibir reservas hoy.
+      </p>
+      {/* URL pill */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(0,229,255,0.05)", border: `1px solid ${NEON}33`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+        <span style={{ flex: 1, color: NEON, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+          orbyx.cl/{slug}
+        </span>
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={copy}
+          style={{
+            background: copied ? "rgba(34,197,94,0.15)" : "rgba(0,229,255,0.12)",
+            border: `1px solid ${copied ? "#22c55e55" : NEON + "55"}`,
+            color: copied ? "#22c55e" : NEON,
+            borderRadius: 7, padding: "5px 13px",
+            fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const,
+          }}
+        >
+          {copied ? "¡Copiado! ✓" : "Copiar"}
+        </motion.button>
+      </div>
+      {/* Services preview */}
+      <div style={{ background: "#1e293b", borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
+        <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: NEON, display: "inline-block" }} />
+          <span style={{ color: "#64748b", fontSize: 11 }}>orbyx.cl/{slug}</span>
+        </div>
+        <div style={{ padding: "12px 14px", display: "grid", gap: 8 }}>
+          {["Consulta general", "Servicio premium"].map((name, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)" }}>
+              <div>
+                <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600 }}>{name}</div>
+                <div style={{ color: "#475569", fontSize: 11 }}>{i === 0 ? "60 min · $15.000" : "90 min · $25.000"}</div>
+              </div>
+              <div style={{ background: `linear-gradient(135deg,${NEON}cc,#0ea5e9)`, color: "#0f172a", borderRadius: 7, padding: "5px 12px", fontSize: 12, fontWeight: 700 }}>
+                Reservar
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
-// ── Cards data ────────────────────────────────────────────────────────────────
-type CardDef = {
-  icon: string;
-  title: string;
-  body: React.ReactNode;
-};
+// ─── Slide 4 — Staff y servicios ──────────────────────────────────────────────
+const MOCK_STAFF = [
+  { initials: "MG", name: "María G.", role: "Especialista" },
+  { initials: "CP", name: "Carlos P.", role: "Profesional" },
+];
 
-function buildCards(slug: string): CardDef[] {
-  const publicUrl = `orbyx.cl/${slug}`;
-  const fullPublicUrl = `https://orbyx.cl/${slug}`;
-
-  return [
-    {
-      icon: "🎉",
-      title: "¡Tu negocio está listo!",
-      body: (
-        <p style={bodyStyle}>
-          En menos de 5 minutos configuraste lo esencial. Ahora te mostramos cómo sacarle el
-          máximo provecho a Orbyx.
-        </p>
-      ),
-    },
-    {
-      icon: "📅",
-      title: "Tu agenda inteligente",
-      body: (
-        <>
-          <p style={bodyStyle}>
-            Desde la agenda puedes ver todas tus reservas del día, cambiar estados, agregar
-            reservas manuales y cerrar atenciones.
-          </p>
-          <div style={{ marginTop: 20 }}>
-            <AgendaSVG />
+function Slide4({ slug }: { slug: string }) {
+  return (
+    <div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8, textAlign: "center" }}>
+        Tu equipo y servicios
+      </h2>
+      <p style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.6, textAlign: "center", marginBottom: 18 }}>
+        Agrega más profesionales y servicios desde el panel. Cada uno con sus propios horarios.
+      </p>
+      {/* 2x2 grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+        {MOCK_STAFF.map((s, i) => (
+          <div key={i} style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg,${NEON}44,#818cf844)`, border: `1px solid ${NEON}44`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: NEON }}>
+              {s.initials}
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600 }}>{s.name}</div>
+              <div style={{ color: "#64748b", fontSize: 11 }}>{s.role}</div>
+            </div>
           </div>
-        </>
-      ),
-    },
-    {
-      icon: "🌐",
-      title: "Tu página de reservas",
-      body: (
-        <>
-          <p style={bodyStyle}>
-            Tus clientes pueden reservar en línea desde tu página pública. Comparte el link y
-            empieza a recibir reservas hoy.
-          </p>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginTop: 20,
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 10,
-              padding: "10px 14px",
-            }}
-          >
-            <span
-              style={{
-                flex: 1,
-                fontSize: 13,
-                color: NEON,
-                fontWeight: 600,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap" as const,
-              }}
-            >
-              {publicUrl}
-            </span>
-            <CopyButton text={fullPublicUrl} />
+        ))}
+        {[0, 1].map((i) => (
+          <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: 10, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <span style={{ color: "#334155", fontSize: 22, lineHeight: 1 }}>+</span>
+            <span style={{ color: "#334155", fontSize: 11 }}>Agregar</span>
           </div>
-        </>
-      ),
-    },
-    {
-      icon: "👥",
-      title: "Agrega tu equipo y servicios",
-      body: (
-        <>
-          <p style={bodyStyle}>
-            Puedes agregar más profesionales y servicios desde el panel. Cada profesional
-            puede tener sus propios horarios.
-          </p>
-          <button
-            onClick={() => window.open(`/dashboard/${slug}/services`, "_blank")}
-            style={{
-              marginTop: 20,
-              padding: "10px 20px",
-              borderRadius: 10,
-              border: `1px solid ${NEON}55`,
-              background: "rgba(0,229,255,0.07)",
-              color: NEON,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-          >
-            Ir a servicios ↗
-          </button>
-        </>
-      ),
-    },
-    {
-      icon: "🚀",
-      title: "¡Todo listo para despegar!",
-      body: (
-        <>
-          <p style={bodyStyle}>
-            Explora el panel, configura tu negocio y empieza a recibir reservas. Si necesitas
-            ayuda, escríbenos.
-          </p>
-        </>
-      ),
-    },
-  ];
+        ))}
+      </div>
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={() => window.open(`/dashboard/${slug}/services`, "_blank")}
+        style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${NEON}44`, background: "rgba(0,229,255,0.06)", color: NEON, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+      >
+        Ir a servicios ↗
+      </motion.button>
+    </div>
+  );
 }
 
-const bodyStyle: React.CSSProperties = {
-  color: "#94a3b8",
-  fontSize: 14,
-  lineHeight: 1.7,
-  margin: 0,
-};
+// ─── Slide 5 — Listo ──────────────────────────────────────────────────────────
+function Slide5() {
+  return (
+    <div style={{ textAlign: "center" }}>
+      <motion.div
+        animate={{ y: [0, -8, 0] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        style={{ fontSize: 52, marginBottom: 16, lineHeight: 1 }}
+      >
+        🚀
+      </motion.div>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9", marginBottom: 12 }}>
+        ¡Todo listo para despegar!
+      </h2>
+      <p style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.7, margin: 0 }}>
+        Explora el panel, configura tu negocio y empieza a recibir reservas.{" "}
+        Si necesitas ayuda, escríbenos.
+      </p>
+    </div>
+  );
+}
 
-// ── Main inner component ──────────────────────────────────────────────────────
+// ─── Inner component ──────────────────────────────────────────────────────────
 function WelcomeInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const slug = searchParams.get("slug") || "";
+  const slug      = searchParams.get("slug")      || "";
+  const tenantId  = searchParams.get("tenant_id") || "";
+  const branchId  = searchParams.get("branch_id") || "";
 
   const [step, setStep] = useState(0);
-  const [dir, setDir] = useState(1); // 1 = forward, -1 = backward
+  const [dir,  setDir]  = useState(1);
+  const TOTAL = 5;
 
-  // Guard: sin slug → login
+  // Guard
   useEffect(() => {
-    if (!slug) { router.replace("/login"); return; }
-    // marcar como visto
-    try { localStorage.setItem(`orbyx_welcome_seen_${slug}`, "1"); } catch {}
+    if (!slug) router.replace("/login");
   }, [slug, router]);
 
-  const cards = buildCards(slug);
-  const total = cards.length;
-  const card = cards[step];
+  // Mark seen on slide 5
+  useEffect(() => {
+    if (step === TOTAL - 1 && slug) {
+      try { localStorage.setItem(`orbyx_welcome_seen_${slug}`, "1"); } catch {}
+    }
+  }, [step, slug]);
 
-  function goNext() {
-    setDir(1);
-    setStep((s) => Math.min(s + 1, total - 1));
-  }
-  function goPrev() {
-    setDir(-1);
-    setStep((s) => Math.max(s - 1, 0));
-  }
-  function finishToDashboard() {
+  function next() { setDir(1);  setStep((s) => Math.min(s + 1, TOTAL - 1)); }
+  function prev() { setDir(-1); setStep((s) => Math.max(s - 1, 0)); }
+
+  function finish() {
+    try { localStorage.setItem(`orbyx_welcome_seen_${slug}`, "1"); } catch {}
     router.push(`/dashboard/${slug}`);
   }
-  function openPublic() {
-    window.open(`https://orbyx.cl/${slug}`, "_blank");
-  }
+
+  const slides = [
+    <Slide1 key="s1" />,
+    <Slide2 key="s2" />,
+    <Slide3 key="s3" slug={slug} />,
+    <Slide4 key="s4" slug={slug} />,
+    <Slide5 key="s5" />,
+  ];
 
   const isFirst = step === 0;
-  const isLast = step === total - 1;
+  const isLast  = step === TOTAL - 1;
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: BG,
-        padding: "24px 16px",
-      }}
-    >
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%)", padding: "24px 16px" }}>
       {/* Blobs */}
-      <div style={{ position: "fixed", top: "8%", left: "4%", width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle,rgba(0,229,255,0.07) 0%,transparent 70%)", pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: "12%", right: "6%", width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle,rgba(14,165,233,0.06) 0%,transparent 70%)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", top: "8%", left: "4%", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,rgba(0,229,255,0.07) 0%,transparent 70%)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "12%", right: "6%", width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle,rgba(129,140,248,0.07) 0%,transparent 70%)", pointerEvents: "none" }} />
 
-      <div style={CARD_STYLE}>
+      <div style={cardBase}>
         {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: `linear-gradient(135deg,${NEON},#0ea5e9)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, boxShadow: `0 4px 14px rgba(0,229,255,0.3)`, color: "#0f172a", fontWeight: 900 }}>◆</div>
-            <span style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", letterSpacing: "-0.5px" }}>Orbyx</span>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#a78bfa,#00e5ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#0f172a", boxShadow: "0 4px 14px rgba(0,229,255,0.28)" }}>
+              ◆
+            </div>
+            <span style={{ fontSize: 19, fontWeight: 800, color: "#f1f5f9", letterSpacing: "-0.4px" }}>Orbyx</span>
           </div>
         </div>
 
-        <ProgressDots current={step} total={total} />
+        <Dots cur={step} total={TOTAL} />
 
-        {/* Card content with AnimatePresence */}
-        <div style={{ minHeight: 240, position: "relative" }}>
+        {/* Slide area */}
+        <div style={{ minHeight: 280, position: "relative" }}>
           <AnimatePresence mode="wait" custom={dir}>
             <motion.div
               key={step}
               custom={dir}
-              variants={{
-                enter: (d: number) => ({ x: d * 60, opacity: 0 }),
-                center: { x: 0, opacity: 1, transition: { duration: 0.35, ease: [0.4, 0, 0.2, 1] } },
-                exit: (d: number) => ({ x: d * -60, opacity: 0, transition: { duration: 0.22, ease: [0.4, 0, 0.2, 1] } }),
-              }}
+              variants={slideVariants}
               initial="enter"
               animate="center"
               exit="exit"
             >
-              {/* Icon */}
-              <div style={{ textAlign: "center", fontSize: 44, marginBottom: 16, lineHeight: 1 }}>
-                {card.icon}
-              </div>
-
-              {/* Title */}
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#f1f5f9", textAlign: "center", marginBottom: 12 }}>
-                {card.title}
-              </h2>
-
-              {/* Body */}
-              <div>{card.body}</div>
+              {slides[step]}
             </motion.div>
           </AnimatePresence>
         </div>
 
         {/* Divider */}
-        <div style={{ height: 1, background: "linear-gradient(90deg,transparent,rgba(0,229,255,0.18),transparent)", margin: "28px 0 20px" }} />
+        <div style={{ height: 1, background: "linear-gradient(90deg,transparent,rgba(0,229,255,0.18),transparent)", margin: "24px 0 20px" }} />
 
         {/* Navigation */}
-        {isLast ? (
-          <div style={{ display: "grid", gap: 10 }}>
-            <button
-              onClick={finishToDashboard}
-              style={{
-                padding: "13px",
-                borderRadius: 10,
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: 15,
-                background: `linear-gradient(135deg,${NEON}cc 0%,#0ea5e9 50%,#06b6d4bb 100%)`,
-                color: "#0f172a",
-                boxShadow: `0 6px 28px rgba(0,229,255,0.35)`,
-                letterSpacing: "0.3px",
-              }}
-            >
-              Ir a mi panel →
-            </button>
-            <button
-              onClick={openPublic}
-              style={{
-                padding: "11px",
-                borderRadius: 10,
-                border: `1px solid ${NEON}44`,
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: 14,
-                background: "rgba(0,229,255,0.06)",
-                color: NEON,
-              }}
-            >
-              Ver mi página pública ↗
-            </button>
-            <button
-              type="button"
-              onClick={goPrev}
-              style={{ background: "none", border: "none", color: "#475569", fontSize: 13, cursor: "pointer", textDecoration: "underline", padding: "4px 0" }}
+        <div style={{ display: "flex", gap: 10 }}>
+          {!isFirst && (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={prev}
+              style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#94a3b8", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: FONT }}
             >
               ← Atrás
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: "flex", gap: 10 }}>
-            {!isFirst && (
-              <button
-                onClick={goPrev}
-                style={{
-                  flex: 1,
-                  padding: "13px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  background: "rgba(255,255,255,0.04)",
-                  color: "#94a3b8",
-                }}
-              >
-                ← Atrás
-              </button>
-            )}
-            <button
-              onClick={goNext}
-              style={{
-                flex: 1,
-                padding: "13px",
-                borderRadius: 10,
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: 15,
-                background: `linear-gradient(135deg,${NEON}cc 0%,#0ea5e9 50%,#06b6d4bb 100%)`,
-                color: "#0f172a",
-                boxShadow: `0 6px 28px rgba(0,229,255,0.3)`,
-                letterSpacing: "0.3px",
-              }}
-            >
-              {isFirst ? "Comenzar tour →" : "Siguiente →"}
-            </button>
-          </div>
-        )}
+            </motion.button>
+          )}
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={isLast ? finish : next}
+            style={{
+              flex: 1, padding: "12px", borderRadius: 10, border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: 15, fontFamily: FONT, letterSpacing: "0.2px",
+              background: isLast
+                ? "linear-gradient(135deg,#a78bfa 0%,#00e5ff 100%)"
+                : `linear-gradient(135deg,${NEON}cc 0%,#0ea5e9 50%,#06b6d4bb 100%)`,
+              color: "#0f172a",
+              boxShadow: `0 6px 24px rgba(0,229,255,0.3)`,
+            }}
+          >
+            {isFirst ? "Comenzar tour →" : isLast ? "Ir a mi panel →" : "Siguiente →"}
+          </motion.button>
+        </div>
 
-        {/* Step counter */}
-        <p style={{ textAlign: "center", color: "#334155", fontSize: 11, marginTop: 16, marginBottom: 0 }}>
-          {step + 1} de {total}
-        </p>
+        {/* Ver página pública solo en slide 5 */}
+        {isLast && (
+          <motion.button
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            onClick={() => window.open(`https://orbyx.cl/${slug}`, "_blank")}
+            style={{ width: "100%", marginTop: 10, padding: "11px", borderRadius: 10, border: `1px solid ${NEON}33`, background: "rgba(0,229,255,0.05)", color: NEON, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}
+          >
+            Ver mi página pública ↗
+          </motion.button>
+        )}
       </div>
     </div>
   );
@@ -427,7 +384,7 @@ function WelcomeInner() {
 export default function WelcomePage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", color: "#64748b", fontFamily: "system-ui" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", color: "#64748b", fontFamily: FONT }}>
         Cargando...
       </div>
     }>

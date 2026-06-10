@@ -375,12 +375,18 @@ function OnboardingInner() {
   }
 
   async function goToDashboard() {
-    if (currentSlug) { router.push(`/welcome?slug=${currentSlug}`); return; }
+    const buildWelcome = (slug: string) => {
+      const p = new URLSearchParams({ slug });
+      if (tenantId) p.set("tenant_id", tenantId);
+      if (resolvedBranchId) p.set("branch_id", resolvedBranchId);
+      return `/welcome?${p.toString()}`;
+    };
+    if (currentSlug) { router.push(buildWelcome(currentSlug)); return; }
     try {
       const tenantRes = await fetch(`${backend}/tenants/${tenantId}`);
       const tenantData = await tenantRes.json().catch(() => ({}));
       const slug = tenantData?.slug || tenantData?.tenant?.slug;
-      router.push(slug ? `/welcome?slug=${slug}` : "/dashboard");
+      router.push(slug ? buildWelcome(slug) : "/dashboard");
     } catch {
       router.push("/dashboard");
     }
