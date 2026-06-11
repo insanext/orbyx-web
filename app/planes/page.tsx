@@ -7,8 +7,10 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
+  Bot,
   CalendarDays,
   Check,
+  ChevronUp,
   Crown,
   Gem,
   Lock,
@@ -25,7 +27,8 @@ import {
 } from "lucide-react";
 
 type PlanKey = "pro" | "premium" | "vip" | "platinum";
-type ExtraKey = "staff" | "reminders" | "campaigns" | "branches";
+type ExtraKey = "staff" | "reminders" | "campaigns" | "branches" | "ai";
+type BillingCycle = "mensual" | "semestral" | "anual";
 
 type FeatureItem = {
   title: string;
@@ -37,7 +40,6 @@ type Plan = {
   key: PlanKey;
   name: string;
   price: number;
-  priceLabel: string;
   ivaLabel: string;
   subtitle: string;
   benefit: string;
@@ -46,9 +48,8 @@ type Plan = {
   includedStaff: number;
   includedServices: number;
   includedReminderConversations: number;
-  includedWhatsappResponseConversations: number;
   includedAiConversations: number;
-  emailCampaignsIncluded: boolean;
+  includedEmailCampaigns: number;
   extras: ExtraKey[];
   summaryTitle: string;
   summaryIntro: string;
@@ -83,6 +84,7 @@ type ExtraConfig = {
   unitPrice: number;
   unitLabel: string;
   usageLabel: string;
+  availableFrom: string;
   icon: ReactNode;
   glow: string;
   iconClass: string;
@@ -94,30 +96,32 @@ const plans: Plan[] = [
   {
     key: "pro",
     name: "Pro",
-    price: 19990,
-    priceLabel: "$19.990",
+    price: 12990,
     ivaLabel: "/mes + IVA",
     subtitle: "Pequeno negocio con agenda profesional",
     benefit:
       "Agenda online, reservas y una base clara para ordenar la operacion diaria.",
+    badge: "14 dias gratis",
     includedBranches: 1,
     includedStaff: 2,
     includedServices: 10,
     includedReminderConversations: 0,
-    includedWhatsappResponseConversations: 0,
     includedAiConversations: 0,
-    emailCampaignsIncluded: false,
-    extras: ["staff", "branches"],
+    includedEmailCampaigns: 200,
+    extras: [],
     summaryTitle: "Plan Pro",
     summaryIntro:
       "Para comenzar con reservas online, confirmaciones y control operativo.",
     features: [
       { title: "Agenda y reservas online" },
-      { title: "Confirmaciones automaticas" },
-      { title: "IA de WhatsApp basica" },
+      { title: "Confirmaciones automaticas por email" },
+      { title: "Recordatorio por email" },
       { title: "2 profesionales incluidos" },
       { title: "1 sucursal incluida" },
-      { title: "Soporte por chat" },
+      { title: "Campanas email 200/mes" },
+      { title: "Google Calendar sync" },
+      { title: "Soporte por email" },
+      { title: "Trial 14 dias gratis", highlight: true },
     ],
     icon: "mail",
     accentClass: "text-violet-300",
@@ -130,7 +134,6 @@ const plans: Plan[] = [
     key: "premium",
     name: "Premium",
     price: 29990,
-    priceLabel: "$29.990",
     ivaLabel: "/mes + IVA",
     subtitle: "Mas automatizacion para crecer con orden",
     benefit:
@@ -138,21 +141,22 @@ const plans: Plan[] = [
     includedBranches: 2,
     includedStaff: 5,
     includedServices: 25,
-    includedReminderConversations: 0,
-    includedWhatsappResponseConversations: 0,
+    includedReminderConversations: 100,
     includedAiConversations: 0,
-    emailCampaignsIncluded: true,
-    extras: ["staff", "branches"],
+    includedEmailCampaigns: 1000,
+    extras: ["staff", "branches", "reminders"],
     summaryTitle: "Plan Premium",
     summaryIntro:
       "Mayor control comercial, mas profesionales y seguimiento mas consistente.",
     features: [
       { title: "Todo lo de Pro" },
       { title: "5 profesionales incluidos" },
-      { title: "Campanas por email" },
-      { title: "Recordatorios por email" },
       { title: "2 sucursales incluidas" },
-      { title: "Soporte prioritario" },
+      { title: "Campanas email 1.000/mes" },
+      { title: "WA recordatorios 100 msgs/mes" },
+      { title: "Modo veterinario (fichas clinicas y mascotas)" },
+      { title: "Reservas grupales (fitness, clases, talleres)" },
+      { title: "Soporte email + chat" },
     ],
     icon: "sparkles",
     accentClass: "text-sky-300",
@@ -164,8 +168,7 @@ const plans: Plan[] = [
   {
     key: "vip",
     name: "VIP",
-    price: 79990,
-    priceLabel: "$79.990",
+    price: 54990,
     ivaLabel: "/mes + IVA",
     subtitle: "WhatsApp real, IA y recuperacion de clientes",
     benefit:
@@ -175,20 +178,19 @@ const plans: Plan[] = [
     includedStaff: 10,
     includedServices: 50,
     includedReminderConversations: 200,
-    includedWhatsappResponseConversations: 200,
-    includedAiConversations: 200,
-    emailCampaignsIncluded: true,
-    extras: ["staff", "reminders", "campaigns", "branches"],
+    includedAiConversations: 500,
+    includedEmailCampaigns: 2000,
+    extras: ["staff", "branches", "reminders", "campaigns", "ai"],
     summaryTitle: "Plan VIP",
     summaryIntro:
       "Para activar clientes, responder por WhatsApp y convertir conversaciones en reservas.",
     features: [
       { title: "Todo lo de Premium" },
       { title: "10 profesionales incluidos" },
-      { title: "Campanas por WhatsApp" },
-      { title: "Recordatorios WhatsApp 200 conversaciones / mes" },
-      { title: "IA responde y deriva a reserva", highlight: true },
       { title: "3 sucursales incluidas" },
+      { title: "Campanas email 2.000/mes" },
+      { title: "WA recordatorios 200 msgs/mes" },
+      { title: "IA WhatsApp 500 conversaciones/mes", highlight: true },
       { title: "Soporte prioritario 24/7" },
     ],
     icon: "crown",
@@ -201,33 +203,32 @@ const plans: Plan[] = [
   {
     key: "platinum",
     name: "Platinum",
-    price: 189990,
-    priceLabel: "$189.990",
+    price: 149990,
     ivaLabel: "/mes + IVA",
     subtitle: "IA avanzada, multi sucursal y SLA premium",
     benefit:
       "Para negocios que quieren escalar sin limites visuales y operar con IA avanzada.",
     badge: "IA avanzada",
     includedBranches: 10,
-    includedStaff: 20,
+    includedStaff: 25,
     includedServices: 100,
-    includedReminderConversations: 800,
-    includedWhatsappResponseConversations: 800,
-    includedAiConversations: 800,
-    emailCampaignsIncluded: true,
-    extras: ["staff", "reminders", "campaigns", "branches"],
+    includedReminderConversations: 400,
+    includedAiConversations: 1500,
+    includedEmailCampaigns: 5000,
+    extras: ["staff", "branches", "reminders", "campaigns", "ai"],
     summaryTitle: "Plan Platinum",
     summaryIntro:
       "Automatizaciones avanzadas, onboarding premium, SLA y seguimiento inteligente.",
     features: [
       { title: "Todo lo de VIP" },
-      { title: "20 profesionales incluidos" },
-      { title: "Recordatorios WhatsApp 800 conversaciones / mes" },
-      { title: "IA responde, sigue y automatiza", highlight: true },
+      { title: "25 profesionales incluidos" },
       { title: "10 sucursales incluidas" },
+      { title: "Campanas email 5.000/mes" },
+      { title: "WA recordatorios 400 msgs/mes" },
+      { title: "IA WhatsApp 1.500 conversaciones/mes", highlight: true },
       { title: "Automatizaciones avanzadas" },
       { title: "Onboarding personalizado" },
-      { title: "SLA y soporte premium" },
+      { title: "Soporte dedicado + SLA" },
     ],
     icon: "gem",
     accentClass: "text-fuchsia-300",
@@ -238,52 +239,104 @@ const plans: Plan[] = [
   },
 ];
 
+// Catalogo definitivo de add-ons. Packs WA: recordatorios = 200 msgs,
+// campanas = 100 msgs, IA = 500 conversaciones. Se suman al limite base del plan.
 const extraConfig: Record<ExtraKey, ExtraConfig> = {
   staff: {
-    title: "+ Profesionales",
+    title: "+ 1 Profesional",
     short: "Agrega mas miembros a tu equipo.",
     detail: "por profesional",
     unitPrice: 6000,
     unitLabel: "profesional",
-    usageLabel: "unidad",
+    usageLabel: "1 staff adicional sobre el limite del plan",
+    availableFrom: "Premium, VIP y Platinum",
     icon: <Users className="h-5 w-5" />,
     glow: "from-violet-500/20 to-violet-500/5",
     iconClass: "bg-violet-500/18 text-violet-200",
   },
+  branches: {
+    title: "+ 1 Sucursal",
+    short: "Gestiona mas sedes desde tu cuenta.",
+    detail: "por sucursal",
+    unitPrice: 15000,
+    unitLabel: "sucursal",
+    usageLabel: "1 sucursal adicional sobre el limite del plan",
+    availableFrom: "Premium, VIP y Platinum",
+    icon: <Store className="h-5 w-5" />,
+    glow: "from-blue-500/20 to-blue-500/5",
+    iconClass: "bg-blue-500/18 text-blue-200",
+  },
   reminders: {
-    title: "Pack recordatorios WhatsApp",
+    title: "+ Recordatorios WhatsApp",
     short: "Envia recordatorios automaticos.",
-    detail: "por 50 conversaciones",
-    unitPrice: 5000,
+    detail: "por 200 mensajes",
+    unitPrice: 4900,
     unitLabel: "pack",
-    usageLabel: "800 conversaciones / mes",
+    usageLabel: "200 msgs recordatorio adicionales / mes",
+    availableFrom: "Premium, VIP y Platinum",
     icon: <MessageCircle className="h-5 w-5" />,
     glow: "from-emerald-500/20 to-emerald-500/5",
     iconClass: "bg-emerald-500/18 text-emerald-200",
   },
   campaigns: {
-    title: "Campanas WhatsApp",
+    title: "+ Campanas WhatsApp",
     short: "Envia promociones y recupera clientes.",
-    detail: "por 50 conversaciones",
-    unitPrice: 9000,
+    detail: "por 100 mensajes",
+    unitPrice: 9900,
     unitLabel: "pack",
-    usageLabel: "500 conversaciones / mes",
+    usageLabel: "100 msgs campana adicionales / mes",
+    availableFrom: "VIP y Platinum",
     icon: <Megaphone className="h-5 w-5" />,
     glow: "from-amber-500/20 to-amber-500/5",
     iconClass: "bg-amber-500/18 text-amber-200",
   },
-  branches: {
-    title: "+ Sucursales",
-    short: "Gestiona mas sedes desde tu cuenta.",
-    detail: "por sucursal",
-    unitPrice: 15000,
-    unitLabel: "sucursal",
-    usageLabel: "unidad",
-    icon: <Store className="h-5 w-5" />,
-    glow: "from-blue-500/20 to-blue-500/5",
-    iconClass: "bg-blue-500/18 text-blue-200",
+  ai: {
+    title: "+ Conversaciones IA WhatsApp",
+    short: "Mas conversaciones atendidas por la IA.",
+    detail: "por 500 conversaciones",
+    unitPrice: 14900,
+    unitLabel: "pack",
+    usageLabel: "500 conversaciones IA adicionales / mes",
+    availableFrom: "VIP y Platinum",
+    icon: <Bot className="h-5 w-5" />,
+    glow: "from-fuchsia-500/20 to-fuchsia-500/5",
+    iconClass: "bg-fuchsia-500/18 text-fuchsia-200",
   },
 };
+
+const REMINDER_PACK_SIZE = 200;
+const CAMPAIGN_PACK_SIZE = 100;
+const AI_PACK_SIZE = 500;
+
+const billingCycleConfig: Record<
+  BillingCycle,
+  { label: string; months: number; discount: number; badge?: string; note?: string }
+> = {
+  mensual: { label: "Mensual", months: 1, discount: 1 },
+  semestral: {
+    label: "Semestral",
+    months: 6,
+    discount: 0.9,
+    badge: "-10%",
+    note: "Facturado cada 6 meses",
+  },
+  anual: {
+    label: "Anual",
+    months: 12,
+    discount: 0.85,
+    badge: "Ahorra 15%",
+    note: "Facturado anualmente",
+  },
+};
+
+function cycleMonthlyPrice(monthlyPrice: number, cycle: BillingCycle) {
+  return Math.round(monthlyPrice * billingCycleConfig[cycle].discount);
+}
+
+function cycleTotalPrice(monthlyPrice: number, cycle: BillingCycle) {
+  const config = billingCycleConfig[cycle];
+  return Math.round(monthlyPrice * config.months * config.discount);
+}
 
 function formatCLP(value: number) {
   return `$${value.toLocaleString("es-CL")}`;
@@ -389,6 +442,10 @@ function PlanesPageContent() {
   const [reminderExtras, setReminderExtras] = useState(0);
   const [campaignExtras, setCampaignExtras] = useState(0);
   const [branchExtras, setBranchExtras] = useState(0);
+  const [aiExtras, setAiExtras] = useState(0);
+
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("mensual");
+  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
 
   const [preview, setPreview] = useState<BillingPreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -396,6 +453,10 @@ function PlanesPageContent() {
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState("");
   const [applyOk, setApplyOk] = useState("");
+
+  const [downgradeModalOpen, setDowngradeModalOpen] = useState(false);
+  const [downgradeChecking, setDowngradeChecking] = useState(false);
+  const [downgradeBlockError, setDowngradeBlockError] = useState("");
 
   useEffect(() => {
     if (hasBillingContext && initialPlan) {
@@ -413,6 +474,9 @@ function PlanesPageContent() {
   const supportsReminderExtra = selectedPlan.extras.includes("reminders");
   const supportsCampaignExtra = selectedPlan.extras.includes("campaigns");
   const supportsBranchExtra = selectedPlan.extras.includes("branches");
+  const supportsAiExtra = selectedPlan.extras.includes("ai");
+
+  const isProSelected = selectedPlan.key === "pro";
 
   const extrasSubtotal = useMemo(() => {
     let total = 0;
@@ -427,13 +491,18 @@ function PlanesPageContent() {
     if (supportsBranchExtra) {
       total += branchExtras * extraConfig.branches.unitPrice;
     }
+    if (supportsAiExtra) {
+      total += aiExtras * extraConfig.ai.unitPrice;
+    }
 
     return total;
   }, [
+    aiExtras,
     branchExtras,
     campaignExtras,
     reminderExtras,
     staffExtras,
+    supportsAiExtra,
     supportsBranchExtra,
     supportsCampaignExtra,
     supportsReminderExtra,
@@ -447,8 +516,11 @@ function PlanesPageContent() {
 
   const currentStaffTotal = selectedPlan.includedStaff + staffExtras;
   const currentReminderTotal =
-    selectedPlan.includedReminderConversations + reminderExtras * 50;
-  const currentCampaignTotal = campaignExtras * 50;
+    selectedPlan.includedReminderConversations +
+    reminderExtras * REMINDER_PACK_SIZE;
+  const currentCampaignTotal = campaignExtras * CAMPAIGN_PACK_SIZE;
+  const currentAiTotal =
+    selectedPlan.includedAiConversations + aiExtras * AI_PACK_SIZE;
   const currentBranchTotal = selectedPlan.includedBranches + branchExtras;
 
   const extraItems = useMemo(() => {
@@ -490,12 +562,23 @@ function PlanesPageContent() {
       });
     }
 
+    if (supportsAiExtra && aiExtras > 0) {
+      items.push({
+        key: "ai",
+        label: `Conversaciones IA WhatsApp x${aiExtras}`,
+        amount: aiExtras * extraConfig.ai.unitPrice,
+        count: aiExtras,
+      });
+    }
+
     return items;
   }, [
+    aiExtras,
     branchExtras,
     campaignExtras,
     reminderExtras,
     staffExtras,
+    supportsAiExtra,
     supportsBranchExtra,
     supportsCampaignExtra,
     supportsReminderExtra,
@@ -548,8 +631,11 @@ function PlanesPageContent() {
     setReminderExtras(0);
     setCampaignExtras(0);
     setBranchExtras(0);
+    setAiExtras(0);
     setApplyError("");
     setApplyOk("");
+    setDowngradeBlockError("");
+    setDowngradeModalOpen(false);
   }
 
   function increaseExtra(extraKey: ExtraKey) {
@@ -564,6 +650,9 @@ function PlanesPageContent() {
     }
     if (extraKey === "branches" && supportsBranchExtra) {
       setBranchExtras((prev) => prev + 1);
+    }
+    if (extraKey === "ai" && supportsAiExtra) {
+      setAiExtras((prev) => prev + 1);
     }
   }
 
@@ -580,9 +669,158 @@ function PlanesPageContent() {
     if (extraKey === "branches" && supportsBranchExtra) {
       setBranchExtras((prev) => Math.max(0, prev - 1));
     }
+    if (extraKey === "ai" && supportsAiExtra) {
+      setAiExtras((prev) => Math.max(0, prev - 1));
+    }
+  }
+
+  // Compara plan actual vs destino para el modal de downgrade:
+  // features que se pierden y add-ons que se cancelan segun las reglas del catalogo.
+  function getDowngradeDetails(current: Plan, target: Plan) {
+    const featuresLost: string[] = [];
+
+    if (target.includedStaff < current.includedStaff) {
+      featuresLost.push(
+        `Profesionales incluidos: ${current.includedStaff} → ${target.includedStaff}`
+      );
+    }
+    if (target.includedBranches < current.includedBranches) {
+      featuresLost.push(
+        `Sucursales incluidas: ${current.includedBranches} → ${target.includedBranches}`
+      );
+    }
+    if (target.includedEmailCampaigns < current.includedEmailCampaigns) {
+      featuresLost.push(
+        `Campanas email: ${current.includedEmailCampaigns.toLocaleString("es-CL")}/mes → ${target.includedEmailCampaigns.toLocaleString("es-CL")}/mes`
+      );
+    }
+    if (
+      current.includedReminderConversations > 0 &&
+      target.includedReminderConversations === 0
+    ) {
+      featuresLost.push("Recordatorios WhatsApp: ya no incluidos");
+    } else if (
+      target.includedReminderConversations < current.includedReminderConversations
+    ) {
+      featuresLost.push(
+        `Recordatorios WhatsApp: ${current.includedReminderConversations} → ${target.includedReminderConversations} msgs/mes`
+      );
+    }
+    if (current.includedAiConversations > 0 && target.includedAiConversations === 0) {
+      featuresLost.push("IA WhatsApp: ya no incluida");
+    } else if (target.includedAiConversations < current.includedAiConversations) {
+      featuresLost.push(
+        `IA WhatsApp: ${current.includedAiConversations.toLocaleString("es-CL")} → ${target.includedAiConversations} conversaciones/mes`
+      );
+    }
+    if (current.key === "platinum") {
+      featuresLost.push(
+        "Automatizaciones avanzadas",
+        "Onboarding personalizado",
+        "Soporte dedicado + SLA"
+      );
+    }
+    if (target.key === "pro") {
+      featuresLost.push(
+        "Modo veterinario (fichas clinicas y mascotas)",
+        "Reservas grupales (fitness, clases, talleres)"
+      );
+    }
+
+    const addonsCanceled: string[] = [];
+    if (target.key === "pro") {
+      addonsCanceled.push(
+        "Todos los add-ons activos (el plan Pro no admite add-ons)"
+      );
+    } else {
+      current.extras.forEach((extraKey) => {
+        if (!target.extras.includes(extraKey)) {
+          addonsCanceled.push(extraConfig[extraKey].title);
+        }
+      });
+    }
+
+    return { featuresLost, addonsCanceled };
+  }
+
+  // Cuenta staff y sucursales activos del tenant para bloquear downgrades
+  // que dejarian la cuenta sobre el limite del plan destino.
+  async function validateDowngradeLimits(target: Plan) {
+    const branchesRes = await fetch(
+      `${BACKEND_URL}/branches?tenant_id=${encodeURIComponent(tenantId)}`
+    );
+    const branchesData = await branchesRes.json();
+
+    if (!branchesRes.ok) {
+      throw new Error(branchesData?.error || "No se pudo validar sucursales");
+    }
+
+    const branches: { id: string; is_active?: boolean }[] =
+      branchesData?.branches || [];
+    const activeBranches = branches.filter(
+      (branch) => branch.is_active !== false
+    );
+
+    let activeStaff = 0;
+    for (const branch of activeBranches) {
+      const staffRes = await fetch(
+        `${BACKEND_URL}/staff?tenant_id=${encodeURIComponent(
+          tenantId
+        )}&branch_id=${encodeURIComponent(branch.id)}&active=true`
+      );
+      const staffData = await staffRes.json();
+
+      if (!staffRes.ok) {
+        throw new Error(staffData?.error || "No se pudo validar profesionales");
+      }
+
+      activeStaff += Number(staffData?.total || 0);
+    }
+
+    if (activeStaff > target.includedStaff) {
+      return `Tienes ${activeStaff} profesionales activos. El plan ${target.name} incluye solo ${target.includedStaff}. Desactiva profesionales antes de continuar.`;
+    }
+
+    if (activeBranches.length > target.includedBranches) {
+      return `Tienes ${activeBranches.length} sucursales activas. El plan ${target.name} incluye solo ${target.includedBranches}. Desactiva sucursales antes de continuar.`;
+    }
+
+    return "";
   }
 
   async function handleApplyPlanChange() {
+    if (previewType === "downgrade") {
+      setApplyError("");
+      setApplyOk("");
+      setDowngradeBlockError("");
+      setDowngradeChecking(true);
+
+      try {
+        const blockMessage = await validateDowngradeLimits(selectedPlan);
+
+        if (blockMessage) {
+          setDowngradeBlockError(blockMessage);
+          return;
+        }
+
+        setDowngradeModalOpen(true);
+      } catch (error: unknown) {
+        setDowngradeBlockError(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron validar los limites del plan. Intenta de nuevo."
+        );
+      } finally {
+        setDowngradeChecking(false);
+      }
+
+      return;
+    }
+
+    await applyPlanChange();
+  }
+
+  async function applyPlanChange() {
     try {
       setApplying(true);
       setApplyError("");
@@ -642,19 +880,29 @@ function PlanesPageContent() {
 
   const ctaLabel =
     !hasBillingContext
-      ? "Comenzar ahora"
+      ? isProSelected
+        ? "Probar gratis 14 dias"
+        : "Solicitar demo"
       : previewType === "same_plan"
       ? "Mantener este plan"
       : previewType === "downgrade"
       ? "Programar downgrade"
       : "Cambiar ahora";
 
+  const publicCtaHref = isProSelected
+    ? "/register?plan=pro"
+    : `/register?plan=${selectedPlanKey}&intent=demo`;
+
   const showTenantWarning = !tenantId && Boolean(from || slug);
 
-  const publicPlanIva = Math.round(selectedPlan.price * 0.19);
+  // Precio mensual equivalente segun ciclo (mensual / semestral -10% / anual -15%)
+  const selectedPlanMonthly = cycleMonthlyPrice(selectedPlan.price, billingCycle);
+  const cycleMonths = billingCycleConfig[billingCycle].months;
+
+  const publicPlanIva = Math.round(selectedPlanMonthly * 0.19);
   const publicExtrasIva = Math.round(extrasSubtotal * 0.19);
   const publicReferenceTotal =
-    selectedPlan.price + publicPlanIva + extrasSubtotal + publicExtrasIva;
+    selectedPlanMonthly + publicPlanIva + extrasSubtotal + publicExtrasIva;
 
   const summaryBaseLabel = "Plan base";
 
@@ -662,15 +910,20 @@ function PlanesPageContent() {
     ? previewType === "downgrade"
       ? "$0"
       : formatCLP(previewAmountToday)
-    : selectedPlan.priceLabel;
+    : formatCLP(selectedPlanMonthly);
 
   const summarySubtotal = hasBillingContext
     ? payTodaySubtotal
-    : selectedPlan.price + extrasSubtotal;
+    : selectedPlanMonthly + extrasSubtotal;
   const summaryIva = hasBillingContext ? payTodayIva : Math.round(summarySubtotal * 0.19);
   const summaryTotal = hasBillingContext ? payTodayTotal : publicReferenceTotal;
 
-  const availableAddons: ExtraKey[] = ["staff", "reminders", "campaigns", "branches"];
+  // Total del ciclo completo (solo modo publico, ciclos no mensuales)
+  const cycleSubtotal =
+    cycleTotalPrice(selectedPlan.price, billingCycle) + extrasSubtotal * cycleMonths;
+  const cycleTotalWithIva = cycleSubtotal + Math.round(cycleSubtotal * 0.19);
+
+  const availableAddons: ExtraKey[] = ["staff", "branches", "reminders", "campaigns", "ai"];
   const selectedAddonsCount = extraItems.reduce((total, item) => total + item.count, 0);
   const addableAddons = availableAddons.filter(
     (extraKey) => extraSupported(extraKey) && extraValue(extraKey) === 0
@@ -680,6 +933,7 @@ function PlanesPageContent() {
     if (extraKey === "staff") return staffExtras;
     if (extraKey === "reminders") return reminderExtras;
     if (extraKey === "campaigns") return campaignExtras;
+    if (extraKey === "ai") return aiExtras;
     return branchExtras;
   }
 
@@ -688,7 +942,7 @@ function PlanesPageContent() {
   }
 
   function extraUnitLabel(extraKey: ExtraKey, count: number) {
-    if (extraKey === "reminders" || extraKey === "campaigns") {
+    if (extraKey === "reminders" || extraKey === "campaigns" || extraKey === "ai") {
       return count === 1 ? "pack" : "packs";
     }
 
@@ -809,7 +1063,7 @@ function PlanesPageContent() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/50 to-transparent" />
       </div>
 
-      <section className="relative mx-auto w-full max-w-[1760px] px-3 pb-6 pt-3 sm:px-5 lg:px-7">
+      <section className="relative mx-auto w-full max-w-[1760px] px-3 pb-28 pt-3 sm:px-5 md:pb-6 lg:px-7">
         <header className="flex items-center justify-between gap-3 border-b border-white/8 pb-3">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.22)]">
@@ -838,7 +1092,7 @@ function PlanesPageContent() {
               Iniciar sesion
             </Link>
             <Link
-              href="/register"
+              href="/register?plan=pro"
               className="inline-flex h-9 items-center justify-center rounded-lg bg-[#21d6c5] px-3 text-xs font-bold text-slate-950 shadow-[0_14px_38px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] lg:px-4 lg:text-sm"
             >
               Probar gratis
@@ -866,17 +1120,40 @@ function PlanesPageContent() {
               </p>
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-                <div className="inline-flex rounded-full border border-white/10 bg-white/6 p-1 text-xs font-semibold text-slate-300">
-                  <span className="rounded-full bg-cyan-400/12 px-6 py-1.5 text-cyan-200">
-                    Mensual
-                  </span>
-                  <span className="px-6 py-1.5">Anual</span>
-                  <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-cyan-200">
-                    -20%
-                  </span>
+                <div className="inline-flex w-full max-w-md rounded-full border border-white/10 bg-white/6 p-1 text-xs font-semibold text-slate-300 sm:w-auto">
+                  {(Object.keys(billingCycleConfig) as BillingCycle[]).map((cycle) => {
+                    const config = billingCycleConfig[cycle];
+                    const isActive = billingCycle === cycle;
+
+                    return (
+                      <button
+                        key={cycle}
+                        type="button"
+                        onClick={() => setBillingCycle(cycle)}
+                        className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-full px-3 transition sm:flex-none sm:px-5 ${
+                          isActive
+                            ? "bg-cyan-400/12 text-cyan-200"
+                            : "text-slate-300 hover:text-white"
+                        }`}
+                      >
+                        {config.label}
+                        {config.badge ? (
+                          <span
+                            className={`rounded-full border px-1.5 py-0.5 text-[10px] ${
+                              isActive
+                                ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-200"
+                                : "border-white/15 bg-white/6 text-slate-300"
+                            }`}
+                          >
+                            {config.badge}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
                 </div>
                 <span className="text-xs font-semibold text-cyan-300">
-                  Ahorra 2 meses con anual
+                  Ahorra 15% con anual y 10% con semestral
                 </span>
               </div>
 
@@ -885,33 +1162,6 @@ function PlanesPageContent() {
                   Llegaste aqui porque alcanzaste el limite de profesionales de tu plan.
                 </div>
               ) : null}
-            </div>
-
-            <div className="mt-5 flex gap-2 overflow-x-auto pb-1 md:hidden">
-              {plans.map((plan) => {
-                const mobileLabel: Record<PlanKey, string> = {
-                  pro: "Individual",
-                  premium: "Basico",
-                  vip: "Premium",
-                  platinum: "Pro",
-                };
-                const isSelected = selectedPlan.key === plan.key;
-
-                return (
-                  <button
-                    key={`mobile-tab-${plan.key}`}
-                    type="button"
-                    onClick={() => handleSelectPlan(plan.key)}
-                    className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                      isSelected
-                        ? "border-violet-300/70 bg-violet-500/18 text-white shadow-[0_0_18px_rgba(168,85,247,0.26)]"
-                        : "border-white/10 bg-white/[0.035] text-slate-300"
-                    }`}
-                  >
-                    {mobileLabel[plan.key]}
-                  </button>
-                );
-              })}
             </div>
 
             <div id="planes" className="mt-4 grid gap-3 md:mt-6 md:grid-cols-2 2xl:grid-cols-4">
@@ -927,7 +1177,7 @@ function PlanesPageContent() {
                     whileHover={{ y: isSelected ? -5 : -3 }}
                     animate={{ y: isSelected ? -5 : 0, scale: isSelected ? 1.01 : 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                    className={`relative isolate ${isSelected ? "flex" : "hidden md:flex"} min-h-[320px] overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:min-h-[370px] 2xl:min-h-[390px] ${
+                    className={`relative isolate flex min-h-[320px] overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:min-h-[370px] 2xl:min-h-[390px] ${
                       isSelected
                         ? `selected-plan-neon ${plan.borderClass} bg-cyan-300/25 shadow-[0_0_0_1px_rgba(34,211,238,0.42),0_0_26px_rgba(34,211,238,0.24),0_0_42px_rgba(168,85,247,0.18),0_18px_54px_rgba(34,211,238,0.16)]`
                         : "border-white/12 bg-white/[0.035] shadow-[0_18px_50px_rgba(0,0,0,0.18)] hover:border-white/25 hover:bg-white/[0.055]"
@@ -966,20 +1216,31 @@ function PlanesPageContent() {
                       </p>
 
                       <div className="mt-3 flex items-end gap-1">
-                        <span className="text-[1.75rem] font-semibold leading-none tracking-tight text-white">
-                          {plan.priceLabel}
+                        <span className="text-2xl font-semibold leading-none tracking-tight text-white sm:text-[1.75rem]">
+                          {formatCLP(cycleMonthlyPrice(plan.price, billingCycle))}
                         </span>
                         <span className="pb-1 text-sm text-slate-400">{plan.ivaLabel}</span>
                       </div>
 
+                      {billingCycle !== "mensual" ? (
+                        <p className="mt-1 text-xs text-slate-400">
+                          {billingCycleConfig[billingCycle].note}:{" "}
+                          {formatCLP(cycleTotalPrice(plan.price, billingCycle))} + IVA
+                        </p>
+                      ) : null}
+
                       <div
-                        className={`mt-4 inline-flex h-10 items-center justify-center rounded-lg border px-4 text-sm font-bold transition ${
+                        className={`mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg border px-4 text-sm font-bold transition ${
                           isSelected
                             ? "border-cyan-300/20 bg-[#21d6c5] text-slate-950 shadow-[0_14px_34px_rgba(34,211,238,0.2)]"
                             : "border-white/15 bg-white/[0.035] text-white"
                         }`}
                       >
-                        {isSelected ? "Plan seleccionado" : "Elegir plan"}
+                        {isSelected
+                          ? "Plan seleccionado"
+                          : plan.key === "pro"
+                          ? "Probar gratis 14 dias"
+                          : "Solicitar demo"}
                       </div>
 
                       <div className="mt-4 space-y-2.5 pb-1">
@@ -1037,57 +1298,46 @@ function PlanesPageContent() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {[
-                  {
-                    key: "staff" as ExtraKey,
-                    title: "Mas profesionales",
-                    text: "Agrega miembros a tu equipo y atiende mas clientes.",
-                  },
-                  {
-                    key: "reminders" as ExtraKey,
-                    title: "WhatsApp ilimitado",
-                    text: "Mas conversaciones, mas recordatorios, mas impacto.",
-                  },
-                  {
-                    key: "campaigns" as ExtraKey,
-                    title: "Campanas efectivas",
-                    text: "Promociona, fideliza y recupera clientes automaticamente.",
-                  },
-                  {
-                    key: "branches" as ExtraKey,
-                    title: "Mas sucursales",
-                    text: "Gestiona multiples sedes desde una sola cuenta.",
-                  },
-                ].map((addon) => {
-                  const config = extraConfig[addon.key];
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {(["staff", "branches", "reminders", "campaigns", "ai"] as ExtraKey[]).map(
+                  (extraKey) => {
+                    const config = extraConfig[extraKey];
 
-                  return (
-                    <div
-                      key={addon.key}
-                      className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-4"
-                    >
-                      <div className={`absolute inset-0 -z-10 bg-gradient-to-br ${config.glow}`} />
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${config.iconClass}`}
-                        >
-                          {config.icon}
-                        </span>
-                        <div>
-                          <p className="text-sm font-semibold text-white">{addon.title}</p>
-                          <p className="mt-1 text-sm leading-5 text-slate-300">{addon.text}</p>
+                    return (
+                      <div
+                        key={extraKey}
+                        className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-4"
+                      >
+                        <div className={`absolute inset-0 -z-10 bg-gradient-to-br ${config.glow}`} />
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${config.iconClass}`}
+                          >
+                            {config.icon}
+                          </span>
+                          <div>
+                            <p className="text-sm font-semibold text-white">{config.title}</p>
+                            <p className="mt-1 text-sm leading-5 text-slate-300">
+                              {config.usageLabel}
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-cyan-200">
+                              {formatCLP(config.unitPrice)} /mes
+                            </p>
+                            <p className="mt-0.5 text-xs text-slate-400">
+                              Disponible desde {config.availableFrom}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  }
+                )}
               </div>
             </section>
 
             <div className="mt-5 grid gap-3 rounded-[16px] border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-300 md:grid-cols-2 xl:grid-cols-4">
               {[
-                ["7 dias gratis", "Prueba sin riesgos.", CalendarDays],
+                ["14 dias gratis en Pro", "Prueba sin riesgos.", CalendarDays],
                 ["Sin tarjeta de credito", "Comienza en segundos.", Lock],
                 ["Cambia cuando quieras", "Upgrade, downgrade o cancela.", Zap],
                 ["Siempre seguro", "Tus datos estan protegidos.", ShieldCheck],
@@ -1112,8 +1362,38 @@ function PlanesPageContent() {
             </p>
           </div>
 
-          <aside className="xl:sticky xl:top-4 xl:self-start">
-            <div className="overflow-hidden rounded-[18px] border border-white/12 bg-[#06101d]/90 shadow-[0_24px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl">
+          <aside className="fixed inset-x-0 bottom-0 z-40 md:static md:z-auto xl:sticky xl:top-4 xl:self-start">
+            <div className="overflow-hidden rounded-t-[18px] border border-white/12 bg-[#06101d]/95 shadow-[0_-12px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl md:rounded-[18px] md:bg-[#06101d]/90 md:shadow-[0_24px_90px_rgba(0,0,0,0.32)]">
+              {/* Barra fija mobile: muestra plan + total y expande el resumen hacia arriba */}
+              <button
+                type="button"
+                onClick={() => setMobileSummaryOpen((open) => !open)}
+                className="flex min-h-[56px] w-full items-center justify-between gap-3 px-4 md:hidden"
+                aria-expanded={mobileSummaryOpen}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-300">
+                    <ShoppingCart className="h-4 w-4" />
+                  </span>
+                  Tu seleccion · {selectedPlan.name}
+                </span>
+                <span className="flex items-center gap-2 text-sm font-bold text-cyan-300">
+                  {formatCLP(summaryTotal)}
+                  <ChevronUp
+                    className={`h-4 w-4 transition-transform ${
+                      mobileSummaryOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </span>
+              </button>
+
+              <div
+                className={`${
+                  mobileSummaryOpen
+                    ? "block max-h-[75vh] overflow-y-auto"
+                    : "hidden"
+                } md:block md:max-h-none md:overflow-visible`}
+              >
               <div className="border-b border-white/10 p-4">
                 <div className="flex items-center gap-3">
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-300">
@@ -1189,6 +1469,11 @@ function PlanesPageContent() {
                       label="Cargo proporcional nuevo plan"
                       value={formatCLP(Number(preview?.charge || 0))}
                     />
+                    <p className="text-xs leading-5 text-cyan-100/80">
+                      Los add-ons que ya esten incluidos en el nuevo plan se
+                      cancelan automaticamente y su valor se descuenta del
+                      prorrateo.
+                    </p>
                   </div>
                 ) : null}
 
@@ -1200,6 +1485,11 @@ function PlanesPageContent() {
                   </div>
                 ) : null}
 
+                {isProSelected ? (
+                  <div className="mt-5 rounded-xl border border-cyan-300/15 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-100">
+                    Sube a Premium para agregar extras a tu plan
+                  </div>
+                ) : (
                 <div className="mt-5">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-sm font-semibold text-white">
@@ -1254,7 +1544,7 @@ function PlanesPageContent() {
                                   <button
                                     type="button"
                                     onClick={() => decreaseExtra(item.key)}
-                                    className="inline-flex h-8 w-8 items-center justify-center text-slate-200 transition hover:bg-white/8"
+                                    className="inline-flex h-11 w-11 items-center justify-center text-slate-200 transition hover:bg-white/8 md:h-8 md:w-8"
                                     aria-label={`Quitar ${extraConfig[item.key].title}`}
                                   >
                                     <Minus className="h-4 w-4" />
@@ -1265,7 +1555,7 @@ function PlanesPageContent() {
                                   <button
                                     type="button"
                                     onClick={() => increaseExtra(item.key)}
-                                    className="inline-flex h-8 w-8 items-center justify-center text-slate-200 transition hover:bg-white/8"
+                                    className="inline-flex h-11 w-11 items-center justify-center text-slate-200 transition hover:bg-white/8 md:h-8 md:w-8"
                                     aria-label={`Agregar ${extraConfig[item.key].title}`}
                                   >
                                     +
@@ -1316,6 +1606,7 @@ function PlanesPageContent() {
                     </div>
                   ) : null}
                 </div>
+                )}
 
                 <div className="mt-5 space-y-2.5 border-t border-white/10 pt-4">
                   <SummaryLine label={summaryBaseLabel} value={summaryBaseAmount} />
@@ -1330,11 +1621,23 @@ function PlanesPageContent() {
                   <SummaryLine label="Subtotal" value={formatCLP(summarySubtotal)} />
                   <SummaryLine label="IVA (19%)" value={formatCLP(summaryIva)} />
                   <SummaryLine label="Total mensual" value={formatCLP(summaryTotal)} strong />
+                  {!hasBillingContext && billingCycle !== "mensual" ? (
+                    <SummaryLine
+                      label={`Total a facturar (${cycleMonths} meses, IVA incl.)`}
+                      value={formatCLP(cycleTotalWithIva)}
+                    />
+                  ) : null}
                 </div>
 
                 {applyError ? (
                   <div className="mt-4 rounded-xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
                     {applyError}
+                  </div>
+                ) : null}
+
+                {downgradeBlockError ? (
+                  <div className="mt-4 rounded-xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                    {downgradeBlockError}
                   </div>
                 ) : null}
 
@@ -1349,14 +1652,18 @@ function PlanesPageContent() {
                     <button
                       type="button"
                       onClick={handleApplyPlanChange}
-                      disabled={applying || previewLoading || !tenantId}
+                      disabled={applying || previewLoading || downgradeChecking || !tenantId}
                       className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {applying ? "Procesando..." : ctaLabel}
+                      {applying
+                        ? "Procesando..."
+                        : downgradeChecking
+                        ? "Validando limites..."
+                        : ctaLabel}
                     </button>
                   ) : (
                     <Link
-                      href="/"
+                      href={publicCtaHref}
                       className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb]"
                     >
                       {ctaLabel}
@@ -1365,7 +1672,9 @@ function PlanesPageContent() {
 
                   <p className="flex items-center justify-center gap-2 text-center text-xs text-slate-400">
                     <Lock className="h-3.5 w-3.5 text-cyan-300" />
-                    Cancela o cambia de plan cuando quieras.
+                    {!hasBillingContext && isProSelected
+                      ? "14 dias gratis, sin tarjeta de credito. Cancela cuando quieras."
+                      : "Cancela o cambia de plan cuando quieras."}
                   </p>
 
                   {hasBillingContext ? (
@@ -1419,30 +1728,34 @@ function PlanesPageContent() {
                     <SummaryLine label="Profesionales incluidos" value={String(currentStaffTotal)} />
                     <SummaryLine
                       label="Campanas por email"
-                      value={selectedPlan.emailCampaignsIncluded ? "Incluidas" : "No incluidas"}
+                      value={`${selectedPlan.includedEmailCampaigns.toLocaleString("es-CL")} / mes`}
                     />
                     <SummaryLine
                       label="Recordatorios WhatsApp"
                       value={
-                        currentReminderTotal > 0 ? `${currentReminderTotal} / mes` : "No incluidos"
-                      }
-                    />
-                    <SummaryLine
-                      label="Respuestas WhatsApp"
-                      value={
-                        selectedPlan.includedWhatsappResponseConversations > 0
-                          ? `${selectedPlan.includedWhatsappResponseConversations} / mes`
-                          : "No incluidas"
+                        currentReminderTotal > 0
+                          ? `${currentReminderTotal.toLocaleString("es-CL")} msgs / mes`
+                          : "No incluidos"
                       }
                     />
                     <SummaryLine
                       label="Campanas WhatsApp"
                       value={
                         currentCampaignTotal > 0
-                          ? `${currentCampaignTotal} conversaciones`
+                          ? `${currentCampaignTotal.toLocaleString("es-CL")} msgs / mes`
                           : supportsCampaignExtra
                           ? "Disponible como adicional"
                           : "No incluidas"
+                      }
+                    />
+                    <SummaryLine
+                      label="IA WhatsApp"
+                      value={
+                        currentAiTotal > 0
+                          ? `${currentAiTotal.toLocaleString("es-CL")} conversaciones / mes`
+                          : supportsAiExtra
+                          ? "Disponible como adicional"
+                          : "No incluida"
                       }
                     />
                   </div>
@@ -1461,10 +1774,103 @@ function PlanesPageContent() {
                   </div>
                 ) : null}
               </div>
+              </div>
             </div>
           </aside>
         </div>
       </section>
+
+      {downgradeModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-amber-300/25 bg-[#06101d] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.5)] sm:rounded-2xl">
+            <h3 className="text-lg font-semibold text-white">
+              Confirmar downgrade a {selectedPlan.name}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              El cambio sera efectivo el{" "}
+              <span className="font-semibold text-amber-200">{billingEndLabel}</span>.
+              Mantendras tu plan actual hasta esa fecha.
+            </p>
+
+            {(() => {
+              const currentPlanData = plans.find((plan) => plan.key === initialPlan);
+              if (!currentPlanData) return null;
+
+              const { featuresLost, addonsCanceled } = getDowngradeDetails(
+                currentPlanData,
+                selectedPlan
+              );
+
+              return (
+                <>
+                  {featuresLost.length > 0 ? (
+                    <div className="mt-4">
+                      <p className="text-sm font-semibold text-white">
+                        Features que perderas
+                      </p>
+                      <ul className="mt-2 space-y-1.5">
+                        {featuresLost.map((item) => (
+                          <li
+                            key={item}
+                            className="flex items-start gap-2 text-sm leading-5 text-slate-300"
+                          >
+                            <Minus className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {addonsCanceled.length > 0 ? (
+                    <div className="mt-4">
+                      <p className="text-sm font-semibold text-white">
+                        Add-ons que se cancelaran
+                      </p>
+                      <ul className="mt-2 space-y-1.5">
+                        {addonsCanceled.map((item) => (
+                          <li
+                            key={item}
+                            className="flex items-start gap-2 text-sm leading-5 text-slate-300"
+                          >
+                            <Minus className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Te notificaremos por email con el detalle de los add-ons
+                        cancelados.
+                      </p>
+                    </div>
+                  ) : null}
+                </>
+              );
+            })()}
+
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setDowngradeModalOpen(false)}
+                className="inline-flex h-11 items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/8"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={applying}
+                onClick={async () => {
+                  setDowngradeModalOpen(false);
+                  await applyPlanChange();
+                }}
+                className="inline-flex h-11 items-center justify-center rounded-lg bg-amber-400 px-5 text-sm font-black text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Confirmar downgrade
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

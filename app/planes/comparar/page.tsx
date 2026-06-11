@@ -37,7 +37,7 @@ const plans: Plan[] = [
   {
     key: "pro",
     name: "Pro",
-    priceLabel: "$19.990",
+    priceLabel: "$12.990",
     subtitle: "Ordena tu negocio y empieza a reservar online",
     icon: "mail",
     accentClass: "text-sky-300",
@@ -57,7 +57,7 @@ const plans: Plan[] = [
   {
     key: "vip",
     name: "VIP",
-    priceLabel: "$79.990",
+    priceLabel: "$54.990",
     subtitle: "Activa clientes y responde más rápido por WhatsApp",
     icon: "crown",
     accentClass: "text-amber-300",
@@ -68,7 +68,7 @@ const plans: Plan[] = [
   {
     key: "platinum",
     name: "Platinum",
-    priceLabel: "$189.990",
+    priceLabel: "$149.990",
     subtitle: "Automatiza tu negocio y convierte más reservas",
     icon: "gem",
     accentClass: "text-emerald-300",
@@ -95,7 +95,7 @@ const comparisonRows: ComparisonRow[] = [
       pro: "2",
       premium: "5",
       vip: "10",
-      platinum: "20",
+      platinum: "25",
     },
     info: "Cantidad base de profesionales o staff que puedes registrar en el plan.",
   },
@@ -162,7 +162,7 @@ const comparisonRows: ComparisonRow[] = [
   {
     label: "Recordatorios por email",
     values: {
-      pro: "—",
+      pro: "Sí",
       premium: "Sí",
       vip: "Sí",
       platinum: "Sí",
@@ -172,10 +172,10 @@ const comparisonRows: ComparisonRow[] = [
   {
     label: "Campañas por email",
     values: {
-      pro: "—",
-      premium: "—",
-      vip: "Incluidas",
-      platinum: "Incluidas",
+      pro: "200 / mes",
+      premium: "1.000 / mes",
+      vip: "2.000 / mes",
+      platinum: "5.000 / mes",
     },
     info: "Mensajes masivos por correo para activar, recuperar o promocionar a tu base de clientes.",
     highlight: true,
@@ -184,30 +184,20 @@ const comparisonRows: ComparisonRow[] = [
     label: "Recordatorios por WhatsApp",
     values: {
       pro: "—",
-      premium: "—",
-      vip: "200 / mes",
-      platinum: "800 / mes",
+      premium: "100 msgs / mes",
+      vip: "200 msgs / mes",
+      platinum: "400 msgs / mes",
     },
     info: "Capacidad mensual incluida para reducir ausencias desde un canal mucho más directo.",
     highlight: true,
-  },
-  {
-    label: "Respuestas por WhatsApp",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "200 / mes",
-      platinum: "800 / mes",
-    },
-    info: "Capacidad mensual incluida para mantener conversaciones activas con tus clientes.",
   },
   {
     label: "IA integrada en WhatsApp",
     values: {
       pro: "—",
       premium: "—",
-      vip: "Responde y deriva a reserva",
-      platinum: "Responde, sigue y automatiza",
+      vip: "500 conversaciones / mes",
+      platinum: "1.500 conversaciones / mes",
     },
     info: "En VIP la IA responde consultas y deriva a tu página de reservas. En Platinum además hace seguimiento y automatiza mejor la atención.",
     highlight: true,
@@ -220,7 +210,7 @@ const comparisonRows: ComparisonRow[] = [
       vip: "Disponible como adicional",
       platinum: "Disponible como adicional",
     },
-    info: "No vienen incluidas. Valor: $9.000 + iva por bloque. No acumulables y uso dentro del mes.",
+    info: "No vienen incluidas. Valor: $9.900 + iva por pack de 100 mensajes. No acumulables y uso dentro del mes.",
   },
   {
     label: "Automatizaciones avanzadas",
@@ -462,8 +452,8 @@ export default function CompararPlanesPage() {
               </p>
               <p className="mt-2 text-sm leading-6 text-amber-50/90">
                 Las campañas por WhatsApp se contratan como adicional.
-                Su valor es <span className="font-semibold">$9.000 + iva</span> por bloque.
-                Los bloques mensuales incluidos y adicionales no son acumulables y deben usarse dentro del mes.
+                Su valor es <span className="font-semibold">$9.900 + iva</span> por pack de 100 mensajes.
+                Los packs mensuales incluidos y adicionales no son acumulables y deben usarse dentro del mes.
               </p>
             </div>
           </div>
