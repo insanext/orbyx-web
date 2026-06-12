@@ -152,7 +152,7 @@ export default function OrbyxLandingPage() {
                 Iniciar sesión
               </Link>
               <Link
-                href="/register"
+                href="/signup?plan=pro"
                 className="hidden h-10 items-center justify-center rounded-lg bg-[#28e6b0] px-5 text-sm font-bold text-slate-950 shadow-[0_18px_40px_rgba(45,212,191,0.22)] transition hover:-translate-y-0.5 hover:bg-[#42f0bf] sm:inline-flex sm:h-12"
               >
                 Probar gratis
@@ -184,7 +184,7 @@ export default function OrbyxLandingPage() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/register"
+                  href="/signup?plan=pro"
                   className="inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-[#28e6b0] px-7 text-base font-bold text-slate-950 shadow-[0_18px_45px_rgba(45,212,191,0.26)] transition hover:-translate-y-0.5 hover:bg-[#48f0bf]"
                 >
                   Probar gratis 7 días
@@ -557,7 +557,7 @@ export default function OrbyxLandingPage() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/register"
+                  href="/signup?plan=pro"
                   className="inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-[#28e6b0] px-8 text-base font-bold text-slate-950 shadow-[0_18px_45px_rgba(45,212,191,0.26)] transition hover:-translate-y-0.5 hover:bg-[#48f0bf]"
                 >
                   Probar gratis 7 días

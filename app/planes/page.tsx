@@ -889,8 +889,8 @@ function PlanesPageContent() {
       : "Cambiar ahora";
 
   const publicCtaHref = isProSelected
-    ? "/register?plan=pro"
-    : `/register?plan=${selectedPlanKey}`;
+    ? "/signup?plan=pro"
+    : `/signup?plan=${selectedPlanKey}`;
 
   const showTenantWarning = !tenantId && Boolean(from || slug);
 
@@ -1091,7 +1091,7 @@ function PlanesPageContent() {
               Iniciar sesion
             </Link>
             <Link
-              href="/register?plan=pro"
+              href="/signup?plan=pro"
               className="inline-flex h-9 items-center justify-center rounded-lg bg-[#21d6c5] px-3 text-xs font-bold text-slate-950 shadow-[0_14px_38px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] lg:px-4 lg:text-sm"
             >
               Probar gratis
