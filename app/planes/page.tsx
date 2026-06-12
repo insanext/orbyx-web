@@ -1216,23 +1216,18 @@ function PlanesPageContent() {
 
                       {billingCycle !== "mensual" ? (
                         <p className="mt-3 text-sm font-semibold text-slate-500 line-through">
-                          {formatCLP(plan.price)}
+                          {formatCLP(plan.price * billingCycleConfig[billingCycle].months)}
                         </p>
                       ) : null}
 
                       <div className={`${billingCycle !== "mensual" ? "mt-1" : "mt-3"} flex items-end gap-1`}>
                         <span className="text-2xl font-semibold leading-none tracking-tight text-white sm:text-[1.75rem]">
-                          {formatCLP(cycleMonthlyPrice(plan.price, billingCycle))}
+                          {formatCLP(cycleTotalPrice(plan.price, billingCycle))}
                         </span>
-                        <span className="pb-1 text-sm text-slate-400">{plan.ivaLabel}</span>
+                        <span className="pb-1 text-sm text-slate-400">
+                          {billingCycle === "mensual" ? plan.ivaLabel : "+ IVA"}
+                        </span>
                       </div>
-
-                      {billingCycle !== "mensual" ? (
-                        <p className="mt-1 text-xs text-slate-400">
-                          {billingCycleConfig[billingCycle].note}:{" "}
-                          {formatCLP(cycleTotalPrice(plan.price, billingCycle))} + IVA
-                        </p>
-                      ) : null}
 
                       <div
                         className={`mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg border px-4 text-sm font-bold transition ${
