@@ -5,7 +5,6 @@ import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
   BarChart3,
   Bot,
   CalendarDays,
@@ -153,7 +152,7 @@ const plans: Plan[] = [
       { title: "5 profesionales incluidos" },
       { title: "2 sucursales incluidas" },
       { title: "Campanas email 1.000/mes" },
-      { title: "WA recordatorios 100 msgs/mes" },
+      { title: "Recordatorios WA 100 msgs/mes" },
       { title: "Modo veterinario (fichas clinicas y mascotas)" },
       { title: "Reservas grupales (fitness, clases, talleres)" },
       { title: "Soporte email + chat" },
@@ -189,7 +188,7 @@ const plans: Plan[] = [
       { title: "10 profesionales incluidos" },
       { title: "3 sucursales incluidas" },
       { title: "Campanas email 2.000/mes" },
-      { title: "WA recordatorios 200 msgs/mes" },
+      { title: "Recordatorios WA 200 msgs/mes" },
       { title: "IA WhatsApp 500 conversaciones/mes", highlight: true },
       { title: "Soporte prioritario 24/7" },
     ],
@@ -224,7 +223,7 @@ const plans: Plan[] = [
       { title: "25 profesionales incluidos" },
       { title: "10 sucursales incluidas" },
       { title: "Campanas email 5.000/mes" },
-      { title: "WA recordatorios 400 msgs/mes" },
+      { title: "Recordatorios WA 400 msgs/mes" },
       { title: "IA WhatsApp 1.500 conversaciones/mes", highlight: true },
       { title: "Automatizaciones avanzadas" },
       { title: "Onboarding personalizado" },
@@ -882,7 +881,7 @@ function PlanesPageContent() {
     !hasBillingContext
       ? isProSelected
         ? "Probar gratis 14 dias"
-        : "Solicitar demo"
+        : "Comenzar ahora"
       : previewType === "same_plan"
       ? "Mantener este plan"
       : previewType === "downgrade"
@@ -891,7 +890,7 @@ function PlanesPageContent() {
 
   const publicCtaHref = isProSelected
     ? "/register?plan=pro"
-    : `/register?plan=${selectedPlanKey}&intent=demo`;
+    : `/register?plan=${selectedPlanKey}`;
 
   const showTenantWarning = !tenantId && Boolean(from || slug);
 
@@ -1215,7 +1214,13 @@ function PlanesPageContent() {
                         {plan.subtitle}
                       </p>
 
-                      <div className="mt-3 flex items-end gap-1">
+                      {billingCycle !== "mensual" ? (
+                        <p className="mt-3 text-sm font-semibold text-slate-500 line-through">
+                          {formatCLP(plan.price)}
+                        </p>
+                      ) : null}
+
+                      <div className={`${billingCycle !== "mensual" ? "mt-1" : "mt-3"} flex items-end gap-1`}>
                         <span className="text-2xl font-semibold leading-none tracking-tight text-white sm:text-[1.75rem]">
                           {formatCLP(cycleMonthlyPrice(plan.price, billingCycle))}
                         </span>
@@ -1240,7 +1245,7 @@ function PlanesPageContent() {
                           ? "Plan seleccionado"
                           : plan.key === "pro"
                           ? "Probar gratis 14 dias"
-                          : "Solicitar demo"}
+                          : "Comenzar ahora"}
                       </div>
 
                       <div className="mt-4 space-y-2.5 pb-1">
@@ -1268,71 +1273,17 @@ function PlanesPageContent() {
               })}
             </div>
 
-            <section className="mt-5 rounded-[18px] border border-white/12 bg-white/[0.035] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-white">
-                    Potencia tu plan con <span className="text-[#24e0d0]">add-ons</span>
-                  </h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-300">
-                    Agrega extras cuando quieras y escala tu negocio sin limites.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Link
-                    href="/planes/comparar"
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Comparar planes
-                  </Link>
-                  <button
-                    type="button"
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
-                  >
-                    <Megaphone className="h-4 w-4" />
-                    Ver todos los add-ons
-                    <ArrowRight className="h-4 w-4 text-cyan-300" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {(["staff", "branches", "reminders", "campaigns", "ai"] as ExtraKey[]).map(
-                  (extraKey) => {
-                    const config = extraConfig[extraKey];
-
-                    return (
-                      <div
-                        key={extraKey}
-                        className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-4"
-                      >
-                        <div className={`absolute inset-0 -z-10 bg-gradient-to-br ${config.glow}`} />
-                        <div className="flex items-start gap-3">
-                          <span
-                            className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${config.iconClass}`}
-                          >
-                            {config.icon}
-                          </span>
-                          <div>
-                            <p className="text-sm font-semibold text-white">{config.title}</p>
-                            <p className="mt-1 text-sm leading-5 text-slate-300">
-                              {config.usageLabel}
-                            </p>
-                            <p className="mt-1 text-sm font-semibold text-cyan-200">
-                              {formatCLP(config.unitPrice)} /mes
-                            </p>
-                            <p className="mt-0.5 text-xs text-slate-400">
-                              Disponible desde {config.availableFrom}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-                )}
-              </div>
+            <section className="mt-5 flex flex-col items-center gap-3">
+              <p className="text-center text-sm text-slate-400">
+                Potencia tu plan con add-ons desde el panel lateral →
+              </p>
+              <Link
+                href="/planes/comparar"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Comparar planes
+              </Link>
             </section>
 
             <div className="mt-5 grid gap-3 rounded-[16px] border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-300 md:grid-cols-2 xl:grid-cols-4">
