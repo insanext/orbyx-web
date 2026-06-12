@@ -457,6 +457,15 @@ function PlanesPageContent() {
   const [downgradeChecking, setDowngradeChecking] = useState(false);
   const [downgradeBlockError, setDowngradeBlockError] = useState("");
 
+  // Add-ons reales del backend (solo con tenant_id; la página pública usa estado local)
+  const [serverAddonAvailability, setServerAddonAvailability] = useState<Record<
+    string,
+    boolean
+  > | null>(null);
+  const [addonsLoading, setAddonsLoading] = useState(false);
+  const [addonBusy, setAddonBusy] = useState<ExtraKey | null>(null);
+  const [addonError, setAddonError] = useState("");
+
   useEffect(() => {
     if (hasBillingContext && initialPlan) {
       setSelectedPlanKey(initialPlan);
@@ -624,6 +633,70 @@ function PlanesPageContent() {
     loadPreview();
   }, [hasBillingContext, initialPlan, tenantId, selectedPlanKey]);
 
+  function setExtraCount(extraKey: ExtraKey, value: number) {
+    if (extraKey === "staff") setStaffExtras(value);
+    else if (extraKey === "reminders") setReminderExtras(value);
+    else if (extraKey === "campaigns") setCampaignExtras(value);
+    else if (extraKey === "ai") setAiExtras(value);
+    else setBranchExtras(value);
+  }
+
+  // Carga catálogo (flags available según el plan real del tenant) y
+  // add-ons activos; inicializa los contadores del panel con lo contratado.
+  async function refreshAddons() {
+    if (!tenantId) return;
+
+    try {
+      setAddonsLoading(true);
+      setAddonError("");
+
+      const res = await fetch(
+        `${BACKEND_URL}/billing/addons?tenant_id=${encodeURIComponent(
+          tenantId
+        )}&plan=${encodeURIComponent(selectedPlanKey)}`
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudieron cargar los add-ons");
+      }
+
+      const availability: Record<string, boolean> = {};
+      (data?.addons || []).forEach(
+        (addon: { key?: string; available?: boolean }) => {
+          if (addon?.key) availability[addon.key] = addon.available !== false;
+        }
+      );
+
+      const counts: Record<string, number> = {};
+      (data?.active_addons || []).forEach(
+        (row: { addon_key?: string; quantity?: number }) => {
+          if (row?.addon_key) counts[row.addon_key] = Number(row.quantity) || 0;
+        }
+      );
+
+      setServerAddonAvailability(availability);
+      setStaffExtras(counts.staff || 0);
+      setBranchExtras(counts.branches || 0);
+      setReminderExtras(counts.reminders || 0);
+      setCampaignExtras(counts.campaigns || 0);
+      setAiExtras(counts.ai || 0);
+    } catch (error: unknown) {
+      setAddonError(
+        error instanceof Error
+          ? error.message
+          : "No se pudieron cargar los add-ons"
+      );
+    } finally {
+      setAddonsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    refreshAddons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId, selectedPlanKey]);
+
   function handleSelectPlan(planKey: PlanKey) {
     setSelectedPlanKey(planKey);
     setStaffExtras(0);
@@ -633,43 +706,122 @@ function PlanesPageContent() {
     setAiExtras(0);
     setApplyError("");
     setApplyOk("");
+    setAddonError("");
     setDowngradeBlockError("");
     setDowngradeModalOpen(false);
   }
 
-  function increaseExtra(extraKey: ExtraKey) {
-    if (extraKey === "staff" && supportsStaffExtra) {
-      setStaffExtras((prev) => prev + 1);
+  // Con tenant_id los botones +/− contratan/cancelan contra el backend.
+  // Sin tenant_id (página pública) solo actualizan estado local, como antes.
+  async function increaseExtra(extraKey: ExtraKey) {
+    if (!selectedPlan.extras.includes(extraKey)) return;
+
+    if (!tenantId) {
+      setExtraCount(extraKey, extraValue(extraKey) + 1);
+      return;
     }
-    if (extraKey === "reminders" && supportsReminderExtra) {
-      setReminderExtras((prev) => prev + 1);
-    }
-    if (extraKey === "campaigns" && supportsCampaignExtra) {
-      setCampaignExtras((prev) => prev + 1);
-    }
-    if (extraKey === "branches" && supportsBranchExtra) {
-      setBranchExtras((prev) => prev + 1);
-    }
-    if (extraKey === "ai" && supportsAiExtra) {
-      setAiExtras((prev) => prev + 1);
+
+    if (addonBusy) return;
+
+    setAddonBusy(extraKey);
+    setAddonError("");
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/billing/addons/activate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          addon_key: extraKey,
+          quantity: 1,
+          billing_cycle: billingCycle,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 403 && data?.upgrade_required) {
+          throw new Error("Este add-on requiere un plan superior");
+        }
+        throw new Error(data?.error || "No se pudo activar el add-on");
+      }
+
+      const newQty = Number(data?.addon?.quantity) || extraValue(extraKey) + 1;
+      setExtraCount(extraKey, newQty);
+    } catch (error: unknown) {
+      setAddonError(
+        error instanceof Error ? error.message : "No se pudo activar el add-on"
+      );
+    } finally {
+      setAddonBusy(null);
     }
   }
 
-  function decreaseExtra(extraKey: ExtraKey) {
-    if (extraKey === "staff" && supportsStaffExtra) {
-      setStaffExtras((prev) => Math.max(0, prev - 1));
+  async function decreaseExtra(extraKey: ExtraKey) {
+    if (!selectedPlan.extras.includes(extraKey)) return;
+
+    const current = extraValue(extraKey);
+    if (current === 0) return;
+
+    if (!tenantId) {
+      setExtraCount(extraKey, current - 1);
+      return;
     }
-    if (extraKey === "reminders" && supportsReminderExtra) {
-      setReminderExtras((prev) => Math.max(0, prev - 1));
-    }
-    if (extraKey === "campaigns" && supportsCampaignExtra) {
-      setCampaignExtras((prev) => Math.max(0, prev - 1));
-    }
-    if (extraKey === "branches" && supportsBranchExtra) {
-      setBranchExtras((prev) => Math.max(0, prev - 1));
-    }
-    if (extraKey === "ai" && supportsAiExtra) {
-      setAiExtras((prev) => Math.max(0, prev - 1));
+
+    if (addonBusy) return;
+
+    setAddonBusy(extraKey);
+    setAddonError("");
+
+    const newQty = current - 1;
+
+    try {
+      const cancelRes = await fetch(`${BACKEND_URL}/billing/addons/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId, addon_key: extraKey }),
+      });
+      const cancelData = await cancelRes.json();
+
+      if (!cancelRes.ok && cancelRes.status !== 404) {
+        throw new Error(cancelData?.error || "No se pudo cancelar el add-on");
+      }
+
+      if (newQty > 0) {
+        // El backend no tiene decremento atómico: se cancela el addon y se
+        // reactiva con la cantidad restante.
+        const reactivateRes = await fetch(
+          `${BACKEND_URL}/billing/addons/activate`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tenant_id: tenantId,
+              addon_key: extraKey,
+              quantity: newQty,
+              billing_cycle: billingCycle,
+            }),
+          }
+        );
+        const reactivateData = await reactivateRes.json();
+
+        if (!reactivateRes.ok) {
+          // Re-sincronizar con el backend antes de reportar el error
+          await refreshAddons();
+          throw new Error(
+            reactivateData?.error ||
+              "No se pudo actualizar la cantidad del add-on"
+          );
+        }
+      }
+
+      setExtraCount(extraKey, newQty);
+    } catch (error: unknown) {
+      setAddonError(
+        error instanceof Error ? error.message : "No se pudo cancelar el add-on"
+      );
+    } finally {
+      setAddonBusy(null);
     }
   }
 
@@ -850,6 +1002,8 @@ function PlanesPageContent() {
         setApplyOk(
           `Upgrade aplicado. Pagar hoy: ${formatCLP(Number(data?.amount_today || 0))}.`
         );
+        // El plan real cambió: refrescar disponibilidad y add-ons activos
+        await refreshAddons();
       } else if (data?.change_type === "downgrade") {
         const dateText = formatDate(data?.tenant?.scheduled_change_at);
         setApplyOk(`Downgrade programado correctamente para el ${dateText}.`);
@@ -937,7 +1091,17 @@ function PlanesPageContent() {
   }
 
   function extraSupported(extraKey: ExtraKey) {
-    return selectedPlan.extras.includes(extraKey);
+    const supportedBySelectedPlan = selectedPlan.extras.includes(extraKey);
+
+    // Con tenant_id manda además la disponibilidad real (plan vigente del tenant)
+    if (tenantId && serverAddonAvailability) {
+      return (
+        supportedBySelectedPlan &&
+        serverAddonAvailability[extraKey] !== false
+      );
+    }
+
+    return supportedBySelectedPlan;
   }
 
   function extraUnitLabel(extraKey: ExtraKey, count: number) {
@@ -1446,9 +1610,17 @@ function PlanesPageContent() {
                     </span>
                   </div>
 
+                  {addonError ? (
+                    <div className="mb-3 rounded-xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                      {addonError}
+                    </div>
+                  ) : null}
+
                   {extraItems.length === 0 ? (
                     <div className="rounded-xl border border-white/8 bg-white/[0.035] px-4 py-3 text-sm text-slate-400">
-                      Aun no has agregado adicionales.
+                      {addonsLoading
+                        ? "Cargando add-ons..."
+                        : "Aun no has agregado adicionales."}
                     </div>
                   ) : (
                     <div className="space-y-2.5">
@@ -1490,18 +1662,20 @@ function PlanesPageContent() {
                                   <button
                                     type="button"
                                     onClick={() => decreaseExtra(item.key)}
-                                    className="inline-flex h-11 w-11 items-center justify-center text-slate-200 transition hover:bg-white/8 md:h-8 md:w-8"
+                                    disabled={addonBusy !== null}
+                                    className="inline-flex h-11 w-11 items-center justify-center text-slate-200 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-40 md:h-8 md:w-8"
                                     aria-label={`Quitar ${extraConfig[item.key].title}`}
                                   >
                                     <Minus className="h-4 w-4" />
                                   </button>
                                   <span className="min-w-8 text-center text-sm font-semibold text-white">
-                                    {item.count}
+                                    {addonBusy === item.key ? "…" : item.count}
                                   </span>
                                   <button
                                     type="button"
                                     onClick={() => increaseExtra(item.key)}
-                                    className="inline-flex h-11 w-11 items-center justify-center text-slate-200 transition hover:bg-white/8 md:h-8 md:w-8"
+                                    disabled={addonBusy !== null}
+                                    className="inline-flex h-11 w-11 items-center justify-center text-slate-200 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-40 md:h-8 md:w-8"
                                     aria-label={`Agregar ${extraConfig[item.key].title}`}
                                   >
                                     +
@@ -1529,7 +1703,8 @@ function PlanesPageContent() {
                               key={extraKey}
                               type="button"
                               onClick={() => increaseExtra(extraKey)}
-                              className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.025] px-3 py-2 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/8"
+                              disabled={addonBusy !== null || addonsLoading}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.025] px-3 py-2 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/8 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               <span className="flex items-center gap-2">
                                 <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${config.iconClass}`}>
