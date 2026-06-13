@@ -266,9 +266,9 @@ const comparisonRows: ComparisonRow[] = [
     label: "Soporte",
     values: {
       pro: "Email",
-      premium: "Email + Chat",
+      premium: "Email",
       vip: "Prioritario",
-      platinum: "Dedicado + SLA",
+      platinum: "Prioritario + SLA",
     },
     info: "Nivel de soporte incluido en el plan.",
   },

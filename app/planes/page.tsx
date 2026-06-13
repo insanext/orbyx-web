@@ -42,6 +42,7 @@ type FeatureItem = {
   description?: string;
   highlight?: boolean;
   locked?: boolean;
+  trialLocked?: boolean;
 };
 
 type Plan = {
@@ -113,7 +114,7 @@ const plans: Plan[] = [
     subtitle: "Pequeno negocio con agenda profesional",
     benefit:
       "Agenda online, reservas y una base clara para ordenar la operacion diaria.",
-    badge: "14 dias gratis",
+    badge: "PRUEBA 14 DÍAS",
     includedBranches: 1,
     includedStaff: 2,
     includedServices: 10,
@@ -134,8 +135,8 @@ const plans: Plan[] = [
       { title: "Campanas email 200/mes" },
       { title: "Google Calendar sync" },
       { title: "Soporte por email" },
-      { title: "Trial 14 dias gratis", highlight: true },
-      { title: "Recordatorios WhatsApp 100/mes (se activa al pagar el plan)", locked: true },
+      { title: "Versión de prueba 14 días gratis", highlight: true },
+      { title: "Recordatorios WhatsApp 100/mes", trialLocked: true },
     ],
     icon: "mail",
     accentClass: "text-violet-300",
@@ -1484,30 +1485,41 @@ function PlanesPageContent() {
                       </div>
 
                       <div className="mt-4 space-y-2.5 pb-1">
-                        {plan.features.map((feature) => (
-                          <div key={`${plan.key}-${feature.title}`} className="flex items-start gap-3">
-                            {feature.locked ? (
-                              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-                            ) : (
-                              <Check
-                                className={`mt-0.5 h-4 w-4 shrink-0 ${
-                                  feature.highlight ? "text-cyan-300" : plan.accentClass
+                        {plan.features.map((feature) => {
+                          const isEffectiveLocked =
+                            feature.locked || (feature.trialLocked && isTrial);
+                          return (
+                            <div key={`${plan.key}-${feature.title}`} className="flex items-start gap-3">
+                              {isEffectiveLocked ? (
+                                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                              ) : (
+                                <Check
+                                  className={`mt-0.5 h-4 w-4 shrink-0 ${
+                                    feature.highlight ? "text-cyan-300" : plan.accentClass
+                                  }`}
+                                />
+                              )}
+                              <span
+                                className={`text-[13px] leading-5 ${
+                                  isEffectiveLocked
+                                    ? "text-slate-500"
+                                    : feature.highlight
+                                    ? "font-semibold text-cyan-100"
+                                    : "text-slate-300"
                                 }`}
-                              />
-                            )}
-                            <span
-                              className={`text-[13px] leading-5 ${
-                                feature.locked
-                                  ? "text-slate-500"
-                                  : feature.highlight
-                                  ? "font-semibold text-cyan-100"
-                                  : "text-slate-300"
-                              }`}
-                            >
-                              {feature.title}
-                            </span>
-                          </div>
-                        ))}
+                              >
+                                {feature.title}
+                                {feature.trialLocked && (
+                                  <span className="mt-0.5 block text-[11px] text-slate-500">
+                                    {isTrial
+                                      ? "No incluido en versión de prueba"
+                                      : "Se activa al pagar el plan"}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                     </div>
@@ -1531,7 +1543,7 @@ function PlanesPageContent() {
 
             <div className="mt-5 grid gap-3 rounded-[16px] border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-300 md:grid-cols-2 xl:grid-cols-4">
               {[
-                ["14 dias gratis en Pro", "Prueba sin riesgos.", CalendarDays],
+                ["Versión de prueba 14 días en Pro", "Prueba sin riesgos.", CalendarDays],
                 ["Sin tarjeta de credito", "Comienza en segundos.", Lock],
                 ["Cambia cuando quieras", "Upgrade, downgrade o cancela.", Zap],
                 ["Siempre seguro", "Tus datos estan protegidos.", ShieldCheck],
@@ -1896,7 +1908,7 @@ function PlanesPageContent() {
                   <p className="flex items-center justify-center gap-2 text-center text-xs text-slate-400">
                     <Lock className="h-3.5 w-3.5 text-cyan-300" />
                     {!hasBillingContext && isProSelected
-                      ? "14 dias gratis, sin tarjeta de credito. Cancela cuando quieras."
+                      ? "Versión de prueba 14 días, sin tarjeta de crédito. Cancela cuando quieras."
                       : "Cancela o cambia de plan cuando quieras."}
                   </p>
 
