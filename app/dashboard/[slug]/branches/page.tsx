@@ -1106,18 +1106,18 @@ export default function BranchesPage() {
             </div>
 
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="min-w-[130px] border-l pl-4" style={{ borderColor: "var(--border-color)" }}>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Total sucursales</p>
-                  <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text-main)" }}>{branches.length}</p>
+              <div className="grid gap-2 sm:grid-cols-3 items-stretch">
+                <div className="rounded-lg border px-3 py-2.5 flex flex-col gap-1" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Total sucursales</p>
+                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{branches.length}</p>
                 </div>
-                <div className="min-w-[160px] border-l pl-4" style={{ borderColor: "var(--border-color)" }}>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Disponibles según plan</p>
-                  <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text-main)" }}>{Math.max(maxBranches - activeBranchesCount, 0)} de {maxBranches}</p>
+                <div className="rounded-lg border px-3 py-2.5 flex flex-col gap-1" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Disponibles en plan</p>
+                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{Math.max(maxBranches - activeBranchesCount, 0)} de {maxBranches}</p>
                 </div>
-                <div className="min-w-[150px] border-l pl-4" style={{ borderColor: "var(--border-color)" }}>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Plan actual</p>
-                  <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text-main)" }}>{planLabel} - {activeBranchesCount}/{maxBranches}</p>
+                <div className="rounded-lg border px-3 py-2.5 flex flex-col gap-1" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Plan actual</p>
+                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{planLabel} · {activeBranchesCount}/{maxBranches}</p>
                 </div>
               </div>
 

@@ -1865,22 +1865,22 @@ function validateStaffHours() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 items-stretch">
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
               style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(59,130,246,0.20)",
+                background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Total staff
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : staff.length}
@@ -1888,20 +1888,20 @@ function validateStaffHours() {
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
               style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(59,130,246,0.20)",
+                background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Activos
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : activeCount}
@@ -1909,20 +1909,20 @@ function validateStaffHours() {
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
               style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(59,130,246,0.20)",
+                background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
-                Usan horario negocio
+                Horario negocio
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : usingBusinessHoursCount}
@@ -1930,20 +1930,20 @@ function validateStaffHours() {
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
               style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(59,130,246,0.20)",
+                background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Límite del plan
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : `${activeCount}/${caps.max_staff}`}

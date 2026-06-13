@@ -1063,23 +1063,22 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 items-stretch">
             <div
-              className="orbyx-services-hero-stat rounded-xl border px-3 py-2"
-
+              className="orbyx-services-hero-stat rounded-lg border px-3 py-2.5 flex flex-col gap-1"
               style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(59,130,246,0.20)",
+                background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Total servicios
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : services.length}
@@ -1087,20 +1086,20 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
             </div>
 
             <div
-              className="orbyx-services-hero-stat rounded-xl border px-3 py-2"
+              className="orbyx-services-hero-stat rounded-lg border px-3 py-2.5 flex flex-col gap-1"
               style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(59,130,246,0.20)",
+                background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Activos
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : activeServicesCount}
@@ -1108,20 +1107,20 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
             </div>
 
             <div
-              className="orbyx-services-hero-stat rounded-2xl border px-3 py-2"
+              className="orbyx-services-hero-stat rounded-lg border px-3 py-2.5 flex flex-col gap-1"
               style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(59,130,246,0.20)",
+                background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Con descripción
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : servicesWithDescriptionCount}
@@ -1129,20 +1128,20 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
             </div>
 
             <div
-              className="orbyx-services-hero-stat rounded-2xl border px-3 py-2"
+              className="orbyx-services-hero-stat rounded-lg border px-3 py-2.5 flex flex-col gap-1"
               style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(59,130,246,0.20)",
+                background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Límite del plan
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : `${activeServicesCount}/${maxServices}`}

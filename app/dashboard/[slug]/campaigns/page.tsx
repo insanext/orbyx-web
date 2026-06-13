@@ -2219,6 +2219,17 @@ export default function CampaignsPage() {
     return "Envíos realizados";
   }, [filteredHistory]);
 
+  const currentMonthSent = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    return history
+      .filter((h) => {
+        const d = new Date(h.created_at);
+        return d.getFullYear() === y && d.getMonth() === m && h.channel === channel;
+      })
+      .reduce((sum, h) => sum + Number(h.sent_count || 0), 0);
+  }, [history, channel]);
+
   const selectedSegmentLabel =
     SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Segmento";
 
@@ -2756,30 +2767,72 @@ export default function CampaignsPage() {
           background: "var(--bg-card)",
         }}
       >
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-stretch gap-2">
           <div
-            className="rounded-xl border px-3 py-1.5"
+            className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
             style={{
-              borderColor: "rgba(148,163,184,0.18)",
-              background: "var(--bg-soft)",
+              borderColor: "rgba(59,130,246,0.20)",
+              background: "rgba(255,255,255,0.06)",
             }}
           >
             <p
-              className="text-[10px] font-semibold uppercase tracking-[0.12em]"
+              className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
               style={{ color: "var(--text-muted)" }}
             >
               {channelLimitInfo.title}
             </p>
             <p
-              className="text-sm font-semibold"
+              className="text-sm font-bold mt-0.5"
               style={{ color: "var(--text-main)" }}
             >
               {channelLimitInfo.value}
             </p>
           </div>
 
+          <div
+            className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+            style={{
+              borderColor: "rgba(59,130,246,0.20)",
+              background: "rgba(255,255,255,0.06)",
+            }}
+          >
+            <p
+              className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Enviados este mes
+            </p>
+            <p
+              className="text-sm font-bold mt-0.5"
+              style={{ color: "var(--text-main)" }}
+            >
+              {currentMonthSent}
+            </p>
+          </div>
+
+          <div
+            className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+            style={{
+              borderColor: "rgba(59,130,246,0.20)",
+              background: "rgba(255,255,255,0.06)",
+            }}
+          >
+            <p
+              className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Saldo disponible
+            </p>
+            <p
+              className="text-sm font-bold mt-0.5"
+              style={{ color: "var(--text-main)" }}
+            >
+              {Math.max(0, channelLimitInfo.limit - currentMonthSent)}
+            </p>
+          </div>
+
           {!loadingAudience && audienceStats.totalVisible > 0 && (
-            <div className="flex items-center gap-2 px-1 flex-wrap">
+            <div className="flex items-center gap-2 px-1 flex-wrap self-center">
               <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Audiencia:</span>
               <span className="text-[11px] font-semibold" style={{ color: "var(--text-main)" }}>{audienceStats.totalVisible} contactos</span>
               <span className="text-[11px] font-medium text-emerald-500">✓ {audienceStats.included} incluidos</span>
