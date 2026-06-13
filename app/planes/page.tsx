@@ -41,6 +41,7 @@ type FeatureItem = {
   title: string;
   description?: string;
   highlight?: boolean;
+  locked?: boolean;
 };
 
 type Plan = {
@@ -95,6 +96,7 @@ type ExtraConfig = {
   unitLabel: string;
   usageLabel: string;
   availableFrom: string;
+  tooltip: string;
   icon: ReactNode;
   glow: string;
   iconClass: string;
@@ -133,6 +135,7 @@ const plans: Plan[] = [
       { title: "Google Calendar sync" },
       { title: "Soporte por email" },
       { title: "Trial 14 dias gratis", highlight: true },
+      { title: "Recordatorios WhatsApp 100/mes (se activa al pagar el plan)", locked: true },
     ],
     icon: "mail",
     accentClass: "text-violet-300",
@@ -165,9 +168,9 @@ const plans: Plan[] = [
       { title: "5 profesionales incluidos" },
       { title: "2 sucursales incluidas" },
       { title: "Campanas email 1.000/mes" },
-      { title: "Recordatorios WA 100 msgs/mes" },
+      { title: "WA confirmacion+recordatorio 200 msgs/mes", highlight: true },
+      { title: "Reservas grupales hasta 25 personas/slot" },
       { title: "Modo veterinario (fichas clinicas y mascotas)" },
-      { title: "Reservas grupales (fitness, clases, talleres)" },
       { title: "Soporte email + chat" },
     ],
     icon: "sparkles",
@@ -202,8 +205,9 @@ const plans: Plan[] = [
       { title: "10 profesionales incluidos" },
       { title: "3 sucursales incluidas" },
       { title: "Campanas email 2.000/mes" },
-      { title: "Recordatorios WA 200 msgs/mes" },
+      { title: "WA confirmacion+recordatorio 300 msgs/mes", highlight: true },
       { title: "IA WhatsApp 500 conversaciones/mes", highlight: true },
+      { title: "Reservas grupales hasta 50 personas/slot" },
       { title: "Soporte prioritario 24/7" },
     ],
     icon: "crown",
@@ -238,8 +242,9 @@ const plans: Plan[] = [
       { title: "25 profesionales incluidos" },
       { title: "10 sucursales incluidas" },
       { title: "Campanas email 5.000/mes" },
-      { title: "Recordatorios WA 400 msgs/mes" },
+      { title: "WA confirmacion+recordatorio 500 msgs/mes", highlight: true },
       { title: "IA WhatsApp 1.500 conversaciones/mes", highlight: true },
+      { title: "Reservas grupales hasta 100 personas/slot" },
       { title: "Automatizaciones avanzadas" },
       { title: "Onboarding personalizado" },
       { title: "Soporte dedicado + SLA" },
@@ -264,6 +269,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     unitLabel: "pack",
     usageLabel: "50 msgs WA adicionales / mes",
     availableFrom: "Pro, Premium, VIP y Platinum",
+    tooltip: "Envía automáticamente un WhatsApp al cliente cuando agenda y otro como recordatorio antes de su cita. 50 mensajes adicionales por pack.",
     icon: <MessageCircle className="h-5 w-5" />,
     glow: "from-emerald-500/20 to-emerald-500/5",
     iconClass: "bg-emerald-500/18 text-emerald-200",
@@ -278,6 +284,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     unitLabel: "pack",
     usageLabel: "50 msgs campaña marketing / mes",
     availableFrom: "VIP y Platinum",
+    tooltip: "Envía mensajes masivos de marketing a tus clientes por WhatsApp. Ideal para promociones, fidelización y recuperación de clientes inactivos. 50 mensajes por pack.",
     icon: <Megaphone className="h-5 w-5" />,
     glow: "from-amber-500/20 to-amber-500/5",
     iconClass: "bg-amber-500/18 text-amber-200",
@@ -292,6 +299,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     unitLabel: "pack",
     usageLabel: "500 conversaciones IA adicionales / mes",
     availableFrom: "VIP y Platinum",
+    tooltip: "Un agente de IA responde automáticamente por WhatsApp, agenda citas y resuelve consultas sin intervención manual. 500 conversaciones por pack.",
     icon: <Bot className="h-5 w-5" />,
     glow: "from-fuchsia-500/20 to-fuchsia-500/5",
     iconClass: "bg-fuchsia-500/18 text-fuchsia-200",
@@ -306,6 +314,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     unitLabel: "pack",
     usageLabel: "2.000 correos campaña adicionales / mes",
     availableFrom: "Pro, Premium, VIP y Platinum",
+    tooltip: "Correos de marketing adicionales para campañas a tus clientes. 2.000 correos por pack.",
     icon: <Mail className="h-5 w-5" />,
     glow: "from-sky-500/20 to-sky-500/5",
     iconClass: "bg-sky-500/18 text-sky-200",
@@ -320,6 +329,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     unitLabel: "profesional",
     usageLabel: "1 staff adicional sobre el limite del plan",
     availableFrom: "Premium, VIP y Platinum",
+    tooltip: "Agrega un profesional adicional sobre el límite de tu plan. Cada profesional tiene su propia agenda y disponibilidad.",
     icon: <Users className="h-5 w-5" />,
     glow: "from-violet-500/20 to-violet-500/5",
     iconClass: "bg-violet-500/18 text-violet-200",
@@ -334,6 +344,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     unitLabel: "sucursal",
     usageLabel: "1 sucursal adicional sobre el limite del plan",
     availableFrom: "Premium, VIP y Platinum",
+    tooltip: "Agrega una sucursal adicional sobre el límite de tu plan. Gestiona múltiples locales desde una sola cuenta.",
     icon: <Store className="h-5 w-5" />,
     glow: "from-blue-500/20 to-blue-500/5",
     iconClass: "bg-blue-500/18 text-blue-200",
@@ -348,6 +359,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     unitLabel: "pack",
     usageLabel: "25 cupos adicionales por slot grupal",
     availableFrom: "Premium, VIP y Platinum",
+    tooltip: "Aumenta la capacidad máxima de tus clases o eventos grupales en 25 cupos por slot adicional.",
     icon: <UsersRound className="h-5 w-5" />,
     glow: "from-teal-500/20 to-teal-500/5",
     iconClass: "bg-teal-500/18 text-teal-200",
@@ -498,6 +510,7 @@ function PlanesPageContent() {
   const slug = searchParams.get("slug") || "";
   const from = searchParams.get("from") || "";
   const currentPlanParam = searchParams.get("current_plan");
+  const isTrial = searchParams.get("is_trial") === "true";
 
   const hasBillingContext = Boolean(tenantId && currentPlanParam);
 
@@ -1156,6 +1169,11 @@ function PlanesPageContent() {
   function extraSupported(extraKey: ExtraKey) {
     const supportedBySelectedPlan = selectedPlan.extras.includes(extraKey);
 
+    // WA no disponible durante trial Pro
+    if (isTrial && selectedPlanKey === "pro" && extraKey === "wa_confirmacion") {
+      return false;
+    }
+
     // Con tenant_id manda además la disponibilidad real (plan vigente del tenant)
     if (tenantId && serverAddonAvailability) {
       return (
@@ -1468,14 +1486,22 @@ function PlanesPageContent() {
                       <div className="mt-4 space-y-2.5 pb-1">
                         {plan.features.map((feature) => (
                           <div key={`${plan.key}-${feature.title}`} className="flex items-start gap-3">
-                            <Check
-                              className={`mt-0.5 h-4 w-4 shrink-0 ${
-                                feature.highlight ? "text-cyan-300" : plan.accentClass
-                              }`}
-                            />
+                            {feature.locked ? (
+                              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                            ) : (
+                              <Check
+                                className={`mt-0.5 h-4 w-4 shrink-0 ${
+                                  feature.highlight ? "text-cyan-300" : plan.accentClass
+                                }`}
+                              />
+                            )}
                             <span
                               className={`text-[13px] leading-5 ${
-                                feature.highlight ? "font-semibold text-cyan-100" : "text-slate-300"
+                                feature.locked
+                                  ? "text-slate-500"
+                                  : feature.highlight
+                                  ? "font-semibold text-cyan-100"
+                                  : "text-slate-300"
                               }`}
                             >
                               {feature.title}
@@ -1685,8 +1711,11 @@ function PlanesPageContent() {
                       {extraItems.map((item) => (
                         <div
                           key={item.label}
-                          className="rounded-xl border border-white/8 bg-white/[0.035] p-3"
+                          className="group relative rounded-xl border border-white/8 bg-white/[0.035] p-3"
                         >
+                          <span className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 hidden w-64 rounded-2xl border border-white/10 bg-slate-950/95 px-3 py-2 text-xs leading-5 text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.45)] group-hover:block">
+                            {extraConfig[item.key].tooltip}
+                          </span>
                           <div className="flex items-start gap-3">
                             <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${extraConfig[item.key].iconClass}`}>
                                 {extraConfig[item.key].icon}
@@ -1705,16 +1734,20 @@ function PlanesPageContent() {
                                   </p>
                                 </div>
                                 <div className="shrink-0 text-right">
-                                  <div className="flex items-center justify-end gap-1.5">
-                                    <p className="text-xs text-slate-400">
-                                      {formatCLP(nextPackPrice(extraConfig[item.key], item.count))} próx.
-                                    </p>
-                                    {discountBadge(extraConfig[item.key], item.count) ? (
+                                  {item.count >= 2 ? (
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <p className="text-xs text-slate-400">
+                                        {formatCLP(nextPackPrice(extraConfig[item.key], item.count))} + IVA
+                                      </p>
                                       <span className="rounded px-1 py-0.5 text-[10px] font-semibold bg-cyan-300/15 text-cyan-300">
                                         {discountBadge(extraConfig[item.key], item.count)}
                                       </span>
-                                    ) : null}
-                                  </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-slate-400">
+                                      {formatCLP(extraConfig[item.key].unitPrice)} + IVA
+                                    </p>
+                                  )}
                                   <p className="mt-2 text-xs text-slate-300">Total:</p>
                                   <p className="text-sm font-semibold text-white">
                                     {formatCLP(item.amount)}
@@ -1764,28 +1797,32 @@ function PlanesPageContent() {
                           const config = extraConfig[extraKey];
 
                           return (
-                            <button
-                              key={extraKey}
-                              type="button"
-                              onClick={() => increaseExtra(extraKey)}
-                              disabled={addonBusy !== null || addonsLoading}
-                              className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.025] px-3 py-2 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/8 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${config.iconClass}`}>
-                                  {config.icon}
-                                </span>
-                                <span>
-                                  <span className="block text-xs font-semibold text-white">
-                                    {config.title}
+                            <div key={extraKey} className="group relative">
+                              <button
+                                type="button"
+                                onClick={() => increaseExtra(extraKey)}
+                                disabled={addonBusy !== null || addonsLoading}
+                                className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.025] px-3 py-2 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/8 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${config.iconClass}`}>
+                                    {config.icon}
                                   </span>
-                                  <span className="block text-xs text-slate-400">
-                                    {formatCLP(config.unitPrice)} /mes
+                                  <span>
+                                    <span className="block text-xs font-semibold text-white">
+                                      {config.title}
+                                    </span>
+                                    <span className="block text-xs text-slate-400">
+                                      {formatCLP(config.unitPrice)} /mes + IVA
+                                    </span>
                                   </span>
                                 </span>
+                                <span className="text-lg leading-none text-cyan-300">+</span>
+                              </button>
+                              <span className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 hidden w-64 rounded-2xl border border-white/10 bg-slate-950/95 px-3 py-2 text-xs leading-5 text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.45)] group-hover:block">
+                                {config.tooltip}
                               </span>
-                              <span className="text-lg leading-none text-cyan-300">+</span>
-                            </button>
+                            </div>
                           );
                         })}
                       </div>
@@ -1964,6 +2001,12 @@ function PlanesPageContent() {
             </div>
           </aside>
         </div>
+      </section>
+
+      <section className="mx-auto max-w-4xl px-4 pb-10 pt-2 text-center md:px-8">
+        <p className="text-xs leading-6 text-slate-500">
+          Los mensajes de WhatsApp e IA incluidos en cada plan y en los add-ons no son acumulables entre períodos. Los add-ons tienen una duración de 30 días desde la fecha de compra y se renuevan automáticamente. Los beneficios incluidos en el plan tienen la misma duración que el plan contratado. Los precios no incluyen IVA.
+        </p>
       </section>
 
       {downgradeModalOpen ? (

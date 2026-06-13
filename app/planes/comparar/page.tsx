@@ -130,16 +130,6 @@ const comparisonRows: ComparisonRow[] = [
     info: "No hay límite de reservas en ningún plan.",
   },
   {
-    label: "Profesional extra",
-    values: {
-      pro: "+5 servicios",
-      premium: "+5 servicios",
-      vip: "+5 servicios",
-      platinum: "+5 servicios",
-    },
-    info: "Cada profesional extra agrega también capacidad adicional de servicios.",
-  },
-  {
     label: "Página pública de reservas",
     values: {
       pro: "Sí",
@@ -203,12 +193,12 @@ const comparisonRows: ComparisonRow[] = [
   {
     label: "WA confirmación+recordatorio",
     values: {
-      pro: "100 msgs / mes",
+      pro: "100 msgs / mes *",
       premium: "200 msgs / mes",
       vip: "300 msgs / mes",
       platinum: "500 msgs / mes",
     },
-    info: "Mensajes WhatsApp incluidos para confirmaciones y recordatorios automáticos. Ampliable con add-on (packs de 50, desde $2.990).",
+    info: "Mensajes WhatsApp incluidos para confirmaciones y recordatorios automáticos. Ampliable con add-on (packs de 50, desde $2.990). * En Pro: disponible al activar plan pagado, no disponible en trial.",
     highlight: true,
   },
   {
@@ -235,12 +225,62 @@ const comparisonRows: ComparisonRow[] = [
   {
     label: "Capacidad grupal máxima",
     values: {
-      pro: "10 cupos",
-      premium: "25 cupos",
-      vip: "50 cupos",
-      platinum: "100 cupos",
+      pro: "10 personas",
+      premium: "25 personas",
+      vip: "50 personas",
+      platinum: "100 personas",
     },
-    info: "Capacidad máxima de cupos por slot grupal incluida en el plan. Ampliable con add-on (packs de 25 cupos).",
+    info: "Capacidad máxima de personas por slot grupal incluida en el plan. Ampliable con add-on (packs de 25 cupos).",
+  },
+  {
+    label: "Modo veterinario",
+    values: {
+      pro: "—",
+      premium: "Sí",
+      vip: "Sí",
+      platinum: "Sí",
+    },
+    info: "Fichas clínicas y registro de mascotas por cliente. Disponible en Premium, VIP y Platinum.",
+  },
+  {
+    label: "Reservas grupales",
+    values: {
+      pro: "—",
+      premium: "Sí",
+      vip: "Sí",
+      platinum: "Sí",
+    },
+    info: "Clases, talleres, eventos y fitness con múltiples cupos por slot. Disponible en Premium, VIP y Platinum.",
+  },
+  {
+    label: "Google Calendar",
+    values: {
+      pro: "Sí",
+      premium: "Sí",
+      vip: "Sí",
+      platinum: "Sí",
+    },
+    info: "Sincronización bidireccional con Google Calendar para todos los profesionales.",
+  },
+  {
+    label: "Soporte",
+    values: {
+      pro: "Email",
+      premium: "Email + Chat",
+      vip: "Prioritario",
+      platinum: "Dedicado + SLA",
+    },
+    info: "Nivel de soporte incluido en el plan.",
+  },
+  {
+    label: "Trial 14 días",
+    values: {
+      pro: "Sí",
+      premium: "—",
+      vip: "—",
+      platinum: "—",
+    },
+    info: "El plan Pro incluye 14 días de prueba gratuita. Los demás planes no incluyen trial.",
   },
   {
     label: "Automatizaciones avanzadas",
@@ -478,12 +518,12 @@ export default function CompararPlanesPage() {
 
             <div className="rounded-[24px] border border-amber-300/15 bg-amber-500/10 p-4">
               <p className="text-sm font-semibold text-amber-100">
-                Importante sobre campañas y bloques
+                Importante sobre mensajes WA e IA
               </p>
               <p className="mt-2 text-sm leading-6 text-amber-50/90">
-                Las campañas por WhatsApp se contratan como adicional.
-                Su valor es <span className="font-semibold">$9.900 + iva</span> por pack de 100 mensajes.
-                Los packs mensuales incluidos y adicionales no son acumulables y deben usarse dentro del mes.
+                Los mensajes WA e IA no son acumulables entre períodos. Se renuevan mensualmente.
+                Campañas WhatsApp: <span className="font-semibold">$6.990 + iva</span> por pack de 50 mensajes (solo VIP y Platinum).
+                * WA conf+rec en Pro: disponible al activar plan pagado, no durante el trial de 14 días.
               </p>
             </div>
           </div>
