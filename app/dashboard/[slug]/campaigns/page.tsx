@@ -161,11 +161,11 @@ const PLAN_LABELS: Record<PlanSlug, string> = {
 };
 
 const PLAN_EMAIL_LIMITS: Record<PlanSlug, number> = {
-  starter: 0,
-  pro: 0,
-  premium: 0,
-  vip: 400,
-  platinum: 1000,
+  starter: 200,
+  pro: 200,
+  premium: 1000,
+  vip: 2000,
+  platinum: 5000,
 };
 
 const PLAN_WHATSAPP_LIMITS: Record<PlanSlug, number> = {
@@ -201,17 +201,14 @@ function getCampaignChannelLimit(plan: PlanSlug, channel: CampaignChannel) {
     };
   }
 
-  const limit = PLAN_EMAIL_LIMITS[plan] ?? 0;
+  const limit = PLAN_EMAIL_LIMITS[plan] ?? 200;
 
   return {
     title: "Límite Email",
-    value: limit > 0 ? String(limit) : "No incluido",
-    helper:
-      limit > 0
-        ? "Máximo de contactos por campaña email."
-        : "Campañas email disponibles desde VIP.",
-    badge: limit > 0 ? "Incluido" : "Disponible en VIP",
-    available: limit > 0,
+    value: `${limit.toLocaleString("es-CL")} / mes`,
+    helper: "Máximo de contactos por campaña email.",
+    badge: "Incluido",
+    available: true,
     limit,
   };
 }
@@ -2753,47 +2750,47 @@ export default function CampaignsPage() {
       </section>
 
       <div
-        className="overflow-x-auto rounded-2xl border p-2"
+        className="rounded-2xl border p-2"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
         }}
       >
-        <div className="grid min-w-[760px] grid-cols-6 gap-2 sm:min-w-0 sm:grid-cols-2 lg:grid-cols-6">
-          {[
-            { label: "Plan", value: PLAN_LABELS[plan] },
-            { label: channelLimitInfo.title, value: channelLimitInfo.value },
-            {
-              label: "Audiencia",
-              value: loadingAudience ? "..." : audienceStats.totalVisible,
-            },
-            { label: "Incluidos", value: audienceStats.included },
-            { label: "Excluidos", value: audienceStats.excluded },
-            { label: "Manuales", value: audienceStats.manual },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-xl border px-3 py-1"
-              style={{
-                borderColor: "rgba(148,163,184,0.18)",
-                background: "var(--bg-soft)",
-              }}
+        <div className="flex flex-wrap items-center gap-2">
+          <div
+            className="rounded-xl border px-3 py-1.5"
+            style={{
+              borderColor: "rgba(148,163,184,0.18)",
+              background: "var(--bg-soft)",
+            }}
+          >
+            <p
+              className="text-[10px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: "var(--text-muted)" }}
             >
-              <p
-                className="text-[10px] font-semibold uppercase tracking-[0.12em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {item.label}
-              </p>
-              <p
-                className="truncate text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-                title={String(item.value)}
-              >
-                {item.value}
-              </p>
+              {channelLimitInfo.title}
+            </p>
+            <p
+              className="text-sm font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              {channelLimitInfo.value}
+            </p>
+          </div>
+
+          {!loadingAudience && audienceStats.totalVisible > 0 && (
+            <div className="flex items-center gap-2 px-1 flex-wrap">
+              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Audiencia:</span>
+              <span className="text-[11px] font-semibold" style={{ color: "var(--text-main)" }}>{audienceStats.totalVisible} contactos</span>
+              <span className="text-[11px] font-medium text-emerald-500">✓ {audienceStats.included} incluidos</span>
+              {audienceStats.excluded > 0 && (
+                <span className="text-[11px] font-medium text-rose-400">✗ {audienceStats.excluded} excluidos</span>
+              )}
+              {audienceStats.manual > 0 && (
+                <span className="text-[11px] font-medium text-amber-400">+ {audienceStats.manual} manuales</span>
+              )}
             </div>
-          ))}
+          )}
         </div>
       </div>
 
