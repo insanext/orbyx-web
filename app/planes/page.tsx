@@ -1940,62 +1940,6 @@ function PlanesPageContent() {
                   ) : null}
                 </div>
 
-                <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-sm font-semibold text-white">Que incluye este plan</p>
-                  <div className="mt-4 space-y-3">
-                    {selectedPlan.features.slice(0, 6).map((feature) => (
-                      <div
-                        key={`${selectedPlan.key}-summary-${feature.title}`}
-                        className="flex items-start gap-3"
-                      >
-                        <Check
-                          className={`mt-0.5 h-4 w-4 shrink-0 ${
-                            feature.highlight ? "text-cyan-300" : selectedPlan.accentClass
-                          }`}
-                        />
-                        <span className="text-sm leading-5 text-slate-300">{feature.title}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 space-y-2 rounded-xl border border-white/8 bg-black/20 px-4 py-3">
-                    <SummaryLine label="Sucursales incluidas" value={String(currentBranchTotal)} />
-                    <SummaryLine label="Profesionales incluidos" value={String(currentStaffTotal)} />
-                    <SummaryLine
-                      label="Emails campaña"
-                      value={`${currentEmailsCampanaTotal.toLocaleString("es-CL")} / mes`}
-                    />
-                    <SummaryLine
-                      label="WhatsApp confirmación+recordatorio"
-                      value={
-                        currentWaConfirmacionTotal > 0
-                          ? `${currentWaConfirmacionTotal.toLocaleString("es-CL")} msgs / mes`
-                          : "No incluidos"
-                      }
-                    />
-                    <SummaryLine
-                      label="Campañas WhatsApp"
-                      value={
-                        currentCampanaWaTotal > 0
-                          ? `${currentCampanaWaTotal.toLocaleString("es-CL")} msgs / mes`
-                          : supportsCampanaWaExtra
-                          ? "Disponible como adicional"
-                          : "No incluidas"
-                      }
-                    />
-                    <SummaryLine
-                      label="IA WhatsApp"
-                      value={
-                        currentIaWaTotal > 0
-                          ? `${currentIaWaTotal.toLocaleString("es-CL")} conversaciones / mes`
-                          : supportsIaWaExtra
-                          ? "Disponible como adicional"
-                          : "No incluida"
-                      }
-                    />
-                  </div>
-                </div>
-
                 {hasBillingContext && previewType === "downgrade" ? (
                   <div className="mt-5 rounded-xl border border-amber-300/20 bg-amber-500/10 p-4">
                     <p className="text-sm font-semibold text-amber-100">
