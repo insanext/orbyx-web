@@ -110,26 +110,6 @@ const comparisonRows: ComparisonRow[] = [
     info: "Los servicios son ilimitados en todos los planes.",
   },
   {
-    label: "Clientes",
-    values: {
-      pro: "∞",
-      premium: "∞",
-      vip: "∞",
-      platinum: "∞",
-    },
-    info: "No hay límite de clientes registrados en ningún plan.",
-  },
-  {
-    label: "Reservas",
-    values: {
-      pro: "∞",
-      premium: "∞",
-      vip: "∞",
-      platinum: "∞",
-    },
-    info: "No hay límite de reservas en ningún plan.",
-  },
-  {
     label: "Página pública de reservas",
     values: {
       pro: "Sí",
@@ -281,17 +261,6 @@ const comparisonRows: ComparisonRow[] = [
       platinum: "—",
     },
     info: "El plan Pro incluye 14 días de prueba gratuita. Los demás planes no incluyen trial.",
-  },
-  {
-    label: "Automatizaciones avanzadas",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "—",
-      platinum: "Sí",
-    },
-    info: "Acciones automáticas como reactivación de clientes, recuperación de no-show y seguimiento sin intervención manual.",
-    highlight: true,
   },
   {
     label: "Encuestas post atención por email",

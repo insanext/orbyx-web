@@ -122,7 +122,7 @@ const plans: Plan[] = [
     includedIaWa: 0,
     includedEmailCampaigns: 200,
     includedGroupCapacity: 10,
-    extras: ["wa_confirmacion", "emails_campana", "staff", "sucursal", "group_capacity"] as ExtraKey[],
+    extras: ["wa_confirmacion", "campanas_wa", "emails_campana"] as ExtraKey[],
     summaryTitle: "Plan Pro",
     summaryIntro:
       "Para comenzar con reservas online, confirmaciones y control operativo.",
@@ -160,7 +160,7 @@ const plans: Plan[] = [
     includedIaWa: 0,
     includedEmailCampaigns: 1000,
     includedGroupCapacity: 25,
-    extras: ["wa_confirmacion", "emails_campana", "staff", "sucursal", "group_capacity"] as ExtraKey[],
+    extras: ["wa_confirmacion", "campanas_wa", "emails_campana", "staff", "sucursal", "group_capacity"] as ExtraKey[],
     summaryTitle: "Plan Premium",
     summaryIntro:
       "Mayor control comercial, mas profesionales y seguimiento mas consistente.",
@@ -382,8 +382,8 @@ function nextPackPrice(config: ExtraConfig, currentCount: number): number {
 }
 
 function discountBadge(config: ExtraConfig, currentCount: number): string | null {
-  if (currentCount >= 2 && config.price_pack3 < config.unitPrice) return "−15%";
-  if (currentCount >= 1 && config.price_pack2 < config.unitPrice) return "−10%";
+  if (currentCount >= 3 && config.price_pack3 < config.unitPrice) return "−15%";
+  if (currentCount === 2 && config.price_pack2 < config.unitPrice) return "−10%";
   return null;
 }
 
