@@ -22,11 +22,19 @@ import {
   Sparkles,
   Store,
   Users,
+  UsersRound,
   Zap,
 } from "lucide-react";
 
 type PlanKey = "pro" | "premium" | "vip" | "platinum";
-type ExtraKey = "staff" | "reminders" | "campaigns" | "branches" | "ai";
+type ExtraKey =
+  | "wa_confirmacion"
+  | "campanas_wa"
+  | "ia_wa"
+  | "emails_campana"
+  | "staff"
+  | "sucursal"
+  | "group_capacity";
 type BillingCycle = "mensual" | "semestral" | "anual";
 
 type FeatureItem = {
@@ -46,9 +54,10 @@ type Plan = {
   includedBranches: number;
   includedStaff: number;
   includedServices: number;
-  includedReminderConversations: number;
-  includedAiConversations: number;
+  includedWaConfirmacion: number;
+  includedIaWa: number;
   includedEmailCampaigns: number;
+  includedGroupCapacity: number;
   extras: ExtraKey[];
   summaryTitle: string;
   summaryIntro: string;
@@ -81,6 +90,8 @@ type ExtraConfig = {
   short: string;
   detail: string;
   unitPrice: number;
+  price_pack2: number;
+  price_pack3: number;
   unitLabel: string;
   usageLabel: string;
   availableFrom: string;
@@ -104,10 +115,11 @@ const plans: Plan[] = [
     includedBranches: 1,
     includedStaff: 2,
     includedServices: 10,
-    includedReminderConversations: 0,
-    includedAiConversations: 0,
+    includedWaConfirmacion: 100,
+    includedIaWa: 0,
     includedEmailCampaigns: 200,
-    extras: [],
+    includedGroupCapacity: 10,
+    extras: ["wa_confirmacion", "emails_campana"] as ExtraKey[],
     summaryTitle: "Plan Pro",
     summaryIntro:
       "Para comenzar con reservas online, confirmaciones y control operativo.",
@@ -140,10 +152,11 @@ const plans: Plan[] = [
     includedBranches: 2,
     includedStaff: 5,
     includedServices: 25,
-    includedReminderConversations: 100,
-    includedAiConversations: 0,
+    includedWaConfirmacion: 200,
+    includedIaWa: 0,
     includedEmailCampaigns: 1000,
-    extras: ["staff", "branches", "reminders"],
+    includedGroupCapacity: 25,
+    extras: ["wa_confirmacion", "emails_campana", "staff", "sucursal", "group_capacity"] as ExtraKey[],
     summaryTitle: "Plan Premium",
     summaryIntro:
       "Mayor control comercial, mas profesionales y seguimiento mas consistente.",
@@ -176,10 +189,11 @@ const plans: Plan[] = [
     includedBranches: 3,
     includedStaff: 10,
     includedServices: 50,
-    includedReminderConversations: 200,
-    includedAiConversations: 500,
+    includedWaConfirmacion: 300,
+    includedIaWa: 500,
     includedEmailCampaigns: 2000,
-    extras: ["staff", "branches", "reminders", "campaigns", "ai"],
+    includedGroupCapacity: 50,
+    extras: ["wa_confirmacion", "emails_campana", "campanas_wa", "ia_wa", "staff", "sucursal", "group_capacity"] as ExtraKey[],
     summaryTitle: "Plan VIP",
     summaryIntro:
       "Para activar clientes, responder por WhatsApp y convertir conversaciones en reservas.",
@@ -211,10 +225,11 @@ const plans: Plan[] = [
     includedBranches: 10,
     includedStaff: 25,
     includedServices: 100,
-    includedReminderConversations: 400,
-    includedAiConversations: 1500,
+    includedWaConfirmacion: 500,
+    includedIaWa: 1500,
     includedEmailCampaigns: 5000,
-    extras: ["staff", "branches", "reminders", "campaigns", "ai"],
+    includedGroupCapacity: 100,
+    extras: ["wa_confirmacion", "emails_campana", "campanas_wa", "ia_wa", "staff", "sucursal", "group_capacity"] as ExtraKey[],
     summaryTitle: "Plan Platinum",
     summaryIntro:
       "Automatizaciones avanzadas, onboarding premium, SLA y seguimiento inteligente.",
@@ -238,62 +253,42 @@ const plans: Plan[] = [
   },
 ];
 
-// Catalogo definitivo de add-ons. Packs WA: recordatorios = 200 msgs,
-// campanas = 100 msgs, IA = 500 conversaciones. Se suman al limite base del plan.
 const extraConfig: Record<ExtraKey, ExtraConfig> = {
-  staff: {
-    title: "+ 1 Profesional",
-    short: "Agrega mas miembros a tu equipo.",
-    detail: "por profesional",
-    unitPrice: 6000,
-    unitLabel: "profesional",
-    usageLabel: "1 staff adicional sobre el limite del plan",
-    availableFrom: "Premium, VIP y Platinum",
-    icon: <Users className="h-5 w-5" />,
-    glow: "from-violet-500/20 to-violet-500/5",
-    iconClass: "bg-violet-500/18 text-violet-200",
-  },
-  branches: {
-    title: "+ 1 Sucursal",
-    short: "Gestiona mas sedes desde tu cuenta.",
-    detail: "por sucursal",
-    unitPrice: 15000,
-    unitLabel: "sucursal",
-    usageLabel: "1 sucursal adicional sobre el limite del plan",
-    availableFrom: "Premium, VIP y Platinum",
-    icon: <Store className="h-5 w-5" />,
-    glow: "from-blue-500/20 to-blue-500/5",
-    iconClass: "bg-blue-500/18 text-blue-200",
-  },
-  reminders: {
-    title: "+ Recordatorios WhatsApp",
-    short: "Envia recordatorios automaticos.",
-    detail: "por 200 mensajes",
-    unitPrice: 4900,
+  wa_confirmacion: {
+    title: "WA confirmación+recordatorio",
+    short: "50 msgs WA adicionales por mes.",
+    detail: "por 50 mensajes",
+    unitPrice: 2990,
+    price_pack2: 2691,
+    price_pack3: 2542,
     unitLabel: "pack",
-    usageLabel: "200 msgs recordatorio adicionales / mes",
-    availableFrom: "Premium, VIP y Platinum",
+    usageLabel: "50 msgs WA adicionales / mes",
+    availableFrom: "Pro, Premium, VIP y Platinum",
     icon: <MessageCircle className="h-5 w-5" />,
     glow: "from-emerald-500/20 to-emerald-500/5",
     iconClass: "bg-emerald-500/18 text-emerald-200",
   },
-  campaigns: {
-    title: "+ Campanas WhatsApp",
-    short: "Envia promociones y recupera clientes.",
-    detail: "por 100 mensajes",
-    unitPrice: 9900,
+  campanas_wa: {
+    title: "Campañas WhatsApp",
+    short: "50 msgs campaña marketing adicionales.",
+    detail: "por 50 mensajes",
+    unitPrice: 6990,
+    price_pack2: 6291,
+    price_pack3: 5942,
     unitLabel: "pack",
-    usageLabel: "100 msgs campana adicionales / mes",
+    usageLabel: "50 msgs campaña marketing / mes",
     availableFrom: "VIP y Platinum",
     icon: <Megaphone className="h-5 w-5" />,
     glow: "from-amber-500/20 to-amber-500/5",
     iconClass: "bg-amber-500/18 text-amber-200",
   },
-  ai: {
-    title: "+ Conversaciones IA WhatsApp",
-    short: "Mas conversaciones atendidas por la IA.",
+  ia_wa: {
+    title: "IA WhatsApp",
+    short: "500 conversaciones IA adicionales.",
     detail: "por 500 conversaciones",
-    unitPrice: 14900,
+    unitPrice: 14990,
+    price_pack2: 13491,
+    price_pack3: 12742,
     unitLabel: "pack",
     usageLabel: "500 conversaciones IA adicionales / mes",
     availableFrom: "VIP y Platinum",
@@ -301,11 +296,89 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     glow: "from-fuchsia-500/20 to-fuchsia-500/5",
     iconClass: "bg-fuchsia-500/18 text-fuchsia-200",
   },
+  emails_campana: {
+    title: "Pack emails campaña",
+    short: "2.000 correos campaña adicionales.",
+    detail: "por 2.000 correos",
+    unitPrice: 1990,
+    price_pack2: 1990,
+    price_pack3: 1990,
+    unitLabel: "pack",
+    usageLabel: "2.000 correos campaña adicionales / mes",
+    availableFrom: "Pro, Premium, VIP y Platinum",
+    icon: <Mail className="h-5 w-5" />,
+    glow: "from-sky-500/20 to-sky-500/5",
+    iconClass: "bg-sky-500/18 text-sky-200",
+  },
+  staff: {
+    title: "+ 1 Profesional",
+    short: "Agrega mas miembros a tu equipo.",
+    detail: "por profesional",
+    unitPrice: 5990,
+    price_pack2: 5990,
+    price_pack3: 5990,
+    unitLabel: "profesional",
+    usageLabel: "1 staff adicional sobre el limite del plan",
+    availableFrom: "Premium, VIP y Platinum",
+    icon: <Users className="h-5 w-5" />,
+    glow: "from-violet-500/20 to-violet-500/5",
+    iconClass: "bg-violet-500/18 text-violet-200",
+  },
+  sucursal: {
+    title: "+ 1 Sucursal",
+    short: "Gestiona mas sedes desde tu cuenta.",
+    detail: "por sucursal",
+    unitPrice: 9990,
+    price_pack2: 9990,
+    price_pack3: 9990,
+    unitLabel: "sucursal",
+    usageLabel: "1 sucursal adicional sobre el limite del plan",
+    availableFrom: "Premium, VIP y Platinum",
+    icon: <Store className="h-5 w-5" />,
+    glow: "from-blue-500/20 to-blue-500/5",
+    iconClass: "bg-blue-500/18 text-blue-200",
+  },
+  group_capacity: {
+    title: "+ Cupos grupales",
+    short: "Mas cupos por slot grupal.",
+    detail: "por 25 cupos",
+    unitPrice: 4900,
+    price_pack2: 4900,
+    price_pack3: 4900,
+    unitLabel: "pack",
+    usageLabel: "25 cupos adicionales por slot grupal",
+    availableFrom: "Premium, VIP y Platinum",
+    icon: <UsersRound className="h-5 w-5" />,
+    glow: "from-teal-500/20 to-teal-500/5",
+    iconClass: "bg-teal-500/18 text-teal-200",
+  },
 };
 
-const REMINDER_PACK_SIZE = 200;
-const CAMPAIGN_PACK_SIZE = 100;
-const AI_PACK_SIZE = 500;
+// Precio escalonado: pack1=precio normal, pack2=−10%, pack3+=−15%
+function tieredAddonCost(config: ExtraConfig, count: number): number {
+  if (count <= 0) return 0;
+  if (count === 1) return config.unitPrice;
+  if (count === 2) return config.unitPrice + config.price_pack2;
+  return config.unitPrice + config.price_pack2 + (count - 2) * config.price_pack3;
+}
+
+function nextPackPrice(config: ExtraConfig, currentCount: number): number {
+  if (currentCount <= 0) return config.unitPrice;
+  if (currentCount === 1) return config.price_pack2;
+  return config.price_pack3;
+}
+
+function discountBadge(config: ExtraConfig, currentCount: number): string | null {
+  if (currentCount >= 2 && config.price_pack3 < config.unitPrice) return "−15%";
+  if (currentCount >= 1 && config.price_pack2 < config.unitPrice) return "−10%";
+  return null;
+}
+
+const WA_CONFIRMACION_PACK_SIZE = 50;
+const CAMPANAS_WA_PACK_SIZE = 50;
+const IA_WA_PACK_SIZE = 500;
+const EMAILS_CAMPANA_PACK_SIZE = 2000;
+const GROUP_CAPACITY_PACK_SIZE = 25;
 
 const billingCycleConfig: Record<
   BillingCycle,
@@ -438,10 +511,12 @@ function PlanesPageContent() {
   );
 
   const [staffExtras, setStaffExtras] = useState(0);
-  const [reminderExtras, setReminderExtras] = useState(0);
-  const [campaignExtras, setCampaignExtras] = useState(0);
-  const [branchExtras, setBranchExtras] = useState(0);
-  const [aiExtras, setAiExtras] = useState(0);
+  const [sucursalExtras, setSucursalExtras] = useState(0);
+  const [waConfirmacionExtras, setWaConfirmacionExtras] = useState(0);
+  const [campanaWaExtras, setCampanaWaExtras] = useState(0);
+  const [iaWaExtras, setIaWaExtras] = useState(0);
+  const [emailsCampanaExtras, setEmailsCampanaExtras] = useState(0);
+  const [groupCapacityExtras, setGroupCapacityExtras] = useState(0);
 
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("mensual");
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
@@ -479,42 +554,40 @@ function PlanesPageContent() {
     hasBillingContext && initialPlan ? selectedPlanKey === initialPlan : false;
 
   const supportsStaffExtra = selectedPlan.extras.includes("staff");
-  const supportsReminderExtra = selectedPlan.extras.includes("reminders");
-  const supportsCampaignExtra = selectedPlan.extras.includes("campaigns");
-  const supportsBranchExtra = selectedPlan.extras.includes("branches");
-  const supportsAiExtra = selectedPlan.extras.includes("ai");
+  const supportsSucursalExtra = selectedPlan.extras.includes("sucursal");
+  const supportsWaConfirmacionExtra = selectedPlan.extras.includes("wa_confirmacion");
+  const supportsCampanaWaExtra = selectedPlan.extras.includes("campanas_wa");
+  const supportsIaWaExtra = selectedPlan.extras.includes("ia_wa");
+  const supportsEmailsCampanaExtra = selectedPlan.extras.includes("emails_campana");
+  const supportsGroupCapacityExtra = selectedPlan.extras.includes("group_capacity");
 
   const isProSelected = selectedPlan.key === "pro";
 
   const extrasSubtotal = useMemo(() => {
     let total = 0;
-
-    if (supportsStaffExtra) total += staffExtras * extraConfig.staff.unitPrice;
-    if (supportsReminderExtra) {
-      total += reminderExtras * extraConfig.reminders.unitPrice;
-    }
-    if (supportsCampaignExtra) {
-      total += campaignExtras * extraConfig.campaigns.unitPrice;
-    }
-    if (supportsBranchExtra) {
-      total += branchExtras * extraConfig.branches.unitPrice;
-    }
-    if (supportsAiExtra) {
-      total += aiExtras * extraConfig.ai.unitPrice;
-    }
-
+    if (supportsStaffExtra) total += tieredAddonCost(extraConfig.staff, staffExtras);
+    if (supportsSucursalExtra) total += tieredAddonCost(extraConfig.sucursal, sucursalExtras);
+    if (supportsWaConfirmacionExtra) total += tieredAddonCost(extraConfig.wa_confirmacion, waConfirmacionExtras);
+    if (supportsCampanaWaExtra) total += tieredAddonCost(extraConfig.campanas_wa, campanaWaExtras);
+    if (supportsIaWaExtra) total += tieredAddonCost(extraConfig.ia_wa, iaWaExtras);
+    if (supportsEmailsCampanaExtra) total += tieredAddonCost(extraConfig.emails_campana, emailsCampanaExtras);
+    if (supportsGroupCapacityExtra) total += tieredAddonCost(extraConfig.group_capacity, groupCapacityExtras);
     return total;
   }, [
-    aiExtras,
-    branchExtras,
-    campaignExtras,
-    reminderExtras,
     staffExtras,
-    supportsAiExtra,
-    supportsBranchExtra,
-    supportsCampaignExtra,
-    supportsReminderExtra,
+    sucursalExtras,
+    waConfirmacionExtras,
+    campanaWaExtras,
+    iaWaExtras,
+    emailsCampanaExtras,
+    groupCapacityExtras,
     supportsStaffExtra,
+    supportsSucursalExtra,
+    supportsWaConfirmacionExtra,
+    supportsCampanaWaExtra,
+    supportsIaWaExtra,
+    supportsEmailsCampanaExtra,
+    supportsGroupCapacityExtra,
   ]);
 
   const previewAmountToday = Number(preview?.amount_today || 0);
@@ -523,74 +596,56 @@ function PlanesPageContent() {
   const payTodayTotal = payTodaySubtotal + payTodayIva;
 
   const currentStaffTotal = selectedPlan.includedStaff + staffExtras;
-  const currentReminderTotal =
-    selectedPlan.includedReminderConversations +
-    reminderExtras * REMINDER_PACK_SIZE;
-  const currentCampaignTotal = campaignExtras * CAMPAIGN_PACK_SIZE;
-  const currentAiTotal =
-    selectedPlan.includedAiConversations + aiExtras * AI_PACK_SIZE;
-  const currentBranchTotal = selectedPlan.includedBranches + branchExtras;
+  const currentBranchTotal = selectedPlan.includedBranches + sucursalExtras;
+  const currentWaConfirmacionTotal =
+    selectedPlan.includedWaConfirmacion + waConfirmacionExtras * WA_CONFIRMACION_PACK_SIZE;
+  const currentCampanaWaTotal = campanaWaExtras * CAMPANAS_WA_PACK_SIZE;
+  const currentIaWaTotal =
+    selectedPlan.includedIaWa + iaWaExtras * IA_WA_PACK_SIZE;
+  const currentEmailsCampanaTotal =
+    selectedPlan.includedEmailCampaigns + emailsCampanaExtras * EMAILS_CAMPANA_PACK_SIZE;
 
   const extraItems = useMemo(() => {
     const items: { key: ExtraKey; label: string; amount: number; count: number }[] = [];
 
+    if (supportsWaConfirmacionExtra && waConfirmacionExtras > 0) {
+      items.push({ key: "wa_confirmacion", label: `WA confirmación x${waConfirmacionExtras}`, amount: tieredAddonCost(extraConfig.wa_confirmacion, waConfirmacionExtras), count: waConfirmacionExtras });
+    }
+    if (supportsCampanaWaExtra && campanaWaExtras > 0) {
+      items.push({ key: "campanas_wa", label: `Campañas WA x${campanaWaExtras}`, amount: tieredAddonCost(extraConfig.campanas_wa, campanaWaExtras), count: campanaWaExtras });
+    }
+    if (supportsIaWaExtra && iaWaExtras > 0) {
+      items.push({ key: "ia_wa", label: `IA WhatsApp x${iaWaExtras}`, amount: tieredAddonCost(extraConfig.ia_wa, iaWaExtras), count: iaWaExtras });
+    }
+    if (supportsEmailsCampanaExtra && emailsCampanaExtras > 0) {
+      items.push({ key: "emails_campana", label: `Emails campaña x${emailsCampanaExtras}`, amount: tieredAddonCost(extraConfig.emails_campana, emailsCampanaExtras), count: emailsCampanaExtras });
+    }
     if (supportsStaffExtra && staffExtras > 0) {
-      items.push({
-        key: "staff",
-        label: `+ Profesionales x${staffExtras}`,
-        amount: staffExtras * extraConfig.staff.unitPrice,
-        count: staffExtras,
-      });
+      items.push({ key: "staff", label: `+ Profesionales x${staffExtras}`, amount: tieredAddonCost(extraConfig.staff, staffExtras), count: staffExtras });
     }
-
-    if (supportsReminderExtra && reminderExtras > 0) {
-      items.push({
-        key: "reminders",
-        label: `Pack recordatorios WhatsApp x${reminderExtras}`,
-        amount: reminderExtras * extraConfig.reminders.unitPrice,
-        count: reminderExtras,
-      });
+    if (supportsSucursalExtra && sucursalExtras > 0) {
+      items.push({ key: "sucursal", label: `+ Sucursales x${sucursalExtras}`, amount: tieredAddonCost(extraConfig.sucursal, sucursalExtras), count: sucursalExtras });
     }
-
-    if (supportsCampaignExtra && campaignExtras > 0) {
-      items.push({
-        key: "campaigns",
-        label: `Campanas WhatsApp x${campaignExtras}`,
-        amount: campaignExtras * extraConfig.campaigns.unitPrice,
-        count: campaignExtras,
-      });
-    }
-
-    if (supportsBranchExtra && branchExtras > 0) {
-      items.push({
-        key: "branches",
-        label: `+ Sucursales x${branchExtras}`,
-        amount: branchExtras * extraConfig.branches.unitPrice,
-        count: branchExtras,
-      });
-    }
-
-    if (supportsAiExtra && aiExtras > 0) {
-      items.push({
-        key: "ai",
-        label: `Conversaciones IA WhatsApp x${aiExtras}`,
-        amount: aiExtras * extraConfig.ai.unitPrice,
-        count: aiExtras,
-      });
+    if (supportsGroupCapacityExtra && groupCapacityExtras > 0) {
+      items.push({ key: "group_capacity", label: `+ Cupos grupales x${groupCapacityExtras}`, amount: tieredAddonCost(extraConfig.group_capacity, groupCapacityExtras), count: groupCapacityExtras });
     }
 
     return items;
   }, [
-    aiExtras,
-    branchExtras,
-    campaignExtras,
-    reminderExtras,
     staffExtras,
-    supportsAiExtra,
-    supportsBranchExtra,
-    supportsCampaignExtra,
-    supportsReminderExtra,
+    sucursalExtras,
+    waConfirmacionExtras,
+    campanaWaExtras,
+    iaWaExtras,
+    emailsCampanaExtras,
+    groupCapacityExtras,
     supportsStaffExtra,
+    supportsSucursalExtra,
+    supportsWaConfirmacionExtra,
+    supportsCampanaWaExtra,
+    supportsIaWaExtra,
+    supportsEmailsCampanaExtra,
+    supportsGroupCapacityExtra,
   ]);
 
   useEffect(() => {
@@ -635,10 +690,12 @@ function PlanesPageContent() {
 
   function setExtraCount(extraKey: ExtraKey, value: number) {
     if (extraKey === "staff") setStaffExtras(value);
-    else if (extraKey === "reminders") setReminderExtras(value);
-    else if (extraKey === "campaigns") setCampaignExtras(value);
-    else if (extraKey === "ai") setAiExtras(value);
-    else setBranchExtras(value);
+    else if (extraKey === "sucursal") setSucursalExtras(value);
+    else if (extraKey === "wa_confirmacion") setWaConfirmacionExtras(value);
+    else if (extraKey === "campanas_wa") setCampanaWaExtras(value);
+    else if (extraKey === "ia_wa") setIaWaExtras(value);
+    else if (extraKey === "emails_campana") setEmailsCampanaExtras(value);
+    else setGroupCapacityExtras(value);
   }
 
   // Carga catálogo (flags available según el plan real del tenant) y
@@ -677,10 +734,12 @@ function PlanesPageContent() {
 
       setServerAddonAvailability(availability);
       setStaffExtras(counts.staff || 0);
-      setBranchExtras(counts.branches || 0);
-      setReminderExtras(counts.reminders || 0);
-      setCampaignExtras(counts.campaigns || 0);
-      setAiExtras(counts.ai || 0);
+      setSucursalExtras(counts.sucursal || 0);
+      setWaConfirmacionExtras(counts.wa_confirmacion || 0);
+      setCampanaWaExtras(counts.campanas_wa || 0);
+      setIaWaExtras(counts.ia_wa || 0);
+      setEmailsCampanaExtras(counts.emails_campana || 0);
+      setGroupCapacityExtras(counts.group_capacity || 0);
     } catch (error: unknown) {
       setAddonError(
         error instanceof Error
@@ -700,10 +759,12 @@ function PlanesPageContent() {
   function handleSelectPlan(planKey: PlanKey) {
     setSelectedPlanKey(planKey);
     setStaffExtras(0);
-    setReminderExtras(0);
-    setCampaignExtras(0);
-    setBranchExtras(0);
-    setAiExtras(0);
+    setSucursalExtras(0);
+    setWaConfirmacionExtras(0);
+    setCampanaWaExtras(0);
+    setIaWaExtras(0);
+    setEmailsCampanaExtras(0);
+    setGroupCapacityExtras(0);
     setApplyError("");
     setApplyOk("");
     setAddonError("");
@@ -846,22 +907,22 @@ function PlanesPageContent() {
       );
     }
     if (
-      current.includedReminderConversations > 0 &&
-      target.includedReminderConversations === 0
+      current.includedWaConfirmacion > 0 &&
+      target.includedWaConfirmacion === 0
     ) {
-      featuresLost.push("Recordatorios WhatsApp: ya no incluidos");
+      featuresLost.push("WA confirmación+recordatorio: ya no incluidos");
     } else if (
-      target.includedReminderConversations < current.includedReminderConversations
+      target.includedWaConfirmacion < current.includedWaConfirmacion
     ) {
       featuresLost.push(
-        `Recordatorios WhatsApp: ${current.includedReminderConversations} → ${target.includedReminderConversations} msgs/mes`
+        `WA confirmación+recordatorio: ${current.includedWaConfirmacion} → ${target.includedWaConfirmacion} msgs/mes`
       );
     }
-    if (current.includedAiConversations > 0 && target.includedAiConversations === 0) {
+    if (current.includedIaWa > 0 && target.includedIaWa === 0) {
       featuresLost.push("IA WhatsApp: ya no incluida");
-    } else if (target.includedAiConversations < current.includedAiConversations) {
+    } else if (target.includedIaWa < current.includedIaWa) {
       featuresLost.push(
-        `IA WhatsApp: ${current.includedAiConversations.toLocaleString("es-CL")} → ${target.includedAiConversations} conversaciones/mes`
+        `IA WhatsApp: ${current.includedIaWa.toLocaleString("es-CL")} → ${target.includedIaWa} conversaciones/mes`
       );
     }
     if (current.key === "platinum") {
@@ -1076,7 +1137,7 @@ function PlanesPageContent() {
     cycleTotalPrice(selectedPlan.price, billingCycle) + extrasSubtotal * cycleMonths;
   const cycleTotalWithIva = cycleSubtotal + Math.round(cycleSubtotal * 0.19);
 
-  const availableAddons: ExtraKey[] = ["staff", "branches", "reminders", "campaigns", "ai"];
+  const availableAddons: ExtraKey[] = ["wa_confirmacion", "campanas_wa", "ia_wa", "emails_campana", "staff", "sucursal", "group_capacity"];
   const selectedAddonsCount = extraItems.reduce((total, item) => total + item.count, 0);
   const addableAddons = availableAddons.filter(
     (extraKey) => extraSupported(extraKey) && extraValue(extraKey) === 0
@@ -1084,10 +1145,12 @@ function PlanesPageContent() {
 
   function extraValue(extraKey: ExtraKey) {
     if (extraKey === "staff") return staffExtras;
-    if (extraKey === "reminders") return reminderExtras;
-    if (extraKey === "campaigns") return campaignExtras;
-    if (extraKey === "ai") return aiExtras;
-    return branchExtras;
+    if (extraKey === "sucursal") return sucursalExtras;
+    if (extraKey === "wa_confirmacion") return waConfirmacionExtras;
+    if (extraKey === "campanas_wa") return campanaWaExtras;
+    if (extraKey === "ia_wa") return iaWaExtras;
+    if (extraKey === "emails_campana") return emailsCampanaExtras;
+    return groupCapacityExtras;
   }
 
   function extraSupported(extraKey: ExtraKey) {
@@ -1105,14 +1168,9 @@ function PlanesPageContent() {
   }
 
   function extraUnitLabel(extraKey: ExtraKey, count: number) {
-    if (extraKey === "reminders" || extraKey === "campaigns" || extraKey === "ai") {
+    if (extraKey === "wa_confirmacion" || extraKey === "campanas_wa" || extraKey === "ia_wa" || extraKey === "emails_campana" || extraKey === "group_capacity") {
       return count === 1 ? "pack" : "packs";
     }
-
-    if (extraKey === "branches") {
-      return count === 1 ? "unidad" : "unidades";
-    }
-
     return count === 1 ? "unidad" : "unidades";
   }
 
@@ -1647,10 +1705,17 @@ function PlanesPageContent() {
                                   </p>
                                 </div>
                                 <div className="shrink-0 text-right">
-                                  <p className="text-xs text-slate-400">
-                                    {formatCLP(extraConfig[item.key].unitPrice)} c/u
-                                  </p>
-                                  <p className="mt-2 text-xs text-slate-300">Subtotal:</p>
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <p className="text-xs text-slate-400">
+                                      {formatCLP(nextPackPrice(extraConfig[item.key], item.count))} próx.
+                                    </p>
+                                    {discountBadge(extraConfig[item.key], item.count) ? (
+                                      <span className="rounded px-1 py-0.5 text-[10px] font-semibold bg-cyan-300/15 text-cyan-300">
+                                        {discountBadge(extraConfig[item.key], item.count)}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <p className="mt-2 text-xs text-slate-300">Total:</p>
                                   <p className="text-sm font-semibold text-white">
                                     {formatCLP(item.amount)}
                                   </p>
@@ -1848,23 +1913,23 @@ function PlanesPageContent() {
                     <SummaryLine label="Sucursales incluidas" value={String(currentBranchTotal)} />
                     <SummaryLine label="Profesionales incluidos" value={String(currentStaffTotal)} />
                     <SummaryLine
-                      label="Campanas por email"
-                      value={`${selectedPlan.includedEmailCampaigns.toLocaleString("es-CL")} / mes`}
+                      label="Emails campaña"
+                      value={`${currentEmailsCampanaTotal.toLocaleString("es-CL")} / mes`}
                     />
                     <SummaryLine
-                      label="Recordatorios WhatsApp"
+                      label="WA confirmación+recordatorio"
                       value={
-                        currentReminderTotal > 0
-                          ? `${currentReminderTotal.toLocaleString("es-CL")} msgs / mes`
+                        currentWaConfirmacionTotal > 0
+                          ? `${currentWaConfirmacionTotal.toLocaleString("es-CL")} msgs / mes`
                           : "No incluidos"
                       }
                     />
                     <SummaryLine
-                      label="Campanas WhatsApp"
+                      label="Campañas WhatsApp"
                       value={
-                        currentCampaignTotal > 0
-                          ? `${currentCampaignTotal.toLocaleString("es-CL")} msgs / mes`
-                          : supportsCampaignExtra
+                        currentCampanaWaTotal > 0
+                          ? `${currentCampanaWaTotal.toLocaleString("es-CL")} msgs / mes`
+                          : supportsCampanaWaExtra
                           ? "Disponible como adicional"
                           : "No incluidas"
                       }
@@ -1872,9 +1937,9 @@ function PlanesPageContent() {
                     <SummaryLine
                       label="IA WhatsApp"
                       value={
-                        currentAiTotal > 0
-                          ? `${currentAiTotal.toLocaleString("es-CL")} conversaciones / mes`
-                          : supportsAiExtra
+                        currentIaWaTotal > 0
+                          ? `${currentIaWaTotal.toLocaleString("es-CL")} conversaciones / mes`
+                          : supportsIaWaExtra
                           ? "Disponible como adicional"
                           : "No incluida"
                       }

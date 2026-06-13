@@ -102,12 +102,32 @@ const comparisonRows: ComparisonRow[] = [
   {
     label: "Servicios incluidos",
     values: {
-      pro: "10",
-      premium: "25",
-      vip: "50",
-      platinum: "100",
+      pro: "∞",
+      premium: "∞",
+      vip: "∞",
+      platinum: "∞",
     },
-    info: "Cantidad base de servicios activos que puedes configurar en tu cuenta.",
+    info: "Los servicios son ilimitados en todos los planes.",
+  },
+  {
+    label: "Clientes",
+    values: {
+      pro: "∞",
+      premium: "∞",
+      vip: "∞",
+      platinum: "∞",
+    },
+    info: "No hay límite de clientes registrados en ningún plan.",
+  },
+  {
+    label: "Reservas",
+    values: {
+      pro: "∞",
+      premium: "∞",
+      vip: "∞",
+      platinum: "∞",
+    },
+    info: "No hay límite de reservas en ningún plan.",
   },
   {
     label: "Profesional extra",
@@ -181,18 +201,18 @@ const comparisonRows: ComparisonRow[] = [
     highlight: true,
   },
   {
-    label: "Recordatorios por WhatsApp",
+    label: "WA confirmación+recordatorio",
     values: {
-      pro: "—",
-      premium: "100 msgs / mes",
-      vip: "200 msgs / mes",
-      platinum: "400 msgs / mes",
+      pro: "100 msgs / mes",
+      premium: "200 msgs / mes",
+      vip: "300 msgs / mes",
+      platinum: "500 msgs / mes",
     },
-    info: "Capacidad mensual incluida para reducir ausencias desde un canal mucho más directo.",
+    info: "Mensajes WhatsApp incluidos para confirmaciones y recordatorios automáticos. Ampliable con add-on (packs de 50, desde $2.990).",
     highlight: true,
   },
   {
-    label: "IA integrada en WhatsApp",
+    label: "IA WA conversaciones",
     values: {
       pro: "—",
       premium: "—",
@@ -203,14 +223,24 @@ const comparisonRows: ComparisonRow[] = [
     highlight: true,
   },
   {
-    label: "Campañas por WhatsApp",
+    label: "Campañas WhatsApp",
     values: {
       pro: "—",
       premium: "—",
       vip: "Disponible como adicional",
       platinum: "Disponible como adicional",
     },
-    info: "No vienen incluidas. Valor: $9.900 + iva por pack de 100 mensajes. No acumulables y uso dentro del mes.",
+    info: "No vienen incluidas. Valor: $6.990 + iva por pack de 50 mensajes. Uso dentro del mes.",
+  },
+  {
+    label: "Capacidad grupal máxima",
+    values: {
+      pro: "10 cupos",
+      premium: "25 cupos",
+      vip: "50 cupos",
+      platinum: "100 cupos",
+    },
+    info: "Capacidad máxima de cupos por slot grupal incluida en el plan. Ampliable con add-on (packs de 25 cupos).",
   },
   {
     label: "Automatizaciones avanzadas",
