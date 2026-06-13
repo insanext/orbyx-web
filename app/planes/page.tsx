@@ -122,7 +122,7 @@ const plans: Plan[] = [
     includedIaWa: 0,
     includedEmailCampaigns: 200,
     includedGroupCapacity: 10,
-    extras: ["wa_confirmacion", "emails_campana"] as ExtraKey[],
+    extras: ["wa_confirmacion", "emails_campana", "staff", "sucursal", "group_capacity"] as ExtraKey[],
     summaryTitle: "Plan Pro",
     summaryIntro:
       "Para comenzar con reservas online, confirmaciones y control operativo.",
@@ -169,7 +169,7 @@ const plans: Plan[] = [
       { title: "5 profesionales incluidos" },
       { title: "2 sucursales incluidas" },
       { title: "Campanas email 1.000/mes" },
-      { title: "WA confirmacion+recordatorio 200 msgs/mes", highlight: true },
+      { title: "WhatsApp confirmación+recordatorio 200 msgs/mes", highlight: true },
       { title: "Reservas grupales hasta 25 personas/slot" },
       { title: "Modo veterinario (fichas clinicas y mascotas)" },
       { title: "Soporte email + chat" },
@@ -206,7 +206,7 @@ const plans: Plan[] = [
       { title: "10 profesionales incluidos" },
       { title: "3 sucursales incluidas" },
       { title: "Campanas email 2.000/mes" },
-      { title: "WA confirmacion+recordatorio 300 msgs/mes", highlight: true },
+      { title: "WhatsApp confirmación+recordatorio 300 msgs/mes", highlight: true },
       { title: "IA WhatsApp 500 conversaciones/mes", highlight: true },
       { title: "Reservas grupales hasta 50 personas/slot" },
       { title: "Soporte prioritario 24/7" },
@@ -243,7 +243,7 @@ const plans: Plan[] = [
       { title: "25 profesionales incluidos" },
       { title: "10 sucursales incluidas" },
       { title: "Campanas email 5.000/mes" },
-      { title: "WA confirmacion+recordatorio 500 msgs/mes", highlight: true },
+      { title: "WhatsApp confirmación+recordatorio 500 msgs/mes", highlight: true },
       { title: "IA WhatsApp 1.500 conversaciones/mes", highlight: true },
       { title: "Reservas grupales hasta 100 personas/slot" },
       { title: "Automatizaciones avanzadas" },
@@ -261,14 +261,14 @@ const plans: Plan[] = [
 
 const extraConfig: Record<ExtraKey, ExtraConfig> = {
   wa_confirmacion: {
-    title: "WA confirmación+recordatorio",
-    short: "50 msgs WA adicionales por mes.",
+    title: "WhatsApp confirmación+recordatorio",
+    short: "50 msgs WhatsApp adicionales por mes.",
     detail: "por 50 mensajes",
     unitPrice: 2990,
     price_pack2: 2691,
     price_pack3: 2542,
     unitLabel: "pack",
-    usageLabel: "50 msgs WA adicionales / mes",
+    usageLabel: "50 msgs WhatsApp adicionales / mes",
     availableFrom: "Pro, Premium, VIP y Platinum",
     tooltip: "Envía automáticamente un WhatsApp al cliente cuando agenda y otro como recordatorio antes de su cita. 50 mensajes adicionales por pack.",
     icon: <MessageCircle className="h-5 w-5" />,
@@ -623,10 +623,10 @@ function PlanesPageContent() {
     const items: { key: ExtraKey; label: string; amount: number; count: number }[] = [];
 
     if (supportsWaConfirmacionExtra && waConfirmacionExtras > 0) {
-      items.push({ key: "wa_confirmacion", label: `WA confirmación x${waConfirmacionExtras}`, amount: tieredAddonCost(extraConfig.wa_confirmacion, waConfirmacionExtras), count: waConfirmacionExtras });
+      items.push({ key: "wa_confirmacion", label: `WhatsApp confirmación x${waConfirmacionExtras}`, amount: tieredAddonCost(extraConfig.wa_confirmacion, waConfirmacionExtras), count: waConfirmacionExtras });
     }
     if (supportsCampanaWaExtra && campanaWaExtras > 0) {
-      items.push({ key: "campanas_wa", label: `Campañas WA x${campanaWaExtras}`, amount: tieredAddonCost(extraConfig.campanas_wa, campanaWaExtras), count: campanaWaExtras });
+      items.push({ key: "campanas_wa", label: `Campañas WhatsApp x${campanaWaExtras}`, amount: tieredAddonCost(extraConfig.campanas_wa, campanaWaExtras), count: campanaWaExtras });
     }
     if (supportsIaWaExtra && iaWaExtras > 0) {
       items.push({ key: "ia_wa", label: `IA WhatsApp x${iaWaExtras}`, amount: tieredAddonCost(extraConfig.ia_wa, iaWaExtras), count: iaWaExtras });
@@ -924,12 +924,12 @@ function PlanesPageContent() {
       current.includedWaConfirmacion > 0 &&
       target.includedWaConfirmacion === 0
     ) {
-      featuresLost.push("WA confirmación+recordatorio: ya no incluidos");
+      featuresLost.push("WhatsApp confirmación+recordatorio: ya no incluidos");
     } else if (
       target.includedWaConfirmacion < current.includedWaConfirmacion
     ) {
       featuresLost.push(
-        `WA confirmación+recordatorio: ${current.includedWaConfirmacion} → ${target.includedWaConfirmacion} msgs/mes`
+        `WhatsApp confirmación+recordatorio: ${current.includedWaConfirmacion} → ${target.includedWaConfirmacion} msgs/mes`
       );
     }
     if (current.includedIaWa > 0 && target.includedIaWa === 0) {
@@ -1966,7 +1966,7 @@ function PlanesPageContent() {
                       value={`${currentEmailsCampanaTotal.toLocaleString("es-CL")} / mes`}
                     />
                     <SummaryLine
-                      label="WA confirmación+recordatorio"
+                      label="WhatsApp confirmación+recordatorio"
                       value={
                         currentWaConfirmacionTotal > 0
                           ? `${currentWaConfirmacionTotal.toLocaleString("es-CL")} msgs / mes`

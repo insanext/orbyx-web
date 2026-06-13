@@ -6,15 +6,17 @@ import { createClient } from "@supabase/supabase-js";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 const PLAN_LABELS: Record<string, string> = {
-  starter: "Starter",
   pro: "Pro",
-  enterprise: "Enterprise",
+  premium: "Premium",
+  vip: "VIP",
+  platinum: "Platinum",
 };
 
 const PLAN_COLORS: Record<string, string> = {
-  starter: "#6366f1",
-  pro: "#0ea5e9",
-  enterprise: "#f59e0b",
+  pro: "#8b5cf6",
+  premium: "#0ea5e9",
+  vip: "#10b981",
+  platinum: "#f59e0b",
 };
 
 function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
@@ -40,9 +42,9 @@ function SignupInner() {
   const searchParams = useSearchParams();
 
   const plan = useMemo(() => {
-    const p = (searchParams.get("plan") || "starter").toLowerCase();
-    if (p === "pro" || p === "enterprise" || p === "starter") return p;
-    return "starter";
+    const p = (searchParams.get("plan") || "pro").toLowerCase();
+    if (p === "pro" || p === "premium" || p === "vip" || p === "platinum") return p;
+    return "pro";
   }, [searchParams]);
 
   const supabase = useMemo(
