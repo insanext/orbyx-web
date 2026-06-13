@@ -171,7 +171,7 @@ const comparisonRows: ComparisonRow[] = [
     highlight: true,
   },
   {
-    label: "WA confirmación+recordatorio",
+    label: "WhatsApp confirmación+recordatorio",
     values: {
       pro: "100 msgs / mes *",
       premium: "200 msgs / mes",
@@ -182,7 +182,7 @@ const comparisonRows: ComparisonRow[] = [
     highlight: true,
   },
   {
-    label: "IA WA conversaciones",
+    label: "IA WhatsApp conversaciones",
     values: {
       pro: "—",
       premium: "—",
@@ -213,26 +213,6 @@ const comparisonRows: ComparisonRow[] = [
     info: "Capacidad máxima de personas por slot grupal incluida en el plan. Ampliable con add-on (packs de 25 cupos).",
   },
   {
-    label: "Modo veterinario",
-    values: {
-      pro: "—",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
-    },
-    info: "Fichas clínicas y registro de mascotas por cliente. Disponible en Premium, VIP y Platinum.",
-  },
-  {
-    label: "Reservas grupales",
-    values: {
-      pro: "—",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
-    },
-    info: "Clases, talleres, eventos y fitness con múltiples cupos por slot. Disponible en Premium, VIP y Platinum.",
-  },
-  {
     label: "Google Calendar",
     values: {
       pro: "Sí",
@@ -261,16 +241,6 @@ const comparisonRows: ComparisonRow[] = [
       platinum: "—",
     },
     info: "El plan Pro incluye 14 días de prueba gratuita. Los demás planes no incluyen trial.",
-  },
-  {
-    label: "Encuestas post atención por email",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "—",
-      platinum: "Sí",
-    },
-    info: "Encuestas automáticas para medir satisfacción, detectar problemas y mejorar la experiencia del cliente.",
   },
   {
     label: "Estadísticas básicas",
@@ -487,12 +457,12 @@ export default function CompararPlanesPage() {
 
             <div className="rounded-[24px] border border-amber-300/15 bg-amber-500/10 p-4">
               <p className="text-sm font-semibold text-amber-100">
-                Importante sobre mensajes WA e IA
+                Importante sobre mensajes WhatsApp e IA
               </p>
               <p className="mt-2 text-sm leading-6 text-amber-50/90">
-                Los mensajes WA e IA no son acumulables entre períodos. Se renuevan mensualmente.
+                Los mensajes WhatsApp e IA no son acumulables entre períodos. Se renuevan mensualmente.
                 Campañas WhatsApp: <span className="font-semibold">$6.990 + iva</span> por pack de 50 mensajes (solo VIP y Platinum).
-                * WA conf+rec en Pro: disponible al activar plan pagado, no durante el trial de 14 días.
+                * WhatsApp conf+rec en Pro: disponible al activar plan pagado, no durante el trial de 14 días.
               </p>
             </div>
           </div>

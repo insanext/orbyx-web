@@ -377,7 +377,7 @@ function tieredAddonCost(config: ExtraConfig, count: number): number {
 
 function nextPackPrice(config: ExtraConfig, currentCount: number): number {
   if (currentCount <= 0) return config.unitPrice;
-  if (currentCount === 1) return config.price_pack2;
+  if (currentCount <= 2) return config.price_pack2;
   return config.price_pack3;
 }
 
