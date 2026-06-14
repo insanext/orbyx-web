@@ -330,6 +330,7 @@ export default function CustomerDetailPage() {
   const [savingCustomer, setSavingCustomer] = useState(false);
   // Nota por sesión (negocios genéricos — appointments.notes)
   const [savingSessionNoteId, setSavingSessionNoteId] = useState<string | null>(null);
+  const [savedSessionNoteId, setSavedSessionNoteId] = useState<string | null>(null);
   const [editingSessionNoteId, setEditingSessionNoteId] = useState<string | null>(null);
   const [sessionNoteDraft, setSessionNoteDraft] = useState<Record<string, string>>({});
   // Campos personalizados del cliente (extra_data)
@@ -578,17 +579,19 @@ export default function CustomerDetailPage() {
   }
 
   async function handleSaveSessionNote(appointmentId: string, note: string) {
-    if (!customer?.id) return;
+    if (!slug) return;
     setSavingSessionNoteId(appointmentId);
     try {
       const res = await fetch(`${BACKEND_URL}/appointments/${appointmentId}/session-notes`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: note, tenant_id: customer.tenant_id }),
+        body: JSON.stringify({ notes: note, slug }),
       });
       if (res.ok) {
         setAppointments((prev) => prev.map((a) => a.id === appointmentId ? { ...a, notes: note } : a));
         setEditingSessionNoteId(null);
+        setSavedSessionNoteId(appointmentId);
+        setTimeout(() => setSavedSessionNoteId(null), 2500);
       }
     } catch (e) {
       console.error("Error guardando nota sesión:", e);
@@ -3579,16 +3582,21 @@ const lastValidAppointment = validAppointments[0] || null;
                               </div>
                             </div>
                           ) : (
-                            <p
-                              className="mt-1.5 cursor-pointer text-xs transition hover:opacity-80"
-                              style={{ color: appt.notes ? "var(--text-main)" : "var(--text-muted)" }}
-                              onClick={() => {
-                                setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: appt.notes ?? "" }));
-                                setEditingSessionNoteId(appt.id);
-                              }}
-                            >
-                              {appt.notes || "Sin nota · Haz clic para agregar..."}
-                            </p>
+                            <div className="mt-1.5">
+                              {savedSessionNoteId === appt.id && (
+                                <p className="mb-1 text-[11px] font-medium" style={{ color: "#10b981" }}>✓ Nota guardada</p>
+                              )}
+                              <p
+                                className="cursor-pointer text-xs transition hover:opacity-80"
+                                style={{ color: appt.notes ? "var(--text-main)" : "var(--text-muted)" }}
+                                onClick={() => {
+                                  setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: appt.notes ?? "" }));
+                                  setEditingSessionNoteId(appt.id);
+                                }}
+                              >
+                                {appt.notes || "Sin nota · Haz clic para agregar..."}
+                              </p>
+                            </div>
                           )}
                         </div>
                       );
