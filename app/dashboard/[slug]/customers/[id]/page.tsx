@@ -1348,7 +1348,7 @@ const lastValidAppointment = validAppointments[0] || null;
         <div className="grid gap-4 xl:grid-cols-[1.45fr_0.8fr]">
           <div className={`space-y-4 ${isVeterinaria ? "xl:col-span-2" : ""}`}>
 
-<div
+{!isVeterinaria && !isClinica && !isOdontologia && <div
   className="rounded-3xl p-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
   style={{
     background:
@@ -1430,7 +1430,7 @@ const lastValidAppointment = validAppointments[0] || null;
       </>
     )}
   </div>
-</div>
+</div>}
 
 
             {isVeterinaria ? (
@@ -3637,7 +3637,7 @@ const lastValidAppointment = validAppointments[0] || null;
                   </div>
                 )}
               </Panel>
-            ) : !isVeterinaria ? (
+            ) : (!isVeterinaria && !isClinica && !isOdontologia) ? (
               <>
                 <Panel
                   title="Nota interna"
