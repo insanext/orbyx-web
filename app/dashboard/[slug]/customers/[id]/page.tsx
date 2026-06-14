@@ -3497,6 +3497,107 @@ const lastValidAppointment = validAppointments[0] || null;
               </Panel>
             ) : null}
 
+            {/* Historial de atenciones — negocios genéricos, columna izquierda */}
+            {!isVeterinaria && !isClinica && !isOdontologia && (
+              <Panel
+                title="Historial de atenciones"
+                description="Reservas del cliente ordenadas de más reciente a más antigua."
+              >
+                {appointments.length === 0 ? (
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>Sin atenciones registradas.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {appointments.map((appt) => {
+                      const statusLabel: Record<string, string> = {
+                        booked: "Reservado",
+                        completed: "Completado",
+                        no_show: "No se presentó",
+                        rescheduled: "Reagendado",
+                        canceled: "Cancelado",
+                      };
+                      const statusColor: Record<string, string> = {
+                        booked: "#3b82f6",
+                        completed: "#10b981",
+                        no_show: "#ef4444",
+                        rescheduled: "#f59e0b",
+                        canceled: "#6b7280",
+                      };
+                      const isEditingThis = editingSessionNoteId === appt.id;
+                      const isSavingThis = savingSessionNoteId === appt.id;
+                      return (
+                        <div
+                          key={appt.id}
+                          className="rounded-xl border p-3"
+                          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div>
+                              <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
+                                {formatDateLong(appt.start_at)}
+                              </p>
+                              {appt.service_name_snapshot && (
+                                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{appt.service_name_snapshot}</p>
+                              )}
+                            </div>
+                            <span
+                              className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                              style={{
+                                background: `${statusColor[appt.status ?? "booked"] ?? "#6b7280"}20`,
+                                color: statusColor[appt.status ?? "booked"] ?? "#6b7280",
+                              }}
+                            >
+                              {statusLabel[appt.status ?? ""] ?? appt.status}
+                            </span>
+                          </div>
+                          {isEditingThis ? (
+                            <div className="mt-2">
+                              <textarea
+                                className="w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition"
+                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                rows={2}
+                                value={sessionNoteDraft[appt.id] ?? ""}
+                                onChange={(e) => setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: e.target.value }))}
+                                onClick={(e) => e.stopPropagation()}
+                                placeholder="Nota de esta sesión..."
+                              />
+                              <div className="mt-1.5 flex gap-2">
+                                <button
+                                  onClick={() => handleSaveSessionNote(appt.id, sessionNoteDraft[appt.id] ?? "")}
+                                  disabled={isSavingThis}
+                                  className="inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs font-semibold text-white transition disabled:opacity-60"
+                                  style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
+                                >
+                                  {isSavingThis ? "Guardando..." : "Guardar"}
+                                </button>
+                                <button
+                                  onClick={() => setEditingSessionNoteId(null)}
+                                  className="inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs transition"
+                                  style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p
+                              className="mt-1.5 cursor-pointer text-xs transition hover:opacity-80"
+                              style={{ color: appt.notes ? "var(--text-main)" : "var(--text-muted)" }}
+                              onClick={() => {
+                                setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: appt.notes ?? "" }));
+                                setEditingSessionNoteId(appt.id);
+                              }}
+                            >
+                              {appt.notes || "Sin nota · Haz clic para agregar..."}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Panel>
+            )}
+
           </div>
 
           <div className="hidden">
@@ -3712,105 +3813,6 @@ const lastValidAppointment = validAppointments[0] || null;
                   </Panel>
                 )}
 
-                {/* Historial de atenciones (negocios genéricos) */}
-                <Panel
-                  title="Historial de atenciones"
-                  description="Reservas del cliente ordenadas de más reciente a más antigua."
-                >
-                  {appointments.length === 0 ? (
-                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>Sin atenciones registradas.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {appointments.map((appt) => {
-                        const statusLabel: Record<string, string> = {
-                          booked: "Reservado",
-                          completed: "Completado",
-                          no_show: "No se presentó",
-                          rescheduled: "Reagendado",
-                          canceled: "Cancelado",
-                        };
-                        const statusColor: Record<string, string> = {
-                          booked: "#3b82f6",
-                          completed: "#10b981",
-                          no_show: "#ef4444",
-                          rescheduled: "#f59e0b",
-                          canceled: "#6b7280",
-                        };
-                        const isEditingThis = editingSessionNoteId === appt.id;
-                        const isSavingThis = savingSessionNoteId === appt.id;
-                        return (
-                          <div
-                            key={appt.id}
-                            className="rounded-xl border p-3"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
-                          >
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <div>
-                                <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
-                                  {formatDateLong(appt.start_at)}
-                                </p>
-                                {appt.service_name_snapshot && (
-                                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{appt.service_name_snapshot}</p>
-                                )}
-                              </div>
-                              <span
-                                className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-                                style={{
-                                  background: `${statusColor[appt.status ?? "booked"] ?? "#6b7280"}20`,
-                                  color: statusColor[appt.status ?? "booked"] ?? "#6b7280",
-                                }}
-                              >
-                                {statusLabel[appt.status ?? ""] ?? appt.status}
-                              </span>
-                            </div>
-                            {/* Nota de sesión inline */}
-                            {isEditingThis ? (
-                              <div className="mt-2">
-                                <textarea
-                                  className="w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition"
-                                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                                  rows={2}
-                                  value={sessionNoteDraft[appt.id] ?? ""}
-                                  onChange={(e) => setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: e.target.value }))}
-                                  onClick={(e) => e.stopPropagation()}
-                                  placeholder="Nota de esta sesión..."
-                                />
-                                <div className="mt-1.5 flex gap-2">
-                                  <button
-                                    onClick={() => handleSaveSessionNote(appt.id, sessionNoteDraft[appt.id] ?? "")}
-                                    disabled={isSavingThis}
-                                    className="inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs font-semibold text-white transition disabled:opacity-60"
-                                    style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
-                                  >
-                                    {isSavingThis ? "Guardando..." : "Guardar"}
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingSessionNoteId(null)}
-                                    className="inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs transition"
-                                    style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
-                                  >
-                                    Cancelar
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <p
-                                className="mt-1.5 cursor-pointer text-xs transition hover:opacity-80"
-                                style={{ color: appt.notes ? "var(--text-main)" : "var(--text-muted)" }}
-                                onClick={() => {
-                                  setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: appt.notes ?? "" }));
-                                  setEditingSessionNoteId(appt.id);
-                                }}
-                              >
-                                {appt.notes || "Sin nota · Haz clic para agregar..."}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </Panel>
               </>
             ) : null}
 
