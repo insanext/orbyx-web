@@ -1744,28 +1744,44 @@ function getSelectedStaffDayWindow(day: Date) {
 
   async function loadBusinessHours(
   currentTenantId: string,
-  currentBranchId: string
+  currentBranchId: string,
+  useGlobal?: boolean
 ) {
   try {
-    // Siempre intentar primero con branch_id propio
-    const branchResponse = await apiFetch(
-      `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
-    );
-    const branchData = await branchResponse.json();
-    const branchRows: BusinessHourItem[] = Array.isArray(branchData?.hours) ? branchData.hours : [];
-
-    // Si la sucursal no tiene horas propias, usar horario global (branch_id IS NULL)
-    // No depender de branches state para evitar race condition con loadBranches
-    if (branchRows.length === 0) {
-      const globalResponse = await apiFetch(
+    if (useGlobal === true) {
+      // La sucursal delega al horario global (use_global_hours = true)
+      const res = await apiFetch(
         `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&scope=global`
       );
-      const globalData = await globalResponse.json();
-      const globalRows: BusinessHourItem[] = Array.isArray(globalData?.hours) ? globalData.hours : [];
-      setBusinessHours(globalRows);
+      const data = await res.json();
+      setBusinessHours(Array.isArray(data?.hours) ? data.hours : []);
       return;
     }
 
+    if (useGlobal === false) {
+      // La sucursal tiene horario propio
+      const res = await apiFetch(
+        `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+      );
+      const data = await res.json();
+      setBusinessHours(Array.isArray(data?.hours) ? data.hours : []);
+      return;
+    }
+
+    // useGlobal desconocido (branches aún no cargado) — intentar branch, fallback a global
+    const branchRes = await apiFetch(
+      `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+    );
+    const branchData = await branchRes.json();
+    const branchRows: BusinessHourItem[] = Array.isArray(branchData?.hours) ? branchData.hours : [];
+    if (branchRows.length === 0) {
+      const globalRes = await apiFetch(
+        `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&scope=global`
+      );
+      const globalData = await globalRes.json();
+      setBusinessHours(Array.isArray(globalData?.hours) ? globalData.hours : []);
+      return;
+    }
     setBusinessHours(branchRows);
   } catch (err) {
     console.error("Error cargando business hours", err);
@@ -2550,9 +2566,19 @@ setBusinessCategory(
 
   loadStaff(tenantId, selectedBranchId);
   loadServices(tenantId, selectedBranchId);
-  loadBusinessHours(tenantId, selectedBranchId);
   loadBusinessSpecialDates(tenantId, selectedBranchId);
 }, [tenantId, selectedBranchId]);
+
+  // Efecto separado para horarios de negocio: reacciona a branches para honrar use_global_hours
+  // aunque la sucursal tenga rows propios en la BD (legado)
+  useEffect(() => {
+    if (!tenantId || !selectedBranchId) return;
+    const activeBranch = branches.find((b) => b.id === selectedBranchId);
+    const useGlobal = branches.length > 0
+      ? activeBranch?.use_global_hours !== false
+      : undefined; // branches aún no cargado — loadBusinessHours usará fallback seguro
+    loadBusinessHours(tenantId, selectedBranchId, useGlobal);
+  }, [tenantId, selectedBranchId, branches]);
 
   useEffect(() => {
     if (!slug) return;
