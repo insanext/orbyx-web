@@ -34,6 +34,7 @@ type Appointment = {
   service_is_group?: boolean | null;
   service_capacity?: number | null;
   status: string;
+  notes?: string | null;
   customer_data?: {
     pet_name?: string;
     pet_species?: string;
@@ -1237,23 +1238,23 @@ next_control_custom_unit: "days",
   }
 
   useEffect(() => {
-    setCustomerNote("");
+    setCustomerNote(selectedAppointment?.notes ?? "");
     setNoteSaved(false);
   }, [selectedAppointment?.id]);
 
   async function handleSaveCustomerNote() {
-    if (!selectedAppointment?.customer_id || !slug) return;
+    if (!selectedAppointment?.id || !tenantId) return;
     setSavingNote(true);
     try {
-      await apiFetch(`${BACKEND_URL}/customers/${selectedAppointment.customer_id}`, {
+      await apiFetch(`${BACKEND_URL}/appointments/${selectedAppointment.id}/session-notes`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: customerNote, slug }),
+        body: JSON.stringify({ notes: customerNote, tenant_id: tenantId }),
       });
       setNoteSaved(true);
       setTimeout(() => setNoteSaved(false), 2500);
     } catch (e) {
-      console.error("Error guardando nota cliente:", e);
+      console.error("Error guardando nota sesión:", e);
     } finally {
       setSavingNote(false);
     }

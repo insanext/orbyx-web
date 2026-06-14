@@ -10,12 +10,14 @@ const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 type Customer = {
   id: string;
+  tenant_id: string;
   name: string;
   email: string | null;
   phone: string | null;
   last_visit_at: string | null;
   total_visits: number;
   notes?: string | null;
+  extra_data?: Record<string, string> | null;
   rut?: string | null;
   birth_date?: string | null;
   sex?: string | null;
@@ -326,6 +328,15 @@ export default function CustomerDetailPage() {
   const [editingCustomer, setEditingCustomer] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({ name: "", phone: "", email: "" });
   const [savingCustomer, setSavingCustomer] = useState(false);
+  // Nota por sesión (negocios genéricos — appointments.notes)
+  const [savingSessionNoteId, setSavingSessionNoteId] = useState<string | null>(null);
+  const [editingSessionNoteId, setEditingSessionNoteId] = useState<string | null>(null);
+  const [sessionNoteDraft, setSessionNoteDraft] = useState<Record<string, string>>({});
+  // Campos personalizados del cliente (extra_data)
+  const [bookingFields, setBookingFields] = useState<{ key: string; label: string }[]>([]);
+  const [editingExtraData, setEditingExtraData] = useState(false);
+  const [extraDataForm, setExtraDataForm] = useState<Record<string, string>>({});
+  const [savingExtraData, setSavingExtraData] = useState(false);
   const [editPatientForm, setEditPatientForm] = useState({
     name: "",
     phone: "",
@@ -566,6 +577,46 @@ export default function CustomerDetailPage() {
     }
   }
 
+  async function handleSaveSessionNote(appointmentId: string, note: string) {
+    if (!customer?.id) return;
+    setSavingSessionNoteId(appointmentId);
+    try {
+      const res = await fetch(`${BACKEND_URL}/appointments/${appointmentId}/session-notes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: note, tenant_id: customer.tenant_id }),
+      });
+      if (res.ok) {
+        setAppointments((prev) => prev.map((a) => a.id === appointmentId ? { ...a, notes: note } : a));
+        setEditingSessionNoteId(null);
+      }
+    } catch (e) {
+      console.error("Error guardando nota sesión:", e);
+    } finally {
+      setSavingSessionNoteId(null);
+    }
+  }
+
+  async function handleSaveExtraData() {
+    if (!customer?.id) return;
+    setSavingExtraData(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/customers/${customer.id}/extra-data`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ extra_data: extraDataForm, slug }),
+      });
+      if (res.ok) {
+        setCustomer((prev) => prev ? { ...prev, extra_data: extraDataForm } as any : prev);
+        setEditingExtraData(false);
+      }
+    } catch (e) {
+      console.error("Error guardando extra_data:", e);
+    } finally {
+      setSavingExtraData(false);
+    }
+  }
+
   async function handleUpdateCustomer() {
     if (!customer || !editPatientForm.name.trim()) return;
     try {
@@ -767,6 +818,20 @@ export default function CustomerDetailPage() {
         if (found) {
           setNoteValue(found.notes ?? "");
           setEditCustomerForm({ name: found.name ?? "", phone: found.phone ?? "", email: found.email ?? "" });
+          setExtraDataForm((found as any).extra_data ?? {});
+        }
+
+        try {
+          const resFields = await fetch(`${BACKEND_URL}/booking-fields/${slug}`);
+          const dataFields = await resFields.json();
+          const cfg = dataFields.booking_fields_config;
+          setBookingFields(
+            Array.isArray(cfg)
+              ? cfg.filter((f: any) => f.active && f.key && f.label).map((f: any) => ({ key: f.key, label: f.label }))
+              : []
+          );
+        } catch {
+          setBookingFields([]);
         }
 
         try {
@@ -3533,57 +3598,220 @@ const lastValidAppointment = validAppointments[0] || null;
                 )}
               </Panel>
             ) : !isVeterinaria ? (
-              <Panel
-                title="Nota interna"
-                description="Notas privadas sobre este cliente, visibles solo para el negocio."
-              >
-                {editingNote ? (
-                  <div>
-                    <textarea
-                      className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
-                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                      rows={4}
-                      value={noteValue}
-                      onChange={(e) => setNoteValue(e.target.value)}
-                      placeholder="Escribe una nota interna sobre este cliente..."
-                    />
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={handleSaveNote}
-                        disabled={savingNote}
-                        className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-60"
-                        style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
-                      >
-                        {savingNote ? "Guardando..." : "Guardar"}
-                      </button>
-                      <button
-                        onClick={() => { setEditingNote(false); setNoteValue(customer.notes ?? ""); }}
-                        className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm transition"
-                        style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
-                      >
-                        Cancelar
-                      </button>
+              <>
+                <Panel
+                  title="Nota interna"
+                  description="Notas privadas sobre este cliente, visibles solo para el negocio."
+                >
+                  {editingNote ? (
+                    <div>
+                      <textarea
+                        className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                        rows={4}
+                        value={noteValue}
+                        onChange={(e) => setNoteValue(e.target.value)}
+                        placeholder="Escribe una nota interna sobre este cliente..."
+                      />
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          onClick={handleSaveNote}
+                          disabled={savingNote}
+                          className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-60"
+                          style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
+                        >
+                          {savingNote ? "Guardando..." : "Guardar"}
+                        </button>
+                        <button
+                          onClick={() => { setEditingNote(false); setNoteValue(customer.notes ?? ""); }}
+                          className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm transition"
+                          style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div
-                    className="cursor-pointer rounded-xl border px-3 py-2.5 text-sm transition hover:opacity-80"
-                    style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: customer.notes ? "var(--text-main)" : "var(--text-muted)" }}
-                    onClick={() => setEditingNote(true)}
+                  ) : (
+                    <div
+                      className="cursor-pointer rounded-xl border px-3 py-2.5 text-sm transition hover:opacity-80"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: customer.notes ? "var(--text-main)" : "var(--text-muted)" }}
+                      onClick={() => setEditingNote(true)}
+                    >
+                      {customer.notes || "Sin notas. Haz clic para agregar..."}
+                    </div>
+                  )}
+                  {!editingNote && (
+                    <button
+                      onClick={() => setEditingNote(true)}
+                      className="mt-2 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {customer.notes ? "Editar nota" : "Agregar nota"}
+                    </button>
+                  )}
+                </Panel>
+
+                {/* Campos personalizados del cliente (extra_data) */}
+                {bookingFields.length > 0 && (
+                  <Panel
+                    title="Campos personalizados"
+                    description="Datos adicionales capturados en el formulario de reserva."
                   >
-                    {customer.notes || "Sin notas. Haz clic para agregar..."}
-                  </div>
+                    {editingExtraData ? (
+                      <div className="space-y-3">
+                        {bookingFields.map((field) => (
+                          <div key={field.key}>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                              {field.label}
+                            </label>
+                            <input
+                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                              value={extraDataForm[field.key] ?? ""}
+                              onChange={(e) => setExtraDataForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                            />
+                          </div>
+                        ))}
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={handleSaveExtraData}
+                            disabled={savingExtraData}
+                            className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-60"
+                            style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
+                          >
+                            {savingExtraData ? "Guardando..." : "Guardar"}
+                          </button>
+                          <button
+                            onClick={() => { setEditingExtraData(false); setExtraDataForm((customer as any).extra_data ?? {}); }}
+                            className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm transition"
+                            style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {bookingFields.map((field) => (
+                          <div key={field.key} className="flex gap-2 text-sm">
+                            <span className="w-32 shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: "var(--text-muted)" }}>{field.label}</span>
+                            <span style={{ color: (customer as any).extra_data?.[field.key] ? "var(--text-main)" : "var(--text-muted)" }}>
+                              {(customer as any).extra_data?.[field.key] || "—"}
+                            </span>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => setEditingExtraData(true)}
+                          className="mt-1 text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Editar campos
+                        </button>
+                      </div>
+                    )}
+                  </Panel>
                 )}
-                {!editingNote && (
-                  <button
-                    onClick={() => setEditingNote(true)}
-                    className="mt-2 text-xs"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {customer.notes ? "Editar nota" : "Agregar nota"}
-                  </button>
-                )}
-              </Panel>
+
+                {/* Historial de atenciones (negocios genéricos) */}
+                <Panel
+                  title="Historial de atenciones"
+                  description="Reservas del cliente ordenadas de más reciente a más antigua."
+                >
+                  {appointments.length === 0 ? (
+                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>Sin atenciones registradas.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {appointments.map((appt) => {
+                        const statusLabel: Record<string, string> = {
+                          booked: "Reservado",
+                          completed: "Completado",
+                          no_show: "No se presentó",
+                          rescheduled: "Reagendado",
+                          canceled: "Cancelado",
+                        };
+                        const statusColor: Record<string, string> = {
+                          booked: "#3b82f6",
+                          completed: "#10b981",
+                          no_show: "#ef4444",
+                          rescheduled: "#f59e0b",
+                          canceled: "#6b7280",
+                        };
+                        const isEditingThis = editingSessionNoteId === appt.id;
+                        const isSavingThis = savingSessionNoteId === appt.id;
+                        return (
+                          <div
+                            key={appt.id}
+                            className="rounded-xl border p-3"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <div>
+                                <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
+                                  {formatDateLong(appt.start_at)}
+                                </p>
+                                {appt.service_name_snapshot && (
+                                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{appt.service_name_snapshot}</p>
+                                )}
+                              </div>
+                              <span
+                                className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                                style={{
+                                  background: `${statusColor[appt.status ?? "booked"] ?? "#6b7280"}20`,
+                                  color: statusColor[appt.status ?? "booked"] ?? "#6b7280",
+                                }}
+                              >
+                                {statusLabel[appt.status ?? ""] ?? appt.status}
+                              </span>
+                            </div>
+                            {/* Nota de sesión inline */}
+                            {isEditingThis ? (
+                              <div className="mt-2">
+                                <textarea
+                                  className="w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition"
+                                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                                  rows={2}
+                                  value={sessionNoteDraft[appt.id] ?? ""}
+                                  onChange={(e) => setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: e.target.value }))}
+                                  onClick={(e) => e.stopPropagation()}
+                                  placeholder="Nota de esta sesión..."
+                                />
+                                <div className="mt-1.5 flex gap-2">
+                                  <button
+                                    onClick={() => handleSaveSessionNote(appt.id, sessionNoteDraft[appt.id] ?? "")}
+                                    disabled={isSavingThis}
+                                    className="inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs font-semibold text-white transition disabled:opacity-60"
+                                    style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
+                                  >
+                                    {isSavingThis ? "Guardando..." : "Guardar"}
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingSessionNoteId(null)}
+                                    className="inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs transition"
+                                    style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p
+                                className="mt-1.5 cursor-pointer text-xs transition hover:opacity-80"
+                                style={{ color: appt.notes ? "var(--text-main)" : "var(--text-muted)" }}
+                                onClick={() => {
+                                  setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: appt.notes ?? "" }));
+                                  setEditingSessionNoteId(appt.id);
+                                }}
+                              >
+                                {appt.notes || "Sin nota · Haz clic para agregar..."}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Panel>
+              </>
             ) : null}
 
                       </div>
