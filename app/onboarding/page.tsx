@@ -44,14 +44,65 @@ const LABEL_STYLE: React.CSSProperties = {
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const DAY_KEYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
-const CATEGORIES = [
-  { value: "generico", label: "Genérico" },
-  { value: "veterinaria", label: "Veterinaria" },
-  { value: "fitness", label: "Fitness" },
-  { value: "clases", label: "Clases" },
-  { value: "talleres", label: "Talleres" },
-  { value: "eventos", label: "Eventos" },
+const CATEGORY_GROUPS = [
+  {
+    group: "Salud y Bienestar",
+    options: [
+      { key: "medico",            category: "clinica",       label: "Médico / Consulta médica" },
+      { key: "psicologo",         category: "clinica",       label: "Psicólogo(a)" },
+      { key: "nutricionista",     category: "clinica",       label: "Nutricionista" },
+      { key: "kinesiologo",       category: "clinica",       label: "Kinesiólogo(a)" },
+      { key: "fonoaudiologo",     category: "clinica",       label: "Fonoaudiólogo(a)" },
+      { key: "podologo",          category: "clinica",       label: "Podólogo(a)" },
+      { key: "t_ocupacional",     category: "clinica",       label: "Terapeuta ocupacional" },
+      { key: "t_complementario",  category: "clinica",       label: "Terapeuta complementario" },
+      { key: "enfermeria",        category: "clinica",       label: "Enfermería" },
+      { key: "centro_salud",      category: "clinica",       label: "Centro de salud" },
+      { key: "dental",            category: "odontologia",   label: "Clínica dental" },
+      { key: "otro_salud",        category: "clinica",       label: "Otro profesional de salud" },
+    ],
+  },
+  {
+    group: "Veterinaria y Mascotas",
+    options: [
+      { key: "vet_clinica",       category: "vet",           label: "Clínica veterinaria" },
+      { key: "peluqueria_can",    category: "vet",           label: "Peluquería canina" },
+      { key: "spa_mascotas",      category: "vet",           label: "Spa de mascotas" },
+      { key: "guarderia_masc",    category: "vet",           label: "Guardería de mascotas" },
+      { key: "adiestramiento",    category: "vet",           label: "Adiestramiento" },
+      { key: "otro_vet",          category: "vet",           label: "Otro servicio para mascotas" },
+    ],
+  },
+  {
+    group: "Clases y actividades grupales",
+    options: [
+      { key: "gimnasio",          category: "group_booking", label: "Gimnasio" },
+      { key: "yoga",              category: "group_booking", label: "Yoga" },
+      { key: "pilates",           category: "group_booking", label: "Pilates" },
+      { key: "crossfit",          category: "group_booking", label: "Crossfit" },
+      { key: "talleres",          category: "group_booking", label: "Talleres" },
+      { key: "academia",          category: "group_booking", label: "Academia" },
+      { key: "clases_part",       category: "group_booking", label: "Clases particulares" },
+      { key: "otro_grupal",       category: "group_booking", label: "Otro servicio grupal" },
+    ],
+  },
+  {
+    group: "Servicios y otros negocios",
+    options: [
+      { key: "taller_automotriz", category: "generico", subtype: "taller_automotriz", label: "Taller automotriz" },
+      { key: "salon_belleza",     category: "generico", label: "Salón de belleza" },
+      { key: "barberia",          category: "generico", label: "Barbería" },
+      { key: "serv_prof",         category: "generico", label: "Servicios profesionales" },
+      { key: "consultoria",       category: "generico", label: "Consultoría" },
+      { key: "serv_domicilio",    category: "generico", label: "Servicios a domicilio" },
+      { key: "otro_negocio",      category: "generico", label: "Otro negocio" },
+    ],
+  },
 ];
+
+const CATEGORY_MAP = Object.fromEntries(
+  CATEGORY_GROUPS.flatMap((g) => g.options.map((o) => [o.key, o]))
+);
 
 // ─── Step indicator ──────────────────────────────────────────────────────────
 function StepIndicator({ step, total }: { step: number; total: number }) {
@@ -184,7 +235,7 @@ function OnboardingInner() {
 
   // Step 1
   const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState("generico");
+  const [category, setCategory] = useState("medico");
 
   // Step 2 — bloques globales + días activos como índices numéricos
   type DayBlock = { start: string; end: string };
@@ -225,14 +276,17 @@ function OnboardingInner() {
     setError(null);
     setLoading(true);
     try {
+      const selectedCat = CATEGORY_MAP[category];
+      const businessCategory = selectedCat?.category ?? "generico";
+      const businessSubtype = (selectedCat as any)?.subtype as string | undefined;
       const res = await fetch(`${backend}/tenants/${tenantId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: businessName.trim(),
           business_name: businessName.trim(),
-          category,
-          ...(category ? { business_category: category } : {}),
+          business_category: businessCategory,
+          ...(businessSubtype ? { business_subtype: businessSubtype } : {}),
         }),
       });
       if (!res.ok) {
@@ -482,10 +536,14 @@ function OnboardingInner() {
                 onChange={(e) => setCategory(e.target.value)}
                 style={{ ...INPUT_STYLE, appearance: "none" as any }}
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value} style={{ background: "#1e293b" }}>
-                    {c.label}
-                  </option>
+                {CATEGORY_GROUPS.map((g) => (
+                  <optgroup key={g.group} label={g.group} style={{ background: "#1e293b", color: "#94a3b8" }}>
+                    {g.options.map((o) => (
+                      <option key={o.key} value={o.key} style={{ background: "#1e293b" }}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>
