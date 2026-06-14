@@ -403,6 +403,9 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   const [error, setError] = useState("");
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
+  const [customerNote, setCustomerNote] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
   const [selectedWeekGroup, setSelectedWeekGroup] =
     useState<WeekGroupedAppointmentsPopover>(null);
   const [selectedEmptySlotKey, setSelectedEmptySlotKey] = useState("");
@@ -1231,6 +1234,29 @@ next_control_custom_unit: "days",
 
     const groupKey = encodeURIComponent(getAppointmentGroupKey(selectedAppointment));
     router.push(`/dashboard/${encodeURIComponent(slug)}/agenda/group/${groupKey}`);
+  }
+
+  useEffect(() => {
+    setCustomerNote("");
+    setNoteSaved(false);
+  }, [selectedAppointment?.id]);
+
+  async function handleSaveCustomerNote() {
+    if (!selectedAppointment?.customer_id || !slug) return;
+    setSavingNote(true);
+    try {
+      await apiFetch(`${BACKEND_URL}/customers/${selectedAppointment.customer_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: customerNote, slug }),
+      });
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 2500);
+    } catch (e) {
+      console.error("Error guardando nota cliente:", e);
+    } finally {
+      setSavingNote(false);
+    }
   }
 
   function handleAppointmentMouseEnter(
@@ -5710,6 +5736,39 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               <UserRound className="h-3.5 w-3.5" />
                               {isVeterinaria || isClinica || isOdontologia ? "Llenar ficha / consulta" : "Ver ficha del cliente"}
                             </button>
+
+                            {!(isVeterinaria || isClinica || isOdontologia) && (
+                              <div className="mt-3">
+                                <p className="mb-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+                                  Nota del cliente
+                                </p>
+                                <textarea
+                                  className="w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-blue-500/50"
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-card)",
+                                    color: "var(--text-main)",
+                                  }}
+                                  rows={3}
+                                  placeholder="Agregar nota interna..."
+                                  value={customerNote}
+                                  onChange={(e) => { setCustomerNote(e.target.value); setNoteSaved(false); }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleSaveCustomerNote}
+                                  disabled={savingNote}
+                                  className="mt-1 w-full rounded-lg border py-1.5 text-xs font-medium transition disabled:opacity-50"
+                                  style={{
+                                    borderColor: "rgba(37,99,235,0.30)",
+                                    background: noteSaved ? "rgba(16,185,129,0.15)" : "rgba(37,99,235,0.10)",
+                                    color: noteSaved ? "rgb(16 185 129)" : "#60a5fa",
+                                  }}
+                                >
+                                  {savingNote ? "Guardando..." : noteSaved ? "✓ Guardado" : "Guardar nota"}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ) : null}
                       </div>

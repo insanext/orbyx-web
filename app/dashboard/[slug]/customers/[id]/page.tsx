@@ -15,6 +15,7 @@ type Customer = {
   phone: string | null;
   last_visit_at: string | null;
   total_visits: number;
+  notes?: string | null;
   rut?: string | null;
   birth_date?: string | null;
   sex?: string | null;
@@ -319,6 +320,12 @@ export default function CustomerDetailPage() {
   const [editingPatient, setEditingPatient] = useState(false);
   const [showPatientProfile, setShowPatientProfile] = useState(false);
   const [showResumenModal, setShowResumenModal] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteValue, setNoteValue] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(false);
+  const [editCustomerForm, setEditCustomerForm] = useState({ name: "", phone: "", email: "" });
+  const [savingCustomer, setSavingCustomer] = useState(false);
   const [editPatientForm, setEditPatientForm] = useState({
     name: "",
     phone: "",
@@ -523,6 +530,42 @@ export default function CustomerDetailPage() {
     }
   }
 
+  async function handleSaveNote() {
+    if (!customer?.id || !slug) return;
+    setSavingNote(true);
+    try {
+      await fetch(`${BACKEND_URL}/customers/${customer.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, notes: noteValue }),
+      });
+      setCustomer((prev) => prev ? { ...prev, notes: noteValue } : prev);
+      setEditingNote(false);
+    } catch (e) {
+      console.error("Error guardando nota:", e);
+    } finally {
+      setSavingNote(false);
+    }
+  }
+
+  async function handleSaveCustomerBasic() {
+    if (!customer?.id || !slug || !editCustomerForm.name.trim()) return;
+    setSavingCustomer(true);
+    try {
+      await fetch(`${BACKEND_URL}/customers/${customer.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, ...editCustomerForm }),
+      });
+      setCustomer((prev) => prev ? { ...prev, ...editCustomerForm } : prev);
+      setEditingCustomer(false);
+    } catch (e) {
+      console.error("Error guardando cliente:", e);
+    } finally {
+      setSavingCustomer(false);
+    }
+  }
+
   async function handleUpdateCustomer() {
     if (!customer || !editPatientForm.name.trim()) return;
     try {
@@ -721,6 +764,10 @@ export default function CustomerDetailPage() {
         );
 
         setCustomer(found || null);
+        if (found) {
+          setNoteValue(found.notes ?? "");
+          setEditCustomerForm({ name: found.name ?? "", phone: found.phone ?? "", email: found.email ?? "" });
+        }
 
         try {
           const resPets = await fetch(
@@ -1267,29 +1314,79 @@ const lastValidAppointment = validAppointments[0] || null;
     color: "white",
   }}
 >
-  <div>
-    <h1 className="text-3xl font-bold">
-      {customer.name}
-    </h1>
+  <div className="flex-1 min-w-0">
+    {editingCustomer ? (
+      <div className="flex flex-col gap-2">
+        <input
+          className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder-white/40 focus:border-white/40"
+          placeholder="Nombre"
+          value={editCustomerForm.name}
+          onChange={(e) => setEditCustomerForm((p) => ({ ...p, name: e.target.value }))}
+        />
+        <input
+          className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder-white/40 focus:border-white/40"
+          placeholder="Teléfono"
+          value={editCustomerForm.phone}
+          onChange={(e) => setEditCustomerForm((p) => ({ ...p, phone: e.target.value }))}
+        />
+        <input
+          className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder-white/40 focus:border-white/40"
+          placeholder="Email"
+          type="email"
+          value={editCustomerForm.email}
+          onChange={(e) => setEditCustomerForm((p) => ({ ...p, email: e.target.value }))}
+        />
+        <div className="flex gap-2 mt-1">
+          <button
+            onClick={handleSaveCustomerBasic}
+            disabled={savingCustomer || !editCustomerForm.name.trim()}
+            className="rounded-xl bg-white/20 hover:bg-white/30 px-4 py-1.5 text-sm font-semibold text-white transition disabled:opacity-50"
+          >
+            {savingCustomer ? "Guardando..." : "Guardar"}
+          </button>
+          <button
+            onClick={() => { setEditingCustomer(false); setEditCustomerForm({ name: customer.name ?? "", phone: customer.phone ?? "", email: customer.email ?? "" }); }}
+            className="rounded-xl bg-white/10 hover:bg-white/20 px-4 py-1.5 text-sm text-slate-300 transition"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    ) : (
+      <>
+        <h1 className="text-3xl font-bold">
+          {customer.name}
+        </h1>
 
-    <p className="mt-2 text-sm text-slate-300">
-      📞 {customer.phone || "Sin teléfono"} · ✉️ {customer.email || "Sin email"}
-    </p>
+        <p className="mt-2 text-sm text-slate-300">
+          📞 {customer.phone || "Sin teléfono"} · ✉️ {customer.email || "Sin email"}
+        </p>
 
-    <p className="mt-3 text-sm text-slate-400">
-      {isVeterinaria ? (
-  <>🐶 {pets.length} mascotas · 🩺 {validAppointments.length} visitas</>
-) : (
-  <>🗓️ {latestAppointments.length} registros</>
-)}
-    </p>
+        <p className="mt-3 text-sm text-slate-400">
+          {isVeterinaria ? (
+            <>🐶 {pets.length} mascotas · 🩺 {validAppointments.length} visitas</>
+          ) : (
+            <>🗓️ {latestAppointments.length} registros</>
+          )}
+        </p>
 
-<p className="mt-2 text-xs text-slate-400">
-  Última visita:{" "}
-  {isVeterinaria
-    ? formatDateLong(lastValidAppointment?.start_at)
-    : formatDateLong(lastValidAppointment?.start_at)}
-</p>
+        <p className="mt-2 text-xs text-slate-400">
+          Última visita:{" "}
+          {isVeterinaria
+            ? formatDateLong(lastValidAppointment?.start_at)
+            : formatDateLong(lastValidAppointment?.start_at)}
+        </p>
+
+        {!isVeterinaria && (
+          <button
+            onClick={() => setEditingCustomer(true)}
+            className="mt-3 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 px-3 py-1 text-xs font-medium text-slate-300 transition"
+          >
+            Editar cliente
+          </button>
+        )}
+      </>
+    )}
   </div>
 </div>
 
@@ -3437,13 +3534,55 @@ const lastValidAppointment = validAppointments[0] || null;
               </Panel>
             ) : !isVeterinaria ? (
               <Panel
-                title="Seguimiento"
-                description="Espacio preparado para futuras acciones del cliente."
+                title="Nota interna"
+                description="Notas privadas sobre este cliente, visibles solo para el negocio."
               >
-                <EmptyState
-                  title="Sin seguimiento adicional"
-                  description="Este bloque puede evolucionar después según el rubro del negocio."
-                />
+                {editingNote ? (
+                  <div>
+                    <textarea
+                      className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                      rows={4}
+                      value={noteValue}
+                      onChange={(e) => setNoteValue(e.target.value)}
+                      placeholder="Escribe una nota interna sobre este cliente..."
+                    />
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={handleSaveNote}
+                        disabled={savingNote}
+                        className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-60"
+                        style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
+                      >
+                        {savingNote ? "Guardando..." : "Guardar"}
+                      </button>
+                      <button
+                        onClick={() => { setEditingNote(false); setNoteValue(customer.notes ?? ""); }}
+                        className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm transition"
+                        style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="cursor-pointer rounded-xl border px-3 py-2.5 text-sm transition hover:opacity-80"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: customer.notes ? "var(--text-main)" : "var(--text-muted)" }}
+                    onClick={() => setEditingNote(true)}
+                  >
+                    {customer.notes || "Sin notas. Haz clic para agregar..."}
+                  </div>
+                )}
+                {!editingNote && (
+                  <button
+                    onClick={() => setEditingNote(true)}
+                    className="mt-2 text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {customer.notes ? "Editar nota" : "Agregar nota"}
+                  </button>
+                )}
               </Panel>
             ) : null}
 
