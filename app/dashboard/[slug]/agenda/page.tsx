@@ -2051,6 +2051,12 @@ async function loadPendingCloseAppointments() {
       setStatusSaving(true);
       setError("");
 
+      const isGeneric = !(isVeterinaria || isClinica || isOdontologia);
+      const body: Record<string, unknown> = { status: newStatus };
+      if (isGeneric && customerNote.trim()) {
+        body.notes = customerNote.trim();
+      }
+
       const res = await apiFetch(
         `${BACKEND_URL}/appointments/${appointmentId}/status`,
         {
@@ -2058,9 +2064,7 @@ async function loadPendingCloseAppointments() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            status: newStatus,
-          }),
+          body: JSON.stringify(body),
         }
       );
 
@@ -2072,6 +2076,11 @@ async function loadPendingCloseAppointments() {
 
       if (data?.appointment) {
         applyAppointmentUpdate(data.appointment);
+      }
+
+      if (isGeneric) {
+        setCustomerNote("");
+        setNoteSaved(false);
       }
 
       await loadAppointments({ preserveSelected: true });

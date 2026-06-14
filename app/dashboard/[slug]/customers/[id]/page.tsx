@@ -328,11 +328,7 @@ export default function CustomerDetailPage() {
   const [editingCustomer, setEditingCustomer] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({ name: "", phone: "", email: "" });
   const [savingCustomer, setSavingCustomer] = useState(false);
-  // Nota por sesión (negocios genéricos — appointments.notes)
-  const [savingSessionNoteId, setSavingSessionNoteId] = useState<string | null>(null);
-  const [savedSessionNoteId, setSavedSessionNoteId] = useState<string | null>(null);
-  const [editingSessionNoteId, setEditingSessionNoteId] = useState<string | null>(null);
-  const [sessionNoteDraft, setSessionNoteDraft] = useState<Record<string, string>>({});
+  // (estados de edición inline de nota por sesión eliminados — ahora es solo lectura)
   // Campos personalizados del cliente (extra_data)
   const [bookingFields, setBookingFields] = useState<{ key: string; label: string }[]>([]);
   const [editingExtraData, setEditingExtraData] = useState(false);
@@ -575,28 +571,6 @@ export default function CustomerDetailPage() {
       console.error("Error guardando cliente:", e);
     } finally {
       setSavingCustomer(false);
-    }
-  }
-
-  async function handleSaveSessionNote(appointmentId: string, note: string) {
-    if (!slug) return;
-    setSavingSessionNoteId(appointmentId);
-    try {
-      const res = await fetch(`${BACKEND_URL}/appointments/${appointmentId}/session-notes`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: note, slug }),
-      });
-      if (res.ok) {
-        setAppointments((prev) => prev.map((a) => a.id === appointmentId ? { ...a, notes: note } : a));
-        setEditingSessionNoteId(null);
-        setSavedSessionNoteId(appointmentId);
-        setTimeout(() => setSavedSessionNoteId(null), 2500);
-      }
-    } catch (e) {
-      console.error("Error guardando nota sesión:", e);
-    } finally {
-      setSavingSessionNoteId(null);
     }
   }
 
@@ -3525,8 +3499,6 @@ const lastValidAppointment = validAppointments[0] || null;
                         rescheduled: "#f59e0b",
                         canceled: "#6b7280",
                       };
-                      const isEditingThis = editingSessionNoteId === appt.id;
-                      const isSavingThis = savingSessionNoteId === appt.id;
                       return (
                         <div
                           key={appt.id}
@@ -3552,52 +3524,11 @@ const lastValidAppointment = validAppointments[0] || null;
                               {statusLabel[appt.status ?? ""] ?? appt.status}
                             </span>
                           </div>
-                          {isEditingThis ? (
-                            <div className="mt-2">
-                              <textarea
-                                className="w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none transition"
-                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                                rows={2}
-                                value={sessionNoteDraft[appt.id] ?? ""}
-                                onChange={(e) => setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: e.target.value }))}
-                                onClick={(e) => e.stopPropagation()}
-                                placeholder="Nota de esta sesión..."
-                              />
-                              <div className="mt-1.5 flex gap-2">
-                                <button
-                                  onClick={() => handleSaveSessionNote(appt.id, sessionNoteDraft[appt.id] ?? "")}
-                                  disabled={isSavingThis}
-                                  className="inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs font-semibold text-white transition disabled:opacity-60"
-                                  style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
-                                >
-                                  {isSavingThis ? "Guardando..." : "Guardar"}
-                                </button>
-                                <button
-                                  onClick={() => setEditingSessionNoteId(null)}
-                                  className="inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs transition"
-                                  style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
-                                >
-                                  Cancelar
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="mt-1.5">
-                              {savedSessionNoteId === appt.id && (
-                                <p className="mb-1 text-[11px] font-medium" style={{ color: "#10b981" }}>✓ Nota guardada</p>
-                              )}
-                              <p
-                                className="cursor-pointer text-xs transition hover:opacity-80"
-                                style={{ color: appt.notes ? "var(--text-main)" : "var(--text-muted)" }}
-                                onClick={() => {
-                                  setSessionNoteDraft((prev) => ({ ...prev, [appt.id]: appt.notes ?? "" }));
-                                  setEditingSessionNoteId(appt.id);
-                                }}
-                              >
-                                {appt.notes || "Sin nota · Haz clic para agregar..."}
-                              </p>
-                            </div>
-                          )}
+                          {appt.notes ? (
+                            <p className="mt-1.5 text-xs italic" style={{ color: "var(--text-muted)" }}>
+                              &ldquo;{appt.notes}&rdquo;
+                            </p>
+                          ) : null}
                         </div>
                       );
                     })}
