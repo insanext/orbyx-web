@@ -1754,18 +1754,16 @@ function getSelectedStaffDayWindow(day: Date) {
     const branchData = await branchResponse.json();
     const branchRows: BusinessHourItem[] = Array.isArray(branchData?.hours) ? branchData.hours : [];
 
-    // Si la sucursal no tiene horas propias y usa horario global, buscar las globales (branch_id IS NULL)
+    // Si la sucursal no tiene horas propias, usar horario global (branch_id IS NULL)
+    // No depender de branches state para evitar race condition con loadBranches
     if (branchRows.length === 0) {
-      const activeBranch = branches.find((b) => b.id === currentBranchId);
-      if (activeBranch?.use_global_hours === true) {
-        const globalResponse = await apiFetch(
-          `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&scope=global`
-        );
-        const globalData = await globalResponse.json();
-        const globalRows: BusinessHourItem[] = Array.isArray(globalData?.hours) ? globalData.hours : [];
-        setBusinessHours(globalRows);
-        return;
-      }
+      const globalResponse = await apiFetch(
+        `${BACKEND_URL}/business-hours?tenant_id=${currentTenantId}&scope=global`
+      );
+      const globalData = await globalResponse.json();
+      const globalRows: BusinessHourItem[] = Array.isArray(globalData?.hours) ? globalData.hours : [];
+      setBusinessHours(globalRows);
+      return;
     }
 
     setBusinessHours(branchRows);
@@ -5314,6 +5312,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
         {selectedAppointment ? (
         <div
           ref={detailRef}
+          data-calendar-selectable="true"
           className={`fixed inset-x-3 bottom-3 z-[75] max-h-[82vh] max-w-[calc(100vw-32px)] overflow-y-auto rounded-3xl border p-3 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.55)] backdrop-blur md:inset-x-auto md:right-6 md:top-24 md:bottom-auto ${
             isSelectedGroupAppointment ? "md:w-[460px]" : "md:w-[340px]"
           }`}

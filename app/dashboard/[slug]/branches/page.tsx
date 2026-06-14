@@ -1580,7 +1580,7 @@ export default function BranchesPage() {
                           {editForm.use_global_hours ? (
                             <div className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}>
                               <p className="font-medium" style={{ color: "var(--text-main)" }}>Esta sucursal usa el horario global configurado en Negocio.</p>
-                              <p className="mt-1">{scheduleLoading ? "Cargando horario global..." : summarizeHours(globalHours)}</p>
+                              <p className="mt-1">{scheduleLoading ? "Cargando horario global..." : globalHours.some((h) => h.enabled) ? summarizeHours(globalHours) : "Configura el horario en Negocio → Horarios"}</p>
                             </div>
                           ) : (
                             <div className="space-y-3">
