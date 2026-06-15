@@ -460,6 +460,11 @@ const [photoUrl, setPhotoUrl] = useState("");
 
   const [plan, setPlan] = useState("pro");
   const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    type: "delete" | "deactivate" | "activate" | null;
+    staffItem: StaffItem | null;
+  }>({ open: false, type: null, staffItem: null });
 
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
@@ -1425,10 +1430,30 @@ function validateStaffHours() {
     }
   }
 
-  async function handleDelete(id: string) {
-    const ok = window.confirm("¿Seguro que quieres eliminar este staff?");
-    if (!ok) return;
+  function handleDeleteClick(item: StaffItem) {
+    setConfirmModal({ open: true, type: "delete", staffItem: item });
+  }
 
+  function handleToggleClick(item: StaffItem) {
+    setConfirmModal({
+      open: true,
+      type: item.is_active ? "deactivate" : "activate",
+      staffItem: item,
+    });
+  }
+
+  async function handleConfirmAction() {
+    const { type, staffItem } = confirmModal;
+    if (!staffItem || !type) return;
+    setConfirmModal({ open: false, type: null, staffItem: null });
+    if (type === "delete") {
+      await handleDelete(staffItem.id);
+    } else {
+      await handleToggleStaffActive(staffItem);
+    }
+  }
+
+  async function handleDelete(id: string) {
     try {
       const res = await apiFetch(`${BACKEND_URL}/staff/${id}`, {
         method: "DELETE",
@@ -1454,13 +1479,6 @@ function validateStaffHours() {
 
   async function handleToggleStaffActive(item: StaffItem) {
     const nextActive = !item.is_active;
-    const ok = window.confirm(
-      nextActive
-        ? `¿Quieres activar a ${item.name}?`
-        : `¿Quieres desactivar a ${item.name}?`
-    );
-    if (!ok) return;
-
     try {
       setSaveError("");
       setSaveOk("");
@@ -3638,7 +3656,7 @@ function validateStaffHours() {
 
                       <button
                         type="button"
-                        onClick={() => handleToggleStaffActive(item)}
+                        onClick={() => handleToggleClick(item)}
                         className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                         style={{
                           borderColor: item.is_active
@@ -3655,7 +3673,7 @@ function validateStaffHours() {
 
                       <button
                         type="button"
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDeleteClick(item)}
                         className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-300 transition hover:bg-rose-500/15"
                       >
                         Eliminar
@@ -3954,6 +3972,114 @@ function validateStaffHours() {
           </div>
         </div>
       ) : null}
+
+      {confirmModal.open && confirmModal.staffItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() =>
+              setConfirmModal({ open: false, type: null, staffItem: null })
+            }
+          />
+          <div className="relative z-10 bg-[#0f1729] border border-blue-900/40 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl shadow-blue-950/50">
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                confirmModal.type === "delete"
+                  ? "bg-red-500/10 border border-red-500/30"
+                  : "bg-yellow-500/10 border border-yellow-500/30"
+              }`}
+            >
+              {confirmModal.type === "delete" ? (
+                <svg
+                  className="w-6 h-6 text-red-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-6 h-6 text-yellow-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                  />
+                </svg>
+              )}
+            </div>
+            <h3 className="text-white font-semibold text-center text-lg mb-1">
+              {confirmModal.type === "delete"
+                ? "Eliminar staff"
+                : confirmModal.type === "deactivate"
+                ? "Desactivar staff"
+                : "Activar staff"}
+            </h3>
+            <p className="text-gray-400 text-sm text-center mb-6">
+              {confirmModal.type === "delete" ? (
+                <>
+                  ¿Confirmas que deseas eliminar a{" "}
+                  <span className="text-white font-medium">
+                    {confirmModal.staffItem.name}
+                  </span>
+                  ? Esta acción no se puede deshacer.
+                </>
+              ) : confirmModal.type === "deactivate" ? (
+                <>
+                  ¿Confirmas que deseas desactivar a{" "}
+                  <span className="text-white font-medium">
+                    {confirmModal.staffItem.name}
+                  </span>
+                  ? Podrás reactivarlo después.
+                </>
+              ) : (
+                <>
+                  ¿Confirmas que deseas activar a{" "}
+                  <span className="text-white font-medium">
+                    {confirmModal.staffItem.name}
+                  </span>
+                  ?
+                </>
+              )}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() =>
+                  setConfirmModal({ open: false, type: null, staffItem: null })
+                }
+                className="flex-1 py-2.5 rounded-xl border border-blue-900/40 text-gray-400 hover:text-white hover:border-blue-700/60 text-sm font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
+                  confirmModal.type === "delete"
+                    ? "bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30 hover:border-red-500/50"
+                    : "bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/30 hover:border-yellow-500/50"
+                }`}
+              >
+                {confirmModal.type === "delete"
+                  ? "Sí, eliminar"
+                  : confirmModal.type === "deactivate"
+                  ? "Sí, desactivar"
+                  : "Sí, activar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes lbFadeIn  { from { opacity: 0; } to { opacity: 1; } }
