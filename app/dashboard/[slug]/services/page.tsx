@@ -6,6 +6,23 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Layers3 } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type BusinessResponse = {
   business: {
@@ -28,6 +45,8 @@ type Service = {
   active: boolean;
   is_group?: boolean | null;
   capacity?: number | null;
+  group_id?: string | null;
+  sort_order?: number;
 };
 
 type StaffItem = {
@@ -177,6 +196,107 @@ function Notice({
   );
 }
 
+function SortableServiceRow({
+  service,
+  onEdit,
+  onDelete,
+}: {
+  service: Service;
+  onEdit: (s: Service) => void;
+  onDelete: (s: Service) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: service.id,
+    data: { type: "service", groupId: service.group_id },
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.35 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 px-3 py-2.5 border-b border-blue-900/10 last:border-b-0 hover:bg-blue-950/20 transition-colors group/row"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="text-blue-900/40 hover:text-blue-400 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
+        aria-label="Arrastrar"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <circle cx="9" cy="6" r="1.5" />
+          <circle cx="15" cy="6" r="1.5" />
+          <circle cx="9" cy="12" r="1.5" />
+          <circle cx="15" cy="12" r="1.5" />
+          <circle cx="9" cy="18" r="1.5" />
+          <circle cx="15" cy="18" r="1.5" />
+        </svg>
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate" style={{ color: "var(--text-main)" }}>
+          {service.name}
+        </p>
+        <div className="flex gap-2 flex-wrap mt-0.5">
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {service.duration_minutes} min
+          </span>
+          {service.price ? (
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              ${Number(service.price).toLocaleString("es-CL")}
+            </span>
+          ) : (
+            <span className="text-xs opacity-40" style={{ color: "var(--text-muted)" }}>
+              Sin precio
+            </span>
+          )}
+          {service.is_group && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+              Grupal · cap {service.capacity}
+            </span>
+          )}
+          {!service.active && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/20">
+              Inactivo
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex gap-1.5 opacity-0 group-hover/row:opacity-100 transition-opacity flex-shrink-0">
+        <button
+          onClick={() => onEdit(service)}
+          className="text-xs px-2.5 py-1 rounded-lg border border-blue-900/30 hover:border-blue-500/40 transition-colors"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Editar
+        </button>
+        <button
+          onClick={() => onDelete(service)}
+          className="text-xs px-2.5 py-1 rounded-lg border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Eliminar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ServicesPage() {
   const params = useParams();
   const slug =
@@ -205,6 +325,21 @@ const [businessCategory, setBusinessCategory] = useState("");
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saveOk, setSaveOk] = useState("");
+  const [groups, setGroups] = useState<any[]>([]);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set()
+  );
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    type: "delete-service" | "delete-group" | null;
+    id: string | null;
+    name: string | null;
+  }>({ open: false, type: null, id: null, name: null });
+  const [newGroupName, setNewGroupName] = useState("");
+  const [showNewGroupInput, setShowNewGroupInput] = useState(false);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState("");
+  const [activeId, setActiveId] = useState<string | null>(null);
 
 const [form, setForm] = useState({
   name: "",
@@ -255,6 +390,256 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
   const excessServices = Math.max(0, activeServicesCount - maxServices);
   const hasExcess = excessServices > 0;
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+  const activeService = services.find((s) => s.id === activeId);
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as string);
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event;
+    if (!over) return;
+    const overData = (over.data as any)?.current;
+    const activeData = (active.data as any)?.current;
+    if (!overData || !activeData) return;
+    if (overData.type === "group" && activeData.groupId !== over.id) {
+      setServices((prev) =>
+        prev.map((s) =>
+          s.id === active.id
+            ? {
+                ...s,
+                group_id:
+                  over.id === "none" ? null : (over.id as string),
+              }
+            : s
+        )
+      );
+    }
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null);
+    if (!event.over) return;
+    const order = services.map((s, i) => ({
+      id: s.id,
+      group_id: s.group_id ?? null,
+      sort_order: i,
+    }));
+    try {
+      await fetch(`${BACKEND_URL}/services/reorder`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId, order }),
+      });
+    } catch (e) {
+      console.error("Error guardando orden:", e);
+    }
+  }
+
+  function renderServiceItem(service: Service) {
+    if (editingId === service.id) {
+      return (
+        <div
+          key={service.id}
+          className="rounded-2xl border p-4 mx-3 mb-2"
+          style={{
+            borderColor: "rgba(37,99,235,0.35)",
+            background:
+              "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.05), var(--bg-soft))",
+          }}
+        >
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold" style={{ color: "var(--text-main)" }}>
+                  Editando servicio
+                </p>
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  Actualiza nombre, descripción, duración y precio.
+                </p>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={editForm.name}
+              onChange={(e) =>
+                setEditForm((prev) => ({ ...prev, name: e.target.value }))
+              }
+              placeholder="Nombre del servicio"
+              className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            />
+            <textarea
+              value={editForm.description}
+              onChange={(e) =>
+                setEditForm((prev) => ({ ...prev, description: e.target.value }))
+              }
+              placeholder="Descripción"
+              className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            />
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                  Duración del servicio (min)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editForm.duration_minutes}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      duration_minutes: e.target.value,
+                    }))
+                  }
+                  placeholder="Duración del servicio (min)"
+                  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                  Precio
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editForm.price}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({ ...prev, price: e.target.value }))
+                  }
+                  placeholder="Precio"
+                  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+            </div>
+            {isGroupBookingBusiness ? (
+              <div className="space-y-2">
+                <label
+                  className={`orbyx-services-energy flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${
+                    editForm.is_group ? "orbyx-services-energy-active" : ""
+                  }`}
+                  style={{
+                    borderColor: editForm.is_group
+                      ? "rgba(37,99,235,0.55)"
+                      : "var(--border-color)",
+                    background: editForm.is_group
+                      ? "rgba(37,99,235,0.10)"
+                      : "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={editForm.is_group}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        is_group: e.target.checked,
+                      }))
+                    }
+                  />
+                  Servicio grupal (clases, talleres, etc.)
+                </label>
+                {editForm.is_group ? (
+                  <div className="space-y-1">
+                    <label
+                      className="text-xs font-medium"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Capacidad máxima
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={editForm.capacity}
+                      onChange={(e) =>
+                        setEditForm((prev) => ({
+                          ...prev,
+                          capacity: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-xl border px-4 py-2 text-sm"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => handleSaveEdit(service.id)}
+                disabled={saving}
+                className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "rgba(147,197,253,0.36)",
+                  background:
+                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                }}
+              >
+                {saving ? "Guardando..." : "Guardar cambios"}
+              </button>
+              <button
+                type="button"
+                onClick={cancelEditing}
+                disabled={saving}
+                className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <SortableServiceRow
+        key={service.id}
+        service={service}
+        onEdit={startEditing}
+        onDelete={(s) =>
+          setConfirmModal({
+            open: true,
+            type: "delete-service",
+            id: s.id,
+            name: s.name,
+          })
+        }
+      />
+    );
+  }
+
   const selectedBranchName =
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
 
@@ -285,17 +670,21 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
     currentTenantId: string,
     currentBranchId: string
   ) {
-    const [servicesRes, staffRes, staffServicesRes] = await Promise.all([
-      fetch(
-        `${BACKEND_URL}/services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
-      ),
-      fetch(
-        `${BACKEND_URL}/staff?tenant_id=${currentTenantId}&branch_id=${currentBranchId}&active=true`
-      ),
-      fetch(
-        `${BACKEND_URL}/staff-services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
-      ),
-    ]);
+    const [servicesRes, staffRes, staffServicesRes, groupsRes] =
+      await Promise.all([
+        fetch(
+          `${BACKEND_URL}/services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+        ),
+        fetch(
+          `${BACKEND_URL}/staff?tenant_id=${currentTenantId}&branch_id=${currentBranchId}&active=true`
+        ),
+        fetch(
+          `${BACKEND_URL}/staff-services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+        ),
+        fetch(
+          `${BACKEND_URL}/service-groups?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+        ),
+      ]);
 
     const servicesData: { services?: Service[]; error?: string } =
       await servicesRes.json();
@@ -305,6 +694,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
       staff_services?: StaffServiceItem[];
       error?: string;
     } = await staffServicesRes.json();
+    const groupsData = await groupsRes.json().catch(() => []);
 
     if (!servicesRes.ok) {
       throw new Error(
@@ -334,6 +724,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
           : []
       )
     );
+    setGroups(Array.isArray(groupsData) ? groupsData : []);
   }
 
   function formatPrice(price: number | null) {
@@ -873,12 +1264,6 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
       setSaveError("");
       setSaveOk("");
 
-      const confirmed = window.confirm(
-        "¿Seguro que deseas eliminar este servicio?"
-      );
-
-      if (!confirmed) return;
-
       setSaving(true);
 
       const response = await apiFetch(`${BACKEND_URL}/services/${serviceId}`, {
@@ -1191,9 +1576,87 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
 
         <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Servicios actuales
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                Servicios actuales
+              </h3>
+              {selectedBranchId && !loading && (
+                <button
+                  onClick={() => setShowNewGroupInput(true)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border border-blue-900/30 hover:border-blue-500/40 transition-colors"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    <line x1="12" y1="11" x2="12" y2="17" />
+                    <line x1="9" y1="14" x2="15" y2="14" />
+                  </svg>
+                  Nueva categoría
+                </button>
+              )}
+            </div>
+
+            {showNewGroupInput && (
+              <div className="flex gap-2">
+                <input
+                  autoFocus
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter" && newGroupName.trim()) {
+                      const res = await fetch(
+                        `${BACKEND_URL}/service-groups`,
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            tenant_id: tenantId,
+                            branch_id: selectedBranchId,
+                            name: newGroupName,
+                          }),
+                        }
+                      );
+                      const newGroup = await res.json();
+                      setGroups((prev) => [...prev, newGroup]);
+                      setNewGroupName("");
+                      setShowNewGroupInput(false);
+                    }
+                    if (e.key === "Escape") {
+                      setShowNewGroupInput(false);
+                      setNewGroupName("");
+                    }
+                  }}
+                  placeholder="Nombre de la categoría... (Enter para crear)"
+                  className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500/50"
+                  style={{
+                    background: "var(--bg-card)",
+                    borderColor: "var(--border-color)",
+                    color: "var(--text-main)",
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    setShowNewGroupInput(false);
+                    setNewGroupName("");
+                  }}
+                  className="px-3 py-2 rounded-xl border text-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
 
             {!selectedBranchId ? (
               <div className="text-sm text-slate-500">
@@ -1203,281 +1666,301 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
               <div className="text-sm text-slate-500">
                 Cargando servicios...
               </div>
-            ) : services.length === 0 ? (
+            ) : (services.length === 0 && groups.length === 0) ? (
               <div className="text-sm text-slate-500">
                 No tienes servicios aún.
               </div>
             ) : (
-              <div className="space-y-4">
-                {services.map((service) => {
-                  const assignedStaffNames = getStaffNamesForService(service.id);
-
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+              >
+                {groups.map((group) => {
+                  const groupServices = services.filter(
+                    (s) => s.group_id === group.id
+                  );
+                  const isCollapsed = collapsedGroups.has(group.id);
                   return (
                     <div
-                      key={service.id}
-                      className="rounded-2xl border p-4"
-                      style={{
-                        borderColor:
-                          editingId === service.id
-                            ? "rgba(37,99,235,0.35)"
-                            : "var(--border-color)",
-                        background:
-                          editingId === service.id
-                            ? "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.05), var(--bg-soft))"
-                            : "var(--bg-soft)",
-                      }}
+                      key={group.id}
+                      className="mb-3 rounded-xl border overflow-hidden"
+                      style={{ borderColor: "rgba(37,99,235,0.20)" }}
                     >
-                      {editingId === service.id ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p
-                                className="font-semibold"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                Editando servicio
-                              </p>
-                              <p
-                                className="text-sm"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                Actualiza nombre, descripción, duración y precio.
-                              </p>
-                            </div>
-                          </div>
-
-                          <input
-                            type="text"
-                            value={editForm.name}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({ ...prev, name: e.target.value }))
-                            }
-                            placeholder="Nombre del servicio"
-                            className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-card)",
-                              color: "var(--text-main)",
-                            }}
-                          />
-
-                          <textarea
-                            value={editForm.description}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                description: e.target.value,
-                              }))
-                            }
-                            placeholder="Descripción"
-                            className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-card)",
-                              color: "var(--text-main)",
-                            }}
-                          />
-
-                          <div className="grid gap-3 md:grid-cols-2">
-                            <div className="space-y-1">
-                              <label
-                                className="text-xs font-medium"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                Duración del servicio (min)
-                              </label>
-                              <input
-                                type="number"
-                                min="1"
-                                value={editForm.duration_minutes}
-                                onChange={(e) =>
-                                  setEditForm((prev) => ({
-                                    ...prev,
-                                    duration_minutes: e.target.value,
-                                  }))
+                      <div
+                        className="flex items-center justify-between px-3 py-2.5 cursor-pointer"
+                        style={{ background: "rgba(37,99,235,0.08)" }}
+                        onClick={() =>
+                          setCollapsedGroups((prev) => {
+                            const next = new Set(prev);
+                            next.has(group.id)
+                              ? next.delete(group.id)
+                              : next.add(group.id);
+                            return next;
+                          })
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          {editingGroupId === group.id ? (
+                            <input
+                              autoFocus
+                              value={editingGroupName}
+                              onChange={(e) =>
+                                setEditingGroupName(e.target.value)
+                              }
+                              onBlur={async () => {
+                                if (
+                                  editingGroupName.trim() &&
+                                  editingGroupName !== group.name
+                                ) {
+                                  await fetch(
+                                    `${BACKEND_URL}/service-groups/${group.id}`,
+                                    {
+                                      method: "PATCH",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                      },
+                                      body: JSON.stringify({
+                                        name: editingGroupName,
+                                        tenant_id: tenantId,
+                                      }),
+                                    }
+                                  );
+                                  setGroups((prev) =>
+                                    prev.map((g) =>
+                                      g.id === group.id
+                                        ? { ...g, name: editingGroupName }
+                                        : g
+                                    )
+                                  );
                                 }
-                                placeholder="Duración del servicio (min)"
-                                className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                                style={{
-                                  borderColor: "var(--border-color)",
-                                  background: "var(--bg-card)",
-                                  color: "var(--text-main)",
-                                }}
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <label
-                                className="text-xs font-medium"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                Precio
-                              </label>
-                              <input
-                                type="number"
-                                min="0"
-                                value={editForm.price}
-                                onChange={(e) =>
-                                  setEditForm((prev) => ({
-                                    ...prev,
-                                    price: e.target.value,
-                                  }))
-                                }
-                                placeholder="Precio"
-                                className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                                style={{
-                                  borderColor: "var(--border-color)",
-                                  background: "var(--bg-card)",
-                                  color: "var(--text-main)",
-                                }}
-                              />
-                            </div>
-                          </div>
-{isGroupBookingBusiness ? (
-  <div className="space-y-2">
-    <label
-      className={`orbyx-services-energy flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${
-        editForm.is_group ? "orbyx-services-energy-active" : ""
-      }`}
-      style={{
-        borderColor: editForm.is_group
-          ? "rgba(37,99,235,0.55)"
-          : "var(--border-color)",
-        background: editForm.is_group ? "rgba(37,99,235,0.10)" : "var(--bg-card)",
-        color: "var(--text-main)",
-      }}
-    >
-      <input
-        type="checkbox"
-        checked={editForm.is_group}
-        onChange={(e) =>
-          setEditForm((prev) => ({
-            ...prev,
-            is_group: e.target.checked,
-          }))
-        }
-      />
-      Servicio grupal (clases, talleres, etc.)
-    </label>
-
-    {editForm.is_group ? (
-      <div className="space-y-1">
-        <label
-          className="text-xs font-medium"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Capacidad máxima
-        </label>
-        <input
-          type="number"
-          min="1"
-          value={editForm.capacity}
-          onChange={(e) =>
-            setEditForm((prev) => ({
-              ...prev,
-              capacity: e.target.value,
-            }))
-          }
-          className="w-full rounded-xl border px-4 py-2 text-sm"
-          style={{
-            borderColor: "var(--border-color)",
-            background: "var(--bg-card)",
-            color: "var(--text-main)",
-          }}
-        />
-      </div>
-    ) : null}
-  </div>
-) : null}
-
-
-
-                          <div className="flex flex-wrap gap-3">
-                            <button
-                              type="button"
-                              onClick={() => handleSaveEdit(service.id)}
-                              disabled={saving}
-                              className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                              style={{
-                                borderColor: "rgba(147,197,253,0.36)",
-                                background:
-                                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                                setEditingGroupId(null);
                               }}
-                            >
-                              {saving ? "Guardando..." : "Guardar cambios"}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={cancelEditing}
-                              disabled={saving}
-                              className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                              onKeyDown={(e) =>
+                                e.key === "Enter" &&
+                                (e.target as HTMLInputElement).blur()
+                              }
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-transparent border-b text-sm font-medium outline-none px-0"
                               style={{
-                                borderColor: "var(--border-color)",
-                                background: "var(--bg-card)",
+                                borderColor: "rgba(37,99,235,0.50)",
                                 color: "var(--text-main)",
                               }}
+                            />
+                          ) : (
+                            <span
+                              className="text-sm font-medium"
+                              style={{ color: "var(--text-main)" }}
                             >
-                              Cancelar
-                            </button>
-                          </div>
+                              {group.name}
+                            </span>
+                          )}
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-full border"
+                            style={{
+                              background: "rgba(37,99,235,0.12)",
+                              borderColor: "rgba(37,99,235,0.20)",
+                              color: "rgba(96,165,250,0.80)",
+                            }}
+                          >
+                            {groupServices.length}{" "}
+                            {groupServices.length === 1
+                              ? "servicio"
+                              : "servicios"}
+                          </span>
                         </div>
-                      ) : (
-                        <>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p
-                                className="font-semibold"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {service.name}
-                              </p>
-                              <p
-                                className="text-sm"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                {service.description || "Sin descripción"}
-                              </p>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => startEditing(service)}
-                              className="orbyx-services-energy inline-flex h-9 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:opacity-90"
-                              style={{
-                                borderColor: "rgba(37,99,235,0.28)",
-                                background:
-                                  "linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.10))",
-                                color: "rgb(37 99 235)",
-                                boxShadow: "0 6px 18px rgba(37,99,235,0.10)",
-                              }}
-                              aria-label={`Editar servicio ${service.name}`}
+                        <div
+                          className="flex items-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={() => {
+                              setEditingGroupId(group.id);
+                              setEditingGroupName(group.name);
+                            }}
+                            className="p-1.5 rounded-lg transition-colors"
+                            style={{ color: "var(--text-muted)" }}
+                            title="Renombrar"
+                          >
+                            <svg
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              aria-hidden="true"
                             >
-                              Editar servicio
-                            </button>
-                          </div>
-
-                          <div
-                            className="mt-3 text-xs"
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() =>
+                              setConfirmModal({
+                                open: true,
+                                type: "delete-group",
+                                id: group.id,
+                                name: group.name,
+                              })
+                            }
+                            className="p-1.5 rounded-lg transition-colors hover:text-red-400"
                             style={{ color: "var(--text-muted)" }}
+                            title="Eliminar grupo"
                           >
-                            {service.duration_minutes} min · {formatPrice(service.price)}
-                          </div>
-
-                          <div
-                            className="mt-2 text-xs"
+                            <svg
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              aria-hidden="true"
+                            >
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14H6L5 6" />
+                              <path d="M10 11v6M14 11v6" />
+                              <path d="M9 6V4h6v2" />
+                            </svg>
+                          </button>
+                          <svg
+                            className={`transition-transform ${
+                              isCollapsed ? "" : "rotate-180"
+                            }`}
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
                             style={{ color: "var(--text-muted)" }}
+                            aria-hidden="true"
                           >
-                            {assignedStaffNames.length > 0
-                              ? assignedStaffNames.join(", ")
-                              : "Sin staff"}
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </div>
+                      </div>
+                      {!isCollapsed && (
+                        <SortableContext
+                          items={groupServices.map((s) => s.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div>
+                            {groupServices.length === 0 ? (
+                              <div
+                                className="px-3 py-4 text-center text-xs border-b"
+                                style={{
+                                  color: "var(--text-muted)",
+                                  borderColor: "var(--border-color)",
+                                }}
+                              >
+                                Arrastra servicios aquí
+                              </div>
+                            ) : (
+                              groupServices.map((service) =>
+                                renderServiceItem(service)
+                              )
+                            )}
                           </div>
-                        </>
+                        </SortableContext>
                       )}
                     </div>
                   );
                 })}
-              </div>
+                {(() => {
+                  const ungrouped = services.filter((s) => !s.group_id);
+                  const isCollapsed = collapsedGroups.has("none");
+                  return (
+                    <div
+                      className="mb-3 rounded-xl border border-dashed overflow-hidden"
+                      style={{ borderColor: "var(--border-color)" }}
+                    >
+                      <div
+                        className="flex items-center justify-between px-3 py-2.5 cursor-pointer"
+                        onClick={() =>
+                          setCollapsedGroups((prev) => {
+                            const next = new Set(prev);
+                            next.has("none")
+                              ? next.delete("none")
+                              : next.add("none");
+                            return next;
+                          })
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="text-sm"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Sin categoría
+                          </span>
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-full border"
+                            style={{
+                              background: "rgba(0,0,0,0.10)",
+                              borderColor: "var(--border-color)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {ungrouped.length}{" "}
+                            {ungrouped.length === 1 ? "servicio" : "servicios"}
+                          </span>
+                        </div>
+                        <svg
+                          className={`transition-transform ${
+                            isCollapsed ? "" : "rotate-180"
+                          }`}
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          style={{ color: "var(--text-muted)" }}
+                          aria-hidden="true"
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </div>
+                      {!isCollapsed && (
+                        <SortableContext
+                          items={ungrouped.map((s) => s.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div>
+                            {ungrouped.map((service) =>
+                              renderServiceItem(service)
+                            )}
+                          </div>
+                        </SortableContext>
+                      )}
+                    </div>
+                  );
+                })()}
+                <DragOverlay>
+                  {activeService ? (
+                    <div
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-blue-500/40 shadow-lg"
+                      style={{ background: "var(--bg-card)" }}
+                    >
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: "var(--text-main)" }}
+                      >
+                        {activeService.name}
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        · {activeService.duration_minutes} min
+                      </p>
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             )}
           </div>
           <div className="space-y-4">
@@ -1643,6 +2126,102 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
           </div>
         </div>
       </section>
+
+      {confirmModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() =>
+              setConfirmModal({ open: false, type: null, id: null, name: null })
+            }
+          />
+          <div className="relative z-10 bg-[#0f1729] border border-blue-900/40 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl shadow-blue-950/50">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 border border-red-500/30">
+              <svg
+                className="w-6 h-6 text-red-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14H6L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4h6v2" />
+              </svg>
+            </div>
+            <h3 className="text-white font-semibold text-center text-lg mb-1">
+              {confirmModal.type === "delete-service"
+                ? "Eliminar servicio"
+                : "Eliminar categoría"}
+            </h3>
+            <p className="text-gray-400 text-sm text-center mb-6">
+              {confirmModal.type === "delete-service" ? (
+                <>
+                  ¿Confirmas eliminar{" "}
+                  <span className="text-white font-medium">
+                    &quot;{confirmModal.name}&quot;
+                  </span>
+                  ? Los turnos ya agendados no se verán afectados.
+                </>
+              ) : (
+                <>
+                  ¿Confirmas eliminar la categoría{" "}
+                  <span className="text-white font-medium">
+                    &quot;{confirmModal.name}&quot;
+                  </span>
+                  ? Los servicios quedarán sin categoría.
+                </>
+              )}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() =>
+                  setConfirmModal({
+                    open: false,
+                    type: null,
+                    id: null,
+                    name: null,
+                  })
+                }
+                className="flex-1 py-2.5 rounded-xl border border-blue-900/40 text-gray-400 hover:text-white hover:border-blue-700/60 text-sm font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (confirmModal.type === "delete-service" && confirmModal.id) {
+                    await handleDeleteService(confirmModal.id);
+                  } else if (confirmModal.id) {
+                    await fetch(
+                      `${BACKEND_URL}/service-groups/${confirmModal.id}?tenant_id=${tenantId}`,
+                      { method: "DELETE" }
+                    );
+                    setGroups((prev) =>
+                      prev.filter((g) => g.id !== confirmModal.id)
+                    );
+                    setServices((prev) =>
+                      prev.map((s) =>
+                        s.group_id === confirmModal.id
+                          ? { ...s, group_id: null }
+                          : s
+                      )
+                    );
+                  }
+                  setConfirmModal({
+                    open: false,
+                    type: null,
+                    id: null,
+                    name: null,
+                  });
+                }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 hover:border-red-500/50 transition-colors"
+              >
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
