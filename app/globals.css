@@ -74,6 +74,36 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* Dashboard inputs — distinción visual en ambos temas */
+:root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root[data-theme="clasico"] textarea,
+:root[data-theme="clasico"] select {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+:root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+:root[data-theme="clasico"] textarea:focus,
+:root[data-theme="clasico"] select:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+
+:root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root[data-theme="nocturno"] textarea,
+:root[data-theme="nocturno"] select {
+  background-color: #0d1526;
+  border-color: rgba(37,99,235,0.30);
+  color: #f8fafc;
+}
+:root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+:root[data-theme="nocturno"] textarea:focus,
+:root[data-theme="nocturno"] select:focus {
+  border-color: rgba(59,130,246,0.60);
+  background-color: #0f1a2e;
+  outline: none;
+}
+
 .react-calendar {
   width: 100%;
   max-width: 100%;

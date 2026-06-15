@@ -16,11 +16,13 @@ import {
   useSensors,
   DragOverlay,
   closestCenter,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
   useSortable,
+  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -192,6 +194,29 @@ function Notice({
       ) : null}
 
       {children ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
+}
+
+function GroupDropZone({
+  groupId,
+  children,
+}: {
+  groupId: string;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: groupId,
+    data: { type: "group", groupId },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[40px] transition-colors ${
+        isOver ? "bg-blue-500/10" : ""
+      }`}
+    >
+      {children}
     </div>
   );
 }
@@ -402,41 +427,68 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event;
     if (!over) return;
+
+    const activeId = active.id as string;
     const overData = (over.data as any)?.current;
     const activeData = (active.data as any)?.current;
-    if (!overData || !activeData) return;
-    if (overData.type === "group" && activeData.groupId !== over.id) {
-      setServices((prev) =>
-        prev.map((s) =>
-          s.id === active.id
-            ? {
-                ...s,
-                group_id:
-                  over.id === "none" ? null : (over.id as string),
-              }
-            : s
-        )
-      );
+
+    // Determinar grupo destino: puede ser una zona grupo (useDroppable)
+    // o un servicio que pertenece a otro grupo (useSortable)
+    let targetGroupId: string | null;
+    if (overData?.type === "group") {
+      targetGroupId = over.id === "none" ? null : (over.id as string);
+    } else if (overData?.type === "service") {
+      targetGroupId = overData.groupId ?? null;
+    } else {
+      return;
     }
+
+    const sourceGroupId = activeData?.groupId ?? null;
+    if (sourceGroupId === targetGroupId) return;
+
+    setServices((prev) =>
+      prev.map((s) =>
+        s.id === activeId ? { ...s, group_id: targetGroupId } : s
+      )
+    );
   }
 
-  async function handleDragEnd(event: DragEndEvent) {
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
     setActiveId(null);
-    if (!event.over) return;
-    const order = services.map((s, i) => ({
-      id: s.id,
-      group_id: s.group_id ?? null,
-      sort_order: i,
-    }));
-    try {
-      await fetch(`${BACKEND_URL}/services/reorder`, {
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    setServices((prev) => {
+      const activeIdx = prev.findIndex((s) => s.id === activeId);
+      const overIdx = prev.findIndex((s) => s.id === overId);
+
+      // Reordenar dentro del mismo grupo si ambos son servicios
+      let reordered = prev;
+      if (activeIdx !== -1 && overIdx !== -1 && activeId !== overId) {
+        const sameGroup =
+          prev[activeIdx].group_id === prev[overIdx].group_id;
+        if (sameGroup) {
+          reordered = arrayMove(prev, activeIdx, overIdx);
+        }
+      }
+
+      // Persistir orden y group_id actualizado
+      const order = reordered.map((s, i) => ({
+        id: s.id,
+        group_id: s.group_id ?? null,
+        sort_order: i,
+      }));
+      fetch(`${BACKEND_URL}/services/reorder`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenant_id: tenantId, order }),
-      });
-    } catch (e) {
-      console.error("Error guardando orden:", e);
-    }
+      }).catch((e) => console.error("Error guardando orden:", e));
+
+      return reordered;
+    });
   }
 
   function renderServiceItem(service: Service) {
@@ -1605,37 +1657,19 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
             </div>
 
             {showNewGroupInput && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <input
                   autoFocus
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  onKeyDown={async (e) => {
-                    if (e.key === "Enter" && newGroupName.trim()) {
-                      const res = await fetch(
-                        `${BACKEND_URL}/service-groups`,
-                        {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            tenant_id: tenantId,
-                            branch_id: selectedBranchId,
-                            name: newGroupName,
-                          }),
-                        }
-                      );
-                      const newGroup = await res.json();
-                      setGroups((prev) => [...prev, newGroup]);
-                      setNewGroupName("");
-                      setShowNewGroupInput(false);
-                    }
+                  onKeyDown={(e) => {
                     if (e.key === "Escape") {
                       setShowNewGroupInput(false);
                       setNewGroupName("");
                     }
                   }}
-                  placeholder="Nombre de la categoría... (Enter para crear)"
-                  className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500/50"
+                  placeholder="Nombre de la categoría..."
+                  className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors"
                   style={{
                     background: "var(--bg-card)",
                     borderColor: "var(--border-color)",
@@ -1643,11 +1677,37 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                   }}
                 />
                 <button
+                  onClick={async () => {
+                    if (!newGroupName.trim()) return;
+                    const res = await fetch(`${BACKEND_URL}/service-groups`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        tenant_id: tenantId,
+                        branch_id: selectedBranchId,
+                        name: newGroupName.trim(),
+                      }),
+                    });
+                    const newGroup = await res.json();
+                    setGroups((prev) => [...prev, newGroup]);
+                    setNewGroupName("");
+                    setShowNewGroupInput(false);
+                  }}
+                  disabled={!newGroupName.trim()}
+                  className="px-4 py-2 rounded-xl text-white text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgb(37 99 235), rgb(59 130 246))",
+                  }}
+                >
+                  Crear
+                </button>
+                <button
                   onClick={() => {
                     setShowNewGroupInput(false);
                     setNewGroupName("");
                   }}
-                  className="px-3 py-2 rounded-xl border text-sm"
+                  className="px-3 py-2 rounded-xl border text-sm transition-colors"
                   style={{
                     borderColor: "var(--border-color)",
                     color: "var(--text-muted)",
@@ -1703,6 +1763,16 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                         }
                       >
                         <div className="flex items-center gap-2">
+                          <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            aria-hidden="true"
+                            style={{ color: "#f59e0b", flexShrink: 0 }}
+                          >
+                            <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z" />
+                          </svg>
                           {editingGroupId === group.id ? (
                             <input
                               autoFocus
@@ -1847,10 +1917,10 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                           items={groupServices.map((s) => s.id)}
                           strategy={verticalListSortingStrategy}
                         >
-                          <div>
+                          <GroupDropZone groupId={group.id}>
                             {groupServices.length === 0 ? (
                               <div
-                                className="px-3 py-4 text-center text-xs border-b"
+                                className="px-3 py-5 text-center text-xs border-b"
                                 style={{
                                   color: "var(--text-muted)",
                                   borderColor: "var(--border-color)",
@@ -1863,7 +1933,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                                 renderServiceItem(service)
                               )
                             )}
-                          </div>
+                          </GroupDropZone>
                         </SortableContext>
                       )}
                     </div>
@@ -1890,6 +1960,16 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                         }
                       >
                         <div className="flex items-center gap-2">
+                          <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            aria-hidden="true"
+                            style={{ color: "#64748b", flexShrink: 0 }}
+                          >
+                            <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z" />
+                          </svg>
                           <span
                             className="text-sm"
                             style={{ color: "var(--text-muted)" }}
@@ -1929,11 +2009,20 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                           items={ungrouped.map((s) => s.id)}
                           strategy={verticalListSortingStrategy}
                         >
-                          <div>
-                            {ungrouped.map((service) =>
-                              renderServiceItem(service)
+                          <GroupDropZone groupId="none">
+                            {ungrouped.length === 0 ? (
+                              <div
+                                className="px-3 py-5 text-center text-xs"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                Arrastra servicios aquí
+                              </div>
+                            ) : (
+                              ungrouped.map((service) =>
+                                renderServiceItem(service)
+                              )
                             )}
-                          </div>
+                          </GroupDropZone>
                         </SortableContext>
                       )}
                     </div>
