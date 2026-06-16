@@ -75,32 +75,45 @@ body {
 }
 
 /* Dashboard inputs — distinción visual en ambos temas */
-:root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 :root[data-theme="clasico"] textarea,
 :root[data-theme="clasico"] select {
-  background-color: #ffffff;
+  background-color: #f1f5f9;
   border-color: #cbd5e1;
   color: #0f172a;
+  transition: border-color 0.15s, background-color 0.15s;
 }
-:root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+:root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover,
+:root[data-theme="clasico"] textarea:hover,
+:root[data-theme="clasico"] select:hover {
+  border-color: #94a3b8;
+}
+:root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
 :root[data-theme="clasico"] textarea:focus,
 :root[data-theme="clasico"] select:focus {
   border-color: #3b82f6;
+  background-color: #ffffff;
   outline: none;
 }
 
-:root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 :root[data-theme="nocturno"] textarea,
 :root[data-theme="nocturno"] select {
-  background-color: #0d1526;
-  border-color: rgba(37,99,235,0.30);
-  color: #f8fafc;
+  background-color: #1e2d4a;
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #f1f5f9;
+  transition: border-color 0.15s, background-color 0.15s;
 }
-:root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+:root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover,
+:root[data-theme="nocturno"] textarea:hover,
+:root[data-theme="nocturno"] select:hover {
+  border-color: rgba(59, 130, 246, 0.55);
+}
+:root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
 :root[data-theme="nocturno"] textarea:focus,
 :root[data-theme="nocturno"] select:focus {
-  border-color: rgba(59,130,246,0.60);
-  background-color: #0f1a2e;
+  border-color: rgba(59, 130, 246, 0.75);
+  background-color: #223252;
   outline: none;
 }
 
@@ -198,50 +211,3 @@ body {
   }
 }
 
-/* Inputs diferenciados dashboard — modo nocturno */
-[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-[data-theme="nocturno"] textarea,
-[data-theme="nocturno"] select {
-  background-color: #0a0f1e;
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  color: #e2e8f0;
-  transition: border-color 0.15s, background-color 0.15s;
-}
-
-[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover,
-[data-theme="nocturno"] textarea:hover,
-[data-theme="nocturno"] select:hover {
-  border-color: rgba(59, 130, 246, 0.45);
-}
-
-[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
-[data-theme="nocturno"] textarea:focus,
-[data-theme="nocturno"] select:focus {
-  outline: none;
-  border-color: rgba(59, 130, 246, 0.65);
-  background-color: #0d1526;
-}
-
-/* Inputs diferenciados dashboard — modo clásico */
-[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-[data-theme="clasico"] textarea,
-[data-theme="clasico"] select {
-  background-color: #f8fafc;
-  border: 1px solid #cbd5e1;
-  color: #1e293b;
-  transition: border-color 0.15s, background-color 0.15s;
-}
-
-[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover,
-[data-theme="clasico"] textarea:hover,
-[data-theme="clasico"] select:hover {
-  border-color: #94a3b8;
-}
-
-[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
-[data-theme="clasico"] textarea:focus,
-[data-theme="clasico"] select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background-color: #ffffff;
-}
