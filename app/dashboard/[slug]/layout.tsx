@@ -128,7 +128,7 @@ const navSections = [
   },
   {
     title: "Ajustes",
-    items: [{ label: "Configuración", href: "/business", icon: Settings }],
+    items: [{ label: "Configuración", href: "/configuracion", icon: Settings }],
   },
 ];
 
