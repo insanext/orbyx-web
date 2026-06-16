@@ -78,9 +78,9 @@ body {
 :root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 :root[data-theme="clasico"] textarea,
 :root[data-theme="clasico"] select {
-  background-color: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #0f172a;
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
   transition: border-color 0.15s, background-color 0.15s;
 }
 :root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover,
@@ -99,9 +99,9 @@ body {
 :root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 :root[data-theme="nocturno"] textarea,
 :root[data-theme="nocturno"] select {
-  background-color: #1e2d4a;
-  border-color: rgba(59, 130, 246, 0.35);
-  color: #f1f5f9;
+  background-color: #1e2d4a !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #f1f5f9 !important;
   transition: border-color 0.15s, background-color 0.15s;
 }
 :root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover,
