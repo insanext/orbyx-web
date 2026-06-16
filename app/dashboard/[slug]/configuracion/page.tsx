@@ -46,6 +46,16 @@ export default function ConfiguracionPage() {
   const [sendingInvite, setSendingInvite] = useState(false);
   const [inviteMsg, setInviteMsg] = useState("");
   const [inviteIsError, setInviteIsError] = useState(false);
+  const [inviteAuthPwd, setInviteAuthPwd] = useState("");
+  const [permissions, setPermissions] = useState<Record<string, "edit" | "view" | false>>({
+    agenda: false,
+    clientes: false,
+    campanas: false,
+    servicios: false,
+    staff: false,
+    sucursales: false,
+    negocio: false,
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -140,30 +150,59 @@ export default function ConfiguracionPage() {
     }
   };
 
+  const toggleModule = (module: string) => {
+    setPermissions(prev => ({
+      ...prev,
+      [module]: prev[module] === false ? "view" : false,
+    }));
+  };
+
   const handleInvite = async () => {
-    if (!inviteEmail.trim() || !tenantId) return;
+    if (!inviteEmail.trim()) return;
+    if (!inviteAuthPwd) {
+      setInviteMsg("Debes ingresar tu contraseña para confirmar.");
+      return;
+    }
+    const hasAnyPermission = Object.values(permissions).some(v => v !== false);
+    if (!hasAnyPermission) {
+      setInviteMsg("Debes dar acceso a al menos un módulo.");
+      return;
+    }
     setSendingInvite(true);
     setInviteMsg("");
     try {
+      const { error: authErr } = await supabase.auth.signInWithPassword({
+        email: currentUser.email,
+        password: inviteAuthPwd,
+      });
+      if (authErr) {
+        setInviteMsg("Contraseña incorrecta. No se envió la invitación.");
+        setSendingInvite(false);
+        return;
+      }
       const res = await fetch(`${BACKEND_URL}/invitations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tenant_id: tenantId,
           email: inviteEmail,
-          role: inviteRole,
+          role: "custom",
+          permissions,
           invited_by: currentUser?.id,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al enviar invitación");
-      setInviteIsError(false);
       setInviteMsg(`✓ Invitación enviada a ${inviteEmail}`);
       setInviteEmail("");
+      setInviteAuthPwd("");
+      setPermissions({
+        agenda: false, clientes: false, campanas: false,
+        servicios: false, staff: false, sucursales: false, negocio: false,
+      });
       loadTeam(tenantId);
     } catch (e: any) {
-      setInviteIsError(true);
-      setInviteMsg(e.message);
+      setInviteMsg("Error: " + e.message);
     } finally {
       setSendingInvite(false);
       setTimeout(() => setInviteMsg(""), 4000);
@@ -462,47 +501,122 @@ export default function ConfiguracionPage() {
           </div>
 
           {/* Bloque 2: Invitar usuario */}
-          <div className={card} style={cardStyle}>
+          <div className="rounded-2xl border border-blue-900/25 p-5" style={{ background: "var(--bg-card)" }}>
             <h3 className="text-sm font-semibold mb-0.5" style={{ color: "var(--text-main)" }}>
-              Invitar a alguien
+              Crea acceso para tu equipo
             </h3>
-            <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-              Recibirá un correo con acceso al dashboard según el rol que le asignes.
+            <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
+              La persona recibirá un correo para crear su contraseña y acceder al dashboard con los permisos que definas.
             </p>
-            <div className="space-y-3">
-              <div>
-                <label className={label} style={{ color: "var(--text-muted)" }}>Correo electrónico</label>
-                <input
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                  type="email"
-                  placeholder="correo@ejemplo.com"
-                  className={inp}
-                />
-              </div>
-              <div>
-                <label className={label} style={{ color: "var(--text-muted)" }}>Rol</label>
-                <select
-                  value={inviteRole}
-                  onChange={e => setInviteRole(e.target.value)}
-                  className={inp}
-                >
-                  <option value="admin">Administrador — acceso completo excepto billing y usuarios</option>
-                  <option value="branch">Sucursal — solo agenda y clientes de su sucursal</option>
-                  <option value="readonly">Solo lectura — puede ver pero no modificar nada</option>
-                </select>
-              </div>
-              <button
-                onClick={handleInvite}
-                disabled={sendingInvite || !inviteEmail.trim()}
-                className={btn}
-              >
-                {sendingInvite ? "Enviando..." : "Enviar invitación"}
-              </button>
-              {inviteMsg && (
-                <p className={`text-xs ${inviteIsError ? "text-red-400" : "text-green-400"}`}>{inviteMsg}</p>
-              )}
+
+            {/* Email */}
+            <div className="mb-5">
+              <label className={label} style={{ color: "var(--text-muted)" }}>Correo electrónico</label>
+              <input
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+                type="email"
+                placeholder="correo@ejemplo.com"
+                className={inp}
+              />
             </div>
+
+            {/* Permisos por módulo */}
+            <div className="mb-5">
+              <label className={label} style={{ color: "var(--text-muted)" }}>Acceso por módulo</label>
+              <div className="space-y-2 mt-1.5">
+                {[
+                  { key: "agenda", label: "Agenda" },
+                  { key: "clientes", label: "Clientes" },
+                  { key: "campanas", label: "Campañas" },
+                  { key: "servicios", label: "Servicios" },
+                  { key: "staff", label: "Staff" },
+                  { key: "sucursales", label: "Sucursales" },
+                  { key: "negocio", label: "Negocio" },
+                ].map(({ key, label: modLabel }) => (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-blue-900/20"
+                    style={{ background: "rgba(10,15,30,0.5)" }}
+                  >
+                    <span className="text-sm" style={{ color: "var(--text-main)" }}>{modLabel}</span>
+                    <div className="flex items-center gap-3">
+                      {permissions[key] !== false && (
+                        <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ background: "rgba(37,99,235,0.15)" }}>
+                          <button
+                            onClick={() => setPermissions(prev => ({ ...prev, [key]: "view" }))}
+                            className={`text-xs px-2.5 py-1 rounded-md transition-all ${
+                              permissions[key] === "view"
+                                ? "bg-blue-600 text-white"
+                                : "text-blue-300/50 hover:text-blue-300"
+                            }`}
+                          >
+                            Solo ver
+                          </button>
+                          <button
+                            onClick={() => setPermissions(prev => ({ ...prev, [key]: "edit" }))}
+                            className={`text-xs px-2.5 py-1 rounded-md transition-all ${
+                              permissions[key] === "edit"
+                                ? "bg-blue-600 text-white"
+                                : "text-blue-300/50 hover:text-blue-300"
+                            }`}
+                          >
+                            Ver y editar
+                          </button>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => toggleModule(key)}
+                        className="relative flex-shrink-0 rounded-full transition-colors"
+                        style={{
+                          width: 40, height: 22,
+                          background: permissions[key] !== false ? "#2563eb" : "rgba(37,99,235,0.2)",
+                        }}
+                      >
+                        <span
+                          className="absolute top-0.5 bg-white rounded-full transition-transform"
+                          style={{
+                            left: 2, width: 18, height: 18,
+                            transform: permissions[key] !== false ? "translateX(18px)" : "translateX(0)",
+                          }}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs mt-2" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
+                Billing y Configuración solo son accesibles para el propietario.
+              </p>
+            </div>
+
+            {/* Confirmación con contraseña */}
+            <div className="mb-5 p-4 rounded-xl border border-blue-900/30" style={{ background: "rgba(37,99,235,0.06)" }}>
+              <p className="text-xs font-medium mb-0.5" style={{ color: "var(--text-main)" }}>Confirma con tu contraseña</p>
+              <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+                Por seguridad, ingresa tu contraseña actual para enviar esta invitación.
+              </p>
+              <input
+                value={inviteAuthPwd}
+                onChange={e => setInviteAuthPwd(e.target.value)}
+                type="password"
+                placeholder="Tu contraseña actual"
+                className={inp}
+              />
+            </div>
+
+            <button
+              onClick={handleInvite}
+              disabled={sendingInvite || !inviteEmail.trim() || !inviteAuthPwd}
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-40"
+            >
+              {sendingInvite ? "Enviando..." : "Enviar invitación"}
+            </button>
+            {inviteMsg && (
+              <p className={`text-xs mt-3 text-center ${inviteMsg.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>
+                {inviteMsg}
+              </p>
+            )}
           </div>
         </div>
       )}
