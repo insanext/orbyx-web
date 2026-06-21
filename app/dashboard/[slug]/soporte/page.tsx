@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetch } from '@/lib/api'
 
@@ -38,8 +39,9 @@ const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }>
   reopened: { label: 'Reabierto', color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
 }
 
-export default function SoportePage({ params }: { params: { slug: string } }) {
-  const { slug } = params
+export default function SoportePage() {
+  const params = useParams()
+  const slug = params?.slug as string
   const [tenantId, setTenantId] = useState('')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [tickets, setTickets] = useState<any[]>([])
