@@ -65,9 +65,10 @@ export default function SoportePage({ params }: { params: { slug: string } }) {
       setCurrentUser(user)
       const res = await fetch(`${BACKEND_URL}/public/business/${slug}`)
       const biz = await res.json()
-      if (biz?.id) {
-        setTenantId(biz.id)
-        loadTickets(biz.id)
+      const tid = biz?.business?.id
+      if (tid) {
+        setTenantId(tid)
+        loadTickets(tid)
       }
     }
     init()
@@ -349,8 +350,8 @@ export default function SoportePage({ params }: { params: { slug: string } }) {
                     <span key={i} className="text-xs bg-blue-900/20 border border-blue-900/30 rounded-lg px-2 py-1 text-blue-300 flex items-center gap-1">
                       <i className="ti ti-photo" style={{ fontSize: 12 }} aria-hidden="true" />
                       {f.name}
-                      <button onClick={() => setFiles(files.filter((_, idx) => idx !== i))} className="hover:text-red-400 transition-colors ml-1">
-                        <i className="ti ti-x" style={{ fontSize: 12 }} aria-hidden="true" />
+                      <button onClick={() => setFiles(files.filter((_, idx) => idx !== i))} className="hover:text-red-400 transition-colors ml-1 font-bold leading-none">
+                        ×
                       </button>
                     </span>
                   ))}
@@ -507,8 +508,8 @@ export default function SoportePage({ params }: { params: { slug: string } }) {
                     <span key={i} className="text-xs bg-blue-900/20 border border-blue-900/30 rounded-lg px-2 py-1 text-blue-300 flex items-center gap-1">
                       <i className="ti ti-photo" style={{ fontSize: 12 }} aria-hidden="true" />
                       {f.name}
-                      <button onClick={() => setReplyFiles(replyFiles.filter((_, idx) => idx !== i))} className="hover:text-red-400 transition-colors ml-1">
-                        <i className="ti ti-x" style={{ fontSize: 12 }} aria-hidden="true" />
+                      <button onClick={() => setReplyFiles(replyFiles.filter((_, idx) => idx !== i))} className="hover:text-red-400 transition-colors ml-1 font-bold leading-none">
+                        ×
                       </button>
                     </span>
                   ))}
