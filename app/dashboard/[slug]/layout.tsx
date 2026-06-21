@@ -19,6 +19,7 @@ import {
   CreditCard,
   FileText,
   HelpCircle,
+  Headphones,
   LogOut,
   Menu,
   Settings,
@@ -124,7 +125,10 @@ const navSections = [
   },
   {
     title: "Soporte",
-    items: [{ label: "Ayuda", href: "", icon: HelpCircle }],
+    items: [
+      { label: "Soporte", href: "/soporte", icon: Headphones },
+      { label: "Ayuda", href: "", icon: HelpCircle },
+    ],
   },
   {
     title: "Ajustes",
