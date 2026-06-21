@@ -122,17 +122,19 @@ export default function SoportePage({ params }: { params: { slug: string } }) {
     setSubmitMsg('')
     try {
       const attachmentUrls = files.length > 0 ? await uploadFiles(files) : []
+      const payload = {
+        tenant_id: tenantId,
+        created_by: currentUser?.id,
+        subject,
+        category,
+        description,
+        attachments: attachmentUrls,
+      }
+      console.log('[DEBUG soporte] payload:', JSON.stringify(payload))
       const res = await fetch(`${BACKEND_URL}/support/tickets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          created_by: currentUser?.id,
-          subject,
-          category,
-          description,
-          attachments: attachmentUrls,
-        }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
