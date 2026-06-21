@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { apiFetch } from '@/lib/api'
 
 const BACKEND_URL = 'https://orbyx-backend.onrender.com'
 
@@ -60,15 +61,20 @@ export default function SoportePage({ params }: { params: { slug: string } }) {
 
   useEffect(() => {
     const init = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      setCurrentUser(user)
-      const res = await fetch(`${BACKEND_URL}/public/business/${slug}`)
-      const biz = await res.json()
-      const tid = biz?.business?.id
-      if (tid) {
-        setTenantId(tid)
-        loadTickets(tid)
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUser(user)
+        const res = await apiFetch(`${BACKEND_URL}/public/business/${slug}`)
+        const biz = await res.json()
+        console.log('[DEBUG soporte] biz response:', JSON.stringify(biz).slice(0, 200))
+        const tid = biz?.business?.id
+        if (tid) {
+          setTenantId(tid)
+          loadTickets(tid)
+        }
+      } catch (e) {
+        console.error('[DEBUG soporte] init error:', e)
       }
     }
     init()
