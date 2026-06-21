@@ -127,7 +127,6 @@ const navSections = [
     title: "Soporte",
     items: [
       { label: "Soporte", href: "/soporte", icon: Headphones },
-      { label: "Ayuda", href: "", icon: HelpCircle },
     ],
   },
   {
@@ -162,6 +161,8 @@ export default function DashboardLayout({
   }
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
+  const [tenantId, setTenantId] = useState("");
+  const [unreadTickets, setUnreadTickets] = useState(0);
   const [businessName, setBusinessName] = useState("");
   const [plan, setPlan] = useState("pro");
   const [selectedBranchId, setSelectedBranchId] = useState("");
@@ -254,6 +255,7 @@ export default function DashboardLayout({
         }
 
         const currentTenantId = businessData.business.id;
+        setTenantId(currentTenantId);
         setBusinessName(businessData.business.name || slug);
         setPlan(String(businessData.business.plan_slug || "pro").toLowerCase());
         setBusinessCategory(String(businessData.business.business_category || "").trim().toLowerCase());
@@ -322,6 +324,19 @@ export default function DashboardLayout({
 
     loadBranchesForSidebar();
   }, [slug, branchStorageKey]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    const fetchUnread = () => {
+      fetch(`${BACKEND_URL}/support/tickets/unread-count?tenant_id=${tenantId}`)
+        .then((res) => res.json())
+        .then((data) => setUnreadTickets(data.count ?? 0))
+        .catch(() => {});
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [tenantId]);
 
   const selectedBranchName =
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
@@ -480,8 +495,13 @@ export default function DashboardLayout({
                     : false;
 
                 return (
+                  <div key={`${section.title}-${item.label}`} className="relative">
+                  {item.label === "Soporte" && unreadTickets > 0 && (
+                    <span className="absolute top-1 right-2 z-10 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center pointer-events-none">
+                      {unreadTickets > 9 ? "9+" : unreadTickets}
+                    </span>
+                  )}
                   <Link
-                    key={`${section.title}-${item.label}`}
                     href={fullHref}
                     title={collapsed ? item.label : undefined}
                     onClick={onNavigate}
@@ -536,6 +556,7 @@ export default function DashboardLayout({
                       />
                     ) : null}
                   </Link>
+                  </div>
                 );
               })}
             </div>
