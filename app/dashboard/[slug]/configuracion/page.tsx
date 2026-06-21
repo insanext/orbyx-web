@@ -26,11 +26,26 @@ export default function ConfiguracionPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState("");
 
-  const [newEmail, setNewEmail] = useState("");
-  const [emailMsg, setEmailMsg] = useState("");
-  const [emailIsError, setEmailIsError] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailSentTo, setEmailSentTo] = useState("");
+  // email change (dual-confirmation flow)
+  const [emailChangeStatus, setEmailChangeStatus] = useState<{
+    pending: boolean;
+    new_email?: string;
+    old_confirmed?: boolean;
+    new_confirmed?: boolean;
+    expires_at?: string;
+  } | null>(null);
+  const [emailChangeLoaded, setEmailChangeLoaded] = useState(false);
+  const [newEmailInput, setNewEmailInput] = useState("");
+  const [emailChangePwd, setEmailChangePwd] = useState("");
+  const [requestingEmailChange, setRequestingEmailChange] = useState(false);
+  const [emailRequestMsg, setEmailRequestMsg] = useState("");
+  const [emailRequestIsError, setEmailRequestIsError] = useState(false);
+
+  // revoke modal (TAREA 2)
+  const [revokeTarget, setRevokeTarget] = useState<{ id: string; email: string } | null>(null);
+  const [revokePwd, setRevokePwd] = useState("");
+  const [revoking, setRevoking] = useState(false);
+  const [revokeMsg, setRevokeMsg] = useState("");
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -57,6 +72,18 @@ export default function ConfiguracionPage() {
     negocio: false,
   });
 
+  const loadEmailChangeStatus = async (uid: string) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/account/email-change/status?user_id=${uid}`);
+      const d = await res.json();
+      setEmailChangeStatus(d.pending ? d : { pending: false });
+    } catch {
+      setEmailChangeStatus({ pending: false });
+    } finally {
+      setEmailChangeLoaded(true);
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       const {
@@ -66,6 +93,7 @@ export default function ConfiguracionPage() {
       setCurrentUser(user);
       setName(user.user_metadata?.name ?? "");
       setPhone(user.user_metadata?.phone ?? "");
+      loadEmailChangeStatus(user.id);
 
       const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
       const data = await res.json();
@@ -102,17 +130,34 @@ export default function ConfiguracionPage() {
     }
   };
 
-  const handleChangeEmail = async () => {
-    if (!newEmail.trim()) return;
-    const target = newEmail.trim();
-    const { error } = await supabase.auth.updateUser({ email: target });
-    if (error) {
-      setEmailIsError(true);
-      setEmailMsg("Error: " + error.message);
-    } else {
-      setEmailSentTo(target);
-      setEmailSent(true);
-      setNewEmail("");
+  const handleRequestEmailChange = async () => {
+    if (!newEmailInput.trim() || !emailChangePwd) return;
+    setRequestingEmailChange(true);
+    setEmailRequestMsg("");
+    setEmailRequestIsError(false);
+    try {
+      const res = await fetch(`${BACKEND_URL}/account/email-change/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          current_email: currentUser.email,
+          new_email: newEmailInput.trim(),
+          password: emailChangePwd,
+          tenant_id: tenantId || null,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? "Error al solicitar cambio");
+      setEmailRequestMsg("✓ " + d.message);
+      setNewEmailInput("");
+      setEmailChangePwd("");
+      await loadEmailChangeStatus(currentUser.id);
+    } catch (e: any) {
+      setEmailRequestIsError(true);
+      setEmailRequestMsg(e.message);
+    } finally {
+      setRequestingEmailChange(false);
     }
   };
 
@@ -218,14 +263,38 @@ export default function ConfiguracionPage() {
     loadTeam(tenantId);
   };
 
-  const handleRevoke = async (memberId: string) => {
-    if (!confirm("¿Revocar acceso a este usuario?")) return;
-    await fetch(`${BACKEND_URL}/members/${memberId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenant_id: tenantId, is_active: false }),
-    });
-    loadTeam(tenantId);
+  const handleRevoke = (memberId: string, memberEmail: string) => {
+    setRevokeTarget({ id: memberId, email: memberEmail });
+    setRevokePwd("");
+    setRevokeMsg("");
+  };
+
+  const handleConfirmRevoke = async () => {
+    if (!revokeTarget || !revokePwd) return;
+    setRevoking(true);
+    setRevokeMsg("");
+    try {
+      const { error: authErr } = await supabase.auth.signInWithPassword({
+        email: currentUser.email,
+        password: revokePwd,
+      });
+      if (authErr) {
+        setRevokeMsg("Contraseña incorrecta.");
+        setRevoking(false);
+        return;
+      }
+      await fetch(`${BACKEND_URL}/members/${revokeTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId, is_active: false }),
+      });
+      setRevokeTarget(null);
+      loadTeam(tenantId);
+    } catch (e: any) {
+      setRevokeMsg("Error: " + e.message);
+    } finally {
+      setRevoking(false);
+    }
   };
 
   const handleCancelInvite = async (inviteId: string) => {
@@ -341,35 +410,83 @@ export default function ConfiguracionPage() {
               Cambiar correo electrónico
             </h3>
             <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-              Tu correo actual es{" "}
+              Correo actual:{" "}
               <span style={{ color: "var(--text-main)" }}>{currentUser?.email ?? "…"}</span>.
-              {" "}Para cambiarlo, escribe el nuevo correo y solicita el cambio. Te enviaremos un email al nuevo
-              correo con un link de confirmación. El cambio solo se aplica cuando hagas clic en ese link —
-              tu correo actual sigue funcionando hasta entonces.
+              {" "}El cambio requiere confirmación desde tu correo actual y desde el nuevo correo.
             </p>
 
-            {emailSent ? (
-              <div className="rounded-xl border border-green-500/30 bg-green-500/8 px-4 py-3 text-sm text-green-400">
-                ✓ Enviamos un email a <strong>{emailSentTo}</strong>. Ábrelo y haz clic en el link para
-                confirmar el cambio. Si no lo ves, revisa tu carpeta de spam.
+            {!emailChangeLoaded ? (
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>Cargando...</p>
+            ) : emailChangeStatus?.pending ? (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-blue-500/20 px-4 py-3 text-sm" style={{ background: "rgba(37,99,235,0.06)" }}>
+                  <p className="font-medium mb-2" style={{ color: "#93c5fd" }}>
+                    Cambio en proceso → <strong style={{ color: "#f1f5f9" }}>{emailChangeStatus.new_email}</strong>
+                  </p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={emailChangeStatus.old_confirmed ? "text-green-400" : "text-yellow-400"}>
+                        {emailChangeStatus.old_confirmed ? "✓" : "○"}
+                      </span>
+                      <span style={{ color: "var(--text-muted)" }}>
+                        {emailChangeStatus.old_confirmed
+                          ? "Correo actual confirmado"
+                          : "Pendiente: confirmar desde tu correo actual"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={emailChangeStatus.new_confirmed ? "text-green-400" : "text-yellow-400"}>
+                        {emailChangeStatus.new_confirmed ? "✓" : "○"}
+                      </span>
+                      <span style={{ color: "var(--text-muted)" }}>
+                        {emailChangeStatus.new_confirmed
+                          ? "Nuevo correo verificado"
+                          : "Pendiente: verificar nuevo correo"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setEmailChangeStatus({ pending: false }); setEmailChangeLoaded(true); }}
+                  className="text-xs px-3 py-1.5 rounded-lg border transition-colors"
+                  style={{ borderColor: "rgba(37,99,235,0.2)", color: "var(--text-muted)" }}
+                >
+                  Cancelar y solicitar nuevo cambio
+                </button>
               </div>
             ) : (
               <div className="space-y-3">
                 <div>
                   <label className={label} style={{ color: "var(--text-muted)" }}>Nuevo correo electrónico</label>
                   <input
-                    value={newEmail}
-                    onChange={e => setNewEmail(e.target.value)}
+                    value={newEmailInput}
+                    onChange={e => setNewEmailInput(e.target.value)}
                     type="email"
                     placeholder="nuevo@correo.com"
                     className={inp}
                   />
                 </div>
-                <button onClick={handleChangeEmail} disabled={!newEmail.trim()} className={btn}>
-                  Solicitar cambio de correo
+                <div>
+                  <label className={label} style={{ color: "var(--text-muted)" }}>Tu contraseña actual</label>
+                  <input
+                    value={emailChangePwd}
+                    onChange={e => setEmailChangePwd(e.target.value)}
+                    type="password"
+                    placeholder="Confirma tu identidad"
+                    className={inp}
+                  />
+                </div>
+                <button
+                  onClick={handleRequestEmailChange}
+                  disabled={!newEmailInput.trim() || !emailChangePwd || requestingEmailChange}
+                  className={btn}
+                >
+                  {requestingEmailChange ? "Enviando..." : "Solicitar cambio de correo"}
                 </button>
-                {emailMsg && (
-                  <p className={`text-xs ${emailIsError ? "text-red-400" : "text-green-400"}`}>{emailMsg}</p>
+                {emailRequestMsg && (
+                  <p className={`text-xs ${emailRequestIsError ? "text-red-400" : "text-green-400"}`}>
+                    {emailRequestMsg}
+                  </p>
                 )}
               </div>
             )}
@@ -456,7 +573,7 @@ export default function ConfiguracionPage() {
                           <option value="readonly">Solo lectura</option>
                         </select>
                         <button
-                          onClick={() => handleRevoke(m.id)}
+                          onClick={() => handleRevoke(m.id, m.email ?? "")}
                           className="text-xs px-2 py-1 rounded-lg border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
                           style={{ color: "var(--text-muted)" }}
                         >
@@ -617,6 +734,54 @@ export default function ConfiguracionPage() {
                 {inviteMsg}
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: Confirmar revocación con contraseña ── */}
+      {revokeTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={e => { if (e.target === e.currentTarget) { setRevokeTarget(null); setRevokePwd(""); setRevokeMsg(""); } }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border p-6"
+            style={{ background: "var(--bg-card)", borderColor: "rgba(239,68,68,0.3)" }}
+          >
+            <h3 className="text-base font-semibold mb-1" style={{ color: "var(--text-main)" }}>
+              Revocar acceso
+            </h3>
+            <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+              Vas a revocar el acceso de <strong style={{ color: "var(--text-main)" }}>{revokeTarget.email}</strong>.
+              Ingresa tu contraseña para confirmar.
+            </p>
+            <input
+              value={revokePwd}
+              onChange={e => setRevokePwd(e.target.value)}
+              type="password"
+              placeholder="Tu contraseña actual"
+              className={inp}
+              autoFocus
+              onKeyDown={e => { if (e.key === "Enter") handleConfirmRevoke(); }}
+            />
+            {revokeMsg && <p className="text-xs text-red-400 mt-2">{revokeMsg}</p>}
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => { setRevokeTarget(null); setRevokePwd(""); setRevokeMsg(""); }}
+                className="flex-1 py-2 rounded-xl text-sm border transition-colors"
+                style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmRevoke}
+                disabled={!revokePwd || revoking}
+                className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-all disabled:opacity-40"
+              >
+                {revoking ? "Revocando..." : "Sí, revocar acceso"}
+              </button>
+            </div>
           </div>
         </div>
       )}
