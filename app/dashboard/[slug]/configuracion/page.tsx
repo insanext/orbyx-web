@@ -71,6 +71,13 @@ export default function ConfiguracionPage() {
     sucursales: false,
     negocio: false,
   });
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editPermissions, setEditPermissions] = useState<Record<string, "edit" | "view" | false>>({});
+  const [editBranchIds, setEditBranchIds] = useState<string[]>([]);
+  const [savingUserEdit, setSavingUserEdit] = useState(false);
 
   const loadEmailChangeStatus = async (uid: string) => {
     try {
@@ -195,11 +202,25 @@ export default function ConfiguracionPage() {
     }
   };
 
+  useEffect(() => {
+    if (!tenantId) return;
+    fetch(`${BACKEND_URL}/branches?tenant_id=${tenantId}`)
+      .then(res => res.json())
+      .then(data => setBranches(Array.isArray(data?.branches) ? data.branches.filter((b: any) => b.is_active !== false) : []))
+      .catch(() => {});
+  }, [tenantId]);
+
   const toggleModule = (module: string) => {
     setPermissions(prev => ({
       ...prev,
       [module]: prev[module] === false ? "view" : false,
     }));
+  };
+
+  const toggleBranch = (branchId: string) => {
+    setSelectedBranchIds(prev =>
+      prev.includes(branchId) ? prev.filter(id => id !== branchId) : [...prev, branchId]
+    );
   };
 
   const handleInvite = async () => {
@@ -233,6 +254,7 @@ export default function ConfiguracionPage() {
           email: inviteEmail,
           role: "custom",
           permissions,
+          branch_ids: selectedBranchIds,
           invited_by: currentUser?.id,
         }),
       });
@@ -241,10 +263,12 @@ export default function ConfiguracionPage() {
       setInviteMsg(`✓ Invitación enviada a ${inviteEmail}`);
       setInviteEmail("");
       setInviteAuthPwd("");
+      setSelectedBranchIds([]);
       setPermissions({
         agenda: false, clientes: false, campanas: false,
         servicios: false, staff: false, sucursales: false, negocio: false,
       });
+      setShowInviteForm(false);
       loadTeam(tenantId);
     } catch (e: any) {
       setInviteMsg("Error: " + e.message);
@@ -549,7 +573,13 @@ export default function ConfiguracionPage() {
                 {members.map(m => (
                   <div
                     key={m.id}
-                    className="flex items-center justify-between py-2.5 border-b last:border-0"
+                    onClick={() => {
+                      if (m.role === "owner") return;
+                      setEditingUser(m);
+                      setEditPermissions(m.permissions ?? {});
+                      setEditBranchIds(m.branch_ids ?? []);
+                    }}
+                    className={`flex items-center justify-between py-2.5 border-b last:border-0 ${m.role !== "owner" ? "cursor-pointer hover:bg-blue-950/20 rounded-lg px-2 -mx-2 transition-colors" : ""}`}
                     style={{ borderColor: "rgba(37,99,235,0.12)" }}
                   >
                     <div>
@@ -618,6 +648,15 @@ export default function ConfiguracionPage() {
           </div>
 
           {/* Bloque 2: Invitar usuario */}
+          {!showInviteForm ? (
+            <button
+              onClick={() => setShowInviteForm(true)}
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-600/30 active:scale-95 text-white text-sm font-medium transition-all flex items-center justify-center gap-2"
+            >
+              <i className="ti ti-user-plus" style={{ fontSize: 15 }} aria-hidden="true" />
+              Crear nuevo usuario
+            </button>
+          ) : (
           <div className="rounded-2xl border border-blue-900/25 p-5" style={{ background: "var(--bg-card)" }}>
             <h3 className="text-sm font-semibold mb-0.5" style={{ color: "var(--text-main)" }}>
               Crea acceso para tu equipo
@@ -707,6 +746,36 @@ export default function ConfiguracionPage() {
               </p>
             </div>
 
+            {/* Acceso por sucursal */}
+            {branches.length > 0 && (
+              <div className="mb-5">
+                <label className={label} style={{ color: "var(--text-muted)" }}>Acceso por sucursal</label>
+                <div className="space-y-2 mt-1.5">
+                  {branches.map(branch => (
+                    <label
+                      key={branch.id}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-blue-900/20 cursor-pointer hover:border-blue-700/30 transition-colors"
+                      style={{ background: "rgba(10,15,30,0.5)" }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <i className="ti ti-building-store text-blue-400/60" style={{ fontSize: 15 }} aria-hidden="true" />
+                        <span className="text-sm" style={{ color: "var(--text-main)" }}>{branch.name}</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={selectedBranchIds.includes(branch.id)}
+                        onChange={() => toggleBranch(branch.id)}
+                        className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                      />
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs mt-2" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
+                  Si no seleccionas ninguna, el usuario verá información de todas las sucursales activas.
+                </p>
+              </div>
+            )}
+
             {/* Confirmación con contraseña */}
             <div className="mb-5 p-4 rounded-xl border border-blue-900/30" style={{ background: "rgba(37,99,235,0.06)" }}>
               <p className="text-xs font-medium mb-0.5" style={{ color: "var(--text-main)" }}>Confirma con tu contraseña</p>
@@ -722,18 +791,147 @@ export default function ConfiguracionPage() {
               />
             </div>
 
-            <button
-              onClick={handleInvite}
-              disabled={sendingInvite || !inviteEmail.trim() || !inviteAuthPwd}
-              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-40"
-            >
-              {sendingInvite ? "Enviando..." : "Enviar invitación"}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleInvite}
+                disabled={sendingInvite || !inviteEmail.trim() || !inviteAuthPwd}
+                className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-600/30 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                <i className="ti ti-send" style={{ fontSize: 14 }} aria-hidden="true" />
+                {sendingInvite ? "Enviando..." : "Enviar invitación"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowInviteForm(false);
+                  setInviteEmail("");
+                  setInviteAuthPwd("");
+                  setSelectedBranchIds([]);
+                  setPermissions({ agenda: false, clientes: false, campanas: false, servicios: false, staff: false, sucursales: false, negocio: false });
+                  setInviteMsg("");
+                }}
+                className="px-4 py-2.5 rounded-xl border border-blue-900/30 text-sm transition-all active:scale-95 hover:border-blue-700/40"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Cancelar
+              </button>
+            </div>
             {inviteMsg && (
               <p className={`text-xs mt-3 text-center ${inviteMsg.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>
                 {inviteMsg}
               </p>
             )}
+          </div>
+          )}
+        </div>
+      )}
+
+      {/* ── MODAL: Editar permisos de usuario ── */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+          <div className="absolute inset-0" onClick={() => setEditingUser(null)} />
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-blue-900/40 p-6 shadow-2xl shadow-blue-950/50 max-h-[85vh] overflow-y-auto" style={{ background: "var(--bg-card)" }}>
+            <h3 className="text-base font-semibold mb-0.5" style={{ color: "var(--text-main)" }}>Editar permisos</h3>
+            <p className="text-sm mb-5" style={{ color: "var(--text-muted)" }}>{editingUser.name ?? editingUser.email}</p>
+
+            {/* Permisos por módulo */}
+            <div className="space-y-2 mb-5">
+              {[
+                { key: "agenda", label: "Agenda" },
+                { key: "clientes", label: "Clientes" },
+                { key: "campanas", label: "Campañas" },
+                { key: "servicios", label: "Servicios" },
+                { key: "staff", label: "Staff" },
+                { key: "sucursales", label: "Sucursales" },
+                { key: "negocio", label: "Negocio" },
+              ].map(({ key, label: modLabel }) => (
+                <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-blue-900/20" style={{ background: "rgba(10,15,30,0.5)" }}>
+                  <span className="text-sm" style={{ color: "var(--text-main)" }}>{modLabel}</span>
+                  <div className="flex items-center gap-3">
+                    {editPermissions[key] !== false && (
+                      <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ background: "rgba(37,99,235,0.15)" }}>
+                        <button
+                          onClick={() => setEditPermissions(prev => ({ ...prev, [key]: "view" }))}
+                          className={`text-xs px-2.5 py-1 rounded-md transition-all ${editPermissions[key] === "view" ? "bg-blue-600 text-white" : "text-blue-300/50 hover:text-blue-300"}`}
+                        >
+                          Solo ver
+                        </button>
+                        <button
+                          onClick={() => setEditPermissions(prev => ({ ...prev, [key]: "edit" }))}
+                          className={`text-xs px-2.5 py-1 rounded-md transition-all ${editPermissions[key] === "edit" ? "bg-blue-600 text-white" : "text-blue-300/50 hover:text-blue-300"}`}
+                        >
+                          Ver y editar
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setEditPermissions(prev => ({ ...prev, [key]: prev[key] === false ? "view" : false }))}
+                      className="relative flex-shrink-0 rounded-full transition-colors"
+                      style={{ width: 40, height: 22, background: editPermissions[key] !== false ? "#2563eb" : "rgba(37,99,235,0.2)" }}
+                    >
+                      <span
+                        className="absolute top-0.5 bg-white rounded-full transition-transform"
+                        style={{ left: 2, width: 18, height: 18, transform: editPermissions[key] !== false ? "translateX(18px)" : "translateX(0)" }}
+                      />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Acceso por sucursal */}
+            {branches.length > 0 && (
+              <>
+                <label className="text-xs mb-2 block font-medium" style={{ color: "var(--text-muted)" }}>Acceso por sucursal</label>
+                <div className="space-y-2 mb-6">
+                  {branches.map(branch => (
+                    <label key={branch.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-blue-900/20 cursor-pointer hover:border-blue-700/30 transition-colors" style={{ background: "rgba(10,15,30,0.5)" }}>
+                      <div className="flex items-center gap-2">
+                        <i className="ti ti-building-store text-blue-400/60" style={{ fontSize: 15 }} aria-hidden="true" />
+                        <span className="text-sm" style={{ color: "var(--text-main)" }}>{branch.name}</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={editBranchIds.includes(branch.id)}
+                        onChange={() => setEditBranchIds(prev => prev.includes(branch.id) ? prev.filter(id => id !== branch.id) : [...prev, branch.id])}
+                        className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditingUser(null)}
+                className="flex-1 py-2.5 rounded-xl border border-blue-900/40 text-sm font-medium transition-all active:scale-95 hover:border-blue-700/60"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={savingUserEdit}
+                onClick={async () => {
+                  setSavingUserEdit(true);
+                  try {
+                    await fetch(`${BACKEND_URL}/members/${editingUser.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ tenant_id: tenantId, permissions: editPermissions, branch_ids: editBranchIds }),
+                    });
+                    loadTeam(tenantId);
+                    setEditingUser(null);
+                  } catch (e) {
+                    console.error("Error guardando permisos:", e);
+                  } finally {
+                    setSavingUserEdit(false);
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-600/30 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-50"
+              >
+                {savingUserEdit ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
           </div>
         </div>
       )}
