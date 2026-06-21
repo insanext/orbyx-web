@@ -85,8 +85,14 @@ export default function SoportePage({ params }: { params: { slug: string } }) {
     current: File[]
   ) => {
     const selected = Array.from(e.target.files ?? [])
-    if (current.length + selected.length > 2) {
-      alert('Máximo 2 imágenes.')
+    if (current.length + selected.length > 1) {
+      alert('Solo puedes subir 1 captura por ticket.')
+      return
+    }
+    const tooLarge = selected.find(f => f.size > 1024 * 1024)
+    if (tooLarge) {
+      alert(`La imagen "${tooLarge.name}" pesa más de 1MB. Comprime la imagen o usa una más liviana.`)
+      e.target.value = ''
       return
     }
     setter([...current, ...selected])
@@ -317,22 +323,21 @@ export default function SoportePage({ params }: { params: { slug: string } }) {
             </div>
 
             <div>
-              <label className="text-xs text-blue-300/60 mb-1 block">Capturas de pantalla (máximo 2)</label>
+              <label className="text-xs text-blue-300/60 mb-1 block">Captura de pantalla (máximo 1, hasta 1MB)</label>
               <input
                 id="ticket-file-input"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                multiple
                 onChange={e => handleFileSelect(e, setFiles, files)}
-                disabled={files.length >= 2}
+                disabled={files.length >= 1}
                 className="hidden"
               />
               <label
                 htmlFor="ticket-file-input"
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium cursor-pointer transition-all active:scale-95 ${
-                  files.length >= 2
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium cursor-pointer transition-all active:scale-95 hover:shadow-lg ${
+                  files.length >= 1
                     ? 'border-blue-900/20 text-blue-900/40 cursor-not-allowed'
-                    : 'border-blue-900/30 text-blue-300 hover:border-blue-500/50 hover:bg-blue-950/30'
+                    : 'border-blue-900/30 text-blue-300 hover:border-blue-500/50 hover:bg-blue-950/30 hover:shadow-blue-600/20'
                 }`}
               >
                 <i className="ti ti-upload" style={{ fontSize: 14 }} aria-hidden="true" />
@@ -472,21 +477,20 @@ export default function SoportePage({ params }: { params: { slug: string } }) {
                     id="reply-file-input"
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
-                    multiple
                     onChange={e => handleFileSelect(e, setReplyFiles, replyFiles)}
-                    disabled={replyFiles.length >= 2}
+                    disabled={replyFiles.length >= 1}
                     className="hidden"
                   />
                   <label
                     htmlFor="reply-file-input"
                     className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium cursor-pointer transition-all active:scale-95 ${
-                      replyFiles.length >= 2
+                      replyFiles.length >= 1
                         ? 'border-blue-900/20 text-blue-900/40 cursor-not-allowed'
                         : 'border-blue-900/30 text-blue-300 hover:border-blue-500/50 hover:bg-blue-950/30'
                     }`}
                   >
                     <i className="ti ti-upload" style={{ fontSize: 12 }} aria-hidden="true" />
-                    {replyFiles.length > 0 ? `${replyFiles.length}/2` : 'Imagen'}
+                    {replyFiles.length > 0 ? '1/1' : 'Imagen'}
                   </label>
                 </div>
                 <button
