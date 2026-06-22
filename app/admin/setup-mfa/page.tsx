@@ -19,7 +19,7 @@ export default function SetupMFAPage() {
     try {
       const supabase = createClient()
       const { error: err } = await supabase.auth.signInWithPassword({ email, password })
-      if (err) { setError('Credenciales inválidas'); setLoading(false); return }
+      if (err) { setError('Error login: ' + err.message); setLoading(false); return }
 
       const { data: enroll, error: enrollErr } = await supabase.auth.mfa.enroll({
         factorType: 'totp',

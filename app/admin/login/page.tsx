@@ -22,7 +22,7 @@ export default function AdminLoginPage() {
       const supabase = createClient()
       const { data, error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
       if (signInErr) {
-        setError('Credenciales inválidas')
+        setError('Error: ' + signInErr.message)
         setLoading(false)
         return
       }
