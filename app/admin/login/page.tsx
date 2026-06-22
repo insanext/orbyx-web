@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Turnstile } from '@marsidev/react-turnstile'
 
 const BACKEND_URL = 'https://orbyx-backend.onrender.com'
 
@@ -9,6 +10,8 @@ export default function AdminLoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [captchaToken, setCaptchaToken] = useState('')
+  const turnstileRef = useRef<any>(null)
   const [totpCode, setTotpCode] = useState('')
   const [step, setStep] = useState<'credentials' | 'totp'>('credentials')
   const [loading, setLoading] = useState(false)
@@ -20,7 +23,12 @@ export default function AdminLoginPage() {
     setError('')
     try {
       const supabase = createClient()
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
+      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+        email, password,
+        options: { captchaToken },
+      })
+      turnstileRef.current?.reset()
+      setCaptchaToken('')
       if (signInErr) {
         setError('Error: ' + signInErr.message)
         setLoading(false)
@@ -112,14 +120,20 @@ export default function AdminLoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 type="password"
                 autoComplete="current-password"
-                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                onKeyDown={e => e.key === 'Enter' && captchaToken && handleLogin()}
                 className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors"
               />
             </div>
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+              onSuccess={setCaptchaToken}
+              options={{ theme: 'dark', size: 'flexible' }}
+            />
             {error && <p className="text-xs text-red-400">{error}</p>}
             <button
               onClick={handleLogin}
-              disabled={loading || !email || !password}
+              disabled={loading || !email || !password || !captchaToken}
               className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-50"
             >
               {loading ? 'Verificando...' : 'Iniciar sesión'}

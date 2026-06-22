@@ -1,10 +1,13 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Turnstile } from '@marsidev/react-turnstile'
 
 export default function SetupMFAPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [captchaToken, setCaptchaToken] = useState('')
+  const turnstileRef = useRef<any>(null)
   const [qrUri, setQrUri] = useState('')
   const [secret, setSecret] = useState('')
   const [factorId, setFactorId] = useState('')
@@ -18,8 +21,13 @@ export default function SetupMFAPage() {
     setError('')
     try {
       const supabase = createClient()
-      const { error: err } = await supabase.auth.signInWithPassword({ email, password })
-      if (err) { setError('Error login: ' + err.message); setLoading(false); return }
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email, password,
+        options: { captchaToken },
+      })
+      turnstileRef.current?.reset()
+      setCaptchaToken('')
+      if (err) { setError('Error: ' + err.message); setLoading(false); return }
 
       const { data: enroll, error: enrollErr } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
@@ -72,10 +80,16 @@ export default function SetupMFAPage() {
             <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email"
               className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50" />
             <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Contraseña"
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              onKeyDown={e => e.key === 'Enter' && captchaToken && handleLogin()}
               className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50" />
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+              onSuccess={setCaptchaToken}
+              options={{ theme: 'dark', size: 'flexible' }}
+            />
             {error && <p className="text-xs text-red-400">{error}</p>}
-            <button onClick={handleLogin} disabled={loading}
+            <button onClick={handleLogin} disabled={loading || !captchaToken}
               className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-50">
               {loading ? 'Configurando...' : 'Configurar MFA'}
             </button>
