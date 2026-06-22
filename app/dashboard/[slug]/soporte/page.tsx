@@ -61,6 +61,8 @@ export default function SoportePage() {
   const [sendingReply, setSendingReply] = useState(false)
   const [confirmingResolution, setConfirmingResolution] = useState(false)
 
+  const inp = "w-full rounded-xl border px-3 py-2 text-sm outline-none transition-colors"
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -235,8 +237,8 @@ export default function SoportePage() {
         <>
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-lg font-semibold text-white">Soporte</h2>
-              <p className="text-sm text-blue-300/50">Crea un ticket y te contactaremos lo antes posible.</p>
+              <h2 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>Soporte</h2>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Crea un ticket y te contactaremos lo antes posible.</p>
             </div>
             <button
               onClick={() => setView('new')}
@@ -248,9 +250,9 @@ export default function SoportePage() {
           </div>
 
           {tickets.length === 0 ? (
-            <div className="bg-[#0f1729] border border-blue-900/25 rounded-2xl p-8 text-center">
-              <i className="ti ti-headset text-blue-900/40 mb-2 block" style={{ fontSize: 28 }} aria-hidden="true" />
-              <p className="text-sm text-blue-300/50">No tienes tickets creados aún.</p>
+            <div className="rounded-2xl border p-8 text-center" style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}>
+              <i className="ti ti-headset mb-2 block" style={{ fontSize: 28, color: "var(--text-muted)", opacity: 0.4 }} aria-hidden="true" />
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No tienes tickets creados aún.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -261,18 +263,19 @@ export default function SoportePage() {
                   <button
                     key={t.id}
                     onClick={() => openTicket(t)}
-                    className="w-full text-left bg-[#0f1729] border border-blue-900/25 hover:border-blue-700/40 rounded-2xl p-4 transition-colors relative"
+                    className="w-full text-left rounded-2xl border p-4 transition-colors relative hover:opacity-90"
+                    style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
                   >
                     {t.has_unread_for_customer && (
                       <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full" />
                     )}
                     <div className="flex items-center justify-between mb-1 pr-4">
-                      <p className="text-sm font-medium text-white">{t.subject}</p>
+                      <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>{t.subject}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${badge.color}`}>{badge.label}</span>
                     </div>
                     <div className="flex items-center gap-3 text-xs">
                       <span className={status.color}>{status.label}</span>
-                      <span className="text-blue-900/40">
+                      <span style={{ color: "var(--text-muted)", opacity: 0.5 }}>
                         {new Date(t.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </div>
@@ -293,48 +296,48 @@ export default function SoportePage() {
           >
             <i className="ti ti-arrow-left" style={{ fontSize: 14 }} aria-hidden="true" /> Volver
           </button>
-          <h2 className="text-lg font-semibold text-white mb-1">Nuevo ticket</h2>
-          <p className="text-sm text-blue-300/50 mb-5">Describe tu problema y te contactaremos lo antes posible.</p>
+          <h2 className="text-lg font-semibold mb-1" style={{ color: "var(--text-main)" }}>Nuevo ticket</h2>
+          <p className="text-sm mb-5" style={{ color: "var(--text-muted)" }}>Describe tu problema y te contactaremos lo antes posible.</p>
 
-          <div className="bg-[#0f1729] border border-blue-900/25 rounded-2xl p-5 space-y-4">
+          <div className="rounded-2xl border p-5 space-y-4" style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}>
             <div>
-              <label className="text-xs text-blue-300/60 mb-1 flex items-center justify-between">
+              <label className="text-xs mb-1 flex items-center justify-between" style={{ color: "var(--text-muted)" }}>
                 <span>Asunto</span>
-                <span className="text-blue-900/40">{subject.length}/80</span>
+                <span style={{ opacity: 0.5 }}>{subject.length}/80</span>
               </label>
               <input
                 value={subject}
                 onChange={e => setSubject(e.target.value.slice(0, 80))}
                 maxLength={80}
                 placeholder="Resume tu problema en pocas palabras"
-                className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                className={inp}
               />
             </div>
 
             <div>
-              <label className="text-xs text-blue-300/60 mb-1 block">Categoría</label>
+              <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Categoría</label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value)}
-                className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                className={inp}
               >
                 {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="text-xs text-blue-300/60 mb-1 block">Descripción</label>
+              <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Descripción</label>
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={5}
                 placeholder="Cuéntanos qué pasó con el mayor detalle posible"
-                className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-blue-500/50 transition-colors"
+                className={inp + " resize-none"}
               />
             </div>
 
             <div>
-              <label className="text-xs text-blue-300/60 mb-1 block">Captura de pantalla (máximo 1, hasta 1MB)</label>
+              <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Captura de pantalla (máximo 1, hasta 1MB)</label>
               <input
                 id="ticket-file-input"
                 type="file"
@@ -345,11 +348,10 @@ export default function SoportePage() {
               />
               <label
                 htmlFor="ticket-file-input"
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium cursor-pointer transition-all active:scale-95 hover:shadow-lg ${
-                  files.length >= 1
-                    ? 'border-blue-900/20 text-blue-900/40 cursor-not-allowed'
-                    : 'border-blue-900/30 text-blue-300 hover:border-blue-500/50 hover:bg-blue-950/30 hover:shadow-blue-600/20'
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium cursor-pointer transition-all active:scale-95 ${
+                  files.length >= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-80'
                 }`}
+                style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
               >
                 <i className="ti ti-upload" style={{ fontSize: 14 }} aria-hidden="true" />
                 Subir captura
@@ -357,7 +359,7 @@ export default function SoportePage() {
               {files.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {files.map((f, i) => (
-                    <span key={i} className="text-xs bg-blue-900/20 border border-blue-900/30 rounded-lg px-2 py-1 text-blue-300 flex items-center gap-1">
+                    <span key={i} className="text-xs rounded-lg border px-2 py-1 flex items-center gap-1" style={{ background: "var(--bg-soft)", borderColor: "var(--border-color)", color: "var(--text-main)" }}>
                       <i className="ti ti-photo" style={{ fontSize: 12 }} aria-hidden="true" />
                       {f.name}
                       <button onClick={() => setFiles(files.filter((_, idx) => idx !== i))} className="hover:text-red-400 transition-colors ml-1 font-bold leading-none">
@@ -392,9 +394,9 @@ export default function SoportePage() {
             <i className="ti ti-arrow-left" style={{ fontSize: 14 }} aria-hidden="true" /> Volver a mis tickets
           </button>
 
-          <div className="bg-[#0f1729] border border-blue-900/25 rounded-2xl p-5 mb-4">
+          <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}>
             <div className="flex items-start justify-between gap-3 mb-1">
-              <h2 className="text-base font-semibold text-white">{selectedTicket.subject}</h2>
+              <h2 className="text-base font-semibold" style={{ color: "var(--text-main)" }}>{selectedTicket.subject}</h2>
               {(() => {
                 const s = STATUS_LABEL[selectedTicket.status] ?? STATUS_LABEL.open
                 return (
@@ -404,16 +406,16 @@ export default function SoportePage() {
                 )
               })()}
             </div>
-            <p className="text-xs text-blue-300/40 mb-3">
+            <p className="text-xs mb-3" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
               {CATEGORIES.find(c => c.value === selectedTicket.category)?.label} ·{' '}
               {new Date(selectedTicket.created_at).toLocaleDateString('es-CL')}
             </p>
-            <p className="text-sm text-blue-100/80">{selectedTicket.description}</p>
+            <p className="text-sm" style={{ color: "var(--text-main)", opacity: 0.85 }}>{selectedTicket.description}</p>
             {selectedTicket.attachments?.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {selectedTicket.attachments.map((url: string, i: number) => (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt="" className="w-20 h-20 object-cover rounded-lg border border-blue-900/30" />
+                    <img src={url} alt="" className="w-20 h-20 object-cover rounded-lg border" style={{ borderColor: "var(--border-color)" }} />
                   </a>
                 ))}
               </div>
@@ -423,7 +425,7 @@ export default function SoportePage() {
           {/* Banner de confirmación de resolución */}
           {selectedTicket.status === 'waiting_confirmation' && (
             <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 mb-4">
-              <p className="text-sm font-medium text-white mb-1">¿Se resolvió tu problema?</p>
+              <p className="text-sm font-medium mb-1" style={{ color: "var(--text-main)" }}>¿Se resolvió tu problema?</p>
               <p className="text-xs text-amber-300/70 mb-3">Marcamos este ticket como resuelto. Confírmanos si quedó solucionado.</p>
               <div className="flex gap-2">
                 <button
@@ -450,19 +452,20 @@ export default function SoportePage() {
               {messages.map(m => (
                 <div
                   key={m.id}
-                  className={`p-3 rounded-xl max-w-[85%] ${
+                  className={`p-3 rounded-xl max-w-[85%] border ${
                     m.sender_type === 'support'
-                      ? 'bg-blue-600/20 border border-blue-600/30'
-                      : 'bg-[#0f1729] border border-blue-900/25 ml-auto'
+                      ? 'bg-blue-600/20 border-blue-600/30'
+                      : 'ml-auto'
                   }`}
+                  style={m.sender_type !== 'support' ? { background: "var(--bg-soft)", borderColor: "var(--border-color)" } : undefined}
                 >
-                  <p className="text-xs text-blue-300/40 mb-1">{m.sender_type === 'support' ? 'Soporte Orbyx' : 'Tú'}</p>
-                  <p className="text-sm text-white">{m.message}</p>
+                  <p className="text-xs mb-1" style={{ color: "var(--text-muted)", opacity: 0.6 }}>{m.sender_type === 'support' ? 'Soporte Orbyx' : 'Tú'}</p>
+                  <p className="text-sm" style={{ color: "var(--text-main)" }}>{m.message}</p>
                   {m.attachments?.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {m.attachments.map((url: string, i: number) => (
                         <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                          <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border border-blue-900/30" />
+                          <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border" style={{ borderColor: "var(--border-color)" }} />
                         </a>
                       ))}
                     </div>
@@ -474,13 +477,13 @@ export default function SoportePage() {
 
           {/* Formulario de respuesta */}
           {canReply && (
-            <div className="bg-[#0f1729] border border-blue-900/25 rounded-2xl p-4">
+            <div className="rounded-2xl border p-4" style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}>
               <textarea
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
                 rows={3}
                 placeholder="Escribe tu respuesta..."
-                className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-blue-500/50 transition-colors mb-3"
+                className={inp + " resize-none mb-3"}
               />
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -495,10 +498,9 @@ export default function SoportePage() {
                   <label
                     htmlFor="reply-file-input"
                     className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium cursor-pointer transition-all active:scale-95 ${
-                      replyFiles.length >= 1
-                        ? 'border-blue-900/20 text-blue-900/40 cursor-not-allowed'
-                        : 'border-blue-900/30 text-blue-300 hover:border-blue-500/50 hover:bg-blue-950/30'
+                      replyFiles.length >= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-80'
                     }`}
+                    style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
                   >
                     <i className="ti ti-upload" style={{ fontSize: 12 }} aria-hidden="true" />
                     {replyFiles.length > 0 ? '1/1' : 'Imagen'}
@@ -515,7 +517,7 @@ export default function SoportePage() {
               {replyFiles.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {replyFiles.map((f, i) => (
-                    <span key={i} className="text-xs bg-blue-900/20 border border-blue-900/30 rounded-lg px-2 py-1 text-blue-300 flex items-center gap-1">
+                    <span key={i} className="text-xs rounded-lg border px-2 py-1 flex items-center gap-1" style={{ background: "var(--bg-soft)", borderColor: "var(--border-color)", color: "var(--text-main)" }}>
                       <i className="ti ti-photo" style={{ fontSize: 12 }} aria-hidden="true" />
                       {f.name}
                       <button onClick={() => setReplyFiles(replyFiles.filter((_, idx) => idx !== i))} className="hover:text-red-400 transition-colors ml-1 font-bold leading-none">
