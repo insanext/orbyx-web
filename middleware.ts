@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Si accede a /admin/** (excepto /admin/login) sin sesión → redirect a /admin/login
-  if (!user && pathname.startsWith("/admin") && pathname !== "/admin/login" && pathname !== "/admin/setup-mfa") {
+  if (!user && pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const adminLoginUrl = request.nextUrl.clone();
     adminLoginUrl.pathname = "/admin/login";
     return NextResponse.redirect(adminLoginUrl);
