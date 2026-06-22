@@ -46,13 +46,18 @@ export async function middleware(request: NextRequest) {
   if (!user && pathname.startsWith("/dashboard")) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
-    // Guardamos la URL original para redirigir después del login
     loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
+  // Si accede a /admin/** (excepto /admin/login) sin sesión → redirect a /admin/login
+  if (!user && pathname.startsWith("/admin") && pathname !== "/admin/login") {
+    const adminLoginUrl = request.nextUrl.clone();
+    adminLoginUrl.pathname = "/admin/login";
+    return NextResponse.redirect(adminLoginUrl);
+  }
+
   // Si ya tiene sesión y accede a /login → redirect al dashboard
-  // (evita que un usuario autenticado vea el login de nuevo)
   if (user && pathname === "/login") {
     const dashboardUrl = request.nextUrl.clone();
     dashboardUrl.pathname = "/dashboard";
@@ -82,5 +87,6 @@ export const config = {
      */
     "/login",
     "/dashboard/:path*",
+    "/admin/:path*",
   ],
 };
