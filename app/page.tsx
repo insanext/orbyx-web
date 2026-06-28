@@ -58,23 +58,23 @@ export default function OrbyxLandingPage() {
   const ctaBadges = ["7 días gratis", "Sin tarjeta de crédito", "Cancelas cuando quieras"];
 
   const agendaStaff = [
-    { name: "Camila R.", initials: "CR" },
-    { name: "Andrés M.", initials: "AM" },
-    { name: "Sofía P.", initials: "SP" },
+    { name: "Camila R.", role: "Estilista", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face" },
+    { name: "Andrés M.", role: "Barbero", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" },
+    { name: "Sofía P.", role: "Estilista", photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face" },
   ];
 
   const agendaHours = ["09:00", "10:00", "11:00", "12:00", "13:00"];
 
   const agendaAppts = [
-    { col: 0, top: 0, h: 67, time: "09:00", service: "Corte", client: "M. González", booked: true },
-    { col: 0, top: 135, h: 90, time: "10:30", service: "Tinte", client: "P. Soto", booked: false },
-    { col: 0, top: 315, h: 45, time: "12:30", service: "Brushing", client: "L. Díaz", booked: true },
-    { col: 1, top: 45, h: 67, time: "09:30", service: "Manicure", client: "C. Rojas", booked: true },
-    { col: 1, top: 180, h: 45, time: "11:00", service: "Pedicure", client: "V. Torres", booked: true },
-    { col: 1, top: 360, h: 90, time: "13:00", service: "Uñas gel", client: "A. Muñoz", booked: false },
-    { col: 2, top: 0, h: 90, time: "09:00", service: "Masaje", client: "R. Silva", booked: true },
-    { col: 2, top: 135, h: 45, time: "10:30", service: "Facial", client: "I. Vargas", booked: false },
-    { col: 2, top: 270, h: 135, time: "12:00", service: "Depilación", client: "F. Herrera", booked: true },
+    { col: 0, top: 0, h: 67, time: "09:00", service: "Corte", client: "M. González", status: "booked" as const },
+    { col: 0, top: 135, h: 90, time: "10:30", service: "Tinte", client: "P. Soto", status: "completed" as const },
+    { col: 0, top: 315, h: 45, time: "12:30", service: "Brushing", client: "L. Díaz", status: "booked" as const },
+    { col: 1, top: 45, h: 67, time: "09:30", service: "Manicure", client: "C. Rojas", status: "booked" as const },
+    { col: 1, top: 180, h: 45, time: "11:00", service: "Pedicure", client: "V. Torres", status: "booked" as const },
+    { col: 1, top: 360, h: 90, time: "13:00", service: "Uñas gel", client: "A. Muñoz", status: "completed" as const },
+    { col: 2, top: 0, h: 90, time: "09:00", service: "Masaje", client: "R. Silva", status: "booked" as const },
+    { col: 2, top: 135, h: 45, time: "10:30", service: "Facial", client: "I. Vargas", status: "completed" as const },
+    { col: 2, top: 270, h: 135, time: "12:00", service: "Depilación", client: "F. Herrera", status: "booked" as const },
   ];
 
   return (
@@ -298,10 +298,15 @@ export default function OrbyxLandingPage() {
                       key={staff.name}
                       className="flex items-center gap-2 border-r border-[#ebebeb] px-2 py-2.5 last:border-r-0"
                     >
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e5e5e5] text-[9px] font-bold text-[#555]">
-                        {staff.initials}
+                      <img
+                        src={staff.photo}
+                        alt={staff.name}
+                        className="h-8 w-8 shrink-0 rounded-full border border-[#e5e5e5] object-cover"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-[11px] font-semibold leading-tight text-[#111]">{staff.name}</p>
+                        <p className="truncate text-[9px] text-[#999]">{staff.role}</p>
                       </div>
-                      <span className="truncate text-[11px] font-semibold text-[#111]">{staff.name}</span>
                     </div>
                   ))}
                 </div>
@@ -353,18 +358,25 @@ export default function OrbyxLandingPage() {
                         .map((appt) => (
                           <div
                             key={`${appt.time}-${appt.service}`}
-                            className={`absolute left-1 right-1 overflow-hidden rounded-[4px] px-1.5 py-1 ${
-                              appt.booked
-                                ? "bg-[#1a1a1a] text-white"
-                                : "bg-[#e8e8e8] text-[#555]"
-                            }`}
-                            style={{ top: appt.top, height: appt.h }}
+                            className="absolute left-1 right-1 overflow-hidden rounded-[4px] px-1.5 py-1 text-white"
+                            style={{
+                              top: appt.top,
+                              height: appt.h,
+                              background:
+                                appt.status === "booked"
+                                  ? "linear-gradient(135deg, rgba(30,64,175,0.90), rgba(59,130,246,0.56))"
+                                  : "linear-gradient(135deg, rgba(6,95,70,0.90), rgba(16,185,129,0.56))",
+                              boxShadow:
+                                appt.status === "booked"
+                                  ? "0 0 18px -10px rgba(96,165,250,0.85)"
+                                  : "0 0 18px -10px rgba(52,211,153,0.85)",
+                            }}
                           >
                             <p className="truncate text-[9px] font-semibold leading-tight">
-                              {appt.time} · {appt.service}
+                              {appt.client} · {appt.service}
                             </p>
                             {appt.h > 50 && (
-                              <p className="mt-0.5 truncate text-[8px] opacity-70">{appt.client}</p>
+                              <p className="mt-0.5 truncate text-[8px] text-white/70">{appt.time}</p>
                             )}
                           </div>
                         ))}
