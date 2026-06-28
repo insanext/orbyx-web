@@ -57,12 +57,32 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(adminLoginUrl);
   }
 
-  // Si ya tiene sesión y accede a /login → redirect al dashboard
+  // Si ya tiene sesión y accede a /login → redirect al dashboard del tenant
   if (user && pathname === "/login") {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dashboard";
-    dashboardUrl.search = "";
-    return NextResponse.redirect(dashboardUrl);
+    const { data: tenantUser } = await supabase
+      .from("tenant_users")
+      .select("tenant_id")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .limit(1)
+      .single();
+
+    if (tenantUser) {
+      const { data: tenant } = await supabase
+        .from("tenants")
+        .select("slug")
+        .eq("id", tenantUser.tenant_id)
+        .single();
+
+      if (tenant?.slug) {
+        const dashboardUrl = request.nextUrl.clone();
+        dashboardUrl.pathname = `/dashboard/${tenant.slug}`;
+        dashboardUrl.search = "";
+        return NextResponse.redirect(dashboardUrl);
+      }
+    }
+
+    // Si no se pudo resolver el tenant, dejar que el login se muestre normalmente
   }
 
   return supabaseResponse;

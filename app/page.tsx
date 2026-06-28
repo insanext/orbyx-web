@@ -12,7 +12,6 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
-  ChevronDown,
   Clock3,
   LayoutDashboard,
   Megaphone,
@@ -134,13 +133,10 @@ export default function OrbyxLandingPage() {
                 Funciones
               </Link>
               <Link href="/planes" className="transition hover:text-white">
-                Precios
+                Planes
               </Link>
               <Link href="#casos" className="transition hover:text-white">
                 Casos de uso
-              </Link>
-              <Link href="#recursos" className="inline-flex items-center gap-1 transition hover:text-white">
-                Recursos <ChevronDown className="h-3.5 w-3.5" />
               </Link>
             </nav>
 
