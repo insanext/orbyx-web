@@ -98,30 +98,20 @@ function SignupInner() {
     }, 10000);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const siteUrl = window.location.origin;
+      const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { captchaToken },
+        options: {
+          captchaToken,
+          emailRedirectTo: `${siteUrl}/auth/verified`,
+          data: { plan },
+        },
       });
       clearTimeout(timeout);
       if (error) throw error;
 
-      const userId = data.user?.id;
-      if (!userId) throw new Error("No se pudo obtener user_id del signup");
-
-      const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
-      const resp = await fetch(`${backend}/tenants/provision`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, email, plan }),
-      });
-
-      const json = await resp.json();
-      if (!resp.ok) throw new Error(json?.detail || json?.error || "Error provisionando tenant");
-
-      const params = new URLSearchParams({ tenant_id: json.tenant_id, calendar_id: json.calendar_id });
-      if (json.branch_id) params.set("branch_id", json.branch_id);
-      router.push(`/onboarding?${params.toString()}`);
+      router.push("/auth/check-email");
     } catch (err: any) {
       clearTimeout(timeout);
       setMsg(err?.message || "Error al crear la cuenta");

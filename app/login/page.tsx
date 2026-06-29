@@ -49,9 +49,11 @@ function LoginForm() {
         return;
       }
 
-      // 2. Resolver el slug del tenant del usuario
-      //    Requiere que RLS permita al usuario leer su propio tenant_users.
-      const { data: tenantUserRow, error: tuError } = await supabase
+      const userEmail = data.user?.email || email;
+      const plan = data.user?.user_metadata?.plan || "pro";
+
+      // 2. Resolver tenant del usuario — o provisionar si es primera vez
+      let { data: tenantUserRow } = await supabase
         .from("tenant_users")
         .select("tenant_id")
         .eq("user_id", userId)
@@ -59,18 +61,30 @@ function LoginForm() {
         .limit(1)
         .single();
 
-      if (tuError || !tenantUserRow) {
-        // El usuario existe en Auth pero no tiene tenant asociado.
-        // Puede ocurrir si la cuenta fue creada manualmente o el provision falló.
-        setError(
-          "Tu cuenta no tiene un negocio asociado. Contacta al administrador."
-        );
+      if (!tenantUserRow) {
+        const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
+        const provisionRes = await fetch(`${backend}/tenants/provision`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId, email: userEmail, plan }),
+        });
+        const provisionData = await provisionRes.json();
+        if (!provisionRes.ok) {
+          setError(provisionData?.error || "Error creando tu negocio. Intenta nuevamente.");
+          return;
+        }
+        const params = new URLSearchParams({
+          tenant_id: provisionData.tenant_id,
+          calendar_id: provisionData.calendar_id,
+        });
+        if (provisionData.branch_id) params.set("branch_id", provisionData.branch_id);
+        router.push(`/onboarding?${params.toString()}`);
         return;
       }
 
       const { data: tenantRow, error: tenantError } = await supabase
         .from("tenants")
-        .select("slug")
+        .select("slug, business_category")
         .eq("id", tenantUserRow.tenant_id)
         .single();
 
@@ -79,7 +93,14 @@ function LoginForm() {
         return;
       }
 
-      // 3. Redirigir al destino guardado o al dashboard del tenant
+      // 3. Si el onboarding no se completó, redirigir ahí
+      if (!tenantRow.business_category) {
+        const params = new URLSearchParams({ tenant_id: tenantUserRow.tenant_id });
+        router.push(`/onboarding?${params.toString()}`);
+        return;
+      }
+
+      // 4. Redirigir al destino guardado o al dashboard del tenant
       const redirectTo = searchParams.get("redirectTo");
       const destination =
         redirectTo && redirectTo.startsWith("/dashboard")
