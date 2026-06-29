@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
 // ─── Shared design tokens (espeja signup) ────────────────────────────────────
 const CARD_STYLE: React.CSSProperties = {
@@ -279,7 +280,7 @@ function OnboardingInner() {
       const selectedCat = CATEGORY_MAP[category];
       const businessCategory = selectedCat?.category ?? "generico";
       const businessSubtype = (selectedCat as any)?.subtype as string | undefined;
-      const res = await fetch(`${backend}/tenants/${tenantId}`, {
+      const res = await apiFetch(`${backend}/tenants/${tenantId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -335,7 +336,7 @@ function OnboardingInner() {
           });
         }
       });
-      const res = await fetch(`${backend}/business-hours`, {
+      const res = await apiFetch(`${backend}/business-hours`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenant_id: tenantId, scope: "global", hours: payload }),
@@ -361,7 +362,7 @@ function OnboardingInner() {
       // Resolver branch_id: usar el que ya tenemos o pedir la primera sucursal activa
       let activeBranchId = resolvedBranchId;
       if (!activeBranchId) {
-        const branchRes = await fetch(`${backend}/branches?tenant_id=${tenantId}`);
+        const branchRes = await apiFetch(`${backend}/branches?tenant_id=${tenantId}`);
         if (branchRes.ok) {
           const branchData = await branchRes.json().catch(() => ({}));
           const branches: any[] = branchData?.branches || branchData || [];
@@ -379,7 +380,7 @@ function OnboardingInner() {
         is_active: true,
       };
       if (activeBranchId) body.branch_id = activeBranchId;
-      const res = await fetch(`${backend}/staff`, {
+      const res = await apiFetch(`${backend}/staff`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -404,7 +405,7 @@ function OnboardingInner() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`${backend}/services`, {
+      const res = await apiFetch(`${backend}/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -437,7 +438,7 @@ function OnboardingInner() {
     };
     if (currentSlug) { router.push(buildWelcome(currentSlug)); return; }
     try {
-      const tenantRes = await fetch(`${backend}/tenants/${tenantId}`);
+      const tenantRes = await apiFetch(`${backend}/tenants/${tenantId}`);
       const tenantData = await tenantRes.json().catch(() => ({}));
       const slug = tenantData?.slug || tenantData?.tenant?.slug;
       router.push(slug ? buildWelcome(slug) : "/dashboard");
