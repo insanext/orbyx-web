@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -118,7 +119,7 @@ export default function NewCustomerPage() {
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`${BACKEND_URL}/public/business/${slug}`)
+    apiFetch(`${BACKEND_URL}/public/business/${slug}`)
       .then((r) => r.json())
       .then((data) => {
         const b = data?.business;
@@ -137,7 +138,7 @@ export default function NewCustomerPage() {
   // If appointment_id present but no date in query params, try to fetch the date
   useEffect(() => {
     if (!appointmentId || appointmentDateParam) return;
-    fetch(`${BACKEND_URL}/appointments/by-range/${slug}?from=2020-01-01&to=2099-12-31`)
+    apiFetch(`${BACKEND_URL}/appointments/by-range/${slug}?from=2020-01-01&to=2099-12-31`)
       .then((r) => r.json())
       .then((data) => {
         const found = Array.isArray(data?.appointments)
@@ -193,7 +194,7 @@ export default function NewCustomerPage() {
     try {
       setSaving(true);
 
-      const res = await fetch(`${BACKEND_URL}/customers`, {
+      const res = await apiFetch(`${BACKEND_URL}/customers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -222,7 +223,7 @@ export default function NewCustomerPage() {
       const customerId: string = data.customer.id;
 
       if (isVeterinaria && petName.trim()) {
-        await fetch(`${BACKEND_URL}/pets`, {
+        await apiFetch(`${BACKEND_URL}/pets`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

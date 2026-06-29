@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import {
   ArrowLeft,
   BarChart3,
@@ -134,7 +135,7 @@ export default function CampaignHistoryPage() {
       setLoading(true);
       setError("");
 
-      const res = await fetch(`${BACKEND_URL}/campaigns/history/${slug}`);
+      const res = await apiFetch(`${BACKEND_URL}/campaigns/history/${slug}`);
       const data = await res.json();
 
       if (!res.ok) {

@@ -328,7 +328,7 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!tenantId) return;
     const fetchUnread = () => {
-      fetch(`${BACKEND_URL}/support/tickets/unread-count?tenant_id=${tenantId}`)
+      apiFetch(`${BACKEND_URL}/support/tickets/unread-count?tenant_id=${tenantId}`)
         .then((res) => res.json())
         .then((data) => setUnreadTickets(data.count ?? 0))
         .catch(() => {});

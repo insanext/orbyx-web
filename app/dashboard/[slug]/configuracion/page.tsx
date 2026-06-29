@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/client";
+import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -81,7 +82,7 @@ export default function ConfiguracionPage() {
 
   const loadEmailChangeStatus = async (uid: string) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/account/email-change/status?user_id=${uid}`);
+      const res = await apiFetch(`${BACKEND_URL}/account/email-change/status?user_id=${uid}`);
       const d = await res.json();
       setEmailChangeStatus(d.pending ? d : { pending: false });
     } catch {
@@ -102,7 +103,7 @@ export default function ConfiguracionPage() {
       setPhone(user.user_metadata?.phone ?? "");
       loadEmailChangeStatus(user.id);
 
-      const res = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+      const res = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
       const data = await res.json();
       const tid = data?.business?.id;
       if (tid) {
@@ -115,8 +116,8 @@ export default function ConfiguracionPage() {
 
   const loadTeam = async (tid: string) => {
     const [mRes, iRes] = await Promise.all([
-      fetch(`${BACKEND_URL}/members?tenant_id=${tid}`),
-      fetch(`${BACKEND_URL}/invitations?tenant_id=${tid}`),
+      apiFetch(`${BACKEND_URL}/members?tenant_id=${tid}`),
+      apiFetch(`${BACKEND_URL}/invitations?tenant_id=${tid}`),
     ]);
     const mData = await mRes.json();
     const iData = await iRes.json();
@@ -143,7 +144,7 @@ export default function ConfiguracionPage() {
     setEmailRequestMsg("");
     setEmailRequestIsError(false);
     try {
-      const res = await fetch(`${BACKEND_URL}/account/email-change/request`, {
+      const res = await apiFetch(`${BACKEND_URL}/account/email-change/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -204,7 +205,7 @@ export default function ConfiguracionPage() {
 
   useEffect(() => {
     if (!tenantId) return;
-    fetch(`${BACKEND_URL}/branches?tenant_id=${tenantId}`)
+    apiFetch(`${BACKEND_URL}/branches?tenant_id=${tenantId}`)
       .then(res => res.json())
       .then(data => setBranches(Array.isArray(data?.branches) ? data.branches.filter((b: any) => b.is_active !== false) : []))
       .catch(() => {});
@@ -246,7 +247,7 @@ export default function ConfiguracionPage() {
         setSendingInvite(false);
         return;
       }
-      const res = await fetch(`${BACKEND_URL}/invitations`, {
+      const res = await apiFetch(`${BACKEND_URL}/invitations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -279,7 +280,7 @@ export default function ConfiguracionPage() {
   };
 
   const handleChangeRole = async (memberId: string, newRole: string) => {
-    await fetch(`${BACKEND_URL}/members/${memberId}`, {
+    await apiFetch(`${BACKEND_URL}/members/${memberId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tenant_id: tenantId, role: newRole }),
@@ -307,7 +308,7 @@ export default function ConfiguracionPage() {
         setRevoking(false);
         return;
       }
-      await fetch(`${BACKEND_URL}/members/${revokeTarget.id}`, {
+      await apiFetch(`${BACKEND_URL}/members/${revokeTarget.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenant_id: tenantId, is_active: false }),
@@ -322,7 +323,7 @@ export default function ConfiguracionPage() {
   };
 
   const handleCancelInvite = async (inviteId: string) => {
-    await fetch(`${BACKEND_URL}/invitations/${inviteId}`, {
+    await apiFetch(`${BACKEND_URL}/invitations/${inviteId}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tenant_id: tenantId }),
@@ -914,7 +915,7 @@ export default function ConfiguracionPage() {
                 onClick={async () => {
                   setSavingUserEdit(true);
                   try {
-                    await fetch(`${BACKEND_URL}/members/${editingUser.id}`, {
+                    await apiFetch(`${BACKEND_URL}/members/${editingUser.id}`, {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ tenant_id: tenantId, permissions: editPermissions, branch_ids: editBranchIds }),

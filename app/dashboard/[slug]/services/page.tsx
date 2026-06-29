@@ -481,7 +481,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
         group_id: s.group_id ?? null,
         sort_order: i,
       }));
-      fetch(`${BACKEND_URL}/services/reorder`, {
+      apiFetch(`${BACKEND_URL}/services/reorder`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenant_id: tenantId, order }),
@@ -1679,7 +1679,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                 <button
                   onClick={async () => {
                     if (!newGroupName.trim()) return;
-                    const res = await fetch(`${BACKEND_URL}/service-groups`, {
+                    const res = await apiFetch(`${BACKEND_URL}/service-groups`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -130,9 +131,9 @@ export default function ClinicalReportPage() {
         setError("");
 
         const [tenantRes, customersRes, petsRes, notesRes] = await Promise.all([
-          fetch(`${BACKEND_URL}/public/business/${slug}`),
-          fetch(`${BACKEND_URL}/customers/${slug}`),
-          fetch(`${BACKEND_URL}/pets/${slug}?customer_id=${customerId}`),
+          apiFetch(`${BACKEND_URL}/public/business/${slug}`),
+          apiFetch(`${BACKEND_URL}/customers/${slug}`),
+          apiFetch(`${BACKEND_URL}/pets/${slug}?customer_id=${customerId}`),
           fetch(
             `${BACKEND_URL}/clinical-notes/${slug}?pet_id=${petId}&limit=100`
           ),

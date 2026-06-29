@@ -85,7 +85,7 @@ export default function SoportePage() {
   }, [slug])
 
   const loadTickets = async (tid: string) => {
-    const res = await fetch(`${BACKEND_URL}/support/tickets?tenant_id=${tid}`)
+    const res = await apiFetch(`${BACKEND_URL}/support/tickets?tenant_id=${tid}`)
     const data = await res.json()
     setTickets(Array.isArray(data) ? data : [])
   }
@@ -116,7 +116,7 @@ export default function SoportePage() {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('tenant_id', tenantId)
-      const res = await fetch(`${BACKEND_URL}/upload/ticket-attachment`, { method: 'POST', body: formData })
+      const res = await apiFetch(`${BACKEND_URL}/upload/ticket-attachment`, { method: 'POST', body: formData })
       const data = await res.json()
       if (data.url) urls.push(data.url)
     }
@@ -141,7 +141,7 @@ export default function SoportePage() {
         attachments: attachmentUrls,
       }
       console.log('[DEBUG soporte] payload:', JSON.stringify(payload))
-      const res = await fetch(`${BACKEND_URL}/support/tickets`, {
+      const res = await apiFetch(`${BACKEND_URL}/support/tickets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -165,11 +165,11 @@ export default function SoportePage() {
     setSelectedTicket(ticket)
     setView('detail')
     setMessages([])
-    const res = await fetch(`${BACKEND_URL}/support/tickets/${ticket.id}/messages?tenant_id=${tenantId}`)
+    const res = await apiFetch(`${BACKEND_URL}/support/tickets/${ticket.id}/messages?tenant_id=${tenantId}`)
     const data = await res.json()
     setMessages(Array.isArray(data) ? data : [])
     if (ticket.has_unread_for_customer) {
-      await fetch(`${BACKEND_URL}/support/tickets/${ticket.id}/mark-read`, {
+      await apiFetch(`${BACKEND_URL}/support/tickets/${ticket.id}/mark-read`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant_id: tenantId }),
@@ -183,7 +183,7 @@ export default function SoportePage() {
     setSendingReply(true)
     try {
       const attachmentUrls = replyFiles.length > 0 ? await uploadFiles(replyFiles) : []
-      const res = await fetch(`${BACKEND_URL}/support/tickets/${selectedTicket.id}/messages`, {
+      const res = await apiFetch(`${BACKEND_URL}/support/tickets/${selectedTicket.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -210,7 +210,7 @@ export default function SoportePage() {
   const handleConfirmResolution = async (confirmed: boolean) => {
     setConfirmingResolution(true)
     try {
-      const res = await fetch(`${BACKEND_URL}/support/tickets/${selectedTicket.id}/confirm-resolution`, {
+      const res = await apiFetch(`${BACKEND_URL}/support/tickets/${selectedTicket.id}/confirm-resolution`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant_id: tenantId, confirmed }),

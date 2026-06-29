@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { BarChart3 } from "lucide-react";
 import { PageHeader } from "../../../components/dashboard/page-header";
 import { Panel } from "../../../components/dashboard/panel";
+import { apiFetch } from "@/lib/api";
 
 type BusinessResponse = {
   business: {
@@ -372,7 +373,7 @@ export default function DashboardHomePage() {
         }
 
         const [businessRes, metricsRes] = await Promise.all([
-          fetch(`${BACKEND_URL}/public/business/${slug}`),
+          apiFetch(`${BACKEND_URL}/public/business/${slug}`),
           fetch(metricsUrl.toString()),
         ]);
 

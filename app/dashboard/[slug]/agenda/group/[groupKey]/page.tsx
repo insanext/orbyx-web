@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -303,7 +304,7 @@ export default function GroupBookingPage() {
     try {
       setSavingId(appointmentId);
 
-      const response = await fetch(`${BACKEND_URL}/appointments/${appointmentId}/status`, {
+      const response = await apiFetch(`${BACKEND_URL}/appointments/${appointmentId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -336,7 +337,7 @@ export default function GroupBookingPage() {
         [appointmentId]: "Guardando...",
       }));
 
-      const response = await fetch(`${BACKEND_URL}/appointments/${appointmentId}`, {
+      const response = await apiFetch(`${BACKEND_URL}/appointments/${appointmentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes }),

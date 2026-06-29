@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Panel } from "../../../../../components/dashboard/panel";
+import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -468,7 +469,7 @@ export default function CustomerDetailPage() {
     try {
       setSavingPet(true);
       setPetError("");
-      const res = await fetch(`${BACKEND_URL}/pets/${petId}`, {
+      const res = await apiFetch(`${BACKEND_URL}/pets/${petId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -542,7 +543,7 @@ export default function CustomerDetailPage() {
     if (!customer?.id || !slug) return;
     setSavingNote(true);
     try {
-      await fetch(`${BACKEND_URL}/customers/${customer.id}`, {
+      await apiFetch(`${BACKEND_URL}/customers/${customer.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, notes: noteValue }),
@@ -560,7 +561,7 @@ export default function CustomerDetailPage() {
     if (!customer?.id || !slug || !editCustomerForm.name.trim()) return;
     setSavingCustomer(true);
     try {
-      await fetch(`${BACKEND_URL}/customers/${customer.id}`, {
+      await apiFetch(`${BACKEND_URL}/customers/${customer.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, ...editCustomerForm }),
@@ -578,7 +579,7 @@ export default function CustomerDetailPage() {
     if (!customer?.id) return;
     setSavingExtraData(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/customers/${customer.id}/extra-data`, {
+      const res = await apiFetch(`${BACKEND_URL}/customers/${customer.id}/extra-data`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ extra_data: extraDataForm, slug }),
@@ -598,7 +599,7 @@ export default function CustomerDetailPage() {
     if (!customer || !editPatientForm.name.trim()) return;
     try {
       setSavingPet(true);
-      const res = await fetch(`${BACKEND_URL}/customers/${customer.id}`, {
+      const res = await apiFetch(`${BACKEND_URL}/customers/${customer.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -679,7 +680,7 @@ export default function CustomerDetailPage() {
         if (!res.ok) throw new Error(data?.error || "No se pudo guardar la nota");
 
         try {
-          await fetch(`${BACKEND_URL}/appointments/${newNoteApptId}/clinical-pending`, {
+          await apiFetch(`${BACKEND_URL}/appointments/${newNoteApptId}/clinical-pending`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ pending: false, slug }),
@@ -689,7 +690,7 @@ export default function CustomerDetailPage() {
         setNewNoteApptId(null);
         await loadPatientNotes();
       } else {
-        const res = await fetch(`${BACKEND_URL}/clinical-notes/${slug}`, {
+        const res = await apiFetch(`${BACKEND_URL}/clinical-notes/${slug}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -763,7 +764,7 @@ export default function CustomerDetailPage() {
         setLoading(true);
 
         try {
-          const businessRes = await fetch(`${BACKEND_URL}/public/business/${slug}`);
+          const businessRes = await apiFetch(`${BACKEND_URL}/public/business/${slug}`);
           const businessData: BusinessResponse = await businessRes.json();
 
           setBusinessCategory(
@@ -784,7 +785,7 @@ export default function CustomerDetailPage() {
           setBusinessCategory("");
         }
 
-        const resCustomers = await fetch(`${BACKEND_URL}/customers/${slug}`);
+        const resCustomers = await apiFetch(`${BACKEND_URL}/customers/${slug}`);
         const dataCustomers = await resCustomers.json();
 
         const found = dataCustomers.customers?.find(
@@ -799,7 +800,7 @@ export default function CustomerDetailPage() {
         }
 
         try {
-          const resFields = await fetch(`${BACKEND_URL}/booking-fields/${slug}`);
+          const resFields = await apiFetch(`${BACKEND_URL}/booking-fields/${slug}`);
           const dataFields = await resFields.json();
           const cfg = dataFields.booking_fields_config;
           setBookingFields(
@@ -945,7 +946,7 @@ export default function CustomerDetailPage() {
       setPetError("");
       setPetSuccess("");
 
-      const res = await fetch(`${BACKEND_URL}/pets`, {
+      const res = await apiFetch(`${BACKEND_URL}/pets`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1101,7 +1102,7 @@ const lastValidAppointment = validAppointments[0] || null;
       setEditingNoteId(null);
 
       try {
-        await fetch(`${BACKEND_URL}/appointments/${appointmentId}/clinical-pending`, {
+        await apiFetch(`${BACKEND_URL}/appointments/${appointmentId}/clinical-pending`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pending: false, slug }),
@@ -1291,7 +1292,7 @@ const lastValidAppointment = validAppointments[0] || null;
     if (!customer) return;
     setPrintingPetId(pet.id);
     try {
-      const res = await fetch(`${BACKEND_URL}/clinical-notes/${slug}?pet_id=${pet.id}&limit=100`);
+      const res = await apiFetch(`${BACKEND_URL}/clinical-notes/${slug}?pet_id=${pet.id}&limit=100`);
       const data = await res.json();
       const notes: ClinicalNote[] = Array.isArray(data?.notes) ? data.notes : [];
       notes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
