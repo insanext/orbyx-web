@@ -262,7 +262,7 @@ export default function GroupBookingPage() {
         query.set("staff_id", staffId);
       }
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${BACKEND_URL}/appointments/by-range/${slug}?${query.toString()}`
       );
       const data = await response.json();

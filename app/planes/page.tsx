@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { apiFetch } from "@/lib/api";
 import {
   BarChart3,
   Bot,
@@ -680,7 +681,7 @@ function PlanesPageContent() {
           tenantId
         )}&new_plan=${encodeURIComponent(selectedPlanKey)}`;
 
-        const res = await fetch(url);
+        const res = await apiFetch(url);
         const data: BillingPreviewResponse = await res.json();
 
         if (!res.ok) {
@@ -721,7 +722,7 @@ function PlanesPageContent() {
       setAddonsLoading(true);
       setAddonError("");
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/billing/addons?tenant_id=${encodeURIComponent(
           tenantId
         )}&plan=${encodeURIComponent(selectedPlanKey)}`
@@ -802,7 +803,7 @@ function PlanesPageContent() {
     setAddonError("");
 
     try {
-      const res = await fetch(`${BACKEND_URL}/billing/addons/activate`, {
+      const res = await apiFetch(`${BACKEND_URL}/billing/addons/activate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -851,7 +852,7 @@ function PlanesPageContent() {
     const newQty = current - 1;
 
     try {
-      const cancelRes = await fetch(`${BACKEND_URL}/billing/addons/cancel`, {
+      const cancelRes = await apiFetch(`${BACKEND_URL}/billing/addons/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenant_id: tenantId, addon_key: extraKey }),
@@ -865,7 +866,7 @@ function PlanesPageContent() {
       if (newQty > 0) {
         // El backend no tiene decremento atómico: se cancela el addon y se
         // reactiva con la cantidad restante.
-        const reactivateRes = await fetch(
+        const reactivateRes = await apiFetch(
           `${BACKEND_URL}/billing/addons/activate`,
           {
             method: "POST",
@@ -972,7 +973,7 @@ function PlanesPageContent() {
   // Cuenta staff y sucursales activos del tenant para bloquear downgrades
   // que dejarian la cuenta sobre el limite del plan destino.
   async function validateDowngradeLimits(target: Plan) {
-    const branchesRes = await fetch(
+    const branchesRes = await apiFetch(
       `${BACKEND_URL}/branches?tenant_id=${encodeURIComponent(tenantId)}`
     );
     const branchesData = await branchesRes.json();
@@ -989,7 +990,7 @@ function PlanesPageContent() {
 
     let activeStaff = 0;
     for (const branch of activeBranches) {
-      const staffRes = await fetch(
+      const staffRes = await apiFetch(
         `${BACKEND_URL}/staff?tenant_id=${encodeURIComponent(
           tenantId
         )}&branch_id=${encodeURIComponent(branch.id)}&active=true`
@@ -1056,7 +1057,7 @@ function PlanesPageContent() {
         throw new Error("Falta tenant_id para aplicar el cambio de plan");
       }
 
-      const res = await fetch(`${BACKEND_URL}/billing/change-plan`, {
+      const res = await apiFetch(`${BACKEND_URL}/billing/change-plan`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

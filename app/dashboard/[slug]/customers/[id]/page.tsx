@@ -397,7 +397,7 @@ export default function CustomerDetailPage() {
 
   async function loadClinicalNotes(petId: string) {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/clinical-notes/${slug}?pet_id=${petId}&limit=50`
       );
       if (!res.ok) return;
@@ -524,7 +524,7 @@ export default function CustomerDetailPage() {
         setClinicalNotes((prev) => ({ ...prev, [PATIENT_NOTES_KEY]: [] }));
         return;
       }
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/clinical-notes/${slug}?appointment_ids=${apptIds.join(",")}&limit=50`,
         { cache: "no-store" }
       );
@@ -666,7 +666,7 @@ export default function CustomerDetailPage() {
         };
         console.log("[save] llamando PATCH clinical con apptId:", newNoteApptId);
         console.log("[save] body:", patchBody);
-        const res = await fetch(
+        const res = await apiFetch(
           `${BACKEND_URL}/appointments/${newNoteApptId}/clinical`,
           {
             method: "PATCH",
@@ -813,7 +813,7 @@ export default function CustomerDetailPage() {
         }
 
         try {
-          const resPets = await fetch(
+          const resPets = await apiFetch(
             `${BACKEND_URL}/pets/${slug}?customer_id=${customerId}`
           );
           const dataPets = await resPets.json();
@@ -831,7 +831,7 @@ export default function CustomerDetailPage() {
             appointmentParams.set("branch_id", selectedBranchId);
           }
 
-          const resAppointments = await fetch(
+          const resAppointments = await apiFetch(
             `${BACKEND_URL}/appointments/customer-history/${slug}?${appointmentParams.toString()}`
           );
           const dataAppointments = await resAppointments.json();
@@ -841,7 +841,7 @@ export default function CustomerDetailPage() {
         }
 
         try {
-          const resFollowups = await fetch(
+          const resFollowups = await apiFetch(
             `${BACKEND_URL}/pet-followups/${slug}?customer_id=${customerId}`
           );
           const dataFollowups = await resFollowups.json();
@@ -883,7 +883,7 @@ export default function CustomerDetailPage() {
 
       let notes: ClinicalNote[] = [];
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${BACKEND_URL}/clinical-notes/${slug}?customer_id=${customerId}&limit=50`
         );
         if (res.ok) {
@@ -1049,7 +1049,7 @@ const lastValidAppointment = validAppointments[0] || null;
 
       console.log("[save] handleSaveClinical llamado con apptId:", appointmentId);
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${BACKEND_URL}/appointments/${appointmentId}/clinical`,
         {
           method: "PATCH",

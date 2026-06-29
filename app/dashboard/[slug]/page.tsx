@@ -374,7 +374,7 @@ export default function DashboardHomePage() {
 
         const [businessRes, metricsRes] = await Promise.all([
           apiFetch(`${BACKEND_URL}/public/business/${slug}`),
-          fetch(metricsUrl.toString()),
+          apiFetch(metricsUrl.toString()),
         ]);
 
         const businessData: BusinessResponse | { error?: string } =

@@ -369,10 +369,10 @@ export default function BillingPage() {
       const perBranchResponses = await Promise.all(
         activeBranchRows.map(async (branch) => {
           const [staffRes, servicesRes] = await Promise.all([
-            fetch(
+            apiFetch(
               `${BACKEND_URL}/staff?tenant_id=${currentTenantId}&branch_id=${branch.id}`
             ),
-            fetch(
+            apiFetch(
               `${BACKEND_URL}/services?tenant_id=${currentTenantId}&branch_id=${branch.id}`
             ),
           ]);

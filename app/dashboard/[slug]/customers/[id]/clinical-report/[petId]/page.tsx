@@ -134,7 +134,7 @@ export default function ClinicalReportPage() {
           apiFetch(`${BACKEND_URL}/public/business/${slug}`),
           apiFetch(`${BACKEND_URL}/customers/${slug}`),
           apiFetch(`${BACKEND_URL}/pets/${slug}?customer_id=${customerId}`),
-          fetch(
+          apiFetch(
             `${BACKEND_URL}/clinical-notes/${slug}?pet_id=${petId}&limit=100`
           ),
         ]);

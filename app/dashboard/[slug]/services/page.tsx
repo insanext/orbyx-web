@@ -724,16 +724,16 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
   ) {
     const [servicesRes, staffRes, staffServicesRes, groupsRes] =
       await Promise.all([
-        fetch(
+        apiFetch(
           `${BACKEND_URL}/services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
         ),
-        fetch(
+        apiFetch(
           `${BACKEND_URL}/staff?tenant_id=${currentTenantId}&branch_id=${currentBranchId}&active=true`
         ),
-        fetch(
+        apiFetch(
           `${BACKEND_URL}/staff-services?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
         ),
-        fetch(
+        apiFetch(
           `${BACKEND_URL}/service-groups?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
         ),
       ]);
@@ -1785,7 +1785,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                                   editingGroupName.trim() &&
                                   editingGroupName !== group.name
                                 ) {
-                                  await fetch(
+                                  await apiFetch(
                                     `${BACKEND_URL}/service-groups/${group.id}`,
                                     {
                                       method: "PATCH",
@@ -2281,7 +2281,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                   if (confirmModal.type === "delete-service" && confirmModal.id) {
                     await handleDeleteService(confirmModal.id);
                   } else if (confirmModal.id) {
-                    await fetch(
+                    await apiFetch(
                       `${BACKEND_URL}/service-groups/${confirmModal.id}?tenant_id=${tenantId}`,
                       { method: "DELETE" }
                     );
