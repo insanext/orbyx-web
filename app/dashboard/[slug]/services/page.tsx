@@ -252,20 +252,16 @@ function SortableServiceRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 px-3 py-2.5 border-b border-blue-900/10 last:border-b-0 hover:bg-blue-950/20 transition-colors group/row"
+      className="flex items-center gap-2 px-3 py-2.5 border-b border-blue-900/10 last:border-b-0 hover:bg-blue-950/20 transition-colors group/row cursor-grab active:cursor-grabbing touch-none"
+      {...attributes}
+      {...listeners}
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="text-blue-900/40 hover:text-blue-400 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
-        aria-label="Arrastrar"
-      >
+      <span className="text-blue-900/40 flex-shrink-0" aria-hidden="true">
         <svg
           width="16"
           height="16"
           viewBox="0 0 24 24"
           fill="currentColor"
-          aria-hidden="true"
         >
           <circle cx="9" cy="6" r="1.5" />
           <circle cx="15" cy="6" r="1.5" />
@@ -274,7 +270,7 @@ function SortableServiceRow({
           <circle cx="9" cy="18" r="1.5" />
           <circle cx="15" cy="18" r="1.5" />
         </svg>
-      </button>
+      </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate" style={{ color: "var(--text-main)" }}>
           {service.name}
@@ -303,8 +299,11 @@ function SortableServiceRow({
             </span>
           )}
           {!hasStaff && (
-            <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              ⚠️ Sin profesional — no visible en tu página pública
+            <span
+              className="text-[10px] px-1.5 py-0.5"
+              style={{ background: "transparent", border: "1.5px solid #d97706", color: "#d97706", borderRadius: 4 }}
+            >
+              ⚠ Sin profesional — no visible en tu página pública
             </span>
           )}
         </div>
@@ -312,6 +311,7 @@ function SortableServiceRow({
       <div className="flex gap-1.5 opacity-0 group-hover/row:opacity-100 transition-opacity flex-shrink-0">
         <button
           onClick={() => onEdit(service)}
+          onPointerDown={(e) => e.stopPropagation()}
           className="text-xs px-2.5 py-1 rounded-lg border border-blue-900/30 hover:border-blue-500/40 transition-colors"
           style={{ color: "var(--text-muted)" }}
         >
@@ -319,6 +319,7 @@ function SortableServiceRow({
         </button>
         <button
           onClick={() => onDelete(service)}
+          onPointerDown={(e) => e.stopPropagation()}
           className="text-xs px-2.5 py-1 rounded-lg border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
           style={{ color: "var(--text-muted)" }}
         >
