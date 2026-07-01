@@ -225,10 +225,12 @@ function SortableServiceRow({
   service,
   onEdit,
   onDelete,
+  hasStaff,
 }: {
   service: Service;
   onEdit: (s: Service) => void;
   onDelete: (s: Service) => void;
+  hasStaff?: boolean;
 }) {
   const {
     attributes,
@@ -298,6 +300,11 @@ function SortableServiceRow({
           {!service.active && (
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/20">
               Inactivo
+            </span>
+          )}
+          {!hasStaff && (
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              ⚠️ Sin profesional — no visible en tu página pública
             </span>
           )}
         </div>
@@ -643,6 +650,41 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                 ) : null}
               </div>
             ) : null}
+            {staff.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                  Profesionales que realizan este servicio
+                </label>
+                <div className="space-y-1.5">
+                  {staff.map((member) => (
+                    <label
+                      key={member.id}
+                      className="flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors"
+                      style={{
+                        borderColor: editForm.staff_ids.includes(member.id)
+                          ? "rgba(37,99,235,0.50)"
+                          : "var(--border-color)",
+                        background: editForm.staff_ids.includes(member.id)
+                          ? "rgba(37,99,235,0.08)"
+                          : "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={editForm.staff_ids.includes(member.id)}
+                        onChange={() => toggleEditStaff(member.id)}
+                        className="accent-blue-500"
+                      />
+                      {member.name}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                  Cada servicio debe tener al menos un profesional asignado para aparecer en tu página pública. Esta regla aplica también para servicios que crees en el futuro.
+                </p>
+              </div>
+            )}
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
@@ -688,6 +730,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
             name: s.name,
           })
         }
+        hasStaff={getSelectedStaffIdsForService(service.id).length > 0}
       />
     );
   }
@@ -2196,6 +2239,42 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
   </div>
 ) : null}
 
+
+              {staff.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                    Profesionales que realizan este servicio
+                  </label>
+                  <div className="space-y-1.5">
+                    {staff.map((member) => (
+                      <label
+                        key={member.id}
+                        className="flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors"
+                        style={{
+                          borderColor: form.staff_ids.includes(member.id)
+                            ? "rgba(37,99,235,0.50)"
+                            : "var(--border-color)",
+                          background: form.staff_ids.includes(member.id)
+                            ? "rgba(37,99,235,0.08)"
+                            : "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.staff_ids.includes(member.id)}
+                          onChange={() => toggleCreateStaff(member.id)}
+                          className="accent-blue-500"
+                        />
+                        {member.name}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                    Cada servicio debe tener al menos un profesional asignado para aparecer en tu página pública. Esta regla aplica también para servicios que crees en el futuro.
+                  </p>
+                </div>
+              )}
 
               <button
                 type="button"
