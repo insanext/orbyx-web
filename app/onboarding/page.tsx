@@ -263,6 +263,10 @@ function OnboardingInner() {
   const [resolvedBranchId, setResolvedBranchId] = useState<string>(searchParams.get("branch_id") || "");
   const [staffName, setStaffName] = useState("");
   const [staffRole, setStaffRole] = useState("");
+  const [createdStaffId, setCreatedStaffId] = useState<string>("");
+
+  // Step 4
+  const [assignStaffToService, setAssignStaffToService] = useState(true);
 
   // Step 4
   const [serviceName, setServiceName] = useState("");
@@ -385,10 +389,12 @@ function OnboardingInner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      const staffData = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error || "Error creando el profesional");
+        throw new Error(staffData?.error || "Error creando el profesional");
       }
+      const newStaffId = staffData?.staff?.id || staffData?.id;
+      if (newStaffId) setCreatedStaffId(String(newStaffId));
       setStep(4);
     } catch (e: any) {
       setError(e.message || "Error");
@@ -417,9 +423,23 @@ function OnboardingInner() {
           is_active: true,
         }),
       });
+      const serviceData = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error || "Error creando el servicio");
+        throw new Error(serviceData?.error || "Error creando el servicio");
+      }
+
+      const createdServiceId = serviceData?.service?.id || serviceData?.id;
+      if (createdServiceId && createdStaffId && assignStaffToService) {
+        await apiFetch(`${backend}/staff-services`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            ...(resolvedBranchId ? { branch_id: resolvedBranchId } : {}),
+            staff_id: createdStaffId,
+            service_ids: [createdServiceId],
+          }),
+        }).catch(() => {});
       }
 
       await goToDashboard();
@@ -701,6 +721,36 @@ function OnboardingInner() {
                 />
               </div>
             </div>
+            {createdStaffId && (
+              <div>
+                <label style={LABEL_STYLE}>Profesionales que realizan este servicio</label>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    border: `1px solid ${assignStaffToService ? "rgba(0,229,255,0.5)" : "rgba(255,255,255,0.15)"}`,
+                    background: assignStaffToService ? "rgba(0,229,255,0.08)" : "rgba(255,255,255,0.04)",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={assignStaffToService}
+                    onChange={(e) => setAssignStaffToService(e.target.checked)}
+                    style={{ accentColor: NEON, width: 16, height: 16, cursor: "pointer" }}
+                  />
+                  <span style={{ color: "#f1f5f9", fontSize: 14 }}>{staffName}</span>
+                  {staffRole && <span style={{ color: "#64748b", fontSize: 13 }}>— {staffRole}</span>}
+                </label>
+                <p style={{ color: "#475569", fontSize: 12, marginTop: 8, lineHeight: 1.5 }}>
+                  Cada servicio debe tener al menos un profesional asignado para aparecer en tu página pública.
+                </p>
+              </div>
+            )}
             {error && <ErrorMsg text={error} />}
             <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent)", margin: "4px 0" }} />
             <div style={{ display: "flex", gap: 10 }}>
