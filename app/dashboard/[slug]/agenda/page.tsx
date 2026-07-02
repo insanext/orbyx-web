@@ -397,6 +397,7 @@ const [calendarId, setCalendarId] = useState("");
 
   const [weekBaseDate, setWeekBaseDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [newAppointmentIds, setNewAppointmentIds] = useState<Set<string>>(new Set());
 const [pendingCloseAllAppointments, setPendingCloseAllAppointments] = useState<Appointment[]>([]);
 const [pendingClinicalNotes, setPendingClinicalNotes] = useState<Appointment[]>([]);
 const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
@@ -2663,22 +2664,70 @@ loadPendingClinicalNotes();
   }, [slug, branchStorageKey]);
 
   useEffect(() => {
-    function handleAppointmentChanged() {
-      loadAppointments({ preserveSelected: true });
+    function handleAppointmentNew(event: Event) {
+      const customEvent = event as CustomEvent<Record<string, any>>;
+      const row = customEvent.detail;
+      if (!row || !row.id || !row.start_at) return;
+      if (row.branch_id !== selectedBranchId) return;
+      if (selectedStaffId && row.staff_id !== selectedStaffId) return;
+
+      const dayKey = formatDateYYYYMMDD(new Date(row.start_at));
+      const isInCurrentWeek = weekDays.some(
+        (d) => formatDateYYYYMMDD(d) === dayKey
+      );
+      if (!isInCurrentWeek) return;
+
+      setAppointments((prev) => {
+        if (prev.some((appt) => appt.id === row.id)) return prev;
+        return [...prev, row as Appointment];
+      });
+
+      setNewAppointmentIds((prev) => {
+        const next = new Set(prev);
+        next.add(row.id);
+        return next;
+      });
+      setTimeout(() => {
+        setNewAppointmentIds((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
+      }, 60000);
+    }
+
+    function handleAppointmentCanceled(event: Event) {
+      const customEvent = event as CustomEvent<{ id?: string }>;
+      const id = customEvent.detail?.id;
+      if (!id) return;
+
+      setAppointments((prev) =>
+        prev.map((appt) =>
+          appt.id === id ? { ...appt, status: "canceled" } : appt
+        )
+      );
     }
 
     window.addEventListener(
-      "orbyx-appointment-changed",
-      handleAppointmentChanged as EventListener
+      "orbyx-appointment-new",
+      handleAppointmentNew as EventListener
+    );
+    window.addEventListener(
+      "orbyx-appointment-canceled",
+      handleAppointmentCanceled as EventListener
     );
 
     return () => {
       window.removeEventListener(
-        "orbyx-appointment-changed",
-        handleAppointmentChanged as EventListener
+        "orbyx-appointment-new",
+        handleAppointmentNew as EventListener
+      );
+      window.removeEventListener(
+        "orbyx-appointment-canceled",
+        handleAppointmentCanceled as EventListener
       );
     };
-  }, [slug, selectedBranchId, weekStart.getTime(), selectedStaffId]);
+  }, [slug, selectedBranchId, weekStart.getTime(), selectedStaffId, weekDays]);
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter(
@@ -5110,6 +5159,11 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                   height: appointmentBlockHeight,
                                 }}
                               >
+                                {newAppointmentIds.has(appt.id) ? (
+                                  <span className="absolute -right-1 -top-1 z-20 rounded-full bg-rose-500 px-1.5 py-0.5 text-[8px] font-bold leading-none text-white shadow-sm">
+                                    Nueva
+                                  </span>
+                                ) : null}
                                 <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
                                   {false && !isGroupSlot ? (
                                   <div

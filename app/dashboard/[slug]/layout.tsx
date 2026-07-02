@@ -60,6 +60,7 @@ type NotificationEvent = {
   serviceName: string;
   startAt: string;
   read: boolean;
+  createdAt: number;
 };
 
 function formatNotifTime(iso: string) {
@@ -74,6 +75,24 @@ function formatNotifTime(iso: string) {
   } catch {
     return "";
   }
+}
+
+function getSantiagoDayKey(ts: number) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(ts));
+}
+
+function formatNotifGroupDate(ts: number) {
+  return new Date(ts).toLocaleDateString("es-CL", {
+    timeZone: "America/Santiago",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 const navItems = [
@@ -395,13 +414,15 @@ export default function DashboardLayout({
           const row = payload.new as Record<string, any>;
           if (row.status !== "booked") return;
 
+          const now = Date.now();
           const event: NotificationEvent = {
-            id: `${row.id}-insert-${Date.now()}`,
+            id: `${row.id}-insert-${now}`,
             type: "new_booking",
             customerName: row.customer_name || "Cliente",
             serviceName: row.service_name_snapshot || "Servicio",
             startAt: row.start_at,
             read: false,
+            createdAt: now,
           };
 
           setNotifications((prev) => [event, ...prev].slice(0, 50));
@@ -409,7 +430,9 @@ export default function DashboardLayout({
           setTimeout(() => {
             setToasts((prev) => prev.filter((t) => t.id !== event.id));
           }, 15000);
-          window.dispatchEvent(new CustomEvent("orbyx-appointment-changed"));
+          window.dispatchEvent(
+            new CustomEvent("orbyx-appointment-new", { detail: row })
+          );
         }
       )
       .on(
@@ -425,27 +448,35 @@ export default function DashboardLayout({
           const prevRow = payload.old as Record<string, any>;
 
           if (row.status === "canceled" && prevRow.status !== "canceled") {
+            const now = Date.now();
             const event: NotificationEvent = {
-              id: `${row.id}-canceled-${Date.now()}`,
+              id: `${row.id}-canceled-${now}`,
               type: "canceled",
               customerName: row.customer_name || "Cliente",
               serviceName: row.service_name_snapshot || "Servicio",
               startAt: row.start_at,
               read: false,
+              createdAt: now,
             };
             setNotifications((prev) => [event, ...prev].slice(0, 50));
-            window.dispatchEvent(new CustomEvent("orbyx-appointment-changed"));
+            window.dispatchEvent(
+              new CustomEvent("orbyx-appointment-canceled", {
+                detail: { id: row.id },
+              })
+            );
             return;
           }
 
           if (prevRow.notes !== undefined && row.notes !== prevRow.notes) {
+            const now = Date.now();
             const event: NotificationEvent = {
-              id: `${row.id}-comment-${Date.now()}`,
+              id: `${row.id}-comment-${now}`,
               type: "comment",
               customerName: row.customer_name || "Cliente",
               serviceName: row.service_name_snapshot || "Servicio",
               startAt: row.start_at,
               read: false,
+              createdAt: now,
             };
             setNotifications((prev) => [event, ...prev].slice(0, 50));
           }
@@ -457,6 +488,27 @@ export default function DashboardLayout({
       supabase.removeChannel(channel);
     };
   }, [tenantId]);
+
+  const groupedNotifications = useMemo(() => {
+    const todayKey = getSantiagoDayKey(Date.now());
+    const groups: { key: string; label: string; items: NotificationEvent[] }[] = [];
+
+    for (const n of notifications) {
+      const key = getSantiagoDayKey(n.createdAt);
+      let group = groups.find((g) => g.key === key);
+      if (!group) {
+        group = {
+          key,
+          label: key === todayKey ? "Hoy" : formatNotifGroupDate(n.createdAt),
+          items: [],
+        };
+        groups.push(group);
+      }
+      group.items.push(n);
+    }
+
+    return groups;
+  }, [notifications]);
 
   const selectedBranchName =
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
@@ -1358,7 +1410,7 @@ export default function DashboardLayout({
                         </p>
                       </div>
                       <div className="max-h-80 overflow-y-auto">
-                        {notifications.length === 0 ? (
+                        {groupedNotifications.length === 0 ? (
                           <p
                             className="px-4 pb-4 text-sm"
                             style={{ color: textMuted }}
@@ -1366,29 +1418,39 @@ export default function DashboardLayout({
                             Sin notificaciones por ahora.
                           </p>
                         ) : (
-                          notifications.map((n) => (
-                            <div
-                              key={n.id}
-                              className="border-t px-4 py-3"
-                              style={{ borderColor: sidebarBorder }}
-                            >
+                          groupedNotifications.map((group) => (
+                            <div key={group.key}>
                               <p
-                                className="text-sm font-semibold"
-                                style={{ color: textMain }}
+                                className="px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em]"
+                                style={{ color: textMuted, background: softBg }}
                               >
-                                {n.type === "new_booking"
-                                  ? "Nueva reserva"
-                                  : n.type === "canceled"
-                                  ? "Cita cancelada"
-                                  : "Nuevo comentario en reserva"}
+                                {group.label}
                               </p>
-                              <p
-                                className="mt-0.5 text-xs"
-                                style={{ color: textMuted }}
-                              >
-                                {n.customerName} · {n.serviceName} ·{" "}
-                                {formatNotifTime(n.startAt)}
-                              </p>
+                              {group.items.map((n) => (
+                                <div
+                                  key={n.id}
+                                  className="border-t px-4 py-3"
+                                  style={{ borderColor: sidebarBorder }}
+                                >
+                                  <p
+                                    className="text-sm font-semibold"
+                                    style={{ color: textMain }}
+                                  >
+                                    {n.type === "new_booking"
+                                      ? "Nueva reserva"
+                                      : n.type === "canceled"
+                                      ? "Cita cancelada"
+                                      : "Nuevo comentario en reserva"}
+                                  </p>
+                                  <p
+                                    className="mt-0.5 text-xs"
+                                    style={{ color: textMuted }}
+                                  >
+                                    {n.customerName} · {n.serviceName} ·{" "}
+                                    {formatNotifTime(n.startAt)}
+                                  </p>
+                                </div>
+                              ))}
                             </div>
                           ))
                         )}
@@ -1428,11 +1490,14 @@ export default function DashboardLayout({
       </div>
 
       {toasts.length > 0 ? (
-        <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2">
+        <div
+          className="flex flex-col gap-2"
+          style={{ position: "fixed", bottom: 20, right: 20, zIndex: 9999 }}
+        >
           {toasts.map((t) => (
             <div
               key={t.id}
-              className="w-80 rounded-2xl border px-4 py-3"
+              className="relative w-80 rounded-2xl border px-4 py-3 pr-8"
               style={{
                 background: dropdownBg,
                 borderColor: sidebarBorder,
@@ -1440,6 +1505,17 @@ export default function DashboardLayout({
                 animation: "orbyxToastIn 200ms ease-out",
               }}
             >
+              <button
+                type="button"
+                aria-label="Cerrar notificación"
+                onClick={() =>
+                  setToasts((prev) => prev.filter((toast) => toast.id !== t.id))
+                }
+                className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full text-xs leading-none transition"
+                style={{ color: textMuted }}
+              >
+                ×
+              </button>
               <p className="text-sm font-semibold" style={{ color: textMain }}>
                 Nueva reserva
               </p>
