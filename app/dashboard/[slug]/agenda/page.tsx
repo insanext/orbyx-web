@@ -2662,6 +2662,24 @@ loadPendingClinicalNotes();
     };
   }, [slug, branchStorageKey]);
 
+  useEffect(() => {
+    function handleAppointmentChanged() {
+      loadAppointments({ preserveSelected: true });
+    }
+
+    window.addEventListener(
+      "orbyx-appointment-changed",
+      handleAppointmentChanged as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "orbyx-appointment-changed",
+        handleAppointmentChanged as EventListener
+      );
+    };
+  }, [slug, selectedBranchId, weekStart.getTime(), selectedStaffId]);
+
   const filteredAppointments = useMemo(() => {
     return appointments.filter(
       (appt) =>

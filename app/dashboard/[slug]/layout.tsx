@@ -408,7 +408,8 @@ export default function DashboardLayout({
           setToasts((prev) => [...prev, event]);
           setTimeout(() => {
             setToasts((prev) => prev.filter((t) => t.id !== event.id));
-          }, 4000);
+          }, 15000);
+          window.dispatchEvent(new CustomEvent("orbyx-appointment-changed"));
         }
       )
       .on(
@@ -433,6 +434,7 @@ export default function DashboardLayout({
               read: false,
             };
             setNotifications((prev) => [event, ...prev].slice(0, 50));
+            window.dispatchEvent(new CustomEvent("orbyx-appointment-changed"));
             return;
           }
 
