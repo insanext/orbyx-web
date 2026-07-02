@@ -53,6 +53,29 @@ type BranchItem = {
   is_active?: boolean;
 };
 
+type NotificationEvent = {
+  id: string;
+  type: "new_booking" | "canceled" | "comment";
+  customerName: string;
+  serviceName: string;
+  startAt: string;
+  read: boolean;
+};
+
+function formatNotifTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleString("es-CL", {
+      timeZone: "America/Santiago",
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+}
+
 const navItems = [
   {
     label: "Métricas",
@@ -174,6 +197,11 @@ export default function DashboardLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const branchDropdownRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<NotificationEvent[]>([]);
+  const [notifPanelOpen, setNotifPanelOpen] = useState(false);
+  const [toasts, setToasts] = useState<NotificationEvent[]>([]);
+  const notifPanelRef = useRef<HTMLDivElement>(null);
+  const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     if (!branchDropdownOpen) return;
@@ -185,6 +213,17 @@ export default function DashboardLayout({
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [branchDropdownOpen]);
+
+  useEffect(() => {
+    if (!notifPanelOpen) return;
+    function handleOutsideClick(e: MouseEvent) {
+      if (notifPanelRef.current && !notifPanelRef.current.contains(e.target as Node)) {
+        setNotifPanelOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [notifPanelOpen]);
 
   const planLabel =
     plan === "platinum"
@@ -336,6 +375,85 @@ export default function DashboardLayout({
     fetchUnread();
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`appointments-notify-${tenantId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "appointments",
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const row = payload.new as Record<string, any>;
+          if (row.status !== "booked") return;
+
+          const event: NotificationEvent = {
+            id: `${row.id}-insert-${Date.now()}`,
+            type: "new_booking",
+            customerName: row.customer_name || "Cliente",
+            serviceName: row.service_name_snapshot || "Servicio",
+            startAt: row.start_at,
+            read: false,
+          };
+
+          setNotifications((prev) => [event, ...prev].slice(0, 50));
+          setToasts((prev) => [...prev, event]);
+          setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== event.id));
+          }, 4000);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "appointments",
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const row = payload.new as Record<string, any>;
+          const prevRow = payload.old as Record<string, any>;
+
+          if (row.status === "canceled" && prevRow.status !== "canceled") {
+            const event: NotificationEvent = {
+              id: `${row.id}-canceled-${Date.now()}`,
+              type: "canceled",
+              customerName: row.customer_name || "Cliente",
+              serviceName: row.service_name_snapshot || "Servicio",
+              startAt: row.start_at,
+              read: false,
+            };
+            setNotifications((prev) => [event, ...prev].slice(0, 50));
+            return;
+          }
+
+          if (prevRow.notes !== undefined && row.notes !== prevRow.notes) {
+            const event: NotificationEvent = {
+              id: `${row.id}-comment-${Date.now()}`,
+              type: "comment",
+              customerName: row.customer_name || "Cliente",
+              serviceName: row.service_name_snapshot || "Servicio",
+              startAt: row.start_at,
+              read: false,
+            };
+            setNotifications((prev) => [event, ...prev].slice(0, 50));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [tenantId]);
 
   const selectedBranchName =
@@ -597,6 +715,11 @@ export default function DashboardLayout({
           background:
             linear-gradient(180deg, #8b5cf6 0%, #1d4ed8 45%, #06b6d4 100%)
             border-box;
+        }
+
+        @keyframes orbyxToastIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
       <div className="flex min-h-screen">
@@ -1185,21 +1308,92 @@ export default function DashboardLayout({
                     : "Cambiar tema"}
                 </button>
 
-                <button
-                  type="button"
-                  aria-label="Notificaciones"
-                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition"
-                  style={{
-                    background: softBg,
-                    borderColor: sidebarBorder,
-                    color: textMain,
-                  }}
-                >
-                  <Bell size={18} />
-                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
-                    3
-                  </span>
-                </button>
+                <div ref={notifPanelRef} className="relative">
+                  <button
+                    type="button"
+                    aria-label="Notificaciones"
+                    onClick={() => {
+                      setNotifPanelOpen((prev) => !prev);
+                      if (!notifPanelOpen) {
+                        setNotifications((prev) =>
+                          prev.map((n) => ({ ...n, read: true }))
+                        );
+                      }
+                    }}
+                    className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition"
+                    style={{
+                      background: notifPanelOpen ? "rgba(37,99,235,0.08)" : softBg,
+                      borderColor: notifPanelOpen
+                        ? "rgba(37,99,235,0.40)"
+                        : sidebarBorder,
+                      color: textMain,
+                    }}
+                  >
+                    <Bell size={18} />
+                    {unreadNotifCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                        {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
+                      </span>
+                    ) : null}
+                  </button>
+
+                  {notifPanelOpen ? (
+                    <div
+                      className="absolute right-0 top-[calc(100%+8px)] z-50 w-80 overflow-hidden rounded-2xl border"
+                      style={{
+                        background: dropdownBg,
+                        borderColor: sidebarBorder,
+                        boxShadow:
+                          "0 12px 40px -8px rgba(0,0,0,0.28), 0 4px 16px -4px rgba(0,0,0,0.18)",
+                      }}
+                    >
+                      <div className="px-4 pb-2 pt-3">
+                        <p
+                          className="text-xs font-semibold uppercase tracking-[0.16em]"
+                          style={{ color: textMuted }}
+                        >
+                          Notificaciones
+                        </p>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <p
+                            className="px-4 pb-4 text-sm"
+                            style={{ color: textMuted }}
+                          >
+                            Sin notificaciones por ahora.
+                          </p>
+                        ) : (
+                          notifications.map((n) => (
+                            <div
+                              key={n.id}
+                              className="border-t px-4 py-3"
+                              style={{ borderColor: sidebarBorder }}
+                            >
+                              <p
+                                className="text-sm font-semibold"
+                                style={{ color: textMain }}
+                              >
+                                {n.type === "new_booking"
+                                  ? "Nueva reserva"
+                                  : n.type === "canceled"
+                                  ? "Cita cancelada"
+                                  : "Nuevo comentario en reserva"}
+                              </p>
+                              <p
+                                className="mt-0.5 text-xs"
+                                style={{ color: textMuted }}
+                              >
+                                {n.customerName} · {n.serviceName} ·{" "}
+                                {formatNotifTime(n.startAt)}
+                              </p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
 
                 <div
                   className="flex items-center gap-3 border-l pl-3"
@@ -1230,6 +1424,30 @@ export default function DashboardLayout({
           </main>
         </div>
       </div>
+
+      {toasts.length > 0 ? (
+        <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2">
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              className="w-80 rounded-2xl border px-4 py-3"
+              style={{
+                background: dropdownBg,
+                borderColor: sidebarBorder,
+                boxShadow: "0 12px 30px -10px rgba(0,0,0,0.35)",
+                animation: "orbyxToastIn 200ms ease-out",
+              }}
+            >
+              <p className="text-sm font-semibold" style={{ color: textMain }}>
+                Nueva reserva
+              </p>
+              <p className="mt-0.5 text-xs" style={{ color: textMuted }}>
+                {t.customerName} · {t.serviceName} · {formatNotifTime(t.startAt)}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
