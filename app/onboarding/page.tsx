@@ -44,6 +44,9 @@ const LABEL_STYLE: React.CSSProperties = {
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const DAY_KEYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+// Backend day_of_week: 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
+// DAYS array: index 0=Lunes ... index 5=Sábado, index 6=Domingo → necesita +1 mod 7
+const DAY_OF_WEEK_VALUES = [1, 2, 3, 4, 5, 6, 0];
 
 const CATEGORY_GROUPS = [
   {
@@ -332,11 +335,12 @@ function OnboardingInner() {
     try {
       const payload: object[] = [];
       DAY_KEYS.forEach((_, i) => {
+        const dayOfWeek = DAY_OF_WEEK_VALUES[i];
         if (!activeDays.includes(i)) {
-          payload.push({ day_of_week: i, enabled: false, start_time: "09:00", end_time: "18:00" });
+          payload.push({ day_of_week: dayOfWeek, enabled: false, start_time: "09:00", end_time: "18:00" });
         } else {
           blocks.forEach((b) => {
-            payload.push({ day_of_week: i, enabled: true, start_time: b.start, end_time: b.end });
+            payload.push({ day_of_week: dayOfWeek, enabled: true, start_time: b.start, end_time: b.end });
           });
         }
       });
@@ -470,7 +474,7 @@ function OnboardingInner() {
   const stepTitles = ["Tu negocio", "Horario de atención", "Tu equipo", "Primer servicio"];
   const stepSubtitles = [
     "Cuéntanos sobre tu negocio",
-    "¿Cuándo atienden tus clientes?",
+    "¿En qué horarios atiendes a tus clientes?",
     "Agrega tu primer profesional. Después podrás agregar más según tu plan.",
     "Agrega tu primer servicio",
   ];
@@ -610,14 +614,14 @@ function OnboardingInner() {
                 <div key={bi} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Inicio</label>
-                    <input type="time" value={b.start} step="1800"
+                    <input type="text" value={b.start} placeholder="HH:MM" maxLength={5}
                       onChange={(e) => updateBlock(bi, "start", e.target.value)}
                       style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
                   </div>
                   <span style={{ color: "#475569", fontSize: 12, paddingBottom: 10 }}>–</span>
                   <div style={{ flex: 1 }}>
                     <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Cierre</label>
-                    <input type="time" value={b.end} step="1800"
+                    <input type="text" value={b.end} placeholder="HH:MM" maxLength={5}
                       onChange={(e) => updateBlock(bi, "end", e.target.value)}
                       style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
                   </div>
