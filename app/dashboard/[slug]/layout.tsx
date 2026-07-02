@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -385,15 +386,10 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!tenantId) return;
-    const fetchUnread = () => {
-      apiFetch(`${BACKEND_URL}/support/tickets/unread-count?tenant_id=${tenantId}`)
-        .then((res) => res.json())
-        .then((data) => setUnreadTickets(data.count ?? 0))
-        .catch(() => {});
-    };
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 30000);
-    return () => clearInterval(interval);
+    apiFetch(`${BACKEND_URL}/support/tickets/unread-count?tenant_id=${tenantId}`)
+      .then((res) => res.json())
+      .then((data) => setUnreadTickets(data.count ?? 0))
+      .catch(() => {});
   }, [tenantId]);
 
   useEffect(() => {
@@ -482,7 +478,7 @@ export default function DashboardLayout({
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => console.log("[REALTIME]", status));
 
     return () => {
       supabase.removeChannel(channel);
@@ -1489,43 +1485,59 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      {toasts.length > 0 ? (
-        <div
-          className="flex flex-col gap-2"
-          style={{ position: "fixed", bottom: 20, right: 20, zIndex: 9999 }}
-        >
-          {toasts.map((t) => (
+      {mounted && typeof window !== "undefined" && toasts.length > 0
+        ? createPortal(
             <div
-              key={t.id}
-              className="relative w-80 rounded-2xl border px-4 py-3 pr-8"
               style={{
-                background: dropdownBg,
-                borderColor: sidebarBorder,
-                boxShadow: "0 12px 30px -10px rgba(0,0,0,0.35)",
-                animation: "orbyxToastIn 200ms ease-out",
+                position: "fixed",
+                bottom: 24,
+                right: 24,
+                zIndex: 9999,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
               }}
             >
-              <button
-                type="button"
-                aria-label="Cerrar notificación"
-                onClick={() =>
-                  setToasts((prev) => prev.filter((toast) => toast.id !== t.id))
-                }
-                className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full text-xs leading-none transition"
-                style={{ color: textMuted }}
-              >
-                ×
-              </button>
-              <p className="text-sm font-semibold" style={{ color: textMain }}>
-                Nueva reserva
-              </p>
-              <p className="mt-0.5 text-xs" style={{ color: textMuted }}>
-                {t.customerName} · {t.serviceName} · {formatNotifTime(t.startAt)}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : null}
+              {toasts.map((t) => (
+                <div
+                  key={t.id}
+                  className="relative w-80 rounded-2xl border px-4 py-3 pr-8"
+                  style={{
+                    background: dropdownBg,
+                    borderColor: sidebarBorder,
+                    boxShadow: "0 12px 30px -10px rgba(0,0,0,0.35)",
+                    animation: "orbyxToastIn 200ms ease-out",
+                  }}
+                >
+                  <button
+                    type="button"
+                    aria-label="Cerrar notificación"
+                    onClick={() =>
+                      setToasts((prev) =>
+                        prev.filter((toast) => toast.id !== t.id)
+                      )
+                    }
+                    className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full text-xs leading-none transition"
+                    style={{ color: textMuted }}
+                  >
+                    ×
+                  </button>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: textMain }}
+                  >
+                    Nueva reserva
+                  </p>
+                  <p className="mt-0.5 text-xs" style={{ color: textMuted }}>
+                    {t.customerName} · {t.serviceName} ·{" "}
+                    {formatNotifTime(t.startAt)}
+                  </p>
+                </div>
+              ))}
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

@@ -2667,6 +2667,16 @@ loadPendingClinicalNotes();
     function handleAppointmentNew(event: Event) {
       const customEvent = event as CustomEvent<Record<string, any>>;
       const row = customEvent.detail;
+      console.log(
+        "[DEBUG orbyx-appointment-new] id:",
+        row?.id,
+        "typeof id:",
+        typeof row?.id,
+        "branch_id:",
+        row?.branch_id,
+        "start_at:",
+        row?.start_at
+      );
       if (!row || !row.id || !row.start_at) return;
       if (row.branch_id !== selectedBranchId) return;
       if (selectedStaffId && row.staff_id !== selectedStaffId) return;
@@ -5159,6 +5169,21 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                   height: appointmentBlockHeight,
                                 }}
                               >
+                                {(() => {
+                                  if (newAppointmentIds.size > 0) {
+                                    console.log(
+                                      "[DEBUG grid block] appt.id:",
+                                      appt.id,
+                                      "typeof:",
+                                      typeof appt.id,
+                                      "newAppointmentIds:",
+                                      Array.from(newAppointmentIds),
+                                      "has:",
+                                      newAppointmentIds.has(appt.id)
+                                    );
+                                  }
+                                  return null;
+                                })()}
                                 {newAppointmentIds.has(appt.id) ? (
                                   <span className="absolute -right-1 -top-1 z-20 rounded-full bg-rose-500 px-1.5 py-0.5 text-[8px] font-bold leading-none text-white shadow-sm">
                                     Nueva
