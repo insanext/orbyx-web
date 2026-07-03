@@ -2083,8 +2083,6 @@ async function loadPendingCloseAppointments() {
         setCustomerNote("");
         setNoteSaved(false);
       }
-
-      await loadAppointments({ preserveSelected: true });
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Error actualizando estado"
@@ -2112,7 +2110,6 @@ async function loadPendingCloseAppointments() {
       if (!res.ok) throw new Error(data?.error || "No se pudo actualizar el estado");
 
       if (data?.appointment) applyAppointmentUpdate(data.appointment);
-      await loadAppointments({ preserveSelected: true });
       setClinicalPendingModal(appt);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error actualizando estado");
