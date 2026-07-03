@@ -468,6 +468,7 @@ next_control_custom_unit: "days",
   const [hoverCard, setHoverCard] = useState<HoverCardState>(null);
 
   const detailRef = useRef<HTMLDivElement | null>(null);
+  const scrollRestoreRef = useRef<number | null>(null);
   const dayGridScrollRef = useRef<HTMLDivElement | null>(null);
   const dayTopScrollRef = useRef<HTMLDivElement | null>(null);
   const dayHeaderScrollRef = useRef<HTMLDivElement | null>(null);
@@ -2869,6 +2870,7 @@ const hasPendingClose = pendingCloseCount > 0;
   }, [appointments]);
 
   function goPrevWeek() {
+    scrollRestoreRef.current = window.scrollY;
     setWeekBaseDate((prev) => addDays(prev, -7));
     setSelectedAppointment(null);
     setIsEditingReservation(false);
@@ -2876,6 +2878,7 @@ const hasPendingClose = pendingCloseCount > 0;
   }
 
   function goNextWeek() {
+    scrollRestoreRef.current = window.scrollY;
     setWeekBaseDate((prev) => addDays(prev, 7));
     setSelectedAppointment(null);
     setIsEditingReservation(false);
@@ -2888,6 +2891,18 @@ const hasPendingClose = pendingCloseCount > 0;
     setIsEditingReservation(false);
     setHoverCard(null);
   }
+
+  useEffect(() => {
+    if (loading) return;
+    if (scrollRestoreRef.current === null) return;
+
+    const targetScrollY = scrollRestoreRef.current;
+    scrollRestoreRef.current = null;
+
+    requestAnimationFrame(() => {
+      window.scrollTo(0, targetScrollY);
+    });
+  }, [loading]);
 
   const selectedBranchName =
     branches.find((branch) => branch.id === selectedBranchId)?.name || "";
@@ -3745,6 +3760,7 @@ onClick={() => {
                     type="button"
                     onClick={() => {
                       if (agendaView === "day") {
+                        scrollRestoreRef.current = window.scrollY;
                         setWeekBaseDate((prev) => addDays(prev, -1));
                         setSelectedAppointment(null);
                         setIsEditingReservation(false);
@@ -3781,6 +3797,7 @@ onClick={() => {
                     type="button"
                     onClick={() => {
                       if (agendaView === "day") {
+                        scrollRestoreRef.current = window.scrollY;
                         setWeekBaseDate((prev) => addDays(prev, 1));
                         setSelectedAppointment(null);
                         setIsEditingReservation(false);
