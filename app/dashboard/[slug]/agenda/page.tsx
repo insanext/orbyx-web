@@ -1244,18 +1244,27 @@ next_control_custom_unit: "days",
   }, [selectedAppointment?.id]);
 
   async function handleSaveCustomerNote() {
-    if (!selectedAppointment?.id || !tenantId) return;
+    if (!selectedAppointment?.id || !tenantId || !slug) return;
+    if (customerNote.length > 300) return;
     setSavingNote(true);
     try {
-      await apiFetch(`${BACKEND_URL}/appointments/${selectedAppointment.id}/session-notes`, {
+      const res = await apiFetch(`${BACKEND_URL}/appointments/${selectedAppointment.id}/session-notes`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: customerNote, tenant_id: tenantId }),
+        body: JSON.stringify({ notes: customerNote, slug }),
       });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo guardar la nota");
+      }
+      if (data?.appointment) {
+        applyAppointmentUpdate({ ...selectedAppointment, notes: data.appointment.notes });
+      }
       setNoteSaved(true);
       setTimeout(() => setNoteSaved(false), 2500);
     } catch (e) {
       console.error("Error guardando nota sesión:", e);
+      setError(e instanceof Error ? e.message : "Error guardando nota");
     } finally {
       setSavingNote(false);
     }
@@ -5855,11 +5864,19 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                   `/dashboard/${slug}/customers/${selectedAppointment.customer_id}?appointment_id=${selectedAppointment.id}&open_note=true`
                                 )
                               }
-                              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm"
+                              className="inline-flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition duration-150 hover:shadow-sm"
                               style={{
                                 borderColor: "rgba(37,99,235,0.35)",
                                 background: "rgba(37,99,235,0.08)",
                                 color: "#2563eb",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "rgba(37,99,235,0.16)";
+                                e.currentTarget.style.borderColor = "rgba(37,99,235,0.55)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "rgba(37,99,235,0.08)";
+                                e.currentTarget.style.borderColor = "rgba(37,99,235,0.35)";
                               }}
                             >
                               <UserRound className="h-3.5 w-3.5" />
@@ -5879,14 +5896,23 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                     color: "var(--text-main)",
                                   }}
                                   rows={3}
+                                  maxLength={300}
                                   placeholder="Agregar nota interna..."
                                   value={customerNote}
                                   onChange={(e) => { setCustomerNote(e.target.value); setNoteSaved(false); }}
                                 />
+                                <p
+                                  className="mt-0.5 text-right text-[10px]"
+                                  style={{
+                                    color: customerNote.length > 300 ? "#ef4444" : "var(--text-muted)",
+                                  }}
+                                >
+                                  {customerNote.length}/300
+                                </p>
                                 <button
                                   type="button"
                                   onClick={handleSaveCustomerNote}
-                                  disabled={savingNote}
+                                  disabled={savingNote || customerNote.length > 300}
                                   className="mt-1 w-full rounded-lg border py-1.5 text-xs font-medium transition disabled:opacity-50"
                                   style={{
                                     borderColor: "rgba(37,99,235,0.30)",

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import { StickyNote } from "lucide-react";
 import { Panel } from "../../../../../components/dashboard/panel";
 import { apiFetch } from "@/lib/api";
 
@@ -3526,8 +3527,9 @@ const lastValidAppointment = validAppointments[0] || null;
                             </span>
                           </div>
                           {appt.notes ? (
-                            <p className="mt-1.5 text-xs italic" style={{ color: "var(--text-muted)" }}>
-                              &ldquo;{appt.notes}&rdquo;
+                            <p className="mt-1.5 flex items-start gap-1 text-xs italic" style={{ color: "var(--text-muted)" }}>
+                              <StickyNote className="mt-0.5 h-3 w-3 shrink-0" />
+                              <span>{appt.notes}</span>
                             </p>
                           ) : null}
                         </div>
