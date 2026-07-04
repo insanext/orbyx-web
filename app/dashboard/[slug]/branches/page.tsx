@@ -4,8 +4,9 @@ import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Copy, Pencil, Plus, Store, Users } from "lucide-react";
+import { Copy, HelpCircle, Pencil, Plus, Store, Users } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
+import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -330,6 +331,7 @@ export default function BranchesPage() {
   const [plan, setPlan] = useState("pro");
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
+  const [horariosAyudaOpen, setHorariosAyudaOpen] = useState(false);
   const [selectedBranchesToKeep, setSelectedBranchesToKeep] = useState<string[]>(
     []
   );
@@ -1563,7 +1565,19 @@ export default function BranchesPage() {
                         <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
                           <div className="mb-4 flex items-start justify-between gap-3">
                             <div>
-                              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Horario de atención</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Horario de atención</p>
+                                <button
+                                  type="button"
+                                  onClick={() => setHorariosAyudaOpen(true)}
+                                  title="¿Cómo funcionan los horarios?"
+                                  aria-label="¿Cómo funcionan los horarios?"
+                                  className="inline-flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-70"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  <HelpCircle size={16} />
+                                </button>
+                              </div>
                               <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Usar el horario del negocio principal</p>
                             </div>
                             <button
@@ -2260,6 +2274,12 @@ export default function BranchesPage() {
           {copiedId === tenantId ? "ID copiada" : "Copiar ID"}
         </button>
       </div>
+
+      <HorariosAyudaModal
+        open={horariosAyudaOpen}
+        onClose={() => setHorariosAyudaOpen(false)}
+        capaActiva="sucursal"
+      />
     </div>
   );
 }

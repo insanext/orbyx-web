@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
-import { Building2 } from "lucide-react";
+import { Building2, HelpCircle } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
+import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 
 type BookingField = {
   key: string;
@@ -545,6 +546,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     return slug ? `orbyx_active_branch_${slug}` : "";
   }, [slug]);
   const [activeSection, setActiveSection] = useState<BusinessSectionId>("general");
+  const [horariosAyudaOpen, setHorariosAyudaOpen] = useState(false);
 
   const businessSectionTabs: Array<{
     id: BusinessSectionId;
@@ -3372,9 +3374,21 @@ function updateHourByIndex(
     <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
       3. Horarios por sucursal
     </p>
-    <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
-      Disponibilidad semanal
-    </h2>
+    <div className="mt-1 flex items-center gap-2">
+      <h2 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+        Disponibilidad semanal
+      </h2>
+      <button
+        type="button"
+        onClick={() => setHorariosAyudaOpen(true)}
+        title="¿Cómo funcionan los horarios?"
+        aria-label="¿Cómo funcionan los horarios?"
+        className="inline-flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-70"
+        style={{ color: "var(--text-muted)" }}
+      >
+        <HelpCircle size={16} />
+      </button>
+    </div>
   </div>
 
   <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
@@ -4397,6 +4411,11 @@ onClick={() => {
 </section>
 ) : null}
 
+      <HorariosAyudaModal
+        open={horariosAyudaOpen}
+        onClose={() => setHorariosAyudaOpen(false)}
+        capaActiva="negocio"
+      />
     </div>
   );
 }

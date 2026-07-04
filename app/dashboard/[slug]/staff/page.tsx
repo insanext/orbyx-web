@@ -3,8 +3,9 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
-import { UsersRound } from "lucide-react";
+import { HelpCircle, UsersRound } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
+import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 
 type BusinessResponse = {
   business: {
@@ -457,6 +458,7 @@ const [photoUrl, setPhotoUrl] = useState("");
     useState(false);
   const [calendarModalStaff, setCalendarModalStaff] =
     useState<StaffItem | null>(null);
+  const [horariosAyudaOpen, setHorariosAyudaOpen] = useState(false);
 
   const [plan, setPlan] = useState("pro");
   const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
@@ -2445,9 +2447,21 @@ function validateStaffHours() {
                       cursor: pointer;
                     }
                   `}</style>
-                  <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                    Horarios
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                      Horarios
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setHorariosAyudaOpen(true)}
+                      title="¿Cómo funcionan los horarios?"
+                      aria-label="¿Cómo funcionan los horarios?"
+                      className="inline-flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-70"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      <HelpCircle size={16} />
+                    </button>
+                  </div>
                   <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
                     Define si este profesional hereda el horario efectivo de la sucursal o tendrá un horario propio.
                   </p>
@@ -4080,6 +4094,12 @@ function validateStaffHours() {
           </div>
         </div>
       )}
+
+      <HorariosAyudaModal
+        open={horariosAyudaOpen}
+        onClose={() => setHorariosAyudaOpen(false)}
+        capaActiva="staff"
+      />
 
       <style>{`
         @keyframes lbFadeIn  { from { opacity: 0; } to { opacity: 1; } }
