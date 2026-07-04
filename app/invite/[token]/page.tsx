@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "@/components/ui/password-visibility-toggle";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -22,6 +23,8 @@ export default function InvitePage() {
   const [submitMsg, setSubmitMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const turnstileRef = useRef<any>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -52,6 +55,10 @@ export default function InvitePage() {
       setSubmitMsg("Las contraseñas no coinciden.");
       return;
     }
+    if (!captchaToken) {
+      setSubmitMsg("Completa la verificación de seguridad.");
+      return;
+    }
     setSubmitting(true);
     setSubmitMsg("");
     try {
@@ -59,6 +66,7 @@ export default function InvitePage() {
       const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
         email: invitation.email,
         password,
+        options: { captchaToken },
       });
       if (signUpErr) throw new Error(signUpErr.message);
 
@@ -76,6 +84,8 @@ export default function InvitePage() {
       }, 2000);
     } catch (e: any) {
       setSubmitMsg(e.message);
+      turnstileRef.current?.reset();
+      setCaptchaToken("");
     } finally {
       setSubmitting(false);
     }
@@ -175,13 +185,24 @@ export default function InvitePage() {
               </div>
             </div>
 
+            <div className="flex justify-center mb-5">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken("")}
+                onError={() => setCaptchaToken("")}
+                options={{ theme: "dark" }}
+              />
+            </div>
+
             {submitMsg && (
               <p className="text-xs text-red-400 mb-3">{submitMsg}</p>
             )}
 
             <button
               onClick={handleAccept}
-              disabled={submitting || !password || !confirmPwd}
+              disabled={submitting || !password || !confirmPwd || !captchaToken}
               className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-40"
             >
               {submitting ? "Creando cuenta..." : "Crear cuenta y acceder"}
