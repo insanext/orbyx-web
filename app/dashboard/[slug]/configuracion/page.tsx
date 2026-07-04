@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/client";
 import { apiFetch } from "@/lib/api";
+import { Turnstile } from "@marsidev/react-turnstile";
+import { PasswordVisibilityToggle } from "@/components/ui/password-visibility-toggle";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -41,18 +43,27 @@ export default function ConfiguracionPage() {
   const [requestingEmailChange, setRequestingEmailChange] = useState(false);
   const [emailRequestMsg, setEmailRequestMsg] = useState("");
   const [emailRequestIsError, setEmailRequestIsError] = useState(false);
+  const [showEmailChangePwd, setShowEmailChangePwd] = useState(false);
 
   // revoke modal (TAREA 2)
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; email: string } | null>(null);
   const [revokePwd, setRevokePwd] = useState("");
   const [revoking, setRevoking] = useState(false);
   const [revokeMsg, setRevokeMsg] = useState("");
+  const [showRevokePwd, setShowRevokePwd] = useState(false);
+  const [revokeCaptchaToken, setRevokeCaptchaToken] = useState("");
+  const revokeTurnstileRef = useRef<any>(null);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState("");
   const [passwordIsError, setPasswordIsError] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [changePwdCaptchaToken, setChangePwdCaptchaToken] = useState("");
+  const changePwdTurnstileRef = useRef<any>(null);
 
   const [tenantId, setTenantId] = useState("");
   const [members, setMembers] = useState<any[]>([]);
@@ -63,6 +74,9 @@ export default function ConfiguracionPage() {
   const [inviteMsg, setInviteMsg] = useState("");
   const [inviteIsError, setInviteIsError] = useState(false);
   const [inviteAuthPwd, setInviteAuthPwd] = useState("");
+  const [showInviteAuthPwd, setShowInviteAuthPwd] = useState(false);
+  const [inviteCaptchaToken, setInviteCaptchaToken] = useState("");
+  const inviteTurnstileRef = useRef<any>(null);
   const [permissions, setPermissions] = useState<Record<string, "edit" | "view" | false>>({
     agenda: false,
     clientes: false,
@@ -183,10 +197,17 @@ export default function ConfiguracionPage() {
     const { error: signInErr } = await supabase.auth.signInWithPassword({
       email: currentUser.email,
       password: currentPassword,
+      options: { captchaToken: changePwdCaptchaToken },
     });
+    changePwdTurnstileRef.current?.reset();
+    setChangePwdCaptchaToken("");
     if (signInErr) {
       setPasswordIsError(true);
-      setPasswordMsg("La contraseña actual es incorrecta.");
+      setPasswordMsg(
+        signInErr.message === "Invalid login credentials"
+          ? "La contraseña actual es incorrecta."
+          : "Error de verificación: " + signInErr.message
+      );
       return;
     }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
@@ -241,9 +262,16 @@ export default function ConfiguracionPage() {
       const { error: authErr } = await supabase.auth.signInWithPassword({
         email: currentUser.email,
         password: inviteAuthPwd,
+        options: { captchaToken: inviteCaptchaToken },
       });
+      inviteTurnstileRef.current?.reset();
+      setInviteCaptchaToken("");
       if (authErr) {
-        setInviteMsg("Contraseña incorrecta. No se envió la invitación.");
+        setInviteMsg(
+          authErr.message === "Invalid login credentials"
+            ? "Contraseña incorrecta. No se envió la invitación."
+            : "Error de verificación: " + authErr.message
+        );
         setSendingInvite(false);
         return;
       }
@@ -292,6 +320,7 @@ export default function ConfiguracionPage() {
     setRevokeTarget({ id: memberId, email: memberEmail });
     setRevokePwd("");
     setRevokeMsg("");
+    setRevokeCaptchaToken("");
   };
 
   const handleConfirmRevoke = async () => {
@@ -302,9 +331,16 @@ export default function ConfiguracionPage() {
       const { error: authErr } = await supabase.auth.signInWithPassword({
         email: currentUser.email,
         password: revokePwd,
+        options: { captchaToken: revokeCaptchaToken },
       });
+      revokeTurnstileRef.current?.reset();
+      setRevokeCaptchaToken("");
       if (authErr) {
-        setRevokeMsg("Contraseña incorrecta.");
+        setRevokeMsg(
+          authErr.message === "Invalid login credentials"
+            ? "Contraseña incorrecta."
+            : "Error de verificación: " + authErr.message
+        );
         setRevoking(false);
         return;
       }
@@ -493,13 +529,20 @@ export default function ConfiguracionPage() {
                 </div>
                 <div>
                   <label className={label} style={{ color: "var(--text-muted)" }}>Tu contraseña actual</label>
-                  <input
-                    value={emailChangePwd}
-                    onChange={e => setEmailChangePwd(e.target.value)}
-                    type="password"
-                    placeholder="Confirma tu identidad"
-                    className={inp}
-                  />
+                  <div className="relative">
+                    <input
+                      value={emailChangePwd}
+                      onChange={e => setEmailChangePwd(e.target.value)}
+                      type={showEmailChangePwd ? "text" : "password"}
+                      placeholder="Confirma tu identidad"
+                      className={`${inp} pr-10`}
+                    />
+                    <PasswordVisibilityToggle
+                      visible={showEmailChangePwd}
+                      onToggle={() => setShowEmailChangePwd(v => !v)}
+                      className="text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                    />
+                  </div>
                 </div>
                 <button
                   onClick={handleRequestEmailChange}
@@ -529,19 +572,61 @@ export default function ConfiguracionPage() {
             <div className="space-y-3">
               <div>
                 <label className={label} style={{ color: "var(--text-muted)" }}>Contraseña actual</label>
-                <input value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} type="password" className={inp} />
+                <div className="relative">
+                  <input
+                    value={currentPassword}
+                    onChange={e => setCurrentPassword(e.target.value)}
+                    type={showCurrentPassword ? "text" : "password"}
+                    className={`${inp} pr-10`}
+                  />
+                  <PasswordVisibilityToggle
+                    visible={showCurrentPassword}
+                    onToggle={() => setShowCurrentPassword(v => !v)}
+                    className="text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                  />
+                </div>
               </div>
               <div>
                 <label className={label} style={{ color: "var(--text-muted)" }}>Nueva contraseña</label>
-                <input value={newPassword} onChange={e => setNewPassword(e.target.value)} type="password" className={inp} />
+                <div className="relative">
+                  <input
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    type={showNewPassword ? "text" : "password"}
+                    className={`${inp} pr-10`}
+                  />
+                  <PasswordVisibilityToggle
+                    visible={showNewPassword}
+                    onToggle={() => setShowNewPassword(v => !v)}
+                    className="text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                  />
+                </div>
               </div>
               <div>
                 <label className={label} style={{ color: "var(--text-muted)" }}>Repetir nueva contraseña</label>
-                <input value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} type="password" className={inp} />
+                <div className="relative">
+                  <input
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    type={showConfirmNewPassword ? "text" : "password"}
+                    className={`${inp} pr-10`}
+                  />
+                  <PasswordVisibilityToggle
+                    visible={showConfirmNewPassword}
+                    onToggle={() => setShowConfirmNewPassword(v => !v)}
+                    className="text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                  />
+                </div>
               </div>
+              <Turnstile
+                ref={changePwdTurnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={setChangePwdCaptchaToken}
+                options={{ theme: "auto", size: "flexible" }}
+              />
               <button
                 onClick={handleChangePassword}
-                disabled={!currentPassword || !newPassword || !confirmPassword}
+                disabled={!currentPassword || !newPassword || !confirmPassword || !changePwdCaptchaToken}
                 className={btn}
               >
                 Actualizar contraseña
@@ -783,19 +868,32 @@ export default function ConfiguracionPage() {
               <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
                 Por seguridad, ingresa tu contraseña actual para enviar esta invitación.
               </p>
-              <input
-                value={inviteAuthPwd}
-                onChange={e => setInviteAuthPwd(e.target.value)}
-                type="password"
-                placeholder="Tu contraseña actual"
-                className={inp}
+              <div className="relative mb-3">
+                <input
+                  value={inviteAuthPwd}
+                  onChange={e => setInviteAuthPwd(e.target.value)}
+                  type={showInviteAuthPwd ? "text" : "password"}
+                  placeholder="Tu contraseña actual"
+                  className={`${inp} pr-10`}
+                />
+                <PasswordVisibilityToggle
+                  visible={showInviteAuthPwd}
+                  onToggle={() => setShowInviteAuthPwd(v => !v)}
+                  className="text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                />
+              </div>
+              <Turnstile
+                ref={inviteTurnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={setInviteCaptchaToken}
+                options={{ theme: "auto", size: "flexible" }}
               />
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={handleInvite}
-                disabled={sendingInvite || !inviteEmail.trim() || !inviteAuthPwd}
+                disabled={sendingInvite || !inviteEmail.trim() || !inviteAuthPwd || !inviteCaptchaToken}
                 className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-600/30 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 <i className="ti ti-send" style={{ fontSize: 14 }} aria-hidden="true" />
@@ -806,6 +904,7 @@ export default function ConfiguracionPage() {
                   setShowInviteForm(false);
                   setInviteEmail("");
                   setInviteAuthPwd("");
+                  setInviteCaptchaToken("");
                   setSelectedBranchIds([]);
                   setPermissions({ agenda: false, clientes: false, campanas: false, servicios: false, staff: false, sucursales: false, negocio: false });
                   setInviteMsg("");
@@ -942,7 +1041,7 @@ export default function ConfiguracionPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-          onClick={e => { if (e.target === e.currentTarget) { setRevokeTarget(null); setRevokePwd(""); setRevokeMsg(""); } }}
+          onClick={e => { if (e.target === e.currentTarget) { setRevokeTarget(null); setRevokePwd(""); setRevokeMsg(""); setRevokeCaptchaToken(""); } }}
         >
           <div
             className="w-full max-w-sm rounded-2xl border p-6"
@@ -955,19 +1054,32 @@ export default function ConfiguracionPage() {
               Vas a revocar el acceso de <strong style={{ color: "var(--text-main)" }}>{revokeTarget.email}</strong>.
               Ingresa tu contraseña para confirmar.
             </p>
-            <input
-              value={revokePwd}
-              onChange={e => setRevokePwd(e.target.value)}
-              type="password"
-              placeholder="Tu contraseña actual"
-              className={inp}
-              autoFocus
-              onKeyDown={e => { if (e.key === "Enter") handleConfirmRevoke(); }}
+            <div className="relative mb-3">
+              <input
+                value={revokePwd}
+                onChange={e => setRevokePwd(e.target.value)}
+                type={showRevokePwd ? "text" : "password"}
+                placeholder="Tu contraseña actual"
+                className={`${inp} pr-10`}
+                autoFocus
+                onKeyDown={e => { if (e.key === "Enter" && revokeCaptchaToken) handleConfirmRevoke(); }}
+              />
+              <PasswordVisibilityToggle
+                visible={showRevokePwd}
+                onToggle={() => setShowRevokePwd(v => !v)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-main)]"
+              />
+            </div>
+            <Turnstile
+              ref={revokeTurnstileRef}
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+              onSuccess={setRevokeCaptchaToken}
+              options={{ theme: "auto", size: "flexible" }}
             />
             {revokeMsg && <p className="text-xs text-red-400 mt-2">{revokeMsg}</p>}
             <div className="flex gap-2 mt-4">
               <button
-                onClick={() => { setRevokeTarget(null); setRevokePwd(""); setRevokeMsg(""); }}
+                onClick={() => { setRevokeTarget(null); setRevokePwd(""); setRevokeMsg(""); setRevokeCaptchaToken(""); }}
                 className="flex-1 py-2 rounded-xl text-sm border transition-colors"
                 style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
               >
@@ -975,7 +1087,7 @@ export default function ConfiguracionPage() {
               </button>
               <button
                 onClick={handleConfirmRevoke}
-                disabled={!revokePwd || revoking}
+                disabled={!revokePwd || revoking || !revokeCaptchaToken}
                 className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-all disabled:opacity-40"
               >
                 {revoking ? "Revocando..." : "Sí, revocar acceso"}

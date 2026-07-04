@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "../../lib/supabase/client";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { PasswordVisibilityToggle } from "../../components/ui/password-visibility-toggle";
 
 function LoginForm() {
   const router = useRouter();
@@ -15,6 +16,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string>("");
+  const [showPassword, setShowPassword] = useState(false);
   const turnstileRef = useRef<any>(null);
 
   async function handleLogin(e: React.FormEvent) {
@@ -218,27 +220,34 @@ function LoginForm() {
             >
               Contraseña
             </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              style={{
-                width: "100%",
-                height: 44,
-                borderRadius: 12,
-                border: "1px solid rgba(59,130,246,0.28)",
-                padding: "0 14px",
-                fontSize: 14,
-                color: "#0f172a",
-                background: "#f8fbff",
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{
+                  width: "100%",
+                  height: 44,
+                  borderRadius: 12,
+                  border: "1px solid rgba(59,130,246,0.28)",
+                  padding: "0 40px 0 14px",
+                  fontSize: 14,
+                  color: "#0f172a",
+                  background: "#f8fbff",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+              <PasswordVisibilityToggle
+                visible={showPassword}
+                onToggle={() => setShowPassword((v) => !v)}
+                className="text-slate-400 hover:text-slate-600"
+              />
+            </div>
           </div>
 
           {error ? (

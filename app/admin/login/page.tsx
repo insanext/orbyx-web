@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Turnstile } from '@marsidev/react-turnstile'
+import { PasswordVisibilityToggle } from '@/components/ui/password-visibility-toggle'
 
 const BACKEND_URL = 'https://orbyx-backend.onrender.com'
 
@@ -17,6 +18,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [factorId, setFactorId] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleLogin = async () => {
     setLoading(true)
@@ -115,14 +117,21 @@ export default function AdminLoginPage() {
             </div>
             <div>
               <label className="text-xs text-blue-300/60 mb-1 block">Contraseña</label>
-              <input
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                type="password"
-                autoComplete="current-password"
-                onKeyDown={e => e.key === 'Enter' && captchaToken && handleLogin()}
-                className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors"
-              />
+              <div className="relative">
+                <input
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  onKeyDown={e => e.key === 'Enter' && captchaToken && handleLogin()}
+                  className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl pl-3 pr-10 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                />
+                <PasswordVisibilityToggle
+                  visible={showPassword}
+                  onToggle={() => setShowPassword(v => !v)}
+                  className="text-blue-300/50 hover:text-blue-200"
+                />
+              </div>
             </div>
             <Turnstile
               ref={turnstileRef}

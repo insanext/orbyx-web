@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordVisibilityToggle } from "@/components/ui/password-visibility-toggle";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -19,6 +20,8 @@ export default function InvitePage() {
   const [confirmPwd, setConfirmPwd] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -134,27 +137,41 @@ export default function InvitePage() {
                 <label className="text-xs mb-1.5 block" style={{ color: "rgba(147,197,253,0.6)" }}>
                   Nueva contraseña
                 </label>
-                <input
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  type="password"
-                  placeholder="Mínimo 8 caracteres"
-                  className="w-full rounded-xl border px-3 py-2 text-sm text-white outline-none transition-colors"
-                  style={{ background: "#0a0f1e", borderColor: "rgba(37,99,235,0.3)" }}
-                />
+                <div className="relative">
+                  <input
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Mínimo 8 caracteres"
+                    className="w-full rounded-xl border pl-3 pr-10 py-2 text-sm text-white outline-none transition-colors"
+                    style={{ background: "#0a0f1e", borderColor: "rgba(37,99,235,0.3)" }}
+                  />
+                  <PasswordVisibilityToggle
+                    visible={showPassword}
+                    onToggle={() => setShowPassword(v => !v)}
+                    className="text-blue-300/50 hover:text-blue-200"
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-xs mb-1.5 block" style={{ color: "rgba(147,197,253,0.6)" }}>
                   Confirmar contraseña
                 </label>
-                <input
-                  value={confirmPwd}
-                  onChange={e => setConfirmPwd(e.target.value)}
-                  type="password"
-                  placeholder="Repite la contraseña"
-                  className="w-full rounded-xl border px-3 py-2 text-sm text-white outline-none transition-colors"
-                  style={{ background: "#0a0f1e", borderColor: "rgba(37,99,235,0.3)" }}
-                />
+                <div className="relative">
+                  <input
+                    value={confirmPwd}
+                    onChange={e => setConfirmPwd(e.target.value)}
+                    type={showConfirmPwd ? "text" : "password"}
+                    placeholder="Repite la contraseña"
+                    className="w-full rounded-xl border pl-3 pr-10 py-2 text-sm text-white outline-none transition-colors"
+                    style={{ background: "#0a0f1e", borderColor: "rgba(37,99,235,0.3)" }}
+                  />
+                  <PasswordVisibilityToggle
+                    visible={showConfirmPwd}
+                    onToggle={() => setShowConfirmPwd(v => !v)}
+                    className="text-blue-300/50 hover:text-blue-200"
+                  />
+                </div>
               </div>
             </div>
 

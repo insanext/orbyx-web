@@ -4,6 +4,7 @@ import { Suspense, useRef, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { PasswordVisibilityToggle } from "../../components/ui/password-visibility-toggle";
 
 const PLAN_LABELS: Record<string, string> = {
   pro: "Pro",
@@ -62,6 +63,8 @@ function SignupInner() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string>("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const turnstileRef = useRef<any>(null);
 
   const hasMinLength = password.length >= 8;
@@ -329,7 +332,7 @@ function SignupInner() {
                 🔒
               </span>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -337,7 +340,7 @@ function SignupInner() {
                 required
                 style={{
                   width: "100%",
-                  padding: "12px 14px 12px 40px",
+                  padding: "12px 40px 12px 40px",
                   background: "rgba(255,255,255,0.04)",
                   border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 10,
@@ -349,6 +352,11 @@ function SignupInner() {
                 }}
                 onFocus={(e) => (e.target.style.borderColor = `${planColor}80`)}
                 onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+              />
+              <PasswordVisibilityToggle
+                visible={showPassword}
+                onToggle={() => setShowPassword((v) => !v)}
+                className="text-slate-400 hover:text-slate-200"
               />
             </div>
             {/* Password requirements */}
@@ -362,54 +370,61 @@ function SignupInner() {
           </div>
 
           {/* Confirm password field */}
-          <div style={{ position: "relative" }}>
-            <span
-              style={{
-                position: "absolute",
-                left: 14,
-                top: "50%",
-                transform: "translateY(-50%)",
-                fontSize: 16,
-                opacity: 0.4,
-                pointerEvents: "none",
-              }}
-            >
-              🔒
-            </span>
-            <input
-              type="password"
-              placeholder="Confirmar contraseña"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={loading}
-              required
-              style={{
-                width: "100%",
-                padding: "12px 14px 12px 40px",
-                background: "rgba(255,255,255,0.09)",
-                border: `1px solid ${
-                  confirmTouched && !passwordsMatch
-                    ? "#ef4444"
-                    : confirmTouched && passwordsMatch
-                    ? "#22c55e"
-                    : "rgba(255,255,255,0.15)"
-                }`,
-                borderRadius: 10,
-                color: "#f1f5f9",
-                fontSize: 14,
-                outline: "none",
-                transition: "border-color 0.2s",
-                boxSizing: "border-box",
-              }}
-              onFocus={(e) => {
-                if (!confirmTouched || passwordsMatch)
-                  e.target.style.borderColor = `${planColor}80`;
-              }}
-              onBlur={(e) => {
-                if (confirmTouched && !passwordsMatch)
-                  e.target.style.borderColor = "#ef4444";
-              }}
-            />
+          <div>
+            <div style={{ position: "relative" }}>
+              <span
+                style={{
+                  position: "absolute",
+                  left: 14,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: 16,
+                  opacity: 0.4,
+                  pointerEvents: "none",
+                }}
+              >
+                🔒
+              </span>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirmar contraseña"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={loading}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px 40px 12px 40px",
+                  background: "rgba(255,255,255,0.09)",
+                  border: `1px solid ${
+                    confirmTouched && !passwordsMatch
+                      ? "#ef4444"
+                      : confirmTouched && passwordsMatch
+                      ? "#22c55e"
+                      : "rgba(255,255,255,0.15)"
+                  }`,
+                  borderRadius: 10,
+                  color: "#f1f5f9",
+                  fontSize: 14,
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                  boxSizing: "border-box",
+                }}
+                onFocus={(e) => {
+                  if (!confirmTouched || passwordsMatch)
+                    e.target.style.borderColor = `${planColor}80`;
+                }}
+                onBlur={(e) => {
+                  if (confirmTouched && !passwordsMatch)
+                    e.target.style.borderColor = "#ef4444";
+                }}
+              />
+              <PasswordVisibilityToggle
+                visible={showConfirmPassword}
+                onToggle={() => setShowConfirmPassword((v) => !v)}
+                className="text-slate-400 hover:text-slate-200"
+              />
+            </div>
             {confirmTouched && !passwordsMatch && (
               <p style={{ color: "#ef4444", fontSize: 12, marginTop: 5, marginBottom: 0 }}>
                 Las contraseñas no coinciden
