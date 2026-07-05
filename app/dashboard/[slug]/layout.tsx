@@ -28,6 +28,7 @@ import {
   Crown,
   Bell,
   X,
+  Eye,
 } from "lucide-react";
 import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
@@ -178,6 +179,20 @@ const navSections = [
   },
 ];
 
+// Módulos de la sidebar cuyo acceso depende de permissions granulares.
+// Los items sin entrada acá (Métricas, Reportes, Soporte, Configuración) no se restringen.
+const NAV_MODULE_MAP: Record<string, string> = {
+  "/agenda": "agenda",
+  "/customers": "clientes",
+  "/campaigns": "campanas",
+  "/services": "servicios",
+  "/staff": "staff",
+  "/branches": "sucursales",
+  "/business": "negocio",
+};
+
+type ModulePermissions = Record<string, boolean | "view" | "edit">;
+
 export default function DashboardLayout({
   children,
 }: {
@@ -213,6 +228,9 @@ export default function DashboardLayout({
   const [branchesError, setBranchesError] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
   const isPacientes = ["veterinaria", "vet", "clinica", "odontologia"].includes(businessCategory);
+  const [memberRole, setMemberRole] = useState("");
+  const [memberPermissions, setMemberPermissions] = useState<ModulePermissions | null>(null);
+  const [memberLoaded, setMemberLoaded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
@@ -383,6 +401,66 @@ export default function DashboardLayout({
 
     loadBranchesForSidebar();
   }, [slug, branchStorageKey]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    async function loadOwnMembership() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const res = await apiFetch(`${BACKEND_URL}/members?tenant_id=${tenantId}`);
+        const data = await res.json();
+        if (!res.ok) return;
+
+        const own = (data.members || []).find((m: any) => m.user_id === user.id);
+        if (own) {
+          setMemberRole(String(own.role || ""));
+          setMemberPermissions(own.permissions || null);
+        }
+      } catch {
+        // si falla, no restringimos la sidebar (el backend igual aplica el enforcement real)
+      } finally {
+        setMemberLoaded(true);
+      }
+    }
+
+    loadOwnMembership();
+  }, [tenantId]);
+
+  const isOwnerOrAdmin = !memberLoaded || memberRole === "owner" || memberRole === "admin";
+
+  function getModuleAccess(href: string): boolean | "view" | "edit" {
+    const moduleKey = NAV_MODULE_MAP[href];
+    if (!moduleKey) return "edit";
+    if (!memberPermissions) return "edit";
+    const value = memberPermissions[moduleKey];
+    if (value === undefined || value === null) return "edit";
+    return value;
+  }
+
+  const visibleNavSections = useMemo(() => {
+    return navSections
+      .map((section) => ({
+        ...section,
+        items: section.items
+          .filter((item) => {
+            if (item.href === "/billing") return isOwnerOrAdmin;
+            if (isOwnerOrAdmin) return true;
+            return getModuleAccess(item.href) !== false;
+          })
+          .map((item) => ({
+            ...item,
+            readOnly: !isOwnerOrAdmin && getModuleAccess(item.href) === "view",
+          })),
+      }))
+      .filter((section) => section.items.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOwnerOrAdmin, memberPermissions]);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -635,7 +713,7 @@ export default function DashboardLayout({
   }) {
     return (
       <nav className={clsx("space-y-3", collapsed && "space-y-2")}>
-        {navSections.map((section) => (
+        {visibleNavSections.map((section) => (
           <div key={section.title}>
             {!collapsed ? (
               <div
@@ -709,7 +787,16 @@ export default function DashboardLayout({
                       >
                         <Icon size={17} />
                       </div>
-                      {!collapsed ? <span className="truncate">{item.href === "/customers" && isPacientes ? "Pacientes" : item.label}</span> : null}
+                      {!collapsed ? (
+                        <span className="truncate flex items-center gap-1.5">
+                          {item.href === "/customers" && isPacientes ? "Pacientes" : item.label}
+                          {item.readOnly ? (
+                            <span title="Solo lectura" style={{ display: "inline-flex", flexShrink: 0 }}>
+                              <Eye size={12} style={{ opacity: 0.6 }} />
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : null}
                     </div>
 
                     {!collapsed ? (

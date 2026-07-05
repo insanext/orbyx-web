@@ -62,21 +62,21 @@ export default function InvitePage() {
     setSubmitting(true);
     setSubmitMsg("");
     try {
+      const res = await fetch(`${BACKEND_URL}/invitations/accept/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al aceptar invitación.");
+
       const supabase = createClient();
-      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
         email: invitation.email,
         password,
         options: { captchaToken },
       });
-      if (signUpErr) throw new Error(signUpErr.message);
-
-      const res = await fetch(`${BACKEND_URL}/invitations/accept/${token}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: signUpData.user?.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error al aceptar invitación.");
+      if (signInErr) throw new Error(signInErr.message);
 
       setStep("success");
       setTimeout(() => {
