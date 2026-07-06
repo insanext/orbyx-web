@@ -92,6 +92,7 @@ export default function ConfiguracionPage() {
   const [editPermissions, setEditPermissions] = useState<Record<string, "edit" | "view" | false>>({});
   const [editBranchIds, setEditBranchIds] = useState<string[]>([]);
   const [savingUserEdit, setSavingUserEdit] = useState(false);
+  const [permissionsSavedMsg, setPermissionsSavedMsg] = useState("");
 
   const loadEmailChangeStatus = async (uid: string) => {
     try {
@@ -940,7 +941,7 @@ export default function ConfiguracionPage() {
       {/* ── MODAL: Editar permisos de usuario ── */}
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-          <div className="absolute inset-0" onClick={() => setEditingUser(null)} />
+          <div className="absolute inset-0" onClick={() => { setEditingUser(null); setPermissionsSavedMsg(""); }} />
           <div className="relative z-10 w-full max-w-md rounded-2xl border border-blue-900/40 p-6 shadow-2xl shadow-blue-950/50 max-h-[85vh] overflow-y-auto" style={{ background: "var(--bg-card)" }}>
             <h3 className="text-base font-semibold mb-0.5" style={{ color: "var(--text-main)" }}>Editar permisos</h3>
             <p className="text-sm mb-5" style={{ color: "var(--text-muted)" }}>{editingUser.name ?? editingUser.email}</p>
@@ -1013,9 +1014,15 @@ export default function ConfiguracionPage() {
               </>
             )}
 
+            {permissionsSavedMsg && (
+              <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+                ℹ️ {permissionsSavedMsg}
+              </p>
+            )}
+
             <div className="flex gap-3">
               <button
-                onClick={() => setEditingUser(null)}
+                onClick={() => { setEditingUser(null); setPermissionsSavedMsg(""); }}
                 className="flex-1 py-2.5 rounded-xl border border-blue-900/40 text-sm font-medium transition-all active:scale-95 hover:border-blue-700/60"
                 style={{ color: "var(--text-muted)" }}
               >
@@ -1032,7 +1039,13 @@ export default function ConfiguracionPage() {
                       body: JSON.stringify({ tenant_id: tenantId, permissions: editPermissions, branch_ids: editBranchIds }),
                     });
                     loadTeam(tenantId);
-                    setEditingUser(null);
+                    setPermissionsSavedMsg(
+                      "Los cambios de permisos se aplicarán la próxima vez que el usuario inicie sesión."
+                    );
+                    setTimeout(() => {
+                      setEditingUser(null);
+                      setPermissionsSavedMsg("");
+                    }, 3500);
                   } catch (e) {
                     console.error("Error guardando permisos:", e);
                   } finally {
