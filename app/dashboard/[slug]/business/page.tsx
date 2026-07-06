@@ -709,7 +709,6 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
             data.business.max_booking_days_ahead || 60
           ),
         });
-        console.log("[business-logo] loaded business logo_url:", data.business.logo_url || "");
 
         await loadBookingFields();
       } catch (error: unknown) {
@@ -1319,7 +1318,6 @@ const cleanedHours = Object.values(grouped);
       }
 
       const uploadedUrl = data.public_url || "";
-      console.log("[business-logo] uploaded URL:", uploadedUrl);
 
       setForm((prev) => ({
         ...prev,
@@ -1431,7 +1429,6 @@ const cleanedHours = Object.values(grouped);
         ...prev,
         logo_url: uploadedUrl,
       }));
-      console.log("[business-logo] form logo_url set:", uploadedUrl);
     } catch (err: unknown) {
       setLogoUploadError(
         err instanceof Error ? err.message : "No se pudo guardar el logo"
@@ -1447,11 +1444,7 @@ const cleanedHours = Object.values(grouped);
       logoFileInputRef.current.value = "";
     }
     setLogoUploadError("");
-    setForm((prev) => {
-      const next = { ...prev, logo_url: "" };
-      console.log("[business-logo] logo removed, form logo_url:", next.logo_url);
-      return next;
-    });
+    setForm((prev) => ({ ...prev, logo_url: "" }));
   }
 
   async function saveBookingFields() {
@@ -1567,8 +1560,6 @@ async function saveSlotMinutes() {
             : {},
       };
 
-      console.log("[business-logo] PATCH /tenants payload logo_url:", tenantPayload.logo_url);
-
       const res = await apiFetch(
         `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
         {
@@ -1581,7 +1572,6 @@ async function saveSlotMinutes() {
       );
 
       const data = await res.json();
-      console.log("[business-logo] PATCH /tenants response logo_url:", data?.tenant?.logo_url);
 
       if (!res.ok) {
         throw new Error(data?.error || "No se pudo guardar");

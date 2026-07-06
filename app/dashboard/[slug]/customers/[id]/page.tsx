@@ -665,8 +665,6 @@ export default function CustomerDetailPage() {
           next_control_at: newNoteForm.next_control_at || null,
           next_control_label: newNoteForm.next_control_label || null,
         };
-        console.log("[save] llamando PATCH clinical con apptId:", newNoteApptId);
-        console.log("[save] body:", patchBody);
         const res = await apiFetch(
           `${BACKEND_URL}/appointments/${newNoteApptId}/clinical`,
           {
@@ -676,8 +674,6 @@ export default function CustomerDetailPage() {
           }
         );
         const data = await res.json();
-        console.log("[save] respuesta status:", res.status);
-        console.log("[save] respuesta data:", data);
         if (!res.ok) throw new Error(data?.error || "No se pudo guardar la nota");
 
         try {
@@ -864,7 +860,6 @@ export default function CustomerDetailPage() {
 
   // Auto-open note form when coming from agenda pending panel
   useEffect(() => {
-    console.log("[auto-open] effect fired — loading:", loading, "appointments:", appointments.length, "autoOpenApptId:", autoOpenApptId, "autoOpenNote:", autoOpenNote, "hasAutoOpened:", hasAutoOpenedRef.current);
     if (
       !autoOpenApptId ||
       autoOpenNote !== "true" ||
@@ -879,9 +874,6 @@ export default function CustomerDetailPage() {
     }
 
     (async () => {
-      console.log("[auto-open] appointments:", appointments.length);
-      console.log("[auto-open] autoOpenApptId:", autoOpenApptId);
-
       let notes: ClinicalNote[] = [];
       try {
         const res = await apiFetch(
@@ -890,15 +882,12 @@ export default function CustomerDetailPage() {
         if (res.ok) {
           const data = await res.json();
           notes = Array.isArray(data.notes) ? data.notes : [];
-          console.log("[auto-open] notes encontradas:", notes);
           setClinicalNotes((prev) => ({ ...prev, [PATIENT_NOTES_KEY]: notes }));
         }
       } catch {}
 
       const existingNote = notes.find((n) => n.appointment_id === autoOpenApptId);
-      console.log("[auto-open] existingNote:", existingNote);
       if (existingNote) {
-        console.log("[auto-open] seteando editingNoteId:", existingNote.id);
         setClinicalFormState((prev) => ({
           ...prev,
           [autoOpenApptId]: {
@@ -914,7 +903,6 @@ export default function CustomerDetailPage() {
         }));
         setEditingNoteId(existingNote.id);
       } else {
-        console.log("[auto-open] seteando newNoteApptId:", autoOpenApptId);
         setClinicalFormState((prev) => ({
           ...prev,
           [autoOpenApptId]: { reason: "", notes: "", diagnosis: "", treatment: "", controlDate: "", controlType: "" },
@@ -1048,8 +1036,6 @@ const lastValidAppointment = validAppointments[0] || null;
       setSavingClinicalId(appointmentId);
       setClinicalMessage("");
 
-      console.log("[save] handleSaveClinical llamado con apptId:", appointmentId);
-
       const res = await apiFetch(
         `${BACKEND_URL}/appointments/${appointmentId}/clinical`,
         {
@@ -1073,8 +1059,6 @@ const lastValidAppointment = validAppointments[0] || null;
       );
 
       const data = await res.json();
-      console.log("[save] respuesta status:", res.status);
-      console.log("[save] respuesta data:", data);
 
       if (!res.ok) {
         throw new Error(data?.error || "No se pudo guardar.");
