@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { Search, UsersRound } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
+import { usePermissions } from "../../../../lib/permissions-context";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -88,6 +89,8 @@ function SegmentBadge({ segment }: { segment?: string }) {
 }
 
 export default function CustomersPage() {
+  const { canEdit } = usePermissions();
+  const canEditClientes = canEdit("clientes");
   const params = useParams();
   const router = useRouter();
   const slug = (params as any)?.slug;
@@ -198,7 +201,7 @@ export default function CustomersPage() {
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] p-4 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-[var(--text-main)]">Filtros</h2>
-          {(isVeterinaria || isClinica) ? (
+          {(isVeterinaria || isClinica) && canEditClientes ? (
             <button
               type="button"
               onClick={() => router.push(`/dashboard/${slug}/customers/new`)}

@@ -16,6 +16,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import { usePermissions } from "../../../../lib/permissions-context";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -1440,6 +1441,8 @@ function RichTextEditor({
 }
 
 export default function CampaignsPage() {
+  const { canEdit } = usePermissions();
+  const canEditCampanas = canEdit("campanas");
   const router = useRouter();
   const params = useParams();
   const slug =
@@ -4090,7 +4093,8 @@ export default function CampaignsPage() {
                   sending ||
                   loadingAudience ||
                   !hasContactsForChannel ||
-                  limitedIncludedRecipients.length === 0
+                  limitedIncludedRecipients.length === 0 ||
+                  !canEditCampanas
                 }
                 className={`${primaryButtonClass} w-full gap-2 font-semibold sm:w-auto`}
                 style={{
@@ -4356,6 +4360,7 @@ export default function CampaignsPage() {
                               Usar
                             </button>
 
+                            {canEditCampanas ? (
                             <button
                               onClick={() => handleDeleteCampaignImage(image.id)}
                               disabled={imageDeletingId === image.id}
@@ -4367,6 +4372,7 @@ export default function CampaignsPage() {
                             >
                               {imageDeletingId === image.id ? "..." : "Eliminar"}
                             </button>
+                            ) : null}
                           </div>
                         </div>
 
@@ -4524,7 +4530,7 @@ export default function CampaignsPage() {
               <button
                 type="button"
                 onClick={handleSendCampaignConfirmed}
-                disabled={sending}
+                disabled={sending || !canEditCampanas}
                 className={`${primaryButtonClass} flex items-center justify-center gap-2 font-semibold`}
                 style={{
                   background: sending

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Copy, HelpCircle, Pencil, Plus, Store, Users } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
+import { usePermissions } from "../../../../lib/permissions-context";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -319,6 +320,8 @@ function MapPreview({ address }: { address: string }) {
 }
 
 export default function BranchesPage() {
+  const { canEdit } = usePermissions();
+  const canEditSucursales = canEdit("sucursales");
   const params = useParams();
   const slug =
     ((params as { slug?: string })?.slug as string) ||
@@ -1123,21 +1126,23 @@ export default function BranchesPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setCreateOpen((prev) => !prev)}
-                disabled={saving || loading || reachedLimit || hasExcess}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  background:
-                    reachedLimit || hasExcess
-                      ? "linear-gradient(135deg, rgba(100,116,139,0.9), rgba(71,85,105,0.9))"
-                      : "linear-gradient(135deg, rgb(99 102 241), rgb(139 92 246))",
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                Nueva sucursal
-              </button>
+              {canEditSucursales ? (
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen((prev) => !prev)}
+                  disabled={saving || loading || reachedLimit || hasExcess}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    background:
+                      reachedLimit || hasExcess
+                        ? "linear-gradient(135deg, rgba(100,116,139,0.9), rgba(71,85,105,0.9))"
+                        : "linear-gradient(135deg, rgb(99 102 241), rgb(139 92 246))",
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  Nueva sucursal
+                </button>
+              ) : null}
             </div>
           </div>
           {createOpen ? (
@@ -1406,12 +1411,12 @@ export default function BranchesPage() {
                         <span className="inline-flex h-10 items-center rounded-2xl border px-3 text-xs font-medium" style={{ borderColor: "rgba(37,99,235,0.28)", background: "rgba(37,99,235,0.08)", color: "rgb(37 99 235)" }}>
                           Editando…
                         </span>
-                      ) : (
+                      ) : canEditSucursales ? (
                         <button type="button" onClick={() => beginEditBranch(branch)} disabled={saving} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
                           <Pencil className="h-4 w-4" />
                           Editar
                         </button>
-                      )}
+                      ) : null}
                     </div>
 
                     {isEditing ? (
@@ -1910,7 +1915,7 @@ export default function BranchesPage() {
                               Cancelar
                             </button>
                           </>
-                        ) : (
+                        ) : canEditSucursales ? (
                           <>
                             <button
                               type="button"
@@ -1944,7 +1949,7 @@ export default function BranchesPage() {
                               {isActive ? "Desactivar" : "Activar"}
                             </button>
                           </>
-                        )}
+                        ) : null}
 
                         <Link
                           href={`/dashboard/${slug}/services`}

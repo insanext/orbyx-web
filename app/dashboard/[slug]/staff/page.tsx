@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { HelpCircle, UsersRound } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
+import { usePermissions } from "../../../../lib/permissions-context";
 
 type BusinessResponse = {
   business: {
@@ -381,6 +382,8 @@ function Notice({
 }
 
 export default function StaffPage() {
+  const { canEdit } = usePermissions();
+  const canEditStaff = canEdit("staff");
   const params = useParams();
   const slug =
     ((params as { slug?: string })?.slug as string) ||
@@ -3505,21 +3508,23 @@ function validateStaffHours() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                resetForm();
-                setFormOpen(true);
-              }}
-              disabled={!selectedBranchId || loading || (!editingId && (reachedLimit || hasExcess))}
-              className={primaryButtonClass}
-              style={{
-                background:
-                  "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-              }}
-            >
-              Crear nuevo staff
-            </button>
+            {canEditStaff ? (
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setFormOpen(true);
+                }}
+                disabled={!selectedBranchId || loading || (!editingId && (reachedLimit || hasExcess))}
+                className={primaryButtonClass}
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                }}
+              >
+                Crear nuevo staff
+              </button>
+            ) : null}
           </div>
 
           {!selectedBranchId ? (
@@ -3655,6 +3660,8 @@ function validateStaffHours() {
                         {item.is_active ? "Activo" : "Inactivo"}
                       </span>
 
+                      {canEditStaff ? (
+                        <>
                       <button
                         type="button"
                         onClick={() => startEdit(item)}
@@ -3692,6 +3699,8 @@ function validateStaffHours() {
                       >
                         Eliminar
                       </button>
+                        </>
+                      ) : null}
                     </div>
 
                     <button

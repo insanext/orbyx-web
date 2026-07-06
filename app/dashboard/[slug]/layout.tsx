@@ -33,6 +33,7 @@ import {
 import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
 import { createClient } from "../../../lib/supabase/client";
+import { PermissionsProvider, ROLE_LABEL, type ModulePermissions } from "../../../lib/permissions-context";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -191,7 +192,6 @@ const NAV_MODULE_MAP: Record<string, string> = {
   "/business": "negocio",
 };
 
-type ModulePermissions = Record<string, boolean | "view" | "edit">;
 
 export default function DashboardLayout({
   children,
@@ -231,6 +231,7 @@ export default function DashboardLayout({
   const [memberRole, setMemberRole] = useState("");
   const [memberPermissions, setMemberPermissions] = useState<ModulePermissions | null>(null);
   const [memberLoaded, setMemberLoaded] = useState(false);
+  const [currentUserLabel, setCurrentUserLabel] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
@@ -417,6 +418,8 @@ export default function DashboardLayout({
         const data = await res.json();
         if (!res.ok) return;
 
+        setCurrentUserLabel(String(user.user_metadata?.name || user.email || ""));
+
         const own = (data.members || []).find((m: any) => m.user_id === user.id);
         if (own) {
           setMemberRole(String(own.role || ""));
@@ -450,6 +453,8 @@ export default function DashboardLayout({
         items: section.items
           .filter((item) => {
             if (item.href === "/billing") return isOwnerOrAdmin;
+            if (item.href === "/configuracion") return isOwnerOrAdmin;
+            if (item.label === "Métricas" || item.label === "Reportes") return isOwnerOrAdmin;
             if (isOwnerOrAdmin) return true;
             return getModuleAccess(item.href) !== false;
           })
@@ -1417,7 +1422,7 @@ export default function DashboardLayout({
                     className="truncate text-lg font-semibold tracking-tight sm:text-xl"
                     style={{ color: textMain }}
                   >
-                    Gestión del negocio
+                    {businessName || slug || "Gestión del negocio"}
                   </h2>
                   <span className="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-semibold sm:text-sm" style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
                     <Crown size={15} />
@@ -1547,16 +1552,16 @@ export default function DashboardLayout({
                   style={{ borderColor: sidebarBorder }}
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(37,99,235),rgb(79,70,229))] text-xs font-bold text-white">
-                    {businessName
-                      ? businessName.slice(0, 2).toUpperCase()
+                    {currentUserLabel
+                      ? currentUserLabel.slice(0, 2).toUpperCase()
                       : slug.slice(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
-                      {businessName || slug || "Orbyx"}
+                      {currentUserLabel || "Usuario"}
                     </p>
                     <p className="truncate text-xs" style={{ color: textMuted }}>
-                      Administrador
+                      {ROLE_LABEL[memberRole] || (memberLoaded ? memberRole : "")}
                     </p>
                   </div>
                 </div>
@@ -1566,7 +1571,16 @@ export default function DashboardLayout({
 
           <main className="flex-1">
             <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-5 sm:py-6 lg:px-8 xl:px-10 2xl:px-12">
-              {children}
+              <PermissionsProvider
+                value={{
+                  role: memberRole,
+                  permissions: memberPermissions,
+                  loaded: memberLoaded,
+                  isOwnerOrAdmin,
+                }}
+              >
+                {children}
+              </PermissionsProvider>
             </div>
           </main>
         </div>

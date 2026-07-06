@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { Building2, HelpCircle } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
+import { usePermissions } from "../../../../lib/permissions-context";
 
 type BookingField = {
   key: string;
@@ -456,6 +457,8 @@ const days = [
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
 
 export default function BusinessPage() {
+  const { canEdit } = usePermissions();
+  const canEditNegocio = canEdit("negocio");
   const params = useParams();
   const slug =
     ((params as { slug?: string })?.slug as string) ||
@@ -2070,7 +2073,7 @@ function updateHourByIndex(
                 <button
                   type="button"
                   onClick={() => logoFileInputRef.current?.click()}
-                  disabled={logoUploading || !tenantId}
+                  disabled={logoUploading || !tenantId || !canEditNegocio}
                   className={secondaryButtonClass}
                   style={{
                     borderColor: "var(--border-color)",
@@ -2084,7 +2087,7 @@ function updateHourByIndex(
                 <button
                   type="button"
                   onClick={removeLogo}
-                  disabled={logoUploading || (!form.logo_url && !logoDraftUrl)}
+                  disabled={logoUploading || (!form.logo_url && !logoDraftUrl) || !canEditNegocio}
                   className="orbyx-business-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Eliminar logo
@@ -2756,7 +2759,7 @@ function updateHourByIndex(
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !canEditNegocio}
             className={primaryButtonClass}
             style={{
               background:
@@ -3348,7 +3351,7 @@ function updateHourByIndex(
         <div className="pt-4">
           <button
             onClick={saveBookingFields}
-            disabled={savingFields}
+            disabled={savingFields || !canEditNegocio}
             className={primaryButtonClass}
             style={{
               background:
@@ -3576,7 +3579,7 @@ function updateHourByIndex(
           <button
             type="button"
             onClick={saveSlotMinutes}
-            disabled={savingSlotMinutes || !calendarId}
+            disabled={savingSlotMinutes || !calendarId || !canEditNegocio}
             className={primaryButtonClass}
             style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
           >
@@ -3800,7 +3803,7 @@ onClick={() => {
     <div className="mt-4 flex flex-wrap gap-3">
       <button
         onClick={saveBusinessHours}
-        disabled={savingHours}
+        disabled={savingHours || !canEditNegocio}
         className={primaryButtonClass}
         style={{
           background:
@@ -4235,7 +4238,7 @@ onClick={() => {
             type="button"
             onClick={saveSpecialDateDraft}
             disabled={
-              savingSpecialDates || Boolean(getSpecialDateDraftTimeError())
+              savingSpecialDates || Boolean(getSpecialDateDraftTimeError()) || !canEditNegocio
             }
             className={`${specialSecondaryButtonClass} ${
               specialDateRangeForm.is_closed ? "lg:col-start-4" : ""
@@ -4367,6 +4370,7 @@ onClick={() => {
                     ) : null}
                   </div>
 
+                  {canEditNegocio ? (
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -4389,6 +4393,7 @@ onClick={() => {
                       Eliminar
                     </button>
                   </div>
+                  ) : null}
                 </div>
               );
             })}

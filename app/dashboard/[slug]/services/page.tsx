@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Layers3 } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
+import { usePermissions } from "../../../../lib/permissions-context";
 import {
   DndContext,
   DragEndEvent,
@@ -226,11 +227,13 @@ function SortableServiceRow({
   onEdit,
   onDelete,
   hasStaff,
+  readOnly,
 }: {
   service: Service;
   onEdit: (s: Service) => void;
   onDelete: (s: Service) => void;
   hasStaff?: boolean;
+  readOnly?: boolean;
 }) {
   const {
     attributes,
@@ -308,29 +311,33 @@ function SortableServiceRow({
           )}
         </div>
       </div>
-      <div className="flex gap-1.5 opacity-0 group-hover/row:opacity-100 transition-opacity flex-shrink-0">
-        <button
-          onClick={() => onEdit(service)}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="text-xs px-2.5 py-1 rounded-lg border border-blue-900/30 hover:border-blue-500/40 transition-colors"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Editar
-        </button>
-        <button
-          onClick={() => onDelete(service)}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="text-xs px-2.5 py-1 rounded-lg border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Eliminar
-        </button>
-      </div>
+      {readOnly ? null : (
+        <div className="flex gap-1.5 opacity-0 group-hover/row:opacity-100 transition-opacity flex-shrink-0">
+          <button
+            onClick={() => onEdit(service)}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="text-xs px-2.5 py-1 rounded-lg border border-blue-900/30 hover:border-blue-500/40 transition-colors"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Editar
+          </button>
+          <button
+            onClick={() => onDelete(service)}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="text-xs px-2.5 py-1 rounded-lg border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Eliminar
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function ServicesPage() {
+  const { canEdit } = usePermissions();
+  const canEditServicios = canEdit("servicios");
   const params = useParams();
   const slug =
     ((params as { slug?: string })?.slug as string) ||
@@ -732,6 +739,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
           })
         }
         hasStaff={getSelectedStaffIdsForService(service.id).length > 0}
+        readOnly={!canEditServicios}
       />
     );
   }
@@ -1889,6 +1897,8 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                           className="flex items-center gap-1"
                           onClick={(e) => e.stopPropagation()}
                         >
+                          {canEditServicios ? (
+                            <>
                           <button
                             onClick={() => {
                               setEditingGroupId(group.id);
@@ -1939,6 +1949,8 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                               <path d="M9 6V4h6v2" />
                             </svg>
                           </button>
+                            </>
+                          ) : null}
                           <svg
                             className={`transition-transform ${
                               isCollapsed ? "" : "rotate-180"
@@ -2280,7 +2292,7 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
               <button
                 type="button"
                 onClick={handleCreateService}
-                disabled={saving || loading || servicesLimitReached || hasExcess}
+                disabled={saving || loading || servicesLimitReached || hasExcess || !canEditServicios}
                 className="orbyx-services-energy w-full rounded-xl border py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "rgba(147,197,253,0.36)",

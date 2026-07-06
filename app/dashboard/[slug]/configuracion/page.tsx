@@ -6,15 +6,10 @@ import { createClient } from "../../../../lib/supabase/client";
 import { apiFetch } from "@/lib/api";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "@/components/ui/password-visibility-toggle";
+import { Pencil, Trash2 } from "lucide-react";
+import { ROLE_LABEL } from "@/lib/permissions-context";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
-
-const ROLE_LABEL: Record<string, string> = {
-  owner: "Propietario",
-  admin: "Administrador",
-  branch: "Sucursal",
-  readonly: "Solo lectura",
-};
 
 export default function ConfiguracionPage() {
   const params = useParams();
@@ -53,6 +48,10 @@ export default function ConfiguracionPage() {
   const [showRevokePwd, setShowRevokePwd] = useState(false);
   const [revokeCaptchaToken, setRevokeCaptchaToken] = useState("");
   const revokeTurnstileRef = useRef<any>(null);
+
+  // eliminar miembro permanentemente (FIX 4)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; email: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -307,15 +306,6 @@ export default function ConfiguracionPage() {
     }
   };
 
-  const handleChangeRole = async (memberId: string, newRole: string) => {
-    await apiFetch(`${BACKEND_URL}/members/${memberId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenant_id: tenantId, role: newRole }),
-    });
-    loadTeam(tenantId);
-  };
-
   const handleRevoke = (memberId: string, memberEmail: string) => {
     setRevokeTarget({ id: memberId, email: memberEmail });
     setRevokePwd("");
@@ -355,6 +345,24 @@ export default function ConfiguracionPage() {
       setRevokeMsg("Error: " + e.message);
     } finally {
       setRevoking(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await apiFetch(`${BACKEND_URL}/members/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId }),
+      });
+      setDeleteTarget(null);
+      loadTeam(tenantId);
+    } catch (e) {
+      console.error("Error eliminando miembro:", e);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -659,13 +667,7 @@ export default function ConfiguracionPage() {
                 {members.map(m => (
                   <div
                     key={m.id}
-                    onClick={() => {
-                      if (m.role === "owner") return;
-                      setEditingUser(m);
-                      setEditPermissions(m.permissions ?? {});
-                      setEditBranchIds(m.branch_ids ?? []);
-                    }}
-                    className={`flex items-center justify-between py-2.5 border-b last:border-0 ${m.role !== "owner" ? "cursor-pointer hover:bg-blue-950/20 rounded-lg px-2 -mx-2 transition-colors" : ""}`}
+                    className="flex items-center justify-between py-2.5 border-b last:border-0"
                     style={{ borderColor: "rgba(37,99,235,0.12)" }}
                   >
                     <div>
@@ -677,23 +679,33 @@ export default function ConfiguracionPage() {
                         Propietario
                       </span>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={m.role}
-                          onChange={e => handleChangeRole(m.id, e.target.value)}
-                          className="text-xs rounded-lg border px-2 py-1 focus:outline-none"
-                          style={{ borderColor: "rgba(37,99,235,0.3)" }}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingUser(m);
+                            setEditPermissions(m.permissions ?? {});
+                            setEditBranchIds(m.branch_ids ?? []);
+                          }}
+                          title="Editar permisos"
+                          className="p-1.5 rounded-lg border border-transparent hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-500/5 transition-colors"
+                          style={{ color: "var(--text-muted)" }}
                         >
-                          <option value="admin">Administrador</option>
-                          <option value="branch">Sucursal</option>
-                          <option value="readonly">Solo lectura</option>
-                        </select>
+                          <Pencil size={14} />
+                        </button>
                         <button
                           onClick={() => handleRevoke(m.id, m.email ?? "")}
                           className="text-xs px-2 py-1 rounded-lg border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
                           style={{ color: "var(--text-muted)" }}
                         >
-                          Revocar
+                          Desactivar
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget({ id: m.id, email: m.email ?? "" })}
+                          title="Eliminar permanentemente"
+                          className="p-1.5 rounded-lg border border-transparent hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     )}
@@ -1091,6 +1103,44 @@ export default function ConfiguracionPage() {
                 className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-all disabled:opacity-40"
               >
                 {revoking ? "Revocando..." : "Sí, revocar acceso"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: Confirmar eliminación permanente ── */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={e => { if (e.target === e.currentTarget) setDeleteTarget(null); }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border p-6"
+            style={{ background: "var(--bg-card)", borderColor: "rgba(239,68,68,0.3)" }}
+          >
+            <h3 className="text-base font-semibold mb-1" style={{ color: "var(--text-main)" }}>
+              Eliminar miembro
+            </h3>
+            <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+              Vas a eliminar permanentemente a <strong style={{ color: "var(--text-main)" }}>{deleteTarget.email}</strong>.
+              {" "}¿Estás seguro? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-2 rounded-xl text-sm border transition-colors"
+                style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-all disabled:opacity-40"
+              >
+                {deleting ? "Eliminando..." : "Sí, eliminar"}
               </button>
             </div>
           </div>
