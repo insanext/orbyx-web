@@ -335,9 +335,9 @@ export default function ConfiguracionPage() {
         return;
       }
       await apiFetch(`${BACKEND_URL}/members/${revokeTarget.id}`, {
-        method: "PATCH",
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenant_id: tenantId, is_active: false }),
+        body: JSON.stringify({ tenant_id: tenantId }),
       });
       setRevokeTarget(null);
       loadTeam(tenantId);
@@ -353,9 +353,9 @@ export default function ConfiguracionPage() {
     setDeleting(true);
     try {
       await apiFetch(`${BACKEND_URL}/members/${deleteTarget.id}`, {
-        method: "DELETE",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenant_id: tenantId }),
+        body: JSON.stringify({ tenant_id: tenantId, is_active: false }),
       });
       setDeleteTarget(null);
       loadTeam(tenantId);
@@ -693,14 +693,14 @@ export default function ConfiguracionPage() {
                           <Pencil size={14} />
                         </button>
                         <button
-                          onClick={() => handleRevoke(m.id, m.email ?? "")}
+                          onClick={() => setDeleteTarget({ id: m.id, email: m.email ?? "" })}
                           className="text-xs px-2 py-1 rounded-lg border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
                           style={{ color: "var(--text-muted)" }}
                         >
                           Desactivar
                         </button>
                         <button
-                          onClick={() => setDeleteTarget({ id: m.id, email: m.email ?? "" })}
+                          onClick={() => handleRevoke(m.id, m.email ?? "")}
                           title="Eliminar permanentemente"
                           className="p-1.5 rounded-lg border border-transparent hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
                           style={{ color: "var(--text-muted)" }}
@@ -1048,7 +1048,7 @@ export default function ConfiguracionPage() {
         </div>
       )}
 
-      {/* ── MODAL: Confirmar revocación con contraseña ── */}
+      {/* ── MODAL: Confirmar eliminación permanente con contraseña ── */}
       {revokeTarget && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -1060,11 +1060,11 @@ export default function ConfiguracionPage() {
             style={{ background: "var(--bg-card)", borderColor: "rgba(239,68,68,0.3)" }}
           >
             <h3 className="text-base font-semibold mb-1" style={{ color: "var(--text-main)" }}>
-              Revocar acceso
+              Eliminar miembro
             </h3>
             <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-              Vas a revocar el acceso de <strong style={{ color: "var(--text-main)" }}>{revokeTarget.email}</strong>.
-              Ingresa tu contraseña para confirmar.
+              Vas a eliminar permanentemente a <strong style={{ color: "var(--text-main)" }}>{revokeTarget.email}</strong>.
+              Esta acción no se puede deshacer. Ingresa tu contraseña para confirmar.
             </p>
             <div className="relative mb-3">
               <input
@@ -1102,14 +1102,14 @@ export default function ConfiguracionPage() {
                 disabled={!revokePwd || revoking || !revokeCaptchaToken}
                 className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-all disabled:opacity-40"
               >
-                {revoking ? "Revocando..." : "Sí, revocar acceso"}
+                {revoking ? "Eliminando..." : "Sí, eliminar"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL: Confirmar eliminación permanente ── */}
+      {/* ── MODAL: Confirmar desactivación (reversible, sin contraseña) ── */}
       {deleteTarget && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -1121,11 +1121,11 @@ export default function ConfiguracionPage() {
             style={{ background: "var(--bg-card)", borderColor: "rgba(239,68,68,0.3)" }}
           >
             <h3 className="text-base font-semibold mb-1" style={{ color: "var(--text-main)" }}>
-              Eliminar miembro
+              Desactivar acceso
             </h3>
             <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-              Vas a eliminar permanentemente a <strong style={{ color: "var(--text-main)" }}>{deleteTarget.email}</strong>.
-              {" "}¿Estás seguro? Esta acción no se puede deshacer.
+              Vas a desactivar el acceso de <strong style={{ color: "var(--text-main)" }}>{deleteTarget.email}</strong>.
+              {" "}Es reversible: podrás reactivarlo más tarde.
             </p>
             <div className="flex gap-2">
               <button
@@ -1140,7 +1140,7 @@ export default function ConfiguracionPage() {
                 disabled={deleting}
                 className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-all disabled:opacity-40"
               >
-                {deleting ? "Eliminando..." : "Sí, eliminar"}
+                {deleting ? "Desactivando..." : "Sí, desactivar"}
               </button>
             </div>
           </div>
