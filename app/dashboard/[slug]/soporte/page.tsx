@@ -71,14 +71,13 @@ export default function SoportePage() {
         setCurrentUser(user)
         const res = await apiFetch(`${BACKEND_URL}/public/business/${slug}`)
         const biz = await res.json()
-        console.log('[DEBUG soporte] biz response:', JSON.stringify(biz).slice(0, 200))
         const tid = biz?.business?.id
         if (tid) {
           setTenantId(tid)
           loadTickets(tid)
         }
       } catch (e) {
-        console.error('[DEBUG soporte] init error:', e)
+        console.error('Error inicializando soporte:', e)
       }
     }
     init()
@@ -140,7 +139,6 @@ export default function SoportePage() {
         description,
         attachments: attachmentUrls,
       }
-      console.log('[DEBUG soporte] payload:', JSON.stringify(payload))
       const res = await apiFetch(`${BACKEND_URL}/support/tickets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
