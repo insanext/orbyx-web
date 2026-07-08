@@ -1405,7 +1405,8 @@ function PlanesPageContent() {
               ) : null}
             </div>
 
-            <div id="planes" className="mt-4 grid gap-3 md:mt-6 md:grid-cols-2 2xl:grid-cols-4">
+            <div className="relative mt-4 md:mt-6">
+            <div id="planes" className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:grid md:snap-none md:overflow-visible md:pb-0 md:grid-cols-2 2xl:grid-cols-4">
               {plans.map((plan) => {
                 const isSelected = selectedPlan.key === plan.key;
                 const isCurrentCard = hasBillingContext && initialPlan === plan.key;
@@ -1418,7 +1419,7 @@ function PlanesPageContent() {
                     whileHover={{ y: isSelected ? -5 : -3 }}
                     animate={{ y: isSelected ? -5 : 0, scale: isSelected ? 1.01 : 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                    className={`relative isolate flex min-h-[320px] overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:min-h-[370px] 2xl:min-h-[390px] ${
+                    className={`relative isolate flex w-[85%] shrink-0 snap-center min-h-[320px] overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:w-[360px] sm:min-h-[370px] md:w-auto md:shrink md:snap-align-none 2xl:min-h-[390px] ${
                       isSelected
                         ? `selected-plan-neon ${plan.borderClass} bg-cyan-300/25 shadow-[0_0_0_1px_rgba(34,211,238,0.42),0_0_26px_rgba(34,211,238,0.24),0_0_42px_rgba(168,85,247,0.18),0_18px_54px_rgba(34,211,238,0.16)]`
                         : "border-white/12 bg-white/[0.035] shadow-[0_18px_50px_rgba(0,0,0,0.18)] hover:border-white/25 hover:bg-white/[0.055]"
@@ -1527,6 +1528,8 @@ function PlanesPageContent() {
                   </motion.button>
                 );
               })}
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#020814] to-transparent md:hidden" />
             </div>
 
             <section className="mt-5 flex flex-col items-center gap-3">

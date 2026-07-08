@@ -284,7 +284,7 @@ export default function OrbyxLandingPage() {
               </div>
 
               {/* Agenda content */}
-              <div className="h-[260px] overflow-hidden sm:h-[370px] lg:h-[480px]">
+              <div className="h-[400px] overflow-hidden sm:h-[420px] lg:h-[480px]">
                 {/* Staff header */}
                 <div
                   className="grid border-b border-[#ebebeb]"

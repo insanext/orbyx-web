@@ -4116,7 +4116,7 @@ onClick={() => {
                   onMouseLeave={() => stopDayGridDrag(true)}
                   onWheel={handleDayGridWheel}
                   onClickCapture={handleDayGridClickCapture}
-                  className={`orbyx-day-grid-scroll select-none overflow-x-hidden overflow-y-visible rounded-b-2xl border ${
+                  className={`orbyx-day-grid-scroll select-none overflow-x-auto overflow-y-visible rounded-b-2xl border md:overflow-x-hidden ${
                     isDayGridDragging ? "cursor-grabbing" : "cursor-grab"
                   }`}
                   style={{
