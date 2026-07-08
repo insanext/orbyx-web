@@ -3737,20 +3737,20 @@ const hasPendingClose = pendingCloseCount > 0;
 onClick={() => {
   setShowPendingPanel(true);
 }}
-                    className={`inline-flex h-11 min-w-[128px] items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-100 ${
+                    className={`flex h-11 w-full items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-100 md:inline-flex md:w-auto md:min-w-[128px] ${
   pendingCloseCount > 0 ? "animate-pulse" : ""
 }`}
                   >
                     Pendientes: {pendingCloseCount}
                   </button>
                 ) : (
-                  <div className="inline-flex h-11 min-w-[128px] items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700">
+                  <div className="flex h-11 w-full items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 md:inline-flex md:w-auto md:min-w-[128px]">
                     Sin pendientes
                   </div>
                 )}
 
                 <div
-                  className="flex items-center gap-2"
+                  className="flex w-full items-center gap-2 md:w-auto"
                   style={{
                     borderColor: "transparent",
                     background: "transparent",
@@ -3770,20 +3770,23 @@ onClick={() => {
 
                       goPrevWeek();
                     }}
-                    className="orbyx-nav-energy inline-flex h-11 min-w-[118px] items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold"
+                    className="orbyx-nav-energy flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border px-2 text-sm font-semibold md:inline-flex md:flex-none md:min-w-[118px] md:px-4"
                     style={{
                       borderColor: "rgba(37,99,235,0.28)",
                       background: "var(--bg-card)",
                       color: "#2563eb",
                     }}
                   >
-                    {agendaView === "day" ? "← Día anterior" : "← Anterior"}
+                    <span className="md:hidden">‹</span>
+                    <span className="hidden md:inline">
+                      {agendaView === "day" ? "← Día anterior" : "← Anterior"}
+                    </span>
                   </button>
 
                   <button
                     type="button"
                     onClick={goToday}
-                    className="orbyx-nav-energy inline-flex h-11 min-w-[72px] items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-semibold text-white shadow-[0_14px_30px_-18px_rgba(37,99,235,0.9)]"
+                    className="orbyx-nav-energy flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border px-2 text-sm font-semibold text-white shadow-[0_14px_30px_-18px_rgba(37,99,235,0.9)] md:inline-flex md:flex-none md:min-w-[72px] md:px-5"
                     style={{
                       borderColor: "rgba(147,197,253,0.34)",
                       background:
@@ -3807,19 +3810,22 @@ onClick={() => {
 
                       goNextWeek();
                     }}
-                    className="orbyx-nav-energy inline-flex h-11 min-w-[118px] items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold"
+                    className="orbyx-nav-energy flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border px-2 text-sm font-semibold md:inline-flex md:flex-none md:min-w-[118px] md:px-4"
                     style={{
                       borderColor: "rgba(37,99,235,0.28)",
                       background: "var(--bg-card)",
                       color: "#2563eb",
                     }}
                   >
-                    {agendaView === "day" ? "Día siguiente →" : "Siguiente →"}
+                    <span className="md:hidden">›</span>
+                    <span className="hidden md:inline">
+                      {agendaView === "day" ? "Día siguiente →" : "Siguiente →"}
+                    </span>
                   </button>
                 </div>
 
                 <div
-                  className="inline-flex h-10 min-w-[210px] items-center justify-center rounded-xl border px-3.5 text-sm font-semibold"
+                  className="flex h-10 w-full items-center justify-center rounded-xl border px-3.5 text-sm font-semibold md:inline-flex md:w-auto md:min-w-[210px]"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -3832,7 +3838,7 @@ onClick={() => {
                 </div>
 
                 <div
-                  className="flex items-center rounded-2xl border p-1"
+                  className="mt-1 flex w-full items-center rounded-2xl border p-1 md:mt-0 md:w-auto"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--agenda-calendar-header-bg)",
@@ -3841,7 +3847,7 @@ onClick={() => {
                   <button
                     type="button"
                     onClick={() => setAgendaView("week")}
-                    className={`orbyx-nav-energy inline-flex h-9 items-center justify-center rounded-xl border px-4 text-xs font-semibold ${
+                    className={`orbyx-nav-energy flex h-9 flex-1 items-center justify-center rounded-xl border px-4 text-xs font-semibold md:inline-flex md:flex-none ${
                       agendaView === "week" ? "orbyx-nav-tab-active text-white" : ""
                     }`}
                     style={
@@ -3862,7 +3868,7 @@ onClick={() => {
                   <button
                     type="button"
                     onClick={() => setAgendaView("day")}
-                    className={`orbyx-nav-energy inline-flex h-9 items-center justify-center rounded-xl border px-4 text-xs font-semibold ${
+                    className={`orbyx-nav-energy flex h-9 flex-1 items-center justify-center rounded-xl border px-2 text-xs font-semibold md:inline-flex md:flex-none md:px-4 ${
                       agendaView === "day" ? "orbyx-nav-tab-active text-white" : ""
                     }`}
                     style={
@@ -3878,7 +3884,8 @@ onClick={() => {
                           }
                     }
                   >
-                    Día por profesional
+                    <span className="md:hidden">Día</span>
+                    <span className="hidden md:inline">Día por profesional</span>
                   </button>
                 </div>
 
@@ -3892,7 +3899,7 @@ onClick={() => {
                     setIsEditingReservation(false);
                     setHoverCard(null);
                   }}
-                  className="h-10 rounded-xl border px-3.5 text-sm outline-none transition"
+                  className="h-10 w-full rounded-xl border px-3.5 text-sm outline-none transition md:w-auto"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-card)",
@@ -4439,9 +4446,9 @@ onClick={() => {
                 </div>
               </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))] xl:gap-0">
+              <div className="flex gap-3 overflow-x-auto pb-2 xl:grid xl:gap-0 xl:overflow-visible xl:pb-0 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))]">
                 <div
-                  className="hidden rounded-l-2xl border xl:block"
+                  className="sticky left-0 z-10 w-[54px] shrink-0 rounded-2xl border xl:static xl:z-auto xl:w-auto xl:shrink xl:rounded-l-2xl xl:rounded-r-none"
                   style={{
                     borderColor: "var(--agenda-calendar-line)",
                     background: "var(--agenda-calendar-time-bg)",
@@ -4558,7 +4565,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                           clearCalendarSelection();
                         }
                       }}
-                      className="min-h-[660px] border first:xl:rounded-l-none last:xl:rounded-r-2xl md:rounded-2xl xl:rounded-none xl:border-l-0"
+                      className="min-h-[660px] w-[260px] shrink-0 rounded-2xl border first:xl:rounded-l-none last:xl:rounded-r-2xl xl:w-auto xl:shrink xl:rounded-none xl:border-l-0"
                       style={{
   borderColor: dayPendingCount > 0
     ? "rgba(244,63,94,0.28)"
