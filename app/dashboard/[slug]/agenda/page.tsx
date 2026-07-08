@@ -4977,7 +4977,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               return (
                                 <div
                                   key={slot}
-                                  className="hidden h-[54px] border-t xl:block"
+                                  className="h-[54px] border-t"
                                   onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
                                   onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
                                   style={{
@@ -5030,7 +5030,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                   }}
                                   onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
                                   onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
-                                  className={`hidden h-[54px] cursor-pointer border-t px-2 text-center text-[10px] font-semibold transition xl:flex xl:items-center xl:justify-center ${getEmptySlotClass(isEmptySlotSelected)}`}
+                                  className={`flex h-[54px] cursor-pointer items-center justify-center border-t px-2 text-center text-[10px] font-semibold transition ${getEmptySlotClass(isEmptySlotSelected)}`}
                                   style={{
                                     borderColor: isHourStart
                                       ? isSlotClosed
