@@ -4587,7 +4587,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
 }}
                     >
                       <div
-  className="sticky z-20 flex h-[58px] items-center px-2.5"
+  className="static z-20 flex h-[58px] items-center px-2.5 xl:sticky"
   style={{
     top: "78px",
     borderBottom: `1px solid ${
