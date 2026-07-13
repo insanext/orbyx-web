@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Lock,
   Phone,
@@ -20,9 +22,9 @@ import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 import {
   APPOINTMENT_STATUS_COLORS,
-  statusRgba,
-  statusCardGradient,
+  STATUS_STYLESHEET,
   statusGlow,
+  type AppointmentStatusKey,
 } from "../../../../lib/appointment-status-colors";
 
 type Appointment = {
@@ -706,10 +708,6 @@ function generateSlotsFromWindows(
 
   function getVisualStatus(appt: Appointment) {
     if (isPastPendingClosure(appt)) return "pending_close";
-    const now = Date.now();
-    const start = new Date(appt.start_at).getTime();
-    const end = new Date(appt.end_at).getTime();
-    if (appt.status === "booked" && start <= now && now <= end) return "in_progress";
     return appt.status;
   }
 
@@ -719,10 +717,6 @@ function generateSlotsFromWindows(
     switch (visualStatus) {
       case "booked":
         return "Agendada";
-      case "in_progress":
-        return "En curso";
-      case "pending":
-        return "Pendiente";
       case "completed":
         return "Atendida";
       case "no_show":
@@ -744,10 +738,6 @@ function generateSlotsFromWindows(
     switch (visualStatus) {
       case "booked":
         return "Agendada";
-      case "in_progress":
-        return "En curso";
-      case "pending":
-        return "Pendiente";
       case "completed":
         return "Atendida";
       case "no_show":
@@ -763,67 +753,40 @@ function generateSlotsFromWindows(
     }
   }
 
-  function getStatusBadgeClass(appt: Appointment) {
+  function getStatusColorKey(appt: Appointment): AppointmentStatusKey {
     const visualStatus = getVisualStatus(appt);
-    const key =
-      visualStatus === "booked"
-        ? "booked"
-        : visualStatus === "in_progress"
-        ? "in_progress"
-        : visualStatus === "pending"
-        ? "pending"
-        : visualStatus === "completed"
-        ? "confirmed"
-        : visualStatus === "no_show"
-        ? "no_show"
-        : visualStatus === "rescheduled"
-        ? "rescheduled"
-        : visualStatus === "pending_close"
-        ? "pending_close"
-        : visualStatus === "canceled"
-        ? "canceled"
-        : ("booked" as const);
-    const color = APPOINTMENT_STATUS_COLORS[key];
-    return `border-[${statusRgba(key, 0.35)}] bg-[${statusRgba(
-      key,
-      0.14
-    )}] text-[${color.hex}]`;
+    switch (visualStatus) {
+      case "completed":
+        return "confirmed";
+      case "no_show":
+        return "no_show";
+      case "rescheduled":
+        return "rescheduled";
+      case "canceled":
+        return "canceled";
+      case "pending_close":
+        return "pending_close";
+      case "booked":
+      default:
+        return "booked";
+    }
+  }
+
+  function getStatusBadgeClass(appt: Appointment) {
+    const key = getStatusColorKey(appt);
+    return `orbyx-status-badge orbyx-status-badge-${key}`;
   }
 
   function getCardClass(appt: Appointment, selected: boolean) {
-    const visualStatus = getVisualStatus(appt);
-
     if (selected) {
       return "border-cyan-200 bg-[linear-gradient(135deg,rgba(14,116,144,0.92),rgba(8,145,178,0.68))] text-white shadow-[0_0_0_1px_rgba(103,232,249,0.34),0_0_26px_-6px_rgba(34,211,238,0.95),0_14px_26px_-18px_rgba(8,47,73,0.9)]";
     }
 
-    const key =
-      visualStatus === "pending_close"
-        ? "pending_close"
-        : visualStatus === "completed"
-        ? "confirmed"
-        : visualStatus === "no_show"
-        ? "no_show"
-        : visualStatus === "canceled"
-        ? "canceled"
-        : visualStatus === "rescheduled"
-        ? "rescheduled"
-        : visualStatus === "pending"
-        ? "pending"
-        : visualStatus === "in_progress"
-        ? "in_progress"
-        : ("booked" as const);
-
-    const borderAlpha = key === "canceled" || key === "no_show" ? 0.6 : 0.8;
+    const key = getStatusColorKey(appt);
     const opacityClass =
       key === "canceled" ? "opacity-80" : key === "no_show" ? "opacity-90" : "";
 
-    return `border-[${statusRgba(key, borderAlpha)}] bg-[${statusCardGradient(
-      key
-    )}] text-white shadow-[${statusGlow(key)}] ${opacityClass} hover:border-[${statusRgba(
-      key,
-      0.95
-    )}] hover:shadow-[${statusGlow(key, 0.95)}]`;
+    return `orbyx-status-card orbyx-status-card-${key} text-white ${opacityClass}`;
   }
 
   function getAppointmentGroupKey(appt: Appointment) {
@@ -942,18 +905,6 @@ function generateSlotsFromWindows(
       };
     }
 
-    if (
-      first &&
-      new Date(first.start_at).getTime() <= now &&
-      now <= new Date(first.end_at).getTime()
-    ) {
-      return {
-        key: "in_progress",
-        label: "En curso",
-        tooltip: "La actividad estÃ¡ en curso.",
-      };
-    }
-
     if (first && new Date(first.end_at).getTime() < now) {
       return {
         key: "pending",
@@ -982,33 +933,21 @@ function generateSlotsFromWindows(
       };
     }
 
-    const keyMap = {
+    const keyMap: Record<string, AppointmentStatusKey> = {
       scheduled: "group_activity",
       pending: "pending_close",
-      partial: "pending",
+      partial: "pending_close",
       closed: "confirmed",
       canceled: "canceled",
-      in_progress: "in_progress",
-    } as const;
+    };
 
-    const colorKey = keyMap[key as keyof typeof keyMap] || "group_activity";
+    const colorKey = keyMap[key] || "group_activity";
 
     return {
-      card: `border-[${statusRgba(colorKey, 0.8)}] bg-[${statusCardGradient(
-        colorKey
-      )}] text-white shadow-[${statusGlow(colorKey)}] hover:border-[${statusRgba(
-        colorKey,
-        0.95
-      )}] hover:shadow-[${statusGlow(colorKey, 0.95)}]`,
-      icon: `text-[${statusRgba(colorKey, 0.85)}]`,
-      stateBadge: `border-[${statusRgba(colorKey, 0.3)}] bg-[${statusRgba(
-        colorKey,
-        0.1
-      )}] text-[${statusRgba(colorKey, 0.95)}]`,
-      countBadge: `border-[${statusRgba(colorKey, 0.35)}] bg-[${statusRgba(
-        colorKey,
-        0.15
-      )}] text-[${statusRgba(colorKey, 0.95)}]`,
+      card: `orbyx-status-card orbyx-status-card-${colorKey} text-white`,
+      icon: `orbyx-status-icon-${colorKey}`,
+      stateBadge: `orbyx-status-badge orbyx-status-badge-${colorKey}`,
+      countBadge: `orbyx-status-badge orbyx-status-badge-${colorKey}`,
     };
   }
 
@@ -3100,6 +3039,7 @@ const hasPendingClose = pendingCloseCount > 0;
           --agenda-closed-muted: rgba(148,163,184,0.75);
         }
       `}</style>
+      <style>{STATUS_STYLESHEET}</style>
 <div
   className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
   style={{
@@ -3396,16 +3336,6 @@ const hasPendingClose = pendingCloseCount > 0;
         />
       ) : null}
 
-      {hasPendingClose ? (
-        <Notice
-          tone="danger"
-          title={`Tienes ${pendingCloseCount} cita${
-            pendingCloseCount === 1 ? "" : "s"
-          } pendiente${pendingCloseCount === 1 ? "" : "s"} de cierre.`}
-          description="Revísalas para mantener la agenda actualizada."
-        />
-      ) : null}
-
       {(isVeterinaria || isClinica || isOdontologia) && pendingClinicalNotes.length > 0 ? (
         <button
           type="button"
@@ -3621,6 +3551,15 @@ const hasPendingClose = pendingCloseCount > 0;
                   filter: brightness(1.06);
                 }
 
+                .orbyx-pending-pulse {
+                  animation: orbyx-pending-pulse 1.5s ease-in-out infinite;
+                }
+
+                @keyframes orbyx-pending-pulse {
+                  0%, 100% { opacity: 0.6; }
+                  50% { opacity: 1; }
+                }
+
                   .orbyx-agenda-filter-select option {
                     background: #0f3fcf;
                     color: #ffffff;
@@ -3647,9 +3586,7 @@ const hasPendingClose = pendingCloseCount > 0;
                   [
                     ["Confirmado", "confirmed"],
                     ["Agendado", "booked"],
-                    ["Pendiente", "pending"],
-                    ["En curso", "in_progress"],
-                    ["No-show", "no_show"],
+                    ["No asistió", "no_show"],
                     ["Reagendado", "rescheduled"],
                     ["Cancelado", "canceled"],
                     ["Falta cierre", "pending_close"],
@@ -3679,14 +3616,20 @@ const hasPendingClose = pendingCloseCount > 0;
                       onClick={() => {
                         setShowPendingPanel(true);
                       }}
-                      className={`orbyx-header-btn flex h-9 w-full items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-semibold text-rose-700 md:inline-flex md:w-auto ${
-                        pendingCloseCount > 0 ? "animate-pulse" : ""
-                      }`}
+                      title="Debes cerrar el estado de estas citas (asistió / no asistió)"
+                      className="orbyx-header-btn orbyx-pending-pulse flex h-9 w-full items-center justify-center rounded-lg border px-3 text-sm font-semibold text-white md:inline-flex md:w-auto"
+                      style={{
+                        borderColor: `rgba(${APPOINTMENT_STATUS_COLORS.canceled.rgb},0.6)`,
+                        background: APPOINTMENT_STATUS_COLORS.canceled.hex,
+                      }}
                     >
-                      Pendientes: {pendingCloseCount}
+                      {pendingCloseCount} pendiente{pendingCloseCount === 1 ? "" : "s"}
                     </button>
                   ) : (
-                    <div className="flex h-9 w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-700 md:inline-flex md:w-auto">
+                    <div
+                      title="No tienes citas pendientes de cierre"
+                      className="flex h-9 w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-700 md:inline-flex md:w-auto"
+                    >
                       Sin pendientes
                     </div>
                   )}
@@ -3708,17 +3651,15 @@ const hasPendingClose = pendingCloseCount > 0;
 
                       goPrevWeek();
                     }}
-                    className="orbyx-header-btn flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-semibold md:inline-flex md:flex-none"
+                    className="orbyx-header-btn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-card)",
                       color: "var(--text-main)",
                     }}
+                    aria-label={agendaView === "day" ? "Día anterior" : "Semana anterior"}
                   >
-                    <span className="md:hidden">‹</span>
-                    <span className="hidden md:inline">
-                      {agendaView === "day" ? "← Día anterior" : "← Anterior"}
-                    </span>
+                    <ChevronLeft className="h-4 w-4" />
                   </button>
 
                   <button
@@ -3748,36 +3689,20 @@ const hasPendingClose = pendingCloseCount > 0;
 
                       goNextWeek();
                     }}
-                    className="orbyx-header-btn flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-semibold md:inline-flex md:flex-none"
+                    className="orbyx-header-btn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-card)",
                       color: "var(--text-main)",
                     }}
+                    aria-label={agendaView === "day" ? "Día siguiente" : "Semana siguiente"}
                   >
-                    <span className="md:hidden">›</span>
-                    <span className="hidden md:inline">
-                      {agendaView === "day" ? "Día siguiente →" : "Siguiente →"}
-                    </span>
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
 
-                {/* Grupo 3 - Periodo */}
-                <div
-                  className="flex h-9 w-full items-center justify-center rounded-lg border px-3 text-sm font-semibold md:inline-flex md:w-auto"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  {agendaView === "day"
-                    ? formattedDayTitle
-                    : formatRangeTitle(weekStart, weekEnd)}
-                </div>
-
                 {/* Grupo 4 - Vista + fecha */}
-                <div className="flex w-full items-center gap-2 md:w-auto">
+                <div className="flex w-full items-center gap-2 md:ml-auto md:w-auto">
                   <div
                     className="flex flex-1 items-center gap-1 rounded-lg border p-1 md:flex-none"
                     style={{
