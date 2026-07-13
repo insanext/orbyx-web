@@ -18,6 +18,12 @@ import {
 } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
+import {
+  APPOINTMENT_STATUS_COLORS,
+  statusRgba,
+  statusCardGradient,
+  statusGlow,
+} from "../../../../lib/appointment-status-colors";
 
 type Appointment = {
   id: string;
@@ -759,27 +765,29 @@ function generateSlotsFromWindows(
 
   function getStatusBadgeClass(appt: Appointment) {
     const visualStatus = getVisualStatus(appt);
-
-    switch (visualStatus) {
-      case "booked":
-        return "border-sky-200 bg-sky-50 text-sky-700";
-      case "in_progress":
-        return "border-cyan-200 bg-cyan-50 text-cyan-700";
-      case "pending":
-        return "border-orange-200 bg-orange-50 text-orange-700";
-      case "completed":
-        return "border-emerald-200 bg-emerald-50 text-emerald-700";
-      case "no_show":
-        return "border-amber-200 bg-amber-50 text-amber-800";
-      case "rescheduled":
-        return "border-violet-200 bg-violet-50 text-violet-700";
-      case "pending_close":
-        return "border-rose-200 bg-rose-50 text-rose-700";
-      case "canceled":
-        return "border-slate-200 bg-slate-100 text-slate-600";
-      default:
-        return "border-slate-200 bg-slate-100 text-slate-700";
-    }
+    const key =
+      visualStatus === "booked"
+        ? "booked"
+        : visualStatus === "in_progress"
+        ? "in_progress"
+        : visualStatus === "pending"
+        ? "pending"
+        : visualStatus === "completed"
+        ? "confirmed"
+        : visualStatus === "no_show"
+        ? "no_show"
+        : visualStatus === "rescheduled"
+        ? "rescheduled"
+        : visualStatus === "pending_close"
+        ? "pending_close"
+        : visualStatus === "canceled"
+        ? "canceled"
+        : ("booked" as const);
+    const color = APPOINTMENT_STATUS_COLORS[key];
+    return `border-[${statusRgba(key, 0.35)}] bg-[${statusRgba(
+      key,
+      0.14
+    )}] text-[${color.hex}]`;
   }
 
   function getCardClass(appt: Appointment, selected: boolean) {
@@ -789,35 +797,33 @@ function generateSlotsFromWindows(
       return "border-cyan-200 bg-[linear-gradient(135deg,rgba(14,116,144,0.92),rgba(8,145,178,0.68))] text-white shadow-[0_0_0_1px_rgba(103,232,249,0.34),0_0_26px_-6px_rgba(34,211,238,0.95),0_14px_26px_-18px_rgba(8,47,73,0.9)]";
     }
 
-    if (visualStatus === "pending_close") {
-      return "border-red-300/80 bg-[linear-gradient(135deg,rgba(127,29,29,0.90),rgba(220,38,38,0.58))] text-white shadow-[0_0_18px_-10px_rgba(248,113,113,0.85)] hover:border-red-200 hover:shadow-[0_0_24px_-9px_rgba(248,113,113,0.95)]";
-    }
+    const key =
+      visualStatus === "pending_close"
+        ? "pending_close"
+        : visualStatus === "completed"
+        ? "confirmed"
+        : visualStatus === "no_show"
+        ? "no_show"
+        : visualStatus === "canceled"
+        ? "canceled"
+        : visualStatus === "rescheduled"
+        ? "rescheduled"
+        : visualStatus === "pending"
+        ? "pending"
+        : visualStatus === "in_progress"
+        ? "in_progress"
+        : ("booked" as const);
 
-    if (visualStatus === "completed") {
-      return "border-emerald-300/80 bg-[linear-gradient(135deg,rgba(6,95,70,0.90),rgba(16,185,129,0.56))] text-white shadow-[0_0_18px_-10px_rgba(52,211,153,0.85)] hover:border-emerald-200 hover:shadow-[0_0_24px_-9px_rgba(52,211,153,0.95)]";
-    }
+    const borderAlpha = key === "canceled" || key === "no_show" ? 0.6 : 0.8;
+    const opacityClass =
+      key === "canceled" ? "opacity-80" : key === "no_show" ? "opacity-90" : "";
 
-    if (visualStatus === "no_show") {
-      return "border-slate-300/65 bg-[linear-gradient(135deg,rgba(51,65,85,0.88),rgba(100,116,139,0.54))] text-white shadow-[0_0_16px_-11px_rgba(148,163,184,0.72)] opacity-90 hover:border-slate-200 hover:shadow-[0_0_22px_-10px_rgba(148,163,184,0.82)]";
-    }
-
-    if (visualStatus === "canceled") {
-      return "border-slate-400/60 bg-[linear-gradient(135deg,rgba(30,41,59,0.90),rgba(100,116,139,0.45))] text-slate-100 opacity-80 hover:border-slate-300 hover:shadow-[0_0_20px_-11px_rgba(148,163,184,0.7)]";
-    }
-
-    if (visualStatus === "rescheduled") {
-      return "border-violet-300/80 bg-[linear-gradient(135deg,rgba(91,33,182,0.90),rgba(139,92,246,0.56))] text-white shadow-[0_0_18px_-10px_rgba(167,139,250,0.85)] hover:border-violet-200 hover:shadow-[0_0_24px_-9px_rgba(167,139,250,0.95)]";
-    }
-
-    if (visualStatus === "pending") {
-      return "border-orange-300/80 bg-[linear-gradient(135deg,rgba(154,52,18,0.90),rgba(245,158,11,0.56))] text-white shadow-[0_0_18px_-10px_rgba(251,146,60,0.85)] hover:border-orange-200 hover:shadow-[0_0_24px_-9px_rgba(251,146,60,0.95)]";
-    }
-
-    if (visualStatus === "in_progress") {
-      return "border-cyan-200/85 bg-[linear-gradient(135deg,rgba(14,116,144,0.92),rgba(34,211,238,0.54))] text-white shadow-[0_0_20px_-9px_rgba(34,211,238,0.90)] hover:border-cyan-100 hover:shadow-[0_0_26px_-8px_rgba(34,211,238,0.98)]";
-    }
-
-    return "border-blue-300/80 bg-[linear-gradient(135deg,rgba(30,64,175,0.90),rgba(59,130,246,0.56))] text-white shadow-[0_0_18px_-10px_rgba(96,165,250,0.85)] hover:border-blue-200 hover:shadow-[0_0_24px_-9px_rgba(96,165,250,0.95)]";
+    return `border-[${statusRgba(key, borderAlpha)}] bg-[${statusCardGradient(
+      key
+    )}] text-white shadow-[${statusGlow(key)}] ${opacityClass} hover:border-[${statusRgba(
+      key,
+      0.95
+    )}] hover:shadow-[${statusGlow(key, 0.95)}]`;
   }
 
   function getAppointmentGroupKey(appt: Appointment) {
@@ -976,49 +982,34 @@ function generateSlotsFromWindows(
       };
     }
 
-    const styles: Record<
-      string,
-      { card: string; icon: string; stateBadge: string; countBadge: string }
-    > = {
-      scheduled: {
-        card: "border-violet-300/80 bg-[linear-gradient(135deg,rgba(91,33,182,0.90),rgba(139,92,246,0.56))] text-white shadow-[0_0_18px_-10px_rgba(167,139,250,0.85)] hover:border-violet-200 hover:shadow-[0_0_24px_-9px_rgba(167,139,250,0.95)]",
-        icon: "text-violet-200",
-        stateBadge: "border-violet-300/30 bg-violet-400/10 text-violet-100",
-        countBadge: "border-violet-300/35 bg-violet-400/15 text-violet-50",
-      },
-      pending: {
-        card: "border-red-300/80 bg-[linear-gradient(135deg,rgba(127,29,29,0.90),rgba(220,38,38,0.58))] text-white shadow-[0_0_18px_-10px_rgba(248,113,113,0.85)] hover:border-red-200 hover:shadow-[0_0_24px_-9px_rgba(248,113,113,0.95)]",
-        icon: "text-red-200",
-        stateBadge: "border-red-300/30 bg-red-400/10 text-red-100",
-        countBadge: "border-red-300/35 bg-red-400/15 text-red-50",
-      },
-      partial: {
-        card: "border-orange-300/80 bg-[linear-gradient(135deg,rgba(154,52,18,0.90),rgba(245,158,11,0.56))] text-white shadow-[0_0_18px_-10px_rgba(251,146,60,0.85)] hover:border-orange-200 hover:shadow-[0_0_24px_-9px_rgba(251,146,60,0.95)]",
-        icon: "text-orange-200",
-        stateBadge: "border-orange-300/30 bg-orange-400/10 text-orange-100",
-        countBadge: "border-orange-300/35 bg-orange-400/15 text-orange-50",
-      },
-      closed: {
-        card: "border-emerald-300/80 bg-[linear-gradient(135deg,rgba(6,95,70,0.90),rgba(16,185,129,0.56))] text-white shadow-[0_0_18px_-10px_rgba(52,211,153,0.85)] hover:border-emerald-200 hover:shadow-[0_0_24px_-9px_rgba(52,211,153,0.95)]",
-        icon: "text-emerald-200",
-        stateBadge: "border-emerald-300/30 bg-emerald-400/10 text-emerald-100",
-        countBadge: "border-emerald-300/35 bg-emerald-400/15 text-emerald-50",
-      },
-      canceled: {
-        card: "border-slate-400/60 bg-[linear-gradient(135deg,rgba(30,41,59,0.90),rgba(100,116,139,0.45))] text-slate-100 opacity-85 hover:border-slate-300 hover:shadow-[0_0_20px_-11px_rgba(148,163,184,0.7)]",
-        icon: "text-slate-300",
-        stateBadge: "border-slate-300/25 bg-slate-400/10 text-slate-200",
-        countBadge: "border-slate-300/25 bg-slate-400/10 text-slate-200",
-      },
-      in_progress: {
-        card: "border-cyan-200/85 bg-[linear-gradient(135deg,rgba(14,116,144,0.92),rgba(34,211,238,0.54))] text-white shadow-[0_0_20px_-9px_rgba(34,211,238,0.90)] hover:border-cyan-100 hover:shadow-[0_0_26px_-8px_rgba(34,211,238,0.98)]",
-        icon: "text-cyan-200",
-        stateBadge: "border-cyan-300/30 bg-cyan-400/10 text-cyan-100",
-        countBadge: "border-cyan-300/35 bg-cyan-400/15 text-cyan-50",
-      },
-    };
+    const keyMap = {
+      scheduled: "group_activity",
+      pending: "pending_close",
+      partial: "pending",
+      closed: "confirmed",
+      canceled: "canceled",
+      in_progress: "in_progress",
+    } as const;
 
-    return styles[key] || styles.scheduled;
+    const colorKey = keyMap[key as keyof typeof keyMap] || "group_activity";
+
+    return {
+      card: `border-[${statusRgba(colorKey, 0.8)}] bg-[${statusCardGradient(
+        colorKey
+      )}] text-white shadow-[${statusGlow(colorKey)}] hover:border-[${statusRgba(
+        colorKey,
+        0.95
+      )}] hover:shadow-[${statusGlow(colorKey, 0.95)}]`,
+      icon: `text-[${statusRgba(colorKey, 0.85)}]`,
+      stateBadge: `border-[${statusRgba(colorKey, 0.3)}] bg-[${statusRgba(
+        colorKey,
+        0.1
+      )}] text-[${statusRgba(colorKey, 0.95)}]`,
+      countBadge: `border-[${statusRgba(colorKey, 0.35)}] bg-[${statusRgba(
+        colorKey,
+        0.15
+      )}] text-[${statusRgba(colorKey, 0.95)}]`,
+    };
   }
 
   function matchesFilter(appt: Appointment, filter: FilterValue) {
@@ -3074,13 +3065,13 @@ const hasPendingClose = pendingCloseCount > 0;
           --agenda-calendar-hover: rgba(59,130,246,0.08);
           --agenda-today-bg: linear-gradient(180deg, rgba(219,234,254,0.98), rgba(226,232,240,0.92), rgba(215,224,236,0.86));
           --agenda-today-header-bg: linear-gradient(180deg, rgba(219,234,254,0.96), rgba(226,232,240,0.86));
-          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(180,30,30,0.07) 0px, rgba(180,30,30,0.07) 8px, transparent 8px, transparent 18px), linear-gradient(180deg, rgba(180,30,30,0.14), rgba(150,20,20,0.10) 48%, rgba(180,30,30,0.12));
-          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(180,30,30,0.10) 0px, rgba(180,30,30,0.10) 8px, transparent 8px, transparent 18px), linear-gradient(180deg, rgba(200,40,40,0.20), rgba(160,25,25,0.16) 48%, rgba(200,40,40,0.18));
-          --agenda-closed-border: rgba(180,30,30,0.22);
-          --agenda-closed-line: rgba(180,30,30,0.14);
-          --agenda-closed-line-soft: rgba(180,30,30,0.08);
-          --agenda-closed-text: #c0392b;
-          --agenda-closed-muted: rgba(150,30,30,0.70);
+          --agenda-closed-bg: #E4E7EC;
+          --agenda-closed-bg-hover: #DADEE5;
+          --agenda-closed-border: rgba(100,116,139,0.24);
+          --agenda-closed-line: rgba(100,116,139,0.18);
+          --agenda-closed-line-soft: rgba(100,116,139,0.10);
+          --agenda-closed-text: #6B7280;
+          --agenda-closed-muted: rgba(107,114,128,0.75);
         }
 
         :root[data-theme="nocturno"] .orbyx-agenda-page {
@@ -3100,11 +3091,13 @@ const hasPendingClose = pendingCloseCount > 0;
           --agenda-calendar-hover: rgba(56,189,248,0.08);
           --agenda-today-bg: linear-gradient(180deg, rgba(30,64,175,0.28), rgba(14,116,144,0.14), rgba(15,23,42,0.94));
           --agenda-today-header-bg: linear-gradient(180deg, rgba(30,64,175,0.28), rgba(15,23,42,0.92));
-          --agenda-closed-bg: repeating-linear-gradient(135deg, rgba(255,120,120,0.06) 0px, rgba(255,120,120,0.06) 8px, transparent 8px, transparent 18px), linear-gradient(180deg, rgba(160,30,30,0.28), rgba(120,20,20,0.22) 48%, rgba(140,25,25,0.24));
-          --agenda-closed-bg-hover: repeating-linear-gradient(135deg, rgba(255,120,120,0.09) 0px, rgba(255,120,120,0.09) 8px, transparent 8px, transparent 18px), linear-gradient(180deg, rgba(180,40,40,0.36), rgba(140,25,25,0.30) 48%, rgba(160,30,30,0.32));
-          --agenda-closed-border: rgba(248,113,113,0.42);
-          --agenda-closed-line: rgba(254,202,202,0.2);
-          --agenda-closed-line-soft: rgba(254,202,202,0.12);
+          --agenda-closed-bg: #1E2530;
+          --agenda-closed-bg-hover: #262E3B;
+          --agenda-closed-border: rgba(107,114,128,0.35);
+          --agenda-closed-line: rgba(107,114,128,0.22);
+          --agenda-closed-line-soft: rgba(107,114,128,0.12);
+          --agenda-closed-text: #6B7280;
+          --agenda-closed-muted: rgba(148,163,184,0.75);
         }
       `}</style>
 <div
@@ -3616,62 +3609,17 @@ const hasPendingClose = pendingCloseCount > 0;
           <div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <style>{`
-                .orbyx-nav-energy {
-                  position: relative;
-                  isolation: isolate;
-                  cursor: pointer;
-                  overflow: hidden;
-                  transition:
-                    transform 180ms ease,
-                    border-color 180ms ease,
-                    box-shadow 180ms ease,
-                    filter 180ms ease,
-                    background 180ms ease;
+                .orbyx-header-btn {
+                  transition: filter 150ms ease, background 150ms ease, border-color 150ms ease;
                 }
 
-                .orbyx-nav-energy::after {
-                  content: "";
-                  position: absolute;
-                  inset: -2px;
-                  z-index: -1;
-                  border-radius: inherit;
-                  background: radial-gradient(circle at 50% 50%, rgba(59,130,246,0.32), transparent 62%);
-                  opacity: 0;
-                  transform: scale(0.78);
-                  transition: opacity 180ms ease, transform 180ms ease;
+                .orbyx-header-btn:hover {
+                  filter: brightness(1.12);
                 }
 
-                .orbyx-nav-energy:hover {
-                  border-color: rgba(59,130,246,0.62) !important;
-                  box-shadow:
-                    0 0 0 1px rgba(59,130,246,0.16),
-                    0 12px 28px -18px rgba(37,99,235,0.85),
-                    0 0 22px -12px rgba(56,189,248,0.8);
-                  filter: saturate(1.08);
-                  transform: translateY(-1px);
+                .orbyx-header-btn-accent:hover {
+                  filter: brightness(1.06);
                 }
-
-                .orbyx-nav-energy:hover::after {
-                  opacity: 1;
-                  transform: scale(1);
-                }
-
-                .orbyx-nav-energy:active {
-                  animation: orbyx-nav-pulse 260ms ease-out;
-                  box-shadow:
-                    0 0 0 3px rgba(96,165,250,0.22),
-                    0 0 26px -8px rgba(59,130,246,0.95),
-                    0 10px 24px -18px rgba(37,99,235,0.85);
-                  transform: translateY(0) scale(0.98);
-                }
-
-                  .orbyx-nav-tab-active {
-                  border-color: rgba(147,197,253,0.72) !important;
-                  box-shadow:
-                    0 0 0 1px rgba(147,197,253,0.2),
-                    0 12px 28px -18px rgba(37,99,235,0.9),
-                    0 0 24px -12px rgba(56,189,248,0.9);
-                  }
 
                   .orbyx-agenda-filter-select option {
                     background: #0f3fcf;
@@ -3682,24 +3630,6 @@ const hasPendingClose = pendingCloseCount > 0;
                     background: #2563eb;
                     color: #ffffff;
                   }
-
-                @keyframes orbyx-nav-pulse {
-                  0% {
-                    box-shadow:
-                      0 0 0 0 rgba(96,165,250,0.34),
-                      0 0 18px -10px rgba(56,189,248,0.9);
-                  }
-                  70% {
-                    box-shadow:
-                      0 0 0 7px rgba(96,165,250,0),
-                      0 0 30px -8px rgba(59,130,246,0.95);
-                  }
-                  100% {
-                    box-shadow:
-                      0 0 0 0 rgba(96,165,250,0),
-                      0 0 18px -12px rgba(56,189,248,0.75);
-                  }
-                }
               `}</style>
 
               <div className="-mt-1 min-w-0">
@@ -3713,49 +3643,57 @@ const hasPendingClose = pendingCloseCount > 0;
                 className="mt-1 flex max-w-[520px] flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] font-medium"
                 style={{ color: "var(--text-muted)" }}
               >
-                {[
-                  ["Confirmado", "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"],
-                  ["Falta cierre", "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"],
-                  ["Agendado", "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"],
-                  ["Pendiente", "bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.8)]"],
-                  ["En curso", "bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.8)]"],
-                  ["No-show", "bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.55)]"],
-                  ["Actividad grupal", "bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]"],
-                ].map(([label, dotClass]) => (
+                {(
+                  [
+                    ["Confirmado", "confirmed"],
+                    ["Agendado", "booked"],
+                    ["Pendiente", "pending"],
+                    ["En curso", "in_progress"],
+                    ["No-show", "no_show"],
+                    ["Reagendado", "rescheduled"],
+                    ["Cancelado", "canceled"],
+                    ["Falta cierre", "pending_close"],
+                    ["Actividad grupal", "group_activity"],
+                  ] as [string, keyof typeof APPOINTMENT_STATUS_COLORS][]
+                ).map(([label, colorKey]) => (
                   <span key={label} className="inline-flex items-center gap-1.5 leading-none">
-                    <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{
+                        background: APPOINTMENT_STATUS_COLORS[colorKey].hex,
+                        boxShadow: statusGlow(colorKey, 0.8),
+                      }}
+                    />
                     {label}
                   </span>
                 ))}
               </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {hasPendingClose ? (
-                  <button
-                    type="button"
-onClick={() => {
-  setShowPendingPanel(true);
-}}
-                    className={`flex h-11 w-full items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-100 md:inline-flex md:w-auto md:min-w-[128px] ${
-  pendingCloseCount > 0 ? "animate-pulse" : ""
-}`}
-                  >
-                    Pendientes: {pendingCloseCount}
-                  </button>
-                ) : (
-                  <div className="flex h-11 w-full items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 md:inline-flex md:w-auto md:min-w-[128px]">
-                    Sin pendientes
-                  </div>
-                )}
+              <div className="flex flex-wrap items-center justify-end gap-6">
+                {/* Grupo 1 - Estado */}
+                <div className="flex w-full items-center gap-2 md:w-auto">
+                  {hasPendingClose ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPendingPanel(true);
+                      }}
+                      className={`orbyx-header-btn flex h-9 w-full items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-semibold text-rose-700 md:inline-flex md:w-auto ${
+                        pendingCloseCount > 0 ? "animate-pulse" : ""
+                      }`}
+                    >
+                      Pendientes: {pendingCloseCount}
+                    </button>
+                  ) : (
+                    <div className="flex h-9 w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-700 md:inline-flex md:w-auto">
+                      Sin pendientes
+                    </div>
+                  )}
+                </div>
 
-                <div
-                  className="flex w-full items-center gap-2 md:w-auto"
-                  style={{
-                    borderColor: "transparent",
-                    background: "transparent",
-                  }}
-                >
+                {/* Grupo 2 - Navegacion */}
+                <div className="flex w-full items-center gap-2 md:w-auto">
                   <button
                     type="button"
                     onClick={() => {
@@ -3770,11 +3708,11 @@ onClick={() => {
 
                       goPrevWeek();
                     }}
-                    className="orbyx-nav-energy flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border px-2 text-sm font-semibold md:inline-flex md:flex-none md:min-w-[118px] md:px-4"
+                    className="orbyx-header-btn flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-semibold md:inline-flex md:flex-none"
                     style={{
-                      borderColor: "rgba(37,99,235,0.28)",
+                      borderColor: "var(--border-color)",
                       background: "var(--bg-card)",
-                      color: "#2563eb",
+                      color: "var(--text-main)",
                     }}
                   >
                     <span className="md:hidden">‹</span>
@@ -3786,7 +3724,7 @@ onClick={() => {
                   <button
                     type="button"
                     onClick={goToday}
-                    className="orbyx-nav-energy flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border px-2 text-sm font-semibold text-white shadow-[0_14px_30px_-18px_rgba(37,99,235,0.9)] md:inline-flex md:flex-none md:min-w-[72px] md:px-5"
+                    className="orbyx-header-btn orbyx-header-btn-accent flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-semibold text-white md:inline-flex md:flex-none"
                     style={{
                       borderColor: "rgba(147,197,253,0.34)",
                       background:
@@ -3810,11 +3748,11 @@ onClick={() => {
 
                       goNextWeek();
                     }}
-                    className="orbyx-nav-energy flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border px-2 text-sm font-semibold md:inline-flex md:flex-none md:min-w-[118px] md:px-4"
+                    className="orbyx-header-btn flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-semibold md:inline-flex md:flex-none"
                     style={{
-                      borderColor: "rgba(37,99,235,0.28)",
+                      borderColor: "var(--border-color)",
                       background: "var(--bg-card)",
-                      color: "#2563eb",
+                      color: "var(--text-main)",
                     }}
                   >
                     <span className="md:hidden">›</span>
@@ -3824,8 +3762,9 @@ onClick={() => {
                   </button>
                 </div>
 
+                {/* Grupo 3 - Periodo */}
                 <div
-                  className="flex h-10 w-full items-center justify-center rounded-xl border px-3.5 text-sm font-semibold md:inline-flex md:w-auto md:min-w-[210px]"
+                  className="flex h-9 w-full items-center justify-center rounded-lg border px-3 text-sm font-semibold md:inline-flex md:w-auto"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -3837,75 +3776,76 @@ onClick={() => {
                     : formatRangeTitle(weekStart, weekEnd)}
                 </div>
 
-                <div
-                  className="mt-1 flex w-full items-center rounded-2xl border p-1 md:mt-0 md:w-auto"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--agenda-calendar-header-bg)",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setAgendaView("week")}
-                    className={`orbyx-nav-energy flex h-9 flex-1 items-center justify-center rounded-xl border px-4 text-xs font-semibold md:inline-flex md:flex-none ${
-                      agendaView === "week" ? "orbyx-nav-tab-active text-white" : ""
-                    }`}
-                    style={
-                      agendaView === "week"
-                        ? {
-                            borderColor: "rgba(147,197,253,0.72)",
-                            background:
-                              "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                          }
-                        : {
-                            color: "var(--text-muted)",
-                            borderColor: "transparent",
-                          }
-                    }
+                {/* Grupo 4 - Vista + fecha */}
+                <div className="flex w-full items-center gap-2 md:w-auto">
+                  <div
+                    className="flex flex-1 items-center gap-1 rounded-lg border p-1 md:flex-none"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--agenda-calendar-header-bg)",
+                    }}
                   >
-                    Semana
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAgendaView("day")}
-                    className={`orbyx-nav-energy flex h-9 flex-1 items-center justify-center rounded-xl border px-2 text-xs font-semibold md:inline-flex md:flex-none md:px-4 ${
-                      agendaView === "day" ? "orbyx-nav-tab-active text-white" : ""
-                    }`}
-                    style={
-                      agendaView === "day"
-                        ? {
-                            borderColor: "rgba(147,197,253,0.72)",
-                            background:
-                              "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
-                          }
-                        : {
-                            color: "var(--text-muted)",
-                            borderColor: "transparent",
-                          }
-                    }
-                  >
-                    <span className="md:hidden">Día</span>
-                    <span className="hidden md:inline">Día por profesional</span>
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => setAgendaView("week")}
+                      className="orbyx-header-btn flex h-9 flex-1 items-center justify-center rounded-md border px-3 text-xs font-semibold md:inline-flex md:flex-none"
+                      style={
+                        agendaView === "week"
+                          ? {
+                              borderColor: "rgba(147,197,253,0.72)",
+                              background:
+                                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                              color: "#fff",
+                            }
+                          : {
+                              color: "var(--text-muted)",
+                              borderColor: "transparent",
+                            }
+                      }
+                    >
+                      Semana
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAgendaView("day")}
+                      className="orbyx-header-btn flex h-9 flex-1 items-center justify-center rounded-md border px-3 text-xs font-semibold md:inline-flex md:flex-none"
+                      style={
+                        agendaView === "day"
+                          ? {
+                              borderColor: "rgba(147,197,253,0.72)",
+                              background:
+                                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                              color: "#fff",
+                            }
+                          : {
+                              color: "var(--text-muted)",
+                              borderColor: "transparent",
+                            }
+                      }
+                    >
+                      <span className="md:hidden">Día</span>
+                      <span className="hidden md:inline">Día por profesional</span>
+                    </button>
+                  </div>
 
-                <input
-                  type="date"
-                  value={formatDateYYYYMMDD(weekBaseDate)}
-                  onChange={(e) => {
-                    if (!e.target.value) return;
-                    setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
-                    setSelectedAppointment(null);
-                    setIsEditingReservation(false);
-                    setHoverCard(null);
-                  }}
-                  className="h-10 w-full rounded-xl border px-3.5 text-sm outline-none transition md:w-auto"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                />
+                  <input
+                    type="date"
+                    value={formatDateYYYYMMDD(weekBaseDate)}
+                    onChange={(e) => {
+                      if (!e.target.value) return;
+                      setWeekBaseDate(new Date(`${e.target.value}T12:00:00`));
+                      setSelectedAppointment(null);
+                      setIsEditingReservation(false);
+                      setHoverCard(null);
+                    }}
+                    className="orbyx-header-btn h-9 w-full rounded-lg border px-3 text-sm outline-none md:w-auto"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -4306,7 +4246,17 @@ onClick={() => {
                                         color: "var(--text-muted)",
                                       }}
                                     >
-                                      {""}
+                                      {isSlotClosed ? (
+                                        <span
+                                          className="flex min-w-0 items-center gap-1 truncate"
+                                          style={{ color: "var(--agenda-closed-text)" }}
+                                        >
+                                          <Lock className="h-3 w-3 shrink-0" />
+                                          Horario bloqueado
+                                        </span>
+                                      ) : (
+                                        ""
+                                      )}
                                     </div>
                                   );
                                 }
@@ -4550,7 +4500,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                     hasNoWorkingWindow ||
                     (daySlots.length === 0 && dayAppointments.length === 0);
                   const closedDayTitle = showClosedBySchedule
-                    ? "Cerrado"
+                    ? "Horario cerrado"
                     : "Sin horario disponible";
                   const closedDaySubtitle = showClosedBySchedule
                     ? "Sin horario disponible"
@@ -4705,7 +4655,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             </div>
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
                               <div className="flex flex-col items-center gap-2" style={{ color: "var(--agenda-closed-text)" }}>
-                                <Lock className="h-5 w-5" />
+                                <Lock className="h-3.5 w-3.5" />
                                 <div>
                                   <p className="text-sm font-semibold" style={{ color: "var(--agenda-closed-text)" }}>
                                     {closedDayTitle}
@@ -4755,7 +4705,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             </div>
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
                               <div className="flex flex-col items-center gap-2" style={{ color: "var(--agenda-closed-text)" }}>
-                                <Lock className="h-5 w-5" />
+                                <Lock className="h-3.5 w-3.5" />
                                 <div>
                                   <p className="text-sm font-semibold" style={{ color: "var(--agenda-closed-text)" }}>
                                     {closedDayTitle}
@@ -4927,7 +4877,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                             </div>
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
                               <div className="flex flex-col items-center gap-2" style={{ color: "var(--agenda-closed-text)" }}>
-                                <Lock className="h-5 w-5" />
+                                <Lock className="h-3.5 w-3.5" />
                                 <div>
                                   <p className="text-sm font-semibold" style={{ color: "var(--agenda-closed-text)" }}>
                                     {closedDayTitle}
@@ -5058,7 +5008,17 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                     color: "var(--text-muted)",
                                   }}
                                 >
-                                  {""}
+                                  {isSlotClosed ? (
+                                    <span
+                                      className="flex min-w-0 items-center gap-1 truncate"
+                                      style={{ color: "var(--agenda-closed-text)" }}
+                                    >
+                                      <Lock className="h-3 w-3 shrink-0" />
+                                      Horario bloqueado
+                                    </span>
+                                  ) : (
+                                    ""
+                                  )}
                                 </div>
                               );
                             }
