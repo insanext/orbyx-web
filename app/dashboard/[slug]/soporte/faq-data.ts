@@ -69,36 +69,8 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
         answer: 'Todo servicio necesita al menos un profesional asignado para ser visible. Revisa el badge "Sin profesional" en la lista de Servicios.',
       },
       {
-        question: '¿Puedo definir un tiempo de preparación (buffer) antes o después de un servicio?',
-        answer: 'Sí, cada servicio permite configurar un buffer antes y después de la duración base, que se suma al tiempo total ocupado en la agenda.',
-      },
-    ],
-  },
-  {
-    title: 'Cuenta y Facturación',
-    icon: 'ti-credit-card',
-    items: [
-      {
-        question: '¿Los descuentos semestral/anual se aplican solos?',
-        answer: 'Sí, al elegir ciclo semestral obtienes -10% y anual -15% automáticamente sobre el valor del plan.',
-      },
-      {
-        question: '¿Cómo cambio de plan?',
-        answer: 'Desde Configuración → Plan puedes ver el detalle del cambio antes de confirmarlo.',
-      },
-    ],
-  },
-  {
-    title: 'Clientes y Campañas',
-    icon: 'ti-users',
-    items: [
-      {
-        question: '¿Puedo enviarles correos a mis clientes desde Orbyx?',
-        answer: 'Sí, desde Campañas puedes enviar campañas de email reales a tus clientes segmentados (nuevos, recurrentes, frecuentes, inactivos).',
-      },
-      {
-        question: '¿Ya puedo enviar campañas por WhatsApp?',
-        answer: 'Aún no, está en desarrollo. Por ahora las campañas reales funcionan solo por correo.',
+        question: '¿Qué es el buffer de un servicio y para qué sirve?',
+        answer: 'El buffer es tiempo extra que se bloquea junto al servicio para preparación o limpieza, sin que el cliente lo vea como parte de la duración. Por ejemplo, un servicio de 30 min con 10 min de buffer después ocupa 40 min en tu agenda. Se configura en Servicios, al editar el servicio, con un campo de buffer antes y/o después.',
       },
     ],
   },

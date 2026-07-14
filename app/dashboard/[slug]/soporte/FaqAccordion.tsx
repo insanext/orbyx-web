@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { FAQ_CATEGORIES } from './faq-data'
 
-export default function FaqAccordion({ onCreateTicket }: { onCreateTicket: () => void }) {
+export default function FaqAccordion() {
   const [openKey, setOpenKey] = useState<string | null>(null)
 
   return (
@@ -36,7 +36,7 @@ export default function FaqAccordion({ onCreateTicket }: { onCreateTicket: () =>
                   >
                     <button
                       onClick={() => setOpenKey(isOpen ? null : key)}
-                      className="w-full flex items-center justify-between gap-3 text-left px-4 py-3.5 hover:opacity-90 transition-opacity"
+                      className="w-full flex items-center justify-between gap-3 text-left px-4 py-3.5 cursor-pointer transition-colors hover:bg-[var(--bg-soft)]"
                     >
                       <span className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>{item.question}</span>
                       <i
@@ -64,17 +64,6 @@ export default function FaqAccordion({ onCreateTicket }: { onCreateTicket: () =>
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="mt-8 rounded-2xl border p-5 text-center" style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}>
-        <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>¿No encontraste lo que buscabas?</p>
-        <button
-          onClick={onCreateTicket}
-          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all inline-flex items-center gap-2"
-        >
-          <i className="ti ti-plus" style={{ fontSize: 14 }} aria-hidden="true" />
-          Crear un ticket
-        </button>
       </div>
     </div>
   )

@@ -236,7 +236,7 @@ export default function SoportePage() {
         <div className="flex items-center gap-1 mb-6 border-b" style={{ borderColor: "var(--border-color)" }}>
           <button
             onClick={() => setView('faq')}
-            className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
+            className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px rounded-t-lg cursor-pointer transition-colors hover:bg-[var(--bg-soft)]"
             style={view === 'faq'
               ? { borderColor: '#3b82f6', color: '#60a5fa' }
               : { borderColor: 'transparent', color: "var(--text-muted)" }}
@@ -245,7 +245,7 @@ export default function SoportePage() {
           </button>
           <button
             onClick={() => setView('list')}
-            className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
+            className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px rounded-t-lg cursor-pointer transition-colors hover:bg-[var(--bg-soft)]"
             style={view === 'list'
               ? { borderColor: '#3b82f6', color: '#60a5fa' }
               : { borderColor: 'transparent', color: "var(--text-muted)" }}
@@ -256,7 +256,7 @@ export default function SoportePage() {
       )}
 
       {/* PREGUNTAS FRECUENTES */}
-      {view === 'faq' && <FaqAccordion onCreateTicket={() => setView('new')} />}
+      {view === 'faq' && <FaqAccordion />}
 
       {/* LISTA DE TICKETS */}
       {view === 'list' && (
