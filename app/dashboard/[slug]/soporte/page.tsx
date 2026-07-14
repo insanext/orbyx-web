@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetch } from '@/lib/api'
+import FaqAccordion from './FaqAccordion'
 
 const BACKEND_URL = 'https://orbyx-backend.onrender.com'
 
@@ -45,7 +46,7 @@ export default function SoportePage() {
   const [tenantId, setTenantId] = useState('')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [tickets, setTickets] = useState<any[]>([])
-  const [view, setView] = useState<'list' | 'new' | 'detail'>('list')
+  const [view, setView] = useState<'faq' | 'list' | 'new' | 'detail'>('faq')
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
 
@@ -229,6 +230,33 @@ export default function SoportePage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
+
+      {/* TABS */}
+      {(view === 'faq' || view === 'list') && (
+        <div className="flex items-center gap-1 mb-6 border-b" style={{ borderColor: "var(--border-color)" }}>
+          <button
+            onClick={() => setView('faq')}
+            className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
+            style={view === 'faq'
+              ? { borderColor: '#3b82f6', color: '#60a5fa' }
+              : { borderColor: 'transparent', color: "var(--text-muted)" }}
+          >
+            Preguntas frecuentes
+          </button>
+          <button
+            onClick={() => setView('list')}
+            className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
+            style={view === 'list'
+              ? { borderColor: '#3b82f6', color: '#60a5fa' }
+              : { borderColor: 'transparent', color: "var(--text-muted)" }}
+          >
+            Mis tickets
+          </button>
+        </div>
+      )}
+
+      {/* PREGUNTAS FRECUENTES */}
+      {view === 'faq' && <FaqAccordion onCreateTicket={() => setView('new')} />}
 
       {/* LISTA DE TICKETS */}
       {view === 'list' && (
