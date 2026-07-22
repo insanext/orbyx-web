@@ -77,7 +77,7 @@ function CheckoutPremiumInner() {
         if (cancelled) return;
 
         if (res.ok && data?.url) {
-          window.location.href = data.url;
+          window.location.href = data.url + "?token=" + data.token;
           return;
         }
 
@@ -151,7 +151,7 @@ function CheckoutPremiumInner() {
         throw new Error(cardData?.error || "No se pudo iniciar el registro de tarjeta");
       }
 
-      window.location.href = cardData.url;
+      window.location.href = cardData.url + "?token=" + cardData.token;
     } catch (e: any) {
       setFormError(e.message || "Ocurrió un error inesperado");
       turnstileRef.current?.reset();
