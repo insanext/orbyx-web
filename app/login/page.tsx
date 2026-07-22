@@ -1,11 +1,80 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "../../lib/supabase/client";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "../../components/ui/password-visibility-toggle";
+
+// Resuelve a dónde debe ir un usuario ya autenticado: provisiona el tenant si
+// es su primer login, lo manda a /onboarding si el negocio no completó el
+// onboarding, o al dashboard/destino guardado si ya está todo listo. Se usa
+// tanto desde el submit manual del login como desde la detección de sesión
+// activa al montar la página, para no duplicar esta lógica en dos lugares.
+async function resolveTenantDestination({
+  supabase,
+  userId,
+  userEmail,
+  plan,
+  redirectTo,
+}: {
+  supabase: SupabaseClient;
+  userId: string;
+  userEmail: string;
+  plan: string;
+  redirectTo: string | null;
+}): Promise<{ destination: string; replace?: boolean } | { error: string }> {
+  let { data: tenantUserRow } = await supabase
+    .from("tenant_users")
+    .select("tenant_id")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .limit(1)
+    .single();
+
+  if (!tenantUserRow) {
+    const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
+    const provisionRes = await fetch(`${backend}/tenants/provision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, email: userEmail, plan }),
+    });
+    const provisionData = await provisionRes.json();
+    if (!provisionRes.ok) {
+      return { error: provisionData?.error || "Error creando tu negocio. Intenta nuevamente." };
+    }
+    const params = new URLSearchParams({
+      tenant_id: provisionData.tenant_id,
+      calendar_id: provisionData.calendar_id,
+    });
+    if (provisionData.branch_id) params.set("branch_id", provisionData.branch_id);
+    return { destination: `/onboarding?${params.toString()}` };
+  }
+
+  const { data: tenantRow, error: tenantError } = await supabase
+    .from("tenants")
+    .select("slug, business_category")
+    .eq("id", tenantUserRow.tenant_id)
+    .single();
+
+  if (tenantError || !tenantRow?.slug) {
+    return { error: "No se pudo cargar el negocio. Intenta nuevamente." };
+  }
+
+  if (!tenantRow.business_category) {
+    const params = new URLSearchParams({ tenant_id: tenantUserRow.tenant_id });
+    return { destination: `/onboarding?${params.toString()}` };
+  }
+
+  const destination =
+    redirectTo && redirectTo.startsWith("/dashboard")
+      ? redirectTo
+      : `/dashboard/${tenantRow.slug}`;
+
+  return { destination, replace: true };
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -17,7 +86,58 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const turnstileRef = useRef<any>(null);
+
+  // Si ya hay una sesión de Supabase activa al entrar a /login (ej. justo
+  // después de completar-registro, que ya hizo signInWithPassword), resuelve
+  // el destino sin pedirle credenciales de nuevo. Si no hay sesión, muestra
+  // el formulario normal.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkExistingSession() {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (cancelled) return;
+
+      if (!session?.user) {
+        setCheckingSession(false);
+        return;
+      }
+
+      const result = await resolveTenantDestination({
+        supabase,
+        userId: session.user.id,
+        userEmail: session.user.email || "",
+        plan: session.user.user_metadata?.plan || "pro",
+        redirectTo: searchParams.get("redirectTo"),
+      });
+
+      if (cancelled) return;
+
+      if ("error" in result) {
+        setError(result.error);
+        setCheckingSession(false);
+        return;
+      }
+
+      if (result.replace) {
+        router.replace(result.destination);
+      } else {
+        router.push(result.destination);
+      }
+    }
+
+    checkExistingSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, searchParams]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -54,62 +174,26 @@ function LoginForm() {
       const userEmail = data.user?.email || email;
       const plan = data.user?.user_metadata?.plan || "pro";
 
-      // 2. Resolver tenant del usuario — o provisionar si es primera vez
-      let { data: tenantUserRow } = await supabase
-        .from("tenant_users")
-        .select("tenant_id")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .limit(1)
-        .single();
+      // 2-4. Resolver tenant/onboarding/dashboard (misma lógica que la
+      // detección de sesión activa al montar la página)
+      const result = await resolveTenantDestination({
+        supabase,
+        userId,
+        userEmail,
+        plan,
+        redirectTo: searchParams.get("redirectTo"),
+      });
 
-      if (!tenantUserRow) {
-        const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
-        const provisionRes = await fetch(`${backend}/tenants/provision`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId, email: userEmail, plan }),
-        });
-        const provisionData = await provisionRes.json();
-        if (!provisionRes.ok) {
-          setError(provisionData?.error || "Error creando tu negocio. Intenta nuevamente.");
-          return;
-        }
-        const params = new URLSearchParams({
-          tenant_id: provisionData.tenant_id,
-          calendar_id: provisionData.calendar_id,
-        });
-        if (provisionData.branch_id) params.set("branch_id", provisionData.branch_id);
-        router.push(`/onboarding?${params.toString()}`);
+      if ("error" in result) {
+        setError(result.error);
         return;
       }
 
-      const { data: tenantRow, error: tenantError } = await supabase
-        .from("tenants")
-        .select("slug, business_category")
-        .eq("id", tenantUserRow.tenant_id)
-        .single();
-
-      if (tenantError || !tenantRow?.slug) {
-        setError("No se pudo cargar el negocio. Intenta nuevamente.");
-        return;
+      if (result.replace) {
+        router.replace(result.destination);
+      } else {
+        router.push(result.destination);
       }
-
-      // 3. Si el onboarding no se completó, redirigir ahí
-      if (!tenantRow.business_category) {
-        const params = new URLSearchParams({ tenant_id: tenantUserRow.tenant_id });
-        router.push(`/onboarding?${params.toString()}`);
-        return;
-      }
-
-      // 4. Redirigir al destino guardado o al dashboard del tenant
-      const redirectTo = searchParams.get("redirectTo");
-      const destination =
-        redirectTo && redirectTo.startsWith("/dashboard")
-          ? redirectTo
-          : `/dashboard/${tenantRow.slug}`;
-
-      router.replace(destination);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Error inesperado. Intenta nuevamente.";
@@ -132,6 +216,23 @@ function LoginForm() {
         padding: "16px",
       }}
     >
+      {checkingSession ? (
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 400,
+            background: "rgba(255,255,255,0.92)",
+            borderRadius: 24,
+            border: "1px solid rgba(59,130,246,0.18)",
+            boxShadow:
+              "0 20px 60px -20px rgba(37,99,235,0.14), 0 2px 8px -2px rgba(37,99,235,0.06)",
+            padding: "36px 32px",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>Verificando sesión…</p>
+        </div>
+      ) : (
       <div
         style={{
           width: "100%",
@@ -311,6 +412,7 @@ function LoginForm() {
           </a>
         </p>
       </div>
+      )}
     </div>
   );
 }

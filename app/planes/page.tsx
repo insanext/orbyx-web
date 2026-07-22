@@ -903,7 +903,7 @@ function PlanesPageContent() {
 
   const publicCtaHref = isProSelected
     ? "/signup?plan=pro"
-    : `/signup?plan=${selectedPlanKey}`;
+    : `/checkout-premium?plan=${selectedPlanKey}&cycle=${billingCycle}`;
 
   const showTenantWarning = !tenantId && Boolean(from || slug);
 

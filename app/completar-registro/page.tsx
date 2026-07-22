@@ -98,7 +98,7 @@ function CompletarRegistroInner() {
 
       setStep("success");
       setTimeout(() => {
-        router.push(data.tenant_slug ? `/dashboard/${data.tenant_slug}` : "/login");
+        router.push("/login");
       }, 2000);
     } catch (e: any) {
       setSubmitMsg(e.message);
