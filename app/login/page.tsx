@@ -63,7 +63,7 @@ async function resolveTenantDestination({
     return { error: "No se pudo cargar el negocio. Intenta nuevamente." };
   }
 
-  if (!tenantRow.business_category) {
+  if (!tenantRow.business_category || tenantRow.business_category === "generic") {
     const params = new URLSearchParams({ tenant_id: tenantUserRow.tenant_id });
     return { destination: `/onboarding?${params.toString()}` };
   }
