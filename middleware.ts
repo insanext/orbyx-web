@@ -70,11 +70,22 @@ export async function middleware(request: NextRequest) {
     if (tenantUser) {
       const { data: tenant } = await supabase
         .from("tenants")
-        .select("slug")
+        .select("slug, business_category")
         .eq("id", tenantUser.tenant_id)
         .single();
 
       if (tenant?.slug) {
+        const ONBOARDING_PENDING = new Set(["generic", "generico"]);
+        const isPending = !tenant.business_category || ONBOARDING_PENDING.has(tenant.business_category);
+
+        if (isPending) {
+          const onboardingUrl = request.nextUrl.clone();
+          onboardingUrl.pathname = "/onboarding";
+          onboardingUrl.search = "";
+          onboardingUrl.searchParams.set("tenant_id", tenantUser.tenant_id);
+          return NextResponse.redirect(onboardingUrl);
+        }
+
         const dashboardUrl = request.nextUrl.clone();
         dashboardUrl.pathname = `/dashboard/${tenant.slug}`;
         dashboardUrl.search = "";
