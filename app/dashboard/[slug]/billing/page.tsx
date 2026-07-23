@@ -1,9 +1,9 @@
 "use client";
 
-import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { CSSProperties, Suspense, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { CreditCard } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 
@@ -71,6 +71,31 @@ const PLAN_LABELS: Record<string, string> = {
   platinum: "Platinum",
 };
 
+const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente de confirmación",
+  card_registered: "Tarjeta registrada",
+  active: "Activa",
+  canceled: "Cancelada",
+  error: "Hubo un problema, contáctanos",
+};
+
+type SubscriptionCard = {
+  brand: string;
+  last4: string;
+};
+
+type SubscriptionStatusResponse =
+  | { has_subscription: false }
+  | {
+      has_subscription: true;
+      status: string;
+      plan_id: string;
+      periodicidad: string;
+      monto: number | null;
+      card: SubscriptionCard | null;
+      flow_subscription_id: string | null;
+    };
+
 const PLAN_CAPS: Record<
   string,
   { max_staff: number; max_services: number; max_branches: number }
@@ -88,6 +113,10 @@ function normalizePlanSlug(planSlug?: string | null) {
   if (normalized in PLAN_CAPS) return normalized;
 
   return "pro";
+}
+
+function formatCLP(value: number) {
+  return `$${value.toLocaleString("es-CL")}`;
 }
 
 function formatDate(dateString?: string | null) {
@@ -220,8 +249,10 @@ function Notice({
   );
 }
 
-export default function BillingPage() {
+function BillingPageInner() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const cardStatusParam = searchParams.get("card_status");
   const slug =
     ((params as { slug?: string })?.slug as string) ||
     ((params as { Slug?: string })?.Slug as string) ||
@@ -434,6 +465,101 @@ export default function BillingPage() {
     loadAll();
   }, [slug]);
 
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<SubscriptionStatusResponse | null>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [subscriptionError, setSubscriptionError] = useState("");
+
+  const [changingCard, setChangingCard] = useState(false);
+  const [cardActionError, setCardActionError] = useState("");
+
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+
+  async function loadSubscriptionStatus(currentTenantId: string) {
+    try {
+      setLoadingSubscription(true);
+      setSubscriptionError("");
+
+      const res = await apiFetch(
+        `${BACKEND_URL}/billing/flow/subscription-status?tenant_id=${currentTenantId}`
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cargar el estado de la suscripción");
+      }
+
+      setSubscriptionStatus(data);
+    } catch (error: unknown) {
+      setSubscriptionError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo cargar el estado de la suscripción"
+      );
+    } finally {
+      setLoadingSubscription(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!tenantId) return;
+    loadSubscriptionStatus(tenantId);
+  }, [tenantId]);
+
+  async function handleChangeCard() {
+    try {
+      setChangingCard(true);
+      setCardActionError("");
+
+      const res = await apiFetch(`${BACKEND_URL}/billing/flow/register-card`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo iniciar el cambio de tarjeta");
+      }
+
+      window.location.href = data.url + "?token=" + data.token;
+    } catch (error: unknown) {
+      setCardActionError(
+        error instanceof Error ? error.message : "No se pudo iniciar el cambio de tarjeta"
+      );
+      setChangingCard(false);
+    }
+  }
+
+  async function handleCancelSubscription() {
+    try {
+      setCanceling(true);
+      setCancelError("");
+
+      const res = await apiFetch(`${BACKEND_URL}/billing/flow/cancel-subscription`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cancelar la suscripción");
+      }
+
+      setCancelModalOpen(false);
+      await loadSubscriptionStatus(tenantId);
+    } catch (error: unknown) {
+      setCancelError(
+        error instanceof Error ? error.message : "No se pudo cancelar la suscripción"
+      );
+    } finally {
+      setCanceling(false);
+    }
+  }
+
   function toggleBranchSelection(branchId: string) {
     setSelectedBranchesToKeep((prev) =>
       prev.includes(branchId)
@@ -606,7 +732,7 @@ export default function BillingPage() {
               className="mt-0.5 text-xl font-semibold tracking-tight"
               style={{ color: "var(--text-main)" }}
             >
-              Ajustar plan
+              Facturación y pago
             </h1>
 
             <p
@@ -737,6 +863,123 @@ export default function BillingPage() {
       {loadError ? <Notice tone="danger" title={loadError} /> : null}
       {saveError ? <Notice tone="danger" title={saveError} /> : null}
       {saveOk ? <Notice tone="success" title={saveOk} /> : null}
+
+      {cardStatusParam === "ok" ? (
+        <Notice tone="success" title="Tarjeta actualizada correctamente." />
+      ) : null}
+      {cardStatusParam === "error" ? (
+        <Notice
+          tone="danger"
+          title="No pudimos actualizar tu tarjeta."
+          description="Intenta nuevamente o escríbenos a soporte@orbyx.cl."
+        />
+      ) : null}
+
+      <Panel
+        title="Mi suscripción"
+        description="Plan, ciclo de cobro y estado de tu suscripción con Cargo Automático."
+      >
+        {loadingSubscription ? (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Cargando...
+          </p>
+        ) : subscriptionError ? (
+          <Notice tone="danger" title={subscriptionError} />
+        ) : !subscriptionStatus?.has_subscription ? (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Aún no tienes un medio de pago automático configurado.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                Plan
+              </p>
+              <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                {PLAN_LABELS[subscriptionStatus.plan_id] || subscriptionStatus.plan_id}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                Periodicidad
+              </p>
+              <p className="mt-1 text-sm font-semibold capitalize" style={{ color: "var(--text-main)" }}>
+                {subscriptionStatus.periodicidad}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                Monto
+              </p>
+              <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                {subscriptionStatus.monto != null ? formatCLP(subscriptionStatus.monto) : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                Estado
+              </p>
+              <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                {SUBSCRIPTION_STATUS_LABELS[subscriptionStatus.status] || subscriptionStatus.status}
+              </p>
+            </div>
+          </div>
+        )}
+      </Panel>
+
+      {subscriptionStatus?.has_subscription && subscriptionStatus.card ? (
+        <Panel
+          title="Mi tarjeta"
+          description="Tarjeta usada para el Cargo Automático de tu suscripción."
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+              {subscriptionStatus.card.brand} •••• {subscriptionStatus.card.last4}
+            </p>
+            <button
+              type="button"
+              onClick={handleChangeCard}
+              disabled={changingCard}
+              className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            >
+              {changingCard ? "Redirigiendo..." : "Cambiar tarjeta"}
+            </button>
+          </div>
+          {cardActionError ? (
+            <p className="mt-2 text-xs" style={{ color: "rgb(248 113 113)" }}>
+              {cardActionError}
+            </p>
+          ) : null}
+        </Panel>
+      ) : null}
+
+      {subscriptionStatus?.has_subscription &&
+      (subscriptionStatus.status === "active" ||
+        subscriptionStatus.status === "card_registered") ? (
+        <Panel
+          title="Cancelar suscripción"
+          description="Deja de renovar tu plan automáticamente."
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setCancelError("");
+              setCancelModalOpen(true);
+            }}
+            className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+            style={{
+              background: "linear-gradient(135deg, rgb(244 63 94), rgb(225 29 72))",
+            }}
+          >
+            Cancelar suscripción
+          </button>
+        </Panel>
+      ) : null}
 
       {hasAnyExcess ? (
         <Notice
@@ -951,6 +1194,76 @@ export default function BillingPage() {
           )}
         </Panel>
       </section>
+
+      {cancelModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0"
+            style={{ background: "rgba(0,0,0,0.6)" }}
+            onClick={() => (canceling ? null : setCancelModalOpen(false))}
+          />
+          <div
+            className="relative z-10 mx-4 w-full max-w-sm rounded-2xl border p-6 shadow-2xl"
+            style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
+          >
+            <h3
+              className="text-center text-lg font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Cancelar suscripción
+            </h3>
+            <p
+              className="mt-2 text-center text-sm leading-6"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Al cancelar, tu suscripción dejará de renovarse automáticamente.
+              Podrás seguir usando tu plan hasta el final del ciclo actual
+              {billingCycleEnd ? ` (${formatDate(billingCycleEnd)})` : ""}.
+            </p>
+
+            {cancelError ? (
+              <p className="mt-3 text-center text-xs" style={{ color: "rgb(248 113 113)" }}>
+                {cancelError}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setCancelModalOpen(false)}
+                disabled={canceling}
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelSubscription}
+                disabled={canceling}
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(135deg, rgb(244 63 94), rgb(225 29 72))",
+                }}
+              >
+                {canceling ? "Cancelando..." : "Sí, cancelar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense fallback={<div className="p-6" style={{ color: "var(--text-muted)" }}>Cargando...</div>}>
+      <BillingPageInner />
+    </Suspense>
   );
 }

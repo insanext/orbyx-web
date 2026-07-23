@@ -158,7 +158,7 @@ const navSections = [
       { label: "Staff", href: "/staff", icon: Users },
       { label: "Sucursales", href: "/branches", icon: Store },
       { label: "Negocio", href: "/business", icon: Briefcase },
-      { label: "Billing", href: "/billing", icon: CreditCard },
+      { label: "Mi suscripción", href: "/billing", icon: CreditCard },
     ],
   },
   {
