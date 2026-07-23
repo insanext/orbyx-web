@@ -710,7 +710,7 @@ function BillingPageInner() {
     remainingDaysNumber <= 2;
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="pb-6">
       <section
         className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
         style={{
@@ -860,22 +860,45 @@ function BillingPageInner() {
         </div>
       </section>
 
-      {loadError ? <Notice tone="danger" title={loadError} /> : null}
-      {saveError ? <Notice tone="danger" title={saveError} /> : null}
-      {saveOk ? <Notice tone="success" title={saveOk} /> : null}
-
-      {cardStatusParam === "ok" ? (
-        <Notice tone="success" title="Tarjeta actualizada correctamente." />
-      ) : null}
-      {cardStatusParam === "error" ? (
-        <Notice
-          tone="danger"
-          title="No pudimos actualizar tu tarjeta."
-          description="Intenta nuevamente o escríbenos a soporte@orbyx.cl."
-        />
+      {loadError ? (
+        <div className="mt-6">
+          <Notice tone="danger" title={loadError} />
+        </div>
       ) : null}
 
-      <Panel
+      <div
+        className="mt-10 border-t"
+        style={{ borderColor: "var(--border-color)", opacity: 0.6 }}
+      />
+
+      <section className="mt-8 space-y-4">
+        <div>
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.16em]"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Suscripción
+          </p>
+          <h2
+            className="mt-1 text-lg font-semibold"
+            style={{ color: "var(--text-main)" }}
+          >
+            Pago y suscripción
+          </h2>
+        </div>
+
+        {cardStatusParam === "ok" ? (
+          <Notice tone="success" title="Tarjeta actualizada correctamente." />
+        ) : null}
+        {cardStatusParam === "error" ? (
+          <Notice
+            tone="danger"
+            title="No pudimos actualizar tu tarjeta."
+            description="Intenta nuevamente o escríbenos a soporte@orbyx.cl."
+          />
+        ) : null}
+
+        <Panel
         title="Mi suscripción"
         description="Plan, ciclo de cobro y estado de tu suscripción con Cargo Automático."
       >
@@ -980,8 +1003,33 @@ function BillingPageInner() {
           </button>
         </Panel>
       ) : null}
+      </section>
 
-      {hasAnyExcess ? (
+      <div
+        className="mt-10 border-t"
+        style={{ borderColor: "var(--border-color)", opacity: 0.6 }}
+      />
+
+      <section className="mt-8 space-y-4">
+        <div>
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.16em]"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Uso del plan
+          </p>
+          <h2
+            className="mt-1 text-lg font-semibold"
+            style={{ color: "var(--text-main)" }}
+          >
+            Ajustes por límite de plan
+          </h2>
+        </div>
+
+        {saveError ? <Notice tone="danger" title={saveError} /> : null}
+        {saveOk ? <Notice tone="success" title={saveOk} /> : null}
+
+        {hasAnyExcess ? (
         <Notice
           tone={isUrgentAdjustment ? "danger" : "limit"}
           title="Tu negocio está sobre el límite del plan."
@@ -1193,6 +1241,7 @@ function BillingPageInner() {
             </div>
           )}
         </Panel>
+      </section>
       </section>
 
       {cancelModalOpen ? (
