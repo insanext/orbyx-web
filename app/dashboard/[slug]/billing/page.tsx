@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { CreditCard } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
+import { AddonManager } from "../../../../components/addons/AddonManager";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -64,7 +65,7 @@ type NoticeTone =
   | "danger"
   | "neutral";
 
-type BillingTabId = "suscripcion" | "historial" | "ajustes";
+type BillingTabId = "suscripcion" | "addons" | "historial" | "ajustes";
 
 const PLAN_LABELS: Record<string, string> = {
   pro: "Pro",
@@ -542,6 +543,7 @@ function BillingPageInner() {
 
   const billingTabs: Array<{ id: BillingTabId; label: string }> = [
     { id: "suscripcion", label: "Suscripción" },
+    { id: "addons", label: "Add-ons" },
     { id: "historial", label: "Historial de pagos" },
     { id: "ajustes", label: "Ajustes por límite de plan" },
   ];
@@ -1153,6 +1155,10 @@ function BillingPageInner() {
         </Panel>
       ) : null}
       </section>
+      ) : null}
+
+      {activeTab === "addons" ? (
+        <AddonManager tenantId={tenantId} />
       ) : null}
 
       {activeTab === "historial" ? (

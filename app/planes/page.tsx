@@ -330,27 +330,18 @@ function PlanesPageContent() {
   const [downgradeChecking, setDowngradeChecking] = useState(false);
   const [downgradeBlockError, setDowngradeBlockError] = useState("");
 
-  // Add-ons reales del backend (solo con tenant_id; la página pública usa estado local)
+  // Add-ons reales del backend (solo con tenant_id; la página pública usa
+  // estado local). Con tenant_id esto es SOLO LECTURA — sirve para que el
+  // resumen de "Total mensual" al cambiar de plan incluya el costo de los
+  // add-ons que el tenant ya tiene contratados. La compra/gestión real de
+  // add-ons (edición + cobro) vive en components/addons/AddonManager.tsx,
+  // montado en el dashboard de Facturación y pago — no aquí.
   const [serverAddonAvailability, setServerAddonAvailability] = useState<Record<
     string,
     boolean
   > | null>(null);
   const [addonsLoading, setAddonsLoading] = useState(false);
   const [addonError, setAddonError] = useState("");
-
-  // Snapshot de lo que el tenant tiene realmente activo (quantity + unit_price
-  // por addon), tal como vino del backend en el ultimo refreshAddons(). Los
-  // botones +/- solo tocan el estado local (staffExtras, etc.) — se compara
-  // contra este baseline para saber que cambio realmente y cuanto cobrar.
-  const [addonBaseline, setAddonBaseline] = useState<
-    Partial<Record<ExtraKey, { quantity: number; unit_price: number | null }>>
-  >({});
-
-  const [addonConfirmModalOpen, setAddonConfirmModalOpen] = useState(false);
-  const [addonSubmitting, setAddonSubmitting] = useState(false);
-  const [addonChangeResults, setAddonChangeResults] = useState<
-    { key: ExtraKey; label: string; ok: boolean; error?: string }[]
-  >([]);
 
   useEffect(() => {
     if (hasBillingContext && initialPlan) {
@@ -537,24 +528,13 @@ function PlanesPageContent() {
       );
 
       const counts: Record<string, number> = {};
-      const baseline: Partial<
-        Record<ExtraKey, { quantity: number; unit_price: number | null }>
-      > = {};
       (data?.active_addons || []).forEach(
-        (row: { addon_key?: string; quantity?: number; unit_price?: number | null }) => {
-          if (!row?.addon_key) return;
-          const qty = Number(row.quantity) || 0;
-          counts[row.addon_key] = qty;
-          baseline[row.addon_key as ExtraKey] = {
-            quantity: qty,
-            unit_price: row.unit_price != null ? Number(row.unit_price) : null,
-          };
+        (row: { addon_key?: string; quantity?: number }) => {
+          if (row?.addon_key) counts[row.addon_key] = Number(row.quantity) || 0;
         }
       );
 
       setServerAddonAvailability(availability);
-      setAddonBaseline(baseline);
-      setAddonChangeResults([]);
       setStaffExtras(counts.staff || 0);
       setSucursalExtras(counts.sucursal || 0);
       setWaConfirmacionExtras(counts.wa_confirmacion || 0);
@@ -594,19 +574,17 @@ function PlanesPageContent() {
     setDowngradeModalOpen(false);
   }
 
-  // Los botones +/- SOLO tocan estado local — nunca cobran ni tocan el
-  // backend. El cobro real solo ocurre al confirmar en el modal de
-  // "Confirmar y cobrar add-ons" (handleConfirmAddonCharge).
+  // Los botones +/- SOLO tocan estado local — solo se usan en la
+  // simulación pública (sin tenant_id). Para un tenant existente, la
+  // compra/gestión real de add-ons vive en AddonManager (dashboard de
+  // Facturación y pago), no aquí.
   function increaseExtra(extraKey: ExtraKey) {
     if (!selectedPlan.extras.includes(extraKey)) return;
-    if (addonSubmitting) return;
-
     setExtraCount(extraKey, extraValue(extraKey) + 1);
   }
 
   function decreaseExtra(extraKey: ExtraKey) {
     if (!selectedPlan.extras.includes(extraKey)) return;
-    if (addonSubmitting) return;
 
     const current = extraValue(extraKey);
     if (current === 0) return;
@@ -905,143 +883,6 @@ function PlanesPageContent() {
       return count === 1 ? "pack" : "packs";
     }
     return count === 1 ? "unidad" : "unidades";
-  }
-
-  // Compara el estado local (lo que el usuario dejó con +/-) contra el
-  // baseline real del tenant (lo que ya tiene contratado y pagado) para
-  // saber que hay que persistir/cobrar al confirmar, y cuanto se cobrará
-  // hoy — replica exactamente la logica de precio del backend:
-  // add-on nuevo (baseline 0) = precio base x cantidad; add-on ya activo
-  // que sube = unit_price ya guardado x el incremento; el que baja no cobra.
-  const addonPendingChanges = useMemo(() => {
-    const keys: ExtraKey[] = [
-      "wa_confirmacion",
-      "campanas_wa",
-      "ia_wa",
-      "emails_campana",
-      "staff",
-      "sucursal",
-      "group_capacity",
-    ];
-
-    const changes: {
-      key: ExtraKey;
-      label: string;
-      baselineQty: number;
-      newQty: number;
-      isNew: boolean;
-      chargeAmount: number;
-    }[] = [];
-
-    keys.forEach((key) => {
-      const baselineQty = addonBaseline[key]?.quantity || 0;
-      const newQty = extraValue(key);
-
-      if (newQty === baselineQty) return;
-
-      const isNew = baselineQty === 0;
-      const config = extraConfig[key];
-
-      let chargeAmount = 0;
-      if (newQty > baselineQty) {
-        const increment = newQty - baselineQty;
-        const unitPrice = isNew
-          ? config.unitPrice
-          : addonBaseline[key]?.unit_price ?? config.unitPrice;
-        chargeAmount = unitPrice * increment;
-      }
-
-      changes.push({ key, label: config.title, baselineQty, newQty, isNew, chargeAmount });
-    });
-
-    return changes;
-  }, [
-    addonBaseline,
-    staffExtras,
-    sucursalExtras,
-    waConfirmacionExtras,
-    campanaWaExtras,
-    iaWaExtras,
-    emailsCampanaExtras,
-    groupCapacityExtras,
-  ]);
-
-  const hasPendingAddonChanges = addonPendingChanges.length > 0;
-  const addonChargeTotal = addonPendingChanges.reduce(
-    (sum, change) => sum + change.chargeAmount,
-    0
-  );
-
-  // Solo aca se toca el backend para add-ons: se llama uno por uno y se
-  // reporta individualmente que salio bien y que no, sin asumir nada.
-  async function handleConfirmAddonCharge() {
-    if (!tenantId || addonPendingChanges.length === 0) return;
-
-    setAddonSubmitting(true);
-    setAddonError("");
-    setAddonChangeResults([]);
-
-    const results: { key: ExtraKey; label: string; ok: boolean; error?: string }[] = [];
-
-    for (const change of addonPendingChanges) {
-      try {
-        if (change.isNew) {
-          const res = await apiFetch(`${BACKEND_URL}/billing/addons/activate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              tenant_id: tenantId,
-              addon_key: change.key,
-              quantity: change.newQty,
-              billing_cycle: billingCycle,
-            }),
-          });
-          const data = await res.json();
-
-          if (!res.ok) {
-            if (res.status === 403 && data?.upgrade_required) {
-              throw new Error("Este add-on requiere un plan superior");
-            }
-            throw new Error(data?.error || "No se pudo activar el add-on");
-          }
-        } else {
-          const res = await apiFetch(`${BACKEND_URL}/billing/addons/quantity`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              tenant_id: tenantId,
-              addon_key: change.key,
-              quantity: change.newQty,
-            }),
-          });
-          const data = await res.json();
-
-          if (!res.ok) {
-            throw new Error(data?.error || "No se pudo actualizar el add-on");
-          }
-        }
-
-        results.push({ key: change.key, label: change.label, ok: true });
-      } catch (error: unknown) {
-        results.push({
-          key: change.key,
-          label: change.label,
-          ok: false,
-          error: error instanceof Error ? error.message : "Error desconocido",
-        });
-      }
-    }
-
-    setAddonChangeResults(results);
-    setAddonSubmitting(false);
-
-    // Refresca siempre, haya habido fallos parciales o no: el estado local
-    // debe reflejar lo que realmente quedó persistido en el servidor.
-    await refreshAddons();
-
-    if (!results.some((result) => !result.ok)) {
-      setAddonConfirmModalOpen(false);
-    }
   }
 
   return (
@@ -1545,7 +1386,71 @@ function PlanesPageContent() {
                   </div>
                 ) : null}
 
-                {isProSelected ? (
+                {hasBillingContext ? (
+                  <div className="mt-5">
+                    {extraItems.length > 0 ? (
+                      <>
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-sm font-semibold text-white">
+                            Tus add-ons actuales
+                          </span>
+                          <span className="rounded-full bg-violet-500/25 px-3 py-1 text-xs font-bold text-violet-100">
+                            {selectedAddonsCount}
+                          </span>
+                        </div>
+                        <div className="space-y-2.5">
+                          {extraItems.map((item) => (
+                            <div
+                              key={item.label}
+                              className="rounded-xl border border-white/8 bg-white/[0.035] p-3"
+                            >
+                              <div className="flex items-start gap-3">
+                                <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${extraConfig[item.key].iconClass}`}>
+                                  {extraConfig[item.key].icon}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-white">
+                                        {extraConfig[item.key].title}
+                                      </p>
+                                      <p className="mt-1 text-xs text-slate-400">
+                                        {item.count} {extraUnitLabel(item.key, item.count)}
+                                      </p>
+                                    </div>
+                                    <div className="shrink-0 text-right">
+                                      <p className="mt-2 text-xs text-slate-300">Total:</p>
+                                      <p className="text-sm font-semibold text-white">
+                                        {formatCLP(item.amount)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+
+                    <div className="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-100">
+                      {slug ? (
+                        <>
+                          Los add-ons ahora se gestionan desde{" "}
+                          <Link
+                            href={`/dashboard/${slug}/billing`}
+                            className="font-semibold underline"
+                          >
+                            Facturación y pago → Add-ons
+                          </Link>
+                          .
+                        </>
+                      ) : (
+                        "Los add-ons ahora se gestionan desde Facturación y pago → Add-ons en tu dashboard."
+                      )}
+                    </div>
+                  </div>
+                ) : isProSelected ? (
                   <div className="mt-5 rounded-xl border border-cyan-300/15 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-100">
                     Sube a Premium para agregar extras a tu plan
                   </div>
@@ -1626,7 +1531,6 @@ function PlanesPageContent() {
                                   <button
                                     type="button"
                                     onClick={() => decreaseExtra(item.key)}
-                                    disabled={addonSubmitting}
                                     className="inline-flex h-11 w-11 items-center justify-center text-slate-200 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-40 md:h-8 md:w-8"
                                     aria-label={`Quitar ${extraConfig[item.key].title}`}
                                   >
@@ -1638,7 +1542,6 @@ function PlanesPageContent() {
                                   <button
                                     type="button"
                                     onClick={() => increaseExtra(item.key)}
-                                    disabled={addonSubmitting}
                                     className="inline-flex h-11 w-11 items-center justify-center text-slate-200 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-40 md:h-8 md:w-8"
                                     aria-label={`Agregar ${extraConfig[item.key].title}`}
                                   >
@@ -1667,7 +1570,7 @@ function PlanesPageContent() {
                               <button
                                 type="button"
                                 onClick={() => increaseExtra(extraKey)}
-                                disabled={addonSubmitting || addonsLoading}
+                                disabled={addonsLoading}
                                 className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.025] px-3 py-2 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/8 disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 <span className="flex items-center gap-2">
@@ -1693,20 +1596,6 @@ function PlanesPageContent() {
                         })}
                       </div>
                     </div>
-                  ) : null}
-
-                  {tenantId && hasPendingAddonChanges ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddonChangeResults([]);
-                        setAddonConfirmModalOpen(true);
-                      }}
-                      disabled={addonSubmitting}
-                      className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 px-5 text-sm font-bold text-cyan-100 transition hover:bg-cyan-400/25 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Confirmar y cobrar add-ons
-                    </button>
                   ) : null}
                 </div>
                 )}
@@ -1925,121 +1814,6 @@ function PlanesPageContent() {
         </div>
       ) : null}
 
-      {addonConfirmModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4">
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-cyan-300/25 bg-[#06101d] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.5)] sm:rounded-2xl">
-            {addonChangeResults.length > 0 ? (
-              <>
-                <h3 className="text-lg font-semibold text-white">
-                  Resultado del cobro de add-ons
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  {addonChangeResults.every((result) => result.ok)
-                    ? "Todos los add-ons se aplicaron y cobraron correctamente."
-                    : "Algunos add-ons no se pudieron aplicar. Revisa el detalle abajo — los que fallaron no se cobraron."}
-                </p>
-
-                <ul className="mt-4 space-y-2">
-                  {addonChangeResults.map((result) => (
-                    <li
-                      key={result.key}
-                      className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-sm"
-                    >
-                      <span className={result.ok ? "text-emerald-300" : "text-rose-300"}>
-                        {result.ok ? "✓" : "✗"}
-                      </span>{" "}
-                      <span className="text-white">{result.label}</span>
-                      {!result.ok && result.error ? (
-                        <p className="mt-1 text-xs text-rose-200">{result.error}</p>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-5 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setAddonConfirmModalOpen(false)}
-                    className="inline-flex h-11 items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/8"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold text-white">
-                  Confirmar cobro de add-ons
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Estos cambios se aplicarán y cobrarán de inmediato a tu tarjeta registrada.
-                </p>
-
-                <ul className="mt-4 space-y-2">
-                  {addonPendingChanges.map((change) => (
-                    <li
-                      key={change.key}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-sm"
-                    >
-                      <span className="text-white">
-                        {change.label}{" "}
-                        <span className="text-slate-400">
-                          ({change.baselineQty} → {change.newQty})
-                        </span>
-                      </span>
-                      <span
-                        className={
-                          change.chargeAmount > 0
-                            ? "font-semibold text-cyan-200"
-                            : "text-slate-400"
-                        }
-                      >
-                        {change.chargeAmount > 0 ? formatCLP(change.chargeAmount) : "Sin costo"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
-                  <span className="text-sm font-semibold text-white">Total a cobrar hoy</span>
-                  <span className="text-lg font-black text-cyan-200">
-                    {formatCLP(addonChargeTotal)}
-                  </span>
-                </div>
-
-                <p className="mt-3 text-xs leading-5 text-amber-200">
-                  Se cobrará {formatCLP(addonChargeTotal)} ahora mismo a tu tarjeta registrada.
-                </p>
-
-                {addonError ? (
-                  <div className="mt-3 rounded-xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-                    {addonError}
-                  </div>
-                ) : null}
-
-                <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setAddonConfirmModalOpen(false)}
-                    disabled={addonSubmitting}
-                    className="inline-flex h-11 items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={addonSubmitting}
-                    onClick={handleConfirmAddonCharge}
-                    className="inline-flex h-11 items-center justify-center rounded-lg bg-cyan-400 px-5 text-sm font-black text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {addonSubmitting ? "Cobrando..." : "Confirmar cobro"}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      ) : null}
     </main>
   );
 }
