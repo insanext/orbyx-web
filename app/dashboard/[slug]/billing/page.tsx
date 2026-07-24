@@ -64,6 +64,8 @@ type NoticeTone =
   | "danger"
   | "neutral";
 
+type BillingTabId = "suscripcion" | "historial" | "ajustes";
+
 const PLAN_LABELS: Record<string, string> = {
   pro: "Pro",
   premium: "Premium",
@@ -477,6 +479,14 @@ function BillingPageInner() {
   const [canceling, setCanceling] = useState(false);
   const [cancelError, setCancelError] = useState("");
 
+  const [activeTab, setActiveTab] = useState<BillingTabId>("suscripcion");
+
+  const billingTabs: Array<{ id: BillingTabId; label: string }> = [
+    { id: "suscripcion", label: "Suscripción" },
+    { id: "historial", label: "Historial de pagos" },
+    { id: "ajustes", label: "Ajustes por límite de plan" },
+  ];
+
   async function loadSubscriptionStatus(currentTenantId: string) {
     try {
       setLoadingSubscription(true);
@@ -710,7 +720,7 @@ function BillingPageInner() {
     remainingDaysNumber <= 2;
 
   return (
-    <div className="pb-6">
+    <div className="space-y-4 pb-6">
       <section
         className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
         style={{
@@ -860,18 +870,49 @@ function BillingPageInner() {
         </div>
       </section>
 
-      {loadError ? (
-        <div className="mt-6">
-          <Notice tone="danger" title={loadError} />
+      {loadError ? <Notice tone="danger" title={loadError} /> : null}
+
+      <nav
+        className="-mx-1 overflow-x-auto px-1"
+        aria-label="Secciones de facturación y pago"
+      >
+        <div
+          className="flex min-w-max gap-2 rounded-[20px] border p-1.5 shadow-sm backdrop-blur"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+          }}
+        >
+          {billingTabs.map((item) => {
+            const active = activeTab === item.id;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveTab(item.id)}
+                aria-current={active ? "page" : undefined}
+                className="cursor-pointer whitespace-nowrap rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                style={{
+                  borderColor: active ? "rgba(37,99,235,0.36)" : "transparent",
+                  background: active
+                    ? "linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.07))"
+                    : "transparent",
+                  color: active ? "var(--text-main)" : "var(--text-muted)",
+                  boxShadow: active
+                    ? "inset 0 0 0 1px rgba(37,99,235,0.22)"
+                    : "none",
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </div>
-      ) : null}
+      </nav>
 
-      <div
-        className="mt-10 border-t"
-        style={{ borderColor: "var(--border-color)", opacity: 0.6 }}
-      />
-
-      <section className="mt-8 space-y-4">
+      {activeTab === "suscripcion" ? (
+      <section className="space-y-4">
         <div>
           <p
             className="text-xs font-semibold uppercase tracking-[0.16em]"
@@ -1004,13 +1045,48 @@ function BillingPageInner() {
         </Panel>
       ) : null}
       </section>
+      ) : null}
 
-      <div
-        className="mt-10 border-t"
-        style={{ borderColor: "var(--border-color)", opacity: 0.6 }}
-      />
+      {activeTab === "historial" ? (
+      <section className="space-y-4">
+        <div>
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.16em]"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Historial
+          </p>
+          <h2
+            className="mt-1 text-lg font-semibold"
+            style={{ color: "var(--text-main)" }}
+          >
+            Historial de pagos
+          </h2>
+        </div>
 
-      <section className="mt-8 space-y-4">
+        <Panel
+          title="Cargos de tu suscripción"
+          description="Cada cobro automático de Cargo Automático quedará listado aquí."
+        >
+          <div
+            className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+              color: "var(--text-muted)",
+            }}
+          >
+            Aún no tienes pagos registrados.
+          </div>
+          <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
+            Próximamente podrás descargar tu boleta o factura electrónica desde aquí.
+          </p>
+        </Panel>
+      </section>
+      ) : null}
+
+      {activeTab === "ajustes" ? (
+      <section className="space-y-4">
         <div>
           <p
             className="text-xs font-semibold uppercase tracking-[0.16em]"
@@ -1243,6 +1319,7 @@ function BillingPageInner() {
         </Panel>
       </section>
       </section>
+      ) : null}
 
       {cancelModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
