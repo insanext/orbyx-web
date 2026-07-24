@@ -98,6 +98,13 @@ type SubscriptionStatusResponse =
       flow_subscription_id: string | null;
     };
 
+type PaymentHistoryCharge = {
+  date: string | null;
+  amount: number | null;
+  status: string;
+  flowOrder: string | number | null;
+};
+
 const PLAN_CAPS: Record<
   string,
   { max_staff: number; max_services: number; max_branches: number }
@@ -516,6 +523,39 @@ function BillingPageInner() {
   useEffect(() => {
     if (!tenantId) return;
     loadSubscriptionStatus(tenantId);
+  }, [tenantId]);
+
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryCharge[]>([]);
+  const [loadingPaymentHistory, setLoadingPaymentHistory] = useState(true);
+  const [paymentHistoryError, setPaymentHistoryError] = useState("");
+
+  async function loadPaymentHistory(currentTenantId: string) {
+    try {
+      setLoadingPaymentHistory(true);
+      setPaymentHistoryError("");
+
+      const res = await apiFetch(
+        `${BACKEND_URL}/billing/flow/payment-history?tenant_id=${currentTenantId}`
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cargar el historial de pagos");
+      }
+
+      setPaymentHistory(Array.isArray(data?.charges) ? data.charges : []);
+    } catch (error: unknown) {
+      setPaymentHistoryError(
+        error instanceof Error ? error.message : "No se pudo cargar el historial de pagos"
+      );
+    } finally {
+      setLoadingPaymentHistory(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!tenantId) return;
+    loadPaymentHistory(tenantId);
   }, [tenantId]);
 
   async function handleChangeCard() {
@@ -1068,16 +1108,44 @@ function BillingPageInner() {
           title="Cargos de tu suscripción"
           description="Cada cobro automático de Cargo Automático quedará listado aquí."
         >
-          <div
-            className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm"
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-soft)",
-              color: "var(--text-muted)",
-            }}
-          >
-            Aún no tienes pagos registrados.
-          </div>
+          {loadingPaymentHistory ? (
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Cargando...
+            </p>
+          ) : paymentHistoryError ? (
+            <Notice tone="danger" title={paymentHistoryError} />
+          ) : paymentHistory.length === 0 ? (
+            <div
+              className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
+              Aún no tienes pagos registrados.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {paymentHistory.map((charge, index) => (
+                <div
+                  key={charge.flowOrder ?? index}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <span>{formatDate(charge.date)}</span>
+                  <span className="font-semibold">
+                    {charge.amount != null ? formatCLP(charge.amount) : "—"}
+                  </span>
+                  <span style={{ color: "var(--text-muted)" }}>{charge.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
             Próximamente podrás descargar tu boleta o factura electrónica desde aquí.
           </p>
