@@ -103,7 +103,14 @@ type PaymentHistoryCharge = {
   amount: number | null;
   status: string;
   flowOrder: string | number | null;
+  subject: string | null;
 };
+
+function compareChargeDateDesc(a: PaymentHistoryCharge, b: PaymentHistoryCharge) {
+  const aTime = a.date ? new Date(a.date).getTime() : 0;
+  const bTime = b.date ? new Date(b.date).getTime() : 0;
+  return bTime - aTime;
+}
 
 const PLAN_CAPS: Record<
   string,
@@ -254,6 +261,51 @@ function Notice({
         </p>
       ) : null}
       {children ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
+}
+
+function ChargeList({
+  charges,
+  emptyMessage,
+}: {
+  charges: PaymentHistoryCharge[];
+  emptyMessage: string;
+}) {
+  if (charges.length === 0) {
+    return (
+      <div
+        className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-soft)",
+          color: "var(--text-muted)",
+        }}
+      >
+        {emptyMessage}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {charges.map((charge, index) => (
+        <div
+          key={charge.flowOrder ?? index}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+            color: "var(--text-main)",
+          }}
+        >
+          <span>{formatDate(charge.date)}</span>
+          <span className="font-semibold">
+            {charge.amount != null ? formatCLP(charge.amount) : "—"}
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>{charge.status}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -557,6 +609,22 @@ function BillingPageInner() {
     if (!tenantId) return;
     loadPaymentHistory(tenantId);
   }, [tenantId]);
+
+  const subscriptionCharges = useMemo(
+    () =>
+      paymentHistory
+        .filter((charge) => !charge.subject || !charge.subject.startsWith("Add-on:"))
+        .sort(compareChargeDateDesc),
+    [paymentHistory]
+  );
+
+  const addonCharges = useMemo(
+    () =>
+      paymentHistory
+        .filter((charge) => charge.subject && charge.subject.startsWith("Add-on:"))
+        .sort(compareChargeDateDesc),
+    [paymentHistory]
+  );
 
   async function handleChangeCard() {
     try {
@@ -1114,41 +1182,30 @@ function BillingPageInner() {
             </p>
           ) : paymentHistoryError ? (
             <Notice tone="danger" title={paymentHistoryError} />
-          ) : paymentHistory.length === 0 ? (
-            <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-soft)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Aún no tienes pagos registrados.
-            </div>
           ) : (
-            <div className="space-y-3">
-              {paymentHistory.map((charge, index) => (
-                <div
-                  key={charge.flowOrder ?? index}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm"
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  <span>{formatDate(charge.date)}</span>
-                  <span className="font-semibold">
-                    {charge.amount != null ? formatCLP(charge.amount) : "—"}
-                  </span>
-                  <span style={{ color: "var(--text-muted)" }}>{charge.status}</span>
-                </div>
-              ))}
-            </div>
+            <ChargeList
+              charges={subscriptionCharges}
+              emptyMessage="Aún no tienes pagos registrados."
+            />
           )}
-          <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
-            Próximamente podrás descargar tu boleta o factura electrónica desde aquí.
-          </p>
+        </Panel>
+
+        <Panel
+          title="Cargos de add-ons"
+          description="Cada cobro de un add-on contratado quedará listado aquí."
+        >
+          {loadingPaymentHistory ? (
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Cargando...
+            </p>
+          ) : paymentHistoryError ? (
+            <Notice tone="danger" title={paymentHistoryError} />
+          ) : (
+            <ChargeList
+              charges={addonCharges}
+              emptyMessage="Aún no tienes add-ons activos."
+            />
+          )}
         </Panel>
       </section>
       ) : null}
