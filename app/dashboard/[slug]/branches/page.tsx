@@ -86,14 +86,6 @@ const PLAN_LABELS: Record<string, string> = {
   platinum: "Platinum",
 };
 
-const PLAN_CAPS: Record<string, { max_branches: number }> = {
-  starter: { max_branches: 1 },
-  pro: { max_branches: 1 },
-  premium: { max_branches: 2 },
-  vip: { max_branches: 3 },
-  platinum: { max_branches: 10 },
-};
-
 const NEXT_PLAN_BY_CURRENT: Record<string, string | null> = {
   starter: "premium",
   pro: "premium",
@@ -332,6 +324,11 @@ export default function BranchesPage() {
   const [businessName, setBusinessName] = useState("");
   const [globalAddress, setGlobalAddress] = useState("");
   const [plan, setPlan] = useState("pro");
+  // Límite real de sucursales (base del plan + add-on "sucursal" activo),
+  // desde GET /billing/addons — mismo endpoint que ya usa AddonManager.tsx.
+  // null mientras carga o si falló el fetch; no bloquea creación en ese
+  // estado, el backend sigue siendo la autoridad real.
+  const [maxBranches, setMaxBranches] = useState<number | null>(null);
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [horariosAyudaOpen, setHorariosAyudaOpen] = useState(false);
@@ -695,15 +692,13 @@ export default function BranchesPage() {
     return branches.filter((branch) => branch.is_active === false).length;
   }, [branches]);
 
-  const caps = PLAN_CAPS[plan] || PLAN_CAPS.pro;
-  const maxBranches = caps.max_branches;
-
-  const reachedLimit = activeBranchesCount >= maxBranches;
-  const excessBranches = Math.max(0, activeBranchesCount - maxBranches);
+  const reachedLimit = maxBranches != null && activeBranchesCount >= maxBranches;
+  const excessBranches =
+    maxBranches != null ? Math.max(0, activeBranchesCount - maxBranches) : 0;
   const hasExcess = excessBranches > 0;
 
   useEffect(() => {
-    if (!hasExcess) {
+    if (!hasExcess || maxBranches == null) {
       setSelectedBranchesToKeep([]);
       return;
     }
@@ -712,6 +707,31 @@ export default function BranchesPage() {
     const allowedIds = activeBranches.slice(0, maxBranches).map((b) => b.id);
     setSelectedBranchesToKeep(allowedIds);
   }, [hasExcess, branches, maxBranches]);
+
+  // Mismo endpoint que ya usa AddonManager.tsx — reemplaza la copia local
+  // hardcodeada que existía antes (sin conocimiento del add-on "+1
+  // Sucursal" comprado).
+  useEffect(() => {
+    if (!tenantId) return;
+
+    async function loadBranchesLimit() {
+      try {
+        const res = await apiFetch(
+          `${BACKEND_URL}/billing/addons?tenant_id=${tenantId}`
+        );
+        const data = await res.json();
+
+        if (res.ok && data?.limits?.sucursales?.total != null) {
+          setMaxBranches(Number(data.limits.sucursales.total));
+        }
+      } catch {
+        // Silencioso: si falla, el gate de límite queda sin cargar (no
+        // bloquea creación) hasta que un refresh lo consiga.
+      }
+    }
+
+    loadBranchesLimit();
+  }, [tenantId]);
 
   async function handleCreateBranch() {
     try {
@@ -1118,11 +1138,11 @@ export default function BranchesPage() {
                 </div>
                 <div className="rounded-lg border px-3 py-2.5 flex flex-col gap-1" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
                   <p className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Disponibles en plan</p>
-                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{Math.max(maxBranches - activeBranchesCount, 0)} de {maxBranches}</p>
+                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{maxBranches == null ? "..." : `${Math.max(maxBranches - activeBranchesCount, 0)} de ${maxBranches}`}</p>
                 </div>
                 <div className="rounded-lg border px-3 py-2.5 flex flex-col gap-1" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
                   <p className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Plan actual</p>
-                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{planLabel} · {activeBranchesCount}/{maxBranches}</p>
+                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{planLabel} · {activeBranchesCount}/{maxBranches ?? "..."}</p>
                 </div>
               </div>
 
@@ -2116,7 +2136,7 @@ export default function BranchesPage() {
                     className="mt-2 text-sm"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    Estás usando {activeBranchesCount} de {maxBranches} sucursales
+                    Estás usando {activeBranchesCount} de {maxBranches ?? "..."} sucursales
                     disponibles.
                   </p>
                 </div>

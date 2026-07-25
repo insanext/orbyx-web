@@ -161,14 +161,6 @@ const PLAN_LABELS: Record<PlanSlug, string> = {
   platinum: "Platinum",
 };
 
-const PLAN_EMAIL_LIMITS: Record<PlanSlug, number> = {
-  starter: 200,
-  pro: 200,
-  premium: 1000,
-  vip: 2000,
-  platinum: 5000,
-};
-
 const PLAN_WHATSAPP_LIMITS: Record<PlanSlug, number> = {
   starter: 0,
   pro: 0,
@@ -185,7 +177,14 @@ const PLAN_IMAGE_LIMITS: Record<PlanSlug, number> = {
   platinum: 100,
 };
 
-function getCampaignChannelLimit(plan: PlanSlug, channel: CampaignChannel) {
+// emailLimit: límite real (base + add-on) de GET /billing/addons, o null
+// mientras carga — en ese caso se muestra "Cargando..." en vez de un
+// número desactualizado.
+function getCampaignChannelLimit(
+  plan: PlanSlug,
+  channel: CampaignChannel,
+  emailLimit: number | null
+) {
   if (channel === "whatsapp") {
     const limit = PLAN_WHATSAPP_LIMITS[plan] ?? 0;
 
@@ -202,12 +201,13 @@ function getCampaignChannelLimit(plan: PlanSlug, channel: CampaignChannel) {
     };
   }
 
-  const limit = PLAN_EMAIL_LIMITS[plan] ?? 200;
+  const limit = emailLimit ?? 0;
 
   return {
     title: "Límite Email",
-    value: `${limit.toLocaleString("es-CL")} / mes`,
-    helper: "Máximo de contactos por campaña email.",
+    value:
+      emailLimit != null ? `${limit.toLocaleString("es-CL")} / mes` : "Cargando...",
+    helper: "Máximo de contactos por campaña email (incluye add-ons activos).",
     badge: "Incluido",
     available: true,
     limit,
@@ -1451,7 +1451,17 @@ export default function CampaignsPage() {
     "";
 
   const [businessName, setBusinessName] = useState("Orbyx");
+  const [tenantId, setTenantId] = useState("");
   const [plan, setPlan] = useState<PlanSlug>("starter");
+  // Límite y uso real de emails_campana (base del plan + add-on "Pack
+  // emails campaña" activo, más lo ya consumido este mes), desde
+  // GET /billing/addons — mismo endpoint que ya usa AddonManager.tsx.
+  // null mientras carga o si falló el fetch.
+  const [emailUsage, setEmailUsage] = useState<{
+    total: number;
+    used: number;
+    remaining: number;
+  } | null>(null);
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [segment, setSegment] = useState<CustomerSegment>("inactive");
@@ -1581,8 +1591,8 @@ export default function CampaignsPage() {
     "inline-flex h-12 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
   const channelLimitInfo = useMemo(
-    () => getCampaignChannelLimit(plan, channel),
-    [plan, channel]
+    () => getCampaignChannelLimit(plan, channel, emailUsage?.total ?? null),
+    [plan, channel, emailUsage]
   );
   const planLimit = channelLimitInfo.limit;
   const planImageLimit = PLAN_IMAGE_LIMITS[plan];
@@ -1681,6 +1691,7 @@ export default function CampaignsPage() {
           const normalizedPlan = normalizePlan(data.business.plan_slug);
           setPlan(normalizedPlan);
           setBusinessName(data.business.name || "Orbyx");
+          setTenantId(data.business.id);
         }
       } catch {
         //
@@ -1691,6 +1702,35 @@ export default function CampaignsPage() {
       loadBusinessPlan();
     }
   }, [slug]);
+
+  // Límite real de emails_campana = base del plan + add-on activo. Antes
+  // se usaba PLAN_EMAIL_LIMITS[plan], una copia local que ignoraba por
+  // completo el add-on "Pack emails campaña" comprado.
+  useEffect(() => {
+    if (!tenantId) return;
+
+    async function loadEmailLimit() {
+      try {
+        const res = await apiFetch(
+          `${BACKEND_URL}/billing/addons?tenant_id=${tenantId}`
+        );
+        const data = await res.json();
+
+        if (res.ok && data?.limits?.emails_campana) {
+          setEmailUsage({
+            total: Number(data.limits.emails_campana.total) || 0,
+            used: Number(data.limits.emails_campana.used) || 0,
+            remaining: Number(data.limits.emails_campana.remaining) || 0,
+          });
+        }
+      } catch {
+        // Silencioso: si falla, la stat card queda en "Cargando..." hasta
+        // el próximo intento; no bloquea el resto del módulo.
+      }
+    }
+
+    loadEmailLimit();
+  }, [tenantId]);
 
   useEffect(() => {
     if (availableLimitOptions.length === 0) {
@@ -2222,6 +2262,11 @@ export default function CampaignsPage() {
     return "Envíos realizados";
   }, [filteredHistory]);
 
+  // Aproximación client-side (suma sent_count del historial visible este
+  // mes). Se usa como fallback para WhatsApp, que todavía no trackea uso
+  // real en el backend. Para email, tenant_monthly_usage (expuesto vía
+  // emailUsage.used más abajo) es la fuente real — puede no coincidir
+  // exacto con esto si el historial cargado no cubre todo el mes.
   const currentMonthSent = useMemo(() => {
     const now = new Date();
     const y = now.getFullYear(), m = now.getMonth();
@@ -2232,6 +2277,17 @@ export default function CampaignsPage() {
       })
       .reduce((sum, h) => sum + Number(h.sent_count || 0), 0);
   }, [history, channel]);
+
+  // Para email, usa el consumo/saldo real que ya trackea el backend
+  // (tenant_monthly_usage, vía checkMonthlyUsage/incrementMonthlyUsage —
+  // el mismo contador que ahora bloquea el envío real). Para WhatsApp,
+  // sin integración real todavía, se mantiene la aproximación local.
+  const displaySent =
+    channel === "email" && emailUsage != null ? emailUsage.used : currentMonthSent;
+  const displayRemaining =
+    channel === "email" && emailUsage != null
+      ? emailUsage.remaining
+      : Math.max(0, channelLimitInfo.limit - currentMonthSent);
 
   const selectedSegmentLabel =
     SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Segmento";
@@ -2809,7 +2865,7 @@ export default function CampaignsPage() {
               className="text-sm font-bold mt-0.5"
               style={{ color: "var(--text-main)" }}
             >
-              {currentMonthSent}
+              {displaySent}
             </p>
           </div>
 
@@ -2830,7 +2886,7 @@ export default function CampaignsPage() {
               className="text-sm font-bold mt-0.5"
               style={{ color: "var(--text-main)" }}
             >
-              {Math.max(0, channelLimitInfo.limit - currentMonthSent)}
+              {displayRemaining}
             </p>
           </div>
 

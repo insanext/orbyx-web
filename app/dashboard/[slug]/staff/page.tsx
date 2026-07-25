@@ -464,6 +464,11 @@ const [photoUrl, setPhotoUrl] = useState("");
   const [horariosAyudaOpen, setHorariosAyudaOpen] = useState(false);
 
   const [plan, setPlan] = useState("pro");
+  // Límite real de staff (base del plan + add-on "staff" activo), desde
+  // GET /billing/addons. null mientras carga o si falló el fetch — en ese
+  // estado no se bloquea la creación por un límite todavía desconocido;
+  // el backend sigue siendo la autoridad real de todos modos.
+  const [maxStaff, setMaxStaff] = useState<number | null>(null);
   const [selectedStaffToKeep, setSelectedStaffToKeep] = useState<string[]>([]);
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
@@ -509,16 +514,8 @@ const [photoUrl, setPhotoUrl] = useState("");
     [staffSpecialDates]
   );
 
-  const planCaps: Record<string, { max_staff: number }> = {
-    pro: { max_staff: 2 },
-    premium: { max_staff: 5 },
-    vip: { max_staff: 10 },
-    platinum: { max_staff: 20 },
-  };
-
-  const caps = planCaps[plan] || planCaps.pro;
-  const reachedLimit = activeCount >= caps.max_staff;
-  const excessStaff = Math.max(0, activeCount - caps.max_staff);
+  const reachedLimit = maxStaff != null && activeCount >= maxStaff;
+  const excessStaff = maxStaff != null ? Math.max(0, activeCount - maxStaff) : 0;
   const hasExcess = excessStaff > 0;
 
   const inputClass =
@@ -563,14 +560,41 @@ async function uploadStaffImage(file: File, staffId: string) {
   }
 
   useEffect(() => {
-    if (hasExcess) {
+    if (hasExcess && maxStaff != null) {
       const activeStaff = staff.filter((s) => s.is_active);
-      const allowed = activeStaff.slice(0, caps.max_staff).map((s) => s.id);
+      const allowed = activeStaff.slice(0, maxStaff).map((s) => s.id);
       setSelectedStaffToKeep(allowed);
     } else {
       setSelectedStaffToKeep([]);
     }
-  }, [hasExcess, staff, caps.max_staff]);
+  }, [hasExcess, staff, maxStaff]);
+
+  // Límite real de staff = base del plan + add-on "staff" activo. Mismo
+  // endpoint que ya usa AddonManager.tsx (GET /billing/addons), que
+  // calcula esto correctamente en el backend — reemplaza la copia local
+  // hardcodeada que existía antes (y que además estaba desactualizada:
+  // decía 20 para platinum en vez de 25).
+  useEffect(() => {
+    if (!tenantId) return;
+
+    async function loadStaffLimit() {
+      try {
+        const res = await apiFetch(
+          `${BACKEND_URL}/billing/addons?tenant_id=${tenantId}`
+        );
+        const data = await res.json();
+
+        if (res.ok && data?.limits?.staff?.total != null) {
+          setMaxStaff(Number(data.limits.staff.total));
+        }
+      } catch {
+        // Silencioso: si falla, el gate de límite queda sin cargar (no
+        // bloquea creación) hasta que un refresh lo consiga.
+      }
+    }
+
+    loadStaffLimit();
+  }, [tenantId]);
 
   useEffect(() => {
     async function loadPage() {
@@ -1969,7 +1993,7 @@ function validateStaffHours() {
                 className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
-                {loading ? "..." : `${activeCount}/${caps.max_staff}`}
+                {loading || maxStaff == null ? "..." : `${activeCount}/${maxStaff}`}
               </p>
             </div>
           </div>
@@ -3429,8 +3453,8 @@ function validateStaffHours() {
   <Notice
     tone="limit"
     title="Has alcanzado el límite de staff de tu plan."
-    description={`Tu plan ${plan} permite ${caps.max_staff} profesional${
-      caps.max_staff === 1 ? "" : "es"
+    description={`Tu plan ${plan} permite ${maxStaff} profesional${
+      maxStaff === 1 ? "" : "es"
     } activos. Para crear otro, debes mejorar el plan o desactivar uno existente.`}
   >
     <div className="mt-1">
