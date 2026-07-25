@@ -323,8 +323,18 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     }
   }
 
+  // "Activo" = tiene una fila real en el servidor (baseline > 0), no solo
+  // seleccionado localmente con +/-. Antes esto filtraba por extraValue()
+  // (estado local), así que un add-on recien seleccionado pero sin
+  // confirmar/cobrar aparecia acá con el toggle de renovación automática
+  // visible — un toggle que el backend rechaza porque la fila todavía no
+  // existe. El count/amount sigue mostrando el valor LOCAL (para
+  // previsualizar el cambio pendiente en un add-on ya activo), solo el
+  // filtro de pertenencia a esta lista cambió a usar el baseline.
   const extraItems = useMemo(() => {
-    return ADDON_KEYS.filter((key) => extraSupported(key) && extraValue(key) > 0).map((key) => ({
+    return ADDON_KEYS.filter(
+      (key) => extraSupported(key) && (addonBaseline[key]?.quantity || 0) > 0
+    ).map((key) => ({
       key,
       count: extraValue(key),
       amount: tieredAddonCost(extraConfig[key], extraValue(key)),
@@ -332,6 +342,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     serverAddonAvailability,
+    addonBaseline,
     staffExtras,
     sucursalExtras,
     waConfirmacionExtras,
@@ -341,7 +352,34 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     groupCapacityExtras,
   ]);
 
-  const addableAddons = ADDON_KEYS.filter((key) => extraSupported(key) && extraValue(key) === 0);
+  // Seleccionado con +/- pero todavía sin fila real en el servidor
+  // (baseline 0, local > 0): se muestra como pendiente de confirmar, sin
+  // el toggle de renovación automática.
+  const pendingNewItems = useMemo(() => {
+    return ADDON_KEYS.filter(
+      (key) =>
+        extraSupported(key) && (addonBaseline[key]?.quantity || 0) === 0 && extraValue(key) > 0
+    ).map((key) => ({
+      key,
+      count: extraValue(key),
+      amount: tieredAddonCost(extraConfig[key], extraValue(key)),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    serverAddonAvailability,
+    addonBaseline,
+    staffExtras,
+    sucursalExtras,
+    waConfirmacionExtras,
+    campanaWaExtras,
+    iaWaExtras,
+    emailsCampanaExtras,
+    groupCapacityExtras,
+  ]);
+
+  const addableAddons = ADDON_KEYS.filter(
+    (key) => extraSupported(key) && (addonBaseline[key]?.quantity || 0) === 0 && extraValue(key) === 0
+  );
   const anyAddonAvailable = ADDON_KEYS.some((key) => extraSupported(key));
 
   // Compara el estado local (lo que el usuario dejó con +/-) contra el
@@ -481,6 +519,134 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     }
   }
 
+  // pending=true: seleccionado con +/- pero sin fila real en el servidor
+  // todavía — sin toggle de renovación automática (no tiene sentido, el
+  // backend rechazaría el PATCH porque el add-on no existe de verdad).
+  function renderAddonCard(
+    item: { key: ExtraKey; count: number; amount: number },
+    { pending }: { pending: boolean }
+  ) {
+    const config = extraConfig[item.key];
+    const renewalMode = addonBaseline[item.key]?.renewal_mode || "manual";
+    const isAutomatico = renewalMode === "automatico";
+
+    return (
+      <div
+        key={item.key}
+        className="rounded-2xl border px-4 py-3"
+        style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+      >
+        <div className="flex items-start gap-3">
+          <span
+            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${config.iconClass}`}
+          >
+            {config.icon}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                  {config.title}
+                  {pending ? (
+                    <span
+                      className="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                      style={{ background: "rgba(245,158,11,0.15)", color: "rgb(245 158 11)" }}
+                    >
+                      Pendiente de confirmar
+                    </span>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                  {item.count} {config.unitLabel}
+                  {item.count === 1 ? "" : "s"} · {config.usageLabel}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {item.count >= 2
+                    ? `${formatCLP(nextPackPrice(config, item.count))} + IVA`
+                    : `${formatCLP(config.unitPrice)} + IVA`}
+                </p>
+                <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                  {formatCLP(item.amount)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-end">
+              <div
+                className="flex items-center rounded-lg border"
+                style={{ borderColor: "var(--border-color)" }}
+              >
+                <button
+                  type="button"
+                  onClick={() => decreaseExtra(item.key)}
+                  disabled={addonSubmitting}
+                  className="inline-flex h-9 w-9 items-center justify-center transition disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ color: "var(--text-main)" }}
+                  aria-label={`Quitar ${config.title}`}
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span
+                  className="min-w-8 text-center text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  {item.count}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => increaseExtra(item.key)}
+                  disabled={addonSubmitting}
+                  className="inline-flex h-9 w-9 items-center justify-center transition disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ color: "var(--text-main)" }}
+                  aria-label={`Agregar ${config.title}`}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {!pending ? (
+              <div
+                className="mt-3 flex items-center justify-between gap-3 border-t pt-3"
+                style={{ borderColor: "var(--border-color)" }}
+              >
+                <div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-main)" }}>
+                    Cobro automático mensual
+                  </p>
+                  {isAutomatico ? (
+                    <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                      Se renovará automáticamente cada mes.
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isAutomatico}
+                  aria-label="Cobro automático mensual"
+                  onClick={() => handleToggleRenewalMode(item.key)}
+                  disabled={renewalModeUpdating === item.key}
+                  className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    background: isAutomatico ? "rgb(37 99 235)" : "var(--border-color)",
+                  }}
+                >
+                  <span
+                    className="inline-block h-4 w-4 transform rounded-full bg-white transition"
+                    style={{ transform: isAutomatico ? "translateX(22px)" : "translateX(4px)" }}
+                  />
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Panel
@@ -517,7 +683,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
           </div>
         ) : (
           <>
-            {extraItems.length === 0 ? (
+            {extraItems.length === 0 && pendingNewItems.length === 0 ? (
               <div
                 className="rounded-2xl border border-dashed px-4 py-6 text-sm"
                 style={{
@@ -530,116 +696,8 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
               </div>
             ) : (
               <div className="space-y-3">
-                {extraItems.map((item) => {
-                  const config = extraConfig[item.key];
-                  const renewalMode = addonBaseline[item.key]?.renewal_mode || "manual";
-                  const isAutomatico = renewalMode === "automatico";
-                  return (
-                    <div
-                      key={item.key}
-                      className="rounded-2xl border px-4 py-3"
-                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${config.iconClass}`}
-                        >
-                          {config.icon}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                                {config.title}
-                              </p>
-                              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-                                {item.count} {config.unitLabel}
-                                {item.count === 1 ? "" : "s"} · {config.usageLabel}
-                              </p>
-                            </div>
-                            <div className="shrink-0 text-right">
-                              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                                {item.count >= 2
-                                  ? `${formatCLP(nextPackPrice(config, item.count))} + IVA`
-                                  : `${formatCLP(config.unitPrice)} + IVA`}
-                              </p>
-                              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                                {formatCLP(item.amount)}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 flex items-center justify-end">
-                            <div
-                              className="flex items-center rounded-lg border"
-                              style={{ borderColor: "var(--border-color)" }}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => decreaseExtra(item.key)}
-                                disabled={addonSubmitting}
-                                className="inline-flex h-9 w-9 items-center justify-center transition disabled:cursor-not-allowed disabled:opacity-40"
-                                style={{ color: "var(--text-main)" }}
-                                aria-label={`Quitar ${config.title}`}
-                              >
-                                <Minus className="h-4 w-4" />
-                              </button>
-                              <span
-                                className="min-w-8 text-center text-sm font-semibold"
-                                style={{ color: "var(--text-main)" }}
-                              >
-                                {item.count}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => increaseExtra(item.key)}
-                                disabled={addonSubmitting}
-                                className="inline-flex h-9 w-9 items-center justify-center transition disabled:cursor-not-allowed disabled:opacity-40"
-                                style={{ color: "var(--text-main)" }}
-                                aria-label={`Agregar ${config.title}`}
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-                          <div
-                            className="mt-3 flex items-center justify-between gap-3 border-t pt-3"
-                            style={{ borderColor: "var(--border-color)" }}
-                          >
-                            <div>
-                              <p className="text-xs font-medium" style={{ color: "var(--text-main)" }}>
-                                Cobro automático mensual
-                              </p>
-                              {isAutomatico ? (
-                                <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                                  Se renovará automáticamente cada mes.
-                                </p>
-                              ) : null}
-                            </div>
-                            <button
-                              type="button"
-                              role="switch"
-                              aria-checked={isAutomatico}
-                              aria-label="Cobro automático mensual"
-                              onClick={() => handleToggleRenewalMode(item.key)}
-                              disabled={renewalModeUpdating === item.key}
-                              className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
-                              style={{
-                                background: isAutomatico ? "rgb(37 99 235)" : "var(--border-color)",
-                              }}
-                            >
-                              <span
-                                className="inline-block h-4 w-4 transform rounded-full bg-white transition"
-                                style={{ transform: isAutomatico ? "translateX(22px)" : "translateX(4px)" }}
-                              />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {extraItems.map((item) => renderAddonCard(item, { pending: false }))}
+                {pendingNewItems.map((item) => renderAddonCard(item, { pending: true }))}
               </div>
             )}
 
