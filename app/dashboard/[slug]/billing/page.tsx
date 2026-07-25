@@ -196,21 +196,11 @@ function groupChargesByDate(charges: PaymentHistoryCharge[]): ChargeGroup[] {
   );
 }
 
-const PLAN_CAPS: Record<
-  string,
-  { max_staff: number; max_services: number; max_branches: number }
-> = {
-  pro: { max_staff: 2, max_services: 10, max_branches: 1 },
-  premium: { max_staff: 5, max_services: 25, max_branches: 2 },
-  vip: { max_staff: 10, max_services: 50, max_branches: 3 },
-  platinum: { max_staff: 20, max_services: 100, max_branches: 10 },
-};
-
 function normalizePlanSlug(planSlug?: string | null) {
   const normalized = String(planSlug || "pro").toLowerCase();
 
   if (normalized === "starter") return "pro";
-  if (normalized in PLAN_CAPS) return normalized;
+  if (normalized in PLAN_LABELS) return normalized;
 
   return "pro";
 }
@@ -503,7 +493,23 @@ function BillingPageInner() {
   const [saveError, setSaveError] = useState("");
   const [saveOk, setSaveOk] = useState("");
 
-  const caps = PLAN_CAPS[plan] || PLAN_CAPS.pro;
+  // Límites reales de staff y sucursales (base del plan + add-on activo),
+  // desde GET /billing/addons — mismo endpoint que ya usa AddonManager.tsx
+  // (que vive en la pestaña "Add-ons" de esta misma página, pero mantiene
+  // su fetch interno/privado, sin exponer `limits` hacia afuera). null
+  // mientras carga o si falló el fetch: en ese estado no se detecta
+  // exceso ni se bloquea nada todavía.
+  const [tenantLimits, setTenantLimits] = useState<{
+    max_staff: number;
+    max_branches: number;
+  } | null>(null);
+
+  // Los servicios son ilimitados en todos los planes (getPlanCapabilities
+  // en el backend: max_services siempre 999999) — no depende de plan ni
+  // de add-ons, así que no hace falta fetch para este valor.
+  const maxServices = 999999;
+  const maxStaff = tenantLimits?.max_staff ?? null;
+  const maxBranches = tenantLimits?.max_branches ?? null;
 
   const activeBranches = useMemo(
     () => branches.filter((branch) => branch.is_active !== false),
@@ -520,9 +526,10 @@ function BillingPageInner() {
     [services]
   );
 
-  const excessBranches = Math.max(0, activeBranches.length - caps.max_branches);
-  const excessStaff = Math.max(0, activeStaff.length - caps.max_staff);
-  const excessServices = Math.max(0, activeServices.length - caps.max_services);
+  const excessBranches =
+    maxBranches != null ? Math.max(0, activeBranches.length - maxBranches) : 0;
+  const excessStaff = maxStaff != null ? Math.max(0, activeStaff.length - maxStaff) : 0;
+  const excessServices = Math.max(0, activeServices.length - maxServices);
 
   const hasBranchExcess = excessBranches > 0;
   const hasStaffExcess = excessStaff > 0;
@@ -531,24 +538,24 @@ function BillingPageInner() {
   const hasAnyExcess = hasBranchExcess || hasStaffExcess || hasServicesExcess;
 
   useEffect(() => {
-    if (!hasBranchExcess) {
+    if (!hasBranchExcess || maxBranches == null) {
       setSelectedBranchesToKeep([]);
       return;
     }
 
-    const allowed = activeBranches.slice(0, caps.max_branches).map((b) => b.id);
+    const allowed = activeBranches.slice(0, maxBranches).map((b) => b.id);
     setSelectedBranchesToKeep(allowed);
-  }, [hasBranchExcess, activeBranches, caps.max_branches]);
+  }, [hasBranchExcess, activeBranches, maxBranches]);
 
   useEffect(() => {
-    if (!hasStaffExcess) {
+    if (!hasStaffExcess || maxStaff == null) {
       setSelectedStaffToKeep([]);
       return;
     }
 
-    const allowed = activeStaff.slice(0, caps.max_staff).map((s) => s.id);
+    const allowed = activeStaff.slice(0, maxStaff).map((s) => s.id);
     setSelectedStaffToKeep(allowed);
-  }, [hasStaffExcess, activeStaff, caps.max_staff]);
+  }, [hasStaffExcess, activeStaff, maxStaff]);
 
   useEffect(() => {
     if (!hasServicesExcess) {
@@ -556,9 +563,40 @@ function BillingPageInner() {
       return;
     }
 
-    const allowed = activeServices.slice(0, caps.max_services).map((s) => s.id);
+    const allowed = activeServices.slice(0, maxServices).map((s) => s.id);
     setSelectedServicesToKeep(allowed);
-  }, [hasServicesExcess, activeServices, caps.max_services]);
+  }, [hasServicesExcess, activeServices]);
+
+  // Mismo endpoint que ya consume AddonManager.tsx (montado en la pestaña
+  // "Add-ons" de esta página), pero ese componente no expone su `limits`
+  // hacia afuera — es un fetch propio, sin estado compartido con el resto
+  // de la página. Reemplaza el PLAN_CAPS local hardcodeado que existía
+  // antes (desactualizado: platinum decía 20 en vez de 25 para staff, y
+  // no sumaba add-ons comprados).
+  useEffect(() => {
+    if (!tenantId) return;
+
+    async function loadTenantLimits() {
+      try {
+        const res = await apiFetch(
+          `${BACKEND_URL}/billing/addons?tenant_id=${tenantId}`
+        );
+        const data = await res.json();
+
+        if (res.ok && data?.limits?.staff?.total != null && data?.limits?.sucursales?.total != null) {
+          setTenantLimits({
+            max_staff: Number(data.limits.staff.total),
+            max_branches: Number(data.limits.sucursales.total),
+          });
+        }
+      } catch {
+        // Silencioso: si falla, los límites quedan sin cargar (no se
+        // detecta exceso ni se bloquea nada) hasta un próximo intento.
+      }
+    }
+
+    loadTenantLimits();
+  }, [tenantId]);
 
   async function loadAll() {
     try {
@@ -1453,7 +1491,7 @@ function BillingPageInner() {
       <section className="grid gap-6 xl:grid-cols-3">
         <Panel
           title="Sucursales"
-          description={`Selecciona las sucursales que deseas mantener activas (${activeBranches.length} / ${caps.max_branches})`}
+          description={`Selecciona las sucursales que deseas mantener activas (${activeBranches.length} / ${maxBranches ?? "..."})`}
           className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
         >
           {activeBranches.length === 0 ? (
@@ -1505,7 +1543,7 @@ function BillingPageInner() {
 
         <Panel
           title="Profesionales"
-          description={`Selecciona los profesionales que deseas mantener activos (${activeStaff.length} / ${caps.max_staff})`}
+          description={`Selecciona los profesionales que deseas mantener activos (${activeStaff.length} / ${maxStaff ?? "..."})`}
           className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
           {activeStaff.length === 0 ? (
@@ -1560,7 +1598,7 @@ function BillingPageInner() {
 
         <Panel
           title="Servicios"
-          description={`Selecciona los servicios que deseas mantener activos (${activeServices.length} / ${caps.max_services})`}
+          description={`Selecciona los servicios que deseas mantener activos (${activeServices.length} / ${maxServices})`}
           className="bg-[linear-gradient(180deg,rgba(34,197,94,0.06),transparent_40%)]"
         >
           {activeServices.length === 0 ? (
