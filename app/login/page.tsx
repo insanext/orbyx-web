@@ -349,6 +349,14 @@ function LoginForm() {
                 className="text-slate-400 hover:text-slate-600"
               />
             </div>
+            <div style={{ textAlign: "right", marginTop: 6 }}>
+              <a
+                href="/recuperar-password"
+                style={{ fontSize: 12, color: "#2563eb", fontWeight: 600, textDecoration: "none" }}
+              >
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
           </div>
 
           {error ? (
