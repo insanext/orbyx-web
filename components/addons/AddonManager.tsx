@@ -588,6 +588,16 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
             ) : null}
 
             {hasPendingAddonChanges ? (
+              <div
+                className="mt-4 flex items-center justify-between text-sm"
+                style={{ color: "var(--text-main)" }}
+              >
+                <span className="font-semibold">Total a cobrar hoy</span>
+                <span className="font-bold">{formatCLP(addonChargeTotal)} + IVA</span>
+              </div>
+            ) : null}
+
+            {hasPendingAddonChanges ? (
               <button
                 type="button"
                 onClick={() => {
