@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { apiFetch } from "@/lib/api";
 import type { ExtraKey } from "@/lib/plans";
 import { Bot, Mail, Megaphone, MessageCircle, Minus, Store, Users, UsersRound } from "lucide-react";
@@ -148,7 +148,13 @@ type AddonBaselineEntry = {
   renewal_mode: RenewalMode;
 };
 
-type AddonChangeResult = { key: ExtraKey; label: string; ok: boolean; error?: string };
+type AddonChangeResult = {
+  key: ExtraKey;
+  label: string;
+  ok: boolean;
+  timedOut?: boolean;
+  error?: string;
+};
 
 export function AddonManager({ tenantId }: { tenantId: string }) {
   const [serverAddonAvailability, setServerAddonAvailability] = useState<Record<
@@ -180,6 +186,14 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
 
   const [renewalModeUpdating, setRenewalModeUpdating] = useState<ExtraKey | null>(null);
 
+  // Cada refreshAddons() toma un ticket incremental al iniciar. Si al
+  // terminar el ticket capturado ya no es el ultimo (se disparo un
+  // refresh mas nuevo mientras este esperaba la respuesta), este refresh
+  // quedo obsoleto y se descarta sin tocar ningun estado — evita que un
+  // refresh lento (cola de un cobro anterior) pise una seleccion local
+  // mas reciente del usuario.
+  const refreshTokenRef = useRef(0);
+
   function setExtraCount(key: ExtraKey, value: number) {
     if (key === "staff") setStaffExtras(value);
     else if (key === "sucursal") setSucursalExtras(value);
@@ -210,6 +224,8 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   async function refreshAddons() {
     if (!tenantId) return;
 
+    const requestToken = ++refreshTokenRef.current;
+
     try {
       setAddonsLoading(true);
       setAddonError("");
@@ -222,6 +238,10 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
       if (!res.ok) {
         throw new Error(data?.error || "No se pudieron cargar los add-ons");
       }
+
+      // Un refresh mas nuevo ya se disparo mientras este esperaba: estos
+      // datos son viejos, no se aplican.
+      if (requestToken !== refreshTokenRef.current) return;
 
       const availability: Record<string, boolean> = {};
       (data?.addons || []).forEach((addon: { key?: string; available?: boolean }) => {
@@ -250,7 +270,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
 
       setServerAddonAvailability(availability);
       setAddonBaseline(baseline);
-      setAddonChangeResults([]);
       setStaffExtras(counts.staff || 0);
       setSucursalExtras(counts.sucursal || 0);
       setWaConfirmacionExtras(counts.wa_confirmacion || 0);
@@ -259,11 +278,14 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
       setEmailsCampanaExtras(counts.emails_campana || 0);
       setGroupCapacityExtras(counts.group_capacity || 0);
     } catch (error: unknown) {
+      if (requestToken !== refreshTokenRef.current) return;
       setAddonError(
         error instanceof Error ? error.message : "No se pudieron cargar los add-ons"
       );
     } finally {
-      setAddonsLoading(false);
+      if (requestToken === refreshTokenRef.current) {
+        setAddonsLoading(false);
+      }
     }
   }
 
@@ -447,8 +469,14 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     0
   );
 
+  // Timeout por llamada de cobro: si el backend/Flow no responde en este
+  // plazo, no asumimos exito ni fallo — se marca como "incierto" y se le
+  // pide al usuario verificar en Historial de pagos antes de reintentar.
+  const ADDON_CHARGE_TIMEOUT_MS = 30000;
+
   // Solo aca se toca el backend para add-ons: se llama uno por uno y se
-  // reporta individualmente que salio bien y que no, sin asumir nada.
+  // reporta individualmente que salio bien, que no, o que quedo incierto
+  // por timeout.
   async function handleConfirmAddonCharge() {
     if (!tenantId || addonPendingChanges.length === 0) return;
 
@@ -459,51 +487,61 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     const results: AddonChangeResult[] = [];
 
     for (const change of addonPendingChanges) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), ADDON_CHARGE_TIMEOUT_MS);
+
       try {
-        if (change.isNew) {
-          const res = await apiFetch(`${BACKEND_URL}/billing/addons/activate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+        const url = change.isNew
+          ? `${BACKEND_URL}/billing/addons/activate`
+          : `${BACKEND_URL}/billing/addons/quantity`;
+        const body = change.isNew
+          ? {
               tenant_id: tenantId,
               addon_key: change.key,
               quantity: change.newQty,
               billing_cycle: "mensual",
-            }),
-          });
-          const data = await res.json();
-
-          if (!res.ok) {
-            if (res.status === 403 && data?.upgrade_required) {
-              throw new Error("Este add-on requiere un plan superior");
             }
-            throw new Error(data?.error || "No se pudo activar el add-on");
-          }
-        } else {
-          const res = await apiFetch(`${BACKEND_URL}/billing/addons/quantity`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              tenant_id: tenantId,
-              addon_key: change.key,
-              quantity: change.newQty,
-            }),
-          });
-          const data = await res.json();
+          : { tenant_id: tenantId, addon_key: change.key, quantity: change.newQty };
 
-          if (!res.ok) {
-            throw new Error(data?.error || "No se pudo actualizar el add-on");
+        const res = await apiFetch(url, {
+          method: change.isNew ? "POST" : "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (change.isNew && res.status === 403 && data?.upgrade_required) {
+            throw new Error("Este add-on requiere un plan superior");
           }
+          throw new Error(
+            data?.error ||
+              (change.isNew ? "No se pudo activar el add-on" : "No se pudo actualizar el add-on")
+          );
         }
 
         results.push({ key: change.key, label: change.label, ok: true });
       } catch (error: unknown) {
-        results.push({
-          key: change.key,
-          label: change.label,
-          ok: false,
-          error: error instanceof Error ? error.message : "Error desconocido",
-        });
+        if (error instanceof DOMException && error.name === "AbortError") {
+          results.push({
+            key: change.key,
+            label: change.label,
+            ok: false,
+            timedOut: true,
+            error:
+              "La operación está tardando más de lo normal. Verifica en Historial de pagos si se aplicó, o intenta de nuevo.",
+          });
+        } else {
+          results.push({
+            key: change.key,
+            label: change.label,
+            ok: false,
+            error: error instanceof Error ? error.message : "Error desconocido",
+          });
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
@@ -511,7 +549,10 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     setAddonSubmitting(false);
 
     // Refresca siempre, haya habido fallos parciales o no: el estado local
-    // debe reflejar lo que realmente quedó persistido en el servidor.
+    // debe reflejar lo que realmente quedó persistido en el servidor. Los
+    // resultados que se acaban de mostrar (setAddonChangeResults arriba)
+    // ya NO se tocan dentro de refreshAddons — solo el usuario los limpia
+    // al cerrar el modal explícitamente.
     await refreshAddons();
 
     if (!results.some((result) => !result.ok)) {
@@ -794,33 +835,45 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                   {addonChangeResults.every((result) => result.ok)
                     ? "Todos los add-ons se aplicaron y cobraron correctamente."
+                    : addonChangeResults.some((result) => result.timedOut)
+                    ? "Algunos add-ons quedaron con estado incierto (la respuesta tardó demasiado). Revisa Historial de pagos antes de reintentar."
                     : "Algunos add-ons no se pudieron aplicar. Los que fallaron no se cobraron."}
                 </p>
 
                 <ul className="mt-4 space-y-2">
-                  {addonChangeResults.map((result) => (
-                    <li
-                      key={result.key}
-                      className="rounded-lg border px-3 py-2 text-sm"
-                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
-                    >
-                      <span style={{ color: result.ok ? "rgb(16 185 129)" : "rgb(244 63 94)" }}>
-                        {result.ok ? "✓" : "✗"}
-                      </span>{" "}
-                      <span style={{ color: "var(--text-main)" }}>{result.label}</span>
-                      {!result.ok && result.error ? (
-                        <p className="mt-1 text-xs" style={{ color: "rgb(244 63 94)" }}>
-                          {result.error}
-                        </p>
-                      ) : null}
-                    </li>
-                  ))}
+                  {addonChangeResults.map((result) => {
+                    const statusColor = result.timedOut
+                      ? "rgb(245 158 11)"
+                      : result.ok
+                      ? "rgb(16 185 129)"
+                      : "rgb(244 63 94)";
+                    return (
+                      <li
+                        key={result.key}
+                        className="rounded-lg border px-3 py-2 text-sm"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+                      >
+                        <span style={{ color: statusColor }}>
+                          {result.timedOut ? "?" : result.ok ? "✓" : "✗"}
+                        </span>{" "}
+                        <span style={{ color: "var(--text-main)" }}>{result.label}</span>
+                        {!result.ok && result.error ? (
+                          <p className="mt-1 text-xs" style={{ color: statusColor }}>
+                            {result.error}
+                          </p>
+                        ) : null}
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 <div className="mt-5 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => setAddonConfirmModalOpen(false)}
+                    onClick={() => {
+                      setAddonChangeResults([]);
+                      setAddonConfirmModalOpen(false);
+                    }}
                     className="inline-flex h-10 items-center justify-center rounded-xl border px-5 text-sm font-medium transition"
                     style={{
                       borderColor: "var(--border-color)",
