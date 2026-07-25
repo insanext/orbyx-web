@@ -132,7 +132,21 @@ function formatCLP(value: number) {
   return `$${value.toLocaleString("es-CL")}`;
 }
 
-type AddonBaselineEntry = { quantity: number; unit_price: number | null };
+// Refleja server.js:applyIva() — si cambia IVA_RATE en backend, actualizar
+// aquí también. Solo para PREVIEW visual (modal / total en vivo); el monto
+// que realmente se cobra siempre lo calcula el backend, nunca este.
+const IVA_RATE = 0.19;
+function applyIva(netAmount: number): number {
+  return Math.round(netAmount * (1 + IVA_RATE));
+}
+
+type RenewalMode = "manual" | "automatico";
+
+type AddonBaselineEntry = {
+  quantity: number;
+  unit_price: number | null;
+  renewal_mode: RenewalMode;
+};
 
 type AddonChangeResult = { key: ExtraKey; label: string; ok: boolean; error?: string };
 
@@ -163,6 +177,8 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   const [addonConfirmModalOpen, setAddonConfirmModalOpen] = useState(false);
   const [addonSubmitting, setAddonSubmitting] = useState(false);
   const [addonChangeResults, setAddonChangeResults] = useState<AddonChangeResult[]>([]);
+
+  const [renewalModeUpdating, setRenewalModeUpdating] = useState<ExtraKey | null>(null);
 
   function setExtraCount(key: ExtraKey, value: number) {
     if (key === "staff") setStaffExtras(value);
@@ -215,13 +231,19 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
       const counts: Record<string, number> = {};
       const baseline: Partial<Record<ExtraKey, AddonBaselineEntry>> = {};
       (data?.active_addons || []).forEach(
-        (row: { addon_key?: string; quantity?: number; unit_price?: number | null }) => {
+        (row: {
+          addon_key?: string;
+          quantity?: number;
+          unit_price?: number | null;
+          renewal_mode?: string | null;
+        }) => {
           if (!row?.addon_key) return;
           const qty = Number(row.quantity) || 0;
           counts[row.addon_key] = qty;
           baseline[row.addon_key as ExtraKey] = {
             quantity: qty,
             unit_price: row.unit_price != null ? Number(row.unit_price) : null,
+            renewal_mode: row.renewal_mode === "automatico" ? "automatico" : "manual",
           };
         }
       );
@@ -263,6 +285,42 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     const current = extraValue(key);
     if (current === 0) return;
     setExtraCount(key, current - 1);
+  }
+
+  // No pasa por el modal de confirmación: no cobra nada, solo cambia un
+  // flag. El cobro real de la renovación automática ocurre en el cron
+  // mensual del backend.
+  async function handleToggleRenewalMode(key: ExtraKey) {
+    const currentMode = addonBaseline[key]?.renewal_mode || "manual";
+    const nextMode: RenewalMode = currentMode === "automatico" ? "manual" : "automatico";
+
+    setRenewalModeUpdating(key);
+    setAddonError("");
+
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/billing/addons/renewal-mode`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId, addon_key: key, renewal_mode: nextMode }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cambiar el modo de renovación");
+      }
+
+      setAddonBaseline((prev) => {
+        const entry = prev[key];
+        if (!entry) return prev;
+        return { ...prev, [key]: { ...entry, renewal_mode: data.renewal_mode } };
+      });
+    } catch (error: unknown) {
+      setAddonError(
+        error instanceof Error ? error.message : "No se pudo cambiar el modo de renovación"
+      );
+    } finally {
+      setRenewalModeUpdating(null);
+    }
   }
 
   const extraItems = useMemo(() => {
@@ -339,6 +397,15 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   const hasPendingAddonChanges = addonPendingChanges.length > 0;
   const addonChargeTotal = addonPendingChanges.reduce(
     (sum, change) => sum + change.chargeAmount,
+    0
+  );
+  // Suma de cada linea YA con IVA aplicada individualmente (no
+  // applyIva(addonChargeTotal)) — el backend cobra cada add-on con una
+  // llamada a Flow separada, cada una redondeada por su cuenta, así que
+  // sumar los montos ya redondeados es lo que realmente coincide con el
+  // total que se termina cobrando.
+  const addonChargeTotalWithIva = addonPendingChanges.reduce(
+    (sum, change) => sum + applyIva(change.chargeAmount),
     0
   );
 
@@ -465,6 +532,8 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
               <div className="space-y-3">
                 {extraItems.map((item) => {
                   const config = extraConfig[item.key];
+                  const renewalMode = addonBaseline[item.key]?.renewal_mode || "manual";
+                  const isAutomatico = renewalMode === "automatico";
                   return (
                     <div
                       key={item.key}
@@ -533,6 +602,39 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                               </button>
                             </div>
                           </div>
+
+                          <div
+                            className="mt-3 flex items-center justify-between gap-3 border-t pt-3"
+                            style={{ borderColor: "var(--border-color)" }}
+                          >
+                            <div>
+                              <p className="text-xs font-medium" style={{ color: "var(--text-main)" }}>
+                                Cobro automático mensual
+                              </p>
+                              {isAutomatico ? (
+                                <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                                  Se renovará automáticamente cada mes.
+                                </p>
+                              ) : null}
+                            </div>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={isAutomatico}
+                              aria-label="Cobro automático mensual"
+                              onClick={() => handleToggleRenewalMode(item.key)}
+                              disabled={renewalModeUpdating === item.key}
+                              className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                background: isAutomatico ? "rgb(37 99 235)" : "var(--border-color)",
+                              }}
+                            >
+                              <span
+                                className="inline-block h-4 w-4 transform rounded-full bg-white transition"
+                                style={{ transform: isAutomatico ? "translateX(22px)" : "translateX(4px)" }}
+                              />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -573,7 +675,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                               {config.title}
                             </span>
                             <span className="block text-xs" style={{ color: "var(--text-muted)" }}>
-                              {formatCLP(config.unitPrice)} /mes + IVA
+                              {formatCLP(config.unitPrice)} + IVA (pago único)
                             </span>
                           </span>
                         </span>
@@ -593,7 +695,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 style={{ color: "var(--text-main)" }}
               >
                 <span className="font-semibold">Total a cobrar hoy</span>
-                <span className="font-bold">{formatCLP(addonChargeTotal)} + IVA</span>
+                <span className="font-bold">{formatCLP(addonChargeTotalWithIva)} (IVA incluido)</span>
               </div>
             ) : null}
 
@@ -698,7 +800,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                         className="font-semibold"
                         style={{ color: change.chargeAmount > 0 ? "var(--text-main)" : "var(--text-muted)" }}
                       >
-                        {change.chargeAmount > 0 ? formatCLP(change.chargeAmount) : "Sin costo"}
+                        {change.chargeAmount > 0 ? formatCLP(applyIva(change.chargeAmount)) : "Sin costo"}
                       </span>
                     </li>
                   ))}
@@ -709,15 +811,15 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                   style={{ borderColor: "var(--border-color)" }}
                 >
                   <span className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                    Total a cobrar hoy
+                    Total a cobrar hoy (IVA incluido)
                   </span>
                   <span className="text-lg font-bold" style={{ color: "var(--text-main)" }}>
-                    {formatCLP(addonChargeTotal)}
+                    {formatCLP(addonChargeTotalWithIva)}
                   </span>
                 </div>
 
                 <p className="mt-3 text-xs leading-5" style={{ color: "rgb(245 158 11)" }}>
-                  Se cobrará {formatCLP(addonChargeTotal)} ahora mismo a tu tarjeta registrada.
+                  Se cobrará {formatCLP(addonChargeTotalWithIva)} ahora mismo a tu tarjeta registrada.
                 </p>
 
                 <div className="mt-5 flex gap-3">

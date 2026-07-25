@@ -612,10 +612,13 @@ function BillingPageInner() {
     loadPaymentHistory(tenantId);
   }, [tenantId]);
 
+  // "Add-on" sin ":" a proposito: cubre tanto los cargos de activacion/
+  // cambio de cantidad ("Add-on: x...") como los del cron de renovacion
+  // automatica ("Add-on recurrente: x...").
   const subscriptionCharges = useMemo(
     () =>
       paymentHistory
-        .filter((charge) => !charge.subject || !charge.subject.startsWith("Add-on:"))
+        .filter((charge) => !charge.subject || !charge.subject.startsWith("Add-on"))
         .sort(compareChargeDateDesc),
     [paymentHistory]
   );
@@ -623,7 +626,7 @@ function BillingPageInner() {
   const addonCharges = useMemo(
     () =>
       paymentHistory
-        .filter((charge) => charge.subject && charge.subject.startsWith("Add-on:"))
+        .filter((charge) => charge.subject && charge.subject.startsWith("Add-on"))
         .sort(compareChargeDateDesc),
     [paymentHistory]
   );
