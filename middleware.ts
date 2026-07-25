@@ -50,6 +50,53 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Con sesión activa, /dashboard/{slug}/** requiere además que el slug de
+  // la URL sea un tenant real Y que el usuario tenga una fila activa en
+  // tenant_users para ESE tenant. Sin esto, cualquier usuario logueado
+  // (dueño de otro negocio, o de ninguno) podía visitar
+  // /dashboard/{cualquier-slug} y ver el shell completo del panel sin
+  // tener acceso real a ese negocio.
+  if (user && pathname.startsWith("/dashboard/")) {
+    const dashboardSlug = pathname.match(/^\/dashboard\/([^/]+)/)?.[1];
+
+    if (dashboardSlug) {
+      const { data: tenant } = await supabase
+        .from("tenants")
+        .select("id")
+        .eq("slug", dashboardSlug)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      let hasAccess = false;
+
+      if (tenant?.id) {
+        const { data: tenantUser } = await supabase
+          .from("tenant_users")
+          .select("id")
+          .eq("tenant_id", tenant.id)
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        hasAccess = Boolean(tenantUser);
+      }
+
+      // Mismo mensaje genérico exista o no el tenant, para no revelar cuál
+      // de los dos casos es (evita confirmar/negar la existencia de un
+      // slug ajeno). Sin redirectTo: si el usuario sigue logueado, /login
+      // ya lo re-redirige solo a SU propio dashboard (resolveTenantDestination
+      // en app/login/page.tsx) — no tiene sentido devolverlo al slug que
+      // se le acaba de negar.
+      if (!hasAccess) {
+        const deniedUrl = request.nextUrl.clone();
+        deniedUrl.pathname = "/login";
+        deniedUrl.search = "";
+        deniedUrl.searchParams.set("error", "no_access");
+        return NextResponse.redirect(deniedUrl);
+      }
+    }
+  }
+
   // Si accede a /admin/** (excepto /admin/login) sin sesión → redirect a /admin/login
   if (!user && pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const adminLoginUrl = request.nextUrl.clone();
