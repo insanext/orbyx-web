@@ -4,7 +4,7 @@ import { CSSProperties, Suspense, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { CreditCard } from "lucide-react";
+import { ChevronRight, CreditCard } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { AddonManager } from "../../../../components/addons/AddonManager";
 
@@ -111,6 +111,89 @@ function compareChargeDateDesc(a: PaymentHistoryCharge, b: PaymentHistoryCharge)
   const aTime = a.date ? new Date(a.date).getTime() : 0;
   const bTime = b.date ? new Date(b.date).getTime() : 0;
   return bTime - aTime;
+}
+
+// Mismos nombres que orbyx-web/components/addons/AddonManager.tsx
+// (extraConfig[key].title) — duplicado a propósito, solo para traducir el
+// addon_key crudo del campo `subject` a texto legible acá.
+const ADDON_LABELS: Record<string, string> = {
+  wa_confirmacion: "WhatsApp confirmación+recordatorio",
+  campanas_wa: "Campañas WhatsApp",
+  ia_wa: "IA WhatsApp",
+  emails_campana: "Pack emails campaña",
+  staff: "+ 1 Profesional",
+  sucursal: "+ 1 Sucursal",
+  group_capacity: "+ Cupos grupales",
+};
+
+// El backend genera subject = "Add-on: {addon_key} x{qty}" al activar/subir
+// cantidad, o "Add-on recurrente: {addon_key} x{qty}" desde el cron de
+// renovación automática mensual (server.js).
+const ADDON_SUBJECT_RE = /^Add-on(?: recurrente)?:\s*([a-z_]+)\s*x(\d+)$/i;
+
+function describeAddonChargeSubject(subject: string | null) {
+  if (!subject) return "Add-on";
+
+  const match = subject.match(ADDON_SUBJECT_RE);
+  if (!match) return subject;
+
+  const [, addonKey, qty] = match;
+  const label = ADDON_LABELS[addonKey] || addonKey;
+  const isRecurring = subject.startsWith("Add-on recurrente");
+
+  return `${label} x${qty}${isRecurring ? " · renovación automática" : ""}`;
+}
+
+function describeSubscriptionChargeSubject(subject: string | null) {
+  return subject && subject.trim() ? subject : "Cobro de suscripción";
+}
+
+type ChargeGroup = {
+  dateKey: string;
+  label: string;
+  total: number;
+  charges: PaymentHistoryCharge[];
+};
+
+function getChargeDateKey(dateString: string | null) {
+  if (!dateString) return "sin-fecha";
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "sin-fecha";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+// Agrupa cargos por día calendario (misma fecha visible con formatDate),
+// preservando orden descendente. El total de cada grupo suma los montos
+// de todos los cargos de ese día.
+function groupChargesByDate(charges: PaymentHistoryCharge[]): ChargeGroup[] {
+  const groups = new Map<string, ChargeGroup>();
+
+  for (const charge of charges) {
+    const dateKey = getChargeDateKey(charge.date);
+    const existing = groups.get(dateKey);
+
+    if (existing) {
+      existing.total += charge.amount ?? 0;
+      existing.charges.push(charge);
+    } else {
+      groups.set(dateKey, {
+        dateKey,
+        label: formatDate(charge.date),
+        total: charge.amount ?? 0,
+        charges: [charge],
+      });
+    }
+  }
+
+  return Array.from(groups.values()).sort((a, b) =>
+    a.dateKey < b.dateKey ? 1 : a.dateKey > b.dateKey ? -1 : 0
+  );
 }
 
 const PLAN_CAPS: Record<
@@ -266,14 +349,22 @@ function Notice({
   );
 }
 
-function ChargeList({
+const CHARGE_GROUPS_PAGE_SIZE = 6;
+
+function GroupedChargeList({
   charges,
   emptyMessage,
+  describeCharge,
 }: {
   charges: PaymentHistoryCharge[];
   emptyMessage: string;
+  describeCharge: (charge: PaymentHistoryCharge) => string;
 }) {
-  if (charges.length === 0) {
+  const groups = useMemo(() => groupChargesByDate(charges), [charges]);
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(CHARGE_GROUPS_PAGE_SIZE);
+
+  if (groups.length === 0) {
     return (
       <div
         className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm"
@@ -288,25 +379,91 @@ function ChargeList({
     );
   }
 
+  const visibleGroups = groups.slice(0, visibleCount);
+  const hasMore = groups.length > visibleCount;
+
+  function toggleGroup(key: string) {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   return (
     <div className="space-y-3">
-      {charges.map((charge, index) => (
-        <div
-          key={charge.flowOrder ?? index}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm"
+      {visibleGroups.map((group) => {
+        const isExpanded = expandedKeys.has(group.dateKey);
+
+        return (
+          <div
+            key={group.dateKey}
+            className="overflow-hidden rounded-2xl border"
+            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+          >
+            <button
+              type="button"
+              onClick={() => toggleGroup(group.dateKey)}
+              className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left text-sm transition"
+              style={{ color: "var(--text-main)" }}
+            >
+              <span className="flex items-center gap-2">
+                <ChevronRight
+                  className="h-4 w-4 shrink-0 transition-transform"
+                  style={{
+                    color: "var(--text-muted)",
+                    transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                  }}
+                />
+                <span>{group.label}</span>
+                {group.charges.length > 1 ? (
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    · {group.charges.length} cargos
+                  </span>
+                ) : null}
+              </span>
+              <span className="font-semibold">{formatCLP(group.total)}</span>
+            </button>
+
+            {isExpanded ? (
+              <div
+                className="space-y-2 border-t px-4 py-3"
+                style={{ borderColor: "var(--border-color)" }}
+              >
+                {group.charges.map((charge, index) => (
+                  <div
+                    key={charge.flowOrder ?? index}
+                    className="flex flex-wrap items-center justify-between gap-3 text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    <span>{describeCharge(charge)}</span>
+                    <span className="flex items-center gap-2">
+                      <span>{charge.amount != null ? formatCLP(charge.amount) : "—"}</span>
+                      <span>{charge.status}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+
+      {hasMore ? (
+        <button
+          type="button"
+          onClick={() => setVisibleCount((prev) => prev + CHARGE_GROUPS_PAGE_SIZE)}
+          className="w-full rounded-xl border px-4 py-2 text-center text-sm font-medium transition"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-soft)",
             color: "var(--text-main)",
           }}
         >
-          <span>{formatDate(charge.date)}</span>
-          <span className="font-semibold">
-            {charge.amount != null ? formatCLP(charge.amount) : "—"}
-          </span>
-          <span style={{ color: "var(--text-muted)" }}>{charge.status}</span>
-        </div>
-      ))}
+          Ver más
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -1192,9 +1349,10 @@ function BillingPageInner() {
           ) : paymentHistoryError ? (
             <Notice tone="danger" title={paymentHistoryError} />
           ) : (
-            <ChargeList
+            <GroupedChargeList
               charges={subscriptionCharges}
               emptyMessage="Aún no tienes pagos registrados."
+              describeCharge={(charge) => describeSubscriptionChargeSubject(charge.subject)}
             />
           )}
         </Panel>
@@ -1210,9 +1368,10 @@ function BillingPageInner() {
           ) : paymentHistoryError ? (
             <Notice tone="danger" title={paymentHistoryError} />
           ) : (
-            <ChargeList
+            <GroupedChargeList
               charges={addonCharges}
               emptyMessage="Aún no tienes add-ons activos."
+              describeCharge={(charge) => describeAddonChargeSubject(charge.subject)}
             />
           )}
         </Panel>
