@@ -41,10 +41,10 @@ type BillingPreviewResponse = {
   change_type?: "same_plan" | "upgrade" | "downgrade";
   current_plan?: string;
   new_plan?: string;
+  // Para upgrade, ya viene con IVA incluido (Flow calcula el prorrateo
+  // sobre montos brutos de plan) — no se le vuelve a aplicar IVA acá.
   amount_today?: number;
-  credit?: number;
-  charge?: number;
-  days_remaining?: number;
+  requires_card?: boolean;
   billing_cycle_end?: string;
   scheduled_change_at?: string;
   message?: string;
@@ -225,11 +225,6 @@ function formatDate(dateString?: string | null) {
   });
 }
 
-function formatRemainingDays(value?: number | null) {
-  if (value == null || Number.isNaN(Number(value))) return "-";
-  return `${Math.max(0, Math.round(Number(value)))} dias`;
-}
-
 function normalizePlanFromUrl(rawValue: string | null): PlanKey {
   const raw = String(rawValue || "vip").toLowerCase();
 
@@ -329,6 +324,7 @@ function PlanesPageContent() {
   const [downgradeModalOpen, setDowngradeModalOpen] = useState(false);
   const [downgradeChecking, setDowngradeChecking] = useState(false);
   const [downgradeBlockError, setDowngradeBlockError] = useState("");
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
   // Add-ons reales del backend (solo con tenant_id; la página pública usa
   // estado local). Con tenant_id esto es SOLO LECTURA — sirve para que el
@@ -392,10 +388,15 @@ function PlanesPageContent() {
     supportsGroupCapacityExtra,
   ]);
 
+  // Para upgrade, amount_today ya viene con IVA incluido desde el backend
+  // (Flow calcula el prorrateo sobre montos de plan brutos) — no se le
+  // vuelve a aplicar IVA acá. extrasSubtotal (add-ons ya activos, solo
+  // informativo en esta pantalla) sigue siendo neto, así que el IVA solo
+  // se calcula sobre esa parte.
   const previewAmountToday = Number(preview?.amount_today || 0);
-  const payTodaySubtotal = previewAmountToday + extrasSubtotal;
+  const payTodaySubtotal = extrasSubtotal;
   const payTodayIva = Math.round(payTodaySubtotal * 0.19);
-  const payTodayTotal = payTodaySubtotal + payTodayIva;
+  const payTodayTotal = previewAmountToday + payTodaySubtotal + payTodayIva;
 
   const currentStaffTotal = selectedPlan.includedStaff + staffExtras;
   const currentBranchTotal = selectedPlan.includedBranches + sucursalExtras;
@@ -735,6 +736,14 @@ function PlanesPageContent() {
       return;
     }
 
+    if (previewType === "upgrade") {
+      if (preview?.requires_card) return;
+      setApplyError("");
+      setApplyOk("");
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     await applyPlanChange();
   }
 
@@ -796,8 +805,6 @@ function PlanesPageContent() {
     preview?.scheduled_change_at || preview?.billing_cycle_end
   );
 
-  const remainingDaysLabel = formatRemainingDays(preview?.days_remaining);
-
   const ctaLabel =
     !hasBillingContext
       ? isProSelected
@@ -807,6 +814,8 @@ function PlanesPageContent() {
       ? "Mantener este plan"
       : previewType === "downgrade"
       ? "Programar downgrade"
+      : previewType === "upgrade" && preview?.requires_card
+      ? "Registrar tarjeta"
       : "Cambiar ahora";
 
   const publicCtaHref = isProSelected
@@ -824,7 +833,11 @@ function PlanesPageContent() {
   const publicReferenceTotal =
     selectedPlanMonthly + publicPlanIva + extrasSubtotal + publicExtrasIva;
 
-  const summaryBaseLabel = "Plan base";
+  // Para upgrade, este monto ya incluye IVA (viene de Flow) — se relabela
+  // para no confundirlo con las lineas de Subtotal/IVA de abajo, que solo
+  // cubren los add-ons (netos).
+  const summaryBaseLabel =
+    hasBillingContext && previewType === "upgrade" ? "Plan base (IVA incluido)" : "Plan base";
 
   const summaryBaseAmount = hasBillingContext
     ? previewType === "downgrade"
@@ -1336,7 +1349,7 @@ function PlanesPageContent() {
                     className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
                       previewType === "same_plan"
                         ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
-                        : previewType === "downgrade"
+                        : previewType === "downgrade" || preview?.requires_card
                         ? "border-amber-300/20 bg-amber-500/10 text-amber-100"
                         : "border-cyan-300/20 bg-cyan-500/10 text-cyan-100"
                     }`}
@@ -1359,21 +1372,31 @@ function PlanesPageContent() {
                   ) : null}
                 </div>
 
-                {previewType === "upgrade" ? (
+                {previewType === "upgrade" && preview?.requires_card ? (
+                  <div className="mt-4 rounded-xl border border-amber-300/15 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                    Necesitas una tarjeta registrada para cambiar de plan.{" "}
+                    {slug ? (
+                      <Link
+                        href={`/dashboard/${slug}/billing`}
+                        className="font-semibold underline"
+                      >
+                        Registrar tarjeta en Facturación y pago
+                      </Link>
+                    ) : (
+                      "Regístrala desde Facturación y pago en tu dashboard."
+                    )}
+                  </div>
+                ) : previewType === "upgrade" ? (
                   <div className="mt-4 space-y-3 rounded-xl border border-cyan-300/15 bg-cyan-400/8 p-4">
-                    <SummaryLine label="Dias restantes del ciclo" value={remainingDaysLabel} />
                     <SummaryLine
-                      label="Credito proporcional plan actual"
-                      value={`- ${formatCLP(Number(preview?.credit || 0))}`}
-                    />
-                    <SummaryLine
-                      label="Cargo proporcional nuevo plan"
-                      value={formatCLP(Number(preview?.charge || 0))}
+                      label="Total a cobrar hoy (IVA incluido)"
+                      value={formatCLP(previewAmountToday)}
                     />
                     <p className="text-xs leading-5 text-cyan-100/80">
-                      Los add-ons que ya esten incluidos en el nuevo plan se
-                      cancelan automaticamente y su valor se descuenta del
-                      prorrateo.
+                      El monto se prorratea según los días restantes de tu
+                      ciclo actual y se cobra de inmediato a tu tarjeta
+                      registrada. Los add-ons que ya estén incluidos en el
+                      nuevo plan se cancelan automáticamente.
                     </p>
                   </div>
                 ) : null}
@@ -1640,7 +1663,14 @@ function PlanesPageContent() {
                 ) : null}
 
                 <div className="mt-4 space-y-3">
-                  {hasBillingContext ? (
+                  {hasBillingContext && previewType === "upgrade" && preview?.requires_card ? (
+                    <Link
+                      href={slug ? `/dashboard/${slug}/billing` : "#"}
+                      className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb]"
+                    >
+                      {ctaLabel}
+                    </Link>
+                  ) : hasBillingContext ? (
                     <button
                       type="button"
                       onClick={handleApplyPlanChange}
@@ -1808,6 +1838,56 @@ function PlanesPageContent() {
                 className="inline-flex h-11 items-center justify-center rounded-lg bg-amber-400 px-5 text-sm font-black text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Confirmar downgrade
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {upgradeModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-cyan-300/25 bg-[#06101d] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.5)] sm:rounded-2xl">
+            <h3 className="text-lg font-semibold text-white">
+              Confirmar cambio a {selectedPlan.name}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              El cambio se aplicará de inmediato y se cobrará el prorrateo a
+              tu tarjeta registrada.
+            </p>
+
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-cyan-300/15 bg-cyan-400/8 px-4 py-3">
+              <span className="text-sm font-semibold text-white">
+                Total a cobrar hoy (IVA incluido)
+              </span>
+              <span className="text-lg font-black text-cyan-200">
+                {formatCLP(previewAmountToday)}
+              </span>
+            </div>
+
+            <p className="mt-3 text-xs leading-5 text-amber-200/90">
+              Se cobrará {formatCLP(previewAmountToday)} ahora mismo a tu
+              tarjeta registrada.
+            </p>
+
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setUpgradeModalOpen(false)}
+                disabled={applying}
+                className="inline-flex h-11 items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={applying}
+                onClick={async () => {
+                  await applyPlanChange();
+                  setUpgradeModalOpen(false);
+                }}
+                className="inline-flex h-11 items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-sm font-black text-slate-950 transition hover:bg-[#45eadb] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {applying ? "Procesando..." : "Confirmar cobro"}
               </button>
             </div>
           </div>
