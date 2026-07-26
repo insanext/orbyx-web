@@ -55,9 +55,13 @@ export default function RecuperarPasswordPage() {
             <div className="text-center">
               <p className="text-4xl mb-3">✓</p>
               <h2 className="text-white font-semibold mb-2">Revisa tu correo</h2>
-              <p className="text-sm mb-5" style={{ color: "rgba(147,197,253,0.6)" }}>
+              <p className="text-sm mb-3" style={{ color: "rgba(147,197,253,0.6)" }}>
                 Si el email existe en nuestro sistema, recibirás un enlace
                 para restablecer tu contraseña.
+              </p>
+              <p className="text-xs mb-5" style={{ color: "rgba(147,197,253,0.4)" }}>
+                Si no lo ves en tu bandeja de entrada en unos minutos, revisa
+                tu carpeta de spam o correo no deseado.
               </p>
               <a
                 href="/login"
