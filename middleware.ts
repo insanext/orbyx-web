@@ -59,6 +59,9 @@ export async function middleware(request: NextRequest) {
   if (user && pathname.startsWith("/dashboard/")) {
     const dashboardSlug = pathname.match(/^\/dashboard\/([^/]+)/)?.[1];
 
+    // temp: logging de diagnóstico
+    console.warn("ownership check: INICIO", { dashboardSlug, userId: user?.id });
+
     if (dashboardSlug) {
       const { data: tenant, error: tenantError } = await supabase
         .from("tenants")
@@ -66,6 +69,16 @@ export async function middleware(request: NextRequest) {
         .eq("slug", dashboardSlug)
         .eq("is_active", true)
         .maybeSingle();
+
+      // temp: logging de diagnóstico — captura completa del error de Supabase
+      if (tenantError) {
+        console.error("ownership check: ERROR consultando tenants", {
+          message: tenantError.message,
+          code: tenantError.code,
+          details: tenantError.details,
+          hint: tenantError.hint,
+        });
+      }
 
       // temp: logging de diagnóstico — ver PR/commit "temp: logging de diagnóstico"
       console.warn("ownership check: tenant encontrado?", {
@@ -85,6 +98,16 @@ export async function middleware(request: NextRequest) {
           .eq("user_id", user.id)
           .eq("is_active", true)
           .maybeSingle();
+
+        // temp: logging de diagnóstico — captura completa del error de Supabase
+        if (tenantUserError) {
+          console.error("ownership check: ERROR consultando tenant_users", {
+            message: tenantUserError.message,
+            code: tenantUserError.code,
+            details: tenantUserError.details,
+            hint: tenantUserError.hint,
+          });
+        }
 
         // temp: logging de diagnóstico
         console.warn("ownership check: fila tenant_users encontrada?", {
