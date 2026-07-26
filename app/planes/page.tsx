@@ -9,6 +9,7 @@ import {
   plans,
   billingCycleConfig,
   cycleTotalPrice,
+  TRIAL_LABEL,
   type Plan,
   type PlanKey,
   type ExtraKey,
@@ -808,7 +809,7 @@ function PlanesPageContent() {
   const ctaLabel =
     !hasBillingContext
       ? isProSelected
-        ? "Probar gratis 14 dias"
+        ? `Probar gratis ${TRIAL_LABEL}`
         : "Comenzar ahora"
       : previewType === "same_plan"
       ? "Mantener este plan"
@@ -1186,7 +1187,7 @@ function PlanesPageContent() {
                         {isSelected
                           ? "Plan seleccionado"
                           : plan.key === "pro"
-                          ? "Probar gratis 14 dias"
+                          ? `Probar gratis ${TRIAL_LABEL}`
                           : "Comenzar ahora"}
                       </div>
 
@@ -1251,7 +1252,7 @@ function PlanesPageContent() {
 
             <div className="mt-5 grid gap-3 rounded-[16px] border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-300 md:grid-cols-2 xl:grid-cols-4">
               {[
-                ["Versión de prueba 14 días en Pro", "Prueba sin riesgos.", CalendarDays],
+                [`Versión de prueba ${TRIAL_LABEL} en Pro`, "Prueba sin riesgos.", CalendarDays],
                 ["Sin tarjeta de credito", "Comienza en segundos.", Lock],
                 ["Cambia cuando quieras", "Upgrade, downgrade o cancela.", Zap],
                 ["Siempre seguro", "Tus datos estan protegidos.", ShieldCheck],
@@ -1695,7 +1696,7 @@ function PlanesPageContent() {
                   <p className="flex items-center justify-center gap-2 text-center text-xs text-slate-400">
                     <Lock className="h-3.5 w-3.5 text-cyan-300" />
                     {!hasBillingContext && isProSelected
-                      ? "Versión de prueba 14 días, sin tarjeta de crédito. Cancela cuando quieras."
+                      ? `Versión de prueba ${TRIAL_LABEL}, sin tarjeta de crédito. Cancela cuando quieras.`
                       : "Cancela o cambia de plan cuando quieras."}
                   </p>
 

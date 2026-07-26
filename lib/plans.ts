@@ -9,6 +9,12 @@ export type ExtraKey =
   | "group_capacity";
 export type BillingCycle = "mensual" | "semestral" | "anual";
 
+// Período de prueba gratis del plan Pro. Única fuente de verdad para el
+// texto de marketing (landing, tarjeta de precios, comparador de planes) —
+// no hay enforcement de fecha de expiración en el backend todavía.
+export const TRIAL_DAYS = 30;
+export const TRIAL_LABEL = "1 mes";
+
 export type FeatureItem = {
   title: string;
   description?: string;
@@ -53,7 +59,7 @@ export const plans: Plan[] = [
     subtitle: "Pequeno negocio con agenda profesional",
     benefit:
       "Agenda online, reservas y una base clara para ordenar la operacion diaria.",
-    badge: "PRUEBA 14 DÍAS",
+    badge: `PRUEBA ${TRIAL_LABEL.toUpperCase()}`,
     includedBranches: 1,
     includedStaff: 2,
     includedServices: 10,
@@ -74,7 +80,7 @@ export const plans: Plan[] = [
       { title: "Campanas email 200/mes" },
       { title: "Google Calendar sync" },
       { title: "Soporte por email" },
-      { title: "Versión de prueba 14 días gratis", highlight: true },
+      { title: `Versión de prueba ${TRIAL_LABEL} gratis`, highlight: true },
       { title: "Recordatorios WhatsApp 100/mes", trialLocked: true },
     ],
     icon: "mail",

@@ -20,6 +20,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { TRIAL_LABEL } from "@/lib/plans";
 
 const serif = { fontFamily: "var(--font-dm-serif), Georgia, serif" };
 
@@ -55,7 +56,7 @@ export default function OrbyxLandingPage() {
     { icon: TrendingUp, title: "Tú visualizas todo", desc: "y haces crecer tu negocio" },
   ];
 
-  const ctaBadges = ["7 días gratis", "Sin tarjeta de crédito", "Cancelas cuando quieras"];
+  const ctaBadges = [`${TRIAL_LABEL} gratis`, "Sin tarjeta de crédito", "Cancelas cuando quieras"];
 
   const agendaStaff = [
     { name: "Camila R.", role: "Estilista", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face" },
@@ -140,7 +141,7 @@ export default function OrbyxLandingPage() {
                   href="/signup?plan=pro"
                   className="inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#333] px-7 text-base font-bold text-white shadow-[0_0_25px_rgba(0,0,0,0.12),0_8px_20px_-6px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:from-[#2a2a2a] hover:to-[#444] hover:shadow-[0_0_35px_rgba(0,0,0,0.18),0_12px_28px_-6px_rgba(0,0,0,0.30)]"
                 >
-                  Probar gratis 7 días
+                  Probar gratis {TRIAL_LABEL}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
@@ -562,7 +563,7 @@ export default function OrbyxLandingPage() {
                   href="/signup?plan=pro"
                   className="inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#333] px-8 text-base font-bold text-white shadow-[0_0_25px_rgba(0,0,0,0.12),0_8px_20px_-6px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:from-[#2a2a2a] hover:to-[#444] hover:shadow-[0_0_35px_rgba(0,0,0,0.18),0_12px_28px_-6px_rgba(0,0,0,0.30)]"
                 >
-                  Probar gratis 7 días
+                  Probar gratis {TRIAL_LABEL}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link

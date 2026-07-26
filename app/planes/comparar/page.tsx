@@ -11,6 +11,7 @@ import {
   Info,
   Check,
 } from "lucide-react";
+import { TRIAL_LABEL } from "@/lib/plans";
 
 type PlanKey = "pro" | "premium" | "vip" | "platinum";
 
@@ -233,14 +234,14 @@ const comparisonRows: ComparisonRow[] = [
     info: "Nivel de soporte incluido en el plan.",
   },
   {
-    label: "Trial 14 días",
+    label: `Trial ${TRIAL_LABEL}`,
     values: {
       pro: "Sí",
       premium: "—",
       vip: "—",
       platinum: "—",
     },
-    info: "El plan Pro incluye 14 días de prueba gratuita. Los demás planes no incluyen trial.",
+    info: `El plan Pro incluye ${TRIAL_LABEL} de prueba gratuita. Los demás planes no incluyen trial.`,
   },
   {
     label: "Estadísticas básicas",
@@ -462,7 +463,7 @@ export default function CompararPlanesPage() {
               <p className="mt-2 text-sm leading-6 text-amber-50/90">
                 Los mensajes WhatsApp e IA no son acumulables entre períodos. Se renuevan mensualmente.
                 Campañas WhatsApp: <span className="font-semibold">$6.990 + iva</span> por pack de 50 mensajes (solo VIP y Platinum).
-                * WhatsApp conf+rec en Pro: disponible al activar plan pagado, no durante el trial de 14 días.
+                * WhatsApp conf+rec en Pro: disponible al activar plan pagado, no durante el trial de {TRIAL_LABEL}.
               </p>
             </div>
           </div>
