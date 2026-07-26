@@ -57,6 +57,7 @@ async function resolveTenantDestination({
     .from("tenants")
     .select("slug, business_category")
     .eq("id", tenantUserRow.tenant_id)
+    .eq("is_active", true)
     .single();
 
   if (tenantError || !tenantRow?.slug) {
@@ -99,21 +100,21 @@ function LoginForm() {
     async function checkExistingSession() {
       const supabase = createClient();
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (cancelled) return;
 
-      if (!session?.user) {
+      if (!user) {
         setCheckingSession(false);
         return;
       }
 
       const result = await resolveTenantDestination({
         supabase,
-        userId: session.user.id,
-        userEmail: session.user.email || "",
-        plan: session.user.user_metadata?.plan || "pro",
+        userId: user.id,
+        userEmail: user.email || "",
+        plan: user.user_metadata?.plan || "pro",
         redirectTo: searchParams.get("redirectTo"),
       });
 
