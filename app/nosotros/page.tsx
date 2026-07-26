@@ -1,19 +1,13 @@
 "use client";
 
 import {
-  Award,
   Bot,
   Building2,
-  Feather,
   Headset,
   Link2,
   PawPrint,
-  RefreshCcw,
-  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
-  Target,
-  Eye,
   Zap,
 } from "lucide-react";
 import { PublicThemeProvider } from "@/lib/public-theme";
@@ -21,6 +15,7 @@ import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
 const serif = { fontFamily: "var(--font-dm-serif), Georgia, serif" };
+const ROMAN = ["I", "II", "III", "IV", "V", "VI"];
 
 export default function NosotrosPage() {
   return (
@@ -32,12 +27,12 @@ export default function NosotrosPage() {
 
 function NosotrosContent() {
   const valores = [
-    { icon: Sparkles, title: "Innovación con propósito", desc: "Creamos tecnología para resolver problemas reales." },
-    { icon: ShieldCheck, title: "Confianza", desc: "Construimos relaciones transparentes y protegemos la información de nuestros clientes." },
-    { icon: Feather, title: "Simplicidad", desc: "La mejor tecnología es aquella que cualquiera puede utilizar." },
-    { icon: RefreshCcw, title: "Evolución constante", desc: "Aprendemos, mejoramos y evolucionamos junto con la inteligencia artificial." },
-    { icon: Target, title: "Orientación al cliente", desc: "Cada solución nace desde las necesidades reales de nuestros clientes." },
-    { icon: Award, title: "Excelencia", desc: "Buscamos calidad, estabilidad y precisión en todo lo que desarrollamos." },
+    { title: "Innovación con propósito", desc: "Creamos tecnología para resolver problemas reales." },
+    { title: "Confianza", desc: "Construimos relaciones transparentes y protegemos la información de nuestros clientes." },
+    { title: "Simplicidad", desc: "La mejor tecnología es aquella que cualquiera puede utilizar." },
+    { title: "Evolución constante", desc: "Aprendemos, mejoramos y evolucionamos junto con la inteligencia artificial." },
+    { title: "Orientación al cliente", desc: "Cada solución nace desde las necesidades reales de nuestros clientes." },
+    { title: "Excelencia", desc: "Buscamos calidad, estabilidad y precisión en todo lo que desarrollamos." },
   ];
 
   const porQueOrbyx = [
@@ -136,15 +131,13 @@ function NosotrosContent() {
       {/* ── MISIÓN Y VISIÓN ── */}
       <section className="relative px-4 py-16 sm:px-6 lg:px-10">
         <div className="mx-auto max-w-[1360px]">
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="rounded-[22px] border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] p-7 shadow-sm sm:p-8">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--pub-accent-soft-bg)] text-[var(--pub-accent)]">
-                <Target className="h-5 w-5" />
-              </div>
-              <h3 style={serif} className="mt-5 text-2xl tracking-[-0.01em] text-[var(--pub-text)]">
+          <div className="grid gap-10 sm:grid-cols-2 sm:gap-16">
+            <div>
+              <h3 style={serif} className="text-2xl tracking-[-0.01em] text-[var(--pub-text)] sm:text-3xl">
                 Misión
               </h3>
-              <p className="mt-3 text-sm leading-7 text-[var(--pub-text-muted)]">
+              <div className="mt-3 h-px w-12 bg-[var(--pub-accent)]" />
+              <p className="mt-5 text-base leading-8 text-[var(--pub-text-muted)]">
                 Desarrollar soluciones de automatización e inteligencia
                 artificial que simplifiquen procesos, optimicen recursos y
                 mejoren la productividad de las empresas mediante
@@ -152,14 +145,12 @@ function NosotrosContent() {
               </p>
             </div>
 
-            <div className="rounded-[22px] border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] p-7 shadow-sm sm:p-8">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--pub-accent-soft-bg)] text-[var(--pub-accent)]">
-                <Eye className="h-5 w-5" />
-              </div>
-              <h3 style={serif} className="mt-5 text-2xl tracking-[-0.01em] text-[var(--pub-text)]">
+            <div>
+              <h3 style={serif} className="text-2xl tracking-[-0.01em] text-[var(--pub-text)] sm:text-3xl">
                 Visión
               </h3>
-              <p className="mt-3 text-sm leading-7 text-[var(--pub-text-muted)]">
+              <div className="mt-3 h-px w-12 bg-[var(--pub-accent)]" />
+              <p className="mt-5 text-base leading-8 text-[var(--pub-text-muted)]">
                 Posicionarnos como una empresa competitiva en automatización
                 inteligente, reconocida por desarrollar soluciones
                 innovadoras, confiables y accesibles que impulsen la
@@ -185,29 +176,28 @@ function NosotrosContent() {
             </h2>
           </div>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {valores.map((valor) => {
-              const Icon = valor.icon;
-              return (
-                <div
-                  key={valor.title}
-                  className="rounded-2xl border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] p-6 text-center shadow-sm"
+          <div className="mx-auto mt-12 max-w-[720px] divide-y divide-[var(--pub-border)]">
+            {valores.map((valor, index) => (
+              <div key={valor.title} className="flex gap-6 py-7 first:pt-0 sm:gap-8">
+                <span
+                  style={serif}
+                  className="w-9 shrink-0 text-2xl leading-none text-[var(--pub-accent)] sm:text-3xl"
                 >
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--pub-accent-soft-bg)] text-[var(--pub-accent)]">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <p className="mt-4 text-base font-bold text-[var(--pub-text)]">{valor.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-[var(--pub-text-muted)]">{valor.desc}</p>
+                  {ROMAN[index]}
+                </span>
+                <div>
+                  <p className="text-lg font-bold text-[var(--pub-text)]">{valor.title}</p>
+                  <p className="mt-1.5 text-base leading-7 text-[var(--pub-text-muted)]">{valor.desc}</p>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── POR QUÉ ORBYX ── */}
       <section className="relative px-4 py-16 sm:px-6 lg:px-10">
-        <div className="mx-auto max-w-[1360px] rounded-[24px] border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] p-6 shadow-sm sm:p-10">
+        <div className="mx-auto max-w-[1360px]">
           <div className="mx-auto max-w-2xl text-center">
             <h2
               style={serif}
@@ -217,15 +207,16 @@ function NosotrosContent() {
             </h2>
           </div>
 
-          <div className="mx-auto mt-10 grid max-w-[900px] gap-x-10 gap-y-6 sm:grid-cols-2">
+          <div className="mx-auto mt-10 grid max-w-[900px] gap-x-12 sm:grid-cols-2">
             {porQueOrbyx.map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.title} className="flex items-center gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--pub-accent-soft-bg)] text-[var(--pub-accent)]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <p className="text-sm font-semibold text-[var(--pub-text)]">{item.title}</p>
+                <div
+                  key={item.title}
+                  className="flex items-center gap-4 border-t border-[var(--pub-border)] py-5"
+                >
+                  <Icon className="h-5 w-5 shrink-0 text-[var(--pub-accent)]" strokeWidth={1.5} />
+                  <p className="text-base font-semibold text-[var(--pub-text)]">{item.title}</p>
                 </div>
               );
             })}
@@ -249,7 +240,7 @@ function NosotrosContent() {
               style={serif}
               className="text-3xl leading-tight tracking-[-0.02em] text-[var(--pub-text)] sm:text-4xl lg:text-[44px]"
             >
-              Conoce a Orbit 🐩
+              Conoce a Orbit
             </h2>
             <p className="mt-6 max-w-[560px] text-base leading-8 text-[var(--pub-text-muted)]">
               Orbit es el compañero y embajador de Orbyx. Representa la
