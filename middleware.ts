@@ -115,11 +115,28 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (tenantUser) {
+      // Mismo criterio que el chequeo de ownership de /dashboard/{slug}/**
+      // más abajo (is_active=true en tenants) — antes este bloque no lo
+      // filtraba, así que un tenant_users activo apuntando a un tenant
+      // inactivo se resolvía igual acá y el otro chequeo lo rechazaba,
+      // generando un loop de redirección entre /login y /dashboard/{slug}.
       const { data: tenant } = await supabase
         .from("tenants")
         .select("slug, business_category")
         .eq("id", tenantUser.tenant_id)
-        .single();
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!tenant) {
+        // tenant_users activo sin un tenant activo correspondiente: dato
+        // inconsistente (membresía huérfana), mismo patrón visto con
+        // barberiaprueba. No se resuelve acá — cae al fallback de abajo
+        // y se muestra el login normal — pero se deja registrado para
+        // poder encontrar estas membresías huérfanas más adelante.
+        console.warn(
+          `middleware /login: tenant_users activo (user_id=${user.id}) apunta a tenants.id=${tenantUser.tenant_id} inexistente o inactivo`
+        );
+      }
 
       if (tenant?.slug) {
         const ONBOARDING_PENDING = new Set(["generic", "generico"]);
