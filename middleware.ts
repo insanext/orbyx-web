@@ -60,17 +60,25 @@ export async function middleware(request: NextRequest) {
     const dashboardSlug = pathname.match(/^\/dashboard\/([^/]+)/)?.[1];
 
     if (dashboardSlug) {
-      const { data: tenant } = await supabase
+      const { data: tenant, error: tenantError } = await supabase
         .from("tenants")
         .select("id")
         .eq("slug", dashboardSlug)
         .eq("is_active", true)
         .maybeSingle();
 
+      // temp: logging de diagnóstico — ver PR/commit "temp: logging de diagnóstico"
+      console.warn("ownership check: tenant encontrado?", {
+        dashboardSlug,
+        userId: user.id,
+        tenant,
+        tenantError,
+      });
+
       let hasAccess = false;
 
       if (tenant?.id) {
-        const { data: tenantUser } = await supabase
+        const { data: tenantUser, error: tenantUserError } = await supabase
           .from("tenant_users")
           .select("id")
           .eq("tenant_id", tenant.id)
@@ -78,8 +86,23 @@ export async function middleware(request: NextRequest) {
           .eq("is_active", true)
           .maybeSingle();
 
+        // temp: logging de diagnóstico
+        console.warn("ownership check: fila tenant_users encontrada?", {
+          tenantId: tenant.id,
+          userId: user.id,
+          tenantUser,
+          tenantUserError,
+        });
+
         hasAccess = Boolean(tenantUser);
       }
+
+      // temp: logging de diagnóstico
+      console.warn("ownership check: resultado final?", {
+        dashboardSlug,
+        userId: user.id,
+        hasAccess,
+      });
 
       // Mismo mensaje genérico exista o no el tenant, para no revelar cuál
       // de los dos casos es (evita confirmar/negar la existencia de un
