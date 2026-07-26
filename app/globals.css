@@ -43,6 +43,41 @@
   --border-color: #334155;
 }
 
+/* Tema de las páginas públicas de marketing (landing, precios). Completamente
+   separado del tema del dashboard (data-theme clasico/nocturno arriba) —
+   distinta key de storage, distinto atributo, escopado a .orbyx-public. */
+.orbyx-public[data-public-theme="light"] {
+  --pub-bg: #fafafa;
+  --pub-bg-elevated: #ffffff;
+  --pub-bg-soft: #f0f0f0;
+  --pub-text: #111111;
+  --pub-text-muted: #6b6b6b;
+  --pub-text-faint: #999999;
+  --pub-border: #e5e5e5;
+  --pub-border-soft: #ebebeb;
+  --pub-accent: #14b8a6;
+  --pub-accent-text: #ffffff;
+  --pub-accent-soft-bg: rgba(20, 184, 166, 0.10);
+  --pub-accent-soft-border: rgba(20, 184, 166, 0.30);
+  --pub-shadow-color: rgba(0, 0, 0, 0.08);
+}
+
+.orbyx-public[data-public-theme="dark"] {
+  --pub-bg: #020814;
+  --pub-bg-elevated: #0b1220;
+  --pub-bg-soft: rgba(255, 255, 255, 0.05);
+  --pub-text: #f8fafc;
+  --pub-text-muted: #94a3b8;
+  --pub-text-faint: #64748b;
+  --pub-border: rgba(255, 255, 255, 0.10);
+  --pub-border-soft: rgba(255, 255, 255, 0.06);
+  --pub-accent: #21d6c5;
+  --pub-accent-text: #04241f;
+  --pub-accent-soft-bg: rgba(34, 211, 238, 0.08);
+  --pub-accent-soft-border: rgba(34, 211, 238, 0.30);
+  --pub-shadow-color: rgba(0, 0, 0, 0.45);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
