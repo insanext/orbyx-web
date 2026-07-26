@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function RecuperarPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string>("");
+  const turnstileRef = useRef<any>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,6 +24,7 @@ export default function RecuperarPasswordPage() {
 
       await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${siteUrl}/actualizar-password`,
+        captchaToken,
       });
 
       // Mensaje genérico sin importar el resultado real: no confirmar ni
@@ -28,6 +32,8 @@ export default function RecuperarPasswordPage() {
       // seguridad aplicado al fix de acceso a tenants ajenos).
       setSent(true);
     } catch {
+      turnstileRef.current?.reset();
+      setCaptchaToken("");
       setErrorMsg("No se pudo procesar la solicitud. Intenta de nuevo.");
     } finally {
       setSubmitting(false);
@@ -92,9 +98,20 @@ export default function RecuperarPasswordPage() {
 
                 {errorMsg && <p className="text-xs text-red-400">{errorMsg}</p>}
 
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <Turnstile
+                    ref={turnstileRef}
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                    onSuccess={(token) => setCaptchaToken(token)}
+                    onExpire={() => setCaptchaToken("")}
+                    onError={() => setCaptchaToken("")}
+                    options={{ theme: "dark" }}
+                  />
+                </div>
+
                 <button
                   type="submit"
-                  disabled={submitting || !email}
+                  disabled={submitting || !email || !captchaToken}
                   className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-40"
                 >
                   {submitting ? "Enviando..." : "Enviar enlace"}
