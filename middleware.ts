@@ -59,39 +59,18 @@ export async function middleware(request: NextRequest) {
   if (user && pathname.startsWith("/dashboard/")) {
     const dashboardSlug = pathname.match(/^\/dashboard\/([^/]+)/)?.[1];
 
-    // temp: logging de diagnóstico
-    console.warn("ownership check: INICIO", { dashboardSlug, userId: user?.id });
-
     if (dashboardSlug) {
-      const { data: tenant, error: tenantError } = await supabase
+      const { data: tenant } = await supabase
         .from("tenants")
         .select("id")
         .eq("slug", dashboardSlug)
         .eq("is_active", true)
         .maybeSingle();
 
-      // temp: logging de diagnóstico — captura completa del error de Supabase
-      if (tenantError) {
-        console.error("ownership check: ERROR consultando tenants", {
-          message: tenantError.message,
-          code: tenantError.code,
-          details: tenantError.details,
-          hint: tenantError.hint,
-        });
-      }
-
-      // temp: logging de diagnóstico — ver PR/commit "temp: logging de diagnóstico"
-      console.warn("ownership check: tenant encontrado?", {
-        dashboardSlug,
-        userId: user.id,
-        tenant,
-        tenantError,
-      });
-
       let hasAccess = false;
 
       if (tenant?.id) {
-        const { data: tenantUser, error: tenantUserError } = await supabase
+        const { data: tenantUser } = await supabase
           .from("tenant_users")
           .select("tenant_id, user_id, role, is_active")
           .eq("tenant_id", tenant.id)
@@ -99,33 +78,8 @@ export async function middleware(request: NextRequest) {
           .eq("is_active", true)
           .maybeSingle();
 
-        // temp: logging de diagnóstico — captura completa del error de Supabase
-        if (tenantUserError) {
-          console.error("ownership check: ERROR consultando tenant_users", {
-            message: tenantUserError.message,
-            code: tenantUserError.code,
-            details: tenantUserError.details,
-            hint: tenantUserError.hint,
-          });
-        }
-
-        // temp: logging de diagnóstico
-        console.warn("ownership check: fila tenant_users encontrada?", {
-          tenantId: tenant.id,
-          userId: user.id,
-          tenantUser,
-          tenantUserError,
-        });
-
         hasAccess = Boolean(tenantUser);
       }
-
-      // temp: logging de diagnóstico
-      console.warn("ownership check: resultado final?", {
-        dashboardSlug,
-        userId: user.id,
-        hasAccess,
-      });
 
       // Mismo mensaje genérico exista o no el tenant, para no revelar cuál
       // de los dos casos es (evita confirmar/negar la existencia de un
