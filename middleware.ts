@@ -93,7 +93,7 @@ export async function middleware(request: NextRequest) {
       if (tenant?.id) {
         const { data: tenantUser, error: tenantUserError } = await supabase
           .from("tenant_users")
-          .select("id")
+          .select("tenant_id, user_id, role, is_active")
           .eq("tenant_id", tenant.id)
           .eq("user_id", user.id)
           .eq("is_active", true)
