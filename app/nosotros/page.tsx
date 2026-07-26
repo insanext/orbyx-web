@@ -5,7 +5,6 @@ import {
   Building2,
   Headset,
   Link2,
-  PawPrint,
   SlidersHorizontal,
   Sparkles,
   Zap,
@@ -220,35 +219,6 @@ function NosotrosContent() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── ORBIT ── */}
-      <section className="relative px-4 pb-16 pt-2 sm:px-6 lg:px-10">
-        <div className="mx-auto grid max-w-[1360px] gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          {/* Placeholder de imagen — aún no se genera la imagen de Orbit */}
-          <div className="mx-auto flex aspect-square w-full max-w-[380px] items-center justify-center rounded-[28px] border border-dashed border-[var(--pub-border)] bg-[var(--pub-bg-soft)]">
-            <div className="flex flex-col items-center gap-3 text-[var(--pub-text-faint)]">
-              <PawPrint className="h-10 w-10" />
-              <p className="text-xs font-medium">Imagen de Orbit próximamente</p>
-            </div>
-          </div>
-
-          <div>
-            <h2
-              style={serif}
-              className="text-3xl leading-tight tracking-[-0.02em] text-[var(--pub-text)] sm:text-4xl lg:text-[44px]"
-            >
-              Conoce a Orbit
-            </h2>
-            <p className="mt-6 max-w-[560px] text-base leading-8 text-[var(--pub-text-muted)]">
-              Orbit es el compañero y embajador de Orbyx. Representa la
-              cercanía, la curiosidad y el compromiso con el que
-              desarrollamos cada solución. Su misión es hacer que la
-              inteligencia artificial sea más humana, accesible y cercana
-              para todos nuestros clientes.
-            </p>
           </div>
         </div>
       </section>
