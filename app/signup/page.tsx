@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useRef, useState, useMemo } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { Turnstile } from "@marsidev/react-turnstile";
@@ -62,6 +63,7 @@ function SignupInner() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [accountAlreadyExists, setAccountAlreadyExists] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -77,6 +79,7 @@ function SignupInner() {
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
+    setAccountAlreadyExists(false);
 
     if (!passwordValid) {
       setMsg("La contraseña no cumple los requisitos mínimos.");
@@ -102,7 +105,7 @@ function SignupInner() {
 
     try {
       const siteUrl = window.location.origin;
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -113,6 +116,16 @@ function SignupInner() {
       });
       clearTimeout(timeout);
       if (error) throw error;
+
+      // Supabase responde 200 (sin error) cuando el email ya tiene una
+      // cuenta confirmada, para no filtrar si un correo existe — pero
+      // no crea nada nuevo. La única señal es identities vacío.
+      if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        setAccountAlreadyExists(true);
+        setMsg("Ya existe una cuenta con este correo.");
+        setLoading(false);
+        return;
+      }
 
       router.push("/auth/check-email");
     } catch (err: any) {
@@ -457,6 +470,14 @@ function SignupInner() {
               }}
             >
               {msg}
+              {accountAlreadyExists && (
+                <>
+                  {" "}
+                  <Link href="/login" style={{ color: "#f87171", textDecoration: "underline" }}>
+                    Inicia sesión en su lugar
+                  </Link>
+                </>
+              )}
             </p>
           )}
 
