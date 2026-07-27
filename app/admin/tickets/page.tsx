@@ -70,7 +70,7 @@ export default function AdminTicketsPage() {
   useEffect(() => { loadTickets(statusFilter || undefined) }, [statusFilter, loadTickets])
 
   return (
-    <div className="min-h-screen p-6" style={{ background: '#060a14' }}>
+    <div className="p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
