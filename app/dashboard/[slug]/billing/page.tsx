@@ -1,12 +1,13 @@
 "use client";
 
-import { CSSProperties, Suspense, useEffect, useMemo, useState } from "react";
+import { CSSProperties, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { ChevronRight, CreditCard } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { AddonManager } from "../../../../components/addons/AddonManager";
+import { plans as PLAN_DEFS, cycleTotalPrice } from "@/lib/plans";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -730,6 +731,10 @@ function BillingPageInner() {
   const [changingCard, setChangingCard] = useState(false);
   const [cardActionError, setCardActionError] = useState("");
 
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeError, setSubscribeError] = useState("");
+  const autoActivateTriedRef = useRef(false);
+
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [cancelError, setCancelError] = useState("");
@@ -773,6 +778,116 @@ function BillingPageInner() {
     if (!tenantId) return;
     loadSubscriptionStatus(tenantId);
   }, [tenantId]);
+
+  // Monto neto (sin IVA) para el plan actual del tenant — misma fuente
+  // (lib/plans.ts) y misma fórmula (cycleTotalPrice) que ya usa el
+  // checkout pagado de premium/vip/platinum, para no depender de un
+  // segundo valor de precio que pueda desincronizarse.
+  function subscriptionMontoForCurrentPlan() {
+    const planDef = PLAN_DEFS.find((p) => p.key === plan);
+    return cycleTotalPrice(planDef?.price ?? 0, "mensual");
+  }
+
+  // Activa la suscripción real en Flow para una tarjeta ya registrada
+  // (subscriptions.status === 'card_registered'). La usa tanto el botón
+  // "Activar suscripción" (por si el auto-disparo de abajo no llegó a
+  // correr) como el efecto que dispara esto solo al volver de Flow.
+  async function activateSubscription() {
+    try {
+      setSubscribing(true);
+      setSubscribeError("");
+
+      const res = await apiFetch(`${BACKEND_URL}/billing/flow/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          plan_id: plan,
+          periodicidad: "mensual",
+          monto: subscriptionMontoForCurrentPlan(),
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo activar la suscripción");
+      }
+
+      await loadSubscriptionStatus(tenantId);
+    } catch (error: unknown) {
+      setSubscribeError(
+        error instanceof Error ? error.message : "No se pudo activar la suscripción"
+      );
+    } finally {
+      setSubscribing(false);
+    }
+  }
+
+  // Suscribirse por primera vez (o reintentar tras 'pending'/'error'):
+  // create-customer es upsert sobre la fila existente del tenant, así
+  // que reintentar nunca duplica ni deja un estado peor.
+  async function handleSubscribe() {
+    try {
+      setSubscribing(true);
+      setSubscribeError("");
+
+      const createRes = await apiFetch(`${BACKEND_URL}/billing/flow/create-customer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          plan_id: plan,
+          monto: subscriptionMontoForCurrentPlan(),
+          periodicidad: "mensual",
+          // "v1": hueco preexistente, no nuevo — no hay hoy ningún checkbox
+          // de consentimiento visible en el frontend antes de un cargo
+          // recurrente (ni acá ni en checkout-premium). Pendiente real
+          // antes del lanzamiento público, no se resuelve en este cambio.
+          texto_autorizacion_version: "v1",
+        }),
+      });
+      const createData = await createRes.json();
+
+      if (!createRes.ok) {
+        throw new Error(createData?.error || "No se pudo iniciar la suscripción");
+      }
+
+      const registerRes = await apiFetch(`${BACKEND_URL}/billing/flow/register-card`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId }),
+      });
+      const registerData = await registerRes.json();
+
+      if (!registerRes.ok) {
+        throw new Error(registerData?.error || "No se pudo iniciar el registro de tarjeta");
+      }
+
+      window.location.href = registerData.url + "?token=" + registerData.token;
+    } catch (error: unknown) {
+      setSubscribeError(
+        error instanceof Error ? error.message : "No se pudo iniciar la suscripción"
+      );
+      setSubscribing(false);
+    }
+  }
+
+  // Al volver del enrolamiento de tarjeta de Flow con card_status=ok, si
+  // la suscripción quedó en 'card_registered' (tarjeta OK pero todavía
+  // sin activar el cobro recurrente), dispara subscribe automáticamente
+  // para no exigir un segundo clic manual. Ref en vez de solo estado
+  // para no reintentarlo en cada re-render mientras subscriptionStatus
+  // se sigue actualizando.
+  useEffect(() => {
+    if (autoActivateTriedRef.current) return;
+    if (cardStatusParam !== "ok") return;
+    if (!subscriptionStatus?.has_subscription) return;
+    if (subscriptionStatus.status !== "card_registered") return;
+
+    autoActivateTriedRef.current = true;
+    activateSubscription();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardStatusParam, subscriptionStatus]);
 
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryCharge[]>([]);
   const [loadingPaymentHistory, setLoadingPaymentHistory] = useState(true);
@@ -1257,45 +1372,91 @@ function BillingPageInner() {
           </p>
         ) : subscriptionError ? (
           <Notice tone="danger" title={subscriptionError} />
-        ) : !subscriptionStatus?.has_subscription ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            Aún no tienes un medio de pago automático configurado.
-          </p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                Plan
+          <>
+            {!subscriptionStatus?.has_subscription ? (
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                Aún no tienes un medio de pago automático configurado.
               </p>
-              <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                {PLAN_LABELS[subscriptionStatus.plan_id] || subscriptionStatus.plan_id}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                Periodicidad
-              </p>
-              <p className="mt-1 text-sm font-semibold capitalize" style={{ color: "var(--text-main)" }}>
-                {subscriptionStatus.periodicidad}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                Monto
-              </p>
-              <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                {subscriptionStatus.monto != null ? formatCLP(subscriptionStatus.monto) : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                Estado
-              </p>
-              <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                {SUBSCRIPTION_STATUS_LABELS[subscriptionStatus.status] || subscriptionStatus.status}
-              </p>
-            </div>
-          </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                    Plan
+                  </p>
+                  <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                    {PLAN_LABELS[subscriptionStatus.plan_id] || subscriptionStatus.plan_id}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                    Periodicidad
+                  </p>
+                  <p className="mt-1 text-sm font-semibold capitalize" style={{ color: "var(--text-main)" }}>
+                    {subscriptionStatus.periodicidad}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                    Monto
+                  </p>
+                  <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                    {subscriptionStatus.monto != null ? formatCLP(subscriptionStatus.monto) : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                    Estado
+                  </p>
+                  <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                    {SUBSCRIPTION_STATUS_LABELS[subscriptionStatus.status] || subscriptionStatus.status}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {(() => {
+              const subStatus = subscriptionStatus?.has_subscription
+                ? subscriptionStatus.status
+                : "none";
+              const needsSubscribeAction =
+                subStatus === "none" ||
+                subStatus === "pending" ||
+                subStatus === "error" ||
+                subStatus === "card_registered";
+
+              if (!needsSubscribeAction) return null;
+
+              const label = subscribing
+                ? "Procesando..."
+                : subStatus === "card_registered"
+                ? "Activar suscripción"
+                : subStatus === "pending" || subStatus === "error"
+                ? "Reintentar"
+                : "Suscribirme";
+
+              const onClick = subStatus === "card_registered" ? activateSubscription : handleSubscribe;
+
+              return (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={onClick}
+                    disabled={subscribing}
+                    className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+                  >
+                    {label}
+                  </button>
+                  {subscribeError ? (
+                    <p className="mt-2 text-xs" style={{ color: "rgb(248 113 113)" }}>
+                      {subscribeError}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })()}
+          </>
         )}
       </Panel>
 
