@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
@@ -240,6 +240,43 @@ function OnboardingInner() {
   // Step 1
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("medico");
+  // business_category que el tenant ya tenía ANTES de este onboarding —
+  // si ya era una categoría real (no null/generic), significa que este
+  // negocio ya había completado onboarding antes y probablemente ya
+  // tiene tráfico real en su slug actual. Se usa para decidir si vale
+  // la pena advertir antes de cambiarle el slug (ver handleStep1).
+  const [existingCategoryOnMount, setExistingCategoryOnMount] = useState<string | null>(null);
+
+  // Pre-llena name/slug con lo que el tenant ya tenía, en vez de dejar
+  // el formulario en blanco — si el usuario avanza sin tocar nada, no
+  // debería perder lo que ya existía.
+  useEffect(() => {
+    if (!tenantId) return;
+    let cancelled = false;
+
+    async function loadExistingTenant() {
+      try {
+        const res = await apiFetch(`${backend}/tenants/${tenantId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const tenant = data?.tenant;
+        if (!tenant || cancelled) return;
+
+        if (tenant.name) setBusinessName((prev) => prev || tenant.name);
+        if (tenant.slug) setCurrentSlug((prev) => prev || tenant.slug);
+        setExistingCategoryOnMount(tenant.business_category || null);
+      } catch {
+        // Si falla, el formulario simplemente arranca en blanco como
+        // antes -- no bloqueamos el onboarding por esto.
+      }
+    }
+
+    loadExistingTenant();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId]);
 
   // Step 2 — bloques globales + días activos como índices numéricos
   type DayBlock = { start: string; end: string };
@@ -278,9 +315,43 @@ function OnboardingInner() {
 
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
 
+  // Mismo algoritmo que PATCH /tenants/:id en server.js para derivar el
+  // slug desde el nombre del negocio -- se usa acá solo para PREDECIR si
+  // el guardado va a cambiar el slug actual, no para calcular el slug
+  // final real (el backend puede agregarle un sufijo si hay colisión).
+  function predictSlugFromName(name: string) {
+    return (
+      name
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 30) || "negocio"
+    );
+  }
+
   // ── Step 1 submit ──────────────────────────────────────────────────────────
   async function handleStep1() {
     if (!businessName.trim()) { setError("Ingresa el nombre de tu negocio."); return; }
+
+    // Si este tenant ya había completado onboarding antes (ya tenía una
+    // categoría real, no null/generic), guardar el nombre acá le cambia
+    // el slug en caliente sin avisar -- confirmar explícitamente antes,
+    // porque puede romper la URL pública que sus clientes ya tengan
+    // guardada.
+    const wasAlreadyOnboarded = Boolean(
+      existingCategoryOnMount && !["generic", "generico"].includes(existingCategoryOnMount)
+    );
+    const predictedSlug = predictSlugFromName(businessName.trim());
+    if (wasAlreadyOnboarded && currentSlug && predictedSlug !== currentSlug) {
+      const confirmed = window.confirm(
+        `Esto cambiará la URL pública de tu negocio de "${currentSlug}" a "${predictedSlug}" — los links que ya compartiste dejarán de funcionar.\n\n¿Continuar de todas formas?`
+      );
+      if (!confirmed) return;
+    }
+
     setError(null);
     setLoading(true);
     try {
