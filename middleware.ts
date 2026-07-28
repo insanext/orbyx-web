@@ -181,8 +181,11 @@ export async function middleware(request: NextRequest) {
       }
 
       if (tenant?.slug) {
-        const ONBOARDING_PENDING = new Set(["generic", "generico"]);
-        const isPending = !tenant.business_category || ONBOARDING_PENDING.has(tenant.business_category);
+        // "generic" es una categoría terminal válida (el usuario eligió
+        // "Otro tipo de negocio" a propósito en el wizard) -- no un
+        // placeholder de "todavía no completó onboarding". Solo NULL
+        // significa que el tenant nunca pasó por el wizard.
+        const isPending = !tenant.business_category;
 
         if (isPending) {
           const onboardingUrl = request.nextUrl.clone();

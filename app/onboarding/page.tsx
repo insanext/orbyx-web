@@ -93,13 +93,13 @@ const CATEGORY_GROUPS = [
   {
     group: "Servicios y otros negocios",
     options: [
-      { key: "taller_automotriz", category: "generico", subtype: "taller_automotriz", label: "Taller automotriz" },
-      { key: "salon_belleza",     category: "generico", label: "Salón de belleza" },
-      { key: "barberia",          category: "generico", label: "Barbería" },
-      { key: "serv_prof",         category: "generico", label: "Servicios profesionales" },
-      { key: "consultoria",       category: "generico", label: "Consultoría" },
-      { key: "serv_domicilio",    category: "generico", label: "Servicios a domicilio" },
-      { key: "otro_negocio",      category: "generico", label: "Otro negocio" },
+      { key: "taller_automotriz", category: "generic", subtype: "taller_automotriz", label: "Taller automotriz" },
+      { key: "salon_belleza",     category: "generic", label: "Salón de belleza" },
+      { key: "barberia",          category: "generic", label: "Barbería" },
+      { key: "serv_prof",         category: "generic", label: "Servicios profesionales" },
+      { key: "consultoria",       category: "generic", label: "Consultoría" },
+      { key: "serv_domicilio",    category: "generic", label: "Servicios a domicilio" },
+      { key: "otro_negocio",      category: "generic", label: "Otro negocio" },
     ],
   },
 ];
@@ -241,10 +241,11 @@ function OnboardingInner() {
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("medico");
   // business_category que el tenant ya tenía ANTES de este onboarding —
-  // si ya era una categoría real (no null/generic), significa que este
-  // negocio ya había completado onboarding antes y probablemente ya
-  // tiene tráfico real en su slug actual. Se usa para decidir si vale
-  // la pena advertir antes de cambiarle el slug (ver handleStep1).
+  // "generic" es una categoría terminal válida (el usuario eligió
+  // "Otro tipo de negocio" a propósito), no un placeholder — solo NULL
+  // significa que el negocio nunca completó onboarding. Se usa para
+  // decidir si vale la pena advertir antes de cambiarle el slug (ver
+  // handleStep1).
   const [existingCategoryOnMount, setExistingCategoryOnMount] = useState<string | null>(null);
 
   // Pre-llena name/slug con lo que el tenant ya tenía, en vez de dejar
@@ -336,14 +337,13 @@ function OnboardingInner() {
   async function handleStep1() {
     if (!businessName.trim()) { setError("Ingresa el nombre de tu negocio."); return; }
 
-    // Si este tenant ya había completado onboarding antes (ya tenía una
-    // categoría real, no null/generic), guardar el nombre acá le cambia
-    // el slug en caliente sin avisar -- confirmar explícitamente antes,
-    // porque puede romper la URL pública que sus clientes ya tengan
-    // guardada.
-    const wasAlreadyOnboarded = Boolean(
-      existingCategoryOnMount && !["generic", "generico"].includes(existingCategoryOnMount)
-    );
+    // Si este tenant ya había completado onboarding antes (tenía
+    // cualquier categoría, incluido "generic" -- es una categoría
+    // terminal válida, no un placeholder), guardar el nombre acá le
+    // cambia el slug en caliente sin avisar -- confirmar explícitamente
+    // antes, porque puede romper la URL pública que sus clientes ya
+    // tengan guardada.
+    const wasAlreadyOnboarded = Boolean(existingCategoryOnMount);
     const predictedSlug = predictSlugFromName(businessName.trim());
     if (wasAlreadyOnboarded && currentSlug && predictedSlug !== currentSlug) {
       const confirmed = window.confirm(
@@ -356,7 +356,7 @@ function OnboardingInner() {
     setLoading(true);
     try {
       const selectedCat = CATEGORY_MAP[category];
-      const businessCategory = selectedCat?.category ?? "generico";
+      const businessCategory = selectedCat?.category ?? "generic";
       const businessSubtype = (selectedCat as any)?.subtype as string | undefined;
       const res = await apiFetch(`${backend}/tenants/${tenantId}`, {
         method: "PATCH",

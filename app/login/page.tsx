@@ -64,7 +64,10 @@ async function resolveTenantDestination({
     return { error: "No se pudo cargar el negocio. Intenta nuevamente." };
   }
 
-  if (!tenantRow.business_category || tenantRow.business_category === "generic") {
+  // "generic" es una categoría terminal válida (el usuario eligió "Otro
+  // tipo de negocio" a propósito) -- no un placeholder. Solo NULL
+  // significa que el tenant nunca completó onboarding.
+  if (!tenantRow.business_category) {
     const params = new URLSearchParams({ tenant_id: tenantUserRow.tenant_id });
     return { destination: `/onboarding?${params.toString()}` };
   }
