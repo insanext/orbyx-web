@@ -80,7 +80,7 @@ const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
   card_registered: "Tarjeta registrada",
   trialing: "En trial — primer cobro programado al terminar",
   active: "Activa",
-  canceled: "Cancelada",
+  canceled: "No suscrito",
   error: "Hubo un problema, contáctanos",
 };
 
@@ -740,6 +740,10 @@ function BillingPageInner() {
   const [canceling, setCanceling] = useState(false);
   const [cancelError, setCancelError] = useState("");
 
+  const [deleteCardModalOpen, setDeleteCardModalOpen] = useState(false);
+  const [deletingCard, setDeletingCard] = useState(false);
+  const [deleteCardError, setDeleteCardError] = useState("");
+
   const [activeTab, setActiveTab] = useState<BillingTabId>("suscripcion");
 
   const billingTabs: Array<{ id: BillingTabId; label: string }> = [
@@ -873,6 +877,40 @@ function BillingPageInner() {
     }
   }
 
+  // Reactivar una suscripción cancelada: intenta el camino corto primero
+  // (subscribe directo, reusa flow_customer_id y la tarjeta que ya
+  // estaba registrada en Flow). Si Flow lo rechaza -- por ejemplo si esa
+  // tarjeta ya no es válida -- cae automáticamente al flujo completo de
+  // siempre (handleSubscribe: create-customer + register-card).
+  async function handleReactivate() {
+    try {
+      setSubscribing(true);
+      setSubscribeError("");
+
+      const res = await apiFetch(`${BACKEND_URL}/billing/flow/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          plan_id: plan,
+          periodicidad: "mensual",
+          monto: subscriptionMontoForCurrentPlan(),
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        await loadSubscriptionStatus(tenantId);
+        setSubscribing(false);
+        return;
+      }
+
+      await handleSubscribe();
+    } catch {
+      await handleSubscribe();
+    }
+  }
+
   // Al volver del enrolamiento de tarjeta de Flow con card_status=ok, si
   // la suscripción quedó en 'card_registered' (tarjeta OK pero todavía
   // sin activar el cobro recurrente), dispara subscribe automáticamente
@@ -964,6 +1002,33 @@ function BillingPageInner() {
         error instanceof Error ? error.message : "No se pudo iniciar el cambio de tarjeta"
       );
       setChangingCard(false);
+    }
+  }
+
+  async function handleDeleteCard() {
+    try {
+      setDeletingCard(true);
+      setDeleteCardError("");
+
+      const res = await apiFetch(`${BACKEND_URL}/billing/flow/unregister-card`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo eliminar la tarjeta");
+      }
+
+      setDeleteCardModalOpen(false);
+      await loadSubscriptionStatus(tenantId);
+    } catch (error: unknown) {
+      setDeleteCardError(
+        error instanceof Error ? error.message : "No se pudo eliminar la tarjeta"
+      );
+    } finally {
+      setDeletingCard(false);
     }
   }
 
@@ -1424,7 +1489,8 @@ function BillingPageInner() {
                 subStatus === "none" ||
                 subStatus === "pending" ||
                 subStatus === "error" ||
-                subStatus === "card_registered";
+                subStatus === "card_registered" ||
+                subStatus === "canceled";
 
               if (!needsSubscribeAction) return null;
 
@@ -1432,11 +1498,18 @@ function BillingPageInner() {
                 ? "Procesando..."
                 : subStatus === "card_registered"
                 ? "Activar suscripción"
+                : subStatus === "canceled"
+                ? "Reactivar suscripción"
                 : subStatus === "pending" || subStatus === "error"
                 ? "Reintentar"
                 : "Suscribirme";
 
-              const onClick = subStatus === "card_registered" ? activateSubscription : handleSubscribe;
+              const onClick =
+                subStatus === "card_registered"
+                  ? activateSubscription
+                  : subStatus === "canceled"
+                  ? handleReactivate
+                  : handleSubscribe;
 
               return (
                 <div className="mt-4">
@@ -1470,19 +1543,38 @@ function BillingPageInner() {
             <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
               {subscriptionStatus.card.brand} •••• {subscriptionStatus.card.last4}
             </p>
-            <button
-              type="button"
-              onClick={handleChangeCard}
-              disabled={changingCard}
-              className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-              style={{
-                borderColor: "var(--border-color)",
-                background: "var(--bg-card)",
-                color: "var(--text-main)",
-              }}
-            >
-              {changingCard ? "Redirigiendo..." : "Cambiar tarjeta"}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleChangeCard}
+                disabled={changingCard}
+                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              >
+                {changingCard ? "Redirigiendo..." : "Cambiar tarjeta"}
+              </button>
+              {!["active", "trialing", "card_registered"].includes(subscriptionStatus.status) ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteCardError("");
+                    setDeleteCardModalOpen(true);
+                  }}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+                  style={{
+                    borderColor: "rgba(244,63,94,0.4)",
+                    background: "var(--bg-card)",
+                    color: "rgb(244 63 94)",
+                  }}
+                >
+                  Eliminar tarjeta
+                </button>
+              ) : null}
+            </div>
           </div>
           {cardActionError ? (
             <p className="mt-2 text-xs" style={{ color: "rgb(248 113 113)" }}>
@@ -1875,6 +1967,67 @@ function BillingPageInner() {
                 }}
               >
                 {canceling ? "Cancelando..." : "Sí, cancelar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteCardModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0"
+            style={{ background: "rgba(0,0,0,0.6)" }}
+            onClick={() => (deletingCard ? null : setDeleteCardModalOpen(false))}
+          />
+          <div
+            className="relative z-10 mx-4 w-full max-w-sm rounded-2xl border p-6 shadow-2xl"
+            style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
+          >
+            <h3
+              className="text-center text-lg font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Eliminar tarjeta
+            </h3>
+            <p
+              className="mt-2 text-center text-sm leading-6"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Se eliminará el registro de tu tarjeta en Flow. Podrás registrar una nueva
+              más adelante si vuelves a suscribirte.
+            </p>
+
+            {deleteCardError ? (
+              <p className="mt-3 text-center text-xs" style={{ color: "rgb(248 113 113)" }}>
+                {deleteCardError}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteCardModalOpen(false)}
+                disabled={deletingCard}
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteCard}
+                disabled={deletingCard}
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(135deg, rgb(244 63 94), rgb(225 29 72))",
+                }}
+              >
+                {deletingCard ? "Eliminando..." : "Sí, eliminar"}
               </button>
             </div>
           </div>
