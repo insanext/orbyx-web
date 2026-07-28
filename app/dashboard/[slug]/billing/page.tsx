@@ -78,6 +78,7 @@ const PLAN_LABELS: Record<string, string> = {
 const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente de confirmación",
   card_registered: "Tarjeta registrada",
+  trialing: "En trial — primer cobro programado al terminar",
   active: "Activa",
   canceled: "Cancelada",
   error: "Hubo un problema, contáctanos",

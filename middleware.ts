@@ -107,21 +107,26 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith(`/dashboard/${dashboardSlug}/billing/`);
 
       if (tenant?.id && !isBillingPath) {
-        const { data: activeSub } = await supabase
+        const { data: latestSub } = await supabase
           .from("subscriptions")
-          .select("id")
+          .select("status")
           .eq("tenant_id", tenant.id)
-          .eq("status", "active")
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        const hasActiveSubscription = Boolean(activeSub);
+        const hasActiveSubscription = latestSub?.status === "active";
+        // 'trialing': tarjeta registrada mid-trial, primer cobro real ya
+        // programado en Flow para cuando termine el trial (ver
+        // POST /billing/flow/subscribe) — no debe tratarse como pago
+        // pendiente ni bloquear nada mientras el trial siga vigente.
+        const isTrialingInFlow = latestSub?.status === "trialing";
         const now = new Date();
         const trialEndsAt = tenant.trial_ends_at ? new Date(tenant.trial_ends_at) : null;
         const billingCycleEnd = tenant.billing_cycle_end ? new Date(tenant.billing_cycle_end) : null;
 
         const trialActive = Boolean(trialEndsAt && now < trialEndsAt && !hasActiveSubscription);
-        const awaitingPayment = !hasActiveSubscription && !trialActive;
+        const awaitingPayment = !hasActiveSubscription && !trialActive && !isTrialingInFlow;
         const blocked = Boolean(awaitingPayment && billingCycleEnd && now >= billingCycleEnd);
 
         if (blocked) {
