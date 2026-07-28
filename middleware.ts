@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
     if (dashboardSlug) {
       const { data: tenant } = await supabase
         .from("tenants")
-        .select("id")
+        .select("id, trial_ends_at, billing_cycle_end")
         .eq("slug", dashboardSlug)
         .eq("is_active", true)
         .maybeSingle();
@@ -93,6 +93,43 @@ export async function middleware(request: NextRequest) {
         deniedUrl.search = "";
         deniedUrl.searchParams.set("error", "no_access");
         return NextResponse.redirect(deniedUrl);
+      }
+
+      // Modo limitado: mismo cálculo que GET /billing/account-status en
+      // server.js — no confiar en tenants.is_trial. Se bloquea toda la
+      // sección /dashboard/{slug}/** EXCEPTO /billing, para que el
+      // dueño pueda pagar o inscribir tarjeta. El layout del dashboard
+      // hace el mismo chequeo del lado del cliente (con contadores de
+      // uso incluidos); esto es la capa de defensa en el servidor para
+      // que entrar directo por URL a otra sección no la esquive.
+      const isBillingPath =
+        pathname === `/dashboard/${dashboardSlug}/billing` ||
+        pathname.startsWith(`/dashboard/${dashboardSlug}/billing/`);
+
+      if (tenant?.id && !isBillingPath) {
+        const { data: activeSub } = await supabase
+          .from("subscriptions")
+          .select("id")
+          .eq("tenant_id", tenant.id)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle();
+
+        const hasActiveSubscription = Boolean(activeSub);
+        const now = new Date();
+        const trialEndsAt = tenant.trial_ends_at ? new Date(tenant.trial_ends_at) : null;
+        const billingCycleEnd = tenant.billing_cycle_end ? new Date(tenant.billing_cycle_end) : null;
+
+        const trialActive = Boolean(trialEndsAt && now < trialEndsAt && !hasActiveSubscription);
+        const awaitingPayment = !hasActiveSubscription && !trialActive;
+        const blocked = Boolean(awaitingPayment && billingCycleEnd && now >= billingCycleEnd);
+
+        if (blocked) {
+          const blockedUrl = request.nextUrl.clone();
+          blockedUrl.pathname = `/dashboard/${dashboardSlug}/billing`;
+          blockedUrl.search = "";
+          return NextResponse.redirect(blockedUrl);
+        }
       }
     }
   }

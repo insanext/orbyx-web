@@ -34,6 +34,7 @@ import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
 import { createClient } from "../../../lib/supabase/client";
 import { PermissionsProvider, ROLE_LABEL, type ModulePermissions } from "../../../lib/permissions-context";
+import { AccountStatusWidget, useAccountStatus } from "../../../components/billing/AccountStatusWidget";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -241,6 +242,10 @@ export default function DashboardLayout({
   const [toasts, setToasts] = useState<NotificationEvent[]>([]);
   const notifPanelRef = useRef<HTMLDivElement>(null);
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
+
+  const { status: accountStatus } = useAccountStatus(tenantId);
+  const isBillingPage = pathname === `/dashboard/${slug}/billing` || pathname?.startsWith(`/dashboard/${slug}/billing/`);
+  const isAccountBlocked = Boolean(accountStatus?.blocked) && !isBillingPage;
 
   useEffect(() => {
     if (!branchDropdownOpen) return;
@@ -1428,6 +1433,9 @@ export default function DashboardLayout({
                     <Crown size={15} />
                     Plan {planLabel}
                   </span>
+                  {tenantId ? (
+                    <AccountStatusWidget tenantId={tenantId} slug={slug} isNocturno={isNocturno} />
+                  ) : null}
                 </div>
                 </div>
               </div>
@@ -1571,16 +1579,39 @@ export default function DashboardLayout({
 
           <main className="flex-1">
             <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-5 sm:py-6 lg:px-8 xl:px-10 2xl:px-12">
-              <PermissionsProvider
-                value={{
-                  role: memberRole,
-                  permissions: memberPermissions,
-                  loaded: memberLoaded,
-                  isOwnerOrAdmin,
-                }}
-              >
-                {children}
-              </PermissionsProvider>
+              {isAccountBlocked ? (
+                <div
+                  className="mx-auto mt-10 max-w-lg rounded-3xl border p-8 text-center"
+                  style={{ borderColor: "rgba(244,63,94,0.4)", background: "rgba(244,63,94,0.08)" }}
+                >
+                  <h2 className="text-lg font-semibold" style={{ color: textMain }}>
+                    Tu cuenta está en modo limitado
+                  </h2>
+                  <p className="mt-2 text-sm" style={{ color: textMuted }}>
+                    {accountStatus?.blocked_reason === "trial_expired"
+                      ? "Tu trial gratuito terminó y todavía no tienes un método de pago activo. Inscribe una tarjeta para recuperar el acceso completo al panel."
+                      : "Tu suscripción no tiene un cobro válido. Inscribe una tarjeta para recuperar el acceso completo al panel."}
+                  </p>
+                  <Link
+                    href={`/dashboard/${slug}/billing`}
+                    className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white"
+                    style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+                  >
+                    Ir a Suscripción
+                  </Link>
+                </div>
+              ) : (
+                <PermissionsProvider
+                  value={{
+                    role: memberRole,
+                    permissions: memberPermissions,
+                    loaded: memberLoaded,
+                    isOwnerOrAdmin,
+                  }}
+                >
+                  {children}
+                </PermissionsProvider>
+              )}
             </div>
           </main>
         </div>
