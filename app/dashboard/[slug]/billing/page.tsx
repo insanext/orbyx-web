@@ -1494,7 +1494,8 @@ function BillingPageInner() {
 
       {subscriptionStatus?.has_subscription &&
       (subscriptionStatus.status === "active" ||
-        subscriptionStatus.status === "card_registered") ? (
+        subscriptionStatus.status === "card_registered" ||
+        subscriptionStatus.status === "trialing") ? (
         <Panel
           title="Cancelar suscripción"
           description="Deja de renovar tu plan automáticamente."
@@ -1835,9 +1836,13 @@ function BillingPageInner() {
               className="mt-2 text-center text-sm leading-6"
               style={{ color: "var(--text-muted)" }}
             >
-              Al cancelar, tu suscripción dejará de renovarse automáticamente.
-              Podrás seguir usando tu plan hasta el final del ciclo actual
-              {billingCycleEnd ? ` (${formatDate(billingCycleEnd)})` : ""}.
+              {subscriptionStatus?.has_subscription && subscriptionStatus.status === "trialing"
+                ? "No se te cobrará nada. Tu suscripción se cancela de inmediato, antes de que termine tu trial."
+                : <>
+                    Al cancelar, tu suscripción dejará de renovarse automáticamente.
+                    Podrás seguir usando tu plan hasta el final del ciclo actual
+                    {billingCycleEnd ? ` (${formatDate(billingCycleEnd)})` : ""}.
+                  </>}
             </p>
 
             {cancelError ? (
