@@ -882,10 +882,29 @@ function BillingPageInner() {
   // estaba registrada en Flow). Si Flow lo rechaza -- por ejemplo si esa
   // tarjeta ya no es válida -- cae automáticamente al flujo completo de
   // siempre (handleSubscribe: create-customer + register-card).
+  //
+  // Antes de intentar el atajo, verifica que el customer TENGA una
+  // tarjeta registrada en Flow (mismo chequeo que ya hace
+  // subscription-status). Flow /subscription/create con
+  // trial_period_days no exige tarjeta al crear la suscripción -- el
+  // cobro se posterga, así que sin este chequeo se podía quedar
+  // "suscrito" sin ninguna tarjeta detrás (ej. tras Cancelar +
+  // Eliminar tarjeta).
   async function handleReactivate() {
     try {
       setSubscribing(true);
       setSubscribeError("");
+
+      const statusRes = await apiFetch(
+        `${BACKEND_URL}/billing/flow/subscription-status?tenant_id=${tenantId}`
+      );
+      const statusData = await statusRes.json();
+      const hasCard = Boolean(statusRes.ok && statusData?.card);
+
+      if (!hasCard) {
+        await handleSubscribe();
+        return;
+      }
 
       const res = await apiFetch(`${BACKEND_URL}/billing/flow/subscribe`, {
         method: "POST",
