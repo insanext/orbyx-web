@@ -158,47 +158,21 @@ function SignupInner() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
+        background: "linear-gradient(160deg, #0b1220 0%, #131c30 50%, #0b1220 100%)",
         padding: "24px 16px",
         fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
       }}
     >
-      {/* Decorative blobs */}
-      <div
-        style={{
-          position: "fixed",
-          top: "10%",
-          left: "5%",
-          width: 300,
-          height: 300,
-          borderRadius: "50%",
-          background: `radial-gradient(circle, ${planColor}22 0%, transparent 70%)`,
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "fixed",
-          bottom: "15%",
-          right: "8%",
-          width: 250,
-          height: 250,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, #818cf822 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
-
       <div
         style={{
           width: "100%",
           maxWidth: 440,
-          background: "rgba(15, 23, 42, 0.85)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(0, 229, 255, 0.4)",
+          background: "rgba(17,24,39,0.78)",
+          backdropFilter: "blur(16px)",
+          border: "1px solid rgba(148,163,184,0.16)",
           borderRadius: 20,
           animation: loading ? "orbyx-pulse 1.4s ease-in-out infinite" : "none",
-          boxShadow: "0 0 24px rgba(0, 229, 255, 0.25), 0 0 60px rgba(6, 182, 212, 0.15), 0 0 2px rgba(0, 229, 255, 0.6), 0 32px 72px rgba(0,0,0,0.55)",
+          boxShadow: "0 24px 64px -24px rgba(2,6,23,0.6), 0 2px 12px -4px rgba(2,6,23,0.4)",
           padding: "44px 40px",
           position: "relative",
         }}
@@ -213,21 +187,11 @@ function SignupInner() {
               marginBottom: 8,
             }}
           >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: `linear-gradient(135deg, ${planColor}, ${planColor}99)`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 20,
-                boxShadow: `0 4px 14px ${planColor}44`,
-              }}
-            >
-              ◆
-            </div>
+            <img
+              src="/orbyx-mark-dark.png"
+              alt="Orbyx"
+              style={{ width: 36, height: 36 }}
+            />
             <span
               style={{
                 fontSize: 22,
@@ -239,7 +203,7 @@ function SignupInner() {
               Orbyx
             </span>
           </div>
-          <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
+          <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>
             Plataforma de reservas inteligente
           </p>
         </div>

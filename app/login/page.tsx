@@ -216,7 +216,7 @@ function LoginForm() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(180deg, #f3f7ff, #eaf1ff 46%, #eef4ff)",
+        background: "linear-gradient(160deg, #0b1220 0%, #131c30 50%, #0b1220 100%)",
         padding: "16px",
       }}
     >
@@ -225,63 +225,51 @@ function LoginForm() {
           style={{
             width: "100%",
             maxWidth: 400,
-            background: "rgba(255,255,255,0.92)",
+            background: "rgba(17,24,39,0.78)",
+            backdropFilter: "blur(16px)",
             borderRadius: 24,
-            border: "1px solid rgba(59,130,246,0.18)",
+            border: "1px solid rgba(148,163,184,0.16)",
             boxShadow:
-              "0 20px 60px -20px rgba(37,99,235,0.14), 0 2px 8px -2px rgba(37,99,235,0.06)",
+              "0 24px 64px -24px rgba(2,6,23,0.6), 0 2px 12px -4px rgba(2,6,23,0.4)",
             padding: "36px 32px",
             textAlign: "center",
           }}
         >
-          <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>Verificando sesión…</p>
+          <p style={{ fontSize: 14, color: "#94a3b8", margin: 0 }}>Verificando sesión…</p>
         </div>
       ) : (
       <div
         style={{
           width: "100%",
           maxWidth: 400,
-          background: "rgba(255,255,255,0.92)",
+          background: "rgba(17,24,39,0.78)",
+          backdropFilter: "blur(16px)",
           borderRadius: 24,
-          border: "1px solid rgba(59,130,246,0.18)",
+          border: "1px solid rgba(148,163,184,0.16)",
           boxShadow:
-            "0 20px 60px -20px rgba(37,99,235,0.14), 0 2px 8px -2px rgba(37,99,235,0.06)",
+            "0 24px 64px -24px rgba(2,6,23,0.6), 0 2px 12px -4px rgba(2,6,23,0.4)",
           padding: "36px 32px",
         }}
       >
         {/* Logotipo */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              background:
-                "conic-gradient(from 180deg, rgb(14,165,233), rgb(79,70,229), rgb(34,211,238), rgb(14,165,233))",
-              color: "white",
-              fontWeight: 700,
-              fontSize: 20,
-              marginBottom: 16,
-              boxShadow: "0 12px 28px -18px rgba(14,165,233,0.9)",
-            }}
-          >
-            O
-          </div>
+          <img
+            src="/orbyx-mark-dark.png"
+            alt="Orbyx"
+            style={{ width: 48, height: 48, marginBottom: 16 }}
+          />
           <h1
             style={{
               fontSize: 22,
               fontWeight: 700,
-              color: "#0f172a",
+              color: "#f1f5f9",
               margin: "0 0 4px",
               letterSpacing: "-0.02em",
             }}
           >
             Bienvenido a Orbyx
           </h1>
-          <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>
+          <p style={{ fontSize: 14, color: "#94a3b8", margin: 0 }}>
             Ingresa a tu panel de negocio
           </p>
         </div>
@@ -291,7 +279,7 @@ function LoginForm() {
           <div>
             <label
               htmlFor="email"
-              style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#334155", marginBottom: 6 }}
+              style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#cbd5e1", marginBottom: 6 }}
             >
               Email
             </label>
@@ -307,11 +295,11 @@ function LoginForm() {
                 width: "100%",
                 height: 44,
                 borderRadius: 12,
-                border: "1px solid rgba(59,130,246,0.28)",
+                border: "1px solid rgba(148,163,184,0.22)",
                 padding: "0 14px",
                 fontSize: 14,
-                color: "#0f172a",
-                background: "#f8fbff",
+                color: "#f1f5f9",
+                background: "rgba(255,255,255,0.05)",
                 outline: "none",
                 boxSizing: "border-box",
               }}
@@ -321,7 +309,7 @@ function LoginForm() {
           <div>
             <label
               htmlFor="password"
-              style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#334155", marginBottom: 6 }}
+              style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#cbd5e1", marginBottom: 6 }}
             >
               Contraseña
             </label>
@@ -338,11 +326,11 @@ function LoginForm() {
                   width: "100%",
                   height: 44,
                   borderRadius: 12,
-                  border: "1px solid rgba(59,130,246,0.28)",
+                  border: "1px solid rgba(148,163,184,0.22)",
                   padding: "0 40px 0 14px",
                   fontSize: 14,
-                  color: "#0f172a",
-                  background: "#f8fbff",
+                  color: "#f1f5f9",
+                  background: "rgba(255,255,255,0.05)",
                   outline: "none",
                   boxSizing: "border-box",
                 }}
@@ -350,13 +338,13 @@ function LoginForm() {
               <PasswordVisibilityToggle
                 visible={showPassword}
                 onToggle={() => setShowPassword((v) => !v)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-200"
               />
             </div>
             <div style={{ textAlign: "right", marginTop: 6 }}>
               <a
                 href="/recuperar-password"
-                style={{ fontSize: 12, color: "#2563eb", fontWeight: 600, textDecoration: "none" }}
+                style={{ fontSize: 12, color: "#60a5fa", fontWeight: 600, textDecoration: "none" }}
               >
                 ¿Olvidaste tu contraseña?
               </a>
@@ -367,9 +355,9 @@ function LoginForm() {
             <div
               style={{
                 borderRadius: 10,
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
-                color: "#b91c1c",
+                background: "#ef444415",
+                border: "1px solid #ef444430",
+                color: "#f87171",
                 fontSize: 13,
                 padding: "10px 14px",
               }}
@@ -418,7 +406,7 @@ function LoginForm() {
           ¿No tienes cuenta?{" "}
           <a
             href="/signup"
-            style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}
+            style={{ color: "#60a5fa", fontWeight: 600, textDecoration: "none" }}
           >
             Regístrate aquí
           </a>

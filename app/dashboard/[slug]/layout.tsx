@@ -233,6 +233,9 @@ export default function DashboardLayout({
   const [memberPermissions, setMemberPermissions] = useState<ModulePermissions | null>(null);
   const [memberLoaded, setMemberLoaded] = useState(false);
   const [currentUserLabel, setCurrentUserLabel] = useState("");
+  const [currentUserEmail, setCurrentUserEmail] = useState("");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
@@ -268,6 +271,17 @@ export default function DashboardLayout({
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [notifPanelOpen]);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function handleOutsideClick(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [userMenuOpen]);
 
   const planLabel =
     plan === "platinum"
@@ -424,6 +438,7 @@ export default function DashboardLayout({
         if (!res.ok) return;
 
         setCurrentUserLabel(String(user.user_metadata?.name || user.email || ""));
+        setCurrentUserEmail(String(user.email || ""));
 
         const own = (data.members || []).find((m: any) => m.user_id === user.id);
         if (own) {
@@ -907,9 +922,11 @@ export default function DashboardLayout({
               style={{ borderColor: sidebarBorder }}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[conic-gradient(from_180deg,rgb(14,165,233),rgb(79,70,229),rgb(34,211,238),rgb(14,165,233))] text-sm font-semibold text-white shadow-[0_12px_28px_-18px_rgba(14,165,233,0.9)]">
-                  O
-                </div>
+                <img
+                  src={isNocturno ? "/orbyx-mark-dark.png" : "/orbyx-mark.png"}
+                  alt="Orbyx"
+                  className="h-10 w-10 shrink-0"
+                />
                 {!sidebarCollapsed ? (
                 <div>
                   <h1
@@ -1322,9 +1339,11 @@ export default function DashboardLayout({
                 style={{ borderColor: sidebarBorder }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 text-sm font-semibold text-white shadow-sm">
-                    O
-                  </div>
+                  <img
+                    src={isNocturno ? "/orbyx-mark-dark.png" : "/orbyx-mark.png"}
+                    alt="Orbyx"
+                    className="h-10 w-10 shrink-0"
+                  />
                   <div>
                     <h2
                       className="text-base font-semibold tracking-tight"
@@ -1555,23 +1574,48 @@ export default function DashboardLayout({
                   ) : null}
                 </div>
 
-                <div
-                  className="flex items-center gap-3 border-l pl-3"
-                  style={{ borderColor: sidebarBorder }}
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(37,99,235),rgb(79,70,229))] text-xs font-bold text-white">
-                    {currentUserLabel
-                      ? currentUserLabel.slice(0, 2).toUpperCase()
-                      : slug.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
-                      {currentUserLabel || "Usuario"}
-                    </p>
-                    <p className="truncate text-xs" style={{ color: textMuted }}>
-                      {ROLE_LABEL[memberRole] || (memberLoaded ? memberRole : "")}
-                    </p>
-                  </div>
+                <div ref={userMenuRef} className="relative border-l pl-3" style={{ borderColor: sidebarBorder }}>
+                  <button
+                    type="button"
+                    onClick={() => setUserMenuOpen((prev) => !prev)}
+                    className="flex items-center gap-3 rounded-2xl px-1 py-1 text-left transition"
+                    style={{ background: userMenuOpen ? softBg : "transparent" }}
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(37,99,235),rgb(79,70,229))] text-xs font-bold text-white">
+                      {currentUserLabel
+                        ? currentUserLabel.slice(0, 2).toUpperCase()
+                        : slug.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
+                        {currentUserLabel || "Usuario"}
+                      </p>
+                      <p className="truncate text-xs" style={{ color: textMuted }}>
+                        {ROLE_LABEL[memberRole] || (memberLoaded ? memberRole : "")}
+                      </p>
+                    </div>
+                  </button>
+
+                  {userMenuOpen ? (
+                    <div
+                      className="absolute right-0 top-[calc(100%+8px)] z-50 w-64 overflow-hidden rounded-2xl border"
+                      style={{
+                        background: dropdownBg,
+                        borderColor: sidebarBorder,
+                        boxShadow:
+                          "0 12px 40px -8px rgba(0,0,0,0.28), 0 4px 16px -4px rgba(0,0,0,0.18)",
+                      }}
+                    >
+                      <div className="px-4 py-3">
+                        <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
+                          {currentUserLabel || "Usuario"}
+                        </p>
+                        <p className="truncate text-xs" style={{ color: textMuted }}>
+                          {currentUserEmail || "—"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

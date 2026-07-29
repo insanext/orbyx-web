@@ -83,6 +83,7 @@ type BusinessItem = {
   business_category?: string;
   business_subtype?: string | null;
   business_subtype_config?: Record<string, unknown> | null;
+  logo_url?: string | null;
 };
 
 type PublicServicesResponse = {
@@ -1426,9 +1427,17 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[30px] md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
               <div className="p-3.5 md:p-5">
                 <div className="flex items-center gap-3 md:gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-base font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.8)] md:h-16 md:w-16 md:rounded-2xl md:text-lg">
-                    {getBusinessInitials(business?.name || slug)}
-                  </div>
+                  {business?.logo_url ? (
+                    <img
+                      src={business.logo_url}
+                      alt={business?.name || slug || "Logo"}
+                      className="h-12 w-12 shrink-0 rounded-xl object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.8)] md:h-16 md:w-16 md:rounded-2xl"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-base font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.8)] md:h-16 md:w-16 md:rounded-2xl md:text-lg">
+                      {getBusinessInitials(business?.name || slug)}
+                    </div>
+                  )}
 
                   <div className="min-w-0">
                     <h1 className="truncate text-lg font-bold tracking-tight text-slate-950 md:text-2xl">
