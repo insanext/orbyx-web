@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "../../lib/supabase/client";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "../../components/ui/password-visibility-toggle";
+import { ParticleBackground } from "../../components/ui/particle-background";
 
 // Resuelve a dónde debe ir un usuario ya autenticado: provisiona el tenant si
 // es su primer login, lo manda a /onboarding si el negocio no completó el
@@ -220,6 +221,7 @@ function LoginForm() {
         padding: "16px",
       }}
     >
+      <ParticleBackground />
       {checkingSession ? (
         <div
           style={{
@@ -233,6 +235,8 @@ function LoginForm() {
               "0 24px 64px -24px rgba(2,6,23,0.6), 0 2px 12px -4px rgba(2,6,23,0.4)",
             padding: "36px 32px",
             textAlign: "center",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           <p style={{ fontSize: 14, color: "#94a3b8", margin: 0 }}>Verificando sesión…</p>
@@ -249,6 +253,8 @@ function LoginForm() {
           boxShadow:
             "0 24px 64px -24px rgba(2,6,23,0.6), 0 2px 12px -4px rgba(2,6,23,0.4)",
           padding: "36px 32px",
+          position: "relative",
+          zIndex: 1,
         }}
       >
         {/* Logotipo */}

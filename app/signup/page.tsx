@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "../../components/ui/password-visibility-toggle";
+import { ParticleBackground } from "../../components/ui/particle-background";
 
 const PLAN_LABELS: Record<string, string> = {
   pro: "Pro",
@@ -58,6 +59,7 @@ function SignupInner() {
     []
   );
 
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -81,6 +83,10 @@ function SignupInner() {
     setMsg(null);
     setAccountAlreadyExists(false);
 
+    if (!fullName.trim()) {
+      setMsg("Ingresa tu nombre completo.");
+      return;
+    }
     if (!passwordValid) {
       setMsg("La contraseña no cumple los requisitos mínimos.");
       return;
@@ -111,7 +117,7 @@ function SignupInner() {
         options: {
           captchaToken,
           emailRedirectTo: `${siteUrl}/auth/verified`,
-          data: { plan },
+          data: { plan, name: fullName.trim() },
         },
       });
       clearTimeout(timeout);
@@ -163,6 +169,7 @@ function SignupInner() {
         fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
       }}
     >
+      <ParticleBackground />
       <div
         style={{
           width: "100%",
@@ -175,6 +182,7 @@ function SignupInner() {
           boxShadow: "0 24px 64px -24px rgba(2,6,23,0.6), 0 2px 12px -4px rgba(2,6,23,0.4)",
           padding: "44px 40px",
           position: "relative",
+          zIndex: 1,
         }}
       >
         {/* Logo */}
@@ -253,6 +261,46 @@ function SignupInner() {
         />
 
         <form onSubmit={handleSignup} style={{ display: "grid", gap: 16 }}>
+          {/* Nombre completo */}
+          <div style={{ position: "relative" }}>
+            <span
+              style={{
+                position: "absolute",
+                left: 14,
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: 16,
+                opacity: 0.4,
+                pointerEvents: "none",
+              }}
+            >
+              👤
+            </span>
+            <input
+              type="text"
+              placeholder="Nombre completo"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              disabled={loading}
+              required
+              autoComplete="name"
+              style={{
+                width: "100%",
+                padding: "12px 14px 12px 40px",
+                background: "rgba(255,255,255,0.09)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 10,
+                color: "#f1f5f9",
+                fontSize: 14,
+                outline: "none",
+                transition: "border-color 0.2s",
+                boxSizing: "border-box",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = `${planColor}80`)}
+              onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+            />
+          </div>
+
           {/* Email field */}
           <div style={{ position: "relative" }}>
             <span

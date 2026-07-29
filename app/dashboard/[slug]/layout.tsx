@@ -175,14 +175,11 @@ const navSections = [
       { label: "Soporte", href: "/soporte", icon: Headphones },
     ],
   },
-  {
-    title: "Ajustes",
-    items: [{ label: "Configuración", href: "/configuracion", icon: Settings }],
-  },
 ];
 
 // Módulos de la sidebar cuyo acceso depende de permissions granulares.
-// Los items sin entrada acá (Métricas, Reportes, Soporte, Configuración) no se restringen.
+// Los items sin entrada acá (Métricas, Reportes, Soporte) no se restringen.
+// Configuración vive en el dropdown del header, no en la sidebar.
 const NAV_MODULE_MAP: Record<string, string> = {
   "/agenda": "agenda",
   "/customers": "clientes",
@@ -473,7 +470,6 @@ export default function DashboardLayout({
         items: section.items
           .filter((item) => {
             if (item.href === "/billing") return isOwnerOrAdmin;
-            if (item.href === "/configuracion") return isOwnerOrAdmin;
             if (item.label === "Métricas" || item.label === "Reportes") return isOwnerOrAdmin;
             if (isOwnerOrAdmin) return true;
             return getModuleAccess(item.href) !== false;
@@ -1606,7 +1602,7 @@ export default function DashboardLayout({
                           "0 12px 40px -8px rgba(0,0,0,0.28), 0 4px 16px -4px rgba(0,0,0,0.18)",
                       }}
                     >
-                      <div className="px-4 py-3">
+                      <div className="border-b px-4 py-3" style={{ borderColor: sidebarBorder }}>
                         <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
                           {currentUserLabel || "Usuario"}
                         </p>
@@ -1614,6 +1610,17 @@ export default function DashboardLayout({
                           {currentUserEmail || "—"}
                         </p>
                       </div>
+                      {isOwnerOrAdmin ? (
+                        <Link
+                          href={`/dashboard/${slug}/configuracion`}
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition hover:bg-black/5"
+                          style={{ color: textMain }}
+                        >
+                          <Settings size={16} />
+                          Configuración
+                        </Link>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
