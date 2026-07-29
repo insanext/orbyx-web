@@ -305,7 +305,7 @@ function LoginForm() {
                 padding: "0 14px",
                 fontSize: 14,
                 color: "#f1f5f9",
-                background: "rgba(255,255,255,0.05)",
+                background: "#1e293b",
                 outline: "none",
                 boxSizing: "border-box",
               }}
@@ -336,7 +336,7 @@ function LoginForm() {
                   padding: "0 40px 0 14px",
                   fontSize: 14,
                   color: "#f1f5f9",
-                  background: "rgba(255,255,255,0.05)",
+                  background: "#1e293b",
                   outline: "none",
                   boxSizing: "border-box",
                 }}

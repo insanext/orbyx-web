@@ -287,7 +287,7 @@ function SignupInner() {
               style={{
                 width: "100%",
                 padding: "12px 14px 12px 40px",
-                background: "rgba(255,255,255,0.09)",
+                background: "#1e293b",
                 border: "1px solid rgba(255,255,255,0.15)",
                 borderRadius: 10,
                 color: "#f1f5f9",
@@ -326,7 +326,7 @@ function SignupInner() {
               style={{
                 width: "100%",
                 padding: "12px 14px 12px 40px",
-                background: "rgba(255,255,255,0.09)",
+                background: "#1e293b",
                 border: "1px solid rgba(255,255,255,0.15)",
                 borderRadius: 10,
                 color: "#f1f5f9",
@@ -366,7 +366,7 @@ function SignupInner() {
                 style={{
                   width: "100%",
                   padding: "12px 40px 12px 40px",
-                  background: "rgba(255,255,255,0.04)",
+                  background: "#1e293b",
                   border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 10,
                   color: "#f1f5f9",
@@ -420,7 +420,7 @@ function SignupInner() {
                 style={{
                   width: "100%",
                   padding: "12px 40px 12px 40px",
-                  background: "rgba(255,255,255,0.09)",
+                  background: "#1e293b",
                   border: `1px solid ${
                     confirmTouched && !passwordsMatch
                       ? "#ef4444"

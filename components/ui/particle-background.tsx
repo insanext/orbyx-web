@@ -23,10 +23,14 @@ class Particle {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = `rgb(${PARTICLE_RGB})`;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-    ctx.fillStyle = `rgba(${PARTICLE_RGB}, 0.7)`;
+    ctx.fillStyle = `rgba(${PARTICLE_RGB}, 0.9)`;
     ctx.fill();
+    ctx.restore();
   }
 
   update(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, mouse: { x: number | null; y: number | null; radius: number }) {
@@ -76,8 +80,10 @@ export function ParticleBackground() {
       if (!canvas) return;
       particles = [];
       const isSmallScreen = canvas.width < 640;
-      const divisor = isSmallScreen ? 16000 : 9000;
-      const maxParticles = isSmallScreen ? 32 : 90;
+      // shadowBlur del glow es mas costoso que un circulo simple, asi que en
+      // pantallas chicas se reduce mas la cantidad de particulas que antes.
+      const divisor = isSmallScreen ? 22000 : 9000;
+      const maxParticles = isSmallScreen ? 20 : 90;
       const numberOfParticles = Math.min(
         Math.floor((canvas.height * canvas.width) / divisor),
         maxParticles
@@ -108,7 +114,7 @@ export function ParticleBackground() {
           const dy = particles[a].y - particles[b].y;
           const distanceSq = dx * dx + dy * dy;
           if (distanceSq < maxDistanceSq) {
-            const opacity = (1 - distanceSq / maxDistanceSq) * 0.35;
+            const opacity = (1 - distanceSq / maxDistanceSq) * 0.18;
             ctx.strokeStyle = `rgba(${PARTICLE_RGB}, ${opacity})`;
             ctx.lineWidth = 1;
             ctx.beginPath();
