@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 // Fondo de canvas con particulas conectadas, reaccionan al mouse en
 // pantallas con puntero fino (desktop). En touch/mobile se desactiva
 // la interaccion con el mouse y se reduce la cantidad de particulas.
-const PARTICLE_RGB = "33, 214, 197"; // --pub-accent (tema oscuro)
+const PARTICLE_RGB = "59, 130, 246"; // azul de marca
 
 class Particle {
   x: number;
@@ -24,7 +24,7 @@ class Particle {
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.save();
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 16;
     ctx.shadowColor = `rgb(${PARTICLE_RGB})`;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
