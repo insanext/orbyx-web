@@ -183,6 +183,10 @@ export function AccountStatusWidget({
   const { status } = useAccountStatus(tenantId);
   const [open, setOpen] = useState(false);
 
+  const [activeAccountTab, setActiveAccountTab] = useState<"cuenta" | "notificaciones" | "deposito">(
+    "notificaciones"
+  );
+
   const [waConfirmEnabled, setWaConfirmEnabled] = useState(false);
   const [waReminderEnabled, setWaReminderEnabled] = useState(false);
   const [waReminderHours, setWaReminderHours] = useState(1);
@@ -419,43 +423,63 @@ export function AccountStatusWidget({
             </div>
           ) : null}
 
-          <div className="grid grid-cols-2 gap-2">
-            <UsagePill
-              icon={MessageCircle}
-              label="WA confirmación"
-              usage={liveWaConfirmacion}
-              textMuted={textMuted}
-              textMain={textMain}
-              borderColor={borderColor}
-              bg={softBg}
-              pulse={pulseField === "wa_confirmacion"}
-            />
-            <UsagePill
-              icon={Sparkles}
-              label="IA WhatsApp"
-              usage={liveIaWa}
-              textMuted={textMuted}
-              textMain={textMain}
-              borderColor={borderColor}
-              bg={softBg}
-              pulse={pulseField === "ia_wa"}
-            />
-          </div>
-
           {isOwnerOrAdmin ? (
-            <div className="mt-4 border-t pt-4" style={{ borderColor }}>
-              <div className="mb-2.5 flex items-center gap-2">
-                <div
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-                  style={{ background: "rgba(16,185,129,0.15)" }}
-                >
-                  <MessageCircle size={13} style={{ color: "rgb(16,185,129)" }} />
-                </div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: textMuted }}>
-                  Notificaciones a clientes
-                </p>
-              </div>
+            <div className="mb-3 flex gap-1 rounded-xl border p-1" style={{ borderColor, background: softBg }}>
+              {(
+                [
+                  { key: "cuenta", label: "Cuenta", icon: Clock, color: "rgb(37,99,235)" },
+                  { key: "notificaciones", label: "Notificaciones", icon: MessageCircle, color: "rgb(16,185,129)" },
+                  { key: "deposito", label: "Depósito previo", icon: Landmark, color: "rgb(99,102,241)" },
+                ] as const
+              ).map((t) => {
+                const Icon = t.icon;
+                const isActive = activeAccountTab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setActiveAccountTab(t.key)}
+                    className="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-center transition"
+                    style={{
+                      background: isActive ? t.color : "transparent",
+                      color: isActive ? "#fff" : textMuted,
+                    }}
+                  >
+                    <Icon size={14} />
+                    <span className="text-[10px] font-semibold leading-tight">{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
+          {!isOwnerOrAdmin || activeAccountTab === "cuenta" ? (
+            <div className="grid grid-cols-2 gap-2">
+              <UsagePill
+                icon={MessageCircle}
+                label="WA confirmación"
+                usage={liveWaConfirmacion}
+                textMuted={textMuted}
+                textMain={textMain}
+                borderColor={borderColor}
+                bg={softBg}
+                pulse={pulseField === "wa_confirmacion"}
+              />
+              <UsagePill
+                icon={Sparkles}
+                label="IA WhatsApp"
+                usage={liveIaWa}
+                textMuted={textMuted}
+                textMain={textMain}
+                borderColor={borderColor}
+                bg={softBg}
+                pulse={pulseField === "ia_wa"}
+              />
+            </div>
+          ) : null}
+
+          {isOwnerOrAdmin && activeAccountTab === "notificaciones" ? (
+            <div>
               <div className="overflow-hidden rounded-xl" style={{ background: softBg }}>
                 <div className="flex items-center justify-between gap-3 px-3 py-2.5">
                   <div className="min-w-0">
@@ -547,20 +571,8 @@ export function AccountStatusWidget({
             </div>
           ) : null}
 
-          {isOwnerOrAdmin ? (
-            <div className="mt-4 border-t pt-4" style={{ borderColor }}>
-              <div className="mb-2.5 flex items-center gap-2">
-                <div
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-                  style={{ background: "rgba(99,102,241,0.15)" }}
-                >
-                  <Landmark size={13} style={{ color: "rgb(99,102,241)" }} />
-                </div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: textMuted }}>
-                  Depósito previo
-                </p>
-              </div>
-
+          {isOwnerOrAdmin && activeAccountTab === "deposito" ? (
+            <div>
               <div className="overflow-hidden rounded-xl" style={{ background: softBg }}>
                 <div className="flex items-center justify-between gap-3 px-3 py-2.5">
                   <div className="min-w-0">
