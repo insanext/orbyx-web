@@ -294,80 +294,106 @@ export function AccountStatusWidget({
           </div>
 
           {isOwnerOrAdmin ? (
-            <div className="mt-3 border-t pt-3" style={{ borderColor }}>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: textMuted }}>
-                Notificaciones a clientes
-              </p>
-
-              <div className="flex items-center justify-between gap-3 py-1.5">
-                <p className="text-sm" style={{ color: textMain }}>
-                  Confirmación por WhatsApp al agendar
-                </p>
-                <MiniToggle
-                  checked={waConfirmEnabled}
-                  disabled={savingField === "wa_confirmation_enabled"}
-                  label="Confirmación por WhatsApp al agendar"
-                  onChange={() => {
-                    const next = !waConfirmEnabled;
-                    setWaConfirmEnabled(next);
-                    saveWhatsAppSetting("wa_confirmation_enabled", next);
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-3 py-1.5">
-                <p className="text-sm" style={{ color: textMain }}>
-                  Recordatorio por WhatsApp antes de la cita
-                </p>
-                <MiniToggle
-                  checked={waReminderEnabled}
-                  disabled={savingField === "wa_reminder_enabled"}
-                  label="Recordatorio por WhatsApp antes de la cita"
-                  onChange={() => {
-                    const next = !waReminderEnabled;
-                    setWaReminderEnabled(next);
-                    saveWhatsAppSetting("wa_reminder_enabled", next);
-                  }}
-                />
-              </div>
-
-              {waReminderEnabled ? (
-                <div className="flex items-center justify-between gap-3 py-1.5 pl-2">
-                  <p className="text-xs" style={{ color: textMuted }}>
-                    Enviar
-                  </p>
-                  <div className="flex gap-1.5">
-                    {[1, 2].map((hours) => (
-                      <button
-                        key={hours}
-                        type="button"
-                        disabled={savingField === "wa_reminder_hours_before"}
-                        onClick={() => {
-                          setWaReminderHours(hours);
-                          saveWhatsAppSetting("wa_reminder_hours_before", hours);
-                        }}
-                        className="rounded-lg border px-2.5 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-                        style={{
-                          borderColor: waReminderHours === hours ? "rgb(37,99,235)" : borderColor,
-                          background: waReminderHours === hours ? "rgba(37,99,235,0.14)" : "transparent",
-                          color: waReminderHours === hours ? "rgb(37,99,235)" : textMuted,
-                        }}
-                      >
-                        {hours} hora{hours === 1 ? "" : "s"} antes
-                      </button>
-                    ))}
-                  </div>
+            <div className="mt-4 border-t pt-4" style={{ borderColor }}>
+              <div className="mb-2.5 flex items-center gap-2">
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                  style={{ background: "rgba(16,185,129,0.15)" }}
+                >
+                  <MessageCircle size={13} style={{ color: "rgb(16,185,129)" }} />
                 </div>
-              ) : null}
+                <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: textMuted }}>
+                  Notificaciones a clientes
+                </p>
+              </div>
+
+              <div className="overflow-hidden rounded-xl" style={{ background: softBg }}>
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium" style={{ color: textMain }}>
+                      Confirmación al agendar
+                    </p>
+                    <p className="text-[11px]" style={{ color: textMuted }}>
+                      Envía un WhatsApp apenas se crea la cita
+                    </p>
+                  </div>
+                  <MiniToggle
+                    checked={waConfirmEnabled}
+                    disabled={savingField === "wa_confirmation_enabled"}
+                    label="Confirmación por WhatsApp al agendar"
+                    onChange={() => {
+                      const next = !waConfirmEnabled;
+                      setWaConfirmEnabled(next);
+                      saveWhatsAppSetting("wa_confirmation_enabled", next);
+                    }}
+                  />
+                </div>
+
+                <div className="h-px" style={{ background: borderColor }} />
+
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium" style={{ color: textMain }}>
+                      Recordatorio antes de la cita
+                    </p>
+                    <p className="text-[11px]" style={{ color: textMuted }}>
+                      Envía un WhatsApp antes de que llegue el cliente
+                    </p>
+                  </div>
+                  <MiniToggle
+                    checked={waReminderEnabled}
+                    disabled={savingField === "wa_reminder_enabled"}
+                    label="Recordatorio por WhatsApp antes de la cita"
+                    onChange={() => {
+                      const next = !waReminderEnabled;
+                      setWaReminderEnabled(next);
+                      saveWhatsAppSetting("wa_reminder_enabled", next);
+                    }}
+                  />
+                </div>
+
+                {waReminderEnabled ? (
+                  <div className="flex items-center justify-between gap-3 px-3 pb-2.5 pt-0.5">
+                    <p className="text-[11px]" style={{ color: textMuted }}>
+                      Enviar
+                    </p>
+                    <div className="flex gap-1.5">
+                      {[1, 2].map((hours) => (
+                        <button
+                          key={hours}
+                          type="button"
+                          disabled={savingField === "wa_reminder_hours_before"}
+                          onClick={() => {
+                            setWaReminderHours(hours);
+                            saveWhatsAppSetting("wa_reminder_hours_before", hours);
+                          }}
+                          className="rounded-lg border px-2.5 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                          style={{
+                            borderColor: waReminderHours === hours ? "rgb(37,99,235)" : borderColor,
+                            background: waReminderHours === hours ? "rgba(37,99,235,0.14)" : "transparent",
+                            color: waReminderHours === hours ? "rgb(37,99,235)" : textMuted,
+                          }}
+                        >
+                          {hours} hora{hours === 1 ? "" : "s"} antes
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
 
               {notifError ? (
-                <p className="mt-1 text-xs" style={{ color: "rgb(244,63,94)" }}>
+                <p className="mt-1.5 text-xs" style={{ color: "rgb(244,63,94)" }}>
                   {notifError}
                 </p>
               ) : null}
 
-              <p className="mt-2 text-xs" style={{ color: textMuted }}>
-                Uso este mes: {status.wa_confirmacion.used} / {status.wa_confirmacion.total} mensajes
+              <p className="mt-2.5 text-[11px]" style={{ color: textMuted }}>
+                Uso este mes:{" "}
+                <span className="font-semibold" style={{ color: textMain }}>
+                  {status.wa_confirmacion.used} / {status.wa_confirmacion.total}
+                </span>{" "}
+                mensajes
               </p>
             </div>
           ) : null}
