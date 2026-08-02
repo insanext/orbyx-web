@@ -9,6 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  FileText,
+  Landmark,
   Lock,
   Phone,
   RotateCcw,
@@ -20,6 +22,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
+import { createClient } from "../../../../lib/supabase/client";
 import {
   APPOINTMENT_STATUS_COLORS,
   STATUS_STYLESHEET,
@@ -55,11 +58,21 @@ type BusinessResponse = {
     name: string;
     slug: string;
     business_category?: string | null;
+    deposit_required?: boolean;
   };
   calendar_id?: string;
   google_connected?: boolean;
   plan_slug?: string | null;
   slot_minutes?: number | string | null;
+};
+
+type PendingDeposit = {
+  id: string;
+  customer_name: string;
+  service_name_snapshot: string | null;
+  start_at: string;
+  deposit_receipt_path: string | null;
+  deposit_hold_expires_at: string | null;
 };
 
 type BranchItem = {
@@ -380,6 +393,13 @@ export default function AgendaPage() {
     const [tenantId, setTenantId] = useState("");
 const [slotMinutes, setSlotMinutes] = useState(30);
   const [businessName, setBusinessName] = useState("");
+  const [depositRequired, setDepositRequired] = useState(false);
+  const [pendingDeposits, setPendingDeposits] = useState<PendingDeposit[]>([]);
+  const [depositsModalOpen, setDepositsModalOpen] = useState(false);
+  const [depositActionId, setDepositActionId] = useState<string | null>(null);
+  const [depositActionError, setDepositActionError] = useState("");
+  const [depositReceiptUrls, setDepositReceiptUrls] = useState<Record<string, string>>({});
+  const [depositsNowTick, setDepositsNowTick] = useState(Date.now());
   const [businessCategory, setBusinessCategory] = useState("");
 const [calendarId, setCalendarId] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
@@ -2485,6 +2505,7 @@ setBusinessName(businessData.business.name || slug || "");
 setBusinessCategory(
   String(businessData.business.business_category || "").trim().toLowerCase()
 );
+setDepositRequired(Boolean(businessData.business.deposit_required));
 
         await Promise.all([
   loadBranches(currentTenantId),
@@ -2498,6 +2519,111 @@ setBusinessCategory(
 
     loadInitial();
   }, [slug]);
+
+  async function loadPendingDeposits(currentTenantId: string) {
+    if (!currentTenantId) return;
+    try {
+      const res = await apiFetch(
+        `${BACKEND_URL}/appointments/pending-deposits?tenant_id=${currentTenantId}`
+      );
+      const data = await res.json();
+      if (res.ok) setPendingDeposits(data.deposits || []);
+    } catch {
+      // silencioso — el badge simplemente no se actualiza en este intento,
+      // el próximo evento de Realtime (o abrir el modal) lo reintenta
+    }
+  }
+
+  // Badge del toolbar: carga inicial + Realtime persistente (no depende de
+  // que el modal esté abierto, a diferencia del widget de cupo, porque acá
+  // el número tiene que verse aunque el modal esté cerrado). Mismo patrón
+  // de canal ya usado (tenant_id filtrado, subscribe/unsubscribe en el
+  // efecto) que AccountStatusWidget.tsx — simplificado a "en cualquier
+  // evento, recargar la lista" en vez de parchear el estado a mano, porque
+  // acá lo que importa es el conteo, no un valor numérico puntual.
+  useEffect(() => {
+    if (!depositRequired || !tenantId) return;
+
+    loadPendingDeposits(tenantId);
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`deposits-pending-${tenantId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "appointments",
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        () => loadPendingDeposits(tenantId)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [depositRequired, tenantId]);
+
+  // Cronómetro de las tarjetas del modal — un solo interval compartido en
+  // vez de uno por tarjeta.
+  useEffect(() => {
+    if (!depositsModalOpen) return;
+    const interval = setInterval(() => setDepositsNowTick(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [depositsModalOpen]);
+
+  async function loadDepositReceiptUrl(appointmentId: string) {
+    if (depositReceiptUrls[appointmentId]) return;
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/appointments/${appointmentId}/deposit-receipt-url`);
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setDepositReceiptUrls((prev) => ({ ...prev, [appointmentId]: data.url }));
+      }
+    } catch {
+      // sin thumbnail esta vez, no es crítico
+    }
+  }
+
+  async function handleConfirmDeposit(id: string) {
+    setDepositActionError("");
+    setDepositActionId(id);
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/appointments/${id}/deposit/confirm`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "No se pudo confirmar el depósito.");
+      setPendingDeposits((prev) => prev.filter((d) => d.id !== id));
+    } catch (error: unknown) {
+      setDepositActionError(
+        error instanceof Error ? error.message : "No se pudo confirmar el depósito."
+      );
+    } finally {
+      setDepositActionId(null);
+    }
+  }
+
+  async function handleRejectDeposit(id: string) {
+    setDepositActionError("");
+    setDepositActionId(id);
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/appointments/${id}/deposit/reject`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "No se pudo rechazar el depósito.");
+      setPendingDeposits((prev) => prev.filter((d) => d.id !== id));
+    } catch (error: unknown) {
+      setDepositActionError(
+        error instanceof Error ? error.message : "No se pudo rechazar el depósito."
+      );
+    } finally {
+      setDepositActionId(null);
+    }
+  }
 
   useEffect(() => {
   if (!tenantId || !selectedBranchId) {
@@ -3752,6 +3878,28 @@ const hasPendingClose = pendingCloseCount > 0;
                       <span className="hidden md:inline">Día por profesional</span>
                     </button>
                   </div>
+
+                  {depositRequired ? (
+                    <button
+                      type="button"
+                      onClick={() => setDepositsModalOpen(true)}
+                      className="orbyx-header-btn relative flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        color: "var(--text-muted)",
+                        background: "var(--agenda-calendar-header-bg)",
+                      }}
+                    >
+                      <Landmark className="h-4 w-4" />
+                      <span className="hidden md:inline">Depósitos pendientes</span>
+                      <span className="md:hidden">Depósitos</span>
+                      {pendingDeposits.length > 0 ? (
+                        <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                          {pendingDeposits.length > 9 ? "9+" : pendingDeposits.length}
+                        </span>
+                      ) : null}
+                    </button>
+                  ) : null}
 
                   <input
                     type="date"
@@ -6532,6 +6680,158 @@ const appt = slotDisplayGroups[0]?.appointments[0];
         </div>
       ) : null}
 
+      {depositsModalOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
+          <div
+            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl border p-6 shadow-[0_24px_80px_-30px_rgba(15,23,42,0.75)]"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+                Depósitos pendientes
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDepositsModalOpen(false)}
+                aria-label="Cerrar"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {depositActionError ? (
+              <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                {depositActionError}
+              </div>
+            ) : null}
+
+            {pendingDeposits.length === 0 ? (
+              <p className="mt-6 text-sm" style={{ color: "var(--text-muted)" }}>
+                No hay depósitos pendientes de revisión.
+              </p>
+            ) : (
+              <div className="mt-4 grid gap-3">
+                {pendingDeposits.map((deposit) => {
+                  const expiresAtMs = deposit.deposit_hold_expires_at
+                    ? new Date(deposit.deposit_hold_expires_at).getTime()
+                    : 0;
+                  const remainingSec = Math.max(0, Math.floor((expiresAtMs - depositsNowTick) / 1000));
+                  const mm = Math.floor(remainingSec / 60);
+                  const ss = remainingSec % 60;
+                  const isPdf = (deposit.deposit_receipt_path || "").toLowerCase().endsWith(".pdf");
+                  const receiptUrl = depositReceiptUrls[deposit.id];
+                  const acting = depositActionId === deposit.id;
+
+                  return (
+                    <div
+                      key={deposit.id}
+                      className="rounded-2xl border p-4"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                            {deposit.customer_name}
+                          </p>
+                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                            {deposit.service_name_snapshot || "Servicio"} ·{" "}
+                            {new Date(deposit.start_at).toLocaleString("es-CL", {
+                              timeZone: "America/Santiago",
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                            Tiempo restante
+                          </p>
+                          <p
+                            className="text-lg font-bold tabular-nums"
+                            style={{ color: remainingSec <= 0 ? "rgb(225,29,72)" : "var(--text-main)" }}
+                          >
+                            {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3">
+                        {deposit.deposit_receipt_path ? (
+                          receiptUrl ? (
+                            isPdf ? (
+                              <a
+                                href={receiptUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold"
+                                style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}
+                              >
+                                <FileText className="h-4 w-4" />
+                                Ver comprobante (PDF)
+                              </a>
+                            ) : (
+                              <a href={receiptUrl} target="_blank" rel="noreferrer">
+                                <img
+                                  src={receiptUrl}
+                                  alt="Comprobante de depósito"
+                                  className="h-24 w-24 rounded-xl border object-cover"
+                                  style={{ borderColor: "var(--border-color)" }}
+                                />
+                              </a>
+                            )
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => loadDepositReceiptUrl(deposit.id)}
+                              className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold"
+                              style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}
+                            >
+                              <FileText className="h-4 w-4" />
+                              Ver comprobante
+                            </button>
+                          )
+                        ) : (
+                          <p className="text-xs italic" style={{ color: "var(--text-muted)" }}>
+                            Sin comprobante subido todavía.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex gap-2">
+                        <button
+                          type="button"
+                          disabled={acting}
+                          onClick={() => handleConfirmDeposit(deposit.id)}
+                          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Check className="h-4 w-4" />
+                          Confirmar depósito
+                        </button>
+                        <button
+                          type="button"
+                          disabled={acting}
+                          onClick={() => handleRejectDeposit(deposit.id)}
+                          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                          style={{ borderColor: "rgba(225,29,72,0.4)", color: "rgb(225,29,72)" }}
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Rechazar
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {freeSlotActionDraft ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">

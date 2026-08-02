@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Clock, MessageCircle, Sparkles, X } from "lucide-react";
+import { AlertTriangle, Clock, Landmark, MessageCircle, Sparkles, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { createClient } from "../../lib/supabase/client";
 
@@ -29,7 +29,15 @@ export type AccountStatus = {
   wa_confirmation_enabled: boolean;
   wa_reminder_enabled: boolean;
   wa_reminder_hours_before: number;
+  deposit_required: boolean;
+  deposit_bank_name: string;
+  deposit_account_type: string;
+  deposit_account_number: string;
+  deposit_holder_rut: string;
+  deposit_holder_name: string;
 };
+
+const DEPOSIT_ACCOUNT_TYPES = ["Cuenta Corriente", "Cuenta Vista", "Cuenta de Ahorro"];
 
 export function useAccountStatus(tenantId: string) {
   const [status, setStatus] = useState<AccountStatus | null>(null);
@@ -182,6 +190,15 @@ export function AccountStatusWidget({
   const [notifError, setNotifError] = useState("");
   const [synced, setSynced] = useState(false);
 
+  const [depositRequired, setDepositRequired] = useState(false);
+  const [depositBankName, setDepositBankName] = useState("");
+  const [depositAccountType, setDepositAccountType] = useState("");
+  const [depositAccountNumber, setDepositAccountNumber] = useState("");
+  const [depositHolderRut, setDepositHolderRut] = useState("");
+  const [depositHolderName, setDepositHolderName] = useState("");
+  const [savingDepositField, setSavingDepositField] = useState<string | null>(null);
+  const [depositError, setDepositError] = useState("");
+
   // Valores "en vivo" recibidos por Realtime — sobreescriben el `used` que
   // vino del fetch inicial (status.wa_confirmacion.used / status.ia_wa.used)
   // sin tener que tocar useAccountStatus. pulseField dispara el destello
@@ -194,6 +211,12 @@ export function AccountStatusWidget({
     setWaConfirmEnabled(status.wa_confirmation_enabled);
     setWaReminderEnabled(status.wa_reminder_enabled);
     setWaReminderHours(status.wa_reminder_hours_before);
+    setDepositRequired(status.deposit_required);
+    setDepositBankName(status.deposit_bank_name);
+    setDepositAccountType(status.deposit_account_type);
+    setDepositAccountNumber(status.deposit_account_number);
+    setDepositHolderRut(status.deposit_holder_rut);
+    setDepositHolderName(status.deposit_holder_name);
     setSynced(true);
   }, [status, synced]);
 
@@ -260,6 +283,42 @@ export function AccountStatusWidget({
       if (field === "wa_reminder_hours_before" && status) setWaReminderHours(status.wa_reminder_hours_before);
     } finally {
       setSavingField(null);
+    }
+  }
+
+  const depositFieldsComplete = Boolean(
+    depositBankName.trim() &&
+      depositAccountType.trim() &&
+      depositAccountNumber.trim() &&
+      depositHolderRut.trim() &&
+      depositHolderName.trim()
+  );
+
+  async function saveDepositSetting(
+    field:
+      | "deposit_required"
+      | "deposit_bank_name"
+      | "deposit_account_type"
+      | "deposit_account_number"
+      | "deposit_holder_rut"
+      | "deposit_holder_name",
+    value: boolean | string,
+    revert: () => void
+  ) {
+    setDepositError("");
+    setSavingDepositField(field);
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/tenants/${tenantId}/deposit-settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (!res.ok) throw new Error("No se pudo guardar");
+    } catch {
+      setDepositError("No se pudo guardar el cambio. Intenta de nuevo.");
+      revert();
+    } finally {
+      setSavingDepositField(null);
     }
   }
 
@@ -485,6 +544,137 @@ export function AccountStatusWidget({
                 </span>{" "}
                 mensajes
               </p>
+            </div>
+          ) : null}
+
+          {isOwnerOrAdmin ? (
+            <div className="mt-4 border-t pt-4" style={{ borderColor }}>
+              <div className="mb-2.5 flex items-center gap-2">
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                  style={{ background: "rgba(99,102,241,0.15)" }}
+                >
+                  <Landmark size={13} style={{ color: "rgb(99,102,241)" }} />
+                </div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: textMuted }}>
+                  Depósito previo
+                </p>
+              </div>
+
+              <div className="overflow-hidden rounded-xl" style={{ background: softBg }}>
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium" style={{ color: textMain }}>
+                      Depósito requerido para confirmar
+                    </p>
+                    <p className="text-[11px]" style={{ color: textMuted }}>
+                      El cliente sube un comprobante antes de que la hora quede en firme
+                    </p>
+                  </div>
+                  <MiniToggle
+                    checked={depositRequired}
+                    disabled={savingDepositField === "deposit_required"}
+                    label="Depósito requerido para confirmar"
+                    onChange={() => {
+                      const next = !depositRequired;
+                      setDepositRequired(next);
+                      saveDepositSetting("deposit_required", next, () => setDepositRequired(!next));
+                    }}
+                  />
+                </div>
+
+                {depositRequired ? (
+                  <div className="space-y-2 px-3 pb-3 pt-1">
+                    <input
+                      type="text"
+                      placeholder="Banco"
+                      value={depositBankName}
+                      disabled={savingDepositField === "deposit_bank_name"}
+                      onChange={(e) => setDepositBankName(e.target.value)}
+                      onBlur={() =>
+                        saveDepositSetting("deposit_bank_name", depositBankName, () =>
+                          setDepositBankName(status.deposit_bank_name)
+                        )
+                      }
+                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                      style={{ borderColor, background: dropdownBg, color: textMain }}
+                    />
+                    <select
+                      value={depositAccountType}
+                      disabled={savingDepositField === "deposit_account_type"}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setDepositAccountType(value);
+                        saveDepositSetting("deposit_account_type", value, () =>
+                          setDepositAccountType(status.deposit_account_type)
+                        );
+                      }}
+                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                      style={{ borderColor, background: dropdownBg, color: textMain }}
+                    >
+                      <option value="">Tipo de cuenta</option>
+                      {DEPOSIT_ACCOUNT_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Número de cuenta"
+                      value={depositAccountNumber}
+                      disabled={savingDepositField === "deposit_account_number"}
+                      onChange={(e) => setDepositAccountNumber(e.target.value)}
+                      onBlur={() =>
+                        saveDepositSetting("deposit_account_number", depositAccountNumber, () =>
+                          setDepositAccountNumber(status.deposit_account_number)
+                        )
+                      }
+                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                      style={{ borderColor, background: dropdownBg, color: textMain }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="RUT titular"
+                      value={depositHolderRut}
+                      disabled={savingDepositField === "deposit_holder_rut"}
+                      onChange={(e) => setDepositHolderRut(e.target.value)}
+                      onBlur={() =>
+                        saveDepositSetting("deposit_holder_rut", depositHolderRut, () =>
+                          setDepositHolderRut(status.deposit_holder_rut)
+                        )
+                      }
+                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                      style={{ borderColor, background: dropdownBg, color: textMain }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Nombre titular"
+                      value={depositHolderName}
+                      disabled={savingDepositField === "deposit_holder_name"}
+                      onChange={(e) => setDepositHolderName(e.target.value)}
+                      onBlur={() =>
+                        saveDepositSetting("deposit_holder_name", depositHolderName, () =>
+                          setDepositHolderName(status.deposit_holder_name)
+                        )
+                      }
+                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                      style={{ borderColor, background: dropdownBg, color: textMain }}
+                    />
+                    {!depositFieldsComplete ? (
+                      <p className="text-[10px] font-medium" style={{ color: "rgb(217,119,6)" }}>
+                        Completa los 5 datos — los clientes no verán esta sección hasta entonces.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+
+              {depositError ? (
+                <p className="mt-1.5 text-xs" style={{ color: "rgb(244,63,94)" }}>
+                  {depositError}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
