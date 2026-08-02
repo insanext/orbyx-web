@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Clock, MessageCircle, Sparkles, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { createClient } from "../../lib/supabase/client";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -62,6 +63,14 @@ export function useAccountStatus(tenantId: string) {
   return { status, loaded };
 }
 
+// Umbrales de alerta de cupo: <80% normal, 80%-99% advertencia, 100%+ agotado.
+function getUsageAlertState(usage: UsageCounter): "ok" | "warning" | "critical" {
+  if (usage.total <= 0) return "ok"; // sin cupo incluido en el plan, no aplica alerta
+  if (usage.used >= usage.total) return "critical";
+  if (usage.used / usage.total >= 0.8) return "warning";
+  return "ok";
+}
+
 function UsagePill({
   icon: Icon,
   label,
@@ -70,6 +79,7 @@ function UsagePill({
   textMain,
   borderColor,
   bg,
+  pulse,
 }: {
   icon: typeof MessageCircle;
   label: string;
@@ -78,26 +88,44 @@ function UsagePill({
   textMain: string;
   borderColor: string;
   bg: string;
+  pulse?: boolean;
 }) {
   const isUnlimitedOrOff = usage.total <= 0;
-  const nearLimit = !isUnlimitedOrOff && usage.remaining <= Math.max(1, Math.round(usage.total * 0.1));
+  const alertState = getUsageAlertState(usage);
+
+  const alertColors: Record<"ok" | "warning" | "critical", { border: string; bg: string; text: string }> = {
+    ok: { border: borderColor, bg, text: textMain },
+    warning: { border: "rgba(245,158,11,0.5)", bg: "rgba(245,158,11,0.12)", text: "rgb(217,119,6)" },
+    critical: { border: "rgba(244,63,94,0.5)", bg: "rgba(244,63,94,0.12)", text: "rgb(225,29,72)" },
+  };
+  const colors = alertColors[alertState];
 
   return (
     <div
-      className="flex items-center gap-2 rounded-xl border px-3 py-2"
-      style={{ borderColor, background: bg }}
+      className="flex items-center gap-2 rounded-xl border px-3 py-2 transition-shadow duration-500"
+      style={{
+        borderColor: colors.border,
+        background: colors.bg,
+        boxShadow: pulse ? "0 0 0 3px rgba(37,99,235,0.4)" : "0 0 0 0px transparent",
+      }}
     >
-      <Icon size={15} style={{ color: nearLimit ? "rgb(244,63,94)" : textMuted }} />
+      <Icon size={15} style={{ color: alertState === "ok" ? textMuted : colors.text }} />
       <div className="min-w-0">
         <p className="text-[11px]" style={{ color: textMuted }}>
           {label}
         </p>
-        <p
-          className="text-sm font-semibold"
-          style={{ color: nearLimit ? "rgb(244,63,94)" : textMain }}
-        >
+        <p className="text-sm font-semibold" style={{ color: colors.text }}>
           {isUnlimitedOrOff ? "No incluido" : `${usage.used} / ${usage.total}`}
         </p>
+        {alertState === "warning" ? (
+          <p className="text-[10px] font-medium" style={{ color: colors.text }}>
+            Cerca del límite
+          </p>
+        ) : alertState === "critical" ? (
+          <p className="text-[10px] font-medium" style={{ color: colors.text }}>
+            Cupo agotado este mes
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -154,6 +182,13 @@ export function AccountStatusWidget({
   const [notifError, setNotifError] = useState("");
   const [synced, setSynced] = useState(false);
 
+  // Valores "en vivo" recibidos por Realtime — sobreescriben el `used` que
+  // vino del fetch inicial (status.wa_confirmacion.used / status.ia_wa.used)
+  // sin tener que tocar useAccountStatus. pulseField dispara el destello
+  // visual breve en la pill correspondiente.
+  const [liveUsage, setLiveUsage] = useState<Partial<Record<"wa_confirmacion" | "ia_wa", number>>>({});
+  const [pulseField, setPulseField] = useState<"wa_confirmacion" | "ia_wa" | null>(null);
+
   useEffect(() => {
     if (!status || synced) return;
     setWaConfirmEnabled(status.wa_confirmation_enabled);
@@ -161,6 +196,48 @@ export function AccountStatusWidget({
     setWaReminderHours(status.wa_reminder_hours_before);
     setSynced(true);
   }, [status, synced]);
+
+  // Realtime: solo mientras el dropdown está abierto (se desuscribe al
+  // cerrar, para no dejar conexiones abiertas de más). Filtra por
+  // tenant_id server-side (Postgres RLS en tenant_monthly_usage, no solo
+  // el filtro del cliente — ver migración 2026-08-02-tenant-monthly-usage-rls.sql).
+  useEffect(() => {
+    if (!open || !tenantId) return;
+
+    const supabase = createClient();
+    const currentPeriod = new Date().toISOString().slice(0, 7);
+
+    function applyChange(row: Record<string, unknown> | null) {
+      if (!row) return;
+      const resource = row.resource;
+      if (resource !== "wa_confirmacion" && resource !== "ia_wa") return;
+      if (row.period !== currentPeriod) return;
+
+      setLiveUsage((prev) => ({ ...prev, [resource]: Number(row.used) || 0 }));
+      setPulseField(resource);
+      setTimeout(() => {
+        setPulseField((current) => (current === resource ? null : current));
+      }, 900);
+    }
+
+    const channel = supabase
+      .channel(`tenant-monthly-usage-${tenantId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tenant_monthly_usage",
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => applyChange((payload.new as Record<string, unknown>) || null)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [open, tenantId]);
 
   async function saveWhatsAppSetting(
     field: "wa_confirmation_enabled" | "wa_reminder_enabled" | "wa_reminder_hours_before",
@@ -187,6 +264,17 @@ export function AccountStatusWidget({
   }
 
   if (!status) return null;
+
+  const liveWaConfirmacion: UsageCounter = {
+    ...status.wa_confirmacion,
+    used: liveUsage.wa_confirmacion ?? status.wa_confirmacion.used,
+    remaining: Math.max(0, status.wa_confirmacion.total - (liveUsage.wa_confirmacion ?? status.wa_confirmacion.used)),
+  };
+  const liveIaWa: UsageCounter = {
+    ...status.ia_wa,
+    used: liveUsage.ia_wa ?? status.ia_wa.used,
+    remaining: Math.max(0, status.ia_wa.total - (liveUsage.ia_wa ?? status.ia_wa.used)),
+  };
 
   const textMuted = "var(--text-muted)";
   const textMain = "var(--text-main)";
@@ -276,20 +364,22 @@ export function AccountStatusWidget({
             <UsagePill
               icon={MessageCircle}
               label="WA confirmación"
-              usage={status.wa_confirmacion}
+              usage={liveWaConfirmacion}
               textMuted={textMuted}
               textMain={textMain}
               borderColor={borderColor}
               bg={softBg}
+              pulse={pulseField === "wa_confirmacion"}
             />
             <UsagePill
               icon={Sparkles}
               label="IA WhatsApp"
-              usage={status.ia_wa}
+              usage={liveIaWa}
               textMuted={textMuted}
               textMain={textMain}
               borderColor={borderColor}
               bg={softBg}
+              pulse={pulseField === "ia_wa"}
             />
           </div>
 
@@ -391,7 +481,7 @@ export function AccountStatusWidget({
               <p className="mt-2.5 text-[11px]" style={{ color: textMuted }}>
                 Uso este mes:{" "}
                 <span className="font-semibold" style={{ color: textMain }}>
-                  {status.wa_confirmacion.used} / {status.wa_confirmacion.total}
+                  {liveWaConfirmacion.used} / {liveWaConfirmacion.total}
                 </span>{" "}
                 mensajes
               </p>
