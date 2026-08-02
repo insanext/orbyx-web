@@ -25,6 +25,9 @@ export type AccountStatus = {
   blocked_reason: "trial_expired" | "payment_overdue" | null;
   wa_confirmacion: UsageCounter;
   ia_wa: UsageCounter;
+  wa_confirmation_enabled: boolean;
+  wa_reminder_enabled: boolean;
+  wa_reminder_hours_before: number;
 };
 
 export function useAccountStatus(tenantId: string) {
@@ -100,17 +103,88 @@ function UsagePill({
   );
 }
 
+function MiniToggle({
+  checked,
+  onChange,
+  disabled,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onChange}
+      disabled={disabled}
+      className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
+      style={{ background: checked ? "rgb(37 99 235)" : "var(--border-color)" }}
+    >
+      <span
+        className="inline-block h-4 w-4 transform rounded-full bg-white transition"
+        style={{ transform: checked ? "translateX(22px)" : "translateX(4px)" }}
+      />
+    </button>
+  );
+}
+
 export function AccountStatusWidget({
   tenantId,
   slug,
   isNocturno,
+  isOwnerOrAdmin,
 }: {
   tenantId: string;
   slug: string;
   isNocturno: boolean;
+  isOwnerOrAdmin: boolean;
 }) {
   const { status } = useAccountStatus(tenantId);
   const [open, setOpen] = useState(false);
+
+  const [waConfirmEnabled, setWaConfirmEnabled] = useState(false);
+  const [waReminderEnabled, setWaReminderEnabled] = useState(false);
+  const [waReminderHours, setWaReminderHours] = useState(1);
+  const [savingField, setSavingField] = useState<string | null>(null);
+  const [notifError, setNotifError] = useState("");
+  const [synced, setSynced] = useState(false);
+
+  useEffect(() => {
+    if (!status || synced) return;
+    setWaConfirmEnabled(status.wa_confirmation_enabled);
+    setWaReminderEnabled(status.wa_reminder_enabled);
+    setWaReminderHours(status.wa_reminder_hours_before);
+    setSynced(true);
+  }, [status, synced]);
+
+  async function saveWhatsAppSetting(
+    field: "wa_confirmation_enabled" | "wa_reminder_enabled" | "wa_reminder_hours_before",
+    value: boolean | number
+  ) {
+    setNotifError("");
+    setSavingField(field);
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/tenants/${tenantId}/whatsapp-settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (!res.ok) throw new Error("No se pudo guardar");
+    } catch {
+      setNotifError("No se pudo guardar el cambio. Intenta de nuevo.");
+      // revierte el valor local al estado que ya sabíamos que estaba guardado
+      if (field === "wa_confirmation_enabled") setWaConfirmEnabled(!value);
+      if (field === "wa_reminder_enabled") setWaReminderEnabled(!value);
+      if (field === "wa_reminder_hours_before" && status) setWaReminderHours(status.wa_reminder_hours_before);
+    } finally {
+      setSavingField(null);
+    }
+  }
 
   if (!status) return null;
 
@@ -218,6 +292,85 @@ export function AccountStatusWidget({
               bg={softBg}
             />
           </div>
+
+          {isOwnerOrAdmin ? (
+            <div className="mt-3 border-t pt-3" style={{ borderColor }}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: textMuted }}>
+                Notificaciones a clientes
+              </p>
+
+              <div className="flex items-center justify-between gap-3 py-1.5">
+                <p className="text-sm" style={{ color: textMain }}>
+                  Confirmación por WhatsApp al agendar
+                </p>
+                <MiniToggle
+                  checked={waConfirmEnabled}
+                  disabled={savingField === "wa_confirmation_enabled"}
+                  label="Confirmación por WhatsApp al agendar"
+                  onChange={() => {
+                    const next = !waConfirmEnabled;
+                    setWaConfirmEnabled(next);
+                    saveWhatsAppSetting("wa_confirmation_enabled", next);
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3 py-1.5">
+                <p className="text-sm" style={{ color: textMain }}>
+                  Recordatorio por WhatsApp antes de la cita
+                </p>
+                <MiniToggle
+                  checked={waReminderEnabled}
+                  disabled={savingField === "wa_reminder_enabled"}
+                  label="Recordatorio por WhatsApp antes de la cita"
+                  onChange={() => {
+                    const next = !waReminderEnabled;
+                    setWaReminderEnabled(next);
+                    saveWhatsAppSetting("wa_reminder_enabled", next);
+                  }}
+                />
+              </div>
+
+              {waReminderEnabled ? (
+                <div className="flex items-center justify-between gap-3 py-1.5 pl-2">
+                  <p className="text-xs" style={{ color: textMuted }}>
+                    Enviar
+                  </p>
+                  <div className="flex gap-1.5">
+                    {[1, 2].map((hours) => (
+                      <button
+                        key={hours}
+                        type="button"
+                        disabled={savingField === "wa_reminder_hours_before"}
+                        onClick={() => {
+                          setWaReminderHours(hours);
+                          saveWhatsAppSetting("wa_reminder_hours_before", hours);
+                        }}
+                        className="rounded-lg border px-2.5 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                        style={{
+                          borderColor: waReminderHours === hours ? "rgb(37,99,235)" : borderColor,
+                          background: waReminderHours === hours ? "rgba(37,99,235,0.14)" : "transparent",
+                          color: waReminderHours === hours ? "rgb(37,99,235)" : textMuted,
+                        }}
+                      >
+                        {hours} hora{hours === 1 ? "" : "s"} antes
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {notifError ? (
+                <p className="mt-1 text-xs" style={{ color: "rgb(244,63,94)" }}>
+                  {notifError}
+                </p>
+              ) : null}
+
+              <p className="mt-2 text-xs" style={{ color: textMuted }}>
+                Uso este mes: {status.wa_confirmacion.used} / {status.wa_confirmacion.total} mensajes
+              </p>
+            </div>
+          ) : null}
 
           <Link
             href={`/dashboard/${slug}/billing`}

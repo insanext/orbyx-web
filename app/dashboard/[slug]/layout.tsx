@@ -1449,7 +1449,12 @@ export default function DashboardLayout({
                     Plan {planLabel}
                   </span>
                   {tenantId ? (
-                    <AccountStatusWidget tenantId={tenantId} slug={slug} isNocturno={isNocturno} />
+                    <AccountStatusWidget
+                      tenantId={tenantId}
+                      slug={slug}
+                      isNocturno={isNocturno}
+                      isOwnerOrAdmin={isOwnerOrAdmin}
+                    />
                   ) : null}
                 </div>
                 </div>
