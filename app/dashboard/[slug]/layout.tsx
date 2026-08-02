@@ -1405,7 +1405,7 @@ export default function DashboardLayout({
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header
-            className="sticky top-0 z-20 border-b backdrop-blur"
+            className="sticky top-0 z-30 border-b backdrop-blur"
             style={{
               background:
                 theme === "nocturno"
