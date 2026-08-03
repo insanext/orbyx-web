@@ -535,7 +535,7 @@ const [loadingNextSlots, setLoadingNextSlots] = useState(false);
   const [depositUploadError, setDepositUploadError] = useState("");
   const [depositRemainingSeconds, setDepositRemainingSeconds] = useState(0);
 
-  // Cronómetro informativo — la ventana de 15 min la libera de verdad el
+  // Cronómetro informativo — la ventana de 10 min la libera de verdad el
   // cron del backend (POST /appointments/maintenance/release-expired-deposits),
   // esto solo le muestra al cliente cuánto tiempo le queda al negocio para
   // revisar el comprobante.

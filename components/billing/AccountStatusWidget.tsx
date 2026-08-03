@@ -203,6 +203,14 @@ export function AccountStatusWidget({
   const [savingDepositField, setSavingDepositField] = useState<string | null>(null);
   const [depositError, setDepositError] = useState("");
 
+  const [depositServices, setDepositServices] = useState<
+    { id: string; name: string; requires_deposit: boolean }[]
+  >([]);
+  const [depositServicesLoading, setDepositServicesLoading] = useState(false);
+  const [depositServicesLoaded, setDepositServicesLoaded] = useState(false);
+  const [depositServicesError, setDepositServicesError] = useState("");
+  const [savingDepositServiceId, setSavingDepositServiceId] = useState<string | null>(null);
+
   // Valores "en vivo" recibidos por Realtime — sobreescriben el `used` que
   // vino del fetch inicial (status.wa_confirmacion.used / status.ia_wa.used)
   // sin tener que tocar useAccountStatus. pulseField dispara el destello
@@ -265,6 +273,79 @@ export function AccountStatusWidget({
       supabase.removeChannel(channel);
     };
   }, [open, tenantId]);
+
+  // Lista de servicios para el checklist "requiere depósito" — solo se carga
+  // una vez que el tab de depósito está abierto y el interruptor maestro
+  // está activo (no tiene sentido antes). Se limita a la sucursal activa
+  // del dashboard (misma convención que el resto del panel:
+  // orbyx_active_branch_${slug}), ya que los servicios son por sucursal.
+  useEffect(() => {
+    if (!open || activeAccountTab !== "deposito" || !depositRequired || depositServicesLoaded) {
+      return;
+    }
+
+    async function loadDepositServices() {
+      setDepositServicesLoading(true);
+      setDepositServicesError("");
+      try {
+        const activeBranchId =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem(`orbyx_active_branch_${slug}`) || ""
+            : "";
+
+        const params = new URLSearchParams({ tenant_id: tenantId, active: "true" });
+        if (activeBranchId) params.set("branch_id", activeBranchId);
+
+        const res = await apiFetch(`${BACKEND_URL}/services?${params.toString()}`);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data?.error || "No se pudo cargar");
+
+        setDepositServices(
+          (data.services || []).map((s: { id: string; name: string; requires_deposit?: boolean }) => ({
+            id: s.id,
+            name: s.name,
+            requires_deposit: Boolean(s.requires_deposit),
+          }))
+        );
+        setDepositServicesLoaded(true);
+      } catch {
+        setDepositServicesError("No se pudieron cargar los servicios.");
+      } finally {
+        setDepositServicesLoading(false);
+      }
+    }
+
+    loadDepositServices();
+  }, [open, activeAccountTab, depositRequired, depositServicesLoaded, tenantId, slug]);
+
+  async function toggleServiceRequiresDeposit(service: {
+    id: string;
+    name: string;
+    requires_deposit: boolean;
+  }) {
+    const next = !service.requires_deposit;
+    setDepositServicesError("");
+    setDepositServices((prev) =>
+      prev.map((s) => (s.id === service.id ? { ...s, requires_deposit: next } : s))
+    );
+    setSavingDepositServiceId(service.id);
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/services/${service.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId, requires_deposit: next }),
+      });
+      if (!res.ok) throw new Error("No se pudo guardar");
+    } catch {
+      setDepositServices((prev) =>
+        prev.map((s) => (s.id === service.id ? { ...s, requires_deposit: !next } : s))
+      );
+      setDepositServicesError("No se pudo guardar el cambio de un servicio. Intenta de nuevo.");
+    } finally {
+      setSavingDepositServiceId(null);
+    }
+  }
 
   async function saveWhatsAppSetting(
     field: "wa_confirmation_enabled" | "wa_reminder_enabled" | "wa_reminder_hours_before",
@@ -678,6 +759,52 @@ export function AccountStatusWidget({
                         Completa los 5 datos — los clientes no verán esta sección hasta entonces.
                       </p>
                     ) : null}
+
+                    <div className="mt-2 border-t pt-2" style={{ borderColor }}>
+                      <p className="text-[11px] font-semibold" style={{ color: textMain }}>
+                        Servicios que requieren depósito
+                      </p>
+                      <p className="text-[10px]" style={{ color: textMuted }}>
+                        Los servicios sin marcar se reservan normal, sin depósito.
+                      </p>
+
+                      {depositServicesLoading ? (
+                        <p className="mt-1.5 text-[11px]" style={{ color: textMuted }}>
+                          Cargando servicios...
+                        </p>
+                      ) : depositServices.length === 0 ? (
+                        <p className="mt-1.5 text-[11px]" style={{ color: textMuted }}>
+                          No hay servicios activos en esta sucursal.
+                        </p>
+                      ) : (
+                        <div className="mt-1.5 max-h-40 space-y-0.5 overflow-y-auto">
+                          {depositServices.map((service) => (
+                            <label
+                              key={service.id}
+                              className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-xs"
+                              style={{
+                                color: textMain,
+                                opacity: savingDepositServiceId === service.id ? 0.6 : 1,
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={service.requires_deposit}
+                                disabled={savingDepositServiceId === service.id}
+                                onChange={() => toggleServiceRequiresDeposit(service)}
+                              />
+                              <span className="truncate">{service.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {depositServicesError ? (
+                        <p className="mt-1 text-[10px]" style={{ color: "rgb(244,63,94)" }}>
+                          {depositServicesError}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 ) : null}
               </div>
