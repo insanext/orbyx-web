@@ -422,15 +422,38 @@ function StaffPhotoPreview({
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function DetailRow({
+  icon,
+  label,
+  value,
+  href,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  href?: string;
+}) {
   return (
-    <div className="min-w-0">
-      <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+    <div className="flex items-start justify-between gap-3 py-2.5">
+      <span className="flex shrink-0 items-center gap-2 text-sm text-slate-500">
+        <span aria-hidden="true">{icon}</span>
         {label}
-      </dt>
-      <dd className="mt-0.5 break-words text-sm font-semibold text-slate-900">
-        {value}
-      </dd>
+      </span>
+
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="min-w-0 break-words text-right text-sm font-semibold text-indigo-600 underline-offset-2 hover:underline"
+        >
+          {value}
+        </a>
+      ) : (
+        <span className="min-w-0 break-words text-right text-sm font-semibold text-slate-900">
+          {value}
+        </span>
+      )}
     </div>
   );
 }
@@ -1447,74 +1470,135 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-3 py-4 sm:px-4 md:px-8 md:py-8">
-        <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-3xl items-center justify-center md:min-h-[calc(100vh-4rem)]">
-          <div className="w-full overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-[0_35px_90px_-45px_rgba(16,185,129,0.42)] md:rounded-[28px]">
-            <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-sky-500 to-indigo-500" />
-
-            <div className="p-4 md:p-6">
-              <div className="flex items-center gap-3 md:gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-sky-100 text-xl shadow-sm ring-4 ring-emerald-50 md:h-14 md:w-14 md:text-2xl">
-                  ✅
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-emerald-600">
-                    Reserva online
-                  </p>
-                  <h1 className="text-xl font-bold tracking-tight text-slate-950 md:text-2xl">
-                    Reserva confirmada
-                  </h1>
+        <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-5xl items-center justify-center md:min-h-[calc(100vh-4rem)]">
+          <div className="w-full rounded-2xl bg-gradient-to-br from-sky-400 via-emerald-400 to-indigo-500 p-[2.5px] shadow-[0_35px_90px_-45px_rgba(16,185,129,0.42)] md:rounded-[28px]">
+            <div className="grid overflow-hidden rounded-[15px] bg-white md:grid-cols-[1.35fr_1fr] md:rounded-[26px]">
+              {/* MASCOTA — arriba en mobile, columna derecha en desktop */}
+              <div className="relative order-1 flex min-h-[170px] items-center justify-center overflow-hidden bg-gradient-to-b from-indigo-950 via-slate-950 to-slate-900 p-4 md:order-2 md:min-h-0 md:p-5">
+                <div className="absolute right-4 top-4 flex items-center gap-1.5 md:right-6 md:top-6">
+                  <img src="/orbyx-mark-dark.png" alt="" className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="text-xs font-extrabold tracking-[0.18em] text-white md:text-sm">
+                    ORBYX
+                  </span>
                 </div>
 
                 <img
                   src="/mascota-confirmacion.png"
                   alt=""
-                  className="hidden h-14 w-14 shrink-0 rounded-xl object-contain sm:block md:h-16 md:w-16"
+                  className="h-auto w-[50%] max-w-[170px] object-contain md:w-[96%] md:max-w-none"
                 />
               </div>
 
-              <p className="mt-3 text-sm leading-5 text-slate-600">
-                Tu hora quedó registrada correctamente. Te enviamos la
-                confirmación a tu correo para que tengas todos los detalles a
-                mano.
-              </p>
+              {/* CONTENIDO */}
+              <div className="order-2 p-5 md:order-1 md:p-8">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-emerald-500 text-xl text-emerald-600 md:h-12 md:w-12">
+                    ✓
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-600">
+                      Reserva confirmada
+                    </p>
+                  </div>
+                </div>
 
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 md:p-4">
-                <dl className="grid gap-x-4 gap-y-2.5 sm:grid-cols-2">
-                  <SummaryRow label="Servicio" value={bookingSuccess.serviceName} />
-                  <SummaryRow
+                <h1 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-slate-950 md:text-3xl">
+                  ¡Tu hora está agendada! 🎉
+                </h1>
+
+                <p className="mt-2 text-sm leading-5 text-slate-500">
+                  Te enviamos la confirmación a tu correo con todos los
+                  detalles.
+                </p>
+
+                <div className="mt-5 divide-y divide-slate-100">
+                  <DetailRow
+                    icon="📋"
+                    label="Servicio"
+                    value={bookingSuccess.serviceName}
+                  />
+                  <DetailRow
+                    icon="📅"
                     label="Fecha y hora"
                     value={`${bookingSuccess.time} · ${bookingSuccess.date}`}
                   />
                   {bookingSuccess.branchName ? (
-                    <SummaryRow label="Sucursal" value={bookingSuccess.branchName} />
+                    <DetailRow
+                      icon="🏢"
+                      label="Sucursal"
+                      value={bookingSuccess.branchName}
+                    />
                   ) : null}
                   {bookingSuccess.staffName ? (
-                    <SummaryRow label="Profesional" value={bookingSuccess.staffName} />
+                    <DetailRow
+                      icon="🧑‍⚕️"
+                      label="Profesional"
+                      value={bookingSuccess.staffName}
+                    />
                   ) : null}
-                </dl>
-
-                <div className="mt-3 border-t border-slate-200 pt-3">
-                  <SummaryRow
+                  <DetailRow
+                    icon="📍"
                     label="Dirección"
                     value={bookingSuccess.branchAddress || "Dirección no disponible"}
+                    href={mapsUrl || undefined}
                   />
-                </div>
-
-                <div className="mt-2.5">
-                  <SummaryRow
+                  <DetailRow
+                    icon="✉️"
                     label="Confirmación enviada a"
                     value={bookingSuccess.customerEmail || "Correo no disponible"}
                   />
                 </div>
-              </div>
 
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 rounded-xl bg-emerald-50/70 px-3.5 py-2 text-xs text-emerald-900">
-                <span>💡 Puedes agendar otra hora cuando quieras.</span>
-                <span>📅 Guarda esta reserva en tu calendario.</span>
-              </div>
+                <a
+                  href={googleCalendarUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 flex items-center justify-between rounded-xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-900 transition hover:bg-sky-100"
+                >
+                  <span className="flex items-center gap-2">
+                    📆 Guarda esta reserva en tu Google Calendar
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </a>
 
-              <div className="mt-4 grid grid-cols-2 gap-2.5">
+                <div className="mt-3 grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingSuccess(null);
+                      setSelectedSlot(null);
+                      setSubmitError("");
+                    }}
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-3 text-sm font-semibold text-white transition hover:opacity-95"
+                  >
+                    Agendar otra hora
+                  </button>
+
+                  {whatsappNumber ? (
+                    <a
+                      href={`https://wa.me/${whatsappNumber}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <span className="text-emerald-500">●</span>
+                      Consultar por WhatsApp
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBookingSuccess(null);
+                        setSelectedSlot(null);
+                        setSubmitError("");
+                      }}
+                      className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Volver a la agenda
+                    </button>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -1522,72 +1606,22 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     setSelectedSlot(null);
                     setSubmitError("");
                   }}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-3 text-sm font-semibold text-white transition hover:opacity-95"
+                  className="mt-2.5 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                 >
-                  Agendar otra hora
+                  <span aria-hidden="true">←</span> Volver
                 </button>
 
-                <a
-                  href={googleCalendarUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Google Calendar
-                </a>
-
-                {whatsappNumber ? (
-                  <a
-                    href={`https://wa.me/${whatsappNumber}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Ir a WhatsApp
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBookingSuccess(null);
-                      setSelectedSlot(null);
-                      setSubmitError("");
-                    }}
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Volver a la agenda
-                  </button>
-                )}
-
-                {mapsUrl ? (
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Abrir ubicación
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBookingSuccess(null);
-                      setSelectedSlot(null);
-                      setSubmitError("");
-                    }}
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Volver
-                  </button>
-                )}
+                {business?.name ? (
+                  <p className="mt-4 text-center text-xs text-slate-500">
+                    Gracias por reservar en{" "}
+                    <span className="font-semibold text-indigo-600">
+                      {business.name}
+                    </span>{" "}
+                    a través de{" "}
+                    <span className="font-semibold text-indigo-600">Orbyx</span>.
+                  </p>
+                ) : null}
               </div>
-
-              {business?.name ? (
-                <p className="mt-3 text-center text-xs text-slate-500">
-                  Gracias por reservar en {business.name}.
-                </p>
-              ) : null}
             </div>
           </div>
         </div>
