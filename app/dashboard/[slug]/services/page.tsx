@@ -50,6 +50,7 @@ type Service = {
   capacity?: number | null;
   group_id?: string | null;
   sort_order?: number;
+  customer_instructions?: string | null;
 };
 
 type StaffItem = {
@@ -389,6 +390,7 @@ const [form, setForm] = useState({
   staff_ids: [] as string[],
   is_group: false,
   capacity: "1",
+  customer_instructions: "",
 });
 
 const [editForm, setEditForm] = useState({
@@ -400,6 +402,7 @@ const [editForm, setEditForm] = useState({
   staff_ids: [] as string[],
   is_group: false,
   capacity: "1",
+  customer_instructions: "",
 });
 
   const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
@@ -556,6 +559,30 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                 color: "var(--text-main)",
               }}
             />
+            <div className="space-y-1">
+              <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                Instrucciones para el cliente (opcional)
+              </label>
+              <textarea
+                value={editForm.customer_instructions}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    customer_instructions: e.target.value,
+                  }))
+                }
+                placeholder="Ej: Trae tu carnet de identidad"
+                className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              />
+              <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                Se incluye en el email de confirmación de la reserva.
+              </p>
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
@@ -1070,6 +1097,7 @@ setForm({
   staff_ids: [],
   is_group: false,
   capacity: "1",
+  customer_instructions: "",
 });
       setSaveError("");
       setSaveOk("");
@@ -1089,6 +1117,7 @@ setForm({
   staff_ids: [],
   is_group: false,
   capacity: "1",
+  customer_instructions: "",
 });
       setSaveError("");
       setSaveOk("");
@@ -1241,6 +1270,7 @@ body: JSON.stringify({
 
 is_group: isGroupBookingBusiness ? form.is_group : false,
 capacity: isGroupBookingBusiness ? Number(form.capacity || 1) : 1,
+customer_instructions: form.customer_instructions.trim() || null,
 }),
       });
 
@@ -1267,6 +1297,7 @@ setForm({
   staff_ids: [],
   is_group: false,
   capacity: "1",
+  customer_instructions: "",
 });
 
       setSaveOk("Servicio creado correctamente.");
@@ -1292,6 +1323,7 @@ function startEditing(service: Service) {
     staff_ids: getSelectedStaffIdsForService(service.id),
     is_group: Boolean(service.is_group),
     capacity: String(service.capacity || 1),
+    customer_instructions: service.customer_instructions || "",
   });
 }
 
@@ -1338,6 +1370,7 @@ body: JSON.stringify({
   active: editForm.active,
 is_group: isGroupBookingBusiness ? editForm.is_group : false,
 capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
+customer_instructions: editForm.customer_instructions.trim() || null,
 }),
       });
 
@@ -2141,6 +2174,34 @@ capacity: isGroupBookingBusiness ? Number(editForm.capacity || 1) : 1,
                   color: "var(--text-main)",
                 }}
               />
+
+              <div className="space-y-1">
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Instrucciones para el cliente (opcional)
+                </label>
+                <textarea
+                  placeholder="Ej: Trae tu carnet de identidad"
+                  value={form.customer_instructions}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      customer_instructions: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                />
+                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                  Se incluye en el email de confirmación de la reserva.
+                </p>
+              </div>
 
               <div className="space-y-1">
                 <label
