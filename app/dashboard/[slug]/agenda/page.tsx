@@ -4212,6 +4212,7 @@ const hasPendingClose = pendingCloseCount > 0;
                             <div className="space-y-0">
                               {dayViewSlots.map((slot, index) => {
                                 const slotTime = new Date(slot).getTime();
+                                const isPastSlot = slotTime < Date.now();
                                 const slotTimeKey = getTimeKey(slot);
                                 const slotAppointments = staffAppointments.filter(
                                   (a) =>
@@ -4257,6 +4258,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                 }
 
                                 if (slotGroups.length === 0) {
+                                  const isSlotDisabled = isSlotClosed || isPastSlot;
                                   return (
                                         <div
                                           key={slot}
@@ -4264,6 +4266,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                           role="button"
                                       tabIndex={0}
                                       onClick={() => {
+                                        if (isPastSlot) return;
                                         selectEmptySlot(slot, staff.id);
                                         if (isSlotClosed) {
                                           openClosedScheduleActions(
@@ -4277,6 +4280,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                       onKeyDown={(event) => {
                                         if (event.key === "Enter" || event.key === " ") {
                                           event.preventDefault();
+                                          if (isPastSlot) return;
                                           if (isSlotClosed) {
                                             selectEmptySlot(slot, staff.id);
                                             openClosedScheduleActions(
@@ -4291,21 +4295,21 @@ const hasPendingClose = pendingCloseCount > 0;
                                       }}
                                       onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(daySlotKey); }}
                                       onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
-                                      className={`flex h-[54px] cursor-pointer items-center justify-center border-t px-2 text-[10px] font-semibold transition ${getEmptySlotClass(isEmptySlotSelected)}`}
+                                      className={`flex h-[54px] items-center justify-center border-t px-2 text-[10px] font-semibold transition ${isPastSlot ? "cursor-not-allowed" : "cursor-pointer"} ${getEmptySlotClass(isEmptySlotSelected)}`}
                                       style={{
                                         borderColor: isHourStart
-                                          ? isSlotClosed
+                                          ? isSlotDisabled
                                              ? "var(--agenda-closed-line)"
                                             : isEmptySlotSelected
                                             ? "rgba(103,232,249,0.72)"
                                             : "rgba(148,163,184,0.22)"
-                                          : isSlotClosed
+                                          : isSlotDisabled
                                            ? "var(--agenda-closed-line-soft)"
                                           : isEmptySlotSelected
                                           ? "rgba(103,232,249,0.58)"
                                           : "rgba(148,163,184,0.14)",
                                         background:
-                                          isSlotClosed
+                                          isSlotDisabled
                                             ? hoveredSlotKey === daySlotKey
                                               ? "var(--agenda-closed-bg-hover)"
                                               : "var(--agenda-closed-bg)"
@@ -4319,7 +4323,15 @@ const hasPendingClose = pendingCloseCount > 0;
                                         color: "var(--text-muted)",
                                       }}
                                     >
-                                      {isSlotClosed ? (
+                                      {isPastSlot ? (
+                                        <span
+                                          className="flex min-w-0 items-center gap-1 truncate"
+                                          style={{ color: "var(--agenda-closed-text)" }}
+                                        >
+                                          <Lock className="h-3 w-3 shrink-0" />
+                                          Horario pasado
+                                        </span>
+                                      ) : isSlotClosed ? (
                                         <span
                                           className="flex min-w-0 items-center gap-1 truncate"
                                           style={{ color: "var(--agenda-closed-text)" }}
@@ -4970,6 +4982,7 @@ const slotAppointments = dayAppointments.filter(
     new Date(slot).getTime()
 );
 const slotTime = new Date(slot).getTime();
+const isPastSlot = slotTime < Date.now();
 const slotTimeKey = getTimeKey(slot);
 const isEmptySlotSelected =
   selectedEmptySlotKey === getEmptySlotKey(slot, selectedStaffId);
@@ -5019,6 +5032,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             }
 
                             if (!appt || slotDisplayGroups.length === 0) {
+                              const isSlotDisabled = isSlotClosed || isPastSlot;
                               return (
                                 <div
                                   key={slot}
@@ -5026,6 +5040,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                   role="button"
                                   tabIndex={0}
                                   onClick={() => {
+                                    if (isPastSlot) return;
                                     selectEmptySlot(slot, selectedStaffId);
                                     if (isSlotClosed) {
                                       openClosedScheduleActions(
@@ -5039,6 +5054,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                   onKeyDown={(event) => {
                                     if (event.key === "Enter" || event.key === " ") {
                                       event.preventDefault();
+                                      if (isPastSlot) return;
                                       if (isSlotClosed) {
                                         selectEmptySlot(slot, selectedStaffId);
                                         openClosedScheduleActions(
@@ -5053,21 +5069,21 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                   }}
                                   onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
                                   onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
-                                  className={`flex h-[54px] cursor-pointer items-center justify-center border-t px-2 text-center text-[10px] font-semibold transition ${getEmptySlotClass(isEmptySlotSelected)}`}
+                                  className={`flex h-[54px] items-center justify-center border-t px-2 text-center text-[10px] font-semibold transition ${isPastSlot ? "cursor-not-allowed" : "cursor-pointer"} ${getEmptySlotClass(isEmptySlotSelected)}`}
                                   style={{
                                     borderColor: isHourStart
-                                      ? isSlotClosed
+                                      ? isSlotDisabled
                                         ? "var(--agenda-closed-line)"
                                         : isEmptySlotSelected
                                         ? "rgba(103,232,249,0.72)"
                                         : "rgba(148,163,184,0.22)"
-                                      : isSlotClosed
+                                      : isSlotDisabled
                                       ? "var(--agenda-closed-line-soft)"
                                       : isEmptySlotSelected
                                       ? "rgba(103,232,249,0.58)"
                                       : "rgba(148,163,184,0.14)",
                                     background:
-                                      isSlotClosed
+                                      isSlotDisabled
                                         ? hoveredSlotKey === weekSlotKey
                                           ? "var(--agenda-closed-bg-hover)"
                                           : "var(--agenda-closed-bg)"
@@ -5081,7 +5097,15 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                     color: "var(--text-muted)",
                                   }}
                                 >
-                                  {isSlotClosed ? (
+                                  {isPastSlot ? (
+                                    <span
+                                      className="flex min-w-0 items-center gap-1 truncate"
+                                      style={{ color: "var(--agenda-closed-text)" }}
+                                    >
+                                      <Lock className="h-3 w-3 shrink-0" />
+                                      Horario pasado
+                                    </span>
+                                  ) : isSlotClosed ? (
                                     <span
                                       className="flex min-w-0 items-center gap-1 truncate"
                                       style={{ color: "var(--agenda-closed-text)" }}
