@@ -718,9 +718,11 @@ export default function DashboardLayout({
           </div>
         ) : null}
 
-        <p className="mt-3 text-xs" style={{ color: textMuted }}>
-          Lo que veas en agenda, staff y servicios dependerÃ¡ de esta sucursal.
-        </p>
+        {!compact ? (
+          <p className="mt-3 text-xs" style={{ color: textMuted }}>
+            Lo que veas en agenda, staff y servicios dependerá de esta sucursal.
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -1375,13 +1377,13 @@ export default function DashboardLayout({
                   className="mb-3 mt-5 px-3 text-[11px] font-semibold uppercase tracking-[0.18em]"
                   style={{ color: textMuted }}
                 >
-                  NavegaciÃ³n
+                  Navegación
                 </div>
 
                 <NavLinks onNavigate={() => setMobileMenuOpen(false)} />
               </div>
 
-              <div className="border-t p-4" style={{ borderColor: sidebarBorder }}>
+              <div className="space-y-2 border-t p-4" style={{ borderColor: sidebarBorder }}>
                 <button
                   type="button"
                   onClick={toggleTheme}
@@ -1395,8 +1397,20 @@ export default function DashboardLayout({
                   {mounted
                     ? theme === "clasico"
                       ? "Cambiar a Nocturno"
-                      : "Cambiar a ClÃ¡sico"
+                      : "Cambiar a Clásico"
                     : "Cambiar tema"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium text-rose-400 transition hover:!border-rose-400/40 hover:!bg-rose-500/10"
+                  style={{
+                    background: softBg,
+                    borderColor: sidebarBorder,
+                  }}
+                >
+                  <LogOut size={17} />
+                  Cerrar sesión
                 </button>
               </div>
             </aside>

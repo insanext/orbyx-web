@@ -472,7 +472,7 @@ export function AccountStatusWidget({
 
       {open ? (
         <div
-          className="absolute right-0 top-[calc(100%+8px)] z-50 w-80 overflow-hidden rounded-2xl border p-4"
+          className="absolute right-0 top-[calc(100%+8px)] z-50 max-h-[80vh] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border p-4"
           style={{
             background: dropdownBg,
             borderColor,
