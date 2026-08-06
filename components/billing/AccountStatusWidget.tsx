@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Clock, Landmark, MessageCircle, Sparkles, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
@@ -182,6 +182,14 @@ export function AccountStatusWidget({
 }) {
   const { status } = useAccountStatus(tenantId);
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  // En mobile el trigger puede caer en cualquier x del header (wrap variable),
+  // así que anclar el panel a right-0 del propio botón lo empuja fuera de
+  // pantalla por la izquierda. Por eso en mobile el panel es `fixed` con
+  // left/right fijos al viewport (nunca se corta) y el top se mide en vivo
+  // contra el botón real; en desktop se mantiene el comportamiento original
+  // (absolute, anclado al botón).
+  const [mobileTop, setMobileTop] = useState<number | null>(null);
 
   const [activeAccountTab, setActiveAccountTab] = useState<"cuenta" | "notificaciones" | "deposito">(
     "notificaciones"
@@ -217,6 +225,17 @@ export function AccountStatusWidget({
   // visual breve en la pill correspondiente.
   const [liveUsage, setLiveUsage] = useState<Partial<Record<"wa_confirmacion" | "ia_wa", number>>>({});
   const [pulseField, setPulseField] = useState<"wa_confirmacion" | "ia_wa" | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    if (typeof window === "undefined" || window.innerWidth >= 640) {
+      setMobileTop(null);
+      return;
+    }
+    if (triggerRef.current) {
+      setMobileTop(triggerRef.current.getBoundingClientRect().bottom + 8);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!status || synced) return;
@@ -457,6 +476,7 @@ export function AccountStatusWidget({
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition"
@@ -472,8 +492,9 @@ export function AccountStatusWidget({
 
       {open ? (
         <div
-          className="absolute right-0 top-[calc(100%+8px)] z-50 max-h-[80vh] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border p-4"
+          className="fixed left-4 right-4 top-24 z-50 max-h-[80vh] overflow-y-auto rounded-2xl border p-4 sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-80"
           style={{
+            top: mobileTop !== null ? `${mobileTop}px` : undefined,
             background: dropdownBg,
             borderColor,
             boxShadow: "0 12px 40px -8px rgba(0,0,0,0.28), 0 4px 16px -4px rgba(0,0,0,0.18)",

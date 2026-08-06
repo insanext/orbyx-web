@@ -1474,11 +1474,11 @@ export default function DashboardLayout({
                 </div>
               </div>
 
-              <div className="hidden items-center gap-3 md:flex">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition"
+                  className="hidden h-11 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition md:inline-flex"
                   style={{
                     background: softBg,
                     borderColor: sidebarBorder,
@@ -1523,7 +1523,7 @@ export default function DashboardLayout({
 
                   {notifPanelOpen ? (
                     <div
-                      className="absolute right-0 top-[calc(100%+8px)] z-50 w-80 overflow-hidden rounded-2xl border"
+                      className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border"
                       style={{
                         background: dropdownBg,
                         borderColor: sidebarBorder,
