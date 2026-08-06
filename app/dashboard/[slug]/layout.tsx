@@ -1428,13 +1428,13 @@ export default function DashboardLayout({
               borderColor: sidebarBorder,
             }}
           >
-            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-3 sm:px-5 lg:px-8 xl:px-10">
-              <div className="flex min-w-0 items-center gap-3">
+            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3 lg:px-8 xl:px-10">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button
                   type="button"
                   aria-label="Abrir menu"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition xl:hidden"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition xl:hidden sm:h-11 sm:w-11"
                   style={{
                     background: softBg,
                     borderColor: sidebarBorder,
@@ -1446,19 +1446,19 @@ export default function DashboardLayout({
 
                 <div className="min-w-0">
                 <p
-                  className="text-[11px] font-semibold uppercase tracking-[0.18em] sm:text-xs"
+                  className="text-[9px] font-semibold uppercase tracking-[0.18em] sm:text-xs"
                   style={{ color: textMuted }}
                 >
                   Dashboard
                 </p>
-                <div className="mt-1 flex min-w-0 flex-wrap items-center gap-3">
+                <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2 sm:mt-1 sm:gap-3">
                   <h2
-                    className="truncate text-lg font-semibold tracking-tight sm:text-xl"
+                    className="truncate text-base font-semibold tracking-tight sm:text-xl"
                     style={{ color: textMain }}
                   >
                     {businessName || slug || "Gestión del negocio"}
                   </h2>
-                  <span className="inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-semibold sm:text-sm" style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
+                  <span className="inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold sm:h-8 sm:gap-2 sm:px-3 sm:text-sm" style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
                     <Crown size={15} />
                     Plan {planLabel}
                   </span>
@@ -1474,7 +1474,7 @@ export default function DashboardLayout({
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={toggleTheme}
@@ -1504,7 +1504,7 @@ export default function DashboardLayout({
                         );
                       }
                     }}
-                    className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition"
+                    className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border transition sm:h-11 sm:w-11"
                     style={{
                       background: notifPanelOpen ? "rgba(37,99,235,0.08)" : softBg,
                       borderColor: notifPanelOpen
@@ -1589,14 +1589,14 @@ export default function DashboardLayout({
                   ) : null}
                 </div>
 
-                <div ref={userMenuRef} className="relative border-l pl-3" style={{ borderColor: sidebarBorder }}>
+                <div ref={userMenuRef} className="relative border-l pl-2 sm:pl-3" style={{ borderColor: sidebarBorder }}>
                   <button
                     type="button"
                     onClick={() => setUserMenuOpen((prev) => !prev)}
-                    className="flex items-center gap-3 rounded-2xl px-1 py-1 text-left transition"
+                    className="flex items-center gap-2 rounded-2xl px-1 py-1 text-left transition sm:gap-3"
                     style={{ background: userMenuOpen ? softBg : "transparent" }}
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(37,99,235),rgb(79,70,229))] text-xs font-bold text-white">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(37,99,235),rgb(79,70,229))] text-[10px] font-bold text-white sm:h-10 sm:w-10 sm:text-xs">
                       {currentUserLabel
                         ? currentUserLabel.slice(0, 2).toUpperCase()
                         : slug.slice(0, 2).toUpperCase()}
@@ -1605,7 +1605,7 @@ export default function DashboardLayout({
                       <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
                         {currentUserLabel || "Usuario"}
                       </p>
-                      <p className="truncate text-xs" style={{ color: textMuted }}>
+                      <p className="hidden truncate text-xs sm:block" style={{ color: textMuted }}>
                         {ROLE_LABEL[memberRole] || (memberLoaded ? memberRole : "")}
                       </p>
                     </div>

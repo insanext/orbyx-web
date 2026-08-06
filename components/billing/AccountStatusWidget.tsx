@@ -479,7 +479,7 @@ export function AccountStatusWidget({
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition"
+        className="inline-flex h-8 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-semibold transition sm:h-11 sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-sm"
         style={{ borderColor: tone.border, background: tone.bg, color: tone.text }}
       >
         {pillTone === "danger" || pillTone === "warning" ? (

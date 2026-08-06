@@ -570,8 +570,13 @@ next_control_custom_unit: "days",
     const end = new Date(appt.end_at).getTime();
     const durationMinutes = Math.max((end - start) / 60000, 15);
     const rows = Math.max(durationMinutes / 30, 0.5);
+    // Debe coincidir con el alto de fila real en CSS: h-[38px] en mobile
+    // (debajo de md, 768px) y h-[54px] en md+ — mismos breakpoints que
+    // las clases Tailwind de las filas de la grilla.
+    const rowHeight =
+      typeof window !== "undefined" && window.innerWidth < 768 ? 38 : 54;
 
-    return Math.max(Math.round(rows * 54), 27);
+    return Math.max(Math.round(rows * rowHeight), Math.round(rowHeight / 2));
   }
 
   function getAppointmentBlockDensity(height: number) {
@@ -4166,7 +4171,7 @@ const hasPendingClose = pendingCloseCount > 0;
                         return (
                           <div
                             key={slot}
-                            className="flex h-[54px] items-start justify-end border-t px-3 pt-1.5 text-[11px]"
+                            className="flex h-[38px] md:h-[54px] items-start justify-end border-t px-2 pt-1 text-[9px] md:px-3 md:pt-1.5 md:text-[11px]"
                             style={{
                               borderColor: "rgba(148,163,184,0.18)",
                               color:
@@ -4239,7 +4244,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                   return (
                                     <div
                                       key={slot}
-                                      className="h-[54px] border-t"
+                                      className="h-[38px] md:h-[54px] border-t"
                                       onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(daySlotKey); }}
                                       onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
                                       style={{
@@ -4295,7 +4300,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                       }}
                                       onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(daySlotKey); }}
                                       onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
-                                      className={`flex h-[54px] items-center justify-center border-t px-2 text-[10px] font-semibold transition ${isPastSlot ? "cursor-not-allowed" : "cursor-pointer"} ${getEmptySlotClass(isEmptySlotSelected)}`}
+                                      className={`flex h-[38px] md:h-[54px] items-center justify-center border-t px-1.5 text-[9px] font-semibold transition md:px-2 md:text-[10px] ${isPastSlot ? "cursor-not-allowed" : "cursor-pointer"} ${getEmptySlotClass(isEmptySlotSelected)}`}
                                       style={{
                                         borderColor: isHourStart
                                           ? isSlotDisabled
@@ -4328,7 +4333,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                           className="flex min-w-0 items-center gap-1 truncate"
                                           style={{ color: "var(--agenda-closed-text)" }}
                                         >
-                                          <Lock className="h-3 w-3 shrink-0" />
+                                          <Lock className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
                                           Horario pasado
                                         </span>
                                       ) : isSlotClosed ? (
@@ -4336,7 +4341,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                           className="flex min-w-0 items-center gap-1 truncate"
                                           style={{ color: "var(--agenda-closed-text)" }}
                                         >
-                                          <Lock className="h-3 w-3 shrink-0" />
+                                          <Lock className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
                                           Horario bloqueado
                                         </span>
                                       ) : (
@@ -4351,7 +4356,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                     key={slot}
                                     onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(daySlotKey); }}
                                     onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
-                                    className="relative h-[54px] border-t"
+                                    className="relative h-[38px] md:h-[54px] border-t"
                                     style={{
                                       borderColor: isHourStart
                                         ? "rgba(148,163,184,0.22)"
@@ -4494,7 +4499,7 @@ const hasPendingClose = pendingCloseCount > 0;
                     {calendarTimeSlots.map((time) => (
                       <div
                         key={time}
-                        className="flex h-[54px] items-start justify-end border-t pt-1.5 text-[11px]"
+                        className="flex h-[38px] md:h-[54px] items-start justify-end border-t pt-1 text-[9px] md:pt-1.5 md:text-[11px]"
                         style={{
                           borderColor: "rgba(148,163,184,0.18)",
                           color:
@@ -4724,7 +4729,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     key={slot}
                                     onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                     onMouseLeave={() => setHoveredTimeKey("")}
-                                    className="h-[54px] border-t transition"
+                                    className="h-[38px] md:h-[54px] border-t transition"
                                     style={{
                                       borderColor: isHourStart
                                         ? "var(--agenda-closed-line)"
@@ -4774,7 +4779,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     key={slot}
                                     onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                     onMouseLeave={() => setHoveredTimeKey("")}
-                                    className="h-[54px] border-t transition"
+                                    className="h-[38px] md:h-[54px] border-t transition"
                                     style={{
                                       borderColor: isHourStart
                                         ? "var(--agenda-closed-line)"
@@ -4946,7 +4951,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                     key={slot}
                                     onMouseEnter={() => setHoveredTimeKey(slotTimeKey)}
                                     onMouseLeave={() => setHoveredTimeKey("")}
-                                    className="h-[54px] border-t transition"
+                                    className="h-[38px] md:h-[54px] border-t transition"
                                     style={{
                                       borderColor: isHourStart
                                         ? "var(--agenda-closed-line)"
@@ -5013,7 +5018,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               return (
                                 <div
                                   key={slot}
-                                  className="h-[54px] border-t"
+                                  className="h-[38px] md:h-[54px] border-t"
                                   onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
                                   onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
                                   style={{
@@ -5069,7 +5074,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                   }}
                                   onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
                                   onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
-                                  className={`flex h-[54px] items-center justify-center border-t px-2 text-center text-[10px] font-semibold transition ${isPastSlot ? "cursor-not-allowed" : "cursor-pointer"} ${getEmptySlotClass(isEmptySlotSelected)}`}
+                                  className={`flex h-[38px] md:h-[54px] items-center justify-center border-t px-1.5 text-center text-[9px] font-semibold transition md:px-2 md:text-[10px] ${isPastSlot ? "cursor-not-allowed" : "cursor-pointer"} ${getEmptySlotClass(isEmptySlotSelected)}`}
                                   style={{
                                     borderColor: isHourStart
                                       ? isSlotDisabled
@@ -5102,7 +5107,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                       className="flex min-w-0 items-center gap-1 truncate"
                                       style={{ color: "var(--agenda-closed-text)" }}
                                     >
-                                      <Lock className="h-3 w-3 shrink-0" />
+                                      <Lock className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
                                       Horario pasado
                                     </span>
                                   ) : isSlotClosed ? (
@@ -5110,7 +5115,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                       className="flex min-w-0 items-center gap-1 truncate"
                                       style={{ color: "var(--agenda-closed-text)" }}
                                     >
-                                      <Lock className="h-3 w-3 shrink-0" />
+                                      <Lock className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
                                       Horario bloqueado
                                     </span>
                                   ) : (
@@ -5125,7 +5130,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                 key={slot}
                                 onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
                                 onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
-                                className="relative h-[54px] border-t"
+                                className="relative h-[38px] md:h-[54px] border-t"
                                 style={{
                                   borderColor: isHourStart
                                     ? "rgba(148,163,184,0.22)"
