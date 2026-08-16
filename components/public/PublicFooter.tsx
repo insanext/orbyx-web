@@ -31,9 +31,6 @@ export function PublicFooter() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--pub-text-faint)]">
               Contáctenos
             </p>
-            <a href="tel:+56961188890" className="transition hover:text-[var(--pub-text)]">
-              +56 9 6118 8890
-            </a>
             <a href="mailto:contacto@orbyx.cl" className="transition hover:text-[var(--pub-text)]">
               contacto@orbyx.cl
             </a>
@@ -58,10 +55,18 @@ export function PublicFooter() {
             </a>
           </div>
 
-          <p className="text-center text-xs text-[var(--pub-text-faint)] sm:text-right">
-            © {year} Orbyx Soluciones Digitales SpA.
-            <br className="sm:hidden" /> Todos los derechos reservados.
-          </p>
+          <div className="flex flex-col items-center gap-1.5 sm:items-end">
+            <p className="text-center text-xs text-[var(--pub-text-faint)] sm:text-right">
+              © {year} Orbyx Soluciones Digitales SpA.
+              <br className="sm:hidden" /> Todos los derechos reservados.
+            </p>
+            <Link
+              href="/privacidad"
+              className="text-xs text-[var(--pub-text-faint)] underline-offset-2 transition hover:text-[var(--pub-text)] hover:underline"
+            >
+              Política de Privacidad
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
