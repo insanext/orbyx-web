@@ -60,12 +60,20 @@ export function PublicFooter() {
               © {year} Orbyx Soluciones Digitales SpA.
               <br className="sm:hidden" /> Todos los derechos reservados.
             </p>
-            <Link
-              href="/privacidad"
-              className="text-xs text-[var(--pub-text-faint)] underline-offset-2 transition hover:text-[var(--pub-text)] hover:underline"
-            >
-              Política de Privacidad
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/terminos"
+                className="text-xs text-[var(--pub-text-faint)] underline-offset-2 transition hover:text-[var(--pub-text)] hover:underline"
+              >
+                Términos de Servicio
+              </Link>
+              <Link
+                href="/privacidad"
+                className="text-xs text-[var(--pub-text-faint)] underline-offset-2 transition hover:text-[var(--pub-text)] hover:underline"
+              >
+                Política de Privacidad
+              </Link>
+            </div>
           </div>
         </div>
       </div>

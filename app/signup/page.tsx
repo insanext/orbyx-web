@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "../../components/ui/password-visibility-toggle";
 import { ParticleBackground } from "../../components/ui/particle-background";
+import { TermsAcceptanceCheckbox } from "../../components/auth/TermsAcceptanceCheckbox";
 
 const PLAN_LABELS: Record<string, string> = {
   pro: "Pro",
@@ -69,6 +70,7 @@ function SignupInner() {
   const [captchaToken, setCaptchaToken] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const turnstileRef = useRef<any>(null);
 
   const hasMinLength = password.length >= 8;
@@ -93,6 +95,10 @@ function SignupInner() {
     }
     if (!passwordsMatch) {
       setMsg("Las contraseñas no coinciden.");
+      return;
+    }
+    if (!acceptedTerms) {
+      setMsg("Debes aceptar los Términos de Servicio para continuar.");
       return;
     }
     if (!captchaToken) {
@@ -469,6 +475,12 @@ function SignupInner() {
           />
           </div>
 
+          <TermsAcceptanceCheckbox
+            checked={acceptedTerms}
+            onChange={setAcceptedTerms}
+            disabled={loading}
+          />
+
           {msg && (
             <p
               style={{
@@ -504,23 +516,28 @@ function SignupInner() {
 
           <button
             type="submit"
-            disabled={loading || !passwordValid || !passwordsMatch || !captchaToken}
+            disabled={loading || !passwordValid || !passwordsMatch || !captchaToken || !acceptedTerms}
             style={{
               padding: "14px",
               borderRadius: 10,
               border: "none",
-              cursor: loading || !passwordValid || !passwordsMatch || !captchaToken ? "not-allowed" : "pointer",
+              cursor:
+                loading || !passwordValid || !passwordsMatch || !captchaToken || !acceptedTerms
+                  ? "not-allowed"
+                  : "pointer",
               fontWeight: 700,
               fontSize: 15,
               background:
-                loading || !passwordValid || !passwordsMatch || !captchaToken
+                loading || !passwordValid || !passwordsMatch || !captchaToken || !acceptedTerms
                   ? "rgba(255,255,255,0.06)"
                   : `linear-gradient(135deg, ${planColor}ee 0%, ${planColor} 50%, ${planColor}bb 100%)`,
               color:
-                loading || !passwordValid || !passwordsMatch || !captchaToken ? "#475569" : "#fff",
+                loading || !passwordValid || !passwordsMatch || !captchaToken || !acceptedTerms
+                  ? "#475569"
+                  : "#fff",
               transition: "all 0.2s",
               boxShadow:
-                loading || !passwordValid || !passwordsMatch || !captchaToken
+                loading || !passwordValid || !passwordsMatch || !captchaToken || !acceptedTerms
                   ? "none"
                   : `0 6px 28px ${planColor}66, 0 2px 8px ${planColor}33`,
               letterSpacing: "0.3px",

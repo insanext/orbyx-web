@@ -10,6 +10,7 @@ import {
   PAID_PLAN_IDS,
   type BillingCycle,
 } from "@/lib/plans";
+import { TermsAcceptanceCheckbox } from "@/components/auth/TermsAcceptanceCheckbox";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -47,6 +48,7 @@ function CheckoutPremiumInner() {
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const turnstileRef = useRef<any>(null);
@@ -108,6 +110,10 @@ function CheckoutPremiumInner() {
     }
     if (!isValidEmail(email)) {
       setFormError("Ingresa un correo electrónico válido.");
+      return;
+    }
+    if (!acceptedTerms) {
+      setFormError("Debes aceptar los Términos de Servicio para continuar.");
       return;
     }
     if (!captchaToken) {
@@ -316,6 +322,14 @@ function CheckoutPremiumInner() {
               </div>
             </div>
 
+            <div className="mb-5">
+              <TermsAcceptanceCheckbox
+                checked={acceptedTerms}
+                onChange={setAcceptedTerms}
+                disabled={submitting}
+              />
+            </div>
+
             <div className="flex justify-center mb-5">
               <Turnstile
                 ref={turnstileRef}
@@ -331,7 +345,7 @@ function CheckoutPremiumInner() {
 
             <button
               onClick={handleSubmit}
-              disabled={submitting || !businessName || !email || !captchaToken}
+              disabled={submitting || !businessName || !email || !captchaToken || !acceptedTerms}
               className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-40"
             >
               {submitting ? "Procesando..." : "Continuar al pago"}
