@@ -128,6 +128,18 @@ function nextPackPrice(config: ExtraConfig, currentCount: number): number {
   return config.price_pack3;
 }
 
+// Precio de la próxima unidad tal como lo calcula el backend en
+// triggerLowBalanceRecharge()/POST billing/addons/activate (server.js):
+// currentQty >= 2 → price_pack3, currentQty >= 1 → price_pack2, si no
+// unitPrice. A diferencia de nextPackPrice() de arriba (que trata
+// currentCount === 2 como price_pack2), esto debe calzar exacto con lo que
+// se cobra de verdad porque se usa en el texto de consentimiento legal.
+function lowBalanceRechargeNextPrice(config: ExtraConfig, currentQty: number): number {
+  if (currentQty >= 2) return config.price_pack3;
+  if (currentQty >= 1) return config.price_pack2;
+  return config.unitPrice;
+}
+
 function formatCLP(value: number) {
   return `$${value.toLocaleString("es-CL")}`;
 }
@@ -146,7 +158,18 @@ type AddonBaselineEntry = {
   quantity: number;
   unit_price: number | null;
   renewal_mode: RenewalMode;
+  low_balance_recharge_enabled: boolean;
+  low_balance_recharge_consented_at: string | null;
 };
+
+// Umbral de mensajes restantes que dispara la recarga automática — debe
+// calzar con LOW_BALANCE_RECHARGE_THRESHOLD en server.js (solo para
+// mostrarlo en el texto de consentimiento; el backend es quien realmente
+// decide cuándo cobrar).
+const LOW_BALANCE_RECHARGE_THRESHOLD = 10;
+
+// Solo wa_confirmacion soporta recarga automática por saldo bajo por ahora.
+const LOW_BALANCE_RECHARGE_ADDON_KEY: ExtraKey = "wa_confirmacion";
 
 type AddonChangeResult = {
   key: ExtraKey;
@@ -185,6 +208,12 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   const [addonChangeResults, setAddonChangeResults] = useState<AddonChangeResult[]>([]);
 
   const [renewalModeUpdating, setRenewalModeUpdating] = useState<ExtraKey | null>(null);
+
+  const [lowBalanceRechargeUpdating, setLowBalanceRechargeUpdating] = useState<ExtraKey | null>(
+    null
+  );
+  const [lowBalanceConsentModalOpen, setLowBalanceConsentModalOpen] = useState(false);
+  const [lowBalanceConsentChecked, setLowBalanceConsentChecked] = useState(false);
 
   // Cada refreshAddons() toma un ticket incremental al iniciar. Si al
   // terminar el ticket capturado ya no es el ultimo (se disparo un
@@ -256,6 +285,8 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
           quantity?: number;
           unit_price?: number | null;
           renewal_mode?: string | null;
+          low_balance_recharge_enabled?: boolean | null;
+          low_balance_recharge_consented_at?: string | null;
         }) => {
           if (!row?.addon_key) return;
           const qty = Number(row.quantity) || 0;
@@ -264,6 +295,8 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
             quantity: qty,
             unit_price: row.unit_price != null ? Number(row.unit_price) : null,
             renewal_mode: row.renewal_mode === "automatico" ? "automatico" : "manual",
+            low_balance_recharge_enabled: row.low_balance_recharge_enabled === true,
+            low_balance_recharge_consented_at: row.low_balance_recharge_consented_at ?? null,
           };
         }
       );
@@ -343,6 +376,83 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     } finally {
       setRenewalModeUpdating(null);
     }
+  }
+
+  // Llama al PATCH real. consentAccepted solo se manda cuando enabled=true
+  // (activando) — el backend lo exige siempre que la fila esté
+  // deshabilitada antes del request, así que en la práctica se envía en
+  // cada activación, no solo la primera vez histórica.
+  async function patchLowBalanceRecharge(
+    key: ExtraKey,
+    enabled: boolean,
+    consentAccepted: boolean
+  ) {
+    setLowBalanceRechargeUpdating(key);
+    setAddonError("");
+
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/billing/addons/low-balance-recharge`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          addon_key: key,
+          enabled,
+          ...(enabled && consentAccepted ? { consent_accepted: true } : {}),
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo actualizar la recarga automática");
+      }
+
+      setAddonBaseline((prev) => {
+        const entry = prev[key];
+        if (!entry) return prev;
+        return {
+          ...prev,
+          [key]: {
+            ...entry,
+            low_balance_recharge_enabled: Boolean(data.low_balance_recharge_enabled),
+            low_balance_recharge_consented_at: data.low_balance_recharge_consented_at ?? null,
+          },
+        };
+      });
+    } catch (error: unknown) {
+      setAddonError(
+        error instanceof Error ? error.message : "No se pudo actualizar la recarga automática"
+      );
+    } finally {
+      setLowBalanceRechargeUpdating(null);
+    }
+  }
+
+  // Desactivar: confirm() simple, sin checkbox de consentimiento de nuevo.
+  // Activar: siempre pasa por el modal de consentimiento (handleConfirmLowBalanceConsent).
+  function handleToggleLowBalanceRecharge(key: ExtraKey) {
+    const currentlyEnabled = addonBaseline[key]?.low_balance_recharge_enabled || false;
+
+    if (currentlyEnabled) {
+      if (
+        !window.confirm(
+          "¿Desactivar la recarga automática cuando bajen tus mensajes de WhatsApp disponibles?"
+        )
+      ) {
+        return;
+      }
+      patchLowBalanceRecharge(key, false, false);
+      return;
+    }
+
+    setLowBalanceConsentChecked(false);
+    setLowBalanceConsentModalOpen(true);
+  }
+
+  function handleConfirmLowBalanceConsent() {
+    if (!lowBalanceConsentChecked) return;
+    setLowBalanceConsentModalOpen(false);
+    patchLowBalanceRecharge(LOW_BALANCE_RECHARGE_ADDON_KEY, true, true);
   }
 
   // "Activo" = tiene una fila real en el servidor (baseline > 0), no solo
@@ -570,6 +680,9 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     const config = extraConfig[item.key];
     const renewalMode = addonBaseline[item.key]?.renewal_mode || "manual";
     const isAutomatico = renewalMode === "automatico";
+    const isLowBalanceRechargeSupported = item.key === LOW_BALANCE_RECHARGE_ADDON_KEY;
+    const isLowBalanceRechargeEnabled =
+      addonBaseline[item.key]?.low_balance_recharge_enabled || false;
 
     return (
       <div
@@ -678,6 +791,47 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                   <span
                     className="inline-block h-4 w-4 transform rounded-full bg-white transition"
                     style={{ transform: isAutomatico ? "translateX(22px)" : "translateX(4px)" }}
+                  />
+                </button>
+              </div>
+            ) : null}
+
+            {!pending && isLowBalanceRechargeSupported ? (
+              <div
+                className="mt-3 flex items-center justify-between gap-3 border-t pt-3"
+                style={{ borderColor: "var(--border-color)" }}
+              >
+                <div className="min-w-0 pr-2">
+                  <p className="text-xs font-medium" style={{ color: "var(--text-main)" }}>
+                    Recarga automática por saldo bajo
+                  </p>
+                  <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                    {isLowBalanceRechargeEnabled
+                      ? `Se cobrará y agregará un pack cuando queden menos de ${LOW_BALANCE_RECHARGE_THRESHOLD} mensajes.`
+                      : `Activa para recargar sola cuando queden menos de ${LOW_BALANCE_RECHARGE_THRESHOLD} mensajes.`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isLowBalanceRechargeEnabled}
+                  aria-label="Recarga automática por saldo bajo"
+                  onClick={() => handleToggleLowBalanceRecharge(item.key)}
+                  disabled={lowBalanceRechargeUpdating === item.key}
+                  className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    background: isLowBalanceRechargeEnabled
+                      ? "rgb(37 99 235)"
+                      : "var(--border-color)",
+                  }}
+                >
+                  <span
+                    className="inline-block h-4 w-4 transform rounded-full bg-white transition"
+                    style={{
+                      transform: isLowBalanceRechargeEnabled
+                        ? "translateX(22px)"
+                        : "translateX(4px)",
+                    }}
                   />
                 </button>
               </div>
@@ -959,6 +1113,85 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {lowBalanceConsentModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0"
+            style={{ background: "rgba(0,0,0,0.6)" }}
+            onClick={() =>
+              lowBalanceRechargeUpdating ? null : setLowBalanceConsentModalOpen(false)
+            }
+          />
+          <div
+            className="relative z-10 mx-4 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
+            style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
+          >
+            <h3 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+              Activar recarga automática
+            </h3>
+            <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+              Cada vez que tus mensajes de WhatsApp disponibles bajen de{" "}
+              {LOW_BALANCE_RECHARGE_THRESHOLD}, se cobrará automáticamente un pack de 50 mensajes
+              adicionales a tu tarjeta registrada, sin que tengas que hacerlo manualmente.
+            </p>
+
+            <label
+              className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3"
+              style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+            >
+              <input
+                type="checkbox"
+                checked={lowBalanceConsentChecked}
+                onChange={(e) => setLowBalanceConsentChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0"
+              />
+              <span className="text-xs leading-5" style={{ color: "var(--text-main)" }}>
+                Autorizo a que se me cobre automáticamente{" "}
+                {formatCLP(
+                  lowBalanceRechargeNextPrice(
+                    extraConfig[LOW_BALANCE_RECHARGE_ADDON_KEY],
+                    addonBaseline[LOW_BALANCE_RECHARGE_ADDON_KEY]?.quantity || 0
+                  )
+                )}{" "}
+                + IVA a mi tarjeta registrada cada vez que mis mensajes de WhatsApp disponibles
+                bajen de {LOW_BALANCE_RECHARGE_THRESHOLD}, agregando 50 mensajes adicionales de
+                inmediato. Puedo desactivar esta opción cuando quiera.
+              </span>
+            </label>
+
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setLowBalanceConsentModalOpen(false)}
+                disabled={lowBalanceRechargeUpdating === LOW_BALANCE_RECHARGE_ADDON_KEY}
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={
+                  !lowBalanceConsentChecked ||
+                  lowBalanceRechargeUpdating === LOW_BALANCE_RECHARGE_ADDON_KEY
+                }
+                onClick={handleConfirmLowBalanceConsent}
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
+              >
+                {lowBalanceRechargeUpdating === LOW_BALANCE_RECHARGE_ADDON_KEY
+                  ? "Activando..."
+                  : "Activar"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
