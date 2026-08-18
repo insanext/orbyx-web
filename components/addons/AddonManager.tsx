@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import type { ExtraKey } from "@/lib/plans";
 import { Bot, Mail, Megaphone, MessageCircle, Minus, Store, Users, UsersRound } from "lucide-react";
 import { Panel } from "../dashboard/panel";
+import { AutoChargeConsentModal } from "./AutoChargeConsentModal";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -227,8 +228,14 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   const [lowBalanceRechargeUpdating, setLowBalanceRechargeUpdating] = useState<ExtraKey | null>(
     null
   );
-  const [lowBalanceConsentModalOpen, setLowBalanceConsentModalOpen] = useState(false);
-  const [lowBalanceConsentChecked, setLowBalanceConsentChecked] = useState(false);
+
+  // Modal de consentimiento genérico, reutilizado por los dos toggles de
+  // cobro automático (renovación mensual y recarga por saldo bajo) — ver
+  // AutoChargeConsentModal. "flow" decide qué texto/handler usar.
+  const [consentModal, setConsentModal] = useState<
+    { key: ExtraKey; flow: "renewal_mode" | "low_balance_recharge" } | null
+  >(null);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   // Cada refreshAddons() toma un ticket incremental al iniciar. Si al
   // terminar el ticket capturado ya no es el ultimo (se disparo un
@@ -357,13 +364,38 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     setExtraCount(key, current - 1);
   }
 
-  // No pasa por el modal de confirmación: no cobra nada, solo cambia un
-  // flag. El cobro real de la renovación automática ocurre en el cron
-  // mensual del backend.
-  async function handleToggleRenewalMode(key: ExtraKey) {
-    const currentMode = addonBaseline[key]?.renewal_mode || "manual";
-    const nextMode: RenewalMode = currentMode === "automatico" ? "manual" : "automatico";
+  // Texto exacto mostrado en el checkbox de consentimiento al activar
+  // "Cobro automático mensual" — se manda tal cual al backend como
+  // text_shown, para que el registro en addon_auto_charge_consents
+  // coincida con lo que el tenant realmente vio (monto/cantidad ya
+  // interpolados en el momento del click, no un template server-side).
+  function buildRenewalConsentText(key: ExtraKey): string {
+    const config = extraConfig[key];
+    const quantity = addonBaseline[key]?.quantity || 0;
+    const unitPrice = addonBaseline[key]?.unit_price ?? config.unitPrice;
+    const monto = unitPrice * quantity;
+    const plural = quantity === 1 ? "" : "es";
+    return `Autorizo a que se me cobre automáticamente ${formatCLP(monto)} + IVA cada ~30 días mientras esta opción esté activa, para mantener mis ${quantity} unidad${plural} de ${config.title} activa${plural}. Este cobro no se prorratea: la renovación de este addon se calcula desde la fecha de tu último pago de este addon en particular, no desde la fecha de tu plan. Puedo desactivar esta opción cuando quiera.`;
+  }
 
+  // Mismo criterio que buildRenewalConsentText — precio dinámico real
+  // (addonUnitTierPrice), texto armado en el frontend y mandado tal cual
+  // como text_shown.
+  function buildLowBalanceConsentText(): string {
+    const config = extraConfig[LOW_BALANCE_RECHARGE_ADDON_KEY];
+    const quantity = addonBaseline[LOW_BALANCE_RECHARGE_ADDON_KEY]?.quantity || 0;
+    const monto = addonUnitTierPrice(config, quantity);
+    return `Autorizo a que se me cobre automáticamente ${formatCLP(monto)} + IVA a mi tarjeta registrada cada vez que mis mensajes de WhatsApp disponibles bajen de ${LOW_BALANCE_RECHARGE_THRESHOLD}, agregando 50 mensajes adicionales de inmediato. Puedo desactivar esta opción cuando quiera.`;
+  }
+
+  // Llama al PATCH real. consentAccepted+textShown solo se mandan cuando
+  // nextMode="automatico" y viene de una activación real (el backend exige
+  // ambos siempre que la fila no estuviera ya en automatico).
+  async function patchRenewalMode(
+    key: ExtraKey,
+    nextMode: RenewalMode,
+    consentAccepted: boolean
+  ) {
     setRenewalModeUpdating(key);
     setAddonError("");
 
@@ -371,7 +403,14 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
       const res = await apiFetch(`${BACKEND_URL}/billing/addons/renewal-mode`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenant_id: tenantId, addon_key: key, renewal_mode: nextMode }),
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          addon_key: key,
+          renewal_mode: nextMode,
+          ...(consentAccepted
+            ? { consent_accepted: true, text_shown: buildRenewalConsentText(key) }
+            : {}),
+        }),
       });
       const data = await res.json();
 
@@ -393,10 +432,25 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     }
   }
 
-  // Llama al PATCH real. consentAccepted solo se manda cuando enabled=true
-  // (activando) — el backend lo exige siempre que la fila esté
-  // deshabilitada antes del request, así que en la práctica se envía en
-  // cada activación, no solo la primera vez histórica.
+  // Desactivar: directo, sin modal (mismo comportamiento que siempre tuvo).
+  // Activar: pasa por el modal de consentimiento genérico
+  // (ver handleConfirmConsentModal) — el backend ahora lo exige.
+  function handleToggleRenewalMode(key: ExtraKey) {
+    const currentMode = addonBaseline[key]?.renewal_mode || "manual";
+
+    if (currentMode === "automatico") {
+      patchRenewalMode(key, "manual", false);
+      return;
+    }
+
+    setConsentChecked(false);
+    setConsentModal({ key, flow: "renewal_mode" });
+  }
+
+  // Llama al PATCH real. consentAccepted+textShown solo se mandan cuando
+  // enabled=true (activando) — el backend lo exige siempre que la fila
+  // esté deshabilitada antes del request, así que en la práctica se manda
+  // en cada activación, no solo la primera vez histórica.
   async function patchLowBalanceRecharge(
     key: ExtraKey,
     enabled: boolean,
@@ -413,7 +467,9 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
           tenant_id: tenantId,
           addon_key: key,
           enabled,
-          ...(enabled && consentAccepted ? { consent_accepted: true } : {}),
+          ...(enabled && consentAccepted
+            ? { consent_accepted: true, text_shown: buildLowBalanceConsentText() }
+            : {}),
         }),
       });
       const data = await res.json();
@@ -444,7 +500,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   }
 
   // Desactivar: confirm() simple, sin checkbox de consentimiento de nuevo.
-  // Activar: siempre pasa por el modal de consentimiento (handleConfirmLowBalanceConsent).
+  // Activar: siempre pasa por el modal de consentimiento genérico.
   function handleToggleLowBalanceRecharge(key: ExtraKey) {
     const currentlyEnabled = addonBaseline[key]?.low_balance_recharge_enabled || false;
 
@@ -460,14 +516,21 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
       return;
     }
 
-    setLowBalanceConsentChecked(false);
-    setLowBalanceConsentModalOpen(true);
+    setConsentChecked(false);
+    setConsentModal({ key, flow: "low_balance_recharge" });
   }
 
-  function handleConfirmLowBalanceConsent() {
-    if (!lowBalanceConsentChecked) return;
-    setLowBalanceConsentModalOpen(false);
-    patchLowBalanceRecharge(LOW_BALANCE_RECHARGE_ADDON_KEY, true, true);
+  // Confirmación del modal genérico — decide a qué PATCH llamar según el
+  // flow con el que se abrió.
+  function handleConfirmConsentModal() {
+    if (!consentModal || !consentChecked) return;
+    const { key, flow } = consentModal;
+    setConsentModal(null);
+    if (flow === "renewal_mode") {
+      patchRenewalMode(key, "automatico", true);
+    } else {
+      patchLowBalanceRecharge(key, true, true);
+    }
   }
 
   // "Activo" = tiene una fila real en el servidor (baseline > 0), no solo
@@ -784,11 +847,11 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                   <p className="text-xs font-medium" style={{ color: "var(--text-main)" }}>
                     Cobro automático mensual
                   </p>
-                  {isAutomatico ? (
-                    <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                      Se renovará automáticamente cada mes.
-                    </p>
-                  ) : null}
+                  <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                    {isAutomatico
+                      ? "Se renovará automáticamente cada mes."
+                      : "Actívalo para renovar automáticamente — no se cobra nada al activar esta opción, solo en cada renovación."}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -967,6 +1030,12 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
             ) : null}
 
             {hasPendingAddonChanges ? (
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                El cobro es por el monto completo al confirmar, sin prorrateo por días del mes.
+              </p>
+            ) : null}
+
+            {hasPendingAddonChanges ? (
               <button
                 type="button"
                 onClick={() => {
@@ -1131,83 +1200,34 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
         </div>
       ) : null}
 
-      {lowBalanceConsentModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0"
-            style={{ background: "rgba(0,0,0,0.6)" }}
-            onClick={() =>
-              lowBalanceRechargeUpdating ? null : setLowBalanceConsentModalOpen(false)
-            }
-          />
-          <div
-            className="relative z-10 mx-4 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
-            style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
-          >
-            <h3 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
-              Activar recarga automática
-            </h3>
-            <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-              Cada vez que tus mensajes de WhatsApp disponibles bajen de{" "}
-              {LOW_BALANCE_RECHARGE_THRESHOLD}, se cobrará automáticamente un pack de 50 mensajes
-              adicionales a tu tarjeta registrada, sin que tengas que hacerlo manualmente.
-            </p>
-
-            <label
-              className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3"
-              style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
-            >
-              <input
-                type="checkbox"
-                checked={lowBalanceConsentChecked}
-                onChange={(e) => setLowBalanceConsentChecked(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0"
-              />
-              <span className="text-xs leading-5" style={{ color: "var(--text-main)" }}>
-                Autorizo a que se me cobre automáticamente{" "}
-                {formatCLP(
-                  addonUnitTierPrice(
-                    extraConfig[LOW_BALANCE_RECHARGE_ADDON_KEY],
-                    addonBaseline[LOW_BALANCE_RECHARGE_ADDON_KEY]?.quantity || 0
-                  )
-                )}{" "}
-                + IVA a mi tarjeta registrada cada vez que mis mensajes de WhatsApp disponibles
-                bajen de {LOW_BALANCE_RECHARGE_THRESHOLD}, agregando 50 mensajes adicionales de
-                inmediato. Puedo desactivar esta opción cuando quiera.
-              </span>
-            </label>
-
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setLowBalanceConsentModalOpen(false)}
-                disabled={lowBalanceRechargeUpdating === LOW_BALANCE_RECHARGE_ADDON_KEY}
-                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={
-                  !lowBalanceConsentChecked ||
-                  lowBalanceRechargeUpdating === LOW_BALANCE_RECHARGE_ADDON_KEY
-                }
-                onClick={handleConfirmLowBalanceConsent}
-                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
-              >
-                {lowBalanceRechargeUpdating === LOW_BALANCE_RECHARGE_ADDON_KEY
-                  ? "Activando..."
-                  : "Activar"}
-              </button>
-            </div>
-          </div>
-        </div>
+      {consentModal ? (
+        <AutoChargeConsentModal
+          open
+          title={
+            consentModal.flow === "renewal_mode"
+              ? "Activar cobro automático mensual"
+              : "Activar recarga automática"
+          }
+          description={
+            consentModal.flow === "renewal_mode"
+              ? "Cada ~30 días se cobrará automáticamente a tu tarjeta registrada para mantener activas tus unidades de este addon, sin que tengas que renovarlo manualmente."
+              : `Cada vez que tus mensajes de WhatsApp disponibles bajen de ${LOW_BALANCE_RECHARGE_THRESHOLD}, se cobrará automáticamente un pack de 50 mensajes adicionales a tu tarjeta registrada, sin que tengas que hacerlo manualmente.`
+          }
+          consentText={
+            consentModal.flow === "renewal_mode"
+              ? buildRenewalConsentText(consentModal.key)
+              : buildLowBalanceConsentText()
+          }
+          checked={consentChecked}
+          onCheckedChange={setConsentChecked}
+          onCancel={() => setConsentModal(null)}
+          onConfirm={handleConfirmConsentModal}
+          confirming={
+            consentModal.flow === "renewal_mode"
+              ? renewalModeUpdating === consentModal.key
+              : lowBalanceRechargeUpdating === consentModal.key
+          }
+        />
       ) : null}
     </div>
   );
