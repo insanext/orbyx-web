@@ -29,6 +29,8 @@ import {
   Bell,
   X,
   Eye,
+  Link2,
+  Check,
 } from "lucide-react";
 import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
@@ -209,6 +211,19 @@ export default function DashboardLayout({
     ((params as { slug?: string })?.slug as string) ||
     ((params as { Slug?: string })?.Slug as string) ||
     "";
+
+  const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
+  const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
+
+  async function copyPublicUrl() {
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopiedPublicUrl(true);
+      setTimeout(() => setCopiedPublicUrl(false), 1500);
+    } catch {
+      alert("No se pudo copiar la URL");
+    }
+  }
 
   async function handleLogout() {
     const supabase = createClient();
@@ -1475,6 +1490,26 @@ export default function DashboardLayout({
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
+                {slug ? (
+                  <button
+                    type="button"
+                    onClick={copyPublicUrl}
+                    aria-label="Copiar URL pública"
+                    title={`Copiar ${publicUrl}`}
+                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-xs font-semibold transition sm:h-11 sm:px-3 sm:text-sm"
+                    style={{
+                      background: copiedPublicUrl ? "rgba(16,185,129,0.12)" : softBg,
+                      borderColor: copiedPublicUrl ? "rgba(16,185,129,0.45)" : sidebarBorder,
+                      color: copiedPublicUrl ? "rgb(16 185 129)" : textMain,
+                    }}
+                  >
+                    {copiedPublicUrl ? <Check size={16} /> : <Link2 size={16} />}
+                    <span className="hidden max-w-[140px] truncate lg:inline">
+                      {copiedPublicUrl ? "URL copiada" : `orbyx.cl/${slug}`}
+                    </span>
+                  </button>
+                ) : null}
+
                 <button
                   type="button"
                   onClick={toggleTheme}

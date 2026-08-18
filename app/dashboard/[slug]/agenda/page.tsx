@@ -12,6 +12,7 @@ import {
   FileText,
   Landmark,
   Lock,
+  Mail,
   Phone,
   RotateCcw,
   Search,
@@ -3172,7 +3173,7 @@ const hasPendingClose = pendingCloseCount > 0;
       `}</style>
       <style>{STATUS_STYLESHEET}</style>
 <div
-  className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
+  className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
   style={{
     borderColor: "var(--agenda-hero-border)",
     background: "var(--agenda-hero-bg)",
@@ -3186,9 +3187,9 @@ const hasPendingClose = pendingCloseCount > 0;
     }}
   />
   <div className="relative flex items-center">
-  <div className="flex items-center gap-4">
+  <div className="flex items-center gap-3">
     <div
-      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]"
       style={{
         borderColor: "rgba(147,197,253,0.72)",
         background:
@@ -3196,18 +3197,11 @@ const hasPendingClose = pendingCloseCount > 0;
         color: "white",
       }}
     >
-      <CalendarDays className="h-5 w-5" />
+      <CalendarDays className="h-4 w-4" />
     </div>
     <div>
-    <p
-      className="text-[11px] font-semibold uppercase tracking-[0.24em]"
-      style={{ color: "#2563eb" }}
-    >
-      Agenda
-    </p>
-
     <h1
-      className="mt-0.5 text-xl font-semibold"
+      className="text-lg font-semibold"
       style={{ color: "var(--agenda-hero-title)" }}
     >
       Agenda semanal
@@ -5798,13 +5792,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                 ) : (
                   <div className="space-y-3">
                     {!isSelectedGroupAppointment ? (
-                      <div
-                        className="space-y-3 rounded-2xl border p-3"
-                        style={{
-                          borderColor: "var(--border-color)",
-                          background: "var(--bg-card)",
-                        }}
-                      >
+                      <div className="space-y-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p
@@ -5853,29 +5841,29 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               {selectedAppointment.customer_phone || "Teléfono no disponible"}
                             </span>
                           </div>
+                          {selectedAppointment.customer_email ? (
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">
+                                {selectedAppointment.customer_email}
+                              </span>
+                            </div>
+                          ) : null}
                         </div>
 
                         <div
-                          className="rounded-xl border px-3 py-2"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                          }}
+                          className="flex items-center justify-between border-t pt-3"
+                          style={{ borderColor: "var(--border-color)" }}
                         >
-                          <div className="flex items-center justify-between">
-                            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Estado actual</p>
-                            <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${getStatusBadgeClass(selectedAppointment)}`}>
-                              {getStatusLabel(selectedAppointment)}
-                            </span>
-                          </div>
+                          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Estado actual</p>
+                          <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${getStatusBadgeClass(selectedAppointment)}`}>
+                            {getStatusLabel(selectedAppointment)}
+                          </span>
                         </div>
 
                         <div
-                          className="rounded-xl border p-2.5"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--bg-soft)",
-                          }}
+                          className="border-t pt-3"
+                          style={{ borderColor: "var(--border-color)" }}
                         >
                           <p className="mb-2 text-[11px]" style={{ color: "var(--text-muted)" }}>
                             Acciones rápidas
@@ -5937,8 +5925,8 @@ const appt = slotDisplayGroups[0]?.appointments[0];
 
                         {selectedAppointment.customer_id ? (
                           <div
-                            className="rounded-xl border px-3 py-2.5"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+                            className="border-t pt-3"
+                            style={{ borderColor: "var(--border-color)" }}
                           >
                             <p className="mb-2 text-[11px]" style={{ color: "var(--text-muted)" }}>
                               {isVeterinaria || isClinica || isOdontologia ? "Ficha clínica" : "Ficha del cliente"}
