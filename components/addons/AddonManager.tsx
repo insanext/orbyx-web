@@ -128,16 +128,31 @@ function nextPackPrice(config: ExtraConfig, currentCount: number): number {
   return config.price_pack3;
 }
 
-// Precio de la próxima unidad tal como lo calcula el backend en
-// triggerLowBalanceRecharge()/POST billing/addons/activate (server.js):
-// currentQty >= 2 → price_pack3, currentQty >= 1 → price_pack2, si no
-// unitPrice. A diferencia de nextPackPrice() de arriba (que trata
-// currentCount === 2 como price_pack2), esto debe calzar exacto con lo que
-// se cobra de verdad porque se usa en el texto de consentimiento legal.
-function lowBalanceRechargeNextPrice(config: ExtraConfig, currentQty: number): number {
-  if (currentQty >= 2) return config.price_pack3;
-  if (currentQty >= 1) return config.price_pack2;
+// Precio de UNA unidad específica por su índice 0-based entre todas las que
+// el tenant llegue a tener (0=primera, 1=segunda, 2+=tercera en adelante) —
+// misma fórmula que addonUnitTierPrice en server.js (activate, quantity,
+// triggerLowBalanceRecharge). A diferencia de nextPackPrice() de arriba
+// (que trata currentCount === 2 como price_pack2, un off-by-one pre-
+// existente no tocado en este fix), esto debe calzar exacto con lo que el
+// backend cobra de verdad, porque se usa tanto para el total a cobrar como
+// para el texto de consentimiento legal de la recarga automática.
+function addonUnitTierPrice(config: ExtraConfig, unitIndex: number): number {
+  if (unitIndex >= 2) return config.price_pack3;
+  if (unitIndex >= 1) return config.price_pack2;
   return config.unitPrice;
+}
+
+// Suma el precio real de cada unidad nueva en su tier correspondiente al
+// agregar `addCount` unidades a un addon que ya tiene `currentQty` activas
+// — reemplaza el cálculo anterior (unit_price de la última compra × todo
+// el incremento), que subcobraba compras de más de 1 unidad de una vez
+// (bug reportado 2026-08-18).
+function tieredAddonChargeAmount(config: ExtraConfig, currentQty: number, addCount: number): number {
+  let total = 0;
+  for (let i = 0; i < addCount; i++) {
+    total += addonUnitTierPrice(config, currentQty + i);
+  }
+  return total;
 }
 
 function formatCLP(value: number) {
@@ -332,21 +347,14 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   // backend. El cobro real solo ocurre al confirmar en el modal.
   function increaseExtra(key: ExtraKey) {
     if (!extraSupported(key) || addonSubmitting) return;
-    const current = extraValue(key);
-    const next = current + 1;
-    // eslint-disable-next-line no-console -- DEBUG TEMPORAL, quitar tras diagnosticar el bug del selector
-    console.log("[ADDON-DEBUG] increaseExtra", { key, current, next, baselineQty: addonBaseline[key]?.quantity, baselineUnitPrice: addonBaseline[key]?.unit_price });
-    setExtraCount(key, next);
+    setExtraCount(key, extraValue(key) + 1);
   }
 
   function decreaseExtra(key: ExtraKey) {
     if (addonSubmitting) return;
     const current = extraValue(key);
     if (current === 0) return;
-    const next = current - 1;
-    // eslint-disable-next-line no-console -- DEBUG TEMPORAL, quitar tras diagnosticar el bug del selector
-    console.log("[ADDON-DEBUG] decreaseExtra", { key, current, next, baselineQty: addonBaseline[key]?.quantity, baselineUnitPrice: addonBaseline[key]?.unit_price });
-    setExtraCount(key, next);
+    setExtraCount(key, current - 1);
   }
 
   // No pasa por el modal de confirmación: no cobra nada, solo cambia un
@@ -524,9 +532,11 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   // Compara el estado local (lo que el usuario dejó con +/-) contra el
   // baseline real del tenant para saber que hay que persistir/cobrar al
   // confirmar, y cuanto se cobrará hoy — replica exactamente la logica de
-  // precio del backend: add-on nuevo (baseline 0) = precio base x
-  // cantidad; add-on ya activo que sube = su unit_price guardado x el
-  // incremento; el que baja no cobra.
+  // precio del backend: cada unidad nueva se cobra en su propio tier
+  // (tieredAddonChargeAmount), sumando 1ª+2ª+3ª... unidad nueva según
+  // corresponda, en vez de aplicar un solo tier a todo el incremento (bug
+  // reportado 2026-08-18, corregido también en POST billing/addons/activate
+  // y PATCH billing/addons/quantity en server.js).
   const addonPendingChanges = useMemo(() => {
     const changes: {
       key: ExtraKey;
@@ -549,19 +559,10 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
       let chargeAmount = 0;
       if (newQty > baselineQty) {
         const increment = newQty - baselineQty;
-        const unitPrice = isNew
-          ? config.unitPrice
-          : addonBaseline[key]?.unit_price ?? config.unitPrice;
-        chargeAmount = unitPrice * increment;
+        chargeAmount = tieredAddonChargeAmount(config, baselineQty, increment);
       }
 
       changes.push({ key, label: config.title, baselineQty, newQty, isNew, chargeAmount });
-    });
-
-    // eslint-disable-next-line no-console -- DEBUG TEMPORAL, quitar tras diagnosticar el bug del selector
-    console.log("[ADDON-DEBUG] addonPendingChanges recompute", {
-      waConfirmacionExtras,
-      changes,
     });
 
     return changes;
@@ -578,12 +579,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   ]);
 
   const hasPendingAddonChanges = addonPendingChanges.length > 0;
-  // eslint-disable-next-line no-console -- DEBUG TEMPORAL, quitar tras diagnosticar el bug del selector
-  console.log("[ADDON-DEBUG] render", {
-    waConfirmacionExtras,
-    hasPendingAddonChanges,
-    addonPendingChangesLength: addonPendingChanges.length,
-  });
   const addonChargeTotal = addonPendingChanges.reduce(
     (sum, change) => sum + change.chargeAmount,
     0
@@ -1171,7 +1166,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
               <span className="text-xs leading-5" style={{ color: "var(--text-main)" }}>
                 Autorizo a que se me cobre automáticamente{" "}
                 {formatCLP(
-                  lowBalanceRechargeNextPrice(
+                  addonUnitTierPrice(
                     extraConfig[LOW_BALANCE_RECHARGE_ADDON_KEY],
                     addonBaseline[LOW_BALANCE_RECHARGE_ADDON_KEY]?.quantity || 0
                   )
