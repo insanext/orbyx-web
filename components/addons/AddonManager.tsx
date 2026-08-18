@@ -332,14 +332,21 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   // backend. El cobro real solo ocurre al confirmar en el modal.
   function increaseExtra(key: ExtraKey) {
     if (!extraSupported(key) || addonSubmitting) return;
-    setExtraCount(key, extraValue(key) + 1);
+    const current = extraValue(key);
+    const next = current + 1;
+    // eslint-disable-next-line no-console -- DEBUG TEMPORAL, quitar tras diagnosticar el bug del selector
+    console.log("[ADDON-DEBUG] increaseExtra", { key, current, next, baselineQty: addonBaseline[key]?.quantity, baselineUnitPrice: addonBaseline[key]?.unit_price });
+    setExtraCount(key, next);
   }
 
   function decreaseExtra(key: ExtraKey) {
     if (addonSubmitting) return;
     const current = extraValue(key);
     if (current === 0) return;
-    setExtraCount(key, current - 1);
+    const next = current - 1;
+    // eslint-disable-next-line no-console -- DEBUG TEMPORAL, quitar tras diagnosticar el bug del selector
+    console.log("[ADDON-DEBUG] decreaseExtra", { key, current, next, baselineQty: addonBaseline[key]?.quantity, baselineUnitPrice: addonBaseline[key]?.unit_price });
+    setExtraCount(key, next);
   }
 
   // No pasa por el modal de confirmación: no cobra nada, solo cambia un
@@ -551,6 +558,12 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
       changes.push({ key, label: config.title, baselineQty, newQty, isNew, chargeAmount });
     });
 
+    // eslint-disable-next-line no-console -- DEBUG TEMPORAL, quitar tras diagnosticar el bug del selector
+    console.log("[ADDON-DEBUG] addonPendingChanges recompute", {
+      waConfirmacionExtras,
+      changes,
+    });
+
     return changes;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -565,6 +578,12 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   ]);
 
   const hasPendingAddonChanges = addonPendingChanges.length > 0;
+  // eslint-disable-next-line no-console -- DEBUG TEMPORAL, quitar tras diagnosticar el bug del selector
+  console.log("[ADDON-DEBUG] render", {
+    waConfirmacionExtras,
+    hasPendingAddonChanges,
+    addonPendingChangesLength: addonPendingChanges.length,
+  });
   const addonChargeTotal = addonPendingChanges.reduce(
     (sum, change) => sum + change.chargeAmount,
     0
