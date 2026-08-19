@@ -1,5 +1,15 @@
 "use client";
 
+// Desglose de precio, ya formateado en pesos ($X.XXX) por quien arma el
+// modal — este componente no conoce IVA_RATE ni formatCLP, solo pinta lo
+// que le pasan, para no duplicar esa lógica (ya vive en AddonManager.tsx).
+export type ConsentPriceBreakdown = {
+  net: string;
+  iva: string;
+  total: string;
+  discountPercent: string | null;
+};
+
 // Modal de consentimiento genérico para cualquier toggle de cobro
 // automático de add-ons (renovación mensual, recarga por saldo bajo).
 // Parametrizado por título/descripción/texto — quien lo usa arma el texto
@@ -11,6 +21,7 @@ export function AutoChargeConsentModal({
   title,
   description,
   consentText,
+  priceBreakdown,
   checked,
   onCheckedChange,
   onCancel,
@@ -22,6 +33,7 @@ export function AutoChargeConsentModal({
   title: string;
   description: string;
   consentText: string;
+  priceBreakdown: ConsentPriceBreakdown;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   onCancel: () => void;
@@ -63,6 +75,37 @@ export function AutoChargeConsentModal({
             {consentText}
           </span>
         </label>
+
+        <div
+          className="mt-3 space-y-1.5 rounded-xl border px-3 py-2.5 text-xs"
+          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+        >
+          <div className="flex items-center justify-between">
+            <span style={{ color: "var(--text-muted)" }}>Monto neto</span>
+            <span style={{ color: "var(--text-main)" }}>{priceBreakdown.net}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span style={{ color: "var(--text-muted)" }}>IVA (19%)</span>
+            <span style={{ color: "var(--text-main)" }}>{priceBreakdown.iva}</span>
+          </div>
+          <div
+            className="flex items-center justify-between border-t pt-1.5"
+            style={{ borderColor: "var(--border-color)" }}
+          >
+            <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+              Total con IVA
+            </span>
+            <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+              {priceBreakdown.total}
+            </span>
+          </div>
+          {priceBreakdown.discountPercent ? (
+            <div className="flex items-center justify-between">
+              <span style={{ color: "rgb(16 185 129)" }}>Descuento vs. 1ª unidad</span>
+              <span style={{ color: "rgb(16 185 129)" }}>{priceBreakdown.discountPercent}</span>
+            </div>
+          ) : null}
+        </div>
 
         <div className="mt-5 flex gap-3">
           <button

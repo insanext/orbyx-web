@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api";
 import type { ExtraKey } from "@/lib/plans";
 import { Bot, Mail, Megaphone, MessageCircle, Minus, Store, Users, UsersRound } from "lucide-react";
 import { Panel } from "../dashboard/panel";
-import { AutoChargeConsentModal } from "./AutoChargeConsentModal";
+import { AutoChargeConsentModal, type ConsentPriceBreakdown } from "./AutoChargeConsentModal";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -272,6 +272,17 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     return serverAddonAvailability ? serverAddonAvailability[key] !== false : false;
   }
 
+  // true si el selector +/- de este addon tiene un cambio de cantidad
+  // local todavía sin confirmar (sin pasar por "Confirmar y cobrar
+  // add-ons") — usado para bloquear el toggle de renovación automática,
+  // porque su texto de consentimiento y su cobro real siempre usan la
+  // cantidad YA confirmada en el servidor (addonBaseline), nunca la local
+  // pendiente. Mostrar un monto de consentimiento que no coincide con la
+  // cantidad real comprometida sería un respaldo legal inválido.
+  function hasUnconfirmedQuantityChange(key: ExtraKey) {
+    return extraValue(key) !== (addonBaseline[key]?.quantity || 0);
+  }
+
   async function refreshAddons() {
     if (!tenantId) return;
 
@@ -374,8 +385,10 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     const quantity = addonBaseline[key]?.quantity || 0;
     const unitPrice = addonBaseline[key]?.unit_price ?? config.unitPrice;
     const monto = unitPrice * quantity;
-    const plural = quantity === 1 ? "" : "es";
-    return `Autorizo a que se me cobre automáticamente ${formatCLP(monto)} + IVA cada ~30 días mientras esta opción esté activa, para mantener mis ${quantity} unidad${plural} de ${config.title} activa${plural}. Este cobro no se prorratea: la renovación de este addon se calcula desde la fecha de tu último pago de este addon en particular, no desde la fecha de tu plan. Puedo desactivar esta opción cuando quiera.`;
+    const isPlural = quantity !== 1;
+    const unidadPlural = isPlural ? "unidades" : "unidad";
+    const activaPlural = isPlural ? "activas" : "activa";
+    return `Autorizo a que se me cobre automáticamente ${formatCLP(monto)} + IVA cada ~30 días mientras esta opción esté activa, para mantener mis ${quantity} ${unidadPlural} de ${config.title} ${activaPlural}. Este cobro no se prorratea: la renovación de este addon se calcula desde la fecha de tu último pago de este addon en particular, no desde la fecha de tu plan. Puedo desactivar esta opción cuando quiera.`;
   }
 
   // Mismo criterio que buildRenewalConsentText — precio dinámico real
@@ -386,6 +399,43 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     const quantity = addonBaseline[LOW_BALANCE_RECHARGE_ADDON_KEY]?.quantity || 0;
     const monto = addonUnitTierPrice(config, quantity);
     return `Autorizo a que se me cobre automáticamente ${formatCLP(monto)} + IVA a mi tarjeta registrada cada vez que mis mensajes de WhatsApp disponibles bajen de ${LOW_BALANCE_RECHARGE_THRESHOLD}, agregando 50 mensajes adicionales de inmediato. Puedo desactivar esta opción cuando quiera.`;
+  }
+
+  // Desglose de precio para los modales de consentimiento (monto neto, IVA
+  // en pesos, total, y % de descuento vs el precio de la 1ª unidad si
+  // referenceUnitPrice queda por debajo de baseUnitPrice — calculado en
+  // vivo desde los precios reales del catálogo, nunca un % fijo hardcodeado).
+  function computePriceBreakdown(
+    netAmount: number,
+    referenceUnitPrice: number,
+    baseUnitPrice: number
+  ): ConsentPriceBreakdown {
+    const total = applyIva(netAmount);
+    const iva = total - netAmount;
+    const discountPercent =
+      referenceUnitPrice < baseUnitPrice
+        ? Math.round((1 - referenceUnitPrice / baseUnitPrice) * 100)
+        : null;
+    return {
+      net: formatCLP(netAmount),
+      iva: formatCLP(iva),
+      total: formatCLP(total),
+      discountPercent: discountPercent !== null ? `${discountPercent}%` : null,
+    };
+  }
+
+  function buildRenewalPriceBreakdown(key: ExtraKey): ConsentPriceBreakdown {
+    const config = extraConfig[key];
+    const quantity = addonBaseline[key]?.quantity || 0;
+    const unitPrice = addonBaseline[key]?.unit_price ?? config.unitPrice;
+    return computePriceBreakdown(unitPrice * quantity, unitPrice, config.unitPrice);
+  }
+
+  function buildLowBalancePriceBreakdown(): ConsentPriceBreakdown {
+    const config = extraConfig[LOW_BALANCE_RECHARGE_ADDON_KEY];
+    const quantity = addonBaseline[LOW_BALANCE_RECHARGE_ADDON_KEY]?.quantity || 0;
+    const unitPrice = addonUnitTierPrice(config, quantity);
+    return computePriceBreakdown(unitPrice, unitPrice, config.unitPrice);
   }
 
   // Llama al PATCH real. consentAccepted+textShown solo se mandan cuando
@@ -440,6 +490,17 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
 
     if (currentMode === "automatico") {
       patchRenewalMode(key, "manual", false);
+      return;
+    }
+
+    // El texto/monto de consentimiento siempre usa la cantidad confirmada
+    // en el servidor — si hay un +/- local sin confirmar, bloquea en vez
+    // de mostrar un número que no coincidiría con lo que realmente se
+    // cobraría (ver hasUnconfirmedQuantityChange).
+    if (hasUnconfirmedQuantityChange(key)) {
+      setAddonError(
+        "Tienes un cambio de cantidad sin confirmar en este add-on. Confírmalo con \"Confirmar y cobrar add-ons\" antes de activar el cobro automático."
+      );
       return;
     }
 
@@ -843,12 +904,22 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 className="mt-3 flex items-center justify-between gap-3 border-t pt-3"
                 style={{ borderColor: "var(--border-color)" }}
               >
-                <div>
+                <div className="min-w-0 pr-2">
                   <p className="text-xs font-medium" style={{ color: "var(--text-main)" }}>
                     Cobro automático mensual
                   </p>
-                  <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                    {isAutomatico
+                  <p
+                    className="mt-0.5 text-xs"
+                    style={{
+                      color:
+                        !isAutomatico && hasUnconfirmedQuantityChange(item.key)
+                          ? "rgb(245 158 11)"
+                          : "var(--text-muted)",
+                    }}
+                  >
+                    {!isAutomatico && hasUnconfirmedQuantityChange(item.key)
+                      ? "Confirma tu cambio de cantidad pendiente antes de activar el cobro automático."
+                      : isAutomatico
                       ? "Se renovará automáticamente cada mes."
                       : "Actívalo para renovar automáticamente — no se cobra nada al activar esta opción, solo en cada renovación."}
                   </p>
@@ -859,7 +930,10 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                   aria-checked={isAutomatico}
                   aria-label="Cobro automático mensual"
                   onClick={() => handleToggleRenewalMode(item.key)}
-                  disabled={renewalModeUpdating === item.key}
+                  disabled={
+                    renewalModeUpdating === item.key ||
+                    (!isAutomatico && hasUnconfirmedQuantityChange(item.key))
+                  }
                   className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
                   style={{
                     background: isAutomatico ? "rgb(37 99 235)" : "var(--border-color)",
@@ -1217,6 +1291,11 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
             consentModal.flow === "renewal_mode"
               ? buildRenewalConsentText(consentModal.key)
               : buildLowBalanceConsentText()
+          }
+          priceBreakdown={
+            consentModal.flow === "renewal_mode"
+              ? buildRenewalPriceBreakdown(consentModal.key)
+              : buildLowBalancePriceBreakdown()
           }
           checked={consentChecked}
           onCheckedChange={setConsentChecked}
