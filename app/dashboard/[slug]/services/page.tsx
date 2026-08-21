@@ -411,18 +411,15 @@ const [editForm, setEditForm] = useState({
     return slug ? `orbyx_active_branch_${slug}` : "";
   }, [slug]);
 
-  const planCaps: Record<string, { max_services: number }> = {
-    pro: { max_services: 10 },
-    premium: { max_services: 25 },
-    vip: { max_services: 50 },
-    platinum: { max_services: 100 },
-  };
+  // Los servicios son ilimitados en todos los planes (decisión de producto,
+  // vigente también tras la migración a 3 planes) — el backend real
+  // (DEFAULT_PLAN_CAPS en server.js) ya devuelve max_services: 999999 para
+  // los 4 planes. Antes había acá una tabla local hardcodeada (10/25/50/100)
+  // desactualizada respecto a eso, que bloqueaba la creación de servicios
+  // sin que existiera ese tope en el backend.
+  const maxServices = Infinity;
 
-  const caps = planCaps[plan] || planCaps.pro;
-  const maxServices = caps.max_services;
-
-  const servicesLimitReached = services.length >= maxServices;
-  const servicesRemainingCount = Math.max(0, maxServices - services.length);
+  const servicesRemainingCount = Infinity;
 const isGroupBookingBusiness = businessCategory === "group_booking";
 
   const activeServicesCount = services.filter((service) => service.active).length;
@@ -1240,10 +1237,6 @@ setForm({
         throw new Error("Debes seleccionar una sucursal activa");
       }
 
-      if (servicesLimitReached || hasExcess) {
-        throw new Error("No puedes crear más servicios con tu plan actual");
-      }
-
       if (!form.name.trim()) {
         throw new Error("Debes ingresar el nombre del servicio");
       }
@@ -1660,13 +1653,13 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                 className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
-                Límite del plan
+                Servicios activos
               </p>
               <p
                 className="text-sm font-bold mt-0.5"
                 style={{ color: "var(--text-main)" }}
               >
-                {loading ? "..." : `${activeServicesCount}/${maxServices}`}
+                {loading ? "..." : `${activeServicesCount} · Sin límite`}
               </p>
             </div>
           </div>
@@ -2353,7 +2346,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
               <button
                 type="button"
                 onClick={handleCreateService}
-                disabled={saving || loading || servicesLimitReached || hasExcess || !canEditServicios}
+                disabled={saving || loading || !canEditServicios}
                 className="orbyx-services-energy w-full rounded-xl border py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "rgba(147,197,253,0.36)",
