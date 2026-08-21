@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Clock, Landmark, MessageCircle, Sparkles, X } from "lucide-react";
+import { AlertTriangle, Clock, Landmark, MessageCircle, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { createClient } from "../../lib/supabase/client";
 
@@ -25,7 +25,6 @@ export type AccountStatus = {
   blocked: boolean;
   blocked_reason: "trial_expired" | "payment_overdue" | null;
   wa_confirmacion: UsageCounter;
-  ia_wa: UsageCounter;
   wa_confirmation_enabled: boolean;
   wa_reminder_enabled: boolean;
   wa_reminder_hours_before: number;
@@ -220,9 +219,11 @@ export function AccountStatusWidget({
   const [savingDepositServiceId, setSavingDepositServiceId] = useState<string | null>(null);
 
   // Valores "en vivo" recibidos por Realtime — sobreescriben el `used` que
-  // vino del fetch inicial (status.wa_confirmacion.used / status.ia_wa.used)
-  // sin tener que tocar useAccountStatus. pulseField dispara el destello
-  // visual breve en la pill correspondiente.
+  // vino del fetch inicial (status.wa_confirmacion.used) sin tener que
+  // tocar useAccountStatus. pulseField dispara el destello visual breve en
+  // la pill correspondiente. El tipo conserva "ia_wa" en la unión aunque
+  // ya no se muestre pill para eso (ver liveIaWa, retirado) — no hace
+  // daño dejarlo, y tocarlo excede el alcance de este hotfix.
   const [liveUsage, setLiveUsage] = useState<Partial<Record<"wa_confirmacion" | "ia_wa", number>>>({});
   const [pulseField, setPulseField] = useState<"wa_confirmacion" | "ia_wa" | null>(null);
 
@@ -433,11 +434,9 @@ export function AccountStatusWidget({
     used: liveUsage.wa_confirmacion ?? status.wa_confirmacion.used,
     remaining: Math.max(0, status.wa_confirmacion.total - (liveUsage.wa_confirmacion ?? status.wa_confirmacion.used)),
   };
-  const liveIaWa: UsageCounter = {
-    ...status.ia_wa,
-    used: liveUsage.ia_wa ?? status.ia_wa.used,
-    remaining: Math.max(0, status.ia_wa.total - (liveUsage.ia_wa ?? status.ia_wa.used)),
-  };
+  // IA WhatsApp fue retirado del backend (ver CLAUDE.md, Sesión 2) — ya no
+  // viene en /billing/account-status, así que se dejó de calcular y de
+  // mostrar el pill correspondiente más abajo.
 
   const textMuted = "var(--text-muted)";
   const textMain = "var(--text-main)";
@@ -446,7 +445,7 @@ export function AccountStatusWidget({
   const dropdownBg = isNocturno ? "rgb(15,23,42)" : "rgb(236,244,255)";
 
   const urgent = status.blocked || status.trial_active || status.awaiting_payment;
-  if (!urgent && status.wa_confirmacion.total <= 0 && status.ia_wa.total <= 0) {
+  if (!urgent && status.wa_confirmacion.total <= 0) {
     // Nada relevante que mostrar (plan sin estos add-ons y sin trial/pago pendiente).
     return null;
   }
@@ -556,7 +555,7 @@ export function AccountStatusWidget({
           ) : null}
 
           {!isOwnerOrAdmin || activeAccountTab === "cuenta" ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <UsagePill
                 icon={MessageCircle}
                 label="WA confirmación"
@@ -566,16 +565,6 @@ export function AccountStatusWidget({
                 borderColor={borderColor}
                 bg={softBg}
                 pulse={pulseField === "wa_confirmacion"}
-              />
-              <UsagePill
-                icon={Sparkles}
-                label="IA WhatsApp"
-                usage={liveIaWa}
-                textMuted={textMuted}
-                textMain={textMain}
-                borderColor={borderColor}
-                bg={softBg}
-                pulse={pulseField === "ia_wa"}
               />
             </div>
           ) : null}
