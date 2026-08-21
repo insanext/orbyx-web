@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   Crown,
-  Gem,
   Mail,
   Sparkles,
   ArrowLeft,
@@ -11,21 +10,7 @@ import {
   Info,
   Check,
 } from "lucide-react";
-import { TRIAL_LABEL } from "@/lib/plans";
-
-type PlanKey = "pro" | "premium" | "vip" | "platinum";
-
-type Plan = {
-  key: PlanKey;
-  name: string;
-  priceLabel: string;
-  subtitle: string;
-  icon: "mail" | "sparkles" | "crown" | "gem";
-  accentClass: string;
-  borderClass: string;
-  softBgClass: string;
-  badge?: string;
-};
+import { plans, TRIAL_LABEL, type PlanKey } from "@/lib/plans";
 
 type ComparisonRow = {
   label: string;
@@ -34,242 +19,147 @@ type ComparisonRow = {
   highlight?: boolean;
 };
 
-const plans: Plan[] = [
-  {
-    key: "pro",
-    name: "Pro",
-    priceLabel: "$12.990",
-    subtitle: "Ordena tu negocio y empieza a reservar online",
-    icon: "mail",
-    accentClass: "text-sky-300",
-    borderClass: "border-sky-400/25",
-    softBgClass: "bg-sky-500/10",
-  },
-  {
-    key: "premium",
-    name: "Premium",
-    priceLabel: "$29.990",
-    subtitle: "Más control, mejor seguimiento y menos ausencias",
-    icon: "sparkles",
-    accentClass: "text-violet-300",
-    borderClass: "border-violet-400/25",
-    softBgClass: "bg-violet-500/10",
-  },
-  {
-    key: "vip",
-    name: "VIP",
-    priceLabel: "$54.990",
-    subtitle: "Activa clientes y responde más rápido por WhatsApp",
-    icon: "crown",
-    accentClass: "text-amber-300",
-    borderClass: "border-amber-400/25",
-    softBgClass: "bg-amber-500/10",
-    badge: "Más elegido",
-  },
-  {
-    key: "platinum",
-    name: "Platinum",
-    priceLabel: "$149.990",
-    subtitle: "Automatiza tu negocio y convierte más reservas",
-    icon: "gem",
-    accentClass: "text-emerald-300",
-    borderClass: "border-emerald-400/25",
-    softBgClass: "bg-emerald-500/10",
-    badge: "IA avanzada",
-  },
-];
+// Contenido que no varía con el número real de un plan (siempre "Sí" en
+// los 3, o texto de posicionamiento sin número que sincronizar) — vive
+// acá porque no tiene un campo equivalente en lib/plans.ts. Los valores
+// que SÍ dependen de un número real (precio, sucursales, profesionales,
+// campañas email, WhatsApp, capacidad grupal) se arman abajo desde
+// `plans` (lib/plans.ts) para no volver a duplicarlos.
+const SUPPORT_LABEL: Record<PlanKey, string> = {
+  starter: "Email",
+  business: "Email + chat",
+  premium: "Prioritario",
+};
+
+function planCard(key: PlanKey) {
+  const plan = plans.find((p) => p.key === key)!;
+  return {
+    key,
+    name: plan.name,
+    priceLabel: `$${plan.price.toLocaleString("es-CL")}`,
+    subtitle: plan.subtitle,
+    icon: plan.icon,
+    accentClass: plan.accentClass,
+    borderClass: plan.borderClass,
+    softBgClass: plan.softBgClass,
+    badge: plan.badge,
+  };
+}
+
+const planCards = plans.map((p) => planCard(p.key));
+
+function byPlan(pick: (key: PlanKey) => string): Record<PlanKey, string> {
+  return {
+    starter: pick("starter"),
+    business: pick("business"),
+    premium: pick("premium"),
+  };
+}
 
 const comparisonRows: ComparisonRow[] = [
   {
     label: "Sucursales incluidas",
-    values: {
-      pro: "1",
-      premium: "2",
-      vip: "3",
-      platinum: "10",
-    },
+    values: byPlan((key) => String(plans.find((p) => p.key === key)!.includedBranches)),
     info: "Cantidad máxima de sucursales que puedes operar dentro de la misma cuenta.",
   },
   {
     label: "Profesionales incluidos",
-    values: {
-      pro: "2",
-      premium: "5",
-      vip: "10",
-      platinum: "25",
-    },
+    values: byPlan((key) => String(plans.find((p) => p.key === key)!.includedStaff)),
     info: "Cantidad base de profesionales o staff que puedes registrar en el plan.",
   },
   {
     label: "Servicios incluidos",
-    values: {
-      pro: "∞",
-      premium: "∞",
-      vip: "∞",
-      platinum: "∞",
-    },
+    values: byPlan(() => "∞"),
     info: "Los servicios son ilimitados en todos los planes.",
   },
   {
     label: "Página pública de reservas",
-    values: {
-      pro: "Sí",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
-    },
+    values: byPlan(() => "Sí"),
     info: "Página donde tus clientes pueden reservar online según horarios y disponibilidad.",
   },
   {
     label: "Agenda online",
-    values: {
-      pro: "Sí",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
-    },
+    values: byPlan(() => "Sí"),
     info: "Agenda centralizada para gestionar reservas, cambios, estados y disponibilidad.",
   },
   {
     label: "Gestión de clientes",
-    values: {
-      pro: "Sí",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
-    },
+    values: byPlan(() => "Sí"),
     info: "Registro y seguimiento operativo de clientes dentro del sistema.",
   },
   {
     label: "Emails de confirmación y notificación",
-    values: {
-      pro: "Sí",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
-    },
+    values: byPlan(() => "Sí"),
     info: "Correos automáticos que acompañan el flujo de reserva y comunicación básica con el cliente.",
   },
   {
     label: "Recordatorios por email",
-    values: {
-      pro: "Sí",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
-    },
+    values: byPlan(() => "Sí"),
     info: "Correos automáticos enviados antes de la cita para reducir ausencias.",
   },
   {
     label: "Campañas por email",
-    values: {
-      pro: "200 / mes",
-      premium: "1.000 / mes",
-      vip: "2.000 / mes",
-      platinum: "5.000 / mes",
-    },
+    values: byPlan((key) => {
+      const n = plans.find((p) => p.key === key)!.includedEmailCampaigns;
+      return n > 0 ? `${n.toLocaleString("es-CL")} / mes` : "—";
+    }),
     info: "Mensajes masivos por correo para activar, recuperar o promocionar a tu base de clientes.",
     highlight: true,
   },
   {
     label: "WhatsApp confirmación+recordatorio",
-    values: {
-      pro: "100 msgs / mes *",
-      premium: "200 msgs / mes",
-      vip: "300 msgs / mes",
-      platinum: "500 msgs / mes",
-    },
-    info: "Mensajes WhatsApp incluidos para confirmaciones y recordatorios automáticos. Ampliable con add-on (packs de 50, desde $2.990). * En Pro: disponible al activar plan pagado, no disponible en trial.",
-    highlight: true,
-  },
-  {
-    label: "IA WhatsApp conversaciones",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "500 conversaciones / mes",
-      platinum: "1.500 conversaciones / mes",
-    },
-    info: "En VIP la IA responde consultas y deriva a tu página de reservas. En Platinum además hace seguimiento y automatiza mejor la atención.",
+    values: byPlan((key) => {
+      const n = plans.find((p) => p.key === key)!.includedWaConfirmacion;
+      return key === "starter" ? `${n} msgs / mes *` : `${n} msgs / mes`;
+    }),
+    info: `Mensajes WhatsApp incluidos para confirmaciones y recordatorios automáticos. Ampliable con add-on (packs de 50, desde $2.990). * En Starter: disponible al activar plan pagado, no disponible durante el trial de ${TRIAL_LABEL}.`,
     highlight: true,
   },
   {
     label: "Campañas WhatsApp",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "Disponible como adicional",
-      platinum: "Disponible como adicional",
-    },
-    info: "No vienen incluidas. Valor: $6.990 + iva por pack de 50 mensajes. Uso dentro del mes.",
+    values: byPlan((key) => {
+      const n = plans.find((p) => p.key === key)!.includedCampanasWa;
+      return n > 0 ? `${n} msgs / mes incluidos` : "—";
+    }),
+    info: "Mensajes masivos de marketing por WhatsApp. Solo Premium las incluye de base; no está disponible como add-on en los otros planes.",
+    highlight: true,
   },
   {
     label: "Capacidad grupal máxima",
-    values: {
-      pro: "10 personas",
-      premium: "25 personas",
-      vip: "50 personas",
-      platinum: "100 personas",
-    },
+    values: byPlan((key) => `${plans.find((p) => p.key === key)!.includedGroupCapacity} personas`),
     info: "Capacidad máxima de personas por slot grupal incluida en el plan. Ampliable con add-on (packs de 25 cupos).",
   },
   {
     label: "Google Calendar",
-    values: {
-      pro: "Sí",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
-    },
+    values: byPlan(() => "Sí"),
     info: "Sincronización bidireccional con Google Calendar para todos los profesionales.",
   },
   {
     label: "Soporte",
-    values: {
-      pro: "Email",
-      premium: "Email",
-      vip: "Prioritario",
-      platinum: "Prioritario + SLA",
-    },
+    values: SUPPORT_LABEL,
     info: "Nivel de soporte incluido en el plan.",
   },
   {
     label: `Trial ${TRIAL_LABEL}`,
-    values: {
-      pro: "Sí",
-      premium: "—",
-      vip: "—",
-      platinum: "—",
-    },
-    info: `El plan Pro incluye ${TRIAL_LABEL} de prueba gratuita. Los demás planes no incluyen trial.`,
+    values: { starter: "Sí", business: "—", premium: "—" },
+    info: `El plan Starter incluye ${TRIAL_LABEL} de prueba gratuita. Los demás planes no incluyen trial.`,
   },
   {
     label: "Estadísticas básicas",
-    values: {
-      pro: "Sí",
-      premium: "Sí",
-      vip: "Sí",
-      platinum: "Sí",
-    },
+    values: byPlan(() => "Sí"),
     info: "Vista inicial del comportamiento del negocio, reservas y operación general.",
   },
   {
     label: "Visión más avanzada del negocio",
-    values: {
-      pro: "—",
-      premium: "—",
-      vip: "Sí",
-      platinum: "Sí",
-    },
+    values: { starter: "—", business: "—", premium: "Sí" },
     info: "Mayor visibilidad para seguir mejor la operación, activar clientes y tomar decisiones con más contexto.",
   },
-] as const;
+];
 
-function PlanIcon({ type }: { type: Plan["icon"] }) {
+function PlanIcon({ type }: { type: (typeof planCards)[number]["icon"] }) {
   if (type === "mail") return <Mail className="h-5 w-5" />;
   if (type === "sparkles") return <Sparkles className="h-5 w-5" />;
-  if (type === "crown") return <Crown className="h-5 w-5" />;
-  return <Gem className="h-5 w-5" />;
+  return <Crown className="h-5 w-5" />;
 }
 
 function InfoDot({ text }: { text: string }) {
@@ -293,11 +183,7 @@ function CellValue({
   value: string;
   highlight?: boolean;
 }) {
-  const positive =
-    value === "Sí" ||
-    value === "Incluidas" ||
-    value === "Incluidos" ||
-    value === "Disponible como adicional";
+  const positive = value === "Sí" || value === "Incluidas" || value === "Incluidos";
 
   if (value === "—") {
     return <span className="text-slate-500">—</span>;
@@ -335,7 +221,7 @@ export default function CompararPlanesPage() {
               </h1>
 
               <p className="mt-3 max-w-3xl text-base leading-7 text-slate-300 lg:text-lg">
-                Desde ordenar tu agenda hasta automatizar atención, recuperar clientes y convertir más reservas.
+                Desde ordenar tu agenda hasta automatizar campañas y recuperar clientes.
               </p>
             </div>
 
@@ -357,8 +243,8 @@ export default function CompararPlanesPage() {
             </div>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {plans.map((plan) => (
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {planCards.map((plan) => (
               <div
                 key={plan.key}
                 className={`relative rounded-3xl border ${plan.borderClass} ${plan.softBgClass} p-5`}
@@ -395,7 +281,7 @@ export default function CompararPlanesPage() {
                     <th className="px-4 py-4 text-left text-sm font-semibold text-slate-200">
                       Qué incluye cada plan
                     </th>
-                    {plans.map((plan) => (
+                    {planCards.map((plan) => (
                       <th
                         key={plan.key}
                         className="px-4 py-4 text-center text-sm font-semibold text-slate-200"
@@ -421,7 +307,7 @@ export default function CompararPlanesPage() {
                         </div>
                       </td>
 
-                      {plans.map((plan) => (
+                      {planCards.map((plan) => (
                         <td
                           key={`${row.label}-${plan.key}`}
                           className="border-t border-white/10 px-4 py-4 text-center text-sm text-slate-300"
@@ -450,7 +336,7 @@ export default function CompararPlanesPage() {
                     Multi-sucursal por plan
                   </p>
                   <p className="text-sm text-slate-300">
-                    Pro: 1 · Premium: 2 · VIP: 3 · Platinum: 10
+                    Starter: 1 · Business: 2 · Premium: 3
                   </p>
                 </div>
               </div>
@@ -458,12 +344,12 @@ export default function CompararPlanesPage() {
 
             <div className="rounded-[24px] border border-amber-300/15 bg-amber-500/10 p-4">
               <p className="text-sm font-semibold text-amber-100">
-                Importante sobre mensajes WhatsApp e IA
+                Importante sobre mensajes WhatsApp
               </p>
               <p className="mt-2 text-sm leading-6 text-amber-50/90">
-                Los mensajes WhatsApp e IA no son acumulables entre períodos. Se renuevan mensualmente.
-                Campañas WhatsApp: <span className="font-semibold">$6.990 + iva</span> por pack de 50 mensajes (solo VIP y Platinum).
-                * WhatsApp conf+rec en Pro: disponible al activar plan pagado, no durante el trial de {TRIAL_LABEL}.
+                Los mensajes WhatsApp no son acumulables entre períodos. Se renuevan mensualmente.
+                Campañas WhatsApp: incluidas solo en <span className="font-semibold">Premium</span> (50 msgs/mes); no disponibles como add-on en Starter ni Business.
+                * WhatsApp conf+rec en Starter: disponible al activar plan pagado, no durante el trial de {TRIAL_LABEL}.
               </p>
             </div>
           </div>

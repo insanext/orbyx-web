@@ -34,7 +34,7 @@ export function PublicHeader() {
           Iniciar sesión
         </Link>
         <Link
-          href="/signup?plan=pro"
+          href="/signup?plan=starter"
           className="hidden h-10 items-center justify-center rounded-lg bg-[var(--pub-accent)] px-5 text-sm font-bold text-[var(--pub-accent-text)] shadow-[0_0_20px_var(--pub-shadow-color)] transition hover:-translate-y-0.5 hover:brightness-110 sm:inline-flex sm:h-12"
         >
           Probar gratis

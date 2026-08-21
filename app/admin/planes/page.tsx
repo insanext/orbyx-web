@@ -15,7 +15,6 @@ type PlanConfig = {
   branches_limit: number
   email_campaign_limit: number
   max_wa_confirmacion: number
-  max_ia_wa: number
   max_group_capacity: number
   max_campanas_wa: number
   is_active: boolean
@@ -174,7 +173,6 @@ export default function AdminPlanesPage() {
           branches_limit: plan.branches_limit,
           email_campaign_limit: plan.email_campaign_limit,
           max_wa_confirmacion: plan.max_wa_confirmacion,
-          max_ia_wa: plan.max_ia_wa,
           max_group_capacity: plan.max_group_capacity,
           max_campanas_wa: plan.max_campanas_wa,
           is_active: plan.is_active,
@@ -258,7 +256,6 @@ export default function AdminPlanesPage() {
                   <NumberField label="Sucursales" value={plan.branches_limit} onChange={(v) => updatePlanField(slug, 'branches_limit', v)} />
                   <NumberField label="Emails campaña" value={plan.email_campaign_limit} onChange={(v) => updatePlanField(slug, 'email_campaign_limit', v)} />
                   <NumberField label="WA confirmación" value={plan.max_wa_confirmacion} onChange={(v) => updatePlanField(slug, 'max_wa_confirmacion', v)} />
-                  <NumberField label="IA WhatsApp" value={plan.max_ia_wa} onChange={(v) => updatePlanField(slug, 'max_ia_wa', v)} />
                   <NumberField label="Campañas WA" value={plan.max_campanas_wa} onChange={(v) => updatePlanField(slug, 'max_campanas_wa', v)} />
                   <NumberField label="Cupos grupales" value={plan.max_group_capacity} onChange={(v) => updatePlanField(slug, 'max_group_capacity', v)} />
                 </div>

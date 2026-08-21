@@ -9,19 +9,11 @@ import { PasswordVisibilityToggle } from "../../components/ui/password-visibilit
 import { ParticleBackground } from "../../components/ui/particle-background";
 import { TermsAcceptanceCheckbox } from "../../components/auth/TermsAcceptanceCheckbox";
 
-const PLAN_LABELS: Record<string, string> = {
-  pro: "Pro",
-  premium: "Premium",
-  vip: "VIP",
-  platinum: "Platinum",
-};
-
-const PLAN_COLORS: Record<string, string> = {
-  pro: "#8b5cf6",
-  premium: "#0ea5e9",
-  vip: "#10b981",
-  platinum: "#f59e0b",
-};
+// /signup es solo el onboarding gratuito (starter) — los planes pagos
+// (business/premium) van por checkout-premium, no por acá. Ya no lee
+// ?plan= de la URL (antes aceptaba pro/premium/vip/platinum): acá solo
+// existe un plan real, así que el badge siempre muestra "Starter".
+const PLAN_COLOR = "#8b5cf6";
 
 function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
   return (
@@ -45,11 +37,7 @@ function SignupInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const plan = useMemo(() => {
-    const p = (searchParams.get("plan") || "pro").toLowerCase();
-    if (p === "pro" || p === "premium" || p === "vip" || p === "platinum") return p;
-    return "pro";
-  }, [searchParams]);
+  const plan = "starter";
 
   const supabase = useMemo(
     () =>
@@ -149,8 +137,8 @@ function SignupInner() {
     }
   }
 
-  const planColor = PLAN_COLORS[plan] ?? "#6366f1";
-  const planLabel = PLAN_LABELS[plan] ?? plan;
+  const planColor = PLAN_COLOR;
+  const planLabel = "Starter";
 
   return (
     <>

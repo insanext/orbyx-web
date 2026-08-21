@@ -120,7 +120,7 @@ function LandingContent() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/signup?plan=pro"
+                  href="/signup?plan=starter"
                   className="inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-[var(--pub-accent)] px-7 text-base font-bold text-[var(--pub-accent-text)] shadow-[0_8px_28px_var(--pub-shadow-color)] transition hover:-translate-y-0.5 hover:brightness-110"
                 >
                   Probar gratis {TRIAL_LABEL}
@@ -466,7 +466,7 @@ function LandingContent() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/signup?plan=pro"
+                  href="/signup?plan=starter"
                   className="inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-[var(--pub-accent)] px-8 text-base font-bold text-[var(--pub-accent-text)] shadow-[0_8px_28px_var(--pub-shadow-color)] transition hover:-translate-y-0.5 hover:brightness-110"
                 >
                   Probar gratis {TRIAL_LABEL}

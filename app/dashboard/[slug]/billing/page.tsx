@@ -7,7 +7,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { ChevronRight, CreditCard } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { AddonManager } from "../../../../components/addons/AddonManager";
-import { plans as PLAN_DEFS, cycleTotalPrice } from "@/lib/plans";
+import { cycleTotalPrice, getPlanLabel, PLAN_PRICES_ALL, type PlanSlug } from "@/lib/plans";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -68,13 +68,6 @@ type NoticeTone =
 
 type BillingTabId = "suscripcion" | "addons" | "historial" | "ajustes";
 
-const PLAN_LABELS: Record<string, string> = {
-  pro: "Pro",
-  premium: "Premium",
-  vip: "VIP",
-  platinum: "Platinum",
-};
-
 const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente de confirmación",
   card_registered: "Tarjeta registrada",
@@ -121,7 +114,6 @@ function compareChargeDateDesc(a: PaymentHistoryCharge, b: PaymentHistoryCharge)
 const ADDON_LABELS: Record<string, string> = {
   wa_confirmacion: "WhatsApp confirmación+recordatorio",
   campanas_wa: "Campañas WhatsApp",
-  ia_wa: "IA WhatsApp",
   emails_campana: "Pack emails campaña",
   staff: "+ 1 Profesional",
   sucursal: "+ 1 Sucursal",
@@ -196,15 +188,6 @@ function groupChargesByDate(charges: PaymentHistoryCharge[]): ChargeGroup[] {
   return Array.from(groups.values()).sort((a, b) =>
     a.dateKey < b.dateKey ? 1 : a.dateKey > b.dateKey ? -1 : 0
   );
-}
-
-function normalizePlanSlug(planSlug?: string | null) {
-  const normalized = String(planSlug || "pro").toLowerCase();
-
-  if (normalized === "starter") return "pro";
-  if (normalized in PLAN_LABELS) return normalized;
-
-  return "pro";
 }
 
 function formatCLP(value: number) {
@@ -471,9 +454,9 @@ function BillingPageInner() {
 
   const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [plan, setPlan] = useState("pro");
+  const [plan, setPlan] = useState<PlanSlug>("starter");
   const [billingCycleEnd, setBillingCycleEnd] = useState<string | null>(null);
-  const [scheduledPlanSlug, setScheduledPlanSlug] = useState<string | null>(null);
+  const [scheduledPlanSlug, setScheduledPlanSlug] = useState<PlanSlug | null>(null);
   const [scheduledChangeAt, setScheduledChangeAt] = useState<string | null>(null);
   const [pendingChangeType, setPendingChangeType] = useState<string | null>(null);
 
@@ -622,9 +605,9 @@ function BillingPageInner() {
       }
 
       const currentTenantId = businessData.business.id;
-      const currentPlan = normalizePlanSlug(businessData.business.plan_slug);
+      const currentPlan = (businessData.business.plan_slug as PlanSlug) || "starter";
       const nextScheduledPlan = businessData.business.scheduled_plan_slug
-        ? normalizePlanSlug(businessData.business.scheduled_plan_slug)
+        ? (businessData.business.scheduled_plan_slug as PlanSlug)
         : null;
 
       setTenantId(currentTenantId);
@@ -784,13 +767,14 @@ function BillingPageInner() {
     loadSubscriptionStatus(tenantId);
   }, [tenantId]);
 
-  // Monto neto (sin IVA) para el plan actual del tenant — misma fuente
-  // (lib/plans.ts) y misma fórmula (cycleTotalPrice) que ya usa el
-  // checkout pagado de premium/vip/platinum, para no depender de un
-  // segundo valor de precio que pueda desincronizarse.
+  // Monto neto (sin IVA) para el plan actual del tenant — PLAN_PRICES_ALL
+  // (lib/plans.ts) cubre también pro/vip/platinum (legacy), a diferencia
+  // del catálogo de marketing `plans` (solo starter/business/premium):
+  // reactivar/re-suscribir a un plan legacy debe cobrar su monto
+  // histórico real, no $0 (si no se encontrara) ni el precio de un plan
+  // nuevo sin relación.
   function subscriptionMontoForCurrentPlan() {
-    const planDef = PLAN_DEFS.find((p) => p.key === plan);
-    return cycleTotalPrice(planDef?.price ?? 0, "mensual");
+    return cycleTotalPrice(PLAN_PRICES_ALL[plan] ?? PLAN_PRICES_ALL.starter, "mensual");
   }
 
   // Activa la suscripción real en Flow para una tarjeta ya registrada
@@ -1212,10 +1196,8 @@ function BillingPageInner() {
     }
   }
 
-  const planLabel = PLAN_LABELS[plan] || "Pro";
-  const scheduledPlanLabel = scheduledPlanSlug
-    ? PLAN_LABELS[scheduledPlanSlug] || scheduledPlanSlug
-    : null;
+  const planLabel = getPlanLabel(plan);
+  const scheduledPlanLabel = scheduledPlanSlug ? getPlanLabel(scheduledPlanSlug) : null;
 
   const remainingDaysNumber = getRemainingDaysNumber(
     scheduledChangeAt || billingCycleEnd
@@ -1470,7 +1452,7 @@ function BillingPageInner() {
                     Plan
                   </p>
                   <p className="mt-1 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                    {PLAN_LABELS[subscriptionStatus.plan_id] || subscriptionStatus.plan_id}
+                    {getPlanLabel(subscriptionStatus.plan_id)}
                   </p>
                 </div>
                 <div>

@@ -6,6 +6,7 @@ import { BarChart3 } from "lucide-react";
 import { PageHeader } from "../../../components/dashboard/page-header";
 import { Panel } from "../../../components/dashboard/panel";
 import { apiFetch } from "@/lib/api";
+import { PLAN_LABELS, getPlanLabel, isPlanAtLeast, type PlanKey, type PlanSlug } from "@/lib/plans";
 
 type BusinessResponse = {
   business: {
@@ -30,39 +31,6 @@ type MetricsResponse = {
 };
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
-
-type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
-
-const PLAN_LABELS: Record<PlanSlug, string> = {
-  starter: "Pro",
-  pro: "Pro",
-  premium: "Premium",
-  vip: "VIP",
-  platinum: "Platinum",
-};
-
-const PLAN_ORDER: Record<PlanSlug, number> = {
-  starter: 1,
-  pro: 1,
-  premium: 2,
-  vip: 3,
-  platinum: 4,
-};
-
-function normalizePlan(plan?: string): PlanSlug {
-  const value = (plan || "").toLowerCase();
-
-  if (value === "premium") return "premium";
-  if (value === "vip") return "vip";
-  if (value === "platinum") return "platinum";
-  if (value === "pro") return "pro";
-
-  return "starter";
-}
-
-function isPlanAtLeast(currentPlan: PlanSlug, requiredPlan: PlanSlug) {
-  return PLAN_ORDER[currentPlan] >= PLAN_ORDER[requiredPlan];
-}
 
 function formatMetricValue(value: number, loading: boolean) {
   if (loading) return "...";
@@ -146,7 +114,7 @@ function MetricCard({
 type FeatureBlockProps = {
   title: string;
   description: string;
-  requiredPlan: PlanSlug;
+  requiredPlan: PlanKey;
   currentPlan: PlanSlug;
 };
 
@@ -395,7 +363,7 @@ export default function DashboardHomePage() {
         }
 
         setBusinessName(businessData.business.name || "");
-        setPlan(normalizePlan(businessData.business.plan_slug));
+        setPlan((businessData.business.plan_slug as PlanSlug) || "starter");
 
         if (metricsRes.ok && metricsData?.metrics) {
           setMetrics({
@@ -430,7 +398,7 @@ export default function DashboardHomePage() {
     }
   }, [slug, selectedBranchId]);
 
-  const planLabel = useMemo(() => PLAN_LABELS[plan], [plan]);
+  const planLabel = useMemo(() => getPlanLabel(plan), [plan]);
 
   const chartValues = useMemo(() => {
     const hoy = metrics.reservas_hoy || 0;
@@ -661,23 +629,17 @@ export default function DashboardHomePage() {
             description="Estos espacios quedan listos para activarse visualmente según el plan."
           />
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <FeatureBlock
               title="Comparación semanal"
               description="Evolución de reservas respecto a la semana anterior y tendencia general del negocio."
-              requiredPlan="premium"
+              requiredPlan="business"
               currentPlan={plan}
             />
             <FeatureBlock
               title="Campañas y canales"
               description="Reservas generadas por web, email y WhatsApp para medir impacto comercial."
-              requiredPlan="vip"
-              currentPlan={plan}
-            />
-            <FeatureBlock
-              title="IA y recuperación"
-              description="Clientes reactivados, conversaciones asistidas y conversión atribuida a automatización."
-              requiredPlan="platinum"
+              requiredPlan="premium"
               currentPlan={plan}
             />
           </div>

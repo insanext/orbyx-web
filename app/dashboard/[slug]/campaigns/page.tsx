@@ -17,13 +17,13 @@ import {
   Users,
 } from "lucide-react";
 import { usePermissions } from "../../../../lib/permissions-context";
+import { PLAN_LABELS, isKnownPlanSlug, type PlanSlug } from "../../../../lib/plans";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
 type CampaignChannel = "email" | "whatsapp";
 type CampaignSort = "oldest" | "recent" | "most_visits" | "least_visits";
-type PlanSlug = "pro" | "premium" | "vip" | "platinum" | "starter";
 type HistoryPeriod = "all" | "7d" | "30d" | "this_month" | "custom";
 type HistoryPerformance = "all" | "excellent" | "good" | "warning" | "failed";
 type EmailVisualPreset = "minimal" | "promo" | "reminder";
@@ -153,26 +153,29 @@ type CampaignHistoryResponse = {
   error?: string;
 };
 
-const PLAN_LABELS: Record<PlanSlug, string> = {
-  starter: "Pro",
-  pro: "Pro",
-  premium: "Premium",
-  vip: "VIP",
-  platinum: "Platinum",
-};
-
+// No vienen de la API — sirven solo para decidir si el canal WhatsApp/el
+// selector de imagen de campaña se muestran habilitados, no un límite real
+// enforced en backend (ese lo aplica GET /billing/addons, ver emailLimit
+// abajo). "premium" (nuevo, tope real) SÍ se corrigió a su valor real
+// (max_campanas_wa base = 50, ver plan_config Sesión 2) porque antes ese
+// mismo string apuntaba a un plan distinto (premium viejo, sin campañas
+// WhatsApp) y dejarlo en 0 ocultaría una capacidad real del plan nuevo.
+// vip/platinum (legacy, 2 tenants preservados) se dejan con su valor
+// histórico intacto — no son planes nuevos, no hace falta tocarlos.
 const PLAN_WHATSAPP_LIMITS: Record<PlanSlug, number> = {
   starter: 0,
+  business: 0,
+  premium: 50,
   pro: 0,
-  premium: 0,
   vip: 200,
   platinum: 800,
 };
 
 const PLAN_IMAGE_LIMITS: Record<PlanSlug, number> = {
   starter: 7,
-  pro: 7,
+  business: 7,
   premium: 15,
+  pro: 7,
   vip: 30,
   platinum: 100,
 };
@@ -195,7 +198,7 @@ function getCampaignChannelLimit(
         limit > 0
           ? "Máximo visual mensual para WhatsApp."
           : "WhatsApp no está incluido en tu plan.",
-      badge: limit > 0 ? "Incluido" : "Disponible en VIP",
+      badge: limit > 0 ? "Incluido" : "Disponible en Premium",
       available: limit > 0,
       limit,
     };
@@ -296,12 +299,7 @@ const INACTIVE_OPTIONS = [
 ];
 
 function normalizePlan(plan?: string): PlanSlug {
-  const value = (plan || "").toLowerCase();
-  if (value === "premium") return "premium";
-  if (value === "vip") return "vip";
-  if (value === "platinum") return "platinum";
-  if (value === "pro") return "pro";
-  return "starter";
+  return isKnownPlanSlug(plan) ? plan : "starter";
 }
 
 function formatDate(value?: string | null) {

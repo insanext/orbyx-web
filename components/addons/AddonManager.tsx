@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { apiFetch } from "@/lib/api";
 import type { ExtraKey } from "@/lib/plans";
-import { Bot, Mail, Megaphone, MessageCircle, Minus, Store, Users, UsersRound } from "lucide-react";
+import { Mail, Megaphone, MessageCircle, Minus, Store, Users, UsersRound } from "lucide-react";
 import { Panel } from "../dashboard/panel";
 import { AutoChargeConsentModal, type ConsentPriceBreakdown } from "./AutoChargeConsentModal";
 
@@ -48,25 +48,14 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     icon: <Megaphone className="h-5 w-5" />,
     iconClass: "bg-amber-500/15 text-amber-500",
   },
-  ia_wa: {
-    title: "IA WhatsApp",
-    unitPrice: 14990,
-    price_pack2: 13491,
-    price_pack3: 12742,
-    unitLabel: "pack",
-    usageLabel: "500 conversaciones IA adicionales / mes",
-    tooltip: "Un agente de IA responde automáticamente por WhatsApp, agenda citas y resuelve consultas sin intervención manual. 500 conversaciones por pack.",
-    icon: <Bot className="h-5 w-5" />,
-    iconClass: "bg-fuchsia-500/15 text-fuchsia-500",
-  },
   emails_campana: {
     title: "Pack emails campaña",
     unitPrice: 1990,
     price_pack2: 1990,
     price_pack3: 1990,
     unitLabel: "pack",
-    usageLabel: "2.000 correos campaña adicionales / mes",
-    tooltip: "Correos de marketing adicionales para campañas a tus clientes. 2.000 correos por pack.",
+    usageLabel: "500 correos campaña adicionales / mes",
+    tooltip: "Correos de marketing adicionales para campañas a tus clientes. 500 correos por pack.",
     icon: <Mail className="h-5 w-5" />,
     iconClass: "bg-sky-500/15 text-sky-500",
   },
@@ -108,7 +97,6 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
 const ADDON_KEYS: ExtraKey[] = [
   "wa_confirmacion",
   "campanas_wa",
-  "ia_wa",
   "emails_campana",
   "staff",
   "sucursal",
@@ -207,7 +195,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   const [sucursalExtras, setSucursalExtras] = useState(0);
   const [waConfirmacionExtras, setWaConfirmacionExtras] = useState(0);
   const [campanaWaExtras, setCampanaWaExtras] = useState(0);
-  const [iaWaExtras, setIaWaExtras] = useState(0);
   const [emailsCampanaExtras, setEmailsCampanaExtras] = useState(0);
   const [groupCapacityExtras, setGroupCapacityExtras] = useState(0);
 
@@ -250,7 +237,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     else if (key === "sucursal") setSucursalExtras(value);
     else if (key === "wa_confirmacion") setWaConfirmacionExtras(value);
     else if (key === "campanas_wa") setCampanaWaExtras(value);
-    else if (key === "ia_wa") setIaWaExtras(value);
     else if (key === "emails_campana") setEmailsCampanaExtras(value);
     else setGroupCapacityExtras(value);
   }
@@ -260,7 +246,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     if (key === "sucursal") return sucursalExtras;
     if (key === "wa_confirmacion") return waConfirmacionExtras;
     if (key === "campanas_wa") return campanaWaExtras;
-    if (key === "ia_wa") return iaWaExtras;
     if (key === "emails_campana") return emailsCampanaExtras;
     return groupCapacityExtras;
   }
@@ -340,7 +325,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
       setSucursalExtras(counts.sucursal || 0);
       setWaConfirmacionExtras(counts.wa_confirmacion || 0);
       setCampanaWaExtras(counts.campanas_wa || 0);
-      setIaWaExtras(counts.ia_wa || 0);
       setEmailsCampanaExtras(counts.emails_campana || 0);
       setGroupCapacityExtras(counts.group_capacity || 0);
     } catch (error: unknown) {
@@ -618,7 +602,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     sucursalExtras,
     waConfirmacionExtras,
     campanaWaExtras,
-    iaWaExtras,
     emailsCampanaExtras,
     groupCapacityExtras,
   ]);
@@ -643,7 +626,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     sucursalExtras,
     waConfirmacionExtras,
     campanaWaExtras,
-    iaWaExtras,
     emailsCampanaExtras,
     groupCapacityExtras,
   ]);
@@ -697,7 +679,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     sucursalExtras,
     waConfirmacionExtras,
     campanaWaExtras,
-    iaWaExtras,
     emailsCampanaExtras,
     groupCapacityExtras,
   ]);

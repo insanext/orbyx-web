@@ -9,6 +9,7 @@ import {
   plans,
   billingCycleConfig,
   cycleTotalPrice,
+  closestNewPlan,
   TRIAL_LABEL,
   type Plan,
   type PlanKey,
@@ -17,12 +18,10 @@ import {
 } from "@/lib/plans";
 import {
   BarChart3,
-  Bot,
   CalendarDays,
   Check,
   ChevronUp,
   Crown,
-  Gem,
   Lock,
   Mail,
   Megaphone,
@@ -80,7 +79,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     price_pack3: 2542,
     unitLabel: "pack",
     usageLabel: "50 msgs WhatsApp adicionales / mes",
-    availableFrom: "Pro, Premium, VIP y Platinum",
+    availableFrom: "Starter, Business y Premium",
     tooltip: "Envía automáticamente un WhatsApp al cliente cuando agenda y otro como recordatorio antes de su cita. 50 mensajes adicionales por pack.",
     icon: <MessageCircle className="h-5 w-5" />,
     glow: "from-emerald-500/20 to-emerald-500/5",
@@ -91,42 +90,27 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     short: "50 msgs campaña marketing adicionales.",
     detail: "por 50 mensajes",
     unitPrice: 6990,
-    price_pack2: 6291,
-    price_pack3: 5942,
+    price_pack2: 6990,
+    price_pack3: 6990,
     unitLabel: "pack",
     usageLabel: "50 msgs campaña marketing / mes",
-    availableFrom: "VIP y Platinum",
+    availableFrom: "Premium",
     tooltip: "Envía mensajes masivos de marketing a tus clientes por WhatsApp. Ideal para promociones, fidelización y recuperación de clientes inactivos. 50 mensajes por pack.",
     icon: <Megaphone className="h-5 w-5" />,
     glow: "from-amber-500/20 to-amber-500/5",
     iconClass: "bg-amber-500/18 text-amber-200",
   },
-  ia_wa: {
-    title: "IA WhatsApp",
-    short: "500 conversaciones IA adicionales.",
-    detail: "por 500 conversaciones",
-    unitPrice: 14990,
-    price_pack2: 13491,
-    price_pack3: 12742,
-    unitLabel: "pack",
-    usageLabel: "500 conversaciones IA adicionales / mes",
-    availableFrom: "VIP y Platinum",
-    tooltip: "Un agente de IA responde automáticamente por WhatsApp, agenda citas y resuelve consultas sin intervención manual. 500 conversaciones por pack.",
-    icon: <Bot className="h-5 w-5" />,
-    glow: "from-fuchsia-500/20 to-fuchsia-500/5",
-    iconClass: "bg-fuchsia-500/18 text-fuchsia-200",
-  },
   emails_campana: {
     title: "Pack emails campaña",
-    short: "2.000 correos campaña adicionales.",
-    detail: "por 2.000 correos",
+    short: "500 correos campaña adicionales.",
+    detail: "por 500 correos",
     unitPrice: 1990,
     price_pack2: 1990,
     price_pack3: 1990,
     unitLabel: "pack",
-    usageLabel: "2.000 correos campaña adicionales / mes",
-    availableFrom: "Pro, Premium, VIP y Platinum",
-    tooltip: "Correos de marketing adicionales para campañas a tus clientes. 2.000 correos por pack.",
+    usageLabel: "500 correos campaña adicionales / mes",
+    availableFrom: "Business y Premium",
+    tooltip: "Correos de marketing adicionales para campañas a tus clientes. 500 correos por pack.",
     icon: <Mail className="h-5 w-5" />,
     glow: "from-sky-500/20 to-sky-500/5",
     iconClass: "bg-sky-500/18 text-sky-200",
@@ -140,7 +124,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     price_pack3: 5990,
     unitLabel: "profesional",
     usageLabel: "1 staff adicional sobre el limite del plan",
-    availableFrom: "Premium, VIP y Platinum",
+    availableFrom: "Starter, Business y Premium",
     tooltip: "Agrega un profesional adicional sobre el límite de tu plan. Cada profesional tiene su propia agenda y disponibilidad.",
     icon: <Users className="h-5 w-5" />,
     glow: "from-violet-500/20 to-violet-500/5",
@@ -155,7 +139,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     price_pack3: 9990,
     unitLabel: "sucursal",
     usageLabel: "1 sucursal adicional sobre el limite del plan",
-    availableFrom: "Premium, VIP y Platinum",
+    availableFrom: "Starter, Business y Premium",
     tooltip: "Agrega una sucursal adicional sobre el límite de tu plan. Gestiona múltiples locales desde una sola cuenta.",
     icon: <Store className="h-5 w-5" />,
     glow: "from-blue-500/20 to-blue-500/5",
@@ -165,12 +149,12 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     title: "+ Cupos grupales",
     short: "Mas cupos por slot grupal.",
     detail: "por 25 cupos",
-    unitPrice: 4900,
-    price_pack2: 4900,
-    price_pack3: 4900,
+    unitPrice: 4990,
+    price_pack2: 4990,
+    price_pack3: 4990,
     unitLabel: "pack",
     usageLabel: "25 cupos adicionales por slot grupal",
-    availableFrom: "Premium, VIP y Platinum",
+    availableFrom: "Starter, Business y Premium",
     tooltip: "Aumenta la capacidad máxima de tus clases o eventos grupales en 25 cupos por slot adicional.",
     icon: <UsersRound className="h-5 w-5" />,
     glow: "from-teal-500/20 to-teal-500/5",
@@ -200,8 +184,7 @@ function discountBadge(config: ExtraConfig, currentCount: number): string | null
 
 const WA_CONFIRMACION_PACK_SIZE = 50;
 const CAMPANAS_WA_PACK_SIZE = 50;
-const IA_WA_PACK_SIZE = 500;
-const EMAILS_CAMPANA_PACK_SIZE = 2000;
+const EMAILS_CAMPANA_PACK_SIZE = 500;
 const GROUP_CAPACITY_PACK_SIZE = 25;
 
 function cycleMonthlyPrice(monthlyPrice: number, cycle: BillingCycle) {
@@ -226,18 +209,6 @@ function formatDate(dateString?: string | null) {
   });
 }
 
-function normalizePlanFromUrl(rawValue: string | null): PlanKey {
-  const raw = String(rawValue || "vip").toLowerCase();
-
-  if (raw === "starter") return "pro";
-  if (raw === "pro") return "pro";
-  if (raw === "premium") return "premium";
-  if (raw === "vip") return "vip";
-  if (raw === "platinum") return "platinum";
-
-  return "vip";
-}
-
 function planNameFromKey(planKey?: string | null) {
   if (!planKey) return "-";
   const found = plans.find((plan) => plan.key === planKey);
@@ -247,8 +218,7 @@ function planNameFromKey(planKey?: string | null) {
 function PlanIcon({ type }: { type: Plan["icon"] }) {
   if (type === "mail") return <Mail className="h-5 w-5" />;
   if (type === "sparkles") return <Sparkles className="h-5 w-5" />;
-  if (type === "crown") return <Crown className="h-5 w-5" />;
-  return <Gem className="h-5 w-5" />;
+  return <Crown className="h-5 w-5" />;
 }
 
 function SummaryLine({
@@ -297,18 +267,17 @@ function PlanesPageContent() {
 
   const initialPlan = useMemo<PlanKey | null>(() => {
     if (!hasBillingContext) return null;
-    return normalizePlanFromUrl(currentPlanParam);
+    return closestNewPlan(currentPlanParam);
   }, [hasBillingContext, currentPlanParam]);
 
   const [selectedPlanKey, setSelectedPlanKey] = useState<PlanKey>(
-    hasBillingContext && initialPlan ? initialPlan : "vip"
+    hasBillingContext && initialPlan ? initialPlan : "business"
   );
 
   const [staffExtras, setStaffExtras] = useState(0);
   const [sucursalExtras, setSucursalExtras] = useState(0);
   const [waConfirmacionExtras, setWaConfirmacionExtras] = useState(0);
   const [campanaWaExtras, setCampanaWaExtras] = useState(0);
-  const [iaWaExtras, setIaWaExtras] = useState(0);
   const [emailsCampanaExtras, setEmailsCampanaExtras] = useState(0);
   const [groupCapacityExtras, setGroupCapacityExtras] = useState(0);
 
@@ -356,11 +325,10 @@ function PlanesPageContent() {
   const supportsSucursalExtra = selectedPlan.extras.includes("sucursal");
   const supportsWaConfirmacionExtra = selectedPlan.extras.includes("wa_confirmacion");
   const supportsCampanaWaExtra = selectedPlan.extras.includes("campanas_wa");
-  const supportsIaWaExtra = selectedPlan.extras.includes("ia_wa");
   const supportsEmailsCampanaExtra = selectedPlan.extras.includes("emails_campana");
   const supportsGroupCapacityExtra = selectedPlan.extras.includes("group_capacity");
 
-  const isProSelected = selectedPlan.key === "pro";
+  const isStarterSelected = selectedPlan.key === "starter";
 
   const extrasSubtotal = useMemo(() => {
     let total = 0;
@@ -368,7 +336,6 @@ function PlanesPageContent() {
     if (supportsSucursalExtra) total += tieredAddonCost(extraConfig.sucursal, sucursalExtras);
     if (supportsWaConfirmacionExtra) total += tieredAddonCost(extraConfig.wa_confirmacion, waConfirmacionExtras);
     if (supportsCampanaWaExtra) total += tieredAddonCost(extraConfig.campanas_wa, campanaWaExtras);
-    if (supportsIaWaExtra) total += tieredAddonCost(extraConfig.ia_wa, iaWaExtras);
     if (supportsEmailsCampanaExtra) total += tieredAddonCost(extraConfig.emails_campana, emailsCampanaExtras);
     if (supportsGroupCapacityExtra) total += tieredAddonCost(extraConfig.group_capacity, groupCapacityExtras);
     return total;
@@ -377,14 +344,12 @@ function PlanesPageContent() {
     sucursalExtras,
     waConfirmacionExtras,
     campanaWaExtras,
-    iaWaExtras,
     emailsCampanaExtras,
     groupCapacityExtras,
     supportsStaffExtra,
     supportsSucursalExtra,
     supportsWaConfirmacionExtra,
     supportsCampanaWaExtra,
-    supportsIaWaExtra,
     supportsEmailsCampanaExtra,
     supportsGroupCapacityExtra,
   ]);
@@ -403,9 +368,8 @@ function PlanesPageContent() {
   const currentBranchTotal = selectedPlan.includedBranches + sucursalExtras;
   const currentWaConfirmacionTotal =
     selectedPlan.includedWaConfirmacion + waConfirmacionExtras * WA_CONFIRMACION_PACK_SIZE;
-  const currentCampanaWaTotal = campanaWaExtras * CAMPANAS_WA_PACK_SIZE;
-  const currentIaWaTotal =
-    selectedPlan.includedIaWa + iaWaExtras * IA_WA_PACK_SIZE;
+  const currentCampanaWaTotal =
+    selectedPlan.includedCampanasWa + campanaWaExtras * CAMPANAS_WA_PACK_SIZE;
   const currentEmailsCampanaTotal =
     selectedPlan.includedEmailCampaigns + emailsCampanaExtras * EMAILS_CAMPANA_PACK_SIZE;
 
@@ -417,9 +381,6 @@ function PlanesPageContent() {
     }
     if (supportsCampanaWaExtra && campanaWaExtras > 0) {
       items.push({ key: "campanas_wa", label: `Campañas WhatsApp x${campanaWaExtras}`, amount: tieredAddonCost(extraConfig.campanas_wa, campanaWaExtras), count: campanaWaExtras });
-    }
-    if (supportsIaWaExtra && iaWaExtras > 0) {
-      items.push({ key: "ia_wa", label: `IA WhatsApp x${iaWaExtras}`, amount: tieredAddonCost(extraConfig.ia_wa, iaWaExtras), count: iaWaExtras });
     }
     if (supportsEmailsCampanaExtra && emailsCampanaExtras > 0) {
       items.push({ key: "emails_campana", label: `Emails campaña x${emailsCampanaExtras}`, amount: tieredAddonCost(extraConfig.emails_campana, emailsCampanaExtras), count: emailsCampanaExtras });
@@ -440,14 +401,12 @@ function PlanesPageContent() {
     sucursalExtras,
     waConfirmacionExtras,
     campanaWaExtras,
-    iaWaExtras,
     emailsCampanaExtras,
     groupCapacityExtras,
     supportsStaffExtra,
     supportsSucursalExtra,
     supportsWaConfirmacionExtra,
     supportsCampanaWaExtra,
-    supportsIaWaExtra,
     supportsEmailsCampanaExtra,
     supportsGroupCapacityExtra,
   ]);
@@ -497,7 +456,6 @@ function PlanesPageContent() {
     else if (extraKey === "sucursal") setSucursalExtras(value);
     else if (extraKey === "wa_confirmacion") setWaConfirmacionExtras(value);
     else if (extraKey === "campanas_wa") setCampanaWaExtras(value);
-    else if (extraKey === "ia_wa") setIaWaExtras(value);
     else if (extraKey === "emails_campana") setEmailsCampanaExtras(value);
     else setGroupCapacityExtras(value);
   }
@@ -541,7 +499,6 @@ function PlanesPageContent() {
       setSucursalExtras(counts.sucursal || 0);
       setWaConfirmacionExtras(counts.wa_confirmacion || 0);
       setCampanaWaExtras(counts.campanas_wa || 0);
-      setIaWaExtras(counts.ia_wa || 0);
       setEmailsCampanaExtras(counts.emails_campana || 0);
       setGroupCapacityExtras(counts.group_capacity || 0);
     } catch (error: unknown) {
@@ -566,7 +523,6 @@ function PlanesPageContent() {
     setSucursalExtras(0);
     setWaConfirmacionExtras(0);
     setCampanaWaExtras(0);
-    setIaWaExtras(0);
     setEmailsCampanaExtras(0);
     setGroupCapacityExtras(0);
     setApplyError("");
@@ -626,39 +582,26 @@ function PlanesPageContent() {
         `WhatsApp confirmación+recordatorio: ${current.includedWaConfirmacion} → ${target.includedWaConfirmacion} msgs/mes`
       );
     }
-    if (current.includedIaWa > 0 && target.includedIaWa === 0) {
-      featuresLost.push("IA WhatsApp: ya no incluida");
-    } else if (target.includedIaWa < current.includedIaWa) {
+    if (current.includedCampanasWa > 0 && target.includedCampanasWa === 0) {
+      featuresLost.push("Campañas WhatsApp: ya no incluidas");
+    } else if (target.includedCampanasWa < current.includedCampanasWa) {
       featuresLost.push(
-        `IA WhatsApp: ${current.includedIaWa.toLocaleString("es-CL")} → ${target.includedIaWa} conversaciones/mes`
+        `Campañas WhatsApp: ${current.includedCampanasWa.toLocaleString("es-CL")} → ${target.includedCampanasWa} msgs/mes`
       );
     }
-    if (current.key === "platinum") {
-      featuresLost.push(
-        "Automatizaciones avanzadas",
-        "Onboarding personalizado",
-        "Soporte dedicado + SLA"
-      );
+    if (current.key === "premium") {
+      featuresLost.push("Soporte prioritario");
     }
-    if (target.key === "pro") {
-      featuresLost.push(
-        "Modo veterinario (fichas clinicas y mascotas)",
-        "Reservas grupales (fitness, clases, talleres)"
-      );
+    if (target.key === "starter") {
+      featuresLost.push("Modo veterinario (fichas clinicas y mascotas)");
     }
 
     const addonsCanceled: string[] = [];
-    if (target.key === "pro") {
-      addonsCanceled.push(
-        "Todos los add-ons activos (el plan Pro no admite add-ons)"
-      );
-    } else {
-      current.extras.forEach((extraKey) => {
-        if (!target.extras.includes(extraKey)) {
-          addonsCanceled.push(extraConfig[extraKey].title);
-        }
-      });
-    }
+    current.extras.forEach((extraKey) => {
+      if (!target.extras.includes(extraKey)) {
+        addonsCanceled.push(extraConfig[extraKey].title);
+      }
+    });
 
     return { featuresLost, addonsCanceled };
   }
@@ -808,7 +751,7 @@ function PlanesPageContent() {
 
   const ctaLabel =
     !hasBillingContext
-      ? isProSelected
+      ? isStarterSelected
         ? `Probar gratis ${TRIAL_LABEL}`
         : "Comenzar ahora"
       : previewType === "same_plan"
@@ -819,8 +762,8 @@ function PlanesPageContent() {
       ? "Registrar tarjeta"
       : "Cambiar ahora";
 
-  const publicCtaHref = isProSelected
-    ? "/signup?plan=pro"
+  const publicCtaHref = isStarterSelected
+    ? "/signup?plan=starter"
     : `/checkout-premium?plan=${selectedPlanKey}&cycle=${billingCycle}`;
 
   const showTenantWarning = !tenantId && Boolean(from || slug);
@@ -857,7 +800,7 @@ function PlanesPageContent() {
     cycleTotalPrice(selectedPlan.price, billingCycle) + extrasSubtotal * cycleMonths;
   const cycleTotalWithIva = cycleSubtotal + Math.round(cycleSubtotal * 0.19);
 
-  const availableAddons: ExtraKey[] = ["wa_confirmacion", "campanas_wa", "ia_wa", "emails_campana", "staff", "sucursal", "group_capacity"];
+  const availableAddons: ExtraKey[] = ["wa_confirmacion", "campanas_wa", "emails_campana", "staff", "sucursal", "group_capacity"];
   const selectedAddonsCount = extraItems.reduce((total, item) => total + item.count, 0);
   const addableAddons = availableAddons.filter(
     (extraKey) => extraSupported(extraKey) && extraValue(extraKey) === 0
@@ -868,7 +811,6 @@ function PlanesPageContent() {
     if (extraKey === "sucursal") return sucursalExtras;
     if (extraKey === "wa_confirmacion") return waConfirmacionExtras;
     if (extraKey === "campanas_wa") return campanaWaExtras;
-    if (extraKey === "ia_wa") return iaWaExtras;
     if (extraKey === "emails_campana") return emailsCampanaExtras;
     return groupCapacityExtras;
   }
@@ -876,8 +818,8 @@ function PlanesPageContent() {
   function extraSupported(extraKey: ExtraKey) {
     const supportedBySelectedPlan = selectedPlan.extras.includes(extraKey);
 
-    // WA no disponible durante trial Pro
-    if (isTrial && selectedPlanKey === "pro" && extraKey === "wa_confirmacion") {
+    // WA no disponible durante trial Starter
+    if (isTrial && selectedPlanKey === "starter" && extraKey === "wa_confirmacion") {
       return false;
     }
 
@@ -893,7 +835,7 @@ function PlanesPageContent() {
   }
 
   function extraUnitLabel(extraKey: ExtraKey, count: number) {
-    if (extraKey === "wa_confirmacion" || extraKey === "campanas_wa" || extraKey === "ia_wa" || extraKey === "emails_campana" || extraKey === "group_capacity") {
+    if (extraKey === "wa_confirmacion" || extraKey === "campanas_wa" || extraKey === "emails_campana" || extraKey === "group_capacity") {
       return count === 1 ? "pack" : "packs";
     }
     return count === 1 ? "unidad" : "unidades";
@@ -1038,7 +980,7 @@ function PlanesPageContent() {
               Iniciar sesion
             </Link>
             <Link
-              href="/signup?plan=pro"
+              href="/signup?plan=starter"
               className="inline-flex h-9 items-center justify-center rounded-lg bg-[#21d6c5] px-3 text-xs font-bold text-slate-950 shadow-[0_14px_38px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] lg:px-4 lg:text-sm"
             >
               Probar gratis
@@ -1061,8 +1003,8 @@ function PlanesPageContent() {
               </h1>
 
               <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-300 lg:text-[15px]">
-                La IA atiende clientes. Orbyx organiza el negocio con agenda,
-                campanas, WhatsApp y automatizacion.
+                Orbyx organiza tu negocio con agenda online, campañas,
+                WhatsApp y automatización.
               </p>
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
@@ -1186,7 +1128,7 @@ function PlanesPageContent() {
                       >
                         {isSelected
                           ? "Plan seleccionado"
-                          : plan.key === "pro"
+                          : plan.key === "starter"
                           ? `Probar gratis ${TRIAL_LABEL}`
                           : "Comenzar ahora"}
                       </div>
@@ -1474,7 +1416,7 @@ function PlanesPageContent() {
                       )}
                     </div>
                   </div>
-                ) : isProSelected ? (
+                ) : isStarterSelected ? (
                   <div className="mt-5 rounded-xl border border-cyan-300/15 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-100">
                     Sube a Premium para agregar extras a tu plan
                   </div>
@@ -1695,7 +1637,7 @@ function PlanesPageContent() {
 
                   <p className="flex items-center justify-center gap-2 text-center text-xs text-slate-400">
                     <Lock className="h-3.5 w-3.5 text-cyan-300" />
-                    {!hasBillingContext && isProSelected
+                    {!hasBillingContext && isStarterSelected
                       ? `Versión de prueba ${TRIAL_LABEL}, sin tarjeta de crédito. Cancela cuando quieras.`
                       : "Cancela o cambia de plan cuando quieras."}
                   </p>
@@ -1749,7 +1691,7 @@ function PlanesPageContent() {
 
       <section className="mx-auto max-w-4xl px-4 pb-10 pt-2 text-center md:px-8">
         <p className="text-xs leading-6 text-slate-500">
-          Los mensajes de WhatsApp e IA incluidos en cada plan y en los add-ons no son acumulables entre períodos. Los add-ons tienen una duración de 30 días desde la fecha de compra y se renuevan automáticamente. Los beneficios incluidos en el plan tienen la misma duración que el plan contratado. Los precios no incluyen IVA.
+          Los mensajes de WhatsApp incluidos en cada plan y en los add-ons no son acumulables entre períodos. Los add-ons tienen una duración de 30 días desde la fecha de compra y se renuevan automáticamente. Los beneficios incluidos en el plan tienen la misma duración que el plan contratado. Los precios no incluyen IVA.
         </p>
       </section>
 

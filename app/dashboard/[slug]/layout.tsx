@@ -37,6 +37,7 @@ import { useTheme } from "../../../lib/use-theme";
 import { createClient } from "../../../lib/supabase/client";
 import { PermissionsProvider, ROLE_LABEL, type ModulePermissions } from "../../../lib/permissions-context";
 import { AccountStatusWidget, useAccountStatus } from "../../../components/billing/AccountStatusWidget";
+import { getPlanLabel } from "../../../lib/plans";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -295,14 +296,7 @@ export default function DashboardLayout({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [userMenuOpen]);
 
-  const planLabel =
-    plan === "platinum"
-      ? "Platinum"
-      : plan === "vip"
-      ? "VIP"
-      : plan === "premium"
-      ? "Premium"
-      : "Pro";
+  const planLabel = getPlanLabel(plan);
 
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";

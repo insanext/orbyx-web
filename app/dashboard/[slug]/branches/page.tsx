@@ -8,6 +8,7 @@ import { Copy, HelpCircle, Pencil, Plus, Store, Users } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 import { usePermissions } from "../../../../lib/permissions-context";
+import { getPlanLabel, NEXT_PLAN_SUGGESTION, type PlanSlug } from "../../../../lib/plans";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -78,21 +79,6 @@ type NoticeTone =
   | "danger"
   | "neutral";
 
-const PLAN_LABELS: Record<string, string> = {
-  starter: "Starter",
-  pro: "Pro",
-  premium: "Premium",
-  vip: "VIP",
-  platinum: "Platinum",
-};
-
-const NEXT_PLAN_BY_CURRENT: Record<string, string | null> = {
-  starter: "premium",
-  pro: "premium",
-  premium: "vip",
-  vip: "platinum",
-  platinum: null,
-};
 
 const days: Record<number, string> = {
   0: "Domingo",
@@ -178,15 +164,6 @@ function summarizeHours(rows: BusinessHour[]) {
     })
     .filter(Boolean)
     .join(" · ");
-}
-
-function normalizePlanSlug(planSlug?: string | null) {
-  const normalized = String(planSlug || "starter").toLowerCase();
-  if (normalized === "starter") return "pro";
-  if (["pro", "premium", "vip", "platinum"].includes(normalized)) {
-    return normalized;
-  }
-  return "pro";
 }
 
 function getNoticeStyles(tone: NoticeTone): {
@@ -323,7 +300,7 @@ export default function BranchesPage() {
   const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [globalAddress, setGlobalAddress] = useState("");
-  const [plan, setPlan] = useState("pro");
+  const [plan, setPlan] = useState<PlanSlug>("starter");
   // Límite real de sucursales (base del plan + add-on "sucursal" activo),
   // desde GET /billing/addons — mismo endpoint que ya usa AddonManager.tsx.
   // null mientras carga o si falló el fetch; no bloquea creación en ese
@@ -667,7 +644,7 @@ export default function BranchesPage() {
       setTenantId(currentTenantId);
       setBusinessName(businessData.business.name || slug);
       setGlobalAddress(businessData.business.address || "");
-      setPlan(normalizePlanSlug(businessData.business.plan_slug));
+      setPlan((businessData.business.plan_slug as PlanSlug) || "starter");
 
       await loadBranches(currentTenantId);
     } catch (error: unknown) {
@@ -1055,9 +1032,9 @@ export default function BranchesPage() {
     }
   }
 
-  const planLabel = PLAN_LABELS[plan] || "Pro";
-  const nextPlan = NEXT_PLAN_BY_CURRENT[plan] || null;
-  const nextPlanLabel = nextPlan ? PLAN_LABELS[nextPlan] || nextPlan : null;
+  const planLabel = getPlanLabel(plan);
+  const nextPlan = NEXT_PLAN_SUGGESTION[plan] || null;
+  const nextPlanLabel = nextPlan ? getPlanLabel(nextPlan) : null;
   const usersCount = 7;
 
   return (
