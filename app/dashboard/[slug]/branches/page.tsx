@@ -859,7 +859,7 @@ export default function BranchesPage() {
         body: JSON.stringify({
           tenant_id: tenantId,
           name: editForm.name,
-          slug: editForm.slug,
+          ...(editForm.slug.trim() ? { slug: editForm.slug } : {}),
           address: editForm.use_global_contact ? "" : editForm.address,
           phone: editForm.use_global_contact ? "" : editForm.phone,
           whatsapp: editForm.use_global_contact ? "" : editForm.whatsapp,
@@ -1409,10 +1409,25 @@ export default function BranchesPage() {
                           Editando…
                         </span>
                       ) : canEditSucursales ? (
-                        <button type="button" onClick={() => beginEditBranch(branch)} disabled={saving} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
-                          <Pencil className="h-4 w-4" />
-                          Editar
-                        </button>
+                        <>
+                          <button type="button" onClick={() => beginEditBranch(branch)} disabled={saving} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                            <Pencil className="h-4 w-4" />
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleBranchActive(branch)}
+                            disabled={saving || (branch.is_active === false && reachedLimit)}
+                            className="inline-flex h-10 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{
+                              borderColor: isActive ? "rgba(244,63,94,0.34)" : "rgba(16,185,129,0.34)",
+                              background: "var(--bg-card)",
+                              color: isActive ? "rgb(244 63 94)" : "rgb(16 185 129)",
+                            }}
+                          >
+                            {isActive ? "Desactivar" : "Activar"}
+                          </button>
+                        </>
                       ) : null}
                     </div>
 
