@@ -1060,7 +1060,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                               {config.title}
                             </span>
                             <span className="block text-xs" style={{ color: "var(--text-muted)" }}>
-                              {formatCLP(config.unitPrice)} + IVA (pago único)
+                              {formatCLP(config.unitPrice)} + IVA /mes
                             </span>
                           </span>
                         </span>

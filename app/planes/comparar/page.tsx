@@ -121,7 +121,7 @@ const comparisonRows: ComparisonRow[] = [
       const n = plans.find((p) => p.key === key)!.includedCampanasWa;
       return n > 0 ? `${n} msgs / mes incluidos` : "—";
     }),
-    info: "Mensajes masivos de marketing por WhatsApp. Solo Premium las incluye de base; no está disponible como add-on en los otros planes.",
+    info: "Mensajes masivos de marketing por WhatsApp. Solo Premium las incluye de base; disponible como add-on desde Business.",
     highlight: true,
   },
   {
@@ -348,7 +348,7 @@ export default function CompararPlanesPage() {
               </p>
               <p className="mt-2 text-sm leading-6 text-amber-50/90">
                 Los mensajes WhatsApp no son acumulables entre períodos. Se renuevan mensualmente.
-                Campañas WhatsApp: incluidas solo en <span className="font-semibold">Premium</span> (50 msgs/mes); no disponibles como add-on en Starter ni Business.
+                Campañas WhatsApp: incluidas de base solo en <span className="font-semibold">Premium</span> (50 msgs/mes); disponibles como add-on desde Business (no en Starter).
                 * WhatsApp conf+rec en Starter: disponible al activar plan pagado, no durante el trial de {TRIAL_LABEL}.
               </p>
             </div>

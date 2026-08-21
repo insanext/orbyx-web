@@ -1548,7 +1548,7 @@ function PlanesPageContent() {
                                       {config.title}
                                     </span>
                                     <span className="block text-xs text-slate-400">
-                                      {formatCLP(config.unitPrice)} + IVA (pago único)
+                                      {formatCLP(config.unitPrice)} + IVA /mes
                                     </span>
                                   </span>
                                 </span>

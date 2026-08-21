@@ -183,7 +183,10 @@ export type Plan = {
 // add-ons puede CONTRATAR ese plan (isAddonAvailableForPlan en backend):
 // - wa_confirmacion, staff, sucursal, group_capacity: disponibles en los 3.
 // - emails_campana: NO en starter (min_plan business).
-// - campanas_wa: SOLO premium (min_plan premium, available_for ["premium"]).
+// - campanas_wa: NO en starter (min_plan business, desde el ajuste
+//   2026-08-21 que revierte la restricción "solo Premium" de la Sesión 3 —
+//   Business ahora puede comprarlo como add-on aunque no lo incluya gratis
+//   de fábrica, ver includedCampanasWa: 0 más abajo).
 export const plans: Plan[] = [
   {
     key: "starter",
@@ -239,7 +242,7 @@ export const plans: Plan[] = [
     includedCampanasWa: 0,
     includedEmailCampaigns: 500,
     includedGroupCapacity: 10,
-    extras: ["wa_confirmacion", "emails_campana", "staff", "sucursal", "group_capacity"],
+    extras: ["wa_confirmacion", "campanas_wa", "emails_campana", "staff", "sucursal", "group_capacity"],
     summaryTitle: "Plan Business",
     summaryIntro:
       "Mayor control comercial, más profesionales y seguimiento más consistente.",
