@@ -15,6 +15,7 @@ import {
   type PlanKey,
   type ExtraKey,
   type BillingCycle,
+  type FeatureItem,
 } from "@/lib/plans";
 import {
   BarChart3,
@@ -219,6 +220,79 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
   if (type === "mail") return <Mail className="h-5 w-5" />;
   if (type === "sparkles") return <Sparkles className="h-5 w-5" />;
   return <Crown className="h-5 w-5" />;
+}
+
+// Agrupa, por título, las features que representan el mismo concepto en los
+// 3 planes (profesionales, sucursales, WhatsApp confirmación, etc.) para que
+// se puedan alinear fila por fila entre tarjetas. Los conceptos que no son
+// comunes (ej. "Soporte prioritario", "Modo veterinario") quedan en una cola
+// sin alinear, en su orden original. Es solo una transformación de
+// presentación sobre plan.features — no modifica lib/plans.ts.
+const COMPARABLE_FEATURE_MATCHERS: ((title: string) => boolean)[] = [
+  (title) => /profesionales? incluid/i.test(title),
+  (title) => /sucursal(es)? incluida/i.test(title),
+  (title) => /^WhatsApp confirmaci/i.test(title),
+  (title) => /^Campañas email/i.test(title),
+  (title) => /^Reservas grupales/i.test(title),
+];
+
+function splitFeatureRows(features: FeatureItem[]) {
+  const aligned: FeatureItem[] = [];
+
+  COMPARABLE_FEATURE_MATCHERS.forEach((test) => {
+    const match = features.find((feature) => test(feature.title));
+    if (match) aligned.push(match);
+  });
+
+  const exclusive = features.filter((feature) => !aligned.includes(feature));
+
+  return { aligned, exclusive };
+}
+
+function FeatureRow({
+  feature,
+  plan,
+  isTrial,
+  alignRow = false,
+}: {
+  feature: FeatureItem;
+  plan: Plan;
+  isTrial: boolean;
+  alignRow?: boolean;
+}) {
+  const isEffectiveLocked = feature.locked || (feature.trialLocked && isTrial);
+
+  return (
+    <div className={`flex items-start gap-3 ${alignRow ? "min-h-[36px]" : ""}`}>
+      {isEffectiveLocked ? (
+        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+      ) : (
+        <Check
+          className={`mt-0.5 h-4 w-4 shrink-0 ${
+            feature.highlight ? "text-cyan-300" : plan.accentClass
+          }`}
+        />
+      )}
+      <span
+        className={`text-[13px] leading-5 ${
+          isEffectiveLocked
+            ? "text-slate-500"
+            : feature.highlight
+            ? "font-semibold text-cyan-100"
+            : "text-slate-300"
+        }`}
+      >
+        {feature.title}
+        {feature.trialLocked && (
+          <span className="mt-0.5 block text-[11px] text-slate-500">
+            {isTrial
+              ? "No incluido en versión de prueba"
+              : "Se activa al pagar el plan"}
+          </span>
+        )}
+      </span>
+    </div>
+  );
 }
 
 function SummaryLine({
@@ -800,7 +874,11 @@ function PlanesPageContent() {
     cycleTotalPrice(selectedPlan.price, billingCycle) + extrasSubtotal * cycleMonths;
   const cycleTotalWithIva = cycleSubtotal + Math.round(cycleSubtotal * 0.19);
 
-  const availableAddons: ExtraKey[] = ["wa_confirmacion", "campanas_wa", "emails_campana", "staff", "sucursal", "group_capacity"];
+  // "staff" (+1 Profesional) se eligió aparte, en un control dentro de la
+  // tarjeta del plan seleccionado — ver el bloque "+ Profesionales" en el
+  // render de cada tarjeta. Sigue usando el mismo estado (staffExtras) y la
+  // misma lógica de precio/limites; solo cambió el punto de entrada visual.
+  const availableAddons: ExtraKey[] = ["wa_confirmacion", "campanas_wa", "emails_campana", "sucursal", "group_capacity"];
   const selectedAddonsCount = extraItems.reduce((total, item) => total + item.count, 0);
   const addableAddons = availableAddons.filter(
     (extraKey) => extraSupported(extraKey) && extraValue(extraKey) === 0
@@ -986,7 +1064,7 @@ function PlanesPageContent() {
           </div>
         </header>
 
-        <div className="grid gap-5 pt-5 xl:grid-cols-[minmax(0,1fr)_430px] 2xl:grid-cols-[minmax(0,1fr)_470px]">
+        <div className="grid gap-4 pt-5 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_410px] 2xl:grid-cols-[minmax(0,1fr)_460px]">
           <div className="min-w-0">
             <div className="mx-auto max-w-3xl text-center">
               <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-[2.65rem] lg:leading-[1.04] 2xl:text-[2.95rem]">
@@ -1040,10 +1118,11 @@ function PlanesPageContent() {
             </div>
 
             <div className="relative mt-4 md:mt-6">
-            <div id="planes" className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:grid md:snap-none md:overflow-visible md:pb-0 md:grid-cols-2 2xl:grid-cols-4">
+            <div id="planes" className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:grid md:snap-none md:overflow-visible md:pb-0 md:grid-cols-3">
               {plans.map((plan) => {
                 const isSelected = selectedPlan.key === plan.key;
                 const isCurrentCard = hasBillingContext && initialPlan === plan.key;
+                const { aligned, exclusive } = splitFeatureRows(plan.features);
 
                 return (
                   <motion.button
@@ -1086,24 +1165,29 @@ function PlanesPageContent() {
                         <PlanIcon type={plan.icon} />
                       </span>
 
-                      <p className="mt-4 text-xl font-semibold text-white">{plan.name}</p>
-                      <p className="mt-2 min-h-[44px] text-sm leading-6 text-slate-300">
-                        {plan.subtitle}
-                      </p>
-
-                      {billingCycle !== "mensual" ? (
-                        <p className="mt-3 text-sm font-semibold text-slate-500 line-through">
-                          {formatCLP(plan.price * billingCycleConfig[billingCycle].months)}
+                      {/* Alto fijo: nombre+descripción+precio ocupan siempre el mismo
+                          espacio entre las 3 tarjetas, así el botón de abajo queda
+                          en la misma línea sin importar cuánto texto tenga cada plan. */}
+                      <div className="min-h-[180px]">
+                        <p className="mt-4 text-xl font-semibold text-white">{plan.name}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-300">
+                          {plan.subtitle}
                         </p>
-                      ) : null}
 
-                      <div className={`${billingCycle !== "mensual" ? "mt-1" : "mt-3"} flex items-end gap-1`}>
-                        <span className="text-2xl font-semibold leading-none tracking-tight text-white sm:text-[1.75rem]">
-                          {formatCLP(cycleTotalPrice(plan.price, billingCycle))}
-                        </span>
-                        <span className="pb-1 text-sm text-slate-400">
-                          {billingCycle === "mensual" ? plan.ivaLabel : "+ IVA"}
-                        </span>
+                        {billingCycle !== "mensual" ? (
+                          <p className="mt-3 text-sm font-semibold text-slate-500 line-through">
+                            {formatCLP(plan.price * billingCycleConfig[billingCycle].months)}
+                          </p>
+                        ) : null}
+
+                        <div className={`${billingCycle !== "mensual" ? "mt-1" : "mt-3"} flex items-end gap-1`}>
+                          <span className="text-2xl font-semibold leading-none tracking-tight text-white sm:text-[1.75rem]">
+                            {formatCLP(cycleTotalPrice(plan.price, billingCycle))}
+                          </span>
+                          <span className="pb-1 text-sm text-slate-400">
+                            {billingCycle === "mensual" ? plan.ivaLabel : "+ IVA"}
+                          </span>
+                        </div>
                       </div>
 
                       <div
@@ -1120,43 +1204,102 @@ function PlanesPageContent() {
                           : "Comenzar ahora"}
                       </div>
 
-                      <div className="mt-4 space-y-2.5 pb-1">
-                        {plan.features.map((feature) => {
-                          const isEffectiveLocked =
-                            feature.locked || (feature.trialLocked && isTrial);
-                          return (
-                            <div key={`${plan.key}-${feature.title}`} className="flex items-start gap-3">
-                              {isEffectiveLocked ? (
-                                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-                              ) : (
-                                <Check
-                                  className={`mt-0.5 h-4 w-4 shrink-0 ${
-                                    feature.highlight ? "text-cyan-300" : plan.accentClass
-                                  }`}
-                                />
-                              )}
-                              <span
-                                className={`text-[13px] leading-5 ${
-                                  isEffectiveLocked
-                                    ? "text-slate-500"
-                                    : feature.highlight
-                                    ? "font-semibold text-cyan-100"
-                                    : "text-slate-300"
-                                }`}
-                              >
-                                {feature.title}
-                                {feature.trialLocked && (
-                                  <span className="mt-0.5 block text-[11px] text-slate-500">
-                                    {isTrial
-                                      ? "No incluido en versión de prueba"
-                                      : "Se activa al pagar el plan"}
-                                  </span>
-                                )}
-                              </span>
-                            </div>
-                          );
-                        })}
+                      <div className="mt-4 pb-1">
+                        {/* Filas comparables (profesionales, sucursales, WhatsApp...)
+                            alineadas en el mismo orden/altura entre las 3 tarjetas.
+                            Lo exclusivo de cada plan va después, sin forzar alineación. */}
+                        {aligned.length > 0 ? (
+                          <div className="space-y-2.5">
+                            {aligned.map((feature) => (
+                              <FeatureRow
+                                key={`${plan.key}-${feature.title}`}
+                                feature={feature}
+                                plan={plan}
+                                isTrial={isTrial}
+                                alignRow
+                              />
+                            ))}
+                          </div>
+                        ) : null}
+                        {exclusive.length > 0 ? (
+                          <div
+                            className={`space-y-2.5 ${
+                              aligned.length > 0 ? "mt-3 border-t border-white/8 pt-3" : ""
+                            }`}
+                          >
+                            {exclusive.map((feature) => (
+                              <FeatureRow
+                                key={`${plan.key}-${feature.title}`}
+                                feature={feature}
+                                plan={plan}
+                                isTrial={isTrial}
+                              />
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
+
+                      {/* + Profesionales: reubicado desde "Agregar add-ons" del panel
+                          lateral (ver comentario en availableAddons). Mismo estado
+                          (staffExtras) y mismas funciones (increaseExtra/decreaseExtra)
+                          que usaba el panel — solo cambia dónde se controla. Solo se
+                          muestra en la tarjeta seleccionada porque staffExtras es un
+                          único valor global ligado al plan seleccionado (se resetea al
+                          cambiar de plan, igual que antes de este cambio). */}
+                      {isSelected && !hasBillingContext && extraSupported("staff") ? (
+                        <div
+                          className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2.5"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-white">+ Profesionales</p>
+                            <p className="mt-0.5 text-[11px] text-slate-400">
+                              {plan.includedStaff} incluido{plan.includedStaff === 1 ? "" : "s"}
+                              {staffExtras > 0
+                                ? ` + ${staffExtras} adicional${staffExtras > 1 ? "es" : ""}`
+                                : ""}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center rounded-lg border border-white/12 bg-black/25">
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              aria-label="Quitar profesional"
+                              aria-disabled={staffExtras === 0}
+                              onClick={() => decreaseExtra("staff")}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  decreaseExtra("staff");
+                                }
+                              }}
+                              className={`inline-flex h-9 w-9 items-center justify-center text-slate-200 transition hover:bg-white/8 ${
+                                staffExtras === 0 ? "cursor-not-allowed opacity-40" : "cursor-pointer"
+                              }`}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </div>
+                            <span className="min-w-8 text-center text-sm font-semibold text-white">
+                              {staffExtras}
+                            </span>
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              aria-label="Agregar profesional"
+                              onClick={() => increaseExtra("staff")}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  increaseExtra("staff");
+                                }
+                              }}
+                              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center text-slate-200 transition hover:bg-white/8"
+                            >
+                              +
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                     </div>
                   </motion.button>
@@ -1168,7 +1311,7 @@ function PlanesPageContent() {
 
             <section className="mt-5 flex flex-col items-center gap-3">
               <p className="text-center text-sm text-slate-400">
-                Potencia tu plan con add-ons desde el panel lateral →
+                Potencia tu plan con add-ons →
               </p>
               <Link
                 href="/planes/comparar"
@@ -1206,7 +1349,7 @@ function PlanesPageContent() {
             </p>
           </div>
 
-          <aside className="fixed inset-x-0 bottom-0 z-40 md:static md:z-auto xl:sticky xl:top-4 xl:self-start">
+          <aside className="fixed inset-x-0 bottom-0 z-40 md:static md:z-auto lg:sticky lg:top-4 lg:self-start">
             <div className="overflow-hidden rounded-t-[18px] border border-white/12 bg-[#06101d]/95 shadow-[0_-12px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl md:rounded-[18px] md:bg-[#06101d]/90 md:shadow-[0_24px_90px_rgba(0,0,0,0.32)]">
               {/* Barra fija mobile: muestra plan + total y expande el resumen hacia arriba */}
               <button
