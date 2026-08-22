@@ -954,9 +954,7 @@ function PlanesPageContent() {
       <section className="relative mx-auto w-full max-w-[1760px] px-3 pb-28 pt-3 sm:px-5 md:pb-6 lg:px-7">
         <header className="flex items-center justify-between gap-3 border-b border-white/8 pb-3">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.22)]">
-              <Sparkles className="h-4 w-4" />
-            </span>
+            <img src="/orbyx-mark-dark.png" alt="Orbyx" className="h-8 w-8" />
             <span className="text-lg font-bold tracking-tight sm:text-xl">Orbyx</span>
           </Link>
 
@@ -991,23 +989,12 @@ function PlanesPageContent() {
         <div className="grid gap-5 pt-5 xl:grid-cols-[minmax(0,1fr)_430px] 2xl:grid-cols-[minmax(0,1fr)_470px]">
           <div className="min-w-0">
             <div className="mx-auto max-w-3xl text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/8 px-3 py-1.5 text-[11px] font-semibold text-cyan-200 shadow-[0_0_34px_rgba(34,211,238,0.12)]">
-                <Sparkles className="h-3.5 w-3.5" />
-                Planes simples, sin complicaciones
-                <Sparkles className="h-3.5 w-3.5" />
-              </div>
-
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-[2.65rem] lg:leading-[1.04] 2xl:text-[2.95rem]">
+              <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-[2.65rem] lg:leading-[1.04] 2xl:text-[2.95rem]">
                 Elige el plan ideal para hacer{" "}
                 <span className="text-[#24e0d0]">crecer tu negocio</span>
               </h1>
 
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-300 lg:text-[15px]">
-                Orbyx organiza tu negocio con agenda online, campañas,
-                WhatsApp y automatización.
-              </p>
-
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                 <div className="inline-flex w-full max-w-md rounded-full border border-white/10 bg-white/6 p-1 text-xs font-semibold text-slate-300 sm:w-auto">
                   {(Object.keys(billingCycleConfig) as BillingCycle[]).map((cycle) => {
                     const config = billingCycleConfig[cycle];
@@ -1415,10 +1402,6 @@ function PlanesPageContent() {
                         "Los add-ons ahora se gestionan desde Facturación y pago → Add-ons en tu dashboard."
                       )}
                     </div>
-                  </div>
-                ) : isStarterSelected ? (
-                  <div className="mt-5 rounded-xl border border-cyan-300/15 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-100">
-                    Sube a Premium para agregar extras a tu plan
                   </div>
                 ) : (
                 <div className="mt-5">

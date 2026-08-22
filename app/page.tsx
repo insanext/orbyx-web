@@ -5,17 +5,14 @@ import {
   ArrowRight,
   BarChart3,
   Bell,
-  Bot,
   CalendarCheck2,
   CalendarDays,
   CheckCircle2,
   LayoutDashboard,
   Megaphone,
-  MessageCircle,
   Power,
   RefreshCcw,
   Send,
-  TrendingUp,
   Users,
   Zap,
 } from "lucide-react";
@@ -57,11 +54,11 @@ function LandingContent() {
   ];
 
   const steps = [
-    { icon: MessageCircle, title: "El cliente escribe", desc: "por WhatsApp" },
-    { icon: Bot, title: "Orbyx responde", desc: "y entiende su solicitud" },
-    { icon: CalendarDays, title: "Agenda la reserva", desc: "automáticamente" },
-    { icon: Bell, title: "Confirma y recuerda", desc: "y reduce ausencias" },
-    { icon: TrendingUp, title: "Tú visualizas todo", desc: "y haces crecer tu negocio" },
+    { icon: CalendarDays, title: "El cliente reserva", desc: "desde tu web, a cualquier hora" },
+    { icon: CalendarCheck2, title: "Tu agenda se organiza", desc: "horarios, staff y sucursales al día" },
+    { icon: Bell, title: "Confirma y recuerda", desc: "por WhatsApp y email, sin ausencias" },
+    { icon: LayoutDashboard, title: "Ves todo en un solo lugar", desc: "reservas, clientes y métricas" },
+    { icon: RefreshCcw, title: "Vuelves a contactarlos", desc: "con campañas cuando dejan de venir" },
   ];
 
   const ctaBadges = [`${TRIAL_LABEL} gratis`, "Sin tarjeta de crédito", "Cancelas cuando quieras"];
@@ -321,13 +318,17 @@ function LandingContent() {
               <div className="mx-auto h-[6px] w-[45%] rounded-b-lg bg-[var(--pub-border)]" />
             </div>
 
-            {/* WhatsApp mockup — campaña de reactivación, no chat de soporte */}
-            <div className="mx-auto w-full max-w-[260px] shrink-0 rounded-[22px] border border-[var(--pub-border)] bg-[#1a1a1a] p-2.5 shadow-[0_20px_50px_var(--pub-shadow-color)]">
-              <div className="rounded-[16px] border border-[#333] bg-[#efe7dc] p-2.5 text-slate-950">
+            {/* WhatsApp mockup — campaña de reactivación, con forma de smartphone */}
+            <div className="mx-auto w-full max-w-[240px] shrink-0 rounded-[38px] border border-[var(--pub-border)] bg-[#1a1a1a] p-3 shadow-[0_20px_50px_var(--pub-shadow-color)]">
+              <div className="mb-2 flex justify-center">
+                <div className="h-1.5 w-14 rounded-full bg-[#3a3a3a]" />
+              </div>
+
+              <div className="rounded-[20px] border border-[#333] bg-[#efe7dc] p-2.5 text-slate-950">
                 <div className="mb-2.5 flex items-center justify-between rounded-t-[12px] bg-[#1a1a1a] px-2.5 py-2.5 text-white">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25d366] text-white">
-                      <MessageCircle className="h-5 w-5" />
+                    <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white">
+                      <img src="/orbyx-mark.png" alt="Orbyx" className="h-6 w-6 object-contain" />
                     </div>
                     <div>
                       <p className="text-xs font-bold">Orbyx</p>
@@ -350,17 +351,18 @@ function LandingContent() {
                   </div>
                 </div>
               </div>
+
+              <div className="mt-2 flex justify-center">
+                <div className="h-1 w-20 rounded-full bg-[#3a3a3a]" />
+              </div>
             </div>
           </div>
 
           {/* Platform benefits */}
           <div className="lg:pl-8">
-            <div className="inline-flex items-center rounded-full border border-[var(--pub-border)] bg-[var(--pub-bg-soft)] px-3 py-2 text-xs font-medium text-[var(--pub-text-muted)]">
-              Plataforma completa
-            </div>
             <h2
               style={serif}
-              className="mt-5 text-3xl leading-tight tracking-[-0.02em] text-[var(--pub-text)] sm:text-4xl lg:text-[44px]"
+              className="text-3xl leading-tight tracking-[-0.02em] text-[var(--pub-text)] sm:text-4xl lg:text-[44px]"
             >
               Todo lo que tu negocio necesita, en una sola plataforma.
             </h2>
@@ -387,14 +389,11 @@ function LandingContent() {
 
       {/* ── CASOS DE USO ── */}
       <section id="casos" className="relative px-4 py-16 sm:px-6 lg:px-10">
-        <div className="mx-auto max-w-[1360px] rounded-[24px] border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] p-5 shadow-sm sm:p-8">
+        <div className="mx-auto max-w-[1360px]">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="mx-auto inline-flex rounded-full border border-[var(--pub-border)] bg-[var(--pub-bg-soft)] px-3 py-2 text-xs font-medium text-[var(--pub-text-muted)]">
-              Así de simple
-            </div>
             <h2
               style={serif}
-              className="mt-4 text-3xl tracking-[-0.02em] text-[var(--pub-text)] sm:text-4xl"
+              className="text-3xl tracking-[-0.02em] text-[var(--pub-text)] sm:text-4xl"
             >
               Reservar debería ser así de fácil.
             </h2>
@@ -489,10 +488,10 @@ function LandingContent() {
                 style={serif}
                 className="mt-3 max-w-[300px] text-xl leading-8 text-[var(--pub-text)]"
               >
-                Más de 500 negocios ya confían en Orbyx.
+                Únete a los negocios que ya organizan su agenda y hacen crecer su cartera de clientes con Orbyx.
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--pub-text-muted)]">
-                Veterinarias, clases, talleres y servicios profesionales operando con menos carga manual.
+                Veterinarias, clases, talleres y servicios profesionales que ordenan su día a día y hacen que sus clientes vuelvan.
               </p>
             </div>
           </div>
