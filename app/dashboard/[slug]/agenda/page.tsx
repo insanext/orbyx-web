@@ -3283,6 +3283,43 @@ const hasPendingClose = pendingCloseCount > 0;
   </div>
   </div>
 
+  <svg
+    className="pointer-events-none absolute right-7 top-1/2 hidden -translate-y-1/2 sm:block"
+    width="150"
+    height="88"
+    viewBox="0 0 150 88"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M40 78 C28 70 26 54 36 44 C36 58 38 68 48 78 Z" fill="#6EE7B7" opacity="0.55" />
+    <path d="M48 80 C38 74 37 60 46 52 C46 64 48 72 56 80 Z" fill="#34D399" opacity="0.55" />
+    <path d="M70 6 L92 82 L48 82 Z" fill="#3B82F6" />
+    <rect x="46" y="16" width="58" height="54" rx="9" fill="#FFFFFF" stroke="#DDE3EF" strokeWidth="1.5" />
+    <rect x="54" y="7" width="5" height="16" rx="2.5" fill="#6366F1" />
+    <rect x="66" y="7" width="5" height="16" rx="2.5" fill="#6366F1" />
+    <rect x="78" y="7" width="5" height="16" rx="2.5" fill="#6366F1" />
+    <rect x="90" y="7" width="5" height="16" rx="2.5" fill="#6366F1" />
+    <rect x="52" y="24" width="8" height="8" rx="2" fill="#FB7185" />
+    <rect x="62" y="24" width="8" height="8" rx="2" fill="#FB7185" />
+    <rect x="72" y="24" width="8" height="8" rx="2" fill="#FB7185" />
+    <rect x="82" y="24" width="8" height="8" rx="2" fill="#FB7185" />
+    <rect x="92" y="24" width="8" height="8" rx="2" fill="#FB7185" />
+    <rect x="52" y="36" width="8" height="8" rx="2" fill="#93C5FD" />
+    <rect x="62" y="36" width="8" height="8" rx="2" fill="#C4B5FD" />
+    <rect x="72" y="36" width="8" height="8" rx="2" fill="#93C5FD" />
+    <rect x="82" y="36" width="8" height="8" rx="2" fill="#C4B5FD" />
+    <rect x="92" y="36" width="8" height="8" rx="2" fill="#93C5FD" />
+    <rect x="52" y="48" width="8" height="8" rx="2" fill="#C4B5FD" />
+    <rect x="62" y="48" width="8" height="8" rx="2" fill="#93C5FD" />
+    <rect x="72" y="48" width="8" height="8" rx="2" fill="#C4B5FD" />
+    <rect x="82" y="48" width="8" height="8" rx="2" fill="#93C5FD" />
+    <rect x="92" y="48" width="8" height="8" rx="2" fill="#C4B5FD" />
+    <circle cx="104" cy="68" r="17" fill="#FFFFFF" stroke="#3B82F6" strokeWidth="3.5" />
+    <line x1="104" y1="68" x2="104" y2="58" stroke="#3B82F6" strokeWidth="2.2" strokeLinecap="round" />
+    <line x1="104" y1="68" x2="111" y2="68" stroke="#3B82F6" strokeWidth="2.2" strokeLinecap="round" />
+    <path d="M118 80 C130 72 132 56 122 46 C122 60 120 70 110 80 Z" fill="#6EE7B7" opacity="0.6" />
+    <path d="M126 82 C136 76 138 62 130 54 C129 64 126 72 118 82 Z" fill="#34D399" opacity="0.55" />
+  </svg>
+
   </div>
 </div>
 
