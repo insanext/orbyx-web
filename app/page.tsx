@@ -44,10 +44,8 @@ function LandingContent() {
   ];
 
   const automationCards = [
-    { icon: MessageCircle, title: "Responde al instante", desc: "Tus clientes escriben, Orbyx responde" },
-    { icon: CalendarCheck2, title: "Agenda automáticamente", desc: "Convierte conversaciones en reservas" },
-    { icon: Bell, title: "Confirma y recuerda", desc: "Menos ausencias, más clientes felices" },
-    { icon: RefreshCcw, title: "Recupera y fideliza", desc: "Campañas y seguimiento automático" },
+    { icon: CalendarCheck2, title: "Agenda organizada", desc: "Horarios, servicios, staff y reservas bajo control." },
+    { icon: RefreshCcw, title: "Clientes que vuelven", desc: "Mantén el contacto y vuelve a activar a quienes dejaron de venir." },
   ];
 
   const platformBenefits = [
@@ -100,22 +98,18 @@ function LandingContent() {
 
           <div className="grid gap-10 pb-8 pt-14 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-12 lg:pb-14 lg:pt-20">
             <div className="max-w-[660px]">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--pub-border)] bg-[var(--pub-bg-soft)] px-3 py-2 text-xs font-medium text-[var(--pub-text-muted)]">
-                Tu negocio, funcionando 24/7
-              </div>
-
               <h1
                 style={serif}
-                className="mt-8 text-[40px] leading-[1.05] tracking-[-0.02em] text-[var(--pub-text)] sm:text-[54px] lg:text-[66px]"
+                className="text-[40px] leading-[1.05] tracking-[-0.02em] text-[var(--pub-text)] sm:text-[54px] lg:text-[66px]"
               >
-                Tu agenda, ordenada.
-                <span className="block">Tus reservas, en automático.</span>
+                Organiza tu agenda.
+                <span className="block">Haz que tus clientes vuelvan.</span>
               </h1>
 
               <p className="mt-6 max-w-[560px] text-base leading-8 text-[var(--pub-text-muted)] sm:text-lg">
-                Orbyx organiza horarios, sucursales y staff con reglas que tú
-                defines, y responde por WhatsApp para confirmar citas sin que
-                nadie tenga que estar pendiente del chat.
+                Orbyx ordena tu día a día y te ayuda a mantener una relación
+                activa con tus clientes. Gestiona tus reservas, confirma sus
+                citas y vuelve a contactarlos cuando sea momento de regresar.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -327,7 +321,7 @@ function LandingContent() {
               <div className="mx-auto h-[6px] w-[45%] rounded-b-lg bg-[var(--pub-border)]" />
             </div>
 
-            {/* WhatsApp mockup — al lado de la agenda, no superpuesto */}
+            {/* WhatsApp mockup — campaña de reactivación, no chat de soporte */}
             <div className="mx-auto w-full max-w-[260px] shrink-0 rounded-[22px] border border-[var(--pub-border)] bg-[#1a1a1a] p-2.5 shadow-[0_20px_50px_var(--pub-shadow-color)]">
               <div className="rounded-[16px] border border-[#333] bg-[#efe7dc] p-2.5 text-slate-950">
                 <div className="mb-2.5 flex items-center justify-between rounded-t-[12px] bg-[#1a1a1a] px-2.5 py-2.5 text-white">
@@ -336,29 +330,23 @@ function LandingContent() {
                       <MessageCircle className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold">Orbyx Asistente</p>
-                      <p className="text-[10px] text-[#888]">en línea</p>
+                      <p className="text-xs font-bold">Orbyx</p>
+                      <p className="text-[10px] text-[#888]">Campaña automática</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-2 px-1 pb-1 text-xs">
-                  <div className="max-w-[80%] rounded-xl rounded-tl-sm bg-white px-2.5 py-1.5 shadow-sm">
-                    <p>¡Hola! 👋 ¿En qué puedo ayudarte?</p>
-                    <p className="mt-1 text-right text-[9px] text-slate-400">11:30 a.m.</p>
+                  <div className="mx-auto max-w-[92%] rounded-full bg-black/5 px-2.5 py-1 text-center text-[9px] font-medium text-slate-500">
+                    Clientes sin reservar hace 30 días
                   </div>
-                  <div className="ml-auto max-w-[72%] rounded-xl rounded-tr-sm bg-[#d7f8cb] px-2.5 py-1.5 shadow-sm">
-                    <p>Quiero agendar hora</p>
-                    <p className="mt-1 text-right text-[9px] text-slate-400">11:30 a.m.</p>
-                  </div>
-                  <div className="max-w-[88%] rounded-xl rounded-tl-sm bg-white px-2.5 py-1.5 shadow-sm">
-                    <p className="mb-1">Tienes estos horarios:</p>
-                    <p>📅 Hoy 16:00 · Mañana 10:00</p>
-                    <p className="mt-1 text-right text-[9px] text-slate-400">11:31 a.m.</p>
-                  </div>
-                  <div className="max-w-[84%] rounded-xl rounded-tl-sm bg-white px-2.5 py-1.5 shadow-sm">
-                    <p>¡Listo! ✅ Tu hora ha sido agendada.</p>
-                    <p className="mt-1 text-right text-[9px] text-slate-400">11:31 a.m.</p>
+                  <div className="max-w-[92%] rounded-xl rounded-tl-sm bg-white px-2.5 py-1.5 shadow-sm">
+                    <p>
+                      Hola Camila 👋 Hace 1 mes de tu última visita. Como
+                      cliente preferente, tienes 15% OFF en tu próxima
+                      reserva. Agenda nuevamente →
+                    </p>
+                    <p className="mt-1 text-right text-[9px] text-slate-400">10:02 a.m.</p>
                   </div>
                 </div>
               </div>
