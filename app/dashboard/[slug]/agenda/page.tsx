@@ -631,18 +631,8 @@ function getWeekdayLabel(date: Date) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-const WEEKDAY_SOFT_BG: Record<number, string> = {
-  1: "#F0EDFF",
-  2: "#E7F6F0",
-  3: "#FFF2E3",
-  4: "#E8F1FF",
-  5: "#F0EDFF",
-  6: "#E7F6F0",
-  0: "#F2F5F9",
-};
-
 function getWeekdaySoftBg(date: Date) {
-  return WEEKDAY_SOFT_BG[date.getDay()] ?? "#F2F5F9";
+  return `var(--agenda-day-${date.getDay()})`;
 }
 
   function formatRangeTitle(start: Date, end: Date) {
@@ -3157,6 +3147,13 @@ const hasPendingClose = pendingCloseCount > 0;
           --agenda-closed-line-soft: rgba(100,116,139,0.10);
           --agenda-closed-text: #64748B;
           --agenda-closed-muted: rgba(100,116,139,0.75);
+          --agenda-day-0: #F2F5F9;
+          --agenda-day-1: #F0EDFF;
+          --agenda-day-2: #E7F6F0;
+          --agenda-day-3: #FFF2E3;
+          --agenda-day-4: #E8F1FF;
+          --agenda-day-5: #F0EDFF;
+          --agenda-day-6: #E7F6F0;
         }
 
         :root[data-theme="clasico"] .orbyx-agenda-page {
@@ -3189,6 +3186,13 @@ const hasPendingClose = pendingCloseCount > 0;
           --text-main: #E6EBF5;
           --text-muted: #94A3BB;
           --border-color: #203A61;
+          --agenda-day-0: #131D2E;
+          --agenda-day-1: #241F3D;
+          --agenda-day-2: #123329;
+          --agenda-day-3: #3A2A18;
+          --agenda-day-4: #132A44;
+          --agenda-day-5: #241F3D;
+          --agenda-day-6: #123329;
         }
 
         :root[data-theme="nocturno"] .orbyx-agenda-page input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
