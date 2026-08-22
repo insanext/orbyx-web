@@ -908,6 +908,15 @@ export default function BranchesPage() {
 
   async function handleToggleBranchActive(branch: BranchItem) {
     try {
+      const nextActive = branch.is_active === false;
+
+      if (!nextActive) {
+        const confirmed = window.confirm(
+          `¿Seguro que deseas desactivar la sucursal "${branch.name}"?`
+        );
+        if (!confirmed) return;
+      }
+
       setSaving(true);
       setSaveError("");
       setSaveOk("");
@@ -915,8 +924,6 @@ export default function BranchesPage() {
       if (!tenantId) {
         throw new Error("No se encontro el negocio");
       }
-
-      const nextActive = branch.is_active === false;
 
       if (nextActive && reachedLimit) {
         throw new Error("Ya alcanzaste el limite de sucursales de tu plan");

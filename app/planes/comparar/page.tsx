@@ -9,6 +9,7 @@ import {
   Building2,
   Info,
   Check,
+  MessageCircle,
 } from "lucide-react";
 import { plans, TRIAL_LABEL, type PlanKey } from "@/lib/plans";
 
@@ -186,20 +187,26 @@ function CellValue({
   const positive = value === "Sí" || value === "Incluidas" || value === "Incluidos";
 
   if (value === "—") {
-    return <span className="text-slate-500">—</span>;
+    return <span className="text-slate-600">—</span>;
   }
 
-  if (positive && !highlight) {
+  if (positive) {
     return (
-      <span className="inline-flex items-center justify-center gap-1 text-slate-100">
-        <Check className="h-4 w-4 text-emerald-300" />
+      <span className="inline-flex items-center justify-center gap-1.5 text-slate-100">
+        <span
+          className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+            highlight ? "bg-cyan-400/25" : "bg-emerald-400/15"
+          }`}
+        >
+          <Check className={`h-3.5 w-3.5 ${highlight ? "text-cyan-200" : "text-emerald-300"}`} />
+        </span>
         {value}
       </span>
     );
   }
 
   return (
-    <span className={highlight ? "font-semibold text-white" : "text-slate-200"}>
+    <span className={highlight ? "font-semibold text-cyan-200" : "text-slate-300"}>
       {value}
     </span>
   );
@@ -212,12 +219,14 @@ export default function CompararPlanesPage() {
         <div className="rounded-[34px] border border-white/10 bg-white/6 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl lg:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-4xl">
-              <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
+              <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200 shadow-[0_0_24px_rgba(34,211,238,0.12)]">
+                <Sparkles className="h-3.5 w-3.5" />
                 Comparador Orbyx
               </span>
 
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl xl:text-[3.2rem] xl:leading-[1.05]">
-                Compara qué tan lejos puede llevarte cada plan
+                Compara qué tan lejos puede llevarte{" "}
+                <span className="text-[#24e0d0]">cada plan</span>
               </h1>
 
               <p className="mt-3 max-w-3xl text-base leading-7 text-slate-300 lg:text-lg">
@@ -244,51 +253,88 @@ export default function CompararPlanesPage() {
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {planCards.map((plan) => (
-              <div
-                key={plan.key}
-                className={`relative rounded-3xl border ${plan.borderClass} ${plan.softBgClass} p-5`}
-              >
-                {plan.badge ? (
-                  <span className="absolute right-4 top-4 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-900">
-                    {plan.badge}
-                  </span>
-                ) : null}
-
-                <span
-                  className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ${plan.accentClass}`}
+            {planCards.map((plan) => {
+              const isFeatured = plan.key === "business";
+              return (
+                <div
+                  key={plan.key}
+                  className={
+                    isFeatured
+                      ? "relative rounded-3xl border border-cyan-300/50 bg-cyan-400/10 p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.18),0_20px_54px_-24px_rgba(34,211,238,0.5)] md:-translate-y-1"
+                      : `relative rounded-3xl border ${plan.borderClass} ${plan.softBgClass} p-5`
+                  }
                 >
-                  <PlanIcon type={plan.icon} />
-                </span>
+                  {plan.badge ? (
+                    <span
+                      className={
+                        isFeatured
+                          ? "absolute right-4 top-4 rounded-full bg-[#21d6c5] px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-950 shadow-[0_8px_20px_rgba(34,211,238,0.35)]"
+                          : "absolute right-4 top-4 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-900"
+                      }
+                    >
+                      {plan.badge}
+                    </span>
+                  ) : null}
 
-                <p className="mt-4 text-lg font-semibold text-white">{plan.name}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-300">
-                  {plan.subtitle}
-                </p>
-                <p className="mt-5 text-3xl font-semibold text-white">
-                  {plan.priceLabel}
-                </p>
-                <p className="mt-1 text-sm text-slate-400">+ iva / mes</p>
-              </div>
-            ))}
+                  <span
+                    className={
+                      isFeatured
+                        ? "inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/20 text-cyan-200"
+                        : `inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ${plan.accentClass}`
+                    }
+                  >
+                    <PlanIcon type={plan.icon} />
+                  </span>
+
+                  <p className="mt-4 text-lg font-semibold text-white">{plan.name}</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-300">
+                    {plan.subtitle}
+                  </p>
+                  <p
+                    className={
+                      isFeatured
+                        ? "mt-5 text-3xl font-semibold text-cyan-200"
+                        : "mt-5 text-3xl font-semibold text-white"
+                    }
+                  >
+                    {plan.priceLabel}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-400">+ iva / mes</p>
+                </div>
+              );
+            })}
           </div>
 
           <div className="mt-8 overflow-hidden rounded-[28px] border border-white/10 bg-white/5">
             <div className="overflow-x-auto">
               <table className="min-w-[1180px] w-full border-collapse">
                 <thead>
-                  <tr className="bg-white/5">
+                  <tr className="bg-gradient-to-r from-cyan-400/8 via-white/5 to-white/5">
                     <th className="px-4 py-4 text-left text-sm font-semibold text-slate-200">
                       Qué incluye cada plan
                     </th>
-                    {planCards.map((plan) => (
-                      <th
-                        key={plan.key}
-                        className="px-4 py-4 text-center text-sm font-semibold text-slate-200"
-                      >
-                        {plan.name}
-                      </th>
-                    ))}
+                    {planCards.map((plan) => {
+                      const isFeatured = plan.key === "business";
+                      return (
+                        <th
+                          key={plan.key}
+                          className={`px-4 py-4 text-center text-sm font-semibold ${
+                            isFeatured
+                              ? "border-x border-cyan-300/25 bg-cyan-400/10 text-cyan-100"
+                              : "text-slate-200"
+                          }`}
+                        >
+                          <div className="flex flex-col items-center gap-1">
+                            {plan.name}
+                            {isFeatured ? (
+                              <span className="rounded-full bg-[#21d6c5] px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-slate-950">
+                                Recomendado
+                              </span>
+                            ) : null}
+                          </div>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
 
@@ -298,26 +344,35 @@ export default function CompararPlanesPage() {
                       key={row.label}
                       className={index % 2 === 0 ? "bg-white/0" : "bg-white/[0.03]"}
                     >
-                      <td className="border-t border-white/10 px-4 py-4 text-sm font-medium text-white">
+                      <td
+                        className={`border-t border-white/10 px-4 py-4 text-sm font-medium text-white ${
+                          row.highlight ? "border-l-2 border-l-cyan-400/50" : ""
+                        }`}
+                      >
                         <div className="flex items-center">
-                          <span className={row.highlight ? "text-white font-semibold" : ""}>
+                          <span className={row.highlight ? "font-semibold text-cyan-100" : ""}>
                             {row.label}
                           </span>
                           {row.info ? <InfoDot text={row.info} /> : null}
                         </div>
                       </td>
 
-                      {planCards.map((plan) => (
-                        <td
-                          key={`${row.label}-${plan.key}`}
-                          className="border-t border-white/10 px-4 py-4 text-center text-sm text-slate-300"
-                        >
-                          <CellValue
-                            value={row.values[plan.key]}
-                            highlight={Boolean(row.highlight)}
-                          />
-                        </td>
-                      ))}
+                      {planCards.map((plan) => {
+                        const isFeatured = plan.key === "business";
+                        return (
+                          <td
+                            key={`${row.label}-${plan.key}`}
+                            className={`border-t border-white/10 px-4 py-4 text-center text-sm text-slate-300 ${
+                              isFeatured ? "border-x border-cyan-300/15 bg-cyan-400/[0.04]" : ""
+                            }`}
+                          >
+                            <CellValue
+                              value={row.values[plan.key]}
+                              highlight={Boolean(row.highlight)}
+                            />
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))}
                 </tbody>
@@ -326,31 +381,53 @@ export default function CompararPlanesPage() {
           </div>
 
           <div className="mt-8 grid gap-4 xl:grid-cols-2">
-            <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+            <div className="rounded-[24px] border border-cyan-300/15 bg-cyan-400/[0.06] p-4">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-slate-200">
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-cyan-400/15 text-cyan-200">
                   <Building2 className="h-5 w-5" />
                 </span>
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    Multi-sucursal por plan
-                  </p>
-                  <p className="text-sm text-slate-300">
-                    Starter: 1 · Business: 2 · Premium: 3
-                  </p>
-                </div>
+                <p className="text-sm font-semibold text-white">
+                  Multi-sucursal por plan
+                </p>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {[
+                  { name: "Starter", n: 1 },
+                  { name: "Business", n: 2 },
+                  { name: "Premium", n: 3 },
+                ].map((item) => (
+                  <span
+                    key={item.name}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200"
+                  >
+                    {item.name}
+                    <span className="font-bold text-cyan-200">{item.n}</span>
+                  </span>
+                ))}
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-amber-300/15 bg-amber-500/10 p-4">
-              <p className="text-sm font-semibold text-amber-100">
-                Importante sobre mensajes WhatsApp
-              </p>
-              <p className="mt-2 text-sm leading-6 text-amber-50/90">
-                Los mensajes WhatsApp no son acumulables entre períodos. Se renuevan mensualmente.
-                Campañas WhatsApp: incluidas de base solo en <span className="font-semibold">Premium</span> (50 msgs/mes); disponibles como add-on desde Business (no en Starter).
-                * WhatsApp conf+rec en Starter: disponible al activar plan pagado, no durante el trial de {TRIAL_LABEL}.
-              </p>
+            <div className="rounded-[24px] border border-amber-300/25 bg-amber-500/10 p-4">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-200">
+                  <MessageCircle className="h-5 w-5" />
+                </span>
+                <p className="text-sm font-semibold text-amber-100">
+                  Ojo con los mensajes WhatsApp
+                </p>
+              </div>
+              <ul className="mt-3 space-y-1.5 text-sm leading-5 text-amber-50/90">
+                <li>• No se acumulan entre períodos: se renuevan cada mes.</li>
+                <li>
+                  • Campañas WhatsApp vienen incluidas solo en{" "}
+                  <span className="font-semibold text-amber-100">Premium</span>; como
+                  add-on están desde Business (no en Starter).
+                </li>
+                <li>
+                  • En Starter, confirmación+recordatorio se activa al pagar el plan
+                  — no aplica durante el trial de {TRIAL_LABEL}.
+                </li>
+              </ul>
             </div>
           </div>
         </div>

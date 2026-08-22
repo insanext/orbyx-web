@@ -31,6 +31,8 @@ import {
   Eye,
   Link2,
   Check,
+  Moon,
+  Sun,
 } from "lucide-react";
 import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
@@ -1396,18 +1398,28 @@ export default function DashboardLayout({
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="inline-flex h-11 w-full items-center justify-center rounded-2xl border px-4 text-sm font-medium transition"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition"
                   style={{
                     background: softBg,
                     borderColor: sidebarBorder,
                     color: textMain,
                   }}
                 >
-                  {mounted
-                    ? theme === "clasico"
-                      ? "Cambiar a Nocturno"
-                      : "Cambiar a Clásico"
-                    : "Cambiar tema"}
+                  {mounted ? (
+                    theme === "clasico" ? (
+                      <>
+                        <Moon size={16} />
+                        Cambiar a Nocturno
+                      </>
+                    ) : (
+                      <>
+                        <Sun size={16} />
+                        Cambiar a Clásico
+                      </>
+                    )
+                  ) : (
+                    "Cambiar tema"
+                  )}
                 </button>
                 <button
                   type="button"
@@ -1507,18 +1519,28 @@ export default function DashboardLayout({
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="hidden h-11 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition md:inline-flex"
+                  className="hidden h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition md:inline-flex"
                   style={{
                     background: softBg,
                     borderColor: sidebarBorder,
                     color: textMain,
                   }}
                 >
-                  {mounted
-                    ? theme === "clasico"
-                      ? "Cambiar a nocturno"
-                      : "Cambiar a clásico"
-                    : "Cambiar tema"}
+                  {mounted ? (
+                    theme === "clasico" ? (
+                      <>
+                        <Moon size={16} />
+                        Cambiar a nocturno
+                      </>
+                    ) : (
+                      <>
+                        <Sun size={16} />
+                        Cambiar a clásico
+                      </>
+                    )
+                  ) : (
+                    "Cambiar tema"
+                  )}
                 </button>
 
                 <div ref={notifPanelRef} className="relative">
