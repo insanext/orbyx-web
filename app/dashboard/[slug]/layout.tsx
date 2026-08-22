@@ -624,22 +624,22 @@ export default function DashboardLayout({
 
   const isNocturno = theme === "nocturno";
   const sidebarBg = isNocturno
-    ? "linear-gradient(180deg, rgba(15,23,42,0.98), rgba(2,6,23,0.98))"
+    ? "#0B1428"
     : "linear-gradient(180deg, #f3f7ff, #eaf1ff 46%, #eef4ff)";
   const sidebarBorder = isNocturno
-    ? "rgba(56,189,248,0.20)"
+    ? "#203A61"
     : "rgba(59,130,246,0.18)";
   const softBg = isNocturno
-    ? "rgba(15,23,42,0.72)"
+    ? "#101B31"
     : "rgba(220,232,255,0.72)";
-  const dropdownBg = isNocturno ? "rgb(15,23,42)" : "rgb(236,244,255)";
+  const dropdownBg = isNocturno ? "#101B31" : "rgb(236,244,255)";
   const cardBg = isNocturno
-    ? "rgba(15,23,42,0.78)"
+    ? "#172640"
     : "rgba(243,247,255,0.86)";
-  const textMain = "var(--text-main)";
-  const textMuted = "var(--text-muted)";
+  const textMain = isNocturno ? "#E6EBF5" : "var(--text-main)";
+  const textMuted = isNocturno ? "#94A3BB" : "var(--text-muted)";
   const mainBg = isNocturno
-    ? "var(--bg-main)"
+    ? "#080F20"
     : "linear-gradient(180deg, #f8fbff, #eef4ff)";
 
   function BranchSelectorBlock({ compact = false }: { compact?: boolean }) {
@@ -1519,7 +1519,21 @@ export default function DashboardLayout({
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="hidden h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition md:inline-flex"
+                  aria-label={
+                    mounted
+                      ? theme === "clasico"
+                        ? "Cambiar a nocturno"
+                        : "Cambiar a clásico"
+                      : "Cambiar tema"
+                  }
+                  title={
+                    mounted
+                      ? theme === "clasico"
+                        ? "Cambiar a nocturno"
+                        : "Cambiar a clásico"
+                      : "Cambiar tema"
+                  }
+                  className="hidden h-11 w-11 items-center justify-center rounded-2xl border transition md:inline-flex"
                   style={{
                     background: softBg,
                     borderColor: sidebarBorder,
@@ -1528,18 +1542,12 @@ export default function DashboardLayout({
                 >
                   {mounted ? (
                     theme === "clasico" ? (
-                      <>
-                        <Moon size={16} />
-                        Cambiar a nocturno
-                      </>
+                      <Moon size={16} />
                     ) : (
-                      <>
-                        <Sun size={16} />
-                        Cambiar a clásico
-                      </>
+                      <Sun size={16} />
                     )
                   ) : (
-                    "Cambiar tema"
+                    <Moon size={16} />
                   )}
                 </button>
 

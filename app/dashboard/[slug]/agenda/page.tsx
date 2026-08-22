@@ -3183,6 +3183,29 @@ const hasPendingClose = pendingCloseCount > 0;
         }
 
         :root[data-theme="nocturno"] .orbyx-agenda-page {
+          --bg-main: #080F20;
+          --bg-card: #101B31;
+          --bg-soft: #080F20;
+          --text-main: #E6EBF5;
+          --text-muted: #94A3BB;
+          --border-color: #203A61;
+        }
+
+        :root[data-theme="nocturno"] .orbyx-agenda-page input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+        :root[data-theme="nocturno"] .orbyx-agenda-page textarea,
+        :root[data-theme="nocturno"] .orbyx-agenda-page select {
+          background-color: #172640 !important;
+          border-color: #203A61 !important;
+          color: #E6EBF5 !important;
+        }
+
+        :root[data-theme="nocturno"] .orbyx-agenda-page input::placeholder,
+        :root[data-theme="nocturno"] .orbyx-agenda-page textarea::placeholder {
+          color: #94A3BB !important;
+          opacity: 1;
+        }
+
+        :root[data-theme="nocturno"] .orbyx-agenda-page {
           --agenda-hero-bg: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(12,32,66,0.92) 50%, rgba(17,24,39,0.96));
           --agenda-hero-border: rgba(56,189,248,0.28);
           --agenda-hero-title: #f8fafc;
