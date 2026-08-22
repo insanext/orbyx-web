@@ -3763,7 +3763,7 @@ const hasPendingClose = pendingCloseCount > 0;
       <div className="relative">
         <section className="space-y-6">
           <div>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <style>{`
                 .orbyx-header-btn {
                   transition: filter 150ms ease, background 150ms ease, border-color 150ms ease;
@@ -3927,7 +3927,7 @@ const hasPendingClose = pendingCloseCount > 0;
                 </div>
 
                 {/* Grupo 4 - Vista + fecha */}
-                <div className="flex w-full items-center gap-2 md:ml-auto md:w-auto">
+                <div className="flex w-full items-center gap-2 md:w-auto">
                   <div
                     className="flex flex-1 items-center gap-1 rounded-lg border p-1 md:flex-none"
                     style={{
