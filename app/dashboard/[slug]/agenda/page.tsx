@@ -3763,7 +3763,7 @@ const hasPendingClose = pendingCloseCount > 0;
       <div className="relative">
         <section className="space-y-6">
           <div>
-            <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="mb-4 flex flex-col gap-3 min-[1700px]:flex-row min-[1700px]:items-center min-[1700px]:justify-between">
               <style>{`
                 .orbyx-header-btn {
                   transition: filter 150ms ease, background 150ms ease, border-color 150ms ease;
@@ -3833,7 +3833,7 @@ const hasPendingClose = pendingCloseCount > 0;
               </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-end gap-6">
+              <div className="flex flex-wrap items-center justify-end gap-6 min-[1700px]:flex-nowrap">
                 {/* Grupo 1 - Estado */}
                 <div className="flex w-full items-center gap-2 md:w-auto">
                   {hasPendingClose ? (
