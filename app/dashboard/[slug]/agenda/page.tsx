@@ -3120,29 +3120,46 @@ const hasPendingClose = pendingCloseCount > 0;
     <div className="orbyx-agenda-page space-y-6 pb-6">
       <style>{`
         .orbyx-agenda-page {
-          --agenda-hero-bg: linear-gradient(135deg, rgba(248,251,255,0.98), rgba(224,238,255,0.9) 48%, rgba(241,248,255,0.98));
-          --agenda-hero-border: rgba(37,99,235,0.42);
-          --agenda-hero-title: #0f172a;
-          --agenda-hero-muted: #334155;
-          --agenda-filter-bg: linear-gradient(135deg, rgba(248,251,255,0.92), rgba(238,242,248,0.86), rgba(230,236,245,0.82));
-          --agenda-filter-label: #1e293b;
-          --agenda-filter-control-bg: rgba(255,255,255,0.72);
-          --agenda-filter-control-text: #0f172a;
-          --agenda-calendar-column-bg: linear-gradient(180deg, #eef2f8, #e6ecf5 52%, #d7e0ec);
-          --agenda-calendar-header-bg: linear-gradient(180deg, #eef2f8, #e6ecf5);
-          --agenda-calendar-time-bg: linear-gradient(180deg, #eef2f8, #e6ecf5 54%, #dce5f0);
-          --agenda-calendar-line: rgba(148,163,184,0.22);
-          --agenda-calendar-line-soft: rgba(148,163,184,0.14);
+          --agenda-hero-bg: linear-gradient(135deg, #FFFFFF, #E8F1FF 50%, #F0EDFF);
+          --agenda-hero-border: rgba(99,102,241,0.35);
+          --agenda-hero-title: #172033;
+          --agenda-hero-muted: #64748B;
+          --agenda-filter-bg: linear-gradient(135deg, #FFFFFF, #F2F5F9 55%, #E8F1FF);
+          --agenda-filter-label: #172033;
+          --agenda-filter-control-bg: #FFFFFF;
+          --agenda-filter-control-text: #172033;
+          --agenda-calendar-column-bg: linear-gradient(180deg, #FFFFFF, #F2F5F9);
+          --agenda-calendar-header-bg: linear-gradient(180deg, #FFFFFF, #F2F5F9);
+          --agenda-calendar-time-bg: linear-gradient(180deg, #FFFFFF, #F2F5F9);
+          --agenda-calendar-line: rgba(221,227,239,0.65);
+          --agenda-calendar-line-soft: rgba(221,227,239,0.4);
           --agenda-calendar-hover: rgba(59,130,246,0.08);
           --agenda-today-bg: linear-gradient(180deg, rgba(219,234,254,0.98), rgba(226,232,240,0.92), rgba(215,224,236,0.86));
           --agenda-today-header-bg: linear-gradient(180deg, rgba(219,234,254,0.96), rgba(226,232,240,0.86));
-          --agenda-closed-bg: #E4E7EC;
-          --agenda-closed-bg-hover: #DADEE5;
+          --agenda-closed-bg: #DDE3EF;
+          --agenda-closed-bg-hover: #D2D9E8;
           --agenda-closed-border: rgba(100,116,139,0.24);
           --agenda-closed-line: rgba(100,116,139,0.18);
           --agenda-closed-line-soft: rgba(100,116,139,0.10);
-          --agenda-closed-text: #6B7280;
-          --agenda-closed-muted: rgba(107,114,128,0.75);
+          --agenda-closed-text: #64748B;
+          --agenda-closed-muted: rgba(100,116,139,0.75);
+        }
+
+        :root[data-theme="clasico"] .orbyx-agenda-page {
+          --bg-main: #F2F5F9;
+          --bg-card: #FFFFFF;
+          --bg-soft: #F2F5F9;
+          --text-main: #172033;
+          --text-muted: #64748B;
+          --border-color: #DDE3EF;
+        }
+
+        :root[data-theme="clasico"] .orbyx-agenda-page input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+        :root[data-theme="clasico"] .orbyx-agenda-page textarea,
+        :root[data-theme="clasico"] .orbyx-agenda-page select {
+          background-color: #FFFFFF !important;
+          border-color: #DDE3EF !important;
+          color: #172033 !important;
         }
 
         :root[data-theme="nocturno"] .orbyx-agenda-page {
@@ -3173,7 +3190,7 @@ const hasPendingClose = pendingCloseCount > 0;
       `}</style>
       <style>{STATUS_STYLESHEET}</style>
 <div
-  className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
+  className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(99,102,241,0.5),0_0_34px_-24px_rgba(59,130,246,0.42)]"
   style={{
     borderColor: "var(--agenda-hero-border)",
     background: "var(--agenda-hero-bg)",
@@ -3183,17 +3200,17 @@ const hasPendingClose = pendingCloseCount > 0;
     className="pointer-events-none absolute inset-x-8 top-0 h-px"
     style={{
       background:
-        "linear-gradient(90deg, transparent, rgba(37,99,235,0.42), rgba(34,211,238,0.35), transparent)",
+        "linear-gradient(90deg, transparent, rgba(99,102,241,0.42), rgba(59,130,246,0.35), transparent)",
     }}
   />
   <div className="relative flex items-center">
   <div className="flex items-center gap-3">
     <div
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-[0_18px_32px_-16px_rgba(99,102,241,0.85),0_0_26px_-12px_rgba(59,130,246,0.75)]"
       style={{
         borderColor: "rgba(147,197,253,0.72)",
         background:
-          "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233) 48%, rgb(79 70 229))",
+          "linear-gradient(135deg, #6366F1, #3B82F6)",
         color: "white",
       }}
     >
@@ -5801,7 +5818,14 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             >
                               {selectedAppointment.customer_name}
                             </p>
-                            <span className="mt-1 inline-flex max-w-full rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                            <span
+                              className="mt-1 inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                              style={{
+                                borderColor: "#F0EDFF",
+                                background: "#F0EDFF",
+                                color: "#8B5CF6",
+                              }}
+                            >
                               {selectedAppointment.service_name_snapshot || "Reserva"}
                             </span>
 
@@ -5940,17 +5964,17 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               }
                               className="inline-flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition duration-150 hover:shadow-sm"
                               style={{
-                                borderColor: "rgba(37,99,235,0.35)",
-                                background: "rgba(37,99,235,0.08)",
-                                color: "#2563eb",
+                                borderColor: "rgba(59,130,246,0.35)",
+                                background: "rgba(59,130,246,0.08)",
+                                color: "#3B82F6",
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.background = "rgba(37,99,235,0.16)";
-                                e.currentTarget.style.borderColor = "rgba(37,99,235,0.55)";
+                                e.currentTarget.style.background = "rgba(59,130,246,0.16)";
+                                e.currentTarget.style.borderColor = "rgba(59,130,246,0.55)";
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.background = "rgba(37,99,235,0.08)";
-                                e.currentTarget.style.borderColor = "rgba(37,99,235,0.35)";
+                                e.currentTarget.style.background = "rgba(59,130,246,0.08)";
+                                e.currentTarget.style.borderColor = "rgba(59,130,246,0.35)";
                               }}
                             >
                               <UserRound className="h-3.5 w-3.5" />
