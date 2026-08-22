@@ -2,9 +2,6 @@
 
 import Link from "next/link";
 import {
-  Crown,
-  Mail,
-  Sparkles,
   ArrowLeft,
   Building2,
   Info,
@@ -84,9 +81,15 @@ const comparisonRows: ComparisonRow[] = [
     info: "Agenda centralizada para gestionar reservas, cambios, estados y disponibilidad.",
   },
   {
-    label: "Gestión de clientes",
+    label: "Registro de clientes",
     values: byPlan(() => "Sí"),
-    info: "Registro y seguimiento operativo de clientes dentro del sistema.",
+    info: "Historial y datos básicos de cada cliente dentro del sistema.",
+  },
+  {
+    label: "Seguimiento y reactivación de clientes",
+    values: { starter: "—", business: "—", premium: "Sí" },
+    info: "Segmenta tu cartera (nuevo, recurrente, frecuente, inactivo) para identificar quiénes dejaron de venir y a quién conviene recontactar — conectado con las campañas de WhatsApp y email, también exclusivas de Premium.",
+    highlight: true,
   },
   {
     label: "Emails de confirmación y notificación",
@@ -157,12 +160,6 @@ const comparisonRows: ComparisonRow[] = [
   },
 ];
 
-function PlanIcon({ type }: { type: (typeof planCards)[number]["icon"] }) {
-  if (type === "mail") return <Mail className="h-5 w-5" />;
-  if (type === "sparkles") return <Sparkles className="h-5 w-5" />;
-  return <Crown className="h-5 w-5" />;
-}
-
 function InfoDot({ text }: { text: string }) {
   return (
     <span className="group relative ml-2 inline-flex align-middle">
@@ -214,17 +211,12 @@ function CellValue({
 
 export default function CompararPlanesPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_22%),radial-gradient(circle_at_left,_rgba(14,165,233,0.12),_transparent_28%),linear-gradient(180deg,_#0b1120_0%,_#0f172a_40%,_#111827_100%)] text-white">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_85%_18%,rgba(14,165,233,0.10),transparent_30%),linear-gradient(180deg,#020814_0%,#050f1e_45%,#020814_100%)] text-white">
       <section className="mx-auto w-full max-w-[1600px] px-4 py-8 lg:px-8 2xl:px-10">
         <div className="rounded-[34px] border border-white/10 bg-white/6 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.34)] backdrop-blur-xl lg:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-4xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200 shadow-[0_0_24px_rgba(34,211,238,0.12)]">
-                <Sparkles className="h-3.5 w-3.5" />
-                Comparador Orbyx
-              </span>
-
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white lg:text-5xl xl:text-[3.2rem] xl:leading-[1.05]">
+              <h1 className="text-3xl font-semibold tracking-tight text-white lg:text-5xl xl:text-[3.2rem] xl:leading-[1.05]">
                 Compara qué tan lejos puede llevarte{" "}
                 <span className="text-[#24e0d0]">cada plan</span>
               </h1>
@@ -260,8 +252,8 @@ export default function CompararPlanesPage() {
                   key={plan.key}
                   className={
                     isFeatured
-                      ? "relative rounded-3xl border border-cyan-300/50 bg-cyan-400/10 p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.18),0_20px_54px_-24px_rgba(34,211,238,0.5)] md:-translate-y-1"
-                      : `relative rounded-3xl border ${plan.borderClass} ${plan.softBgClass} p-5`
+                      ? "relative border border-cyan-300/50 bg-cyan-400/10 p-4 shadow-[0_0_0_1px_rgba(34,211,238,0.18),0_20px_54px_-24px_rgba(34,211,238,0.5)] md:-translate-y-1"
+                      : `relative border ${plan.borderClass} ${plan.softBgClass} p-4`
                   }
                 >
                   {plan.badge ? (
@@ -276,36 +268,26 @@ export default function CompararPlanesPage() {
                     </span>
                   ) : null}
 
-                  <span
-                    className={
-                      isFeatured
-                        ? "inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/20 text-cyan-200"
-                        : `inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ${plan.accentClass}`
-                    }
-                  >
-                    <PlanIcon type={plan.icon} />
-                  </span>
-
-                  <p className="mt-4 text-lg font-semibold text-white">{plan.name}</p>
+                  <p className="text-lg font-semibold text-white">{plan.name}</p>
                   <p className="mt-1 text-sm leading-6 text-slate-300">
                     {plan.subtitle}
                   </p>
                   <p
                     className={
                       isFeatured
-                        ? "mt-5 text-3xl font-semibold text-cyan-200"
-                        : "mt-5 text-3xl font-semibold text-white"
+                        ? "mt-3 text-3xl font-semibold text-cyan-200"
+                        : "mt-3 text-3xl font-semibold text-white"
                     }
                   >
                     {plan.priceLabel}
                   </p>
-                  <p className="mt-1 text-sm text-slate-400">+ iva / mes</p>
+                  <p className="mt-0.5 text-sm text-slate-400">+ iva / mes</p>
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-8 overflow-hidden rounded-[28px] border border-white/10 bg-white/5">
+          <div className="mt-8 overflow-hidden border border-white/10 bg-white/5">
             <div className="overflow-x-auto">
               <table className="min-w-[1180px] w-full border-collapse">
                 <thead>
@@ -342,7 +324,7 @@ export default function CompararPlanesPage() {
                   {comparisonRows.map((row, index) => (
                     <tr
                       key={row.label}
-                      className={index % 2 === 0 ? "bg-white/0" : "bg-white/[0.03]"}
+                      className={index % 2 === 0 ? "bg-slate-900/30" : "bg-cyan-400/[0.055]"}
                     >
                       <td
                         className={`border-t border-white/10 px-4 py-4 text-sm font-medium text-white ${
