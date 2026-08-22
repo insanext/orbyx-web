@@ -631,6 +631,20 @@ function getWeekdayLabel(date: Date) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+const WEEKDAY_SOFT_BG: Record<number, string> = {
+  1: "#F0EDFF",
+  2: "#E7F6F0",
+  3: "#FFF2E3",
+  4: "#E8F1FF",
+  5: "#F0EDFF",
+  6: "#E7F6F0",
+  0: "#F2F5F9",
+};
+
+function getWeekdaySoftBg(date: Date) {
+  return WEEKDAY_SOFT_BG[date.getDay()] ?? "#F2F5F9";
+}
+
   function formatRangeTitle(start: Date, end: Date) {
     const startText = start.toLocaleDateString("es-CL", {
       day: "numeric",
@@ -3120,11 +3134,11 @@ const hasPendingClose = pendingCloseCount > 0;
     <div className="orbyx-agenda-page space-y-6 pb-6">
       <style>{`
         .orbyx-agenda-page {
-          --agenda-hero-bg: linear-gradient(135deg, #FFFFFF, #E8F1FF 50%, #F0EDFF);
+          --agenda-hero-bg: linear-gradient(135deg, #F0EDFF, #E8F1FF);
           --agenda-hero-border: rgba(99,102,241,0.35);
           --agenda-hero-title: #172033;
           --agenda-hero-muted: #64748B;
-          --agenda-filter-bg: linear-gradient(135deg, #FFFFFF, #F2F5F9 55%, #E8F1FF);
+          --agenda-filter-bg: linear-gradient(135deg, #FFFFFF, #E8F1FF);
           --agenda-filter-label: #172033;
           --agenda-filter-control-bg: #FFFFFF;
           --agenda-filter-control-text: #172033;
@@ -3160,6 +3174,12 @@ const hasPendingClose = pendingCloseCount > 0;
           background-color: #FFFFFF !important;
           border-color: #DDE3EF !important;
           color: #172033 !important;
+        }
+
+        :root[data-theme="clasico"] .orbyx-agenda-page input::placeholder,
+        :root[data-theme="clasico"] .orbyx-agenda-page textarea::placeholder {
+          color: #64748B !important;
+          opacity: 1;
         }
 
         :root[data-theme="nocturno"] .orbyx-agenda-page {
@@ -3281,7 +3301,7 @@ const hasPendingClose = pendingCloseCount > 0;
       <div
         className="rounded-2xl border p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.45)]"
         style={{
-          borderColor: "rgba(148,163,184,0.22)",
+          borderColor: "var(--border-color)",
           background: "var(--agenda-filter-bg)",
         }}
       >
@@ -3797,7 +3817,7 @@ const hasPendingClose = pendingCloseCount > 0;
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-card)",
-                      color: "var(--text-main)",
+                      color: "var(--text-muted)",
                     }}
                     aria-label={agendaView === "day" ? "Día anterior" : "Semana anterior"}
                   >
@@ -3809,9 +3829,8 @@ const hasPendingClose = pendingCloseCount > 0;
                     onClick={goToday}
                     className="orbyx-header-btn orbyx-header-btn-accent flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-semibold text-white md:inline-flex md:flex-none"
                     style={{
-                      borderColor: "rgba(147,197,253,0.34)",
-                      background:
-                        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                      borderColor: "#3B82F6",
+                      background: "#3B82F6",
                     }}
                   >
                     Hoy
@@ -3835,7 +3854,7 @@ const hasPendingClose = pendingCloseCount > 0;
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-card)",
-                      color: "var(--text-main)",
+                      color: "var(--text-muted)",
                     }}
                     aria-label={agendaView === "day" ? "Día siguiente" : "Semana siguiente"}
                   >
@@ -3859,14 +3878,14 @@ const hasPendingClose = pendingCloseCount > 0;
                       style={
                         agendaView === "week"
                           ? {
-                              borderColor: "rgba(147,197,253,0.72)",
-                              background:
-                                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                              borderColor: "#3B82F6",
+                              background: "#3B82F6",
                               color: "#fff",
                             }
                           : {
-                              color: "var(--text-muted)",
-                              borderColor: "transparent",
+                              color: "var(--text-main)",
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
                             }
                       }
                     >
@@ -3879,14 +3898,14 @@ const hasPendingClose = pendingCloseCount > 0;
                       style={
                         agendaView === "day"
                           ? {
-                              borderColor: "rgba(147,197,253,0.72)",
-                              background:
-                                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                              borderColor: "#3B82F6",
+                              background: "#3B82F6",
                               color: "#fff",
                             }
                           : {
-                              color: "var(--text-muted)",
-                              borderColor: "transparent",
+                              color: "var(--text-main)",
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
                             }
                       }
                     >
@@ -4656,7 +4675,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
       ? "var(--agenda-closed-bg)"
       : isToday
       ? "var(--agenda-today-header-bg)"
-      : "var(--agenda-calendar-header-bg)",
+      : getWeekdaySoftBg(day),
     backdropFilter: "blur(8px)",
   }}
 >
