@@ -1815,30 +1815,6 @@ function updateHourByIndex(
             </p>
             </div>
           </div>
-
-          <div style={{ color: "var(--text-main)" }}>
-            <div
-              className="rounded-2xl border px-3 py-2.5"
-              style={{
-                borderColor: "rgba(59,130,246,0.24)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Google Calendar
-              </p>
-              <p className="mt-1 text-sm font-semibold">
-                {loading
-                  ? "Cargando..."
-                  : googleConnected
-                    ? "Conectado"
-                  : "Pendiente"}
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
