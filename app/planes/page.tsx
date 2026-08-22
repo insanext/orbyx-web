@@ -228,6 +228,14 @@ function PlanIcon({ type }: { type: Plan["icon"] }) {
 // comunes (ej. "Soporte prioritario", "Modo veterinario") quedan en una cola
 // sin alinear, en su orden original. Es solo una transformación de
 // presentación sobre plan.features — no modifica lib/plans.ts.
+// El modo veterinario está disponible en todos los planes, no es un
+// diferenciador de plan — se filtra del checklist comparativo (cualquiera
+// sea el plan en que aparezca en lib/plans.ts) para no insinuar que es
+// exclusivo de uno solo. Filtro de presentación, no toca lib/plans.ts.
+const EXCLUDED_FEATURE_PATTERNS: ((title: string) => boolean)[] = [
+  (title) => /Modo veterinario/i.test(title),
+];
+
 const COMPARABLE_FEATURE_MATCHERS: ((title: string) => boolean)[] = [
   (title) => /profesionales? incluid/i.test(title),
   (title) => /sucursal(es)? incluida/i.test(title),
@@ -884,6 +892,13 @@ function PlanesPageContent() {
     (extraKey) => extraSupported(extraKey) && extraValue(extraKey) === 0
   );
 
+  // "Add-ons seleccionados" (panel público) ya no lista profesionales — ese
+  // control vive en la tarjeta del plan. El desglose de precio de más abajo
+  // (Plan base/Subtotal/IVA/Total) sigue usando extraItems completo, sin
+  // filtrar, tal como estaba.
+  const visibleExtraItems = extraItems.filter((item) => item.key !== "staff");
+  const visibleAddonsCount = visibleExtraItems.reduce((total, item) => total + item.count, 0);
+
   function extraValue(extraKey: ExtraKey) {
     if (extraKey === "staff") return staffExtras;
     if (extraKey === "sucursal") return sucursalExtras;
@@ -1122,7 +1137,10 @@ function PlanesPageContent() {
               {plans.map((plan) => {
                 const isSelected = selectedPlan.key === plan.key;
                 const isCurrentCard = hasBillingContext && initialPlan === plan.key;
-                const { aligned, exclusive } = splitFeatureRows(plan.features);
+                const cardFeatures = plan.features.filter(
+                  (feature) => !EXCLUDED_FEATURE_PATTERNS.some((test) => test(feature.title))
+                );
+                const { aligned, exclusive } = splitFeatureRows(cardFeatures);
 
                 return (
                   <motion.button
@@ -1204,41 +1222,6 @@ function PlanesPageContent() {
                           : "Comenzar ahora"}
                       </div>
 
-                      <div className="mt-4 pb-1">
-                        {/* Filas comparables (profesionales, sucursales, WhatsApp...)
-                            alineadas en el mismo orden/altura entre las 3 tarjetas.
-                            Lo exclusivo de cada plan va después, sin forzar alineación. */}
-                        {aligned.length > 0 ? (
-                          <div className="space-y-2.5">
-                            {aligned.map((feature) => (
-                              <FeatureRow
-                                key={`${plan.key}-${feature.title}`}
-                                feature={feature}
-                                plan={plan}
-                                isTrial={isTrial}
-                                alignRow
-                              />
-                            ))}
-                          </div>
-                        ) : null}
-                        {exclusive.length > 0 ? (
-                          <div
-                            className={`space-y-2.5 ${
-                              aligned.length > 0 ? "mt-3 border-t border-white/8 pt-3" : ""
-                            }`}
-                          >
-                            {exclusive.map((feature) => (
-                              <FeatureRow
-                                key={`${plan.key}-${feature.title}`}
-                                feature={feature}
-                                plan={plan}
-                                isTrial={isTrial}
-                              />
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-
                       {/* + Profesionales: reubicado desde "Agregar add-ons" del panel
                           lateral (ver comentario en availableAddons). Mismo estado
                           (staffExtras) y mismas funciones (increaseExtra/decreaseExtra)
@@ -1300,6 +1283,41 @@ function PlanesPageContent() {
                           </div>
                         </div>
                       ) : null}
+
+                      <div className="mt-4 pb-1">
+                        {/* Filas comparables (profesionales, sucursales, WhatsApp...)
+                            alineadas en el mismo orden/altura entre las 3 tarjetas.
+                            Lo exclusivo de cada plan va después, sin forzar alineación. */}
+                        {aligned.length > 0 ? (
+                          <div className="space-y-2.5">
+                            {aligned.map((feature) => (
+                              <FeatureRow
+                                key={`${plan.key}-${feature.title}`}
+                                feature={feature}
+                                plan={plan}
+                                isTrial={isTrial}
+                                alignRow
+                              />
+                            ))}
+                          </div>
+                        ) : null}
+                        {exclusive.length > 0 ? (
+                          <div
+                            className={`space-y-2.5 ${
+                              aligned.length > 0 ? "mt-3 border-t border-white/8 pt-3" : ""
+                            }`}
+                          >
+                            {exclusive.map((feature) => (
+                              <FeatureRow
+                                key={`${plan.key}-${feature.title}`}
+                                feature={feature}
+                                plan={plan}
+                                isTrial={isTrial}
+                              />
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                     </div>
                   </motion.button>
@@ -1548,30 +1566,27 @@ function PlanesPageContent() {
                   </div>
                 ) : (
                 <div className="mt-5">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">
-                      Add-ons seleccionados
-                    </span>
-                    <span className="rounded-full bg-violet-500/25 px-3 py-1 text-xs font-bold text-violet-100">
-                      {selectedAddonsCount}
-                    </span>
-                  </div>
-
                   {addonError ? (
                     <div className="mb-3 rounded-xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
                       {addonError}
                     </div>
                   ) : null}
 
-                  {extraItems.length === 0 ? (
-                    <div className="rounded-xl border border-white/8 bg-white/[0.035] px-4 py-3 text-sm text-slate-400">
-                      {addonsLoading
-                        ? "Cargando add-ons..."
-                        : "Aun no has agregado adicionales."}
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {extraItems.map((item) => (
+                  {/* Profesionales no aparece acá (se agrega desde la tarjeta del
+                      plan) — si es el único "add-on" activo, esta tarjeta no
+                      tiene nada más que mostrar y se oculta entera. */}
+                  {visibleExtraItems.length > 0 ? (
+                    <>
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-white">
+                          Add-ons seleccionados
+                        </span>
+                        <span className="rounded-full bg-violet-500/25 px-3 py-1 text-xs font-bold text-violet-100">
+                          {visibleAddonsCount}
+                        </span>
+                      </div>
+                      <div className="space-y-2.5">
+                      {visibleExtraItems.map((item) => (
                         <div
                           key={item.label}
                           className="group relative rounded-xl border border-white/8 bg-white/[0.035] p-3"
@@ -1645,8 +1660,9 @@ function PlanesPageContent() {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  )}
+                      </div>
+                    </>
+                  ) : null}
 
                   {addableAddons.length > 0 ? (
                     <div className="mt-3 rounded-xl border border-white/8 bg-black/15 p-3">
