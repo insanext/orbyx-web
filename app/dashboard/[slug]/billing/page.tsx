@@ -1402,7 +1402,7 @@ function BillingPageInner() {
       </nav>
 
       {activeTab === "suscripcion" ? (
-      <section className="space-y-4">
+      <section id="billing-flow-action" className="space-y-4 scroll-mt-6">
         <div>
           <p
             className="text-xs font-semibold uppercase tracking-[0.16em]"

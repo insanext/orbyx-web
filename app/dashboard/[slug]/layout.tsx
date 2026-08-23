@@ -1725,9 +1725,16 @@ export default function DashboardLayout({
                   </p>
                   <p className="mt-1 text-sm" style={{ color: textMuted }}>
                     {accountStatus?.blocked_reason === "trial_expired"
-                      ? "Tu trial gratuito terminó y todavía no tienes un método de pago activo. Regulariza tu suscripción abajo para recuperar el acceso completo."
-                      : "Tu suscripción no tiene un cobro válido. Regulariza tu suscripción abajo para recuperar el acceso completo al panel."}
+                      ? "Tu trial gratuito terminó y todavía no tienes un método de pago activo."
+                      : "Tu suscripción no tiene un cobro válido."}
                   </p>
+                  <a
+                    href="#billing-flow-action"
+                    className="mt-3 inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+                    style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+                  >
+                    Pagar ahora
+                  </a>
                 </div>
               ) : null}
               {isAccountBlocked ? (
