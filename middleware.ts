@@ -31,6 +31,14 @@ export async function middleware(request: NextRequest) {
         );
       },
     },
+    // Ningun dato de auth/facturacion que pase por este middleware debe
+    // quedar en la Data Cache de Next.js: getUser(), el lookup de tenant,
+    // tenant_users y subscriptions deciden si se bloquea el dashboard. Un
+    // fetch cacheado acá puede seguir sirviendo "blocked" (o "no blocked")
+    // viejo aunque la fila en la base ya haya cambiado.
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+    },
   });
 
   // Verifica sesión activa.
@@ -133,7 +141,14 @@ export async function middleware(request: NextRequest) {
           const blockedUrl = request.nextUrl.clone();
           blockedUrl.pathname = `/dashboard/${dashboardSlug}/billing`;
           blockedUrl.search = "";
-          return NextResponse.redirect(blockedUrl);
+          const blockedResponse = NextResponse.redirect(blockedUrl);
+          // No cachear esta respuesta en ningun nivel: el estado "blocked"
+          // se recalcula en cada request a partir de datos de facturacion
+          // que cambian (pago confirmado, renovacion) y no debe quedar
+          // pegado un 307 viejo despues de que el tenant deja de estar
+          // bloqueado.
+          blockedResponse.headers.set("Cache-Control", "no-store");
+          return blockedResponse;
         }
       }
     }
