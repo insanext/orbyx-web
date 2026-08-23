@@ -115,7 +115,7 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith(`/dashboard/${dashboardSlug}/billing/`);
 
       if (tenant?.id && !isBillingPath) {
-        const { data: latestSub } = await supabase
+        const { data: latestSub, error: latestSubErr } = await supabase
           .from("subscriptions")
           .select("status")
           .eq("tenant_id", tenant.id)
@@ -136,6 +136,34 @@ export async function middleware(request: NextRequest) {
         const trialActive = Boolean(trialEndsAt && now < trialEndsAt && !hasActiveSubscription);
         const awaitingPayment = !hasActiveSubscription && !trialActive && !isTrialingInFlow;
         const blocked = Boolean(awaitingPayment && billingCycleEnd && now >= billingCycleEnd);
+
+        // DIAGNOSTICO TEMPORAL — sacar despues de confirmar la causa del
+        // bloqueo indebido en tenants con suscripcion activa (ver sesion
+        // 2026-08-23). Loguea contra que proyecto de Supabase esta
+        // consultando este middleware realmente (por si el env var de
+        // Vercel apunta a otro proyecto que el que se revisa a mano por
+        // SQL) y los valores reales de cada variable de la formula.
+        console.log("[gating-debug]", {
+          supabaseUrlHost: (() => {
+            try {
+              return new URL(supabaseUrl).host;
+            } catch {
+              return supabaseUrl;
+            }
+          })(),
+          dashboardSlug,
+          tenantId: tenant.id,
+          latestSubStatus: latestSub?.status ?? null,
+          latestSubQueryError: latestSubErr?.message ?? null,
+          hasActiveSubscription,
+          isTrialingInFlow,
+          trialEndsAt: tenant.trial_ends_at,
+          billingCycleEndRaw: tenant.billing_cycle_end,
+          nowIso: now.toISOString(),
+          trialActive,
+          awaitingPayment,
+          blocked,
+        });
 
         if (blocked) {
           const blockedUrl = request.nextUrl.clone();

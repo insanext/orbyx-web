@@ -1708,6 +1708,28 @@ export default function DashboardLayout({
 
           <main className="flex-1">
             <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-5 sm:py-6 lg:px-8 xl:px-10 2xl:px-12">
+              {isBillingPage && accountStatus?.blocked ? (
+                // isAccountBlocked excluye /billing a propósito (reemplazaría
+                // el contenido de esta misma página, incluida la forma de
+                // pagar, con un botón que apunta de vuelta acá). Un tenant
+                // bloqueado por middleware.ts SOLO puede llegar a /billing —
+                // nunca ve isAccountBlocked en ningún otro lado — así que
+                // sin este aviso no había ninguna indicación visible de por
+                // qué terminó acá.
+                <div
+                  className="mb-4 rounded-2xl border p-4"
+                  style={{ borderColor: "rgba(244,63,94,0.4)", background: "rgba(244,63,94,0.08)" }}
+                >
+                  <p className="text-sm font-semibold" style={{ color: textMain }}>
+                    Acceso limitado al resto del panel
+                  </p>
+                  <p className="mt-1 text-sm" style={{ color: textMuted }}>
+                    {accountStatus?.blocked_reason === "trial_expired"
+                      ? "Tu trial gratuito terminó y todavía no tienes un método de pago activo. Regulariza tu suscripción abajo para recuperar el acceso completo."
+                      : "Tu suscripción no tiene un cobro válido. Regulariza tu suscripción abajo para recuperar el acceso completo al panel."}
+                  </p>
+                </div>
+              ) : null}
               {isAccountBlocked ? (
                 <div
                   className="mx-auto mt-10 max-w-lg rounded-3xl border p-8 text-center"
