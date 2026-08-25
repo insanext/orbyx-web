@@ -30,6 +30,12 @@ type BranchItem = {
   slug?: string | null;
   address?: string | null;
   phone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  description?: string | null;
+  map_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   is_active?: boolean;
 };
 
@@ -281,6 +287,20 @@ function buildMapsUrl(address?: string) {
   )}`;
 }
 
+function buildMapsEmbedUrl(
+  address?: string | null,
+  latitude?: number | null,
+  longitude?: number | null
+) {
+  if (typeof latitude === "number" && typeof longitude === "number") {
+    return `https://www.google.com/maps?q=${latitude},${longitude}&hl=es&z=16&output=embed`;
+  }
+  if (!address) return "";
+  return `https://www.google.com/maps?q=${encodeURIComponent(
+    address
+  )}&hl=es&z=15&output=embed`;
+}
+
 function formatGoogleCalendarDate(dateString: string) {
   return new Date(dateString)
     .toISOString()
@@ -458,6 +478,449 @@ function DetailRow({
   );
 }
 
+function PublicBookingHeader({
+  business,
+  slug,
+  branches,
+  selectedBranchId,
+  onBranchChange,
+}: {
+  business: BusinessItem | null;
+  slug: string;
+  branches: BranchItem[];
+  selectedBranchId: string;
+  onBranchChange: (branchId: string) => void;
+}) {
+  const showBranchSelector = branches.length > 1;
+
+  return (
+    <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:rounded-[28px] md:p-7">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-4 md:gap-5">
+          {business?.logo_url ? (
+            <img
+              src={business.logo_url}
+              alt={business?.name || slug || "Logo"}
+              className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28"
+            />
+          ) : (
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-2xl font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28 md:text-3xl">
+              {getBusinessInitials(business?.name || slug)}
+            </div>
+          )}
+
+          <div className="min-w-0 pt-1">
+            <h1 className="text-xl font-bold tracking-tight text-slate-950 md:text-[28px]">
+              {business?.name || slug || "Reserva"}
+            </h1>
+
+            {business?.description?.trim() ? (
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 line-clamp-3">
+                {business.description.trim()}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {business?.instagram_url || business?.facebook_url ? (
+          <div className="flex shrink-0 items-center gap-2 self-start">
+            {business?.instagram_url ? (
+              <a
+                href={business.instagram_url}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-5 w-5"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
+                </svg>
+              </a>
+            ) : null}
+
+            {business?.facebook_url ? (
+              <a
+                href={business.facebook_url}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Facebook"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-4 w-4"
+                >
+                  <path d="M13.5 21v-7.5h2.5l.5-3h-3V8.5c0-.9.3-1.5 1.6-1.5H16.5V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.3H8v3h2.3V21h3.2z" />
+                </svg>
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      {showBranchSelector ? (
+        <div className="mt-5 max-w-xs">
+          <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+            Sucursal
+          </label>
+          <select
+            value={selectedBranchId}
+            onChange={(e) => onBranchChange(e.target.value)}
+            className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
+          >
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {branch.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CatalogSidebar({
+  searchQuery,
+  onSearchChange,
+}: {
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+      <div className="relative">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 110-15 7.5 7.5 0 010 15z"
+          />
+        </svg>
+        <input
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="¿Qué servicio buscas?"
+          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white"
+        />
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible">
+        <button
+          type="button"
+          className="flex shrink-0 items-center gap-2 rounded-xl border-l-[3px] border-indigo-600 bg-[#EDEBFB] px-3.5 py-2.5 text-left text-sm font-semibold text-indigo-700 lg:w-full lg:rounded-l-none lg:rounded-r-xl"
+        >
+          Todos
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ServiceCatalogSection({
+  services,
+  totalCount,
+  selectedServiceId,
+  onSelect,
+  open,
+  onToggle,
+}: {
+  services: ServiceItem[];
+  totalCount: number;
+  selectedServiceId: string;
+  onSelect: (service: ServiceItem) => void;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.2)]">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between bg-[#EDEBFB] px-4 py-3.5 text-left transition hover:bg-[#E4E1F9] md:px-5"
+      >
+        <span className="flex items-center gap-2 text-sm font-bold text-slate-900 md:text-base">
+          Servicios
+          <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-slate-500">
+            {totalCount}
+          </span>
+        </span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {open ? (
+        <div className="divide-y divide-white bg-[#F5F4FC]">
+          {services.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-slate-500 md:px-5">
+              No encontramos servicios con ese nombre.
+            </p>
+          ) : (
+            services.map((service) => {
+              const isSelected = selectedServiceId === service.id;
+
+              return (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() => onSelect(service)}
+                  className={`flex w-full items-center justify-between gap-3 border-l-[3px] px-4 py-3.5 text-left transition md:px-5 ${
+                    isSelected
+                      ? "border-indigo-600 bg-white"
+                      : "border-transparent hover:bg-white/60"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 md:text-base">
+                      {service.name}
+                    </p>
+                    {service.description?.trim() ? (
+                      <p className="mt-0.5 truncate text-xs text-slate-500 md:text-sm">
+                        {service.description.trim()}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-2.5 md:gap-3">
+                    <span className="text-sm font-semibold text-slate-700">
+                      {formatPrice(service.price)}
+                    </span>
+                    {service.duration_minutes ? (
+                      <span className="rounded-full bg-white px-2 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
+                        {service.duration_minutes} min
+                      </span>
+                    ) : null}
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                        isSelected
+                          ? "border-indigo-600 bg-indigo-600"
+                          : "border-slate-300 bg-white"
+                      }`}
+                    >
+                      {isSelected ? (
+                        <span className="h-2 w-2 rounded-full bg-white" />
+                      ) : null}
+                    </span>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function BusinessLocationPanel({
+  mapsEmbedUrl,
+  mapsLinkUrl,
+  address,
+  phone,
+  whatsappNumber,
+}: {
+  mapsEmbedUrl: string;
+  mapsLinkUrl: string;
+  address?: string | null;
+  phone?: string | null;
+  whatsappNumber: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)]">
+      {mapsEmbedUrl ? (
+        <iframe
+          src={mapsEmbedUrl}
+          title="Ubicación"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          className="h-[150px] w-full border-0"
+        />
+      ) : null}
+
+      <div className="divide-y divide-slate-100 py-1">
+        {address ? (
+          <a
+            href={mapsLinkUrl || undefined}
+            target={mapsLinkUrl ? "_blank" : undefined}
+            rel={mapsLinkUrl ? "noreferrer" : undefined}
+            className="flex items-start gap-2.5 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50 md:px-5"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 21s7-4.35 7-11a7 7 0 10-14 0c0 6.65 7 11 7 11z"
+              />
+              <circle cx="12" cy="10" r="2.5" />
+            </svg>
+            <span className="min-w-0 break-words">{address}</span>
+          </a>
+        ) : null}
+
+        {phone ? (
+          <div className="flex items-start gap-2.5 px-4 py-2.5 text-sm text-slate-700 md:px-5">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M22 16.92v3a2 2 0 01-2.18 2 19.8 19.8 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.8 19.8 0 012.12 4.2 2 2 0 014.11 2h3a2 2 0 012 1.72c.12.9.32 1.77.59 2.61a2 2 0 01-.45 2.11L8 9.69a16 16 0 006.31 6.31l1.25-1.25a2 2 0 012.11-.45c.84.27 1.71.47 2.61.59A2 2 0 0122 16.92z"
+              />
+            </svg>
+            <span className="min-w-0 break-words">{phone}</span>
+          </div>
+        ) : null}
+
+        {whatsappNumber ? (
+          <a
+            href={`https://wa.me/${whatsappNumber}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-start gap-2.5 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 md:px-5"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="mt-0.5 h-4 w-4 shrink-0"
+            >
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.966-.273-.099-.471-.148-.67.15-.198.297-.768.966-.94 1.164-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.787-1.48-1.759-1.653-2.056-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.793.372-.273.297-1.04 1.016-1.04 2.479s1.065 2.875 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.174-1.413-.075-.124-.273-.198-.57-.347z" />
+              <path d="M20.52 3.449A11.94 11.94 0 0 0 12.043 0C5.495 0 .161 5.334.161 11.882c0 2.094.547 4.139 1.587 5.945L0 24l6.356-1.667a11.86 11.86 0 0 0 5.687 1.448h.005c6.548 0 11.882-5.334 11.882-11.882a11.8 11.8 0 0 0-3.41-8.45zm-8.477 18.32h-.004a9.86 9.86 0 0 1-5.026-1.378l-.361-.214-3.772.99 1.007-3.676-.235-.377a9.86 9.86 0 0 1-1.52-5.232c.003-5.44 4.43-9.867 9.875-9.867 2.637 0 5.114 1.027 6.978 2.893a9.82 9.82 0 0 1 2.889 6.983c-.003 5.443-4.43 9.878-9.87 9.878z" />
+            </svg>
+            <span>¡Contáctame por WhatsApp!</span>
+          </a>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ProfessionalsPanel({
+  staff,
+  hasSelectedService,
+  onSeeAll,
+}: {
+  staff: StaffItem[];
+  hasSelectedService: boolean;
+  onSeeAll: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] md:p-5">
+      <p className="mb-3 text-sm font-bold text-slate-950">Profesionales</p>
+
+      {!hasSelectedService ? (
+        <p className="text-sm text-slate-500">
+          Selecciona un servicio para ver los profesionales disponibles.
+        </p>
+      ) : staff.length === 0 ? (
+        <p className="text-sm text-slate-500">Cargando profesionales...</p>
+      ) : (
+        <>
+          <div className="space-y-3">
+            {staff.slice(0, 6).map((member) => (
+              <div key={member.id} className="flex items-center gap-3">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                  {member.photo_url ? (
+                    <img
+                      src={member.photo_url}
+                      alt={member.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-600">
+                      {getStaffInitial(member.name)}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {member.name}
+                  </p>
+                  {member.role?.trim() ? (
+                    <p className="truncate text-xs text-slate-500">
+                      {member.role.trim()}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {staff.length > 6 ? (
+            <button
+              type="button"
+              onClick={onSeeAll}
+              className="mt-3 text-xs font-semibold text-indigo-600 hover:underline"
+            >
+              Ver todos los profesionales →
+            </button>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+function OrbyxPromoFooter() {
+  return (
+    <div className="mt-6 flex flex-col items-center gap-2.5 rounded-2xl bg-[#F0EEFC] px-5 py-4 text-center shadow-sm sm:flex-row sm:justify-center sm:text-left md:mt-10">
+      <img src="/orbyx-mark.png" alt="Orbyx" className="h-6 w-6 shrink-0" />
+      <p className="text-xs text-slate-600 sm:text-sm">
+        Gestiona tu negocio y reservas de forma fácil y profesional con Orbyx.{" "}
+        <a
+          href="https://orbyx.cl"
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-indigo-600 hover:underline"
+        >
+          Conoce más en orbyx.cl →
+        </a>
+      </p>
+    </div>
+  );
+}
+
 export default function Page() {
   const params = useParams();
   const pathname = usePathname();
@@ -498,6 +961,9 @@ const isGroupBookingBusiness =
   const [showDatePopover, setShowDatePopover] = useState(false);
   const [showStaffDrawer, setShowStaffDrawer] = useState(false);
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
+  const [viewStep, setViewStep] = useState<"catalog" | "booking">("catalog");
+  const [catalogSearchQuery, setCatalogSearchQuery] = useState("");
+  const [catalogSectionOpen, setCatalogSectionOpen] = useState(true);
   const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
 const [nextAvailableSlots, setNextAvailableSlots] = useState<SlotItem[]>([]);
 const [loadingNextSlots, setLoadingNextSlots] = useState(false);
@@ -553,7 +1019,6 @@ const [loadingNextSlots, setLoadingNextSlots] = useState(false);
   }, [depositPending]);
 
   const formRef = useRef<HTMLDivElement | null>(null);
-  const serviceSectionRef = useRef<HTMLDivElement | null>(null);
 
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 const noSlotsThisWeek = useMemo(() => {
@@ -584,7 +1049,6 @@ const nextAvailableDays = useMemo(() => {
     }));
 }, [nextAvailableSlots]);
 
-  const showBranchSelector = branches.length > 1;
   const visibleBookingFields = bookingFields.filter(
     (field) => field.enabled && !lockedBookingFieldKeys.has(field.key)
   );
@@ -637,6 +1101,23 @@ const nextAvailableDays = useMemo(() => {
 
   const visibleAddress = selectedBranch?.address || business?.address || null;
   const visiblePhone = selectedBranch?.phone || business?.phone || null;
+  const mapsEmbedUrl = buildMapsEmbedUrl(
+    visibleAddress,
+    selectedBranch?.latitude ?? null,
+    selectedBranch?.longitude ?? null
+  );
+  const mapsLinkUrl = buildMapsUrl(visibleAddress || undefined);
+  const visibleWhatsappNumber = normalizeWhatsappNumber(
+    business?.whatsapp || selectedBranch?.whatsapp || visiblePhone
+  );
+  const filteredCatalogServices = useMemo(() => {
+    const term = catalogSearchQuery.trim().toLowerCase();
+    if (!term) return services;
+    return services.filter((service) => {
+      const haystack = `${service.name} ${service.description || ""}`.toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [services, catalogSearchQuery]);
   const weekStartDate = weekDates[0];
   const weekEndDate = weekDates[weekDates.length - 1];
   const todayKey = formatDate(new Date());
@@ -729,6 +1210,29 @@ const nextAvailableDays = useMemo(() => {
     setWeekSlots({});
     setSubmitError("");
     setBookingSuccess(null);
+  }
+
+  function selectCatalogService(service: ServiceItem) {
+    resetAfterServiceChange();
+    setSelectedService(service);
+  }
+
+  function handleBranchChange(nextBranchId: string) {
+    resetAfterBranchChange();
+    setSelectedBranchId(nextBranchId);
+    setViewStep("catalog");
+  }
+
+  function goToBooking() {
+    if (!selectedService) return;
+    setViewStep("booking");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function backToCatalog() {
+    setViewStep("catalog");
   }
 
   function moveSelectedWeek(days: number) {
@@ -1630,178 +2134,108 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto w-full max-w-[1600px] px-3 py-2 sm:px-4 md:px-6 md:py-6 xl:px-8">
-        <div className="grid gap-3 md:gap-4 xl:grid-cols-[360px_1fr] xl:gap-6">
-          <div className="space-y-3 md:space-y-4 xl:space-y-6">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[30px] md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
-              <div className="p-3.5 md:p-5">
-                <div className="flex items-center gap-3 md:gap-4">
-                  {business?.logo_url ? (
-                    <img
-                      src={business.logo_url}
-                      alt={business?.name || slug || "Logo"}
-                      className="h-12 w-12 shrink-0 rounded-xl object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.8)] md:h-16 md:w-16 md:rounded-2xl"
-                    />
-                  ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-base font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.8)] md:h-16 md:w-16 md:rounded-2xl md:text-lg">
-                      {getBusinessInitials(business?.name || slug)}
-                    </div>
-                  )}
+    <div className="min-h-screen bg-gradient-to-b from-[#FBFAFF] to-[#F1EFFC]">
+      <div className="mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 md:px-6 md:py-8 xl:px-8">
+        <PublicBookingHeader
+          business={business}
+          slug={slug}
+          branches={branches}
+          selectedBranchId={selectedBranchId}
+          onBranchChange={handleBranchChange}
+        />
 
-                  <div className="min-w-0">
-                    <h1 className="truncate text-lg font-bold tracking-tight text-slate-950 md:text-2xl">
-                      {business?.name || slug || "Reserva"}
-                    </h1>
-                    <span className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 md:mt-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Reserva online
-                    </span>
-                  </div>
+        {viewStep === "catalog" ? (
+          <div className="mt-4 grid gap-4 md:mt-6 lg:grid-cols-[230px_1fr_290px] lg:gap-5 xl:gap-6">
+            <CatalogSidebar
+              searchQuery={catalogSearchQuery}
+              onSearchChange={setCatalogSearchQuery}
+            />
+
+            <div className="min-w-0 space-y-4">
+              {loadingServices ? (
+                <div className="rounded-2xl border border-slate-100 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+                  Cargando servicios...
                 </div>
+              ) : (
+                <ServiceCatalogSection
+                  services={filteredCatalogServices}
+                  totalCount={services.length}
+                  selectedServiceId={selectedService?.id || ""}
+                  onSelect={selectCatalogService}
+                  open={catalogSectionOpen}
+                  onToggle={() => setCatalogSectionOpen((current) => !current)}
+                />
+              )}
 
-                 <div className="mt-3 grid gap-2 text-xs text-slate-600 md:mt-4 md:text-sm">
-                  {visibleAddress ? (
-                    <span className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 md:rounded-2xl">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        className="h-4 w-4 text-slate-500"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 21s7-4.35 7-11a7 7 0 10-14 0c0 6.65 7 11 7 11z"
-                        />
-                        <circle cx="12" cy="10" r="2.5" />
-                      </svg>
-                      <span className="min-w-0 truncate">{visibleAddress}</span>
-                    </span>
-                  ) : null}
-                  {visiblePhone ? (
-                    <span className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 md:rounded-2xl">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        className="h-4 w-4 text-slate-500"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M22 16.92v3a2 2 0 01-2.18 2 19.8 19.8 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.8 19.8 0 012.12 4.2 2 2 0 014.11 2h3a2 2 0 012 1.72c.12.9.32 1.77.59 2.61a2 2 0 01-.45 2.11L8 9.69a16 16 0 006.31 6.31l1.25-1.25a2 2 0 012.11-.45c.84.27 1.71.47 2.61.59A2 2 0 0122 16.92z"
-                        />
-                      </svg>
-                      <span className="min-w-0 truncate">{visiblePhone}</span>
-                    </span>
-                  ) : null}
+              {selectedService ? (
+                <button
+                  type="button"
+                  onClick={goToBooking}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95"
+                >
+                  Ir a Agendar
+                  <span aria-hidden="true">→</span>
+                </button>
+              ) : null}
+            </div>
+
+            <div className="space-y-4">
+              <BusinessLocationPanel
+                mapsEmbedUrl={mapsEmbedUrl}
+                mapsLinkUrl={mapsLinkUrl}
+                address={visibleAddress}
+                phone={visiblePhone}
+                whatsappNumber={visibleWhatsappNumber}
+              />
+
+              <ProfessionalsPanel
+                staff={staffOptions}
+                hasSelectedService={Boolean(selectedService)}
+                onSeeAll={() => {
+                  setStaffSearchQuery("");
+                  setShowStaffDrawer(true);
+                }}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {viewStep === "booking" && selectedService ? (
+        <div className="mt-4 grid gap-3 md:mt-6 md:gap-4 xl:grid-cols-[300px_1fr] xl:gap-6">
+          <div className="space-y-3 md:space-y-4 xl:space-y-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[26px] md:p-4">
+              <button
+                type="button"
+                onClick={backToCatalog}
+                className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:underline"
+              >
+                <span aria-hidden="true">←</span> Volver al catálogo
+              </button>
+
+              <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-2xl md:p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  {selectedService.name}
+                </p>
+
+                {selectedService.description?.trim() ? (
+                  <p className="mt-1.5 text-xs leading-5 text-slate-600 md:text-sm">
+                    {selectedService.description.trim()}
+                  </p>
+                ) : null}
+
+                <div className="mt-2 flex flex-wrap gap-2 text-xs md:mt-3">
+                  <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
+                    {selectedService.duration_minutes || 0} min
+                  </span>
+                  <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
+                    {formatPrice(selectedService.price)}
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[26px] md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] xl:min-h-[860px]">
               <div className="space-y-2.5 md:space-y-4">
-                {showBranchSelector ? (
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      Sucursal
-                    </label>
-                    <select
-                      value={selectedBranchId}
-                      onChange={(e) => {
-                        const nextBranchId = e.target.value;
-                        resetAfterBranchChange();
-                        setSelectedBranchId(nextBranchId);
-                      }}
-                    className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
-                    >
-                      {branches.map((branch) => (
-                        <option key={branch.id} value={branch.id}>
-                          {branch.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : null}
-
-                                <div
-                  ref={serviceSectionRef}
-                  className="relative"
-                >
-{!selectedService ? (
-  <div className="pointer-events-none absolute -top-3 left-14 z-20 hidden animate-bounce flex-col items-start sm:flex">
-    <div className="animate-pulse rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 px-4 py-1.5 text-xs font-semibold text-white shadow-[0_10px_30px_-12px_rgba(245,158,11,0.9)]">
-      Selecciona un servicio aquí
-    </div>
-    <div className="ml-8 h-0 w-0 border-l-[9px] border-r-[9px] border-t-[12px] border-l-transparent border-r-transparent border-t-amber-500" />
-  </div>
-) : null}
-
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Servicio
-                  </label>
-                  <select
-                    value={selectedService?.id || ""}
-                    disabled={loadingServices}
-                    onChange={(e) => {
-                      const service =
-                        services.find((item) => item.id === e.target.value) ||
-                        null;
-                      resetAfterServiceChange();
-                      setSelectedService(service);
-                    }}
-                    className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition disabled:bg-slate-100 focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
-                  >
-                    <option value="">
-                      {loadingServices
-                        ? "Cargando servicios..."
-                        : services.length === 0
-                        ? "Sin servicios disponibles"
-                        : "Selecciona servicio"}
-                    </option>
-
-                    {services.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.name}
-                        {service.duration_minutes
-                          ? ` · ${service.duration_minutes} min`
-                          : ""}
-                        {typeof service.price === "number"
-                          ? ` · ${formatPrice(service.price)}`
-                          : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selectedService ? (
-                  <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-2xl md:p-4">
-                    <p className="text-sm font-semibold text-slate-900">
-                      {selectedService.name}
-                    </p>
-
-                    {selectedService.description?.trim() ? (
-                      <p className="mt-1.5 text-xs leading-5 text-slate-600 md:text-sm">
-                        {selectedService.description.trim()}
-                      </p>
-                    ) : null}
-
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs md:mt-3">
-                      <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
-                        {selectedService!.duration_minutes || 0} min
-                      </span>
-                      <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
-                        {formatPrice(selectedService!.price)}
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
-
                                 {selectedService ? (
                   <div>
                     <div className="mb-2.5 md:mb-3">
@@ -2947,6 +3381,9 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             </div>
           </div>
         </div>
+        ) : null}
+
+        <OrbyxPromoFooter />
 
         {showStaffDrawer ? (
           <div className="fixed inset-0 z-50">
