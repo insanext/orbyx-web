@@ -1396,9 +1396,12 @@ customer_instructions: editForm.customer_instructions.trim() || null,
 
       setSaving(true);
 
-      const response = await apiFetch(`${BACKEND_URL}/services/${serviceId}`, {
-        method: "DELETE",
-      });
+      const response = await apiFetch(
+        `${BACKEND_URL}/services/${serviceId}?tenant_id=${tenantId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const data = await response.json();
 
@@ -1767,6 +1770,12 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                       }),
                     });
                     const newGroup = await res.json();
+                    if (!res.ok || !newGroup?.id) {
+                      setSaveError(
+                        newGroup?.error || "No se pudo crear la categoría"
+                      );
+                      return;
+                    }
                     setGroups((prev) => [...prev, newGroup]);
                     setNewGroupName("");
                     setShowNewGroupInput(false);
