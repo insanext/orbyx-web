@@ -581,16 +581,15 @@ function BusinessBannerCard({
   );
 }
 
-const CATEGORY_TINTS = [
-  { header: "linear-gradient(135deg, #E3DEFB, #D2C6F5)", body: "#EEEAFB" },
-  { header: "linear-gradient(135deg, #DCEBFC, #C2DBFA)", body: "#E7F1FC" },
-  { header: "linear-gradient(135deg, #F8E9D0, #EFD5A7)", body: "#FBF2E2" },
-  { header: "linear-gradient(135deg, #DCF1E1, #BFE5CB)", body: "#E7F6EA" },
-  { header: "linear-gradient(135deg, #F8DCE8, #EFBED6)", body: "#FBE9F0" },
-];
+const CATEGORY_HEADER_GRADIENT = "linear-gradient(135deg, #5b6270, #2f333c)";
+
+const CATEGORY_BODY_TINTS = ["#EEEAFB", "#E7F1FC", "#FBF2E2", "#E7F6EA", "#FBE9F0"];
 
 function getCategoryTint(index: number) {
-  return CATEGORY_TINTS[index % CATEGORY_TINTS.length];
+  return {
+    header: CATEGORY_HEADER_GRADIENT,
+    body: CATEGORY_BODY_TINTS[index % CATEGORY_BODY_TINTS.length],
+  };
 }
 
 type CatalogCategoryOption = {
@@ -704,12 +703,12 @@ function ServiceCatalogAccordion({
             <button
               type="button"
               onClick={() => onToggleCategory(category.key)}
-              className="flex w-full items-center justify-between px-4 py-3.5 text-left transition md:px-5"
+              className="flex w-full items-center justify-between gap-2 px-3 py-3.5 text-left transition md:px-5"
               style={{ background: tint.header }}
             >
-              <span className="flex items-center gap-2 text-sm font-bold text-slate-900 md:text-base">
+              <span className="flex items-center gap-2 text-sm font-bold text-white md:text-base">
                 {category.name}
-                <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-slate-500">
+                <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-slate-100">
                   {category.totalCount}
                 </span>
               </span>
@@ -719,7 +718,7 @@ function ServiceCatalogAccordion({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
+                className={`h-4 w-4 shrink-0 text-slate-300 transition-transform ${
                   open ? "rotate-180" : ""
                 }`}
               >
@@ -742,10 +741,10 @@ function ServiceCatalogAccordion({
                         key={service.id}
                         type="button"
                         onClick={() => onSelect(service)}
-                        className={`flex w-full items-center justify-between gap-3 border-l-[3px] px-4 py-3.5 text-left transition md:px-5 ${
+                        className={`flex w-full items-center justify-between gap-2 border-l-4 px-3 py-3.5 text-left transition sm:gap-3 md:px-5 ${
                           isSelected
-                            ? "border-indigo-600 bg-white"
-                            : "border-transparent hover:bg-white/60"
+                            ? "border-indigo-600 bg-indigo-50 shadow-[inset_0_0_0_1px_rgba(79,70,229,0.35)]"
+                            : "border-transparent hover:border-slate-300 hover:bg-slate-50"
                         }`}
                       >
                         <div className="min-w-0">
@@ -759,12 +758,12 @@ function ServiceCatalogAccordion({
                           ) : null}
                         </div>
 
-                        <div className="flex shrink-0 items-center gap-2.5 md:gap-3">
-                          <span className="text-sm font-semibold text-slate-700">
+                        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5 md:gap-3">
+                          <span className="whitespace-nowrap text-sm font-semibold text-slate-700">
                             {formatPrice(service.price)}
                           </span>
                           {service.duration_minutes ? (
-                            <span className="rounded-full bg-white px-2 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
+                            <span className="whitespace-nowrap rounded-full bg-white px-2 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
                               {service.duration_minutes} min
                             </span>
                           ) : null}
