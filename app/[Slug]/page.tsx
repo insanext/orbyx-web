@@ -21,6 +21,20 @@ type ServiceItem = {
   price?: number | null;
   is_group?: boolean | null;
   capacity?: number | null;
+  group_id?: string | null;
+};
+
+type ServiceGroupItem = {
+  id: string;
+  name: string;
+  sort_order?: number | null;
+};
+
+type BusinessHourDay = {
+  day_of_week: number;
+  enabled: boolean;
+  start_time?: string | null;
+  end_time?: string | null;
 };
 
 type BranchItem = {
@@ -104,6 +118,8 @@ type PublicServicesResponse = {
   branches?: BranchItem[];
   calendar_id?: string | null;
   services?: ServiceItem[];
+  service_groups?: ServiceGroupItem[];
+  business_hours?: BusinessHourDay[];
 };
 
 type BookingSuccessData = {
@@ -287,19 +303,33 @@ function buildMapsUrl(address?: string) {
   )}`;
 }
 
-function buildMapsEmbedUrl(
-  address?: string | null,
-  latitude?: number | null,
-  longitude?: number | null
-) {
-  if (typeof latitude === "number" && typeof longitude === "number") {
-    return `https://www.google.com/maps?q=${latitude},${longitude}&hl=es&z=16&output=embed`;
-  }
-  if (!address) return "";
-  return `https://www.google.com/maps?q=${encodeURIComponent(
-    address
-  )}&hl=es&z=15&output=embed`;
+function buildMapThumbnailUrl(slug: string, branchId?: string | null) {
+  if (!slug) return "";
+  const query = branchId ? `?branch_id=${encodeURIComponent(branchId)}` : "";
+  return `${BACKEND_URL}/public/map-thumbnail/${encodeURIComponent(slug)}${query}`;
 }
+
+function formatHourLabel(time?: string | null) {
+  if (!time) return "";
+  const [h, m] = time.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return time;
+  const period = h >= 12 ? "pm" : "am";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return m === 0 ? `${hour12} ${period}` : `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+const UNGROUPED_CATEGORY_KEY = "__sin_categoria__";
+
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const WEEKDAY_LABELS: Record<number, string> = {
+  0: "Domingo",
+  1: "Lunes",
+  2: "Martes",
+  3: "Miércoles",
+  4: "Jueves",
+  5: "Viernes",
+  6: "Sábado",
+};
 
 function formatGoogleCalendarDate(dateString: string) {
   return new Date(dateString)
@@ -591,12 +621,36 @@ function PublicBookingHeader({
   );
 }
 
+const CATEGORY_TINTS = [
+  { header: "#EDEBFB", headerHover: "#E4E1F9", body: "#F5F4FC" },
+  { header: "#EAF2FC", headerHover: "#DFEBFA", body: "#F3F8FE" },
+  { header: "#FBF1E4", headerHover: "#F8E9D5", body: "#FDF8F1" },
+  { header: "#EAF6EE", headerHover: "#DFF1E5", body: "#F3FAF5" },
+  { header: "#FBEAF0", headerHover: "#F8DFE9", body: "#FDF5F8" },
+];
+
+function getCategoryTint(index: number) {
+  return CATEGORY_TINTS[index % CATEGORY_TINTS.length];
+}
+
+type CatalogCategoryOption = {
+  key: string;
+  name: string;
+  totalCount: number;
+};
+
 function CatalogSidebar({
   searchQuery,
   onSearchChange,
+  categories,
+  activeCategoryKey,
+  onCategoryChange,
 }: {
   searchQuery: string;
   onSearchChange: (value: string) => void;
+  categories: CatalogCategoryOption[];
+  activeCategoryKey: string;
+  onCategoryChange: (key: string) => void;
 }) {
   return (
     <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
@@ -626,143 +680,204 @@ function CatalogSidebar({
       <div className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible">
         <button
           type="button"
-          className="flex shrink-0 items-center gap-2 rounded-xl border-l-[3px] border-indigo-600 bg-[#EDEBFB] px-3.5 py-2.5 text-left text-sm font-semibold text-indigo-700 lg:w-full lg:rounded-l-none lg:rounded-r-xl"
+          onClick={() => onCategoryChange("todos")}
+          className={`flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2.5 text-left text-sm transition lg:w-full lg:rounded-l-none lg:rounded-r-xl ${
+            activeCategoryKey === "todos"
+              ? "border-l-[3px] border-indigo-600 bg-[#EDEBFB] font-semibold text-indigo-700"
+              : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
+          }`}
         >
           Todos
         </button>
+
+        {categories.map((category) => (
+          <button
+            key={category.key}
+            type="button"
+            onClick={() => onCategoryChange(category.key)}
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2.5 text-left text-sm transition lg:w-full lg:rounded-l-none lg:rounded-r-xl ${
+              activeCategoryKey === category.key
+                ? "border-l-[3px] border-indigo-600 bg-[#EDEBFB] font-semibold text-indigo-700"
+                : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {category.name}
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
-function ServiceCatalogSection({
-  services,
-  totalCount,
+function ServiceCatalogAccordion({
+  categories,
   selectedServiceId,
   onSelect,
-  open,
-  onToggle,
+  collapsedKeys,
+  onToggleCategory,
 }: {
-  services: ServiceItem[];
-  totalCount: number;
+  categories: { key: string; name: string; totalCount: number; services: ServiceItem[] }[];
   selectedServiceId: string;
   onSelect: (service: ServiceItem) => void;
-  open: boolean;
-  onToggle: () => void;
+  collapsedKeys: Set<string>;
+  onToggleCategory: (key: string) => void;
 }) {
+  if (categories.length === 0) {
+    return (
+      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+        No hay servicios disponibles.
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.2)]">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between bg-[#EDEBFB] px-4 py-3.5 text-left transition hover:bg-[#E4E1F9] md:px-5"
-      >
-        <span className="flex items-center gap-2 text-sm font-bold text-slate-900 md:text-base">
-          Servicios
-          <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-slate-500">
-            {totalCount}
-          </span>
-        </span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
+    <div className="space-y-3">
+      {categories.map((category, index) => {
+        const tint = getCategoryTint(index);
+        const open = !collapsedKeys.has(category.key);
 
-      {open ? (
-        <div className="divide-y divide-white bg-[#F5F4FC]">
-          {services.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-slate-500 md:px-5">
-              No encontramos servicios con ese nombre.
-            </p>
-          ) : (
-            services.map((service) => {
-              const isSelected = selectedServiceId === service.id;
+        return (
+          <div
+            key={category.key}
+            className="overflow-hidden rounded-2xl border border-slate-100 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.2)]"
+          >
+            <button
+              type="button"
+              onClick={() => onToggleCategory(category.key)}
+              className="flex w-full items-center justify-between px-4 py-3.5 text-left transition md:px-5"
+              style={{ background: tint.header }}
+            >
+              <span className="flex items-center gap-2 text-sm font-bold text-slate-900 md:text-base">
+                {category.name}
+                <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-slate-500">
+                  {category.totalCount}
+                </span>
+              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
+                  open ? "rotate-180" : ""
+                }`}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
 
-              return (
-                <button
-                  key={service.id}
-                  type="button"
-                  onClick={() => onSelect(service)}
-                  className={`flex w-full items-center justify-between gap-3 border-l-[3px] px-4 py-3.5 text-left transition md:px-5 ${
-                    isSelected
-                      ? "border-indigo-600 bg-white"
-                      : "border-transparent hover:bg-white/60"
-                  }`}
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 md:text-base">
-                      {service.name}
-                    </p>
-                    {service.description?.trim() ? (
-                      <p className="mt-0.5 truncate text-xs text-slate-500 md:text-sm">
-                        {service.description.trim()}
-                      </p>
-                    ) : null}
-                  </div>
+            {open ? (
+              <div className="divide-y divide-white" style={{ background: tint.body }}>
+                {category.services.length === 0 ? (
+                  <p className="px-4 py-6 text-center text-sm text-slate-500 md:px-5">
+                    No encontramos servicios con ese nombre.
+                  </p>
+                ) : (
+                  category.services.map((service) => {
+                    const isSelected = selectedServiceId === service.id;
 
-                  <div className="flex shrink-0 items-center gap-2.5 md:gap-3">
-                    <span className="text-sm font-semibold text-slate-700">
-                      {formatPrice(service.price)}
-                    </span>
-                    {service.duration_minutes ? (
-                      <span className="rounded-full bg-white px-2 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
-                        {service.duration_minutes} min
-                      </span>
-                    ) : null}
-                    <span
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                        isSelected
-                          ? "border-indigo-600 bg-indigo-600"
-                          : "border-slate-300 bg-white"
-                      }`}
-                    >
-                      {isSelected ? (
-                        <span className="h-2 w-2 rounded-full bg-white" />
-                      ) : null}
-                    </span>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
-      ) : null}
+                    return (
+                      <button
+                        key={service.id}
+                        type="button"
+                        onClick={() => onSelect(service)}
+                        className={`flex w-full items-center justify-between gap-3 border-l-[3px] px-4 py-3.5 text-left transition md:px-5 ${
+                          isSelected
+                            ? "border-indigo-600 bg-white"
+                            : "border-transparent hover:bg-white/60"
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 md:text-base">
+                            {service.name}
+                          </p>
+                          {service.description?.trim() ? (
+                            <p className="mt-0.5 truncate text-xs text-slate-500 md:text-sm">
+                              {service.description.trim()}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-2.5 md:gap-3">
+                          <span className="text-sm font-semibold text-slate-700">
+                            {formatPrice(service.price)}
+                          </span>
+                          {service.duration_minutes ? (
+                            <span className="rounded-full bg-white px-2 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
+                              {service.duration_minutes} min
+                            </span>
+                          ) : null}
+                          <span
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                              isSelected
+                                ? "border-indigo-600 bg-indigo-600"
+                                : "border-slate-300 bg-white"
+                            }`}
+                          >
+                            {isSelected ? (
+                              <span className="h-2 w-2 rounded-full bg-white" />
+                            ) : null}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 function BusinessLocationPanel({
-  mapsEmbedUrl,
+  mapThumbnailUrl,
   mapsLinkUrl,
   address,
   phone,
   whatsappNumber,
+  weeklyHours,
 }: {
-  mapsEmbedUrl: string;
+  mapThumbnailUrl: string;
   mapsLinkUrl: string;
   address?: string | null;
   phone?: string | null;
   whatsappNumber: string;
+  weeklyHours: {
+    day: number;
+    label: string;
+    enabled: boolean;
+    start_time: string | null;
+    end_time: string | null;
+  }[];
 }) {
+  const [hoursOpen, setHoursOpen] = useState(false);
+  const hasHours = weeklyHours.some((row) => row.enabled);
+
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)]">
-      {mapsEmbedUrl ? (
-        <iframe
-          src={mapsEmbedUrl}
-          title="Ubicación"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          className="h-[150px] w-full border-0"
-        />
+      {address ? (
+        <div className="relative">
+          {mapsLinkUrl ? (
+            <a
+              href={mapsLinkUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="absolute left-2.5 top-2.5 z-10 inline-flex items-center gap-1 rounded-lg bg-white/95 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-white"
+            >
+              Maps <span aria-hidden="true">⧉</span>
+            </a>
+          ) : null}
+          <img
+            src={mapThumbnailUrl}
+            alt={`Mapa de ${address}`}
+            className="h-[150px] w-full object-cover"
+            loading="lazy"
+          />
+        </div>
       ) : null}
 
       <div className="divide-y divide-slate-100 py-1">
@@ -830,6 +945,61 @@ function BusinessLocationPanel({
             </svg>
             <span>¡Contáctame por WhatsApp!</span>
           </a>
+        ) : null}
+
+        {hasHours ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setHoursOpen((current) => !current)}
+              className="flex w-full items-center justify-between gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50 md:px-5"
+            >
+              <span className="flex items-center gap-2.5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-4 w-4 shrink-0 text-slate-400"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 3" />
+                </svg>
+                Ver horario
+              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
+                  hoursOpen ? "rotate-180" : ""
+                }`}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+
+            {hoursOpen ? (
+              <div className="space-y-1 px-4 pb-3 md:px-5">
+                {weeklyHours.map((row) => (
+                  <div
+                    key={row.day}
+                    className="flex items-center justify-between text-xs text-slate-600"
+                  >
+                    <span>{row.label}</span>
+                    <span className={row.enabled ? "font-medium text-slate-800" : "text-slate-400"}>
+                      {row.enabled
+                        ? `${formatHourLabel(row.start_time)} – ${formatHourLabel(row.end_time)}`
+                        : "Cerrado"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </div>
@@ -949,6 +1119,8 @@ const isGroupBookingBusiness =
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [services, setServices] = useState<ServiceItem[]>([]);
+  const [serviceGroups, setServiceGroups] = useState<ServiceGroupItem[]>([]);
+  const [businessHours, setBusinessHours] = useState<BusinessHourDay[]>([]);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(
     null
   );
@@ -963,7 +1135,10 @@ const isGroupBookingBusiness =
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
   const [viewStep, setViewStep] = useState<"catalog" | "booking">("catalog");
   const [catalogSearchQuery, setCatalogSearchQuery] = useState("");
-  const [catalogSectionOpen, setCatalogSectionOpen] = useState(true);
+  const [activeCategoryKey, setActiveCategoryKey] = useState("todos");
+  const [collapsedCatalogSections, setCollapsedCatalogSections] = useState<
+    Set<string>
+  >(new Set());
   const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
 const [nextAvailableSlots, setNextAvailableSlots] = useState<SlotItem[]>([]);
 const [loadingNextSlots, setLoadingNextSlots] = useState(false);
@@ -1101,23 +1276,71 @@ const nextAvailableDays = useMemo(() => {
 
   const visibleAddress = selectedBranch?.address || business?.address || null;
   const visiblePhone = selectedBranch?.phone || business?.phone || null;
-  const mapsEmbedUrl = buildMapsEmbedUrl(
-    visibleAddress,
-    selectedBranch?.latitude ?? null,
-    selectedBranch?.longitude ?? null
-  );
+  const mapThumbnailUrl = buildMapThumbnailUrl(slug, selectedBranchId);
   const mapsLinkUrl = buildMapsUrl(visibleAddress || undefined);
   const visibleWhatsappNumber = normalizeWhatsappNumber(
     business?.whatsapp || selectedBranch?.whatsapp || visiblePhone
   );
-  const filteredCatalogServices = useMemo(() => {
+
+  const catalogCategories = useMemo(() => {
     const term = catalogSearchQuery.trim().toLowerCase();
-    if (!term) return services;
-    return services.filter((service) => {
+    const matchesSearch = (service: ServiceItem) => {
+      if (!term) return true;
       const haystack = `${service.name} ${service.description || ""}`.toLowerCase();
       return haystack.includes(term);
+    };
+
+    const sortedGroups = [...serviceGroups].sort(
+      (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+    );
+
+    const categories = sortedGroups.map((group) => {
+      const groupServices = services.filter((s) => s.group_id === group.id);
+      return {
+        key: group.id,
+        name: group.name,
+        totalCount: groupServices.length,
+        services: groupServices.filter(matchesSearch),
+      };
     });
-  }, [services, catalogSearchQuery]);
+
+    const ungroupedServices = services.filter((s) => !s.group_id);
+    if (ungroupedServices.length > 0) {
+      categories.push({
+        key: UNGROUPED_CATEGORY_KEY,
+        name: "Sin categoría",
+        totalCount: ungroupedServices.length,
+        services: ungroupedServices.filter(matchesSearch),
+      });
+    }
+
+    if (categories.length === 0 && services.length > 0) {
+      categories.push({
+        key: UNGROUPED_CATEGORY_KEY,
+        name: "Servicios",
+        totalCount: services.length,
+        services: services.filter(matchesSearch),
+      });
+    }
+
+    return categories;
+  }, [services, serviceGroups, catalogSearchQuery]);
+
+  const visibleCatalogCategories =
+    activeCategoryKey === "todos"
+      ? catalogCategories
+      : catalogCategories.filter((category) => category.key === activeCategoryKey);
+
+  const weeklyHoursOrdered = WEEKDAY_ORDER.map((day) => {
+    const row = businessHours.find((h) => h.day_of_week === day);
+    return {
+      day,
+      label: WEEKDAY_LABELS[day],
+      enabled: Boolean(row?.enabled),
+      start_time: row?.start_time || null,
+      end_time: row?.end_time || null,
+    };
+  });
   const weekStartDate = weekDates[0];
   const weekEndDate = weekDates[weekDates.length - 1];
   const todayKey = formatDate(new Date());
@@ -1221,6 +1444,7 @@ const nextAvailableDays = useMemo(() => {
     resetAfterBranchChange();
     setSelectedBranchId(nextBranchId);
     setViewStep("catalog");
+    setActiveCategoryKey("todos");
   }
 
   function goToBooking() {
@@ -1316,6 +1540,12 @@ const nextAvailableDays = useMemo(() => {
         setBranches(normalizedBranches);
         setSelectedBranchId(initialBranchId);
         setServices(initialServices);
+        setServiceGroups(
+          Array.isArray(data.service_groups) ? data.service_groups : []
+        );
+        setBusinessHours(
+          Array.isArray(data.business_hours) ? data.business_hours : []
+        );
 
         setBookingFields(
           normalizeBookingFieldsConfig(data.business?.booking_fields_config)
@@ -1327,6 +1557,8 @@ const nextAvailableDays = useMemo(() => {
         setBranches([]);
         setSelectedBranchId("");
         setServices([]);
+        setServiceGroups([]);
+        setBusinessHours([]);
       } finally {
         setLoadingPage(false);
       }
@@ -1439,6 +1671,12 @@ const nextAvailableDays = useMemo(() => {
           : [];
 
         setServices(rows);
+        setServiceGroups(
+          Array.isArray(data.service_groups) ? data.service_groups : []
+        );
+        setBusinessHours(
+          Array.isArray(data.business_hours) ? data.business_hours : []
+        );
 
         setSelectedService((prev) => {
           if (!prev) return null;
@@ -1447,6 +1685,7 @@ const nextAvailableDays = useMemo(() => {
       } catch (error) {
         console.error("Error cargando servicios:", error);
         setServices([]);
+        setServiceGroups([]);
         setSelectedService(null);
       } finally {
         setLoadingServices(false);
@@ -2149,6 +2388,13 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
             <CatalogSidebar
               searchQuery={catalogSearchQuery}
               onSearchChange={setCatalogSearchQuery}
+              categories={catalogCategories.map((category) => ({
+                key: category.key,
+                name: category.name,
+                totalCount: category.totalCount,
+              }))}
+              activeCategoryKey={activeCategoryKey}
+              onCategoryChange={setActiveCategoryKey}
             />
 
             <div className="min-w-0 space-y-4">
@@ -2157,13 +2403,22 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                   Cargando servicios...
                 </div>
               ) : (
-                <ServiceCatalogSection
-                  services={filteredCatalogServices}
-                  totalCount={services.length}
+                <ServiceCatalogAccordion
+                  categories={visibleCatalogCategories}
                   selectedServiceId={selectedService?.id || ""}
                   onSelect={selectCatalogService}
-                  open={catalogSectionOpen}
-                  onToggle={() => setCatalogSectionOpen((current) => !current)}
+                  collapsedKeys={collapsedCatalogSections}
+                  onToggleCategory={(key) =>
+                    setCollapsedCatalogSections((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(key)) {
+                        next.delete(key);
+                      } else {
+                        next.add(key);
+                      }
+                      return next;
+                    })
+                  }
                 />
               )}
 
@@ -2181,11 +2436,12 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
             <div className="space-y-4">
               <BusinessLocationPanel
-                mapsEmbedUrl={mapsEmbedUrl}
+                mapThumbnailUrl={mapThumbnailUrl}
                 mapsLinkUrl={mapsLinkUrl}
                 address={visibleAddress}
                 phone={visiblePhone}
                 whatsappNumber={visibleWhatsappNumber}
+                weeklyHours={weeklyHoursOrdered}
               />
 
               <ProfessionalsPanel
