@@ -581,16 +581,7 @@ function BusinessBannerCard({
   );
 }
 
-const CATEGORY_HEADER_GRADIENT = "linear-gradient(135deg, #5b6270, #2f333c)";
-
-const CATEGORY_BODY_TINTS = ["#EEEAFB", "#E7F1FC", "#FBF2E2", "#E7F6EA", "#FBE9F0"];
-
-function getCategoryTint(index: number) {
-  return {
-    header: CATEGORY_HEADER_GRADIENT,
-    body: CATEGORY_BODY_TINTS[index % CATEGORY_BODY_TINTS.length],
-  };
-}
+const CATEGORY_HEADER_GRADIENT = "linear-gradient(135deg, #E7E9ED, #C5CAD2)";
 
 type CatalogCategoryOption = {
   key: string;
@@ -691,8 +682,7 @@ function ServiceCatalogAccordion({
 
   return (
     <div className="space-y-3">
-      {categories.map((category, index) => {
-        const tint = getCategoryTint(index);
+      {categories.map((category) => {
         const open = !collapsedKeys.has(category.key);
 
         return (
@@ -704,11 +694,11 @@ function ServiceCatalogAccordion({
               type="button"
               onClick={() => onToggleCategory(category.key)}
               className="flex w-full items-center justify-between gap-2 px-3 py-3.5 text-left transition md:px-5"
-              style={{ background: tint.header }}
+              style={{ background: CATEGORY_HEADER_GRADIENT }}
             >
-              <span className="flex items-center gap-2 text-sm font-bold text-white md:text-base">
+              <span className="flex items-center gap-2 text-sm font-bold text-slate-800 md:text-base">
                 {category.name}
-                <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-slate-100">
+                <span className="rounded-full bg-white/60 px-2 py-0.5 text-xs font-semibold text-slate-600">
                   {category.totalCount}
                 </span>
               </span>
@@ -718,7 +708,7 @@ function ServiceCatalogAccordion({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className={`h-4 w-4 shrink-0 text-slate-300 transition-transform ${
+                className={`h-4 w-4 shrink-0 text-slate-600 transition-transform ${
                   open ? "rotate-180" : ""
                 }`}
               >
@@ -727,7 +717,7 @@ function ServiceCatalogAccordion({
             </button>
 
             {open ? (
-              <div className="divide-y divide-white" style={{ background: tint.body }}>
+              <div className="divide-y divide-slate-100 bg-white">
                 {category.services.length === 0 ? (
                   <p className="px-4 py-6 text-center text-sm text-slate-500 md:px-5">
                     No encontramos servicios con ese nombre.
