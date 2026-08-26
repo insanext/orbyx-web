@@ -514,19 +514,37 @@ function PublicBookingHeader({
   branches,
   selectedBranchId,
   onBranchChange,
+  mapThumbnailUrl,
+  mapsLinkUrl,
+  address,
+  phone,
+  whatsappNumber,
+  weeklyHours,
 }: {
   business: BusinessItem | null;
   slug: string;
   branches: BranchItem[];
   selectedBranchId: string;
   onBranchChange: (branchId: string) => void;
+  mapThumbnailUrl: string;
+  mapsLinkUrl: string;
+  address?: string | null;
+  phone?: string | null;
+  whatsappNumber: string;
+  weeklyHours: {
+    day: number;
+    label: string;
+    enabled: boolean;
+    start_time: string | null;
+    end_time: string | null;
+  }[];
 }) {
   const showBranchSelector = branches.length > 1;
 
   return (
     <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:rounded-[28px] md:p-7">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex items-start gap-4 md:gap-5">
+      <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+        <div className="flex min-w-0 items-start gap-4 md:flex-1 md:gap-5">
           {business?.logo_url ? (
             <img
               src={business.logo_url}
@@ -545,78 +563,45 @@ function PublicBookingHeader({
             </h1>
 
             {business?.description?.trim() ? (
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 line-clamp-3">
+              <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 line-clamp-3">
                 {business.description.trim()}
               </p>
             ) : null}
+
+            {showBranchSelector ? (
+              <div className="mt-4 max-w-xs">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                  Sucursal
+                </label>
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => onBranchChange(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
+                >
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
         </div>
 
-        {business?.instagram_url || business?.facebook_url ? (
-          <div className="flex shrink-0 items-center gap-2 self-start">
-            {business?.instagram_url ? (
-              <a
-                href={business.instagram_url}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Instagram"
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-5 w-5"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="5" />
-                  <circle cx="12" cy="12" r="4" />
-                  <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
-                </svg>
-              </a>
-            ) : null}
-
-            {business?.facebook_url ? (
-              <a
-                href={business.facebook_url}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Facebook"
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-4 w-4"
-                >
-                  <path d="M13.5 21v-7.5h2.5l.5-3h-3V8.5c0-.9.3-1.5 1.6-1.5H16.5V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.3H8v3h2.3V21h3.2z" />
-                </svg>
-              </a>
-            ) : null}
-          </div>
-        ) : null}
+        <div className="w-full shrink-0 md:w-[300px]">
+          <BusinessLocationPanel
+            mapThumbnailUrl={mapThumbnailUrl}
+            mapsLinkUrl={mapsLinkUrl}
+            address={address}
+            phone={phone}
+            whatsappNumber={whatsappNumber}
+            weeklyHours={weeklyHours}
+            instagramUrl={business?.instagram_url}
+            facebookUrl={business?.facebook_url}
+          />
+        </div>
       </div>
-
-      {showBranchSelector ? (
-        <div className="mt-5 max-w-xs">
-          <label className="mb-1.5 block text-xs font-semibold text-slate-500">
-            Sucursal
-          </label>
-          <select
-            value={selectedBranchId}
-            onChange={(e) => onBranchChange(e.target.value)}
-            className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
-          >
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -840,6 +825,8 @@ function BusinessLocationPanel({
   phone,
   whatsappNumber,
   weeklyHours,
+  instagramUrl,
+  facebookUrl,
 }: {
   mapThumbnailUrl: string;
   mapsLinkUrl: string;
@@ -853,12 +840,60 @@ function BusinessLocationPanel({
     start_time: string | null;
     end_time: string | null;
   }[];
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
 }) {
   const [hoursOpen, setHoursOpen] = useState(false);
   const hasHours = weeklyHours.some((row) => row.enabled);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)]">
+      {instagramUrl || facebookUrl ? (
+        <div className="flex items-center justify-end gap-2 border-b border-slate-100 px-3 py-2">
+          {instagramUrl ? (
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
+              </svg>
+            </a>
+          ) : null}
+
+          {facebookUrl ? (
+            <a
+              href={facebookUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Facebook"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-3.5 w-3.5"
+              >
+                <path d="M13.5 21v-7.5h2.5l.5-3h-3V8.5c0-.9.3-1.5 1.6-1.5H16.5V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.3H8v3h2.3V21h3.2z" />
+              </svg>
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+
       {address ? (
         <div className="relative">
           {mapsLinkUrl ? (
@@ -2381,6 +2416,12 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           branches={branches}
           selectedBranchId={selectedBranchId}
           onBranchChange={handleBranchChange}
+          mapThumbnailUrl={mapThumbnailUrl}
+          mapsLinkUrl={mapsLinkUrl}
+          address={visibleAddress}
+          phone={visiblePhone}
+          whatsappNumber={visibleWhatsappNumber}
+          weeklyHours={weeklyHoursOrdered}
         />
 
         {viewStep === "catalog" ? (
@@ -2435,15 +2476,6 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
             </div>
 
             <div className="space-y-4">
-              <BusinessLocationPanel
-                mapThumbnailUrl={mapThumbnailUrl}
-                mapsLinkUrl={mapsLinkUrl}
-                address={visibleAddress}
-                phone={visiblePhone}
-                whatsappNumber={visibleWhatsappNumber}
-                weeklyHours={weeklyHoursOrdered}
-              />
-
               <ProfessionalsPanel
                 staff={staffOptions}
                 hasSelectedService={Boolean(selectedService)}
