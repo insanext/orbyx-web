@@ -542,9 +542,9 @@ function PublicBookingHeader({
   const showBranchSelector = branches.length > 1;
 
   return (
-    <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:rounded-[28px] md:p-7">
-      <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-        <div className="flex min-w-0 items-start gap-4 md:flex-1 md:gap-5">
+    <div className="flex flex-col gap-4 md:flex-row md:items-start">
+      <div className="min-w-0 overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:flex-1 md:rounded-[28px] md:p-7">
+        <div className="flex min-w-0 items-start gap-4 md:gap-5">
           {business?.logo_url ? (
             <img
               src={business.logo_url}
@@ -588,30 +588,30 @@ function PublicBookingHeader({
             ) : null}
           </div>
         </div>
+      </div>
 
-        <div className="w-full shrink-0 md:w-[300px]">
-          <BusinessLocationPanel
-            mapThumbnailUrl={mapThumbnailUrl}
-            mapsLinkUrl={mapsLinkUrl}
-            address={address}
-            phone={phone}
-            whatsappNumber={whatsappNumber}
-            weeklyHours={weeklyHours}
-            instagramUrl={business?.instagram_url}
-            facebookUrl={business?.facebook_url}
-          />
-        </div>
+      <div className="w-full shrink-0 md:w-[300px]">
+        <BusinessLocationPanel
+          mapThumbnailUrl={mapThumbnailUrl}
+          mapsLinkUrl={mapsLinkUrl}
+          address={address}
+          phone={phone}
+          whatsappNumber={whatsappNumber}
+          weeklyHours={weeklyHours}
+          instagramUrl={business?.instagram_url}
+          facebookUrl={business?.facebook_url}
+        />
       </div>
     </div>
   );
 }
 
 const CATEGORY_TINTS = [
-  { header: "#EDEBFB", headerHover: "#E4E1F9", body: "#F5F4FC" },
-  { header: "#EAF2FC", headerHover: "#DFEBFA", body: "#F3F8FE" },
-  { header: "#FBF1E4", headerHover: "#F8E9D5", body: "#FDF8F1" },
-  { header: "#EAF6EE", headerHover: "#DFF1E5", body: "#F3FAF5" },
-  { header: "#FBEAF0", headerHover: "#F8DFE9", body: "#FDF5F8" },
+  { header: "linear-gradient(135deg, #E3DEFB, #D2C6F5)", body: "#EEEAFB" },
+  { header: "linear-gradient(135deg, #DCEBFC, #C2DBFA)", body: "#E7F1FC" },
+  { header: "linear-gradient(135deg, #F8E9D0, #EFD5A7)", body: "#FBF2E2" },
+  { header: "linear-gradient(135deg, #DCF1E1, #BFE5CB)", body: "#E7F6EA" },
+  { header: "linear-gradient(135deg, #F8DCE8, #EFBED6)", body: "#FBE9F0" },
 ];
 
 function getCategoryTint(index: number) {
