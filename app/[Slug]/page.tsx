@@ -303,10 +303,18 @@ function buildMapsUrl(address?: string) {
   )}`;
 }
 
-function buildMapThumbnailUrl(slug: string, branchId?: string | null) {
-  if (!slug) return "";
-  const query = branchId ? `?branch_id=${encodeURIComponent(branchId)}` : "";
-  return `${BACKEND_URL}/public/map-thumbnail/${encodeURIComponent(slug)}${query}`;
+function buildMapsEmbedUrl(
+  address?: string | null,
+  latitude?: number | null,
+  longitude?: number | null
+) {
+  if (typeof latitude === "number" && typeof longitude === "number") {
+    return `https://www.google.com/maps?q=${latitude},${longitude}&hl=es&z=16&output=embed`;
+  }
+  if (!address) return "";
+  return `https://www.google.com/maps?q=${encodeURIComponent(
+    address
+  )}&hl=es&z=15&output=embed`;
 }
 
 function formatHourLabel(time?: string | null) {
@@ -508,99 +516,66 @@ function DetailRow({
   );
 }
 
-function PublicBookingHeader({
+function BusinessBannerCard({
   business,
   slug,
   branches,
   selectedBranchId,
   onBranchChange,
-  mapThumbnailUrl,
-  mapsLinkUrl,
-  address,
-  phone,
-  whatsappNumber,
-  weeklyHours,
 }: {
   business: BusinessItem | null;
   slug: string;
   branches: BranchItem[];
   selectedBranchId: string;
   onBranchChange: (branchId: string) => void;
-  mapThumbnailUrl: string;
-  mapsLinkUrl: string;
-  address?: string | null;
-  phone?: string | null;
-  whatsappNumber: string;
-  weeklyHours: {
-    day: number;
-    label: string;
-    enabled: boolean;
-    start_time: string | null;
-    end_time: string | null;
-  }[];
 }) {
   const showBranchSelector = branches.length > 1;
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-start">
-      <div className="min-w-0 overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:flex-1 md:rounded-[28px] md:p-7">
-        <div className="flex min-w-0 items-start gap-4 md:gap-5">
-          {business?.logo_url ? (
-            <img
-              src={business.logo_url}
-              alt={business?.name || slug || "Logo"}
-              className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28"
-            />
-          ) : (
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-2xl font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28 md:text-3xl">
-              {getBusinessInitials(business?.name || slug)}
-            </div>
-          )}
-
-          <div className="min-w-0 pt-1">
-            <h1 className="text-xl font-bold tracking-tight text-slate-950 md:text-[28px]">
-              {business?.name || slug || "Reserva"}
-            </h1>
-
-            {business?.description?.trim() ? (
-              <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 line-clamp-3">
-                {business.description.trim()}
-              </p>
-            ) : null}
-
-            {showBranchSelector ? (
-              <div className="mt-4 max-w-xs">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-500">
-                  Sucursal
-                </label>
-                <select
-                  value={selectedBranchId}
-                  onChange={(e) => onBranchChange(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
-                >
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
+    <div className="min-w-0 overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:rounded-[28px] md:p-7">
+      <div className="flex min-w-0 items-start gap-4 md:gap-5">
+        {business?.logo_url ? (
+          <img
+            src={business.logo_url}
+            alt={business?.name || slug || "Logo"}
+            className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28"
+          />
+        ) : (
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-2xl font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28 md:text-3xl">
+            {getBusinessInitials(business?.name || slug)}
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className="w-full shrink-0 md:w-[300px]">
-        <BusinessLocationPanel
-          mapThumbnailUrl={mapThumbnailUrl}
-          mapsLinkUrl={mapsLinkUrl}
-          address={address}
-          phone={phone}
-          whatsappNumber={whatsappNumber}
-          weeklyHours={weeklyHours}
-          instagramUrl={business?.instagram_url}
-          facebookUrl={business?.facebook_url}
-        />
+        <div className="min-w-0 pt-1">
+          <h1 className="text-xl font-bold tracking-tight text-slate-950 md:text-[28px]">
+            {business?.name || slug || "Reserva"}
+          </h1>
+
+          {business?.description?.trim() ? (
+            <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 line-clamp-3">
+              {business.description.trim()}
+            </p>
+          ) : null}
+
+          {showBranchSelector ? (
+            <div className="mt-4 max-w-xs">
+              <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                Sucursal
+              </label>
+              <select
+                value={selectedBranchId}
+                onChange={(e) => onBranchChange(e.target.value)}
+                className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
+              >
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -819,7 +794,7 @@ function ServiceCatalogAccordion({
 }
 
 function BusinessLocationPanel({
-  mapThumbnailUrl,
+  mapsEmbedUrl,
   mapsLinkUrl,
   address,
   phone,
@@ -828,7 +803,7 @@ function BusinessLocationPanel({
   instagramUrl,
   facebookUrl,
 }: {
-  mapThumbnailUrl: string;
+  mapsEmbedUrl: string;
   mapsLinkUrl: string;
   address?: string | null;
   phone?: string | null;
@@ -894,25 +869,14 @@ function BusinessLocationPanel({
         </div>
       ) : null}
 
-      {address ? (
-        <div className="relative">
-          {mapsLinkUrl ? (
-            <a
-              href={mapsLinkUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="absolute left-2.5 top-2.5 z-10 inline-flex items-center gap-1 rounded-lg bg-white/95 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-white"
-            >
-              Maps <span aria-hidden="true">⧉</span>
-            </a>
-          ) : null}
-          <img
-            src={mapThumbnailUrl}
-            alt={`Mapa de ${address}`}
-            className="h-[150px] w-full object-cover"
-            loading="lazy"
-          />
-        </div>
+      {mapsEmbedUrl ? (
+        <iframe
+          src={mapsEmbedUrl}
+          title="Ubicación"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          className="h-[150px] w-full border-0"
+        />
       ) : null}
 
       <div className="divide-y divide-slate-100 py-1">
@@ -1311,7 +1275,11 @@ const nextAvailableDays = useMemo(() => {
 
   const visibleAddress = selectedBranch?.address || business?.address || null;
   const visiblePhone = selectedBranch?.phone || business?.phone || null;
-  const mapThumbnailUrl = buildMapThumbnailUrl(slug, selectedBranchId);
+  const mapsEmbedUrl = buildMapsEmbedUrl(
+    visibleAddress,
+    selectedBranch?.latitude ?? null,
+    selectedBranch?.longitude ?? null
+  );
   const mapsLinkUrl = buildMapsUrl(visibleAddress || undefined);
   const visibleWhatsappNumber = normalizeWhatsappNumber(
     business?.whatsapp || selectedBranch?.whatsapp || visiblePhone
@@ -2410,72 +2378,81 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FBFAFF] to-[#F1EFFC]">
       <div className="mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 md:px-6 md:py-8 xl:px-8">
-        <PublicBookingHeader
-          business={business}
-          slug={slug}
-          branches={branches}
-          selectedBranchId={selectedBranchId}
-          onBranchChange={handleBranchChange}
-          mapThumbnailUrl={mapThumbnailUrl}
-          mapsLinkUrl={mapsLinkUrl}
-          address={visibleAddress}
-          phone={visiblePhone}
-          whatsappNumber={visibleWhatsappNumber}
-          weeklyHours={weeklyHoursOrdered}
-        />
-
         {viewStep === "catalog" ? (
-          <div className="mt-4 grid gap-4 md:mt-6 lg:grid-cols-[230px_1fr_290px] lg:gap-5 xl:gap-6">
-            <CatalogSidebar
-              searchQuery={catalogSearchQuery}
-              onSearchChange={setCatalogSearchQuery}
-              categories={catalogCategories.map((category) => ({
-                key: category.key,
-                name: category.name,
-                totalCount: category.totalCount,
-              }))}
-              activeCategoryKey={activeCategoryKey}
-              onCategoryChange={setActiveCategoryKey}
-            />
+          <div className="grid gap-4 lg:grid-cols-[1fr_290px] lg:items-start lg:gap-6 xl:grid-cols-[1fr_300px]">
+            <div className="min-w-0 space-y-4 md:space-y-6">
+              <BusinessBannerCard
+                business={business}
+                slug={slug}
+                branches={branches}
+                selectedBranchId={selectedBranchId}
+                onBranchChange={handleBranchChange}
+              />
 
-            <div className="min-w-0 space-y-4">
-              {loadingServices ? (
-                <div className="rounded-2xl border border-slate-100 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
-                  Cargando servicios...
-                </div>
-              ) : (
-                <ServiceCatalogAccordion
-                  categories={visibleCatalogCategories}
-                  selectedServiceId={selectedService?.id || ""}
-                  onSelect={selectCatalogService}
-                  collapsedKeys={collapsedCatalogSections}
-                  onToggleCategory={(key) =>
-                    setCollapsedCatalogSections((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(key)) {
-                        next.delete(key);
-                      } else {
-                        next.add(key);
-                      }
-                      return next;
-                    })
-                  }
+              <div className="grid gap-4 lg:grid-cols-[230px_1fr] lg:gap-5 xl:gap-6">
+                <CatalogSidebar
+                  searchQuery={catalogSearchQuery}
+                  onSearchChange={setCatalogSearchQuery}
+                  categories={catalogCategories.map((category) => ({
+                    key: category.key,
+                    name: category.name,
+                    totalCount: category.totalCount,
+                  }))}
+                  activeCategoryKey={activeCategoryKey}
+                  onCategoryChange={setActiveCategoryKey}
                 />
-              )}
 
-              {selectedService ? (
-                <button
-                  type="button"
-                  onClick={goToBooking}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95"
-                >
-                  Ir a Agendar
-                  <span aria-hidden="true">→</span>
-                </button>
-              ) : null}
+                <div className="min-w-0 space-y-4">
+                  {loadingServices ? (
+                    <div className="rounded-2xl border border-slate-100 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+                      Cargando servicios...
+                    </div>
+                  ) : (
+                    <ServiceCatalogAccordion
+                      categories={visibleCatalogCategories}
+                      selectedServiceId={selectedService?.id || ""}
+                      onSelect={selectCatalogService}
+                      collapsedKeys={collapsedCatalogSections}
+                      onToggleCategory={(key) =>
+                        setCollapsedCatalogSections((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(key)) {
+                            next.delete(key);
+                          } else {
+                            next.add(key);
+                          }
+                          return next;
+                        })
+                      }
+                    />
+                  )}
+
+                  {selectedService ? (
+                    <button
+                      type="button"
+                      onClick={goToBooking}
+                      className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95"
+                    >
+                      Ir a Agendar
+                      <span aria-hidden="true">→</span>
+                    </button>
+                  ) : null}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+              <BusinessLocationPanel
+                mapsEmbedUrl={mapsEmbedUrl}
+                mapsLinkUrl={mapsLinkUrl}
+                address={visibleAddress}
+                phone={visiblePhone}
+                whatsappNumber={visibleWhatsappNumber}
+                weeklyHours={weeklyHoursOrdered}
+                instagramUrl={business?.instagram_url}
+                facebookUrl={business?.facebook_url}
+              />
+
               <ProfessionalsPanel
                 staff={staffOptions}
                 hasSelectedService={Boolean(selectedService)}
@@ -2489,6 +2466,31 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         ) : null}
 
         {viewStep === "booking" && selectedService ? (
+        <>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start">
+          <div className="min-w-0 md:flex-1">
+            <BusinessBannerCard
+              business={business}
+              slug={slug}
+              branches={branches}
+              selectedBranchId={selectedBranchId}
+              onBranchChange={handleBranchChange}
+            />
+          </div>
+          <div className="w-full shrink-0 md:w-[300px]">
+            <BusinessLocationPanel
+              mapsEmbedUrl={mapsEmbedUrl}
+              mapsLinkUrl={mapsLinkUrl}
+              address={visibleAddress}
+              phone={visiblePhone}
+              whatsappNumber={visibleWhatsappNumber}
+              weeklyHours={weeklyHoursOrdered}
+              instagramUrl={business?.instagram_url}
+              facebookUrl={business?.facebook_url}
+            />
+          </div>
+        </div>
+
         <div className="mt-4 grid gap-3 md:mt-6 md:gap-4 xl:grid-cols-[300px_1fr] xl:gap-6">
           <div className="space-y-3 md:space-y-4 xl:space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[26px] md:p-4">
@@ -3669,6 +3671,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             </div>
           </div>
         </div>
+        </>
         ) : null}
 
         <OrbyxPromoFooter />
