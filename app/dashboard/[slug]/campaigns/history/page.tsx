@@ -36,7 +36,17 @@ type CampaignHistoryItem = {
   recipients_with_contact: number;
   sent_count: number;
   failed_count: number;
+  skipped_count?: number;
+  template_id?: string | null;
   created_at: string;
+};
+
+// Mismos labels que WHATSAPP_MARKETING_TEMPLATES en page.tsx — solo para
+// mostrar un nombre amigable acá, no la fuente de verdad (esa es server.js).
+const WHATSAPP_TEMPLATE_LABELS: Record<string, string> = {
+  descuento: "Descuento por tiempo limitado",
+  reactivacion: "Reactivación simple",
+  recordatorio: "Recordatorio de servicios",
 };
 
 function formatDate(value?: string | null) {
@@ -455,6 +465,15 @@ export default function CampaignHistoryPage() {
                         </p>
                       ) : null}
 
+                      {item.channel === "whatsapp" && item.template_id ? (
+                        <p
+                          className="mt-3 text-sm font-medium"
+                          style={{ color: "var(--text-main)" }}
+                        >
+                          Plantilla: {WHATSAPP_TEMPLATE_LABELS[item.template_id] || item.template_id}
+                        </p>
+                      ) : null}
+
                       {item.message ? (
                         <p
                           className="mt-2 line-clamp-2 text-sm leading-6"
@@ -466,12 +485,17 @@ export default function CampaignHistoryPage() {
                     </div>
 
                     <div className="grid min-w-full grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
-                      {[
-                        ["Audiencia", item.audience_total],
-                        ["Aplicado", item.applied_limit],
-                        ["Enviados", item.sent_count],
-                        ["Fallidos", item.failed_count],
-                      ].map(([label, value]) => (
+                      {(
+                        [
+                          ["Audiencia", item.audience_total],
+                          ["Aplicado", item.applied_limit],
+                          ["Enviados", item.sent_count],
+                          ["Fallidos", item.failed_count],
+                          ...(item.channel === "whatsapp" && Number(item.skipped_count) > 0
+                            ? [["Sin saldo", item.skipped_count]]
+                            : []),
+                        ] as Array<[string, number | null | undefined]>
+                      ).map(([label, value]) => (
                         <div
                           key={label}
                           className="rounded-2xl border px-4 py-3"

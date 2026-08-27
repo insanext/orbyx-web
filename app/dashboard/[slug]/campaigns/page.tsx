@@ -47,6 +47,8 @@ type BusinessResponse = {
     name: string;
     slug: string;
     plan_slug?: string;
+    phone?: string | null;
+    whatsapp?: string | null;
   };
 };
 
@@ -118,6 +120,7 @@ type SendEmailResponse = {
   recipients_with_email?: number;
   sent?: number;
   failed?: number;
+  skipped_for_balance?: number;
   errors?: Array<{
     customer_id: string;
     email: string;
@@ -153,24 +156,6 @@ type CampaignHistoryResponse = {
   error?: string;
 };
 
-// No vienen de la API — sirven solo para decidir si el canal WhatsApp/el
-// selector de imagen de campaña se muestran habilitados, no un límite real
-// enforced en backend (ese lo aplica GET /billing/addons, ver emailLimit
-// abajo). "premium" (nuevo, tope real) SÍ se corrigió a su valor real
-// (max_campanas_wa base = 50, ver plan_config Sesión 2) porque antes ese
-// mismo string apuntaba a un plan distinto (premium viejo, sin campañas
-// WhatsApp) y dejarlo en 0 ocultaría una capacidad real del plan nuevo.
-// vip/platinum (legacy, 2 tenants preservados) se dejan con su valor
-// histórico intacto — no son planes nuevos, no hace falta tocarlos.
-const PLAN_WHATSAPP_LIMITS: Record<PlanSlug, number> = {
-  starter: 0,
-  business: 0,
-  premium: 50,
-  pro: 0,
-  vip: 200,
-  platinum: 800,
-};
-
 const PLAN_IMAGE_LIMITS: Record<PlanSlug, number> = {
   starter: 7,
   business: 7,
@@ -180,27 +165,24 @@ const PLAN_IMAGE_LIMITS: Record<PlanSlug, number> = {
   platinum: 100,
 };
 
-// emailLimit: límite real (base + add-on) de GET /billing/addons, o null
+// emailLimit/waLimit: límite real (base del plan + add-on) de
+// GET /billing/addons (limits.emails_campana / limits.campanas_wa), o null
 // mientras carga — en ese caso se muestra "Cargando..." en vez de un
-// número desactualizado.
+// número desactualizado o de un mapa local desactualizado.
 function getCampaignChannelLimit(
-  plan: PlanSlug,
   channel: CampaignChannel,
-  emailLimit: number | null
+  emailLimit: number | null,
+  waLimit: number | null
 ) {
   if (channel === "whatsapp") {
-    const limit = PLAN_WHATSAPP_LIMITS[plan] ?? 0;
-
     return {
       title: "Límite WhatsApp",
-      value: limit > 0 ? `${limit} / mes` : "No disponible",
-      helper:
-        limit > 0
-          ? "Máximo visual mensual para WhatsApp."
-          : "WhatsApp no está incluido en tu plan.",
-      badge: limit > 0 ? "Incluido" : "Disponible en Premium",
-      available: limit > 0,
-      limit,
+      value:
+        waLimit != null ? `${waLimit.toLocaleString("es-CL")} / mes` : "Cargando...",
+      helper: "Máximo de mensajes de marketing por mes (incluye add-ons activos).",
+      badge: "Incluido",
+      available: true,
+      limit: waLimit ?? 0,
     };
   }
 
@@ -215,6 +197,91 @@ function getCampaignChannelLimit(
     available: true,
     limit,
   };
+}
+
+// Plantillas de WhatsApp Marketing aprobadas en Twilio — mismos Content SIDs
+// y copy exactos que en server.js (WHATSAPP_MARKETING_TEMPLATES). Duplicado
+// acá porque orbyx-web es un submodule aparte, no puede importar server.js
+// en build time (mismo patrón que LEGAL_TERMS_BLOCKS en email.js/terminos).
+type WhatsAppTemplateSlot =
+  | { auto: "customer_name" | "business_name" | "link" | "phone" }
+  | { editable: true; label: string; placeholder: string };
+
+type WhatsAppMarketingTemplate = {
+  id: string;
+  label: string;
+  rawText: string;
+  slots: Record<number, WhatsAppTemplateSlot>;
+};
+
+const WHATSAPP_MARKETING_TEMPLATES: WhatsAppMarketingTemplate[] = [
+  {
+    id: "descuento",
+    label: "Descuento por tiempo limitado",
+    rawText:
+      "Hola {{1}} 🤙, en *{{2}}* tenemos {{3}}% de descuento en {{4}} hasta el {{5}}.\n\nAgenda tu hora ya en {{6}}.\n\nPara dudas escríbenos al {{7}}. ¡Te esperamos!",
+    slots: {
+      1: { auto: "customer_name" },
+      2: { auto: "business_name" },
+      3: { editable: true, label: "Porcentaje de descuento", placeholder: "20" },
+      4: { editable: true, label: "Servicio en promoción", placeholder: "Manicure" },
+      5: { editable: true, label: "Fecha límite", placeholder: "31 de agosto" },
+      6: { auto: "link" },
+      7: { auto: "phone" },
+    },
+  },
+  {
+    id: "reactivacion",
+    label: "Reactivación simple",
+    rawText:
+      "Hola {{1}} 👋, ¡hace tiempo no te vemos en *{{2}}*! Nos encantaría atenderte de nuevo. Agenda tu próxima hora cuando quieras 😊\n\nDudas, escríbenos al {{3}} y con gusto te ayudamos.",
+    slots: {
+      1: { auto: "customer_name" },
+      2: { auto: "business_name" },
+      3: { auto: "phone" },
+    },
+  },
+  {
+    id: "recordatorio",
+    label: "Recordatorio de servicios",
+    rawText:
+      "Hola {{1}} 👋 Ha pasado un tiempo desde tu última visita a *{{2}}* para {{3}}. ¿Qué tal si agendamos tu próxima cita? Reserva aquí: {{4}} ¡Te esperamos!",
+    slots: {
+      1: { auto: "customer_name" },
+      2: { auto: "business_name" },
+      3: { editable: true, label: "Servicios a destacar", placeholder: "Manicure, Pestañas y Depilación" },
+      4: { auto: "link" },
+    },
+  },
+];
+
+function getWhatsAppTemplate(id: string) {
+  return WHATSAPP_MARKETING_TEMPLATES.find((t) => t.id === id) || null;
+}
+
+function renderWhatsAppTemplateText(
+  template: WhatsAppMarketingTemplate,
+  templateVars: Record<string, string>,
+  autoValues: { customer_name: string; business_name: string; link: string; phone: string }
+) {
+  let text = template.rawText;
+  for (const [index, slot] of Object.entries(template.slots)) {
+    const value = "auto" in slot ? autoValues[slot.auto] || "" : templateVars[index] || "";
+    text = text.replace(new RegExp(`\\{\\{\\s*${index}\\s*\\}\\}`, "g"), value);
+  }
+  return text;
+}
+
+// Misma validación que normalizeChileanPhone en server.js (extraída de
+// POST /appointments/slot) — duplicada acá para poder mostrar en el
+// frontend cuántos contactos del segmento se excluyen por no tener un
+// celular chileno válido, antes de intentar el envío real.
+function isValidChileanMobile(rawPhone?: string | null) {
+  if (!rawPhone) return false;
+  let digits = String(rawPhone).replace(/\D/g, "");
+  if (digits.startsWith("56")) digits = digits.slice(2);
+  if (digits.length !== 9) return false;
+  return digits.startsWith("9");
 }
 
 const SEGMENT_OPTIONS: Array<{
@@ -259,7 +326,7 @@ const CHANNEL_OPTIONS: Array<{
   {
     key: "whatsapp",
     label: "WhatsApp",
-    description: "Base lista para campañas y recuperación futura.",
+    description: "Plantillas aprobadas por WhatsApp para reactivar clientes.",
     icon: MessageCircle,
   },
 ];
@@ -882,75 +949,6 @@ function MetricCard({
   );
 }
 
-function ChannelCard({
-  active,
-  title,
-  description,
-  icon,
-  onClick,
-}: {
-  active: boolean;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? "true" : undefined}
-      className={`orbyx-campaign-energy w-full cursor-pointer rounded-2xl border p-2.5 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 sm:p-3 ${
-        active ? "orbyx-campaign-energy-active" : ""
-      }`}
-      style={{
-        borderColor: active ? "rgba(37,99,235,0.55)" : "var(--border-color)",
-        background: active
-          ? "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.08))"
-          : "var(--bg-card)",
-        boxShadow: active
-          ? "inset 0 0 0 1px rgba(37,99,235,0.24), 0 12px 28px rgba(37,99,235,0.10)"
-          : "none",
-      }}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
-          style={{
-            background: active ? "rgb(37 99 235)" : "var(--bg-soft)",
-            color: active ? "#ffffff" : "var(--text-muted)",
-          }}
-        >
-          {icon}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span
-              className="text-sm font-semibold"
-              style={{ color: "var(--text-main)" }}
-            >
-              {title}
-            </span>
-
-            {active ? (
-              <span
-                className="inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold"
-                style={{
-                  borderColor: "rgba(37,99,235,0.24)",
-                  background: "rgba(37,99,235,0.08)",
-                  color: "rgb(37 99 235)",
-                }}
-              >
-                Activo
-              </span>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </button>
-  );
-}
 
 function SegmentCard({
   active,
@@ -1449,13 +1447,27 @@ export default function CampaignsPage() {
     "";
 
   const [businessName, setBusinessName] = useState("Orbyx");
+  const [businessPhone, setBusinessPhone] = useState("");
   const [tenantId, setTenantId] = useState("");
   const [plan, setPlan] = useState<PlanSlug>("starter");
+  // Pantalla de selección de canal antes del wizard — "landing" muestra las
+  // 2 tarjetas (Email/WhatsApp) con métricas reales, "wizard" es el flujo de
+  // 3 pasos de siempre. El estado del wizard (channel, segment, mensaje,
+  // etc.) NO se limpia al volver a "landing", así "← Cambiar canal" no
+  // pierde lo que ya se había armado en el otro canal.
+  const [view, setView] = useState<"landing" | "wizard">("landing");
   // Límite y uso real de emails_campana (base del plan + add-on "Pack
   // emails campaña" activo, más lo ya consumido este mes), desde
   // GET /billing/addons — mismo endpoint que ya usa AddonManager.tsx.
   // null mientras carga o si falló el fetch.
   const [emailUsage, setEmailUsage] = useState<{
+    total: number;
+    used: number;
+    remaining: number;
+  } | null>(null);
+  // Mismo shape que emailUsage, para el recurso campanas_wa (antes era un
+  // mapa local PLAN_WHATSAPP_LIMITS que no reflejaba add-ons ni consumo real).
+  const [waUsage, setWaUsage] = useState<{
     total: number;
     used: number;
     remaining: number;
@@ -1479,32 +1491,49 @@ export default function CampaignsPage() {
 
   const isWhatsApp = channel === "whatsapp";
 
-  const [whatsappMessage, setWhatsappMessage] = useState(
-    "Hola {{nombre}}, te escribimos desde {{negocio}}.\n\nAgenda aquí tu próxima hora:\n{{link_agenda}}"
+  // WhatsApp ya no tiene editor libre — se elige una de las 3 plantillas
+  // aprobadas por Meta y solo se llenan sus variables editables (ver
+  // WHATSAPP_MARKETING_TEMPLATES). templateVars solo guarda los slots
+  // marcados "editable" del template seleccionado.
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
+    WHATSAPP_MARKETING_TEMPLATES[0].id
   );
+  const [templateVars, setTemplateVars] = useState<Record<string, string>>({});
 
-  const [whatsappCtaUrl, setWhatsappCtaUrl] = useState("");
+  const selectedTemplate = useMemo(
+    () => getWhatsAppTemplate(selectedTemplateId),
+    [selectedTemplateId]
+  );
 
   const whatsappDefaultLink = useMemo(() => {
     if (!slug) return "";
     return `https://www.orbyx.cl/${slug}`;
   }, [slug]);
 
-  const whatsappLink = useMemo(() => {
-    return (whatsappCtaUrl || "").trim() || whatsappDefaultLink;
-  }, [whatsappCtaUrl, whatsappDefaultLink]);
+  // Vars automáticas: negocio/link/teléfono vienen del tenant, el nombre del
+  // cliente se resuelve por destinatario al enviar — acá se usa un ejemplo
+  // ("Camila") solo para la vista previa.
+  const whatsappAutoValues = useMemo(
+    () => ({
+      customer_name: "Camila",
+      business_name: businessName || "Tu negocio",
+      link: whatsappDefaultLink,
+      phone: businessPhone || "",
+    }),
+    [businessName, whatsappDefaultLink, businessPhone]
+  );
 
   const whatsappPreviewText = useMemo(() => {
-    let text = (whatsappMessage || "").trim();
+    if (!selectedTemplate) return "Selecciona una plantilla...";
+    return renderWhatsAppTemplateText(selectedTemplate, templateVars, whatsappAutoValues);
+  }, [selectedTemplate, templateVars, whatsappAutoValues]);
 
-    if (!text) return "Escribe tu mensaje de WhatsApp...";
-
-    text = text.replace(/\{\{\s*nombre\s*\}\}/gi, "Camila");
-    text = text.replace(/\{\{\s*negocio\s*\}\}/gi, businessName || "Tu negocio");
-    text = text.replace(/\{\{\s*link_agenda\s*\}\}/gi, whatsappLink || "");
-
-    return text;
-  }, [whatsappMessage, businessName, whatsappLink]);
+  const missingTemplateVars = useMemo(() => {
+    if (!selectedTemplate) return [];
+    return Object.entries(selectedTemplate.slots)
+      .filter(([index, slot]) => "editable" in slot && !templateVars[index]?.trim())
+      .map(([, slot]) => ("editable" in slot ? slot.label : ""));
+  }, [selectedTemplate, templateVars]);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
@@ -1589,8 +1618,8 @@ export default function CampaignsPage() {
     "inline-flex h-12 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
   const channelLimitInfo = useMemo(
-    () => getCampaignChannelLimit(plan, channel, emailUsage?.total ?? null),
-    [plan, channel, emailUsage]
+    () => getCampaignChannelLimit(channel, emailUsage?.total ?? null, waUsage?.total ?? null),
+    [channel, emailUsage, waUsage]
   );
   const planLimit = channelLimitInfo.limit;
   const planImageLimit = PLAN_IMAGE_LIMITS[plan];
@@ -1626,12 +1655,6 @@ export default function CampaignsPage() {
       window.removeEventListener("orbyx-branch-changed", handleBranchChanged);
     };
   }, [branchStorageKey]);
-
-  useEffect(() => {
-    if (slug && !whatsappCtaUrl.trim()) {
-      setWhatsappCtaUrl(`https://www.orbyx.cl/${slug}`);
-    }
-  }, [slug, whatsappCtaUrl]);
 
   useEffect(() => {
     if (emailPreset === "minimal") {
@@ -1689,6 +1712,7 @@ export default function CampaignsPage() {
           const normalizedPlan = normalizePlan(data.business.plan_slug);
           setPlan(normalizedPlan);
           setBusinessName(data.business.name || "Orbyx");
+          setBusinessPhone(data.business.phone || data.business.whatsapp || "");
           setTenantId(data.business.id);
         }
       } catch {
@@ -1719,6 +1743,14 @@ export default function CampaignsPage() {
             total: Number(data.limits.emails_campana.total) || 0,
             used: Number(data.limits.emails_campana.used) || 0,
             remaining: Number(data.limits.emails_campana.remaining) || 0,
+          });
+        }
+
+        if (res.ok && data?.limits?.campanas_wa) {
+          setWaUsage({
+            total: Number(data.limits.campanas_wa.total) || 0,
+            used: Number(data.limits.campanas_wa.used) || 0,
+            remaining: Number(data.limits.campanas_wa.remaining) || 0,
           });
         }
       } catch {
@@ -2080,12 +2112,12 @@ export default function CampaignsPage() {
 
   const allAudienceRecipients = useMemo<AudienceRecipient[]>(() => {
     const manualForChannel = manualRecipients.filter((item) =>
-      channel === "email" ? !!item.email : !!item.phone
+      channel === "email" ? !!item.email : isValidChileanMobile(item.phone)
     );
 
     const segmentForChannel = segmentRecipients.filter((item) => {
       if (channel === "email") return !!item.email;
-      return !!item.phone;
+      return isValidChileanMobile(item.phone);
     });
 
     const merged = [...manualForChannel, ...segmentForChannel].map((item) => ({
@@ -2140,14 +2172,25 @@ export default function CampaignsPage() {
     const included = includedAudienceRecipients.length;
     const excluded = Math.max(totalVisible - included, 0);
     const manual = manualRecipients.filter((item) =>
-      channel === "email" ? !!item.email : !!item.phone
+      channel === "email" ? !!item.email : isValidChileanMobile(item.phone)
     ).length;
+
+    // Contactos del segmento/manuales que sí tienen un teléfono cargado pero
+    // no pasan el formato de celular chileno válido — se excluyen de la
+    // audiencia de WhatsApp aunque tengan un valor en el campo teléfono.
+    const excludedForInvalidPhone =
+      channel === "whatsapp"
+        ? [...manualRecipients, ...segmentRecipients].filter(
+            (item) => !!item.phone && !isValidChileanMobile(item.phone)
+          ).length
+        : 0;
 
     return {
       totalVisible,
       included,
       excluded,
       manual,
+      excludedForInvalidPhone,
       withEmail:
         channel === "email"
           ? totalVisible
@@ -2163,6 +2206,14 @@ export default function CampaignsPage() {
   const limitedAudienceCount = useMemo(() => {
     return Math.min(Number(sendLimit || 50), includedAudienceRecipients.length || 0);
   }, [sendLimit, includedAudienceRecipients]);
+
+  // Solo aplica a WhatsApp — email no tiene este bloqueo porque
+  // consumeResourceUsage("emails_campana") se descuenta en el momento, no
+  // hay un cupo "reservado" que pueda faltar a mitad de camino como acá.
+  const waInsufficientBalance =
+    channel === "whatsapp" &&
+    waUsage != null &&
+    waUsage.remaining < limitedIncludedRecipients.length;
 
   const previewRecipients = useMemo(() => {
     return filteredAudienceRecipients.slice(0, 50);
@@ -2260,32 +2311,13 @@ export default function CampaignsPage() {
     return "Envíos realizados";
   }, [filteredHistory]);
 
-  // Aproximación client-side (suma sent_count del historial visible este
-  // mes). Se usa como fallback para WhatsApp, que todavía no trackea uso
-  // real en el backend. Para email, tenant_monthly_usage (expuesto vía
-  // emailUsage.used más abajo) es la fuente real — puede no coincidir
-  // exacto con esto si el historial cargado no cubre todo el mes.
-  const currentMonthSent = useMemo(() => {
-    const now = new Date();
-    const y = now.getFullYear(), m = now.getMonth();
-    return history
-      .filter((h) => {
-        const d = new Date(h.created_at);
-        return d.getFullYear() === y && d.getMonth() === m && h.channel === channel;
-      })
-      .reduce((sum, h) => sum + Number(h.sent_count || 0), 0);
-  }, [history, channel]);
-
-  // Para email, usa el consumo/saldo real que ya trackea el backend
-  // (tenant_monthly_usage, vía checkMonthlyUsage/incrementMonthlyUsage —
-  // el mismo contador que ahora bloquea el envío real). Para WhatsApp,
-  // sin integración real todavía, se mantiene la aproximación local.
-  const displaySent =
-    channel === "email" && emailUsage != null ? emailUsage.used : currentMonthSent;
-  const displayRemaining =
-    channel === "email" && emailUsage != null
-      ? emailUsage.remaining
-      : Math.max(0, channelLimitInfo.limit - currentMonthSent);
+  // Ambos canales ahora trackean uso real en el backend
+  // (tenant_monthly_usage vía checkMonthlyUsage/consumeResourceUsage —
+  // emails_campana para email, campanas_wa para WhatsApp, este último
+  // recién descontado cuando Twilio confirma "delivered").
+  const currentUsage = channel === "email" ? emailUsage : waUsage;
+  const displaySent = currentUsage?.used ?? 0;
+  const displayRemaining = currentUsage?.remaining ?? 0;
 
   const selectedSegmentLabel =
     SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Segmento";
@@ -2345,18 +2377,32 @@ export default function CampaignsPage() {
     setSendSummary(null);
 
     if (channel === "whatsapp") {
-      if (!whatsappMessage.trim()) {
-        setError("⚠️ Debes escribir un mensaje de WhatsApp antes de continuar.");
+      if (!selectedTemplate) {
+        setError("⚠️ Debes elegir una plantilla de WhatsApp antes de continuar.");
+        return;
+      }
+
+      if (missingTemplateVars.length > 0) {
+        setError(`⚠️ Faltan datos de la plantilla: ${missingTemplateVars.join(", ")}.`);
         return;
       }
 
       if (!hasContactsForChannel) {
-        setError("⚠️ No hay clientes con teléfono en este segmento.");
+        setError("⚠️ No hay clientes con teléfono válido en este segmento.");
         return;
       }
 
       if (limitedIncludedRecipients.length <= 0) {
         setError("⚠️ No hay destinatarios incluidos para enviar.");
+        return;
+      }
+
+      if (waUsage != null && waUsage.remaining < limitedIncludedRecipients.length) {
+        setError(
+          waUsage.remaining > 0
+            ? `⚠️ Tu saldo de WhatsApp Marketing solo alcanza para ${waUsage.remaining} de ${limitedIncludedRecipients.length} destinatarios. Reduce la audiencia o compra más saldo en Facturación.`
+            : "⚠️ No tienes saldo disponible de WhatsApp Marketing. Compra más saldo en Facturación."
+        );
         return;
       }
 
@@ -2408,26 +2454,20 @@ export default function CampaignsPage() {
       }));
 
       if (channel === "whatsapp") {
-        const recipientsWithPhone = finalRecipients.filter(
-          (item) => !!String(item.phone || "").trim()
+        const recipientsWithPhone = finalRecipients.filter((item) =>
+          isValidChileanMobile(item.phone)
         );
 
-        const simulatedSent = recipientsWithPhone.length;
-        const simulatedFailed = Math.max(finalRecipients.length - simulatedSent, 0);
-
-        const res = await apiFetch(`${BACKEND_URL}/campaigns/save-whatsapp`, {
+        const res = await apiFetch(`${BACKEND_URL}/campaigns/send-whatsapp`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             slug,
-            channel: "whatsapp",
             campaign_name: campaignName.trim() || null,
             segment,
             inactive_days: Number(inactiveDays),
-            subject: null,
-            message: whatsappMessage.trim(),
             sort,
             plan,
             plan_limit: planLimit,
@@ -2435,45 +2475,35 @@ export default function CampaignsPage() {
             applied_limit: Math.min(Number(sendLimit), finalRecipients.length),
             audience_total: includedAudienceRecipients.length,
             recipients_with_contact: recipientsWithPhone.length,
-            sent_count: simulatedSent,
-            failed_count: simulatedFailed,
+            template_id: selectedTemplateId,
+            template_vars: templateVars,
             final_recipients: finalRecipients,
           }),
         });
 
-        const data = await res.json();
+        const data: SendEmailResponse = await res.json();
 
         if (!res.ok) {
-          throw new Error(data?.error || "No se pudo guardar la campaña de WhatsApp");
+          throw new Error(data?.error || "No se pudo enviar la campaña de WhatsApp");
         }
 
-        const whatsappSummary: SendEmailResponse = {
-          ok: true,
-          campaign_name: campaignName.trim() || null,
-          channel: "whatsapp",
-          slug,
-          plan,
-          plan_limit: planLimit,
-          requested_limit: Number(sendLimit),
-          applied_limit: Math.min(Number(sendLimit), finalRecipients.length),
-          sort,
-          segment,
-          inactive_days: Number(inactiveDays),
-          audience_total: includedAudienceRecipients.length,
-          recipients_with_email: recipientsWithPhone.length,
-          sent: simulatedSent,
-          failed: simulatedFailed,
-        };
-
-        setSendSummary(whatsappSummary);
+        setSendSummary({ ...data, recipients_with_email: recipientsWithPhone.length });
 
         setResultMessage(
-          `Campaña WhatsApp guardada en historial. Mensajes enviados: ${simulatedSent}. Fallidos: ${simulatedFailed}.`
+          `Campaña WhatsApp enviada. Mensajes enviados: ${data.sent || 0}. Fallidos: ${
+            data.failed || 0
+          }.${
+            data.skipped_for_balance
+              ? ` Sin saldo suficiente para ${data.skipped_for_balance}.`
+              : ""
+          }`
         );
 
         setToast({
           type: "success",
-          message: `Campaña WhatsApp guardada en historial. Enviados: ${simulatedSent}. Fallidos: ${simulatedFailed}.`,
+          message: `Campaña WhatsApp enviada. Enviados: ${data.sent || 0}. Fallidos: ${
+            data.failed || 0
+          }.`,
         });
 
         if (slug) {
@@ -2768,6 +2798,181 @@ export default function CampaignsPage() {
       </SectionCard>
     );
 
+  if (view === "landing") {
+    return (
+      <div className="space-y-5 pb-6">
+        <section
+          className="relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
+          style={{
+            borderColor: "rgba(37,99,235,0.42)",
+            background:
+              "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+          }}
+        >
+          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">
+                  Campañas
+                </p>
+                <h1
+                  className="relative mt-0.5 text-xl font-semibold tracking-tight"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Campañas y recuperación
+                </h1>
+                <p
+                  className="mt-0.5 max-w-2xl text-sm leading-5"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Elige un canal para armar tu campaña.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
+              className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-muted)",
+              }}
+            >
+              Ver historial Campañas
+            </button>
+          </div>
+        </section>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          {CHANNEL_OPTIONS.map((item) => {
+            const Icon = item.icon;
+            const usage = item.key === "email" ? emailUsage : waUsage;
+
+            return (
+              <button
+                type="button"
+                key={item.key}
+                onClick={() => {
+                  setChannel(item.key);
+                  setView("wizard");
+                  setActiveStep(1);
+                }}
+                className="orbyx-campaign-energy group flex cursor-pointer flex-col gap-4 rounded-[24px] border p-6 text-left transition-all duration-200"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.08))",
+                      color: "rgb(37 99 235)",
+                    }}
+                  >
+                    <Icon size={22} />
+                  </div>
+                  <div>
+                    <p
+                      className="text-lg font-semibold"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {item.label}
+                    </p>
+                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div
+                    className="rounded-xl border px-2.5 py-2"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                    }}
+                  >
+                    <p
+                      className="text-[10px] font-medium uppercase tracking-[0.06em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Límite
+                    </p>
+                    <p
+                      className="mt-0.5 text-sm font-bold"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {usage != null ? usage.total.toLocaleString("es-CL") : "..."}
+                    </p>
+                  </div>
+
+                  <div
+                    className="rounded-xl border px-2.5 py-2"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                    }}
+                  >
+                    <p
+                      className="text-[10px] font-medium uppercase tracking-[0.06em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Enviados
+                    </p>
+                    <p
+                      className="mt-0.5 text-sm font-bold"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {usage != null ? usage.used.toLocaleString("es-CL") : "..."}
+                    </p>
+                  </div>
+
+                  <div
+                    className="rounded-xl border px-2.5 py-2"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                    }}
+                  >
+                    <p
+                      className="text-[10px] font-medium uppercase tracking-[0.06em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Saldo
+                    </p>
+                    <p
+                      className="mt-0.5 text-sm font-bold"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {usage != null ? usage.remaining.toLocaleString("es-CL") : "..."}
+                    </p>
+                  </div>
+                </div>
+
+                <span
+                  className="mt-1 inline-flex items-center gap-1 text-sm font-semibold"
+                  style={{ color: "rgb(37 99 235)" }}
+                >
+                  Crear campaña de {item.label}
+                  <ArrowRight size={16} />
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 pb-6">
 <section
@@ -2816,6 +3021,15 @@ export default function CampaignsPage() {
   </button>
 </div>
       </section>
+
+      <button
+        type="button"
+        onClick={() => setView("landing")}
+        className="inline-flex items-center gap-1.5 text-sm font-medium transition hover:opacity-80"
+        style={{ color: "var(--text-muted)" }}
+      >
+        ← Cambiar canal
+      </button>
 
       <div
         className="rounded-2xl border p-2"
@@ -3055,7 +3269,7 @@ export default function CampaignsPage() {
           background: "var(--bg-card)",
         }}
       >
-        <div className="grid gap-1 md:grid-cols-3">
+        <div className="grid gap-1 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
           {[
             {
               number: "1",
@@ -3075,10 +3289,10 @@ export default function CampaignsPage() {
               title: "Envio",
               description: "Revision y resultado",
             },
-          ].map((step, index) => (
+          ].map((step, index, steps) => (
+          <div className="contents" key={step.number}>
             <button
               type="button"
-              key={step.number}
               onClick={() => setActiveStep(step.step)}
               aria-current={activeStep === step.step ? "step" : undefined}
               className={`orbyx-campaign-energy group flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
@@ -3122,6 +3336,16 @@ export default function CampaignsPage() {
                 </p>
               </div>
             </button>
+
+            {index < steps.length - 1 ? (
+              <div
+                className="hidden items-center justify-center md:flex"
+                aria-hidden="true"
+              >
+                <ArrowRight size={18} style={{ color: "var(--text-muted)" }} />
+              </div>
+            ) : null}
+          </div>
           ))}
         </div>
       </section>
@@ -3130,7 +3354,7 @@ export default function CampaignsPage() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.88fr)] 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <SectionCard
           title="Configurar campaña"
-          description="Selecciona el canal, el segmento y el criterio de envío."
+          description="Selecciona el segmento y el criterio de envío."
           rightSlot={
             <div className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
               style={{
@@ -3145,31 +3369,6 @@ export default function CampaignsPage() {
           }
         >
           <div className="space-y-5">
-            <div>
-              <p
-                className="mb-3 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                Canal
-              </p>
-
-              <div className="flex gap-3">
-                {CHANNEL_OPTIONS.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <ChannelCard
-                      key={item.key}
-                      active={channel === item.key}
-                      title={item.label}
-                      description={item.description}
-                      icon={<Icon size={18} />}
-                      onClick={() => setChannel(item.key)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
             <div>
               <p
                 className="mb-3 text-sm font-semibold"
@@ -3335,6 +3534,24 @@ export default function CampaignsPage() {
                   }}
                 />
               </div>
+
+              {channel === "whatsapp" && audienceStats.excludedForInvalidPhone > 0 ? (
+                <div
+                  className="rounded-2xl border px-4 py-3 text-sm"
+                  style={{
+                    borderColor: "rgba(244,63,94,0.24)",
+                    background: "rgba(244,63,94,0.08)",
+                    color: "rgb(244 63 94)",
+                  }}
+                >
+                  {audienceStats.excludedForInvalidPhone} contacto
+                  {audienceStats.excludedForInvalidPhone === 1 ? "" : "s"} del segmento{" "}
+                  {audienceStats.excludedForInvalidPhone === 1 ? "tiene" : "tienen"} teléfono
+                  cargado pero no es un celular chileno válido, así que{" "}
+                  {audienceStats.excludedForInvalidPhone === 1 ? "queda excluido" : "quedan excluidos"}{" "}
+                  de esta campaña.
+                </div>
+              ) : null}
 
               <div
                 className="rounded-2xl border p-3 sm:p-4"
@@ -3968,86 +4185,19 @@ export default function CampaignsPage() {
             </>
           ) : (
             <div className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Nombre interno de campaña
-                  </label>
-                  <input
-                    type="text"
-                    value={campaignName}
-                    onChange={(e) => setCampaignName(e.target.value)}
-                    placeholder="Ej: Reactivación WhatsApp 120+ días"
-                    className={inputClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Link de destino
-                  </label>
-
-                  <input
-                    type="text"
-                    value={whatsappCtaUrl}
-                    onChange={(e) => setWhatsappCtaUrl(e.target.value)}
-                    placeholder={`https://www.orbyx.cl/${slug}`}
-                    className={inputClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div
-                className="rounded-2xl border p-4"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                }}
-              >
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Objetivo del mensaje
-                </p>
-                <p
-                  className="mt-2 text-sm leading-6"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Esta campaña está pensada para reactivar clientes y llevarlos directo a la
-                  agenda pública mediante un link de reserva.
-                </p>
-              </div>
-
               <div>
                 <label
                   className="mb-2 block text-sm font-medium"
                   style={{ color: "var(--text-main)" }}
                 >
-                  Mensaje
+                  Nombre interno de campaña
                 </label>
-
-                <textarea
-                  value={whatsappMessage}
-                  onChange={(e) => setWhatsappMessage(e.target.value)}
-                  placeholder="Escribe tu mensaje de WhatsApp..."
-                  className={textareaClass}
+                <input
+                  type="text"
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  placeholder="Ej: Reactivación WhatsApp 120+ días"
+                  className={inputClass}
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-card)",
@@ -4056,10 +4206,118 @@ export default function CampaignsPage() {
                 />
               </div>
 
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                Puedes usar <strong>{"{{nombre}}"}</strong>, <strong>{"{{negocio}}"}</strong> y{" "}
-                <strong>{"{{link_agenda}}"}</strong>.
-              </p>
+              <div>
+                <p
+                  className="mb-3 text-sm font-semibold"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Plantilla de WhatsApp
+                </p>
+                <p className="mb-3 text-xs" style={{ color: "var(--text-muted)" }}>
+                  WhatsApp solo permite enviar mensajes de marketing usando plantillas
+                  aprobadas por Meta — no se puede escribir texto libre. Elige una y completa
+                  solo las variables que te pide.
+                </p>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {WHATSAPP_MARKETING_TEMPLATES.map((tpl) => (
+                    <button
+                      type="button"
+                      key={tpl.id}
+                      onClick={() => {
+                        setSelectedTemplateId(tpl.id);
+                        setTemplateVars({});
+                      }}
+                      className="rounded-2xl border p-3 text-left transition-all duration-200 hover:border-blue-400/40"
+                      style={{
+                        borderColor:
+                          selectedTemplateId === tpl.id
+                            ? "rgba(37,99,235,0.55)"
+                            : "var(--border-color)",
+                        background:
+                          selectedTemplateId === tpl.id
+                            ? "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.08))"
+                            : "var(--bg-card)",
+                      }}
+                    >
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: "var(--text-main)" }}
+                      >
+                        {tpl.label}
+                      </p>
+                      <p
+                        className="mt-1 line-clamp-3 text-xs leading-5"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {tpl.rawText.replace(/\{\{\s*\d+\s*\}\}/g, "...")}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {selectedTemplate ? (
+                <div
+                  className="rounded-2xl border p-4"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Nombre del cliente, negocio, link y teléfono se completan
+                    automáticamente
+                  </p>
+                  <p
+                    className="mt-2 text-sm leading-6"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {Object.values(selectedTemplate.slots).some((s) => "editable" in s)
+                      ? "Solo falta completar lo siguiente para esta plantilla:"
+                      : "Esta plantilla no pide ningún dato adicional — solo confirma y envía."}
+                  </p>
+                </div>
+              ) : null}
+
+              {selectedTemplate ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {Object.entries(selectedTemplate.slots)
+                    .filter(([, slot]) => "editable" in slot)
+                    .map(([index, slot]) =>
+                      "editable" in slot ? (
+                        <div key={index}>
+                          <label
+                            className="mb-2 block text-sm font-medium"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            {slot.label}
+                          </label>
+                          <input
+                            type="text"
+                            value={templateVars[index] || ""}
+                            onChange={(e) =>
+                              setTemplateVars((prev) => ({
+                                ...prev,
+                                [index]: e.target.value,
+                              }))
+                            }
+                            placeholder={slot.placeholder}
+                            className={inputClass}
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                              color: "var(--text-main)",
+                            }}
+                          />
+                        </div>
+                      ) : null
+                    )}
+                </div>
+              ) : null}
             </div>
           )}
         </div>
@@ -4124,7 +4382,37 @@ export default function CampaignsPage() {
                 value={String(limitedIncludedRecipients.length)}
                 helper="Contactos que se procesarán."
               />
+              {channel === "whatsapp" ? (
+                <MiniStat
+                  title="Saldo WhatsApp"
+                  value={waUsage != null ? String(waUsage.remaining) : "Cargando..."}
+                  helper="Mensajes disponibles este mes (plan + add-ons)."
+                />
+              ) : null}
             </div>
+
+            {waInsufficientBalance ? (
+              <div
+                className="mt-4 rounded-2xl border px-4 py-3 text-sm"
+                style={{
+                  borderColor: "rgba(244,63,94,0.24)",
+                  background: "rgba(244,63,94,0.08)",
+                  color: "rgb(244 63 94)",
+                }}
+              >
+                Tu saldo actual solo alcanza para enviar a{" "}
+                {Math.max(waUsage?.remaining || 0, 0)} de {limitedIncludedRecipients.length}{" "}
+                destinatarios incluidos. Reduce la audiencia o{" "}
+                <button
+                  type="button"
+                  onClick={() => router.push(`/dashboard/${slug}/billing`)}
+                  className="font-semibold underline"
+                >
+                  compra más saldo de WhatsApp Marketing
+                </button>
+                .
+              </div>
+            ) : null}
 
             <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <button
@@ -4148,6 +4436,7 @@ export default function CampaignsPage() {
                   loadingAudience ||
                   !hasContactsForChannel ||
                   limitedIncludedRecipients.length === 0 ||
+                  waInsufficientBalance ||
                   !canEditCampanas
                 }
                 className={`${primaryButtonClass} w-full gap-2 font-semibold sm:w-auto`}
@@ -4199,7 +4488,7 @@ export default function CampaignsPage() {
               helper={
                 channel === "email"
                   ? "Envíos exitosos."
-                  : "Mensajes enviados correctamente."
+                  : "Aceptados por Twilio (pendiente de confirmación de entrega)."
               }
             />
             <MiniStat
@@ -4207,6 +4496,13 @@ export default function CampaignsPage() {
               value={String(sendSummary.failed || 0)}
               helper="Contactos que no se pudieron procesar."
             />
+            {channel === "whatsapp" && (sendSummary.skipped_for_balance || 0) > 0 ? (
+              <MiniStat
+                title="Sin saldo"
+                value={String(sendSummary.skipped_for_balance || 0)}
+                helper="Quedaron sin enviar por falta de saldo de WhatsApp Marketing."
+              />
+            ) : null}
           </div>
         </SectionCard>
       ) : null}
