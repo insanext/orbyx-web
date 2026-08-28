@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { href: '/admin/tickets', label: 'Tickets' },
   { href: '/admin/planes', label: 'Planes' },
   { href: '/admin/estadisticas', label: 'Estadísticas' },
-  // Tenants se agrega aca cuando exista esa pantalla.
+  { href: '/admin/tenants', label: 'Tenants' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
