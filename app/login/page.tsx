@@ -19,12 +19,14 @@ async function resolveTenantDestination({
   userId,
   userEmail,
   plan,
+  phone,
   redirectTo,
 }: {
   supabase: SupabaseClient;
   userId: string;
   userEmail: string;
   plan: string;
+  phone?: string;
   redirectTo: string | null;
 }): Promise<{ destination: string; replace?: boolean } | { error: string }> {
   let { data: tenantUserRow } = await supabase
@@ -40,7 +42,7 @@ async function resolveTenantDestination({
     const provisionRes = await fetch(`${backend}/tenants/provision`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, email: userEmail, plan }),
+      body: JSON.stringify({ user_id: userId, email: userEmail, plan, phone: phone || null }),
     });
     const provisionData = await provisionRes.json();
     if (!provisionRes.ok) {
@@ -119,6 +121,7 @@ function LoginForm() {
         userId: user.id,
         userEmail: user.email || "",
         plan: user.user_metadata?.plan || "pro",
+        phone: user.user_metadata?.phone,
         redirectTo: searchParams.get("redirectTo"),
       });
 
@@ -178,6 +181,7 @@ function LoginForm() {
 
       const userEmail = data.user?.email || email;
       const plan = data.user?.user_metadata?.plan || "pro";
+      const phone = data.user?.user_metadata?.phone;
 
       // 2-4. Resolver tenant/onboarding/dashboard (misma lógica que la
       // detección de sesión activa al montar la página)
@@ -186,6 +190,7 @@ function LoginForm() {
         userId,
         userEmail,
         plan,
+        phone,
         redirectTo: searchParams.get("redirectTo"),
       });
 

@@ -11,6 +11,8 @@ import {
   type BillingCycle,
 } from "@/lib/plans";
 import { TermsAcceptanceCheckbox } from "@/components/auth/TermsAcceptanceCheckbox";
+import { PhoneCountryInput } from "@/components/auth/PhoneCountryInput";
+import { isValidPhoneForCountry, toE164 } from "@/components/auth/countries";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -47,6 +49,8 @@ function CheckoutPremiumInner() {
 
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneIso2, setPhoneIso2] = useState("CL");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -112,6 +116,10 @@ function CheckoutPremiumInner() {
       setFormError("Ingresa un correo electrónico válido.");
       return;
     }
+    if (!isValidPhoneForCountry(phoneIso2, phoneNumber)) {
+      setFormError("Ingresa un teléfono válido.");
+      return;
+    }
     if (!acceptedTerms) {
       setFormError("Debes aceptar los Términos de Servicio para continuar.");
       return;
@@ -133,6 +141,7 @@ function CheckoutPremiumInner() {
         body: JSON.stringify({
           email,
           business_name: businessName,
+          phone: toE164(phoneIso2, phoneNumber),
           plan_id: plan.key,
           periodicidad: cycleParam,
           monto,
@@ -318,6 +327,22 @@ function CheckoutPremiumInner() {
                   placeholder="correo@empresa.com"
                   className="w-full rounded-xl border px-3 py-2 text-sm text-white outline-none transition-colors"
                   style={{ background: "#0a0f1e", borderColor: "rgba(37,99,235,0.3)" }}
+                />
+              </div>
+              <div>
+                <label
+                  className="text-xs mb-1.5 block"
+                  style={{ color: "rgba(147,197,253,0.6)" }}
+                >
+                  Teléfono
+                </label>
+                <PhoneCountryInput
+                  iso2={phoneIso2}
+                  onIso2Change={setPhoneIso2}
+                  value={phoneNumber}
+                  onChange={setPhoneNumber}
+                  disabled={submitting}
+                  required
                 />
               </div>
             </div>

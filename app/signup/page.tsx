@@ -8,6 +8,8 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "../../components/ui/password-visibility-toggle";
 import { ParticleBackground } from "../../components/ui/particle-background";
 import { TermsAcceptanceCheckbox } from "../../components/auth/TermsAcceptanceCheckbox";
+import { PhoneCountryInput } from "../../components/auth/PhoneCountryInput";
+import { isValidPhoneForCountry, toE164 } from "../../components/auth/countries";
 
 // /signup es solo el onboarding gratuito (starter) — los planes pagos
 // (business/premium) van por checkout-premium, no por acá. Ya no lee
@@ -49,6 +51,8 @@ function SignupInner() {
   );
 
   const [fullName, setFullName] = useState("");
+  const [phoneIso2, setPhoneIso2] = useState("CL");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -75,6 +79,10 @@ function SignupInner() {
 
     if (!fullName.trim()) {
       setMsg("Ingresa tu nombre completo.");
+      return;
+    }
+    if (!isValidPhoneForCountry(phoneIso2, phoneNumber)) {
+      setMsg("Ingresa un teléfono válido.");
       return;
     }
     if (!passwordValid) {
@@ -111,7 +119,7 @@ function SignupInner() {
         options: {
           captchaToken,
           emailRedirectTo: `${siteUrl}/auth/verified`,
-          data: { plan, name: fullName.trim() },
+          data: { plan, name: fullName.trim(), phone: toE164(phoneIso2, phoneNumber) },
         },
       });
       clearTimeout(timeout);
@@ -294,6 +302,16 @@ function SignupInner() {
               onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
             />
           </div>
+
+          {/* Teléfono */}
+          <PhoneCountryInput
+            iso2={phoneIso2}
+            onIso2Change={setPhoneIso2}
+            value={phoneNumber}
+            onChange={setPhoneNumber}
+            disabled={loading}
+            required
+          />
 
           {/* Email field */}
           <div style={{ position: "relative" }}>
