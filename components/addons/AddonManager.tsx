@@ -176,7 +176,11 @@ const LOW_BALANCE_RECHARGE_THRESHOLD = 10;
 const LOW_BALANCE_RECHARGE_ADDON_KEY: ExtraKey = "wa_confirmacion";
 
 type AddonChangeResult = {
-  key: ExtraKey;
+  // string, no ExtraKey: las filas de activación de cobro automático
+  // encadenadas tras una compra usan una key sintética ("${addonKey}_renewal")
+  // para no colisionar con la fila de la compra misma en la lista de
+  // resultados — ver handleConfirmAddonCharge.
+  key: string;
   label: string;
   ok: boolean;
   timedOut?: boolean;
@@ -223,6 +227,15 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     { key: ExtraKey; flow: "renewal_mode" | "low_balance_recharge" } | null
   >(null);
   const [consentChecked, setConsentChecked] = useState(false);
+
+  // Checkbox inline "dejar en cobro automático" por línea, dentro del
+  // modal de compra — se resetea cada vez que se abre el modal (ver
+  // onClick de "Confirmar y cobrar add-ons"). Solo aplica a los add-ons
+  // comprados en este lote que todavía no estén en renewal_mode
+  // "automatico" (ver purchaseAutoPayEligible).
+  const [purchaseAutoPayOptIn, setPurchaseAutoPayOptIn] = useState<
+    Partial<Record<ExtraKey, boolean>>
+  >({});
 
   // Cada refreshAddons() toma un ticket incremental al iniciar. Si al
   // terminar el ticket capturado ya no es el ultimo (se disparo un
@@ -364,15 +377,32 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   // text_shown, para que el registro en addon_auto_charge_consents
   // coincida con lo que el tenant realmente vio (monto/cantidad ya
   // interpolados en el momento del click, no un template server-side).
-  function buildRenewalConsentText(key: ExtraKey): string {
-    const config = extraConfig[key];
-    const quantity = addonBaseline[key]?.quantity || 0;
-    const unitPrice = addonBaseline[key]?.unit_price ?? config.unitPrice;
+  function buildRenewalConsentTextRaw(
+    config: ExtraConfig,
+    quantity: number,
+    unitPrice: number
+  ): string {
     const monto = unitPrice * quantity;
     const isPlural = quantity !== 1;
     const unidadPlural = isPlural ? "unidades" : "unidad";
     const activaPlural = isPlural ? "activas" : "activa";
     return `Autorizo a que se me cobre automáticamente ${formatCLP(monto)} + IVA cada ~30 días mientras esta opción esté activa, para mantener mis ${quantity} ${unidadPlural} de ${config.title} ${activaPlural}. Este cobro no se prorratea: la renovación de este addon se calcula desde la fecha de tu último pago de este addon en particular, no desde la fecha de tu plan. Puedo desactivar esta opción cuando quiera.`;
+  }
+
+  function buildRenewalConsentText(key: ExtraKey): string {
+    const config = extraConfig[key];
+    const quantity = addonBaseline[key]?.quantity || 0;
+    const unitPrice = addonBaseline[key]?.unit_price ?? config.unitPrice;
+    return buildRenewalConsentTextRaw(config, quantity, unitPrice);
+  }
+
+  // Mismo texto legal, pero para el checkbox inline del modal de compra:
+  // usa la cantidad/precio PROYECTADOS tras la compra (change.newQty, tier
+  // de su última unidad), no el addonBaseline actual (todavía viejo en ese
+  // momento) — así el monto que el tenant ve y acepta ya es el que
+  // realmente quedará vigente apenas se confirme el cobro.
+  function buildRenewalConsentTextForPurchase(key: ExtraKey, quantity: number, unitPrice: number): string {
+    return buildRenewalConsentTextRaw(extraConfig[key], quantity, unitPrice);
   }
 
   // Mismo criterio que buildRenewalConsentText — precio dinámico real
@@ -698,6 +728,18 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     0
   );
 
+  // Elegible para el checkbox inline "dejar en cobro automático" del modal
+  // de compra: la línea implica un cobro real hoy (compra nueva o aumento
+  // de cantidad, nunca una baja) y el addon todavía no está en
+  // renewal_mode "automatico" — si ya lo está, no hay nada que ofrecer acá
+  // (el toggle fuera del modal sigue siendo el lugar para desactivarlo).
+  function purchaseAutoPayEligible(change: { key: ExtraKey; chargeAmount: number }): boolean {
+    return (
+      change.chargeAmount > 0 &&
+      (addonBaseline[change.key]?.renewal_mode || "manual") !== "automatico"
+    );
+  }
+
   // Timeout por llamada de cobro: si el backend/Flow no responde en este
   // plazo, no asumimos exito ni fallo — se marca como "incierto" y se le
   // pide al usuario verificar en Historial de pagos antes de reintentar.
@@ -751,6 +793,56 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
         }
 
         results.push({ key: change.key, label: change.label, ok: true });
+
+        // Encadena la activación de cobro automático si el tenant marcó el
+        // checkbox inline para esta línea — mismo endpoint/consentimiento
+        // que el toggle "Cobro automático mensual" de fuera del modal, solo
+        // que acá se dispara automáticamente justo después de la compra en
+        // vez de requerir que el tenant vuelva a buscarlo por separado. Un
+        // fallo acá NO revierte ni oculta que la compra sí se hizo — solo
+        // se reporta aparte, y el tenant puede activar el toggle a mano.
+        if (purchaseAutoPayOptIn[change.key] && purchaseAutoPayEligible(change)) {
+          try {
+            const config = extraConfig[change.key];
+            const projectedUnitPrice = addonUnitTierPrice(config, change.newQty - 1);
+
+            const renewalRes = await apiFetch(`${BACKEND_URL}/billing/addons/renewal-mode`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                tenant_id: tenantId,
+                addon_key: change.key,
+                renewal_mode: "automatico",
+                consent_accepted: true,
+                text_shown: buildRenewalConsentTextForPurchase(
+                  change.key,
+                  change.newQty,
+                  projectedUnitPrice
+                ),
+              }),
+            });
+            const renewalData = await renewalRes.json();
+
+            if (!renewalRes.ok) {
+              results.push({
+                key: `${change.key}_renewal`,
+                label: `${change.label} — cobro automático mensual`,
+                ok: false,
+                error:
+                  renewalData?.error ||
+                  "El add-on se compró, pero no se pudo activar el cobro automático. Actívalo manualmente con el interruptor.",
+              });
+            }
+          } catch {
+            results.push({
+              key: `${change.key}_renewal`,
+              label: `${change.label} — cobro automático mensual`,
+              ok: false,
+              error:
+                "El add-on se compró, pero no se pudo activar el cobro automático. Actívalo manualmente con el interruptor.",
+            });
+          }
+        }
       } catch (error: unknown) {
         if (error instanceof DOMException && error.name === "AbortError") {
           results.push({
@@ -1095,6 +1187,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 type="button"
                 onClick={() => {
                   setAddonChangeResults([]);
+                  setPurchaseAutoPayOptIn({});
                   setAddonConfirmModalOpen(true);
                 }}
                 disabled={addonSubmitting}
@@ -1190,21 +1283,50 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                   {addonPendingChanges.map((change) => (
                     <li
                       key={change.key}
-                      className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm"
+                      className="rounded-lg border px-3 py-2 text-sm"
                       style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
                     >
-                      <span style={{ color: "var(--text-main)" }}>
-                        {change.label}{" "}
-                        <span style={{ color: "var(--text-muted)" }}>
-                          ({change.baselineQty} → {change.newQty})
+                      <div className="flex items-center justify-between gap-3">
+                        <span style={{ color: "var(--text-main)" }}>
+                          {change.label}{" "}
+                          <span style={{ color: "var(--text-muted)" }}>
+                            ({change.baselineQty} → {change.newQty})
+                          </span>
                         </span>
-                      </span>
-                      <span
-                        className="font-semibold"
-                        style={{ color: change.chargeAmount > 0 ? "var(--text-main)" : "var(--text-muted)" }}
-                      >
-                        {change.chargeAmount > 0 ? formatCLP(applyIva(change.chargeAmount)) : "Sin costo"}
-                      </span>
+                        <span
+                          className="font-semibold"
+                          style={{ color: change.chargeAmount > 0 ? "var(--text-main)" : "var(--text-muted)" }}
+                        >
+                          {change.chargeAmount > 0 ? formatCLP(applyIva(change.chargeAmount)) : "Sin costo"}
+                        </span>
+                      </div>
+
+                      {purchaseAutoPayEligible(change) ? (
+                        <label
+                          className="mt-2 flex cursor-pointer items-start gap-2 border-t pt-2"
+                          style={{ borderColor: "var(--border-color)" }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={purchaseAutoPayOptIn[change.key] || false}
+                            onChange={(e) =>
+                              setPurchaseAutoPayOptIn((prev) => ({
+                                ...prev,
+                                [change.key]: e.target.checked,
+                              }))
+                            }
+                            disabled={addonSubmitting}
+                            className="mt-0.5 h-4 w-4 shrink-0"
+                          />
+                          <span className="text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                            {buildRenewalConsentTextForPurchase(
+                              change.key,
+                              change.newQty,
+                              addonUnitTierPrice(extraConfig[change.key], change.newQty - 1)
+                            )}
+                          </span>
+                        </label>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
