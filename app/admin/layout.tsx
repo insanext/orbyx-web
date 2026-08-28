@@ -8,6 +8,7 @@ const BACKEND_URL = 'https://orbyx-backend.onrender.com'
 const NAV_ITEMS = [
   { href: '/admin/tickets', label: 'Tickets' },
   { href: '/admin/planes', label: 'Planes' },
+  { href: '/admin/estadisticas', label: 'Estadísticas' },
   // Tenants se agrega aca cuando exista esa pantalla.
 ]
 
