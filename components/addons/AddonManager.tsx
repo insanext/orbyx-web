@@ -51,8 +51,8 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
   emails_campana: {
     title: "Pack emails campaña",
     unitPrice: 1990,
-    price_pack2: 1990,
-    price_pack3: 1990,
+    price_pack2: 1791,
+    price_pack3: 1692,
     unitLabel: "pack",
     usageLabel: "500 correos campaña adicionales / mes",
     tooltip: "Correos de marketing adicionales para campañas a tus clientes. 500 correos por pack.",
@@ -62,8 +62,8 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
   staff: {
     title: "+ 1 Profesional",
     unitPrice: 5990,
-    price_pack2: 5990,
-    price_pack3: 5990,
+    price_pack2: 5391,
+    price_pack3: 5092,
     unitLabel: "profesional",
     usageLabel: "1 staff adicional sobre el límite del plan",
     tooltip: "Agrega un profesional adicional sobre el límite de tu plan. Cada profesional tiene su propia agenda y disponibilidad.",
@@ -73,8 +73,8 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
   sucursal: {
     title: "+ 1 Sucursal",
     unitPrice: 9990,
-    price_pack2: 9990,
-    price_pack3: 9990,
+    price_pack2: 8991,
+    price_pack3: 8492,
     unitLabel: "sucursal",
     usageLabel: "1 sucursal adicional sobre el límite del plan",
     tooltip: "Agrega una sucursal adicional sobre el límite de tu plan.",
@@ -83,9 +83,12 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
   },
   group_capacity: {
     title: "+ Cupos grupales",
-    unitPrice: 4900,
-    price_pack2: 4900,
-    price_pack3: 4900,
+    // unitPrice era 4900 acá pero 4990 en server.js/tabla real (desfase
+    // preexistente, detectado 2026-08-28 al sincronizar los tramos de
+    // descuento) — corregido para que calce con lo que de verdad se cobra.
+    unitPrice: 4990,
+    price_pack2: 4491,
+    price_pack3: 4242,
     unitLabel: "pack",
     usageLabel: "25 cupos adicionales por slot grupal",
     tooltip: "Aumenta la capacidad máxima de tus clases o eventos grupales en 25 cupos por slot adicional.",
@@ -111,18 +114,10 @@ function tieredAddonCost(config: ExtraConfig, count: number): number {
   return config.unitPrice + config.price_pack2 + (count - 2) * config.price_pack3;
 }
 
-function nextPackPrice(config: ExtraConfig, currentCount: number): number {
-  if (currentCount <= 0) return config.unitPrice;
-  if (currentCount <= 2) return config.price_pack2;
-  return config.price_pack3;
-}
-
 // Precio de UNA unidad específica por su índice 0-based entre todas las que
 // el tenant llegue a tener (0=primera, 1=segunda, 2+=tercera en adelante) —
 // misma fórmula que addonUnitTierPrice en server.js (activate, quantity,
-// triggerLowBalanceRecharge). A diferencia de nextPackPrice() de arriba
-// (que trata currentCount === 2 como price_pack2, un off-by-one pre-
-// existente no tocado en este fix), esto debe calzar exacto con lo que el
+// triggerLowBalanceRecharge). Esto debe calzar exacto con lo que el
 // backend cobra de verdad, porque se usa tanto para el total a cobrar como
 // para el texto de consentimiento legal de la recarga automática.
 function addonUnitTierPrice(config: ExtraConfig, unitIndex: number): number {
@@ -154,6 +149,74 @@ function formatCLP(value: number) {
 const IVA_RATE = 0.19;
 function applyIva(netAmount: number): number {
   return Math.round(netAmount * (1 + IVA_RATE));
+}
+
+type AmountLineBreakdown = {
+  fullNet: string;
+  discount: string | null;
+  iva: string;
+  total: string;
+};
+
+// Desglose "Valor Neto / Descuento / IVA / Total" para mostrar montos de
+// add-ons en toda la UI (tarjeta activa, líneas del modal de compra, total
+// del modal). fullListNet = lo que costaría sin ningún descuento por
+// cantidad (unidades × precio de lista); actualNet = lo que REALMENTE se
+// cobra hoy — el mismo cálculo que usa el backend para cobrar de verdad
+// (tieredAddonCost/tieredAddonChargeAmount, descuento marginal por tramo,
+// no un % plano sobre el total — ver hallazgo reportado sobre el punto 2).
+// "Descuento" es la diferencia entre ambos, y se omite si no hay ninguno
+// (hoy: staff/sucursal/group_capacity/campanas_wa/emails_campana, que no
+// tienen tramos de descuento configurados en el catálogo).
+function buildAmountLineBreakdown(fullListNet: number, actualNet: number): AmountLineBreakdown {
+  const roundedFullNet = Math.round(fullListNet);
+  const roundedActualNet = Math.round(actualNet);
+  const discountAmount = Math.max(0, roundedFullNet - roundedActualNet);
+  const iva = Math.round(roundedActualNet * IVA_RATE);
+  return {
+    fullNet: formatCLP(roundedFullNet),
+    discount: discountAmount > 0 ? `-${formatCLP(discountAmount)}` : null,
+    iva: formatCLP(iva),
+    total: formatCLP(roundedActualNet + iva),
+  };
+}
+
+function AmountBreakdownRows({
+  breakdown,
+  totalLabel,
+}: {
+  breakdown: AmountLineBreakdown;
+  totalLabel: string;
+}) {
+  return (
+    <div className="space-y-0.5 text-xs">
+      <div className="flex items-center justify-between gap-4">
+        <span style={{ color: "var(--text-muted)" }}>Valor Neto</span>
+        <span style={{ color: "var(--text-main)" }}>{breakdown.fullNet}</span>
+      </div>
+      {breakdown.discount ? (
+        <div className="flex items-center justify-between gap-4">
+          <span style={{ color: "rgb(16 185 129)" }}>Descuento</span>
+          <span style={{ color: "rgb(16 185 129)" }}>{breakdown.discount}</span>
+        </div>
+      ) : null}
+      <div className="flex items-center justify-between gap-4">
+        <span style={{ color: "var(--text-muted)" }}>IVA</span>
+        <span style={{ color: "var(--text-main)" }}>{breakdown.iva}</span>
+      </div>
+      <div
+        className="flex items-center justify-between gap-4 border-t pt-0.5"
+        style={{ borderColor: "var(--border-color)" }}
+      >
+        <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+          {totalLabel}
+        </span>
+        <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+          {breakdown.total}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 type RenewalMode = "manual" | "automatico";
@@ -234,6 +297,14 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   // comprados en este lote que todavía no estén en renewal_mode
   // "automatico" (ver purchaseAutoPayEligible).
   const [purchaseAutoPayOptIn, setPurchaseAutoPayOptIn] = useState<
+    Partial<Record<ExtraKey, boolean>>
+  >({});
+
+  // Mismo patrón que purchaseAutoPayOptIn, pero para el segundo checkbox
+  // inline (recarga automática por saldo bajo) — solo aplica a
+  // wa_confirmacion en la práctica (ver purchaseLowBalanceEligible), pero
+  // se mantiene keyed por ExtraKey por consistencia.
+  const [purchaseLowBalanceOptIn, setPurchaseLowBalanceOptIn] = useState<
     Partial<Record<ExtraKey, boolean>>
   >({});
 
@@ -408,11 +479,16 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   // Mismo criterio que buildRenewalConsentText — precio dinámico real
   // (addonUnitTierPrice), texto armado en el frontend y mandado tal cual
   // como text_shown.
-  function buildLowBalanceConsentText(): string {
+  function buildLowBalanceConsentTextForQuantity(quantity: number): string {
     const config = extraConfig[LOW_BALANCE_RECHARGE_ADDON_KEY];
-    const quantity = addonBaseline[LOW_BALANCE_RECHARGE_ADDON_KEY]?.quantity || 0;
     const monto = addonUnitTierPrice(config, quantity);
     return `Autorizo a que se me cobre automáticamente ${formatCLP(monto)} + IVA a mi tarjeta registrada cada vez que mis mensajes de WhatsApp disponibles bajen de ${LOW_BALANCE_RECHARGE_THRESHOLD}, agregando 50 mensajes adicionales de inmediato. Puedo desactivar esta opción cuando quiera.`;
+  }
+
+  function buildLowBalanceConsentText(): string {
+    return buildLowBalanceConsentTextForQuantity(
+      addonBaseline[LOW_BALANCE_RECHARGE_ADDON_KEY]?.quantity || 0
+    );
   }
 
   // Desglose de precio para los modales de consentimiento (monto neto, IVA
@@ -728,6 +804,31 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     0
   );
 
+  // Desglose Valor Neto/Descuento/IVA/Total para el footer del modal de
+  // compra — suma cada componente YA redondeado por línea (no re-deriva
+  // desde los totales netos agregados), para que coincida exacto con
+  // addonChargeTotalWithIva de arriba (cada add-on se cobra con su propia
+  // llamada a Flow, redondeada por separado).
+  const addonAmountBreakdownTotal: AmountLineBreakdown = useMemo(() => {
+    let fullNet = 0;
+    let net = 0;
+    let iva = 0;
+    addonPendingChanges.forEach((change) => {
+      if (change.chargeAmount <= 0) return;
+      const config = extraConfig[change.key];
+      fullNet += (change.newQty - change.baselineQty) * config.unitPrice;
+      net += change.chargeAmount;
+      iva += applyIva(change.chargeAmount) - change.chargeAmount;
+    });
+    const discountAmount = Math.max(0, fullNet - net);
+    return {
+      fullNet: formatCLP(fullNet),
+      discount: discountAmount > 0 ? `-${formatCLP(discountAmount)}` : null,
+      iva: formatCLP(iva),
+      total: formatCLP(net + iva),
+    };
+  }, [addonPendingChanges]);
+
   // Elegible para el checkbox inline "dejar en cobro automático" del modal
   // de compra: la línea implica un cobro real hoy (compra nueva o aumento
   // de cantidad, nunca una baja) y el addon todavía no está en
@@ -737,6 +838,17 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     return (
       change.chargeAmount > 0 &&
       (addonBaseline[change.key]?.renewal_mode || "manual") !== "automatico"
+    );
+  }
+
+  // Igual criterio, pero para el checkbox de recarga automática por saldo
+  // bajo — restringido a wa_confirmacion (único add-on que la soporta hoy,
+  // ver LOW_BALANCE_RECHARGE_ADDON_KEY), y no se ofrece si ya está activada.
+  function purchaseLowBalanceEligible(change: { key: ExtraKey; chargeAmount: number }): boolean {
+    return (
+      change.key === LOW_BALANCE_RECHARGE_ADDON_KEY &&
+      change.chargeAmount > 0 &&
+      !(addonBaseline[change.key]?.low_balance_recharge_enabled || false)
     );
   }
 
@@ -843,6 +955,49 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
             });
           }
         }
+
+        // Mismo patrón que el bloque de arriba, pero para el checkbox de
+        // recarga automática por saldo bajo — mismo endpoint/consentimiento
+        // que el toggle "Recarga automática por saldo bajo" de fuera del
+        // modal (PATCH /billing/addons/low-balance-recharge).
+        if (purchaseLowBalanceOptIn[change.key] && purchaseLowBalanceEligible(change)) {
+          try {
+            const lowBalanceRes = await apiFetch(
+              `${BACKEND_URL}/billing/addons/low-balance-recharge`,
+              {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  tenant_id: tenantId,
+                  addon_key: change.key,
+                  enabled: true,
+                  consent_accepted: true,
+                  text_shown: buildLowBalanceConsentTextForQuantity(change.newQty),
+                }),
+              }
+            );
+            const lowBalanceData = await lowBalanceRes.json();
+
+            if (!lowBalanceRes.ok) {
+              results.push({
+                key: `${change.key}_lowbalance`,
+                label: `${change.label} — recarga automática por saldo bajo`,
+                ok: false,
+                error:
+                  lowBalanceData?.error ||
+                  "El add-on se compró, pero no se pudo activar la recarga automática por saldo bajo. Actívala manualmente con el interruptor.",
+              });
+            }
+          } catch {
+            results.push({
+              key: `${change.key}_lowbalance`,
+              label: `${change.label} — recarga automática por saldo bajo`,
+              ok: false,
+              error:
+                "El add-on se compró, pero no se pudo activar la recarga automática por saldo bajo. Actívala manualmente con el interruptor.",
+            });
+          }
+        }
       } catch (error: unknown) {
         if (error instanceof DOMException && error.name === "AbortError") {
           results.push({
@@ -927,14 +1082,10 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 </p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {item.count >= 2
-                    ? `${formatCLP(nextPackPrice(config, item.count))} + IVA`
-                    : `${formatCLP(config.unitPrice)} + IVA`}
-                </p>
-                <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                  {formatCLP(item.amount)}
-                </p>
+                <AmountBreakdownRows
+                  breakdown={buildAmountLineBreakdown(item.count * config.unitPrice, item.amount)}
+                  totalLabel="Total mensual"
+                />
               </div>
             </div>
 
@@ -1188,6 +1339,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 onClick={() => {
                   setAddonChangeResults([]);
                   setPurchaseAutoPayOptIn({});
+                  setPurchaseLowBalanceOptIn({});
                   setAddonConfirmModalOpen(true);
                 }}
                 disabled={addonSubmitting}
@@ -1327,20 +1479,41 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                           </span>
                         </label>
                       ) : null}
+
+                      {purchaseLowBalanceEligible(change) ? (
+                        <label
+                          className="mt-2 flex cursor-pointer items-start gap-2 border-t pt-2"
+                          style={{ borderColor: "var(--border-color)" }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={purchaseLowBalanceOptIn[change.key] || false}
+                            onChange={(e) =>
+                              setPurchaseLowBalanceOptIn((prev) => ({
+                                ...prev,
+                                [change.key]: e.target.checked,
+                              }))
+                            }
+                            disabled={addonSubmitting}
+                            className="mt-0.5 h-4 w-4 shrink-0"
+                          />
+                          <span className="text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                            {buildLowBalanceConsentTextForQuantity(change.newQty)}
+                          </span>
+                        </label>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
 
                 <div
-                  className="mt-4 flex items-center justify-between border-t pt-3"
+                  className="mt-4 border-t pt-3"
                   style={{ borderColor: "var(--border-color)" }}
                 >
-                  <span className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                    Total a cobrar hoy (IVA incluido)
-                  </span>
-                  <span className="text-lg font-bold" style={{ color: "var(--text-main)" }}>
-                    {formatCLP(addonChargeTotalWithIva)}
-                  </span>
+                  <AmountBreakdownRows
+                    breakdown={addonAmountBreakdownTotal}
+                    totalLabel="Total a cobrar hoy"
+                  />
                 </div>
 
                 <p className="mt-3 text-xs leading-5" style={{ color: "rgb(245 158 11)" }}>
