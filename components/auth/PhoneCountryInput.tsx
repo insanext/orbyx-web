@@ -11,6 +11,7 @@ export function PhoneCountryInput({
   disabled,
   required,
   variant = "dark",
+  allowedCountries,
 }: {
   iso2: string;
   onIso2Change: (iso2: string) => void;
@@ -22,6 +23,10 @@ export function PhoneCountryInput({
   // claro para calzar con el formulario público de reserva ([slug]/page.tsx),
   // que usa fondo blanco/indigo en vez del tema oscuro del onboarding.
   variant?: "dark" | "light";
+  // Lista opcional de códigos ISO2 a mostrar/seleccionar (ej. ["CL"]). Si se
+  // omite, se comporta igual que antes (todos los países) — signup y
+  // checkout-premium no la pasan y siguen sin restricción.
+  allowedCountries?: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -30,6 +35,11 @@ export function PhoneCountryInput({
 
   const country = getCountry(iso2);
 
+  const availableCountries =
+    allowedCountries && allowedCountries.length > 0
+      ? COUNTRIES.filter((c) => allowedCountries.includes(c.iso2))
+      : COUNTRIES;
+
   useEffect(() => {
     if (open) {
       setSearch("");
@@ -37,7 +47,7 @@ export function PhoneCountryInput({
     }
   }, [open]);
 
-  const filtered = COUNTRIES.filter((c) => {
+  const filtered = availableCountries.filter((c) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
     return c.name.toLowerCase().includes(q) || c.dialCode.includes(q);

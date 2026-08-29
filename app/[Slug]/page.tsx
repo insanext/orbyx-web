@@ -3187,6 +3187,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
 
                     <PhoneCountryInput
                       variant="light"
+                      allowedCountries={["CL"]}
                       iso2={phoneIso2}
                       onIso2Change={setPhoneIso2}
                       value={customerData.phone || ""}
