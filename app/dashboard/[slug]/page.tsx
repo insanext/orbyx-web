@@ -56,7 +56,7 @@ type StatsResponse = {
   error?: string;
 };
 
-// ---- Presets de rango de fechas ----
+// ---- Presets de rango de fechas (filtro global) ----
 const RANGE_PRESETS = [
   { key: "today", label: "Hoy" },
   { key: "7d", label: "7 días" },
@@ -66,6 +66,17 @@ const RANGE_PRESETS = [
   { key: "custom", label: "Personalizado" },
 ] as const;
 type RangePresetKey = (typeof RANGE_PRESETS)[number]["key"];
+
+// ---- Presets de corte de inactividad (filtro propio del ranking de clientes) ----
+const INACTIVE_PRESETS = [
+  { key: "30", label: "30 días", days: 30 },
+  { key: "60", label: "60 días", days: 60 },
+  { key: "90", label: "90 días", days: 90 },
+  { key: "custom", label: "Personalizado" },
+] as const;
+type InactivePresetKey = (typeof INACTIVE_PRESETS)[number]["key"];
+
+const CUSTOMER_LIMIT_OPTIONS = [3, 5, 10] as const;
 
 function toKey(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -109,13 +120,16 @@ function formatPct(value: number) {
   return `${value.toLocaleString("es-CL", { maximumFractionDigits: 1 })}%`;
 }
 
-function formatDateShort(iso: string | null) {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric" });
-  } catch {
-    return "—";
-  }
+// Formato chileno día-mes-año en TODO el módulo (reemplaza cualquier
+// formato ISO/slash) — hecho con split de string, no Date+toLocaleDateString,
+// para no arriesgar un corrimiento de día por zona horaria al parsear
+// "YYYY-MM-DD" como medianoche UTC y mostrarlo en hora local del navegador.
+function formatDateCL(value: string | null | undefined) {
+  if (!value) return "—";
+  const datePart = value.length >= 10 ? value.slice(0, 10) : value;
+  const [y, m, d] = datePart.split("-");
+  if (!y || !m || !d) return "—";
+  return `${d}-${m}-${y}`;
 }
 
 // Umbral heurístico para colorear alertas (no es un benchmark de industria,
@@ -132,18 +146,24 @@ function toneColor(tone: "default" | "warning" | "danger") {
   return "var(--text-main)";
 }
 
-// ---- Export CSV — cliente-side, sin endpoint nuevo. Excel abre .csv nativo. ----
-function downloadCsv(filename: string, rows: Record<string, unknown>[], columns: { key: string; label: string }[]) {
-  if (!rows.length) return;
+// ---- Export CSV — un botón por SECCIÓN (no por panel), cliente-side, sin
+// endpoint nuevo. Un solo archivo con varios bloques de tabla separados por
+// una línea en blanco y un título — Excel abre .csv nativo, no hace falta
+// una librería de hojas de cálculo para esto. ----
+type CsvTable = { title: string; columns: { key: string; label: string }[]; rows: Record<string, unknown>[] };
+
+function downloadMultiTableCsv(filename: string, tables: CsvTable[]) {
   const escape = (v: unknown) => {
     const s = v === null || v === undefined ? "" : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const lines = [
-    columns.map((c) => escape(c.label)).join(","),
-    ...rows.map((row) => columns.map((c) => escape(row[c.key])).join(",")),
-  ];
-  const csv = "﻿" + lines.join("\r\n");
+  const blocks = tables.map((t) => {
+    if (t.rows.length === 0) return `${t.title}\r\n(sin datos en el período seleccionado)`;
+    const header = t.columns.map((c) => escape(c.label)).join(",");
+    const body = t.rows.map((row) => t.columns.map((c) => escape(row[c.key])).join(",")).join("\r\n");
+    return `${t.title}\r\n${header}\r\n${body}`;
+  });
+  const csv = "﻿" + blocks.join("\r\n\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -155,38 +175,57 @@ function downloadCsv(filename: string, rows: Record<string, unknown>[], columns:
   URL.revokeObjectURL(url);
 }
 
-function ExportButton({ rows, columns, filename }: { rows: Record<string, unknown>[]; columns: { key: string; label: string }[]; filename: string }) {
+function SectionExportButton({ tables, filename }: { tables: CsvTable[]; filename: string }) {
+  const hasData = tables.some((t) => t.rows.length > 0);
   return (
     <button
       type="button"
-      onClick={() => downloadCsv(filename, rows, columns)}
-      disabled={rows.length === 0}
+      onClick={() => downloadMultiTableCsv(filename, tables)}
+      disabled={!hasData}
       className="inline-flex h-7 items-center gap-1.5 border px-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] transition disabled:cursor-not-allowed disabled:opacity-40"
       style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)", borderRadius: 3 }}
     >
       <Download size={12} />
-      CSV
+      Exportar sección (CSV)
     </button>
   );
 }
 
 // ---- Bloques visuales "ejecutivos": esquinas rectas (radio mínimo), tipografía
-// numérica grande — deliberadamente distintos del resto del dashboard (Panel/
+// numérica compacta — deliberadamente distintos del resto del dashboard (Panel/
 // MetricCard usan rounded-3xl), ver dirección de diseño pedida para este módulo.
 function StatCard({ label, value, hint, tone = "default" }: { label: string; value: string; hint?: string; tone?: "default" | "warning" | "danger" }) {
   return (
-    <div className="border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", borderRadius: 3 }}>
-      <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+    <div className="border p-2.5" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", borderRadius: 3 }}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "var(--text-muted)" }}>
         {label}
       </p>
-      <p className="mt-1.5 text-[26px] font-bold leading-none tabular-nums" style={{ color: toneColor(tone) }}>
+      <p className="mt-1 text-lg font-bold leading-none tabular-nums" style={{ color: toneColor(tone) }}>
         {value}
       </p>
       {hint ? (
-        <p className="mt-1.5 text-[11px] leading-4" style={{ color: "var(--text-muted)" }}>
+        <p className="mt-1 text-[10.5px] leading-tight" style={{ color: "var(--text-muted)" }}>
           {hint}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function SectionHeader({ title, description, action }: { title: string; description?: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-2 border-b-2 pb-2 pt-2" style={{ borderColor: "var(--text-main)" }}>
+      <div>
+        <h2 className="text-[15px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--text-main)" }}>
+          {title}
+        </h2>
+        {description ? (
+          <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
+            {description}
+          </p>
+        ) : null}
+      </div>
+      {action}
     </div>
   );
 }
@@ -206,11 +245,11 @@ function StatPanel({
 }) {
   return (
     <section className="border" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", borderRadius: 3 }}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style={{ borderColor: "var(--border-color)" }}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5" style={{ borderColor: "var(--border-color)" }}>
         <div className="flex items-center gap-2">
-          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
+          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
             {title}
-          </h2>
+          </h3>
           {badge}
         </div>
         {actions}
@@ -256,6 +295,25 @@ function EmptyState({ text }: { text: string }) {
   );
 }
 
+function LockedBlock({ requiredPlanLabel, description }: { requiredPlanLabel: string; description: string }) {
+  return (
+    <div className="border border-dashed p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", borderRadius: 3 }}>
+      <div className="flex items-center gap-2">
+        <Lock size={13} style={{ color: "var(--text-muted)" }} />
+        <span
+          className="inline-flex h-5 items-center px-2 text-[10px] font-bold uppercase tracking-[0.08em]"
+          style={{ background: "rgba(37,99,235,0.12)", color: "#2563eb", borderRadius: 3 }}
+        >
+          Desde {requiredPlanLabel}
+        </span>
+      </div>
+      <p className="mt-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+        {description}
+      </p>
+    </div>
+  );
+}
+
 function RankingList({
   items,
   formatValue,
@@ -294,6 +352,78 @@ function RankingList({
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// Ranking de clientes: altura fija con scroll interno (no empuja el resto del
+// panel hacia abajo), click expande inline (acordeón) con teléfono/email.
+function CustomerRankingList({
+  items,
+  limit,
+  expandedId,
+  onToggle,
+  mode,
+  emptyText,
+}: {
+  items: CustomerRow[];
+  limit: number;
+  expandedId: string | null;
+  onToggle: (id: string) => void;
+  mode: "active" | "inactive";
+  emptyText: string;
+}) {
+  const visible = items.slice(0, limit);
+  if (visible.length === 0) return <EmptyState text={emptyText} />;
+  const max = Math.max(...visible.map((i) => i.total_visits), 1);
+
+  return (
+    <div className="max-h-72 overflow-y-auto pr-1">
+      <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
+        {visible.map((item, idx) => {
+          const isOpen = expandedId === item.id;
+          return (
+            <div key={item.id}>
+              <button
+                type="button"
+                onClick={() => onToggle(item.id)}
+                className="flex w-full items-start gap-3 py-2 text-left first:pt-0"
+              >
+                <span className="w-5 shrink-0 pt-0.5 text-right text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                  {idx + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-medium" style={{ color: "var(--text-main)" }}>
+                      {item.name || "Cliente"}
+                    </span>
+                    <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
+                      {mode === "active" ? `${item.total_visits} visitas` : formatDateCL(item.last_visit_at)}
+                    </span>
+                  </div>
+                  {mode === "active" ? (
+                    <>
+                      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                        {item.segment === "frequent" ? "Frecuente" : "Recurrente"}
+                      </p>
+                      <div className="mt-1 h-1 w-full" style={{ background: "var(--bg-soft)" }}>
+                        <div className="h-1" style={{ width: `${Math.max((item.total_visits / max) * 100, 3)}%`, background: "#2563eb" }} />
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </button>
+              {isOpen ? (
+                <div className="mb-2 ml-8 border-l-2 pl-3 text-xs" style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}>
+                  <p>Teléfono: {item.phone || "—"}</p>
+                  <p>Email: {item.email || "—"}</p>
+                  {mode === "inactive" ? <p>Total visitas históricas: {item.total_visits}</p> : null}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -354,9 +484,13 @@ function OccupancyHeatmap({ cells }: { cells: HeatCell[] }) {
   );
 }
 
-function UsageBar({ label, usage, hint }: { label: string; usage: UsageInfo; hint?: string }) {
+// Barra de cupo + desglose de composición: cuánto queda del cupo del plan
+// (resetea cada mes) vs. cuánto queda de saldo por add-ons (acumulable).
+function UsageBar({ label, usage }: { label: string; usage: UsageInfo }) {
   const pct = usage.limit > 0 ? Math.min(100, (usage.used / usage.limit) * 100) : 0;
   const tone = rateTone(pct, 75, 95);
+  const planRemaining = Math.max(0, usage.base - usage.used);
+
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
@@ -370,29 +504,32 @@ function UsageBar({ label, usage, hint }: { label: string; usage: UsageInfo; hin
       <div className="mt-1.5 h-2 w-full" style={{ background: "var(--bg-soft)" }}>
         <div className="h-2" style={{ width: `${pct}%`, background: tone === "danger" ? "#dc2626" : tone === "warning" ? "#d97706" : "#2563eb" }} />
       </div>
-      <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
-        {hint || `Restante: ${usage.remaining} (${usage.base} del plan + ${usage.addon} de add-ons)`}
-      </p>
-    </div>
-  );
-}
 
-function UpsellTeaser({ requiredPlanLabel, description }: { requiredPlanLabel: string; description: string }) {
-  return (
-    <section className="border border-dashed p-5" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", borderRadius: 3 }}>
-      <div className="flex items-center gap-2">
-        <Lock size={14} style={{ color: "var(--text-muted)" }} />
-        <span
-          className="inline-flex h-5 items-center px-2 text-[10px] font-bold uppercase tracking-[0.08em]"
-          style={{ background: "rgba(37,99,235,0.12)", color: "#2563eb", borderRadius: 3 }}
-        >
-          Desde {requiredPlanLabel}
-        </span>
+      <div className="mt-2.5 grid grid-cols-2 gap-2 border-t pt-2" style={{ borderColor: "var(--border-color)" }}>
+        <div>
+          <p className="text-[9.5px] font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--text-muted)" }}>
+            Cupo del plan
+          </p>
+          <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
+            {planRemaining} / {usage.base}
+            <span className="ml-1 text-[10px] font-normal" style={{ color: "var(--text-muted)" }}>
+              restante, resetea cada mes
+            </span>
+          </p>
+        </div>
+        <div>
+          <p className="text-[9.5px] font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--text-muted)" }}>
+            Saldo add-ons
+          </p>
+          <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
+            {usage.addon}
+            <span className="ml-1 text-[10px] font-normal" style={{ color: "var(--text-muted)" }}>
+              acumulable
+            </span>
+          </p>
+        </div>
       </div>
-      <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
-        {description}
-      </p>
-    </section>
+    </div>
   );
 }
 
@@ -409,7 +546,20 @@ export default function DashboardHomePage() {
   const [customTo, setCustomTo] = useState("");
   const [branchFilter, setBranchFilter] = useState("");
 
+  const [inactivePreset, setInactivePreset] = useState<InactivePresetKey>("60");
+  const [customInactiveDays, setCustomInactiveDays] = useState("60");
+  const [customerLimit, setCustomerLimit] = useState<number>(5);
+  const [expandedCustomerId, setExpandedCustomerId] = useState<string | null>(null);
+
   const range = useMemo(() => computeRange(rangePreset, customFrom, customTo), [rangePreset, customFrom, customTo]);
+
+  const inactiveDays = useMemo(() => {
+    if (inactivePreset === "custom") {
+      const n = Number(customInactiveDays);
+      return Number.isFinite(n) && n > 0 ? Math.round(n) : 60;
+    }
+    return Number(inactivePreset);
+  }, [inactivePreset, customInactiveDays]);
 
   useEffect(() => {
     if (!slug) return;
@@ -422,6 +572,7 @@ export default function DashboardHomePage() {
         const url = new URL(`${BACKEND_URL}/stats/${slug}`);
         url.searchParams.set("from", range.from);
         url.searchParams.set("to", range.to);
+        url.searchParams.set("inactive_days", String(inactiveDays));
         if (branchFilter) url.searchParams.set("branch_id", branchFilter);
 
         const res = await apiFetch(url.toString());
@@ -440,19 +591,200 @@ export default function DashboardHomePage() {
     }
 
     loadStats();
-  }, [slug, range.from, range.to, branchFilter]);
+  }, [slug, range.from, range.to, branchFilter, inactiveDays]);
 
   const plan = data?.plan_slug || "starter";
   const businessUnlocked = isPlanAtLeast(plan, "business");
   const premiumUnlocked = isPlanAtLeast(plan, "premium");
   const multiBranch = (data?.branches?.length || 0) > 1;
 
+  function toggleCustomer(id: string) {
+    setExpandedCustomerId((prev) => (prev === id ? null : id));
+  }
+
+  // ---- Tablas para exportación CSV (una por sección) ----
+  const operacionTables: CsvTable[] = useMemo(() => {
+    if (!data) return [];
+    return [
+      {
+        title: "Reservas por estado",
+        columns: [
+          { key: "estado", label: "Estado" },
+          { key: "total", label: "Total" },
+        ],
+        rows: Object.entries(data.basic.appointments.by_status).map(([estado, total]) => ({ estado, total })),
+      },
+      {
+        title: "Clientes más activos / recurrentes",
+        columns: [
+          { key: "name", label: "Nombre" },
+          { key: "phone", label: "Teléfono" },
+          { key: "email", label: "Email" },
+          { key: "total_visits", label: "Visitas" },
+          { key: "last_visit_at", label: "Última visita" },
+        ],
+        rows: data.basic.customer_ranking.active.map((c) => ({ ...c, last_visit_at: formatDateCL(c.last_visit_at) })),
+      },
+      {
+        title: "Clientes inactivos",
+        columns: [
+          { key: "name", label: "Nombre" },
+          { key: "phone", label: "Teléfono" },
+          { key: "email", label: "Email" },
+          { key: "last_visit_at", label: "Última visita" },
+        ],
+        rows: data.basic.customer_ranking.inactive.map((c) => ({ ...c, last_visit_at: formatDateCL(c.last_visit_at) })),
+      },
+      {
+        title: "Servicios más reservados",
+        columns: [
+          { key: "name", label: "Servicio" },
+          { key: "total", label: "Reservas" },
+        ],
+        rows: data.basic.top_services,
+      },
+      {
+        title: "Ocupación por día y hora",
+        columns: [
+          { key: "weekday", label: "Día" },
+          { key: "hour", label: "Hora" },
+          { key: "count", label: "Reservas" },
+        ],
+        rows: (data.premium?.occupancy_heatmap || []).map((c) => ({ weekday: WEEKDAY_LABEL[c.weekday] || c.weekday, hour: c.hour, count: c.count })),
+      },
+    ];
+  }, [data]);
+
+  const ingresosTables: CsvTable[] = useMemo(() => {
+    if (!data?.premium) return [];
+    const p = data.premium;
+    return [
+      {
+        title: "Ingresos estimados por servicio",
+        columns: [
+          { key: "name", label: "Servicio" },
+          { key: "total", label: "Estimado (CLP)" },
+        ],
+        rows: p.revenue_estimated.by_service,
+      },
+      {
+        title: "Ingresos estimados por profesional",
+        columns: [
+          { key: "name", label: "Profesional" },
+          { key: "total", label: "Estimado (CLP)" },
+        ],
+        rows: p.revenue_estimated.by_staff,
+      },
+      {
+        title: "Ingresos estimados por sucursal",
+        columns: [
+          { key: "name", label: "Sucursal" },
+          { key: "total", label: "Estimado (CLP)" },
+        ],
+        rows: p.revenue_estimated.by_branch,
+      },
+      {
+        title: "Desempeño por profesional",
+        columns: [
+          { key: "name", label: "Profesional" },
+          { key: "total", label: "Reservas" },
+          { key: "completed", label: "Completadas" },
+          { key: "no_show_rate", label: "Tasa no-show (%)" },
+          { key: "cancellation_rate", label: "Tasa cancelación (%)" },
+        ],
+        rows: p.staff_performance,
+      },
+      {
+        title: "Actividad por sucursal",
+        columns: [
+          { key: "name", label: "Sucursal" },
+          { key: "total_appointments", label: "Reservas" },
+          { key: "active_customers", label: "Clientes activos" },
+        ],
+        rows: p.branch_activity,
+      },
+      {
+        title: "Cupos ocupados en reservas grupales",
+        columns: [
+          { key: "name", label: "Servicio" },
+          { key: "sessions", label: "Sesiones" },
+          { key: "capacity_per_session", label: "Cupo por sesión" },
+          { key: "total_booked", label: "Cupos ocupados" },
+          { key: "occupancy_rate", label: "Ocupación (%)" },
+        ],
+        rows: p.group_capacity,
+      },
+    ];
+  }, [data]);
+
+  const marketingTables: CsvTable[] = useMemo(() => {
+    if (!data) return [];
+    const cupoRows: Record<string, unknown>[] = [{ recurso: "WhatsApp confirmación + recordatorio", ...data.basic.wa_confirmacion_usage }];
+    if (data.business) {
+      cupoRows.push({ recurso: "Campañas WhatsApp", ...data.business.campanas_wa_usage });
+      cupoRows.push({ recurso: "Campañas Email", ...data.business.emails_campana_usage });
+    }
+    const tables: CsvTable[] = [
+      {
+        title: "Cupos mensuales",
+        columns: [
+          { key: "recurso", label: "Recurso" },
+          { key: "used", label: "Usado" },
+          { key: "limit", label: "Límite total" },
+          { key: "base", label: "Cupo del plan" },
+          { key: "addon", label: "Saldo add-ons" },
+          { key: "remaining", label: "Restante" },
+        ],
+        rows: cupoRows,
+      },
+      {
+        title: "Add-ons activos",
+        columns: [
+          { key: "name", label: "Add-on" },
+          { key: "quantity", label: "Cantidad" },
+          { key: "balance", label: "Saldo" },
+          { key: "billing_cycle", label: "Ciclo" },
+        ],
+        rows: data.basic.addons,
+      },
+    ];
+    if (data.business) {
+      tables.push({
+        title: "Historial de campañas",
+        columns: [
+          { key: "campaign_name", label: "Campaña" },
+          { key: "channel", label: "Canal" },
+          { key: "sent_count", label: "Enviados" },
+          { key: "failed_count", label: "Fallidos" },
+          { key: "skipped_count", label: "Omitidos" },
+          { key: "created_at", label: "Fecha" },
+        ],
+        rows: data.business.campaign_history.rows.map((r) => ({ ...r, created_at: formatDateCL(r.created_at) })),
+      });
+    }
+    if (data.premium) {
+      tables.push({
+        title: "Entrega WhatsApp Marketing",
+        columns: [
+          { key: "total", label: "Total" },
+          { key: "delivered", label: "Entregados" },
+          { key: "read", label: "Leídos" },
+          { key: "failed", label: "Fallidos" },
+          { key: "undelivered", label: "No entregados" },
+          { key: "delivery_rate", label: "Tasa de entrega (%)" },
+        ],
+        rows: [data.premium.whatsapp_marketing_delivery],
+      });
+    }
+    return tables;
+  }, [data]);
+
   return (
     <div className="space-y-4">
       <PageHeader
         eyebrow="Análisis"
         title="Indicadores"
-        description="Panel de control del negocio: reservas, clientes, servicios e ingresos estimados."
+        description={`Panel de control del negocio · ${formatDateCL(range.from)} al ${formatDateCL(range.to)}`}
         icon={<BarChart3 className="h-5 w-5" />}
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -529,117 +861,119 @@ export default function DashboardHomePage() {
 
       {data ? (
         <>
-          {/* ===== STARTER (básicas — siempre visibles) ===== */}
-          <section className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-            <StatCard label="Reservas totales" value={String(data.basic.appointments.total)} hint={`${range.from} a ${range.to}`} />
+          {/* ===== SECCIÓN 1: OPERACIÓN ===== */}
+          <SectionHeader
+            title="Operación"
+            description="Reservas, clientes, servicios y ocupación"
+            action={premiumUnlocked ? <SectionExportButton tables={operacionTables} filename="operacion.csv" /> : undefined}
+          />
+
+          <section className="grid grid-cols-3 gap-2.5 lg:grid-cols-6">
+            <StatCard label="Reservas totales" value={String(data.basic.appointments.total)} />
             <StatCard label="Completadas" value={String(data.basic.appointments.by_status.completed)} />
             <StatCard label="Canceladas" value={String(data.basic.appointments.by_status.canceled)} tone={rateTone(data.basic.appointments.cancellation_rate, 15, 30)} />
             <StatCard label="No-show" value={String(data.basic.appointments.by_status.no_show)} tone={rateTone(data.basic.appointments.no_show_rate, 10, 25)} />
-            <StatCard
-              label="Tasa de no-show"
-              value={formatPct(data.basic.appointments.no_show_rate)}
-              tone={rateTone(data.basic.appointments.no_show_rate, 10, 25)}
-              hint="Sobre citas completadas + no-show + canceladas"
-            />
-            <StatCard
-              label="Tasa de cancelación"
-              value={formatPct(data.basic.appointments.cancellation_rate)}
-              tone={rateTone(data.basic.appointments.cancellation_rate, 15, 30)}
-              hint="Sobre citas completadas + no-show + canceladas"
-            />
+            <StatCard label="Tasa no-show" value={formatPct(data.basic.appointments.no_show_rate)} tone={rateTone(data.basic.appointments.no_show_rate, 10, 25)} />
+            <StatCard label="Tasa cancelación" value={formatPct(data.basic.appointments.cancellation_rate)} tone={rateTone(data.basic.appointments.cancellation_rate, 15, 30)} />
           </section>
 
           <StatPanel title="Clientes">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               <StatCard label="Clientes totales" value={String(data.basic.customers.total)} />
               <StatCard label="Nuevos en el período" value={String(data.basic.customers.new_in_period)} />
             </div>
 
+            <div className="mt-4 flex flex-wrap items-center gap-4 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                  Inactividad:
+                </span>
+                <div className="flex items-center border" style={{ borderColor: "var(--border-color)", borderRadius: 3, overflow: "hidden" }}>
+                  {INACTIVE_PRESETS.map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => setInactivePreset(p.key)}
+                      className="h-7 px-2 text-[11px] font-medium"
+                      style={{
+                        background: inactivePreset === p.key ? "#2563eb" : "var(--bg-card)",
+                        color: inactivePreset === p.key ? "#fff" : "var(--text-main)",
+                        borderRight: p.key !== "custom" ? "1px solid var(--border-color)" : "none",
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                {inactivePreset === "custom" ? (
+                  <input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={customInactiveDays}
+                    onChange={(e) => setCustomInactiveDays(e.target.value)}
+                    className="h-7 w-16 border px-2 text-[11px] outline-none"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", borderRadius: 3 }}
+                  />
+                ) : null}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                  Mostrar:
+                </span>
+                <div className="flex items-center border" style={{ borderColor: "var(--border-color)", borderRadius: 3, overflow: "hidden" }}>
+                  {CUSTOMER_LIMIT_OPTIONS.map((n, idx) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setCustomerLimit(n)}
+                      className="h-7 px-2.5 text-[11px] font-medium"
+                      style={{
+                        background: customerLimit === n ? "#2563eb" : "var(--bg-card)",
+                        color: customerLimit === n ? "#fff" : "var(--text-main)",
+                        borderRight: idx !== CUSTOMER_LIMIT_OPTIONS.length - 1 ? "1px solid var(--border-color)" : "none",
+                      }}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                    Más activos / recurrentes
-                  </h3>
-                  {premiumUnlocked ? (
-                    <ExportButton
-                      rows={data.basic.customer_ranking.active}
-                      filename="clientes_activos.csv"
-                      columns={[
-                        { key: "name", label: "Nombre" },
-                        { key: "phone", label: "Teléfono" },
-                        { key: "email", label: "Email" },
-                        { key: "total_visits", label: "Visitas" },
-                        { key: "last_visit_at", label: "Última visita" },
-                      ]}
-                    />
-                  ) : null}
-                </div>
-                <RankingList
-                  items={data.basic.customer_ranking.active.map((c) => ({
-                    id: c.id,
-                    name: c.name || "Cliente",
-                    value: c.total_visits,
-                    sub: c.segment === "frequent" ? "Frecuente" : "Recurrente",
-                  }))}
-                  formatValue={(n) => `${n} visitas`}
+                <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
+                  Más activos / recurrentes
+                </h4>
+                <CustomerRankingList
+                  items={data.basic.customer_ranking.active}
+                  limit={customerLimit}
+                  expandedId={expandedCustomerId}
+                  onToggle={toggleCustomer}
+                  mode="active"
                   emptyText="Sin clientes activos en este segmento."
                 />
               </div>
 
               <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                    Inactivos (+{data.basic.customer_ranking.inactive_days_threshold} días sin visita)
-                  </h3>
-                  {premiumUnlocked ? (
-                    <ExportButton
-                      rows={data.basic.customer_ranking.inactive}
-                      filename="clientes_inactivos.csv"
-                      columns={[
-                        { key: "name", label: "Nombre" },
-                        { key: "phone", label: "Teléfono" },
-                        { key: "email", label: "Email" },
-                        { key: "last_visit_at", label: "Última visita" },
-                      ]}
-                    />
-                  ) : null}
-                </div>
-                <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-                  {data.basic.customer_ranking.inactive.length === 0 ? (
-                    <EmptyState text="Sin clientes inactivos." />
-                  ) : (
-                    data.basic.customer_ranking.inactive.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between gap-2 py-2">
-                        <span className="truncate text-sm font-medium" style={{ color: "var(--text-main)" }}>
-                          {c.name || "Cliente"}
-                        </span>
-                        <span className="shrink-0 text-xs" style={{ color: "var(--text-muted)" }}>
-                          {formatDateShort(c.last_visit_at)}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
+                <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
+                  Inactivos (+{inactiveDays} días sin visita)
+                </h4>
+                <CustomerRankingList
+                  items={data.basic.customer_ranking.inactive}
+                  limit={customerLimit}
+                  expandedId={expandedCustomerId}
+                  onToggle={toggleCustomer}
+                  mode="inactive"
+                  emptyText="Sin clientes inactivos."
+                />
               </div>
             </div>
           </StatPanel>
 
-          <StatPanel
-            title="Servicios más reservados"
-            actions={
-              premiumUnlocked ? (
-                <ExportButton
-                  rows={data.basic.top_services}
-                  filename="servicios_mas_reservados.csv"
-                  columns={[
-                    { key: "name", label: "Servicio" },
-                    { key: "total", label: "Reservas" },
-                  ]}
-                />
-              ) : undefined
-            }
-          >
+          <StatPanel title="Servicios más reservados">
             <RankingList
               items={data.basic.top_services.map((s) => ({ id: s.service_id, name: s.name, value: s.total }))}
               formatValue={(n) => `${n} reservas`}
@@ -647,169 +981,51 @@ export default function DashboardHomePage() {
             />
           </StatPanel>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <StatPanel title="Add-ons activos">
-              {data.basic.addons.length === 0 ? (
-                <EmptyState text="No tienes add-ons activos." />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              {premiumUnlocked && data.premium ? (
+                <StatPanel title="Ocupación por día y hora">
+                  <OccupancyHeatmap cells={data.premium.occupancy_heatmap} />
+                </StatPanel>
               ) : (
-                <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-                  {data.basic.addons.map((a) => (
-                    <div key={a.addon_key} className="flex items-center justify-between gap-2 py-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium" style={{ color: "var(--text-main)" }}>
-                          {a.name}
-                        </p>
-                        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                          {a.quantity} unidad{a.quantity === 1 ? "" : "es"} · {a.billing_cycle}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
-                        Saldo: {a.balance}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <LockedBlock requiredPlanLabel="Premium" description="Heatmap de horarios más pedidos por día y hora." />
               )}
-            </StatPanel>
-
-            <StatPanel title="Cupo WhatsApp confirmación + recordatorio">
-              <UsageBar label="Mensajes usados este mes" usage={data.basic.wa_confirmacion_usage} />
-            </StatPanel>
+            </div>
+            {premiumUnlocked && data.premium ? (
+              <StatCard
+                label="Anticipación promedio de reserva"
+                value={data.premium.avg_lead_time_hours === null ? "—" : `${data.premium.avg_lead_time_hours}h`}
+                hint="Tiempo entre creación y hora de la cita"
+              />
+            ) : (
+              <LockedBlock requiredPlanLabel="Premium" description="Anticipación promedio de reserva." />
+            )}
           </div>
 
           {data.is_vet_mode && data.basic.vet ? (
             <StatPanel title="Mascotas">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <StatCard label="Mascotas registradas" value={String(data.basic.vet.pets_count)} />
                 <StatCard label="Controles pendientes" value={String(data.basic.vet.pending_followups)} />
               </div>
             </StatPanel>
           ) : null}
 
-          {/* ===== BUSINESS ===== */}
-          {businessUnlocked && data.business ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <StatPanel title="Cupo campañas WhatsApp">
-                  <UsageBar label="Mensajes usados este mes" usage={data.business.campanas_wa_usage} />
-                </StatPanel>
-                <StatPanel title="Cupo campañas Email">
-                  <UsageBar label="Emails usados este mes" usage={data.business.emails_campana_usage} />
-                </StatPanel>
-              </div>
+          {/* ===== SECCIÓN 2: INGRESOS Y DESEMPEÑO ===== */}
+          <SectionHeader
+            title="Ingresos y desempeño"
+            description="Ingresos estimados, desempeño por profesional y por sucursal"
+            action={premiumUnlocked ? <SectionExportButton tables={ingresosTables} filename="ingresos_y_desempeno.csv" /> : undefined}
+          />
 
-              <StatPanel
-                title="Historial de campañas"
-                description={`Enviados: ${data.business.campaign_history.totals.sent} · Fallidos: ${data.business.campaign_history.totals.failed} · Omitidos: ${data.business.campaign_history.totals.skipped}`}
-                actions={
-                  premiumUnlocked ? (
-                    <ExportButton
-                      rows={data.business.campaign_history.rows}
-                      filename="historial_campanas.csv"
-                      columns={[
-                        { key: "campaign_name", label: "Campaña" },
-                        { key: "channel", label: "Canal" },
-                        { key: "sent_count", label: "Enviados" },
-                        { key: "failed_count", label: "Fallidos" },
-                        { key: "skipped_count", label: "Omitidos" },
-                        { key: "created_at", label: "Fecha" },
-                      ]}
-                    />
-                  ) : undefined
-                }
-              >
-                {data.business.campaign_history.rows.length === 0 ? (
-                  <EmptyState text="Sin campañas enviadas en el período seleccionado." />
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr style={{ color: "var(--text-muted)" }}>
-                          <th className="pb-2 font-semibold">Campaña</th>
-                          <th className="pb-2 font-semibold">Canal</th>
-                          <th className="pb-2 text-right font-semibold">Enviados</th>
-                          <th className="pb-2 text-right font-semibold">Fallidos</th>
-                          <th className="pb-2 text-right font-semibold">Omitidos</th>
-                          <th className="pb-2 text-right font-semibold">Fecha</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-                        {data.business.campaign_history.rows.map((c) => (
-                          <tr key={c.id}>
-                            <td className="py-1.5 font-medium" style={{ color: "var(--text-main)" }}>
-                              {c.campaign_name || "Sin nombre"}
-                            </td>
-                            <td className="py-1.5 capitalize" style={{ color: "var(--text-main)" }}>
-                              {c.channel}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {c.sent_count}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {c.failed_count}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {c.skipped_count}
-                            </td>
-                            <td className="py-1.5 text-right" style={{ color: "var(--text-muted)" }}>
-                              {formatDateShort(c.created_at)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </StatPanel>
-            </>
-          ) : !businessUnlocked ? (
-            <UpsellTeaser
-              requiredPlanLabel="Business"
-              description="Cupos de campañas WhatsApp/Email e historial de campañas enviadas."
-            />
-          ) : null}
-
-          {/* ===== PREMIUM ===== */}
           {premiumUnlocked && data.premium ? (
             <>
-              <StatPanel title="Ocupación por día y hora">
-                <OccupancyHeatmap cells={data.premium.occupancy_heatmap} />
-              </StatPanel>
-
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <StatCard
-                  label="Anticipación promedio de reserva"
-                  value={data.premium.avg_lead_time_hours === null ? "—" : `${data.premium.avg_lead_time_hours}h`}
-                  hint="Tiempo entre creación y hora de la cita"
-                />
-                <div className="lg:col-span-2">
-                  <StatPanel title="Entrega WhatsApp Marketing" badge={<RealDataBadge />}>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      <StatCard label="Entregados" value={String(data.premium.whatsapp_marketing_delivery.delivered + data.premium.whatsapp_marketing_delivery.read)} />
-                      <StatCard label="Fallidos" value={String(data.premium.whatsapp_marketing_delivery.failed + data.premium.whatsapp_marketing_delivery.undelivered)} />
-                      <StatCard label="Total enviados" value={String(data.premium.whatsapp_marketing_delivery.total)} />
-                      <StatCard label="Tasa de entrega" value={formatPct(data.premium.whatsapp_marketing_delivery.delivery_rate)} />
-                    </div>
-                  </StatPanel>
-                </div>
-              </div>
-
               <StatPanel title="Ingresos estimados" badge={<EstimatedBadge />} description={data.premium.revenue_estimated.note}>
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                   <div>
-                    <div className="mb-2 flex items-center justify-between">
-                      <h3 className="text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                        Por servicio
-                      </h3>
-                      <ExportButton
-                        rows={data.premium.revenue_estimated.by_service}
-                        filename="ingresos_estimados_por_servicio.csv"
-                        columns={[
-                          { key: "name", label: "Servicio" },
-                          { key: "total", label: "Estimado (CLP)" },
-                        ]}
-                      />
-                    </div>
+                    <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
+                      Por servicio
+                    </h4>
                     <RankingList
                       items={data.premium.revenue_estimated.by_service.map((r) => ({ id: r.service_id || r.name, name: r.name, value: r.total }))}
                       formatValue={formatCLP}
@@ -817,19 +1033,9 @@ export default function DashboardHomePage() {
                     />
                   </div>
                   <div>
-                    <div className="mb-2 flex items-center justify-between">
-                      <h3 className="text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                        Por profesional
-                      </h3>
-                      <ExportButton
-                        rows={data.premium.revenue_estimated.by_staff}
-                        filename="ingresos_estimados_por_profesional.csv"
-                        columns={[
-                          { key: "name", label: "Profesional" },
-                          { key: "total", label: "Estimado (CLP)" },
-                        ]}
-                      />
-                    </div>
+                    <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
+                      Por profesional
+                    </h4>
                     <RankingList
                       items={data.premium.revenue_estimated.by_staff.map((r) => ({ id: r.staff_id || r.name, name: r.name, value: r.total }))}
                       formatValue={formatCLP}
@@ -838,19 +1044,9 @@ export default function DashboardHomePage() {
                   </div>
                   {multiBranch ? (
                     <div>
-                      <div className="mb-2 flex items-center justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                          Por sucursal
-                        </h3>
-                        <ExportButton
-                          rows={data.premium.revenue_estimated.by_branch}
-                          filename="ingresos_estimados_por_sucursal.csv"
-                          columns={[
-                            { key: "name", label: "Sucursal" },
-                            { key: "total", label: "Estimado (CLP)" },
-                          ]}
-                        />
-                      </div>
+                      <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
+                        Por sucursal
+                      </h4>
                       <RankingList
                         items={data.premium.revenue_estimated.by_branch.map((r) => ({ id: r.branch_id || r.name, name: r.name, value: r.total }))}
                         formatValue={formatCLP}
@@ -861,22 +1057,7 @@ export default function DashboardHomePage() {
                 </div>
               </StatPanel>
 
-              <StatPanel
-                title="Desempeño por profesional"
-                actions={
-                  <ExportButton
-                    rows={data.premium.staff_performance}
-                    filename="desempeno_profesionales.csv"
-                    columns={[
-                      { key: "name", label: "Profesional" },
-                      { key: "total", label: "Reservas" },
-                      { key: "completed", label: "Completadas" },
-                      { key: "no_show_rate", label: "Tasa no-show (%)" },
-                      { key: "cancellation_rate", label: "Tasa cancelación (%)" },
-                    ]}
-                  />
-                }
-              >
+              <StatPanel title="Desempeño por profesional">
                 {data.premium.staff_performance.length === 0 ? (
                   <EmptyState text="Sin reservas asignadas a profesionales en el período." />
                 ) : (
@@ -914,20 +1095,7 @@ export default function DashboardHomePage() {
               </StatPanel>
 
               {multiBranch ? (
-                <StatPanel
-                  title="Actividad por sucursal"
-                  actions={
-                    <ExportButton
-                      rows={data.premium.branch_activity}
-                      filename="actividad_por_sucursal.csv"
-                      columns={[
-                        { key: "name", label: "Sucursal" },
-                        { key: "total_appointments", label: "Reservas" },
-                        { key: "active_customers", label: "Clientes activos" },
-                      ]}
-                    />
-                  }
-                >
+                <StatPanel title="Desempeño por sucursal">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {data.premium.branch_activity.map((b) => (
                       <div key={b.branch_id} className="border p-3" style={{ borderColor: "var(--border-color)", borderRadius: 3 }}>
@@ -947,22 +1115,7 @@ export default function DashboardHomePage() {
               ) : null}
 
               {data.premium.group_capacity.length > 0 ? (
-                <StatPanel
-                  title="Cupos ocupados en reservas grupales"
-                  actions={
-                    <ExportButton
-                      rows={data.premium.group_capacity}
-                      filename="cupos_grupales.csv"
-                      columns={[
-                        { key: "name", label: "Servicio" },
-                        { key: "sessions", label: "Sesiones" },
-                        { key: "capacity_per_session", label: "Cupo por sesión" },
-                        { key: "total_booked", label: "Cupos ocupados" },
-                        { key: "occupancy_rate", label: "Ocupación (%)" },
-                      ]}
-                    />
-                  }
-                >
+                <StatPanel title="Cupos ocupados en reservas grupales">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
@@ -1000,12 +1153,125 @@ export default function DashboardHomePage() {
                 </StatPanel>
               ) : null}
             </>
-          ) : !premiumUnlocked ? (
-            <UpsellTeaser
+          ) : (
+            <LockedBlock
               requiredPlanLabel="Premium"
-              description="Ocupación por día/hora, ingresos estimados, desempeño por profesional y sucursal, entrega real de campañas WhatsApp, y exportación a CSV."
+              description="Ingresos estimados por servicio/profesional/sucursal, desempeño por profesional y por sucursal, y cupos ocupados en reservas grupales."
             />
-          ) : null}
+          )}
+
+          {/* ===== SECCIÓN 3: MARKETING Y SUSCRIPCIÓN ===== */}
+          <SectionHeader
+            title="Marketing y suscripción"
+            description="Cupos, campañas y add-ons"
+            action={premiumUnlocked ? <SectionExportButton tables={marketingTables} filename="marketing_y_suscripcion.csv" /> : undefined}
+          />
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <StatPanel title="Cupo WhatsApp confirmación + recordatorio">
+              <UsageBar label="Mensajes usados este mes" usage={data.basic.wa_confirmacion_usage} />
+            </StatPanel>
+
+            <StatPanel title="Add-ons activos">
+              {data.basic.addons.length === 0 ? (
+                <EmptyState text="No tienes add-ons activos." />
+              ) : (
+                <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
+                  {data.basic.addons.map((a) => (
+                    <div key={a.addon_key} className="flex items-center justify-between gap-2 py-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium" style={{ color: "var(--text-main)" }}>
+                          {a.name}
+                        </p>
+                        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                          {a.quantity} unidad{a.quantity === 1 ? "" : "es"} · {a.billing_cycle}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
+                        Saldo: {a.balance}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </StatPanel>
+          </div>
+
+          {businessUnlocked && data.business ? (
+            <>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <StatPanel title="Cupo campañas WhatsApp">
+                  <UsageBar label="Mensajes usados este mes" usage={data.business.campanas_wa_usage} />
+                </StatPanel>
+                <StatPanel title="Cupo campañas Email">
+                  <UsageBar label="Emails usados este mes" usage={data.business.emails_campana_usage} />
+                </StatPanel>
+              </div>
+
+              <StatPanel
+                title="Historial de campañas"
+                description={`Enviados: ${data.business.campaign_history.totals.sent} · Fallidos: ${data.business.campaign_history.totals.failed} · Omitidos: ${data.business.campaign_history.totals.skipped}`}
+              >
+                {data.business.campaign_history.rows.length === 0 ? (
+                  <EmptyState text="Sin campañas enviadas en el período seleccionado." />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr style={{ color: "var(--text-muted)" }}>
+                          <th className="pb-2 font-semibold">Campaña</th>
+                          <th className="pb-2 font-semibold">Canal</th>
+                          <th className="pb-2 text-right font-semibold">Enviados</th>
+                          <th className="pb-2 text-right font-semibold">Fallidos</th>
+                          <th className="pb-2 text-right font-semibold">Omitidos</th>
+                          <th className="pb-2 text-right font-semibold">Fecha</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y" style={{ borderColor: "var(--border-color)" }}>
+                        {data.business.campaign_history.rows.map((c) => (
+                          <tr key={c.id}>
+                            <td className="py-1.5 font-medium" style={{ color: "var(--text-main)" }}>
+                              {c.campaign_name || "Sin nombre"}
+                            </td>
+                            <td className="py-1.5 capitalize" style={{ color: "var(--text-main)" }}>
+                              {c.channel}
+                            </td>
+                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
+                              {c.sent_count}
+                            </td>
+                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
+                              {c.failed_count}
+                            </td>
+                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
+                              {c.skipped_count}
+                            </td>
+                            <td className="py-1.5 text-right" style={{ color: "var(--text-muted)" }}>
+                              {formatDateCL(c.created_at)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </StatPanel>
+            </>
+          ) : (
+            <LockedBlock requiredPlanLabel="Business" description="Cupos de campañas WhatsApp/Email e historial de campañas enviadas." />
+          )}
+
+          {premiumUnlocked && data.premium ? (
+            <StatPanel title="Entrega WhatsApp Marketing" badge={<RealDataBadge />}>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                <StatCard label="Entregados" value={String(data.premium.whatsapp_marketing_delivery.delivered + data.premium.whatsapp_marketing_delivery.read)} />
+                <StatCard label="Fallidos" value={String(data.premium.whatsapp_marketing_delivery.failed + data.premium.whatsapp_marketing_delivery.undelivered)} />
+                <StatCard label="Total enviados" value={String(data.premium.whatsapp_marketing_delivery.total)} />
+                <StatCard label="Tasa de entrega" value={formatPct(data.premium.whatsapp_marketing_delivery.delivery_rate)} />
+              </div>
+            </StatPanel>
+          ) : (
+            <LockedBlock requiredPlanLabel="Premium" description="Tasa de entrega real de WhatsApp Marketing por destinatario." />
+          )}
         </>
       ) : null}
     </div>
