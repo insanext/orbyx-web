@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import { PhoneCountryInput } from "../../components/auth/PhoneCountryInput";
+import { isValidPhoneForCountry, toE164 } from "../../components/auth/countries";
 
 type StaffItem = {
   id: string;
@@ -1133,6 +1135,7 @@ const [loadingNextSlots, setLoadingNextSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
 
   const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
+  const [phoneIso2, setPhoneIso2] = useState("CL");
   const [customerData, setCustomerData] = useState<Record<string, string>>({
     name: "",
     phone: "",
@@ -1462,7 +1465,9 @@ const nextAvailableDays = useMemo(() => {
 
   function validateForm() {
     if (!customerData.name?.trim()) return "Debes ingresar nombre y apellido.";
-    if (!customerData.phone?.trim()) return "Debes ingresar teléfono.";
+    if (!isValidPhoneForCountry(phoneIso2, customerData.phone || "")) {
+      return "Debes ingresar un teléfono válido.";
+    }
     if (!customerData.email?.trim()) return "Debes ingresar email.";
 
       if (isVeterinaria) {
@@ -1964,7 +1969,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         slot_start: selectedSlot.slot_start,
 	customer_id: detectedCustomerId,
         customer_name: customerData.name.trim(),
-        customer_phone: customerData.phone.trim(),
+        customer_phone: toE164(phoneIso2, customerData.phone.trim()),
         customer_email: customerData.email.trim(),
                 customer_data: {
   ...visibleBookingFields.reduce<Record<string, string>>((acc, field) => {
@@ -2037,7 +2042,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           branchAddress: selectedBranch?.address || business?.address || undefined,
           staffName: selectedStaff?.name || undefined,
           customerEmail: customerData.email.trim(),
-          customerPhone: customerData.phone.trim(),
+          customerPhone: toE164(phoneIso2, customerData.phone.trim()),
           startIso: startDate.toISOString(),
           endIso: endDate.toISOString(),
         });
@@ -2065,6 +2070,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         ...clearedExtraFields,
         ...clearedSubtypeFields,
       });
+      setPhoneIso2("CL");
 
       setSelectedPetId("");
       setPets([]);
@@ -3179,12 +3185,13 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
                     />
 
-                    <input
-                      placeholder="Teléfono *"
-                      required
+                    <PhoneCountryInput
+                      variant="light"
+                      iso2={phoneIso2}
+                      onIso2Change={setPhoneIso2}
                       value={customerData.phone || ""}
-                      onChange={(e) => updateCustomerField("phone", e.target.value)}
-                      className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
+                      onChange={(v) => updateCustomerField("phone", v)}
+                      required
                     />
 
                     <input

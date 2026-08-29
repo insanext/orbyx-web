@@ -10,6 +10,7 @@ export function PhoneCountryInput({
   onChange,
   disabled,
   required,
+  variant = "dark",
 }: {
   iso2: string;
   onIso2Change: (iso2: string) => void;
@@ -17,10 +18,15 @@ export function PhoneCountryInput({
   onChange: (value: string) => void;
   disabled?: boolean;
   required?: boolean;
+  // "dark": estilo original (signup, checkout-premium). "light": estilo
+  // claro para calzar con el formulario público de reserva ([slug]/page.tsx),
+  // que usa fondo blanco/indigo en vez del tema oscuro del onboarding.
+  variant?: "dark" | "light";
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const isLight = variant === "light";
 
   const country = getCountry(iso2);
 
@@ -39,24 +45,33 @@ export function PhoneCountryInput({
 
   return (
     <div style={{ position: "relative" }}>
-      <div style={{ display: "flex", gap: 8 }}>
+      <div className={isLight ? "flex gap-2" : undefined} style={isLight ? undefined : { display: "flex", gap: 8 }}>
         <button
           type="button"
           disabled={disabled}
           onClick={() => setOpen((v) => !v)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "12px 10px",
-            background: "#1e293b",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: 10,
-            color: "#f1f5f9",
-            fontSize: 14,
-            cursor: disabled ? "not-allowed" : "pointer",
-            flexShrink: 0,
-          }}
+          className={
+            isLight
+              ? "flex h-11 flex-shrink-0 items-center gap-1.5 rounded-xl border border-indigo-100 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-3.5"
+              : undefined
+          }
+          style={
+            isLight
+              ? { cursor: disabled ? "not-allowed" : "pointer" }
+              : {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "12px 10px",
+                  background: "#1e293b",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  borderRadius: 10,
+                  color: "#f1f5f9",
+                  fontSize: 14,
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  flexShrink: 0,
+                }
+          }
         >
           <span style={{ fontSize: 18, lineHeight: 1 }}>{flagEmoji(country.iso2)}</span>
           <span>+{country.dialCode}</span>
@@ -71,18 +86,27 @@ export function PhoneCountryInput({
           required={required}
           placeholder={country.iso2 === "CL" ? "9 1234 5678" : "Número de teléfono"}
           autoComplete="tel-national"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            padding: "12px 14px",
-            background: "#1e293b",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: 10,
-            color: "#f1f5f9",
-            fontSize: 14,
-            outline: "none",
-            boxSizing: "border-box",
-          }}
+          className={
+            isLight
+              ? "h-11 min-w-0 flex-1 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
+              : undefined
+          }
+          style={
+            isLight
+              ? undefined
+              : {
+                  flex: 1,
+                  minWidth: 0,
+                  padding: "12px 14px",
+                  background: "#1e293b",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  borderRadius: 10,
+                  color: "#f1f5f9",
+                  fontSize: 14,
+                  outline: "none",
+                  boxSizing: "border-box",
+                }
+          }
         />
       </div>
 
@@ -93,45 +117,71 @@ export function PhoneCountryInput({
             style={{ position: "fixed", inset: 0, zIndex: 40 }}
           />
           <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 6px)",
-              left: 0,
-              width: 300,
-              maxWidth: "90vw",
-              maxHeight: 320,
-              background: "#0f172a",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 12,
-              boxShadow: "0 20px 40px rgba(0,0,0,0.45)",
-              zIndex: 50,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
+            className={
+              isLight
+                ? "absolute left-0 top-[calc(100%+6px)] z-50 flex max-h-80 w-[300px] max-w-[90vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_28px_90px_-38px_rgba(15,23,42,0.55)]"
+                : undefined
+            }
+            style={
+              isLight
+                ? undefined
+                : {
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    left: 0,
+                    width: 300,
+                    maxWidth: "90vw",
+                    maxHeight: 320,
+                    background: "#0f172a",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    borderRadius: 12,
+                    boxShadow: "0 20px 40px rgba(0,0,0,0.45)",
+                    zIndex: 50,
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                  }
+            }
           >
-            <div style={{ padding: 10, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            <div
+              className={isLight ? "border-b border-slate-100 p-2.5" : undefined}
+              style={isLight ? undefined : { padding: 10, borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+            >
               <input
                 ref={searchInputRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar país"
-                style={{
-                  width: "100%",
-                  padding: "8px 10px",
-                  background: "#1e293b",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  borderRadius: 8,
-                  color: "#f1f5f9",
-                  fontSize: 13,
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
+                className={
+                  isLight
+                    ? "w-full rounded-lg border border-indigo-100 bg-white px-2.5 py-2 text-[13px] text-slate-900 outline-none transition focus:border-indigo-400"
+                    : undefined
+                }
+                style={
+                  isLight
+                    ? undefined
+                    : {
+                        width: "100%",
+                        padding: "8px 10px",
+                        background: "#1e293b",
+                        border: "1px solid rgba(255,255,255,0.15)",
+                        borderRadius: 8,
+                        color: "#f1f5f9",
+                        fontSize: 13,
+                        outline: "none",
+                        boxSizing: "border-box",
+                      }
+                }
               />
             </div>
             <div style={{ overflowY: "auto" }}>
               {filtered.length === 0 ? (
-                <p style={{ padding: 14, fontSize: 13, color: "#64748b" }}>Sin resultados.</p>
+                <p
+                  className={isLight ? "p-3.5 text-[13px] text-slate-400" : undefined}
+                  style={isLight ? undefined : { padding: 14, fontSize: 13, color: "#64748b" }}
+                >
+                  Sin resultados.
+                </p>
               ) : (
                 filtered.map((c) => (
                   <button
@@ -141,25 +191,40 @@ export function PhoneCountryInput({
                       onIso2Change(c.iso2);
                       setOpen(false);
                     }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      width: "100%",
-                      padding: "9px 14px",
-                      background: c.iso2 === country.iso2 ? "rgba(139,92,246,0.15)" : "transparent",
-                      border: "none",
-                      color: "#e2e8f0",
-                      fontSize: 13.5,
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
+                    className={
+                      isLight
+                        ? `flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13.5px] text-slate-700 ${
+                            c.iso2 === country.iso2 ? "bg-indigo-50" : "bg-transparent"
+                          }`
+                        : undefined
+                    }
+                    style={
+                      isLight
+                        ? undefined
+                        : {
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            width: "100%",
+                            padding: "9px 14px",
+                            background: c.iso2 === country.iso2 ? "rgba(139,92,246,0.15)" : "transparent",
+                            border: "none",
+                            color: "#e2e8f0",
+                            fontSize: 13.5,
+                            textAlign: "left",
+                            cursor: "pointer",
+                          }
+                    }
                   >
                     <span style={{ fontSize: 16 }}>{flagEmoji(c.iso2)}</span>
                     <span style={{ flex: 1 }}>{c.name}</span>
-                    <span style={{ color: "#64748b" }}>+{c.dialCode}</span>
+                    <span className={isLight ? "text-slate-400" : undefined} style={isLight ? undefined : { color: "#64748b" }}>
+                      +{c.dialCode}
+                    </span>
                     {c.iso2 === country.iso2 ? (
-                      <span style={{ color: "#8b5cf6" }}>✓</span>
+                      <span className={isLight ? "text-indigo-500" : undefined} style={isLight ? undefined : { color: "#8b5cf6" }}>
+                        ✓
+                      </span>
                     ) : null}
                   </button>
                 ))
