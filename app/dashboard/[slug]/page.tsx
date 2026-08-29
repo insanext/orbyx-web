@@ -312,16 +312,16 @@ function SectionShell({
   return (
     <section style={{ border: `1px solid ${SHELL_BORDER}`, borderTop: `3px solid ${TONE[tone].solid}`, background: PANEL_BG }}>
       <div
-        className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3.5 sm:px-5"
+        className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2.5"
         style={{ borderColor: SHELL_BORDER, background: SHELL_HEADER_BG }}
       >
         <div className="flex items-center gap-3">
-          <IconBox icon={icon} tone={tone} variant={iconVariant} size={40} />
+          <IconBox icon={icon} tone={tone} variant={iconVariant} size={36} iconSize={17} />
           <div>
-            <h2 className="text-[15px] font-extrabold uppercase tracking-[0.04em]" style={{ color: INK }}>
+            <h2 className="text-sm font-extrabold uppercase tracking-[0.04em]" style={{ color: INK }}>
               {title}
             </h2>
-            <p className="text-xs" style={{ color: MUTED }}>
+            <p className="text-[11px]" style={{ color: MUTED }}>
               {subtitle}
             </p>
           </div>
@@ -1038,7 +1038,7 @@ export default function DashboardHomePage() {
         eyebrow="Análisis"
         title="Indicadores"
         description={`Panel de control del negocio · ${formatDateCL(range.from)} al ${formatDateCL(range.to)}`}
-        icon={<BarChart3 className="h-5 w-5" />}
+        icon={<BarChart3 className="h-4 w-4" />}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {multiBranch ? (

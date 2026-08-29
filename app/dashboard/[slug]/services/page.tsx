@@ -1535,7 +1535,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
       `}</style>
 
       <section
-        className="orbyx-services-hero relative overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
+        className="orbyx-services-hero relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
         style={{
           borderColor: "var(--agenda-hero-border, rgba(37,99,235,0.42))",
           background:
@@ -1544,17 +1544,17 @@ customer_instructions: editForm.customer_instructions.trim() || null,
       >
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex max-w-3xl items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
-              <Layers3 className="h-5 w-5" />
+          <div className="flex max-w-3xl items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
+              <Layers3 className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-            <p className="orbyx-services-hero-kicker text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">
+            <p className="orbyx-services-hero-kicker text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-600">
               Servicios
             </p>
 
             <h1
-  className="mt-0.5 text-xl font-semibold tracking-tight"
+  className="mt-0.5 text-lg font-semibold tracking-tight"
               style={{ color: "var(--agenda-hero-title, var(--text-main))" }}
             >
               Servicios del negocio

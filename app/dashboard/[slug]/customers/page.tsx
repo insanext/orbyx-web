@@ -63,26 +63,68 @@ function formatDate(value?: string | null) {
   }).format(d);
 }
 
-function Stat({ title, value, accent }: { title: string; value: number; accent?: string }) {
+// ---- Sistema visual "Base de clientes" — reutiliza el mismo criterio de
+// Indicadores/Agenda: variables CSS scoped a la página, con un juego de
+// valores para modo claro y otro para modo oscuro, reaccionando al mismo
+// atributo data-theme="clasico"|"nocturno" que ya usa el toggle sol/luna del
+// dashboard (lib/use-theme.ts) — mismo mecanismo, no uno nuevo. ----
+type SegmentTone = "blue" | "amber" | "rose" | "emerald";
+
+const SEGMENT_TONE: Record<SegmentTone, { solid: string; tint: string; text: string }> = {
+  blue: { solid: "var(--cust-blue-solid)", tint: "var(--cust-blue-tint)", text: "var(--cust-blue-text)" },
+  amber: { solid: "var(--cust-amber-solid)", tint: "var(--cust-amber-tint)", text: "var(--cust-amber-text)" },
+  rose: { solid: "var(--cust-rose-solid)", tint: "var(--cust-rose-tint)", text: "var(--cust-rose-text)" },
+  emerald: { solid: "var(--cust-emerald-solid)", tint: "var(--cust-emerald-tint)", text: "var(--cust-emerald-text)" },
+};
+
+// Paleta decorativa para los avatares (color distinto por cliente) — más
+// variedad que los 4 tonos semánticos de los badges de segmento.
+const AVATAR_PALETTE = ["blue", "cyan", "amber", "rose", "violet", "emerald"] as const;
+
+function hashString(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+function getInitials(name?: string | null) {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return "—";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function Avatar({ id, name }: { id: string; name: string }) {
+  const color = AVATAR_PALETTE[hashString(id) % AVATAR_PALETTE.length];
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] px-4 py-3.5">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{title}</p>
-      <p className="mt-1 text-2xl font-bold text-[var(--text-main)]">{value}</p>
-      {accent && <div className={`mt-2 h-0.5 w-8 rounded-full ${accent} opacity-60`} />}
-    </div>
+    <span
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+      style={{ background: `var(--cust-avatar-${color}-bg)`, color: `var(--cust-avatar-${color}-text)` }}
+    >
+      {getInitials(name)}
+    </span>
   );
 }
 
 function SegmentBadge({ segment }: { segment?: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    frequent: { label: "Frecuente", cls: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400" },
-    recurrent: { label: "Recurrente", cls: "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400" },
-    inactive: { label: "Inactivo", cls: "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400" },
-    new: { label: "Nuevo", cls: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400" },
+  const map: Record<string, { label: string; tone: SegmentTone }> = {
+    frequent: { label: "Frecuente", tone: "emerald" },
+    recurrent: { label: "Recurrente", tone: "blue" },
+    inactive: { label: "Inactivo", tone: "rose" },
+    new: { label: "Nuevo", tone: "amber" },
   };
-  const { label, cls } = map[segment ?? "new"] ?? map.new;
+  const { label, tone } = map[segment ?? "new"] ?? map.new;
+  const t = SEGMENT_TONE[tone];
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
+    <span
+      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+      style={{ background: t.tint, color: t.text }}
+    >
       {label}
     </span>
   );
@@ -93,7 +135,7 @@ export default function CustomersPage() {
   const canEditClientes = canEdit("clientes");
   const params = useParams();
   const router = useRouter();
-  const slug = (params as any)?.slug;
+  const slug = (params as { slug?: string })?.slug;
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [businessCategory, setBusinessCategory] = useState("");
@@ -103,7 +145,7 @@ export default function CustomersPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [segment, setSegment] = useState<any>("all");
+  const [segment, setSegment] = useState("all");
   const [inactiveDays, setInactiveDays] = useState("60");
 
   const [summary, setSummary] = useState({
@@ -175,12 +217,11 @@ export default function CustomersPage() {
   }, [segment]);
 
   return (
-    <div className="space-y-8">
-
+    <div className="orbyx-customers-page space-y-6">
       <PageHeader
         eyebrow={isVeterinaria ? "Tutores y mascotas" : "Clientes"}
         title="Base de clientes"
-        icon={<UsersRound className="h-5 w-5" />}
+        icon={<UsersRound className="h-4 w-4" />}
         description={
           selectedBranchId
             ? "Clientes con actividad en la sucursal seleccionada."
@@ -188,24 +229,21 @@ export default function CustomersPage() {
         }
       />
 
-      {/* STATS */}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
-        <Stat title="Total"       value={summary.total}       accent="bg-slate-400"   />
-        <Stat title="Nuevos"      value={summary.nuevos}      accent="bg-amber-400"   />
-        <Stat title="Recurrentes" value={summary.recurrentes} accent="bg-sky-400"     />
-        <Stat title="Frecuentes"  value={summary.frecuentes}  accent="bg-emerald-400" />
-        <Stat title="Inactivos"   value={summary.inactivos}   accent="bg-rose-400"    />
-      </div>
-
       {/* FILTROS */}
-      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] p-4 space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-[var(--text-main)]">Filtros</h2>
+      <section
+        className="rounded-2xl border p-4 space-y-4"
+        style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold" style={{ color: "var(--cust-ink)" }}>
+            Filtros
+          </h2>
           {(isVeterinaria || isClinica) && canEditClientes ? (
             <button
               type="button"
               onClick={() => router.push(`/dashboard/${slug}/customers/new`)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 shrink-0"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+              style={{ background: "var(--cust-blue-solid)" }}
             >
               <span className="text-base leading-none">＋</span>
               Crear ficha paciente
@@ -214,14 +252,21 @@ export default function CustomersPage() {
         </div>
 
         <div className="grid gap-3 xl:grid-cols-[1.2fr_1fr_220px]">
-
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+              style={{ color: "var(--cust-muted)" }}
+            />
             <input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Buscar cliente..."
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-soft)] text-[var(--text-main)] placeholder:text-slate-400 pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 transition"
+              className="w-full rounded-xl border pl-9 pr-4 py-2.5 text-sm outline-none transition focus:ring-2"
+              style={{
+                borderColor: "var(--cust-border)",
+                background: "var(--cust-soft-bg)",
+                color: "var(--cust-ink)",
+              }}
             />
           </div>
 
@@ -232,11 +277,12 @@ export default function CustomersPage() {
                 <button
                   key={o.key}
                   onClick={() => setSegment(o.key)}
-                  className={`px-3 py-1.5 rounded-lg text-sm border font-medium transition ${
+                  className="rounded-xl border px-3 py-1.5 text-sm font-medium transition"
+                  style={
                     active
-                      ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100"
-                      : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  }`}
+                      ? { background: "var(--cust-blue-solid)", borderColor: "var(--cust-blue-solid)", color: "#ffffff" }
+                      : { background: "var(--cust-card-bg)", borderColor: "var(--cust-pill-border)", color: "var(--cust-ink)" }
+                  }
                 >
                   {o.label}
                 </button>
@@ -247,28 +293,33 @@ export default function CustomersPage() {
           <select
             value={inactiveDays}
             onChange={(e) => setInactiveDays(e.target.value)}
-            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-soft)] text-[var(--text-main)] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 transition"
+            className="rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2"
+            style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
           >
             <option value="30">Inactivos: 30 días</option>
             <option value="60">Inactivos: 60 días</option>
             <option value="90">Inactivos: 90 días</option>
             <option value="120">Inactivos: 120 días</option>
           </select>
-
         </div>
 
-        <p className="text-xs text-slate-500">
-          Viendo: <b className="text-[var(--text-main)] font-semibold">{activeSegmentLabel}</b>
-          {search && <> · <span className="italic">{search}</span></>}
+        <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
+          Viendo: <b style={{ color: "var(--cust-ink)" }}>{activeSegmentLabel}</b>
+          {search && (
+            <>
+              {" "}
+              · <span className="italic">{search}</span>
+            </>
+          )}
         </p>
       </section>
 
       {/* LISTADO */}
       <section>
-        <h2 className="text-sm font-semibold text-[var(--text-main)] mb-3">
+        <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--cust-ink)" }}>
           {isVeterinaria ? "Listado de tutores" : "Listado de clientes"}
           {customers.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-slate-500">
+            <span className="ml-2 text-xs font-normal" style={{ color: "var(--cust-muted)" }}>
               {customers.length} resultado{customers.length !== 1 ? "s" : ""}
             </span>
           )}
@@ -276,14 +327,17 @@ export default function CustomersPage() {
 
         {/* Estado vacío */}
         {customers.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] py-16 text-center">
-            <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-4 mb-4">
-              <UsersRound className="h-7 w-7 text-slate-400" />
+          <div
+            className="flex flex-col items-center justify-center rounded-2xl border py-16 text-center"
+            style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}
+          >
+            <div className="mb-4 rounded-full p-4" style={{ background: "var(--cust-soft-bg)" }}>
+              <UsersRound className="h-7 w-7" style={{ color: "var(--cust-muted)" }} />
             </div>
-            <p className="text-sm font-semibold text-[var(--text-main)]">
+            <p className="text-sm font-semibold" style={{ color: "var(--cust-ink)" }}>
               {search ? "Sin resultados" : "Sin clientes aún"}
             </p>
-            <p className="mt-1 text-xs text-slate-500 max-w-xs">
+            <p className="mt-1 max-w-xs text-xs" style={{ color: "var(--cust-muted)" }}>
               {search
                 ? `No se encontraron clientes para "${search}".`
                 : "Cuando se registren reservas, los clientes aparecerán aquí."}
@@ -297,41 +351,55 @@ export default function CustomersPage() {
             {customers.map((c) => (
               <article
                 key={c.id}
-                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--bg-card)] p-4 shadow-sm"
+                className="rounded-2xl border p-4 shadow-sm"
+                style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="break-words text-sm font-semibold text-[var(--text-main)]">
-                      {c.name}
-                    </h3>
-                    {isVeterinaria && Array.isArray(c.pets) && c.pets.length > 0 && (
-                      <p className="mt-0.5 break-words text-xs text-emerald-600 dark:text-emerald-400">
-                        {c.pets.map((p) => p.name).join(", ")}
-                      </p>
-                    )}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar id={c.id} name={c.name} />
+                    <div className="min-w-0">
+                      <h3 className="break-words text-sm font-semibold" style={{ color: "var(--cust-ink)" }}>
+                        {c.name}
+                      </h3>
+                      {isVeterinaria && Array.isArray(c.pets) && c.pets.length > 0 && (
+                        <p className="mt-0.5 break-words text-xs" style={{ color: SEGMENT_TONE.emerald.text }}>
+                          {c.pets.map((p) => p.name).join(", ")}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <SegmentBadge segment={c.segment} />
                 </div>
 
                 <div className="mt-3 space-y-3">
                   <div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Contacto</p>
-                    <p className="mt-0.5 break-words text-xs text-slate-800 dark:text-slate-200">
+                    <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
+                      Contacto
+                    </p>
+                    <p className="mt-0.5 break-words text-xs" style={{ color: "var(--cust-ink)" }}>
                       {c.email || c.phone || "Sin contacto"}
                     </p>
                     {c.email && c.phone && (
-                      <p className="break-words text-xs text-slate-600 dark:text-slate-400">{c.phone}</p>
+                      <p className="break-words text-xs" style={{ color: "var(--cust-muted)" }}>
+                        {c.phone}
+                      </p>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2">
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Visitas</p>
-                      <p className="mt-0.5 text-sm font-semibold text-[var(--text-main)]">{c.total_visits}</p>
+                    <div className="rounded-lg px-3 py-2" style={{ background: "var(--cust-soft-bg)" }}>
+                      <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
+                        Visitas
+                      </p>
+                      <p className="mt-0.5 text-sm font-bold" style={{ color: "var(--cust-blue-solid)" }}>
+                        {c.total_visits}
+                      </p>
                     </div>
-                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2">
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Última visita</p>
-                      <p className="mt-0.5 text-xs font-medium text-slate-800 dark:text-slate-300">
+                    <div className="rounded-lg px-3 py-2" style={{ background: "var(--cust-soft-bg)" }}>
+                      <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
+                        Última visita
+                      </p>
+                      <p className="mt-0.5 text-xs font-medium" style={{ color: "var(--cust-ink)" }}>
                         {formatDate(c.last_visit_at)}
                       </p>
                     </div>
@@ -341,7 +409,8 @@ export default function CustomersPage() {
                 <button
                   type="button"
                   onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
-                  className="mt-4 w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium transition hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="mt-4 w-full rounded-xl border px-4 py-2 text-sm font-medium transition"
+                  style={{ borderColor: "var(--cust-border)", color: "var(--cust-ink)" }}
                 >
                   Ver detalle →
                 </button>
@@ -352,40 +421,61 @@ export default function CustomersPage() {
 
         {/* Tabla desktop */}
         {customers.length > 0 && (
-          <div className="hidden rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden md:block">
+          <div className="hidden overflow-hidden rounded-2xl border md:block" style={{ borderColor: "var(--cust-border)" }}>
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+              <thead style={{ background: "var(--cust-table-head-bg)" }}>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Cliente</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Contacto</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Visitas</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Segmento</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Última visita</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "var(--cust-table-head-text)" }}>
+                    Cliente
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "var(--cust-table-head-text)" }}>
+                    Contacto
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "var(--cust-table-head-text)" }}>
+                    Visitas
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "var(--cust-table-head-text)" }}>
+                    Segmento
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "var(--cust-table-head-text)" }}>
+                    Última visita
+                  </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-[var(--bg-card)]">
+              <tbody className="divide-y" style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}>
                 {customers.map((c) => (
                   <tr
                     key={c.id}
                     onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
-                    className="cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    className="orbyx-customers-row cursor-pointer transition"
                   >
-                    <td className="px-4 py-3.5 font-medium text-[var(--text-main)]">
-                      {c.name}
-                      {isVeterinaria && Array.isArray(c.pets) && c.pets.length > 0 && (
-                        <div className="text-xs font-normal text-emerald-600 dark:text-emerald-400">
-                          {c.pets.map((p) => p.name).join(", ")}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <Avatar id={c.id} name={c.name} />
+                        <div className="min-w-0">
+                          <p className="font-semibold" style={{ color: "var(--cust-ink)" }}>
+                            {c.name}
+                          </p>
+                          {isVeterinaria && Array.isArray(c.pets) && c.pets.length > 0 && (
+                            <p className="text-xs font-normal" style={{ color: SEGMENT_TONE.emerald.text }}>
+                              {c.pets.map((p) => p.name).join(", ")}
+                            </p>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </td>
 
                     <td className="px-4 py-3.5">
-                      <span className="block text-xs text-slate-700 dark:text-slate-300">{c.email || "—"}</span>
-                      <span className="block text-xs text-slate-600 dark:text-slate-400">{c.phone || "—"}</span>
+                      <span className="block text-xs" style={{ color: "var(--cust-ink)" }}>
+                        {c.email || "—"}
+                      </span>
+                      <span className="block text-xs" style={{ color: "var(--cust-muted)" }}>
+                        {c.phone || "—"}
+                      </span>
                     </td>
 
-                    <td className="px-4 py-3.5 font-semibold text-[var(--text-main)]">
+                    <td className="px-4 py-3.5 font-bold" style={{ color: "var(--cust-blue-solid)" }}>
                       {c.total_visits}
                     </td>
 
@@ -393,7 +483,7 @@ export default function CustomersPage() {
                       <SegmentBadge segment={c.segment} />
                     </td>
 
-                    <td className="px-4 py-3.5 text-xs text-slate-700 dark:text-slate-300">
+                    <td className="px-4 py-3.5 text-xs" style={{ color: "var(--cust-ink)" }}>
                       {formatDate(c.last_visit_at)}
                     </td>
                   </tr>
@@ -404,6 +494,90 @@ export default function CustomersPage() {
         )}
       </section>
 
+      <style jsx>{`
+        .orbyx-customers-row {
+          background: var(--cust-card-bg);
+        }
+        .orbyx-customers-row:hover {
+          background: var(--cust-row-hover);
+        }
+
+        .orbyx-customers-page {
+          --cust-ink: #0f172a;
+          --cust-muted: #64748b;
+          --cust-border: #e2e8f0;
+          --cust-pill-border: #bfdbfe;
+          --cust-card-bg: #ffffff;
+          --cust-soft-bg: #f1f5f9;
+          --cust-row-hover: #f8fafc;
+          --cust-table-head-bg: #0f172a;
+          --cust-table-head-text: #ffffff;
+
+          --cust-blue-solid: #2563eb;
+          --cust-blue-tint: #eff6ff;
+          --cust-blue-text: #1d4ed8;
+          --cust-amber-solid: #d97706;
+          --cust-amber-tint: #fffbeb;
+          --cust-amber-text: #b45309;
+          --cust-rose-solid: #e11d48;
+          --cust-rose-tint: #fff1f2;
+          --cust-rose-text: #be123c;
+          --cust-emerald-solid: #059669;
+          --cust-emerald-tint: #ecfdf5;
+          --cust-emerald-text: #047857;
+
+          --cust-avatar-blue-bg: #dbeafe;
+          --cust-avatar-blue-text: #1d4ed8;
+          --cust-avatar-cyan-bg: #cffafe;
+          --cust-avatar-cyan-text: #0e7490;
+          --cust-avatar-amber-bg: #fef3c7;
+          --cust-avatar-amber-text: #b45309;
+          --cust-avatar-rose-bg: #ffe4e6;
+          --cust-avatar-rose-text: #be123c;
+          --cust-avatar-violet-bg: #ede9fe;
+          --cust-avatar-violet-text: #6d28d9;
+          --cust-avatar-emerald-bg: #d1fae5;
+          --cust-avatar-emerald-text: #047857;
+        }
+
+        :global(:root[data-theme="nocturno"]) .orbyx-customers-page {
+          --cust-ink: #e6ebf5;
+          --cust-muted: #94a3bb;
+          --cust-border: #203a61;
+          --cust-pill-border: #2c5282;
+          --cust-card-bg: #101b31;
+          --cust-soft-bg: #0b1526;
+          --cust-row-hover: #16223d;
+          --cust-table-head-bg: #060b16;
+          --cust-table-head-text: #f1f5f9;
+
+          --cust-blue-solid: #3b82f6;
+          --cust-blue-tint: #132a44;
+          --cust-blue-text: #93c5fd;
+          --cust-amber-solid: #f59e0b;
+          --cust-amber-tint: #3a2a18;
+          --cust-amber-text: #fcd34d;
+          --cust-rose-solid: #fb7185;
+          --cust-rose-tint: #3a151a;
+          --cust-rose-text: #fda4af;
+          --cust-emerald-solid: #22c55e;
+          --cust-emerald-tint: #123329;
+          --cust-emerald-text: #6ee7b7;
+
+          --cust-avatar-blue-bg: #1e3a5f;
+          --cust-avatar-blue-text: #93c5fd;
+          --cust-avatar-cyan-bg: #123a42;
+          --cust-avatar-cyan-text: #67e8f9;
+          --cust-avatar-amber-bg: #3a2a18;
+          --cust-avatar-amber-text: #fcd34d;
+          --cust-avatar-rose-bg: #3a151a;
+          --cust-avatar-rose-text: #fda4af;
+          --cust-avatar-violet-bg: #241f3d;
+          --cust-avatar-violet-text: #c4b5fd;
+          --cust-avatar-emerald-bg: #123329;
+          --cust-avatar-emerald-text: #6ee7b7;
+        }
+      `}</style>
     </div>
   );
 }

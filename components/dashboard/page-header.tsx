@@ -15,7 +15,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div
-      className="orbyx-page-header relative mb-4 flex flex-col gap-4 overflow-hidden rounded-2xl border px-5 py-4 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)] sm:flex-row sm:items-center sm:justify-between"
+      className="orbyx-page-header relative mb-4 flex flex-col gap-3 overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)] sm:flex-row sm:items-center sm:justify-between"
       style={{
         background: "var(--page-hero-bg)",
         borderColor: "var(--page-hero-border)",
@@ -29,19 +29,19 @@ export function PageHeader({
         }}
       />
 
-      <div className="relative z-10 flex min-w-0 items-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
-          {icon || <span className="text-sm font-bold">O</span>}
+      <div className="relative z-10 flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
+          {icon || <span className="text-xs font-bold">O</span>}
         </div>
 
         <div className="min-w-0">
           {eyebrow ? (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: "var(--page-hero-eyebrow)" }}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--page-hero-eyebrow)" }}>
               {eyebrow}
             </p>
           ) : null}
 
-          <h1 className="mt-0.5 text-xl font-semibold tracking-tight" style={{ color: "var(--page-hero-title)" }}>
+          <h1 className="mt-0.5 text-lg font-semibold tracking-tight" style={{ color: "var(--page-hero-title)" }}>
             {title}
           </h1>
 
