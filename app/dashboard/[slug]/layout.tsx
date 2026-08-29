@@ -18,7 +18,6 @@ import {
   ChevronsRight,
   Megaphone,
   CreditCard,
-  FileText,
   HelpCircle,
   Headphones,
   LogOut,
@@ -170,8 +169,7 @@ const navSections = [
   {
     title: "Análisis",
     items: [
-      { label: "Métricas", href: "", icon: BarChart3 },
-      { label: "Reportes", href: "", icon: FileText },
+      { label: "Indicadores", href: "", icon: BarChart3 },
     ],
   },
   {
@@ -481,7 +479,7 @@ export default function DashboardLayout({
         items: section.items
           .filter((item) => {
             if (item.href === "/billing") return isOwnerOrAdmin;
-            if (item.label === "Métricas" || item.label === "Reportes") return isOwnerOrAdmin;
+            if (item.label === "Indicadores") return isOwnerOrAdmin;
             if (isOwnerOrAdmin) return true;
             return getModuleAccess(item.href) !== false;
           })
@@ -768,7 +766,7 @@ export default function DashboardLayout({
                 const Icon = item.icon;
                 const fullHref = `/dashboard/${slug}${item.href}`;
                 const active =
-                  item.label === "Métricas"
+                  item.label === "Indicadores"
                     ? isItemActive(fullHref)
                     : item.href
                     ? isItemActive(fullHref)
