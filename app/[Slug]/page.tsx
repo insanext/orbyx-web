@@ -2467,8 +2467,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         >
           <span aria-hidden="true">←</span> Volver al catálogo
         </button>
-        <div className="flex flex-col gap-4 md:flex-row md:items-start">
-          <div className="min-w-0 md:flex-1">
+        <div className="grid gap-4 md:gap-6 lg:grid-cols-[1fr_290px] lg:items-start xl:grid-cols-[1fr_300px]">
+          <div className="min-w-0 space-y-4 md:space-y-6">
             <BusinessBannerCard
               business={business}
               slug={slug}
@@ -2476,22 +2476,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               selectedBranchId={selectedBranchId}
               onBranchChange={handleBranchChange}
             />
-          </div>
-          <div className="w-full shrink-0 md:w-[300px]">
-            <BusinessLocationPanel
-              mapsEmbedUrl={mapsEmbedUrl}
-              mapsLinkUrl={mapsLinkUrl}
-              address={visibleAddress}
-              phone={visiblePhone}
-              whatsappNumber={visibleWhatsappNumber}
-              weeklyHours={weeklyHoursOrdered}
-              instagramUrl={business?.instagram_url}
-              facebookUrl={business?.facebook_url}
-            />
-          </div>
-        </div>
 
-        <div className="mt-4 grid gap-4 md:mt-6 lg:grid-cols-[1fr_290px] lg:items-start lg:gap-6 xl:grid-cols-[1fr_300px]">
           <div className="min-w-0 flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
             <div className="mb-3 flex flex-col gap-3 md:mb-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative flex flex-wrap items-center gap-2">
@@ -3521,8 +3506,20 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
               </div>
             </div>
           </div>
+          </div>
 
           <div className="space-y-3 md:space-y-4">
+            <BusinessLocationPanel
+              mapsEmbedUrl={mapsEmbedUrl}
+              mapsLinkUrl={mapsLinkUrl}
+              address={visibleAddress}
+              phone={visiblePhone}
+              whatsappNumber={visibleWhatsappNumber}
+              weeklyHours={weeklyHoursOrdered}
+              instagramUrl={business?.instagram_url}
+              facebookUrl={business?.facebook_url}
+            />
+
             <div className="rounded-none border border-slate-200 bg-white p-3.5 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4">
               <div className="rounded-none border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-none md:p-4">
                 <p className="text-sm font-semibold text-slate-900">
@@ -3571,23 +3568,23 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                             setSelectedStaffId("");
                             setSelectedSlot(null);
                           }}
-                          className={`w-full rounded-none border p-3 text-left transition-all duration-200 cursor-pointer md:rounded-none md:p-5 ${
+                          className={`w-full rounded-none border p-2 text-left transition-all duration-200 cursor-pointer md:rounded-none md:p-2.5 ${
   selectedStaffId === ""
     ? "border-indigo-600 bg-indigo-50 shadow-md scale-[1.01]"
     : "border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm hover:scale-[1.01]"
 }`}
                         >
-                          <div className="flex items-center gap-3 md:gap-5">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-none border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700 md:h-20 md:w-20 md:rounded-none md:text-2xl">
+                          <div className="flex items-center gap-2 md:gap-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-700 md:h-9 md:w-9 md:rounded-none md:text-base">
                               *
                             </div>
 
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-900 md:text-base">
+                              <p className="text-sm font-semibold text-slate-900">
                                 Cualquiera disponible
                               </p>
-                              <p className="mt-1 text-xs leading-5 text-slate-500 md:text-sm">
-                                Orbyx asignará un profesional con horario disponible
+                              <p className="mt-0.5 text-xs leading-4 text-slate-500">
+                                Se asignará un profesional con horario disponible.
                               </p>
                             </div>
                           </div>
