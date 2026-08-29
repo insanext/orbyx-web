@@ -2,7 +2,34 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { BarChart3, Lock, Download } from "lucide-react";
+import {
+  BarChart3,
+  Lock,
+  Download,
+  TrendingUp,
+  Calendar,
+  CheckCircle2,
+  XCircle,
+  UserX,
+  Percent,
+  Users,
+  UserPlus,
+  User,
+  Star,
+  Clock,
+  PawPrint,
+  ClipboardList,
+  ShoppingBag,
+  Megaphone,
+  Mail,
+  Puzzle,
+  PackageOpen,
+  Sparkles,
+  Send,
+  Inbox,
+  Building2,
+  type LucideIcon,
+} from "lucide-react";
 import { PageHeader } from "../../../components/dashboard/page-header";
 import { apiFetch } from "@/lib/api";
 import { isPlanAtLeast } from "@/lib/plans";
@@ -132,18 +159,19 @@ function formatDateCL(value: string | null | undefined) {
   return `${d}-${m}-${y}`;
 }
 
-// Umbral heurístico para colorear alertas (no es un benchmark de industria,
-// solo un corte razonable para llamar la atención del dueño del negocio).
+// Umbral heurístico para colorear alertas en bloques que no tienen un color
+// fijo de categoría propio (ej. ocupación de cupos grupales) — no es un
+// benchmark de industria, solo un corte razonable para llamar la atención.
 function rateTone(rate: number, warnAt: number, dangerAt: number): "default" | "warning" | "danger" {
   if (rate >= dangerAt) return "danger";
   if (rate >= warnAt) return "warning";
   return "default";
 }
 
-function toneColor(tone: "default" | "warning" | "danger") {
+function toneTextColor(tone: "default" | "warning" | "danger") {
   if (tone === "danger") return "#dc2626";
   if (tone === "warning") return "#d97706";
-  return "var(--text-main)";
+  return INK;
 }
 
 // ---- Export CSV — un botón por SECCIÓN (no por panel), cliente-side, sin
@@ -175,6 +203,69 @@ function downloadMultiTableCsv(filename: string, tables: CsvTable[]) {
   URL.revokeObjectURL(url);
 }
 
+// ============================================================================
+// Sistema visual "ejecutivo" del módulo Indicadores — paleta y esquinas fijas
+// (no depende del theme claro/oscuro del resto del dashboard), reproduciendo
+// las referencias de diseño acordadas: fondo blanco/lavanda pálido, acento de
+// color sólido por categoría, esquinas rectas en todos los paneles/tarjetas/
+// botones/inputs. Las únicas formas circulares son indicadores de estado
+// puntuales (puntos de color, marcadores de gráfico) — nunca esquinas de
+// tarjetas/paneles/botones.
+// ============================================================================
+type Tone = "indigo" | "green" | "red" | "gray" | "blue" | "violet" | "amber";
+
+const TONE: Record<Tone, { solid: string; tint: string; text: string }> = {
+  indigo: { solid: "#4f46e5", tint: "#eef0ff", text: "#3730a3" },
+  green: { solid: "#16a34a", tint: "#eafbf1", text: "#15803d" },
+  red: { solid: "#dc2626", tint: "#fdf0f1", text: "#b91c1c" },
+  gray: { solid: "#64748b", tint: "#f3f4f6", text: "#475569" },
+  blue: { solid: "#2563eb", tint: "#edf3ff", text: "#1d4ed8" },
+  violet: { solid: "#7c3aed", tint: "#f4f0ff", text: "#6d28d9" },
+  amber: { solid: "#d97706", tint: "#fff6e8", text: "#b45309" },
+};
+
+const INK = "#0f172a";
+const MUTED = "#64748b";
+const SHELL_BORDER = "#e2e0f3";
+const PANEL_BORDER = "#e7e5f1";
+const TRACK_BG = "#eef0f4";
+
+function WhatsAppGlyph({ size = 18 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.966-.273-.099-.471-.148-.67.15-.198.297-.768.966-.94 1.164-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.787-1.48-1.759-1.653-2.056-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.793.372-.273.297-1.04 1.016-1.04 2.479s1.065 2.875 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.174-1.413-.075-.124-.273-.198-.57-.347z" />
+      <path d="M20.52 3.449A11.94 11.94 0 0 0 12.043 0C5.495 0 .161 5.334.161 11.882c0 2.094.547 4.139 1.587 5.945L0 24l6.356-1.667a11.86 11.86 0 0 0 5.687 1.448h.005c6.548 0 11.882-5.334 11.882-11.882a11.8 11.8 0 0 0-3.41-8.45zm-8.477 18.32h-.004a9.86 9.86 0 0 1-5.026-1.378l-.361-.214-3.772.99 1.007-3.676-.235-.377a9.86 9.86 0 0 1-1.52-5.232c.003-5.44 4.43-9.867 9.875-9.867 2.637 0 5.114 1.027 6.978 2.893a9.82 9.82 0 0 1 2.889 6.983c-.003 5.443-4.43 9.878-9.87 9.878z" />
+    </svg>
+  );
+}
+
+type IconLike = LucideIcon | ((props: { size?: number; strokeWidth?: number }) => React.ReactElement);
+
+function IconBox({
+  icon: Icon,
+  tone,
+  variant = "tint",
+  size = 32,
+  iconSize,
+}: {
+  icon: IconLike;
+  tone: Tone;
+  variant?: "tint" | "solid";
+  size?: number;
+  iconSize?: number;
+}) {
+  const t = TONE[tone];
+  const IconComp = Icon as LucideIcon;
+  return (
+    <div
+      className="flex shrink-0 items-center justify-center"
+      style={{ width: size, height: size, background: variant === "solid" ? t.solid : t.tint, color: variant === "solid" ? "#ffffff" : t.solid }}
+    >
+      <IconComp size={iconSize ?? Math.round(size * 0.55)} strokeWidth={2.25} />
+    </div>
+  );
+}
+
 function SectionExportButton({ tables, filename }: { tables: CsvTable[]; filename: string }) {
   const hasData = tables.some((t) => t.rows.length > 0);
   return (
@@ -182,93 +273,145 @@ function SectionExportButton({ tables, filename }: { tables: CsvTable[]; filenam
       type="button"
       onClick={() => downloadMultiTableCsv(filename, tables)}
       disabled={!hasData}
-      className="inline-flex h-7 items-center gap-1.5 border px-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] transition disabled:cursor-not-allowed disabled:opacity-40"
-      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)", borderRadius: 3 }}
+      className="inline-flex h-9 items-center gap-2 border bg-white px-3.5 text-[11px] font-extrabold uppercase tracking-[0.06em] transition disabled:cursor-not-allowed disabled:opacity-40"
+      style={{ borderColor: TONE.indigo.solid, color: TONE.indigo.solid }}
     >
-      <Download size={12} />
+      <Download size={14} />
       Exportar sección (CSV)
     </button>
   );
 }
 
-// ---- Bloques visuales "ejecutivos": esquinas rectas (radio mínimo), tipografía
-// numérica compacta — deliberadamente distintos del resto del dashboard (Panel/
-// MetricCard usan rounded-3xl), ver dirección de diseño pedida para este módulo.
-function StatCard({ label, value, hint, tone = "default" }: { label: string; value: string; hint?: string; tone?: "default" | "warning" | "danger" }) {
-  return (
-    <div className="border p-2.5" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", borderRadius: 3 }}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "var(--text-muted)" }}>
-        {label}
-      </p>
-      <p className="mt-1 text-lg font-bold leading-none tabular-nums" style={{ color: toneColor(tone) }}>
-        {value}
-      </p>
-      {hint ? (
-        <p className="mt-1 text-[10.5px] leading-tight" style={{ color: "var(--text-muted)" }}>
-          {hint}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function SectionHeader({ title, description, action }: { title: string; description?: string; action?: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-2 border-b-2 pb-2 pt-2" style={{ borderColor: "var(--text-main)" }}>
-      <div>
-        <h2 className="text-[15px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--text-main)" }}>
-          {title}
-        </h2>
-        {description ? (
-          <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-            {description}
-          </p>
-        ) : null}
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function StatPanel({
+function SectionShell({
+  icon,
+  iconVariant = "tint",
+  tone,
   title,
-  description,
-  badge,
-  actions,
+  subtitle,
+  action,
   children,
 }: {
+  icon: LucideIcon;
+  iconVariant?: "tint" | "solid";
+  tone: Tone;
   title: string;
-  description?: string;
-  badge?: React.ReactNode;
-  actions?: React.ReactNode;
+  subtitle: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="border" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", borderRadius: 3 }}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5" style={{ borderColor: "var(--border-color)" }}>
-        <div className="flex items-center gap-2">
-          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-            {title}
-          </h3>
+    <section className="bg-white" style={{ border: `1px solid ${SHELL_BORDER}`, borderTop: `3px solid ${TONE[tone].solid}` }}>
+      <div
+        className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3.5 sm:px-5"
+        style={{ borderColor: SHELL_BORDER, background: "linear-gradient(180deg,#ffffff,#faf9ff)" }}
+      >
+        <div className="flex items-center gap-3">
+          <IconBox icon={icon} tone={tone} variant={iconVariant} size={40} />
+          <div>
+            <h2 className="text-[15px] font-extrabold uppercase tracking-[0.04em]" style={{ color: INK }}>
+              {title}
+            </h2>
+            <p className="text-xs" style={{ color: MUTED }}>
+              {subtitle}
+            </p>
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="space-y-4 p-4 sm:p-5">{children}</div>
+    </section>
+  );
+}
+
+function SubHeading({ icon: Icon, children }: { icon?: LucideIcon; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2">
+      {Icon ? <Icon size={16} style={{ color: TONE.indigo.solid }} /> : null}
+      <h3 className="text-sm font-extrabold uppercase tracking-[0.04em]" style={{ color: INK }}>
+        {children}
+      </h3>
+    </div>
+  );
+}
+
+function Panel({
+  icon,
+  iconVariant = "tint",
+  tone = "indigo",
+  title,
+  badge,
+  action,
+  meta,
+  tint,
+  children,
+}: {
+  icon?: IconLike;
+  iconVariant?: "tint" | "solid";
+  tone?: Tone;
+  title?: string;
+  badge?: React.ReactNode;
+  action?: React.ReactNode;
+  meta?: React.ReactNode;
+  tint?: Tone;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section style={{ border: `1px solid ${PANEL_BORDER}`, background: tint ? TONE[tint].tint : "#ffffff" }}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style={{ borderColor: PANEL_BORDER }}>
+        <div className="flex items-center gap-2.5">
+          {icon ? <IconBox icon={icon} tone={tone} variant={iconVariant} size={28} /> : null}
+          {title ? (
+            <h3 className="text-[12.5px] font-extrabold uppercase tracking-[0.05em]" style={{ color: INK }}>
+              {title}
+            </h3>
+          ) : null}
           {badge}
         </div>
-        {actions}
+        {action}
       </div>
-      {description ? (
-        <p className="border-b px-4 py-2 text-xs" style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}>
-          {description}
-        </p>
+      {meta ? (
+        <div className="border-b px-4 py-2.5" style={{ borderColor: PANEL_BORDER }}>
+          {meta}
+        </div>
       ) : null}
-      <div className="p-4">{children}</div>
+      {children ? <div className="p-4">{children}</div> : null}
     </section>
+  );
+}
+
+function Kpi({
+  icon,
+  label,
+  value,
+  tone,
+  valueColor,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  tone: Tone;
+  valueColor?: string;
+}) {
+  return (
+    <div className="p-3" style={{ background: TONE[tone].tint, border: `1px solid ${PANEL_BORDER}`, borderTop: `3px solid ${TONE[tone].solid}` }}>
+      <div className="flex items-center gap-2.5">
+        <IconBox icon={icon} tone={tone} variant="solid" size={30} />
+        <p className="truncate text-[10px] font-bold uppercase leading-tight tracking-[0.06em]" style={{ color: MUTED }}>
+          {label}
+        </p>
+      </div>
+      <p className="mt-2.5 text-2xl font-extrabold leading-none tabular-nums" style={{ color: valueColor || INK }}>
+        {value}
+      </p>
+    </div>
   );
 }
 
 function EstimatedBadge() {
   return (
     <span
-      className="inline-flex h-5 items-center px-2 text-[10px] font-bold uppercase tracking-[0.08em]"
-      style={{ background: "rgba(217,119,6,0.14)", color: "#b45309", borderRadius: 3 }}
+      className="inline-flex h-5 items-center px-2 text-[10px] font-extrabold uppercase tracking-[0.08em] text-white"
+      style={{ background: TONE.violet.solid }}
       title="Calculado con el precio actual del servicio — puede no calzar con el histórico si hubo cambios de precio."
     >
       Estimado
@@ -279,8 +422,8 @@ function EstimatedBadge() {
 function RealDataBadge() {
   return (
     <span
-      className="inline-flex h-5 items-center px-2 text-[10px] font-bold uppercase tracking-[0.08em]"
-      style={{ background: "rgba(5,150,105,0.14)", color: "#059669", borderRadius: 3 }}
+      className="inline-flex h-5 items-center px-2 text-[10px] font-extrabold uppercase tracking-[0.08em]"
+      style={{ background: TONE.green.tint, color: TONE.green.text }}
     >
       Dato real
     </span>
@@ -289,7 +432,7 @@ function RealDataBadge() {
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <p className="py-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+    <p className="py-6 text-center text-sm" style={{ color: MUTED }}>
       {text}
     </p>
   );
@@ -297,23 +440,25 @@ function EmptyState({ text }: { text: string }) {
 
 function LockedBlock({ requiredPlanLabel, description }: { requiredPlanLabel: string; description: string }) {
   return (
-    <div className="border border-dashed p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", borderRadius: 3 }}>
-      <div className="flex items-center gap-2">
-        <Lock size={13} style={{ color: "var(--text-muted)" }} />
+    <div className="flex items-start gap-3 border border-dashed bg-white p-4" style={{ borderColor: PANEL_BORDER }}>
+      <IconBox icon={Lock} tone="blue" variant="tint" size={36} iconSize={16} />
+      <div>
         <span
-          className="inline-flex h-5 items-center px-2 text-[10px] font-bold uppercase tracking-[0.08em]"
-          style={{ background: "rgba(37,99,235,0.12)", color: "#2563eb", borderRadius: 3 }}
+          className="inline-flex h-5 items-center px-2 text-[10px] font-extrabold uppercase tracking-[0.08em] text-white"
+          style={{ background: TONE.blue.solid }}
         >
           Desde {requiredPlanLabel}
         </span>
+        <p className="mt-1.5 text-xs" style={{ color: MUTED }}>
+          {description}
+        </p>
       </div>
-      <p className="mt-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
-        {description}
-      </p>
     </div>
   );
 }
 
+// Lista numerada de "Servicios más reservados" — badge cuadrado indigo,
+// barra de progreso ancha con degradado indigo→violeta.
 function RankingList({
   items,
   formatValue,
@@ -326,29 +471,28 @@ function RankingList({
   if (items.length === 0) return <EmptyState text={emptyText} />;
   const max = Math.max(...items.map((i) => i.value), 1);
   return (
-    <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
+    <div className="space-y-3.5">
       {items.map((item, idx) => (
-        <div key={item.id} className="flex items-start gap-3 py-2 first:pt-0 last:pb-0">
-          <span className="w-5 shrink-0 pt-0.5 text-right text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-            {idx + 1}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-sm font-medium" style={{ color: "var(--text-main)" }}>
-                {item.name}
-              </span>
-              <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
-                {formatValue ? formatValue(item.value) : item.value}
-              </span>
-            </div>
-            {item.sub ? (
-              <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                {item.sub}
-              </p>
-            ) : null}
-            <div className="mt-1 h-1 w-full" style={{ background: "var(--bg-soft)" }}>
-              <div className="h-1" style={{ width: `${Math.max((item.value / max) * 100, 3)}%`, background: "#2563eb" }} />
-            </div>
+        <div key={item.id}>
+          <div className="flex items-center gap-3">
+            <span
+              className="flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-extrabold text-white"
+              style={{ background: TONE.indigo.solid }}
+            >
+              {String(idx + 1).padStart(2, "0")}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm font-bold" style={{ color: INK }}>
+              {item.name}
+            </span>
+            <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: INK }}>
+              {formatValue ? formatValue(item.value) : item.value}
+            </span>
+          </div>
+          <div className="ml-9 mt-1.5 h-1.5" style={{ background: TRACK_BG }}>
+            <div
+              className="h-1.5"
+              style={{ width: `${Math.max((item.value / max) * 100, 4)}%`, background: "linear-gradient(90deg, #4f46e5, #7c3aed)" }}
+            />
           </div>
         </div>
       ))}
@@ -376,54 +520,58 @@ function CustomerRankingList({
   const visible = items.slice(0, limit);
   if (visible.length === 0) return <EmptyState text={emptyText} />;
   const max = Math.max(...visible.map((i) => i.total_visits), 1);
+  const badgeTone: Tone = mode === "active" ? "indigo" : "red";
 
   return (
-    <div className="max-h-72 overflow-y-auto pr-1">
-      <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-        {visible.map((item, idx) => {
-          const isOpen = expandedId === item.id;
-          return (
-            <div key={item.id}>
-              <button
-                type="button"
-                onClick={() => onToggle(item.id)}
-                className="flex w-full items-start gap-3 py-2 text-left first:pt-0"
+    <div className="max-h-80 space-y-1.5 overflow-y-auto pr-1">
+      {visible.map((item, idx) => {
+        const isOpen = expandedId === item.id;
+        return (
+          <div key={item.id}>
+            <button
+              type="button"
+              onClick={() => onToggle(item.id)}
+              className="flex w-full items-start gap-3 p-2.5 text-left"
+              style={{ background: mode === "inactive" ? TONE.red.tint : "transparent" }}
+            >
+              <span
+                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-extrabold text-white"
+                style={{ background: TONE[badgeTone].solid }}
               >
-                <span className="w-5 shrink-0 pt-0.5 text-right text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                  {idx + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium" style={{ color: "var(--text-main)" }}>
-                      {item.name || "Cliente"}
-                    </span>
-                    <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
-                      {mode === "active" ? `${item.total_visits} visitas` : formatDateCL(item.last_visit_at)}
-                    </span>
-                  </div>
-                  {mode === "active" ? (
-                    <>
-                      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                        {item.segment === "frequent" ? "Frecuente" : "Recurrente"}
-                      </p>
-                      <div className="mt-1 h-1 w-full" style={{ background: "var(--bg-soft)" }}>
-                        <div className="h-1" style={{ width: `${Math.max((item.total_visits / max) * 100, 3)}%`, background: "#2563eb" }} />
-                      </div>
-                    </>
-                  ) : null}
+                {String(idx + 1).padStart(2, "0")}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-bold" style={{ color: INK }}>
+                    {item.name || "Cliente"}
+                  </span>
+                  <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: INK }}>
+                    {mode === "active" ? `${item.total_visits} visita${item.total_visits === 1 ? "" : "s"}` : "—"}
+                  </span>
                 </div>
-              </button>
-              {isOpen ? (
-                <div className="mb-2 ml-8 border-l-2 pl-3 text-xs" style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}>
-                  <p>Teléfono: {item.phone || "—"}</p>
-                  <p>Email: {item.email || "—"}</p>
-                  {mode === "inactive" ? <p>Total visitas históricas: {item.total_visits}</p> : null}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+                {mode === "active" ? (
+                  <>
+                    <p className="text-[11px] font-bold" style={{ color: TONE.indigo.solid }}>
+                      {item.segment === "frequent" ? "Frecuente" : "Recurrente"}
+                    </p>
+                    <div className="mt-1.5 h-1 w-full" style={{ background: TRACK_BG }}>
+                      <div className="h-1" style={{ width: `${Math.max((item.total_visits / max) * 100, 4)}%`, background: TONE.indigo.solid }} />
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            </button>
+            {isOpen ? (
+              <div className="ml-9 border-l-2 px-3 py-1.5 text-xs" style={{ borderColor: PANEL_BORDER, color: MUTED }}>
+                <p>Teléfono: {item.phone || "—"}</p>
+                <p>Email: {item.email || "—"}</p>
+                {mode === "inactive" ? <p>Última visita: {formatDateCL(item.last_visit_at)}</p> : null}
+                {mode === "inactive" ? <p>Total visitas históricas: {item.total_visits}</p> : null}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -440,90 +588,183 @@ function OccupancyHeatmap({ cells }: { cells: HeatCell[] }) {
   const maxHour = Math.min(23, Math.max(...hours) + 1);
   const hourRange = Array.from({ length: maxHour - minHour + 1 }, (_, i) => minHour + i);
   const cellMap = new Map(cells.map((c) => [`${c.weekday}-${c.hour}`, c.count]));
+  const legendSteps = [0.12, 0.28, 0.44, 0.6, 0.76, 0.92];
 
   return (
-    <div className="overflow-x-auto">
-      <table className="border-collapse text-[11px]">
-        <thead>
-          <tr>
-            <th className="w-9" />
-            {hourRange.map((h) => (
-              <th key={h} className="px-0.5 pb-1 text-center font-medium" style={{ color: "var(--text-muted)" }}>
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {WEEKDAY_ORDER.map((wd) => (
-            <tr key={wd}>
-              <td className="pr-2 text-right font-semibold" style={{ color: "var(--text-muted)" }}>
-                {WEEKDAY_LABEL[wd]}
-              </td>
-              {hourRange.map((h) => {
-                const count = cellMap.get(`${wd}-${h}`) || 0;
-                const intensity = count / max;
-                return (
-                  <td key={h} className="p-[1px]">
-                    <div
-                      title={`${WEEKDAY_LABEL[wd]} ${h}:00 — ${count} reserva${count === 1 ? "" : "s"}`}
-                      className="h-5 w-5"
-                      style={{
-                        background: count === 0 ? "var(--bg-soft)" : `rgba(37,99,235,${0.18 + intensity * 0.72})`,
-                        border: "1px solid var(--border-color)",
-                      }}
-                    />
-                  </td>
-                );
-              })}
+    <div>
+      <div className="overflow-x-auto">
+        <table className="border-collapse text-[11px]">
+          <thead>
+            <tr>
+              <th className="w-10" />
+              {hourRange.map((h) => (
+                <th key={h} className="px-1 pb-1.5 text-center font-bold" style={{ color: MUTED }}>
+                  {h}
+                </th>
+              ))}
             </tr>
+          </thead>
+          <tbody>
+            {WEEKDAY_ORDER.map((wd) => (
+              <tr key={wd}>
+                <td className="pr-2 text-right font-bold" style={{ color: MUTED }}>
+                  {WEEKDAY_LABEL[wd]}
+                </td>
+                {hourRange.map((h) => {
+                  const count = cellMap.get(`${wd}-${h}`) || 0;
+                  const intensity = count / max;
+                  return (
+                    <td key={h} className="p-[1.5px]">
+                      <div
+                        title={`${WEEKDAY_LABEL[wd]} ${h}:00 — ${count} reserva${count === 1 ? "" : "s"}`}
+                        style={{
+                          height: 22,
+                          width: 38,
+                          background: count === 0 ? TRACK_BG : `rgba(79,70,229,${0.15 + intensity * 0.75})`,
+                        }}
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-3 flex items-center justify-center gap-2 text-[11px] font-medium" style={{ color: MUTED }}>
+        <span>Baja ocupación</span>
+        <div className="flex h-2.5 w-24 overflow-hidden">
+          {legendSteps.map((op, i) => (
+            <div key={i} className="h-full flex-1" style={{ background: `rgba(79,70,229,${op})` }} />
           ))}
-        </tbody>
-      </table>
+        </div>
+        <span>Alta ocupación</span>
+      </div>
     </div>
   );
 }
 
+// Tarjeta destacada de anticipación promedio — ícono + número grande, con un
+// detalle decorativo sutil (ondas) en la esquina inferior derecha.
+function LeadTimeCard({ hours }: { hours: number | null }) {
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden bg-white p-5" style={{ border: `1px solid ${PANEL_BORDER}` }}>
+      <svg className="pointer-events-none absolute bottom-0 right-0 h-28 w-40" viewBox="0 0 160 112" fill="none">
+        <path d="M0 92 Q40 62 80 92 T170 92" stroke="#efe9ff" strokeWidth="10" />
+        <path d="M10 108 Q55 82 100 108 T190 108" stroke="#f5f1ff" strokeWidth="10" />
+      </svg>
+      <div className="relative z-10 flex items-center gap-3">
+        <IconBox icon={Clock} tone="violet" variant="tint" size={40} iconSize={19} />
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.06em]" style={{ color: INK }}>
+          Anticipación promedio de reserva
+        </p>
+      </div>
+      <p className="relative z-10 mt-4 text-4xl font-extrabold tabular-nums" style={{ color: INK }}>
+        {hours === null ? "—" : `${hours}h`}
+      </p>
+      <p className="relative z-10 mt-1.5 text-xs" style={{ color: MUTED }}>
+        Tiempo entre creación y hora de la cita
+      </p>
+    </div>
+  );
+}
+
+// Gráfico de barras simple (marcador circular en la punta + línea base
+// punteada) usado para "Por servicio" / "Por profesional" / "Por sucursal" en
+// Ingresos estimados. Sin datos: muestra una silueta decorativa desvanecida.
+function MiniBarChart({
+  items,
+  tone,
+  valueFormatter,
+}: {
+  items: { id: string; name: string; value: number }[];
+  tone: Tone;
+  valueFormatter: (n: number) => string;
+}) {
+  const hasData = items.length > 0;
+  const source = hasData ? items.slice(0, 8) : [42, 24, 60, 84].map((v, i) => ({ id: String(i), name: "", value: v }));
+  const max = Math.max(...source.map((i) => i.value), 1);
+
+  return (
+    <div className="flex flex-col items-center px-3 pb-2 pt-6">
+      <div className="flex h-28 items-end gap-4" style={{ opacity: hasData ? 1 : 0.35 }}>
+        {source.map((item) => {
+          const h = Math.max((item.value / max) * 100, 6);
+          return (
+            <div
+              key={item.id}
+              className="flex h-full flex-col items-center justify-end gap-1.5"
+              title={hasData ? `${item.name}: ${valueFormatter(item.value)}` : undefined}
+            >
+              <span className="h-2 w-2 border-2" style={{ borderRadius: 9999, borderColor: TONE[tone].solid, background: "#ffffff" }} />
+              <div style={{ height: `${h}%`, width: 18, background: TONE[tone].solid }} />
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2 w-full border-t border-dashed" style={{ borderColor: TONE[tone].solid, opacity: 0.4 }} />
+      {!hasData ? (
+        <p className="mt-4 pb-2 text-sm" style={{ color: MUTED }}>
+          Sin datos en el período.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function getInitials(name?: string | null) {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return "—";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
 // Barra de cupo + desglose de composición: cuánto queda del cupo del plan
-// (resetea cada mes) vs. cuánto queda de saldo por add-ons (acumulable).
-function UsageBar({ label, usage }: { label: string; usage: UsageInfo }) {
+// (resetea cada mes) vs. cuánto queda de saldo por add-ons (acumulable). El
+// color es fijo por tipo de recurso (verde WhatsApp, azul Email), no cambia
+// según el porcentaje usado.
+function UsageBar({ label, usage, tone }: { label: string; usage: UsageInfo; tone: Tone }) {
   const pct = usage.limit > 0 ? Math.min(100, (usage.used / usage.limit) * 100) : 0;
-  const tone = rateTone(pct, 75, 95);
   const planRemaining = Math.max(0, usage.base - usage.used);
+  const t = TONE[tone];
 
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold" style={{ color: "var(--text-main)" }}>
+        <span className="text-xs font-semibold" style={{ color: INK }}>
           {label}
         </span>
-        <span className="text-xs font-bold tabular-nums" style={{ color: toneColor(tone) }}>
+        <span className="text-xs font-bold tabular-nums" style={{ color: INK }}>
           {usage.used} / {usage.limit}
         </span>
       </div>
-      <div className="mt-1.5 h-2 w-full" style={{ background: "var(--bg-soft)" }}>
-        <div className="h-2" style={{ width: `${pct}%`, background: tone === "danger" ? "#dc2626" : tone === "warning" ? "#d97706" : "#2563eb" }} />
+      <div className="mt-2 h-2.5 w-full" style={{ background: TRACK_BG }}>
+        <div className="h-2.5" style={{ width: `${pct}%`, background: t.solid }} />
       </div>
 
-      <div className="mt-2.5 grid grid-cols-2 gap-2 border-t pt-2" style={{ borderColor: "var(--border-color)" }}>
+      <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3" style={{ borderColor: PANEL_BORDER }}>
         <div>
-          <p className="text-[9.5px] font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.08em]" style={{ color: MUTED }}>
             Cupo del plan
           </p>
-          <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
+          <p className="text-sm font-extrabold tabular-nums" style={{ color: t.solid }}>
             {planRemaining} / {usage.base}
-            <span className="ml-1 text-[10px] font-normal" style={{ color: "var(--text-muted)" }}>
+            <span className="ml-1.5 text-[10px] font-normal" style={{ color: MUTED }}>
               restante, resetea cada mes
             </span>
           </p>
         </div>
         <div>
-          <p className="text-[9.5px] font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.08em]" style={{ color: MUTED }}>
             Saldo add-ons
           </p>
-          <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
+          <p className="text-sm font-extrabold tabular-nums" style={{ color: INK }}>
             {usage.addon}
-            <span className="ml-1 text-[10px] font-normal" style={{ color: "var(--text-muted)" }}>
+            <span className="ml-1.5 text-[10px] font-normal" style={{ color: MUTED }}>
               acumulable
             </span>
           </p>
@@ -848,7 +1089,7 @@ export default function DashboardHomePage() {
       />
 
       {error ? (
-        <div className="border px-4 py-3 text-sm" style={{ borderColor: "rgba(244,63,94,0.28)", background: "rgba(244,63,94,0.08)", color: "#be123c", borderRadius: 3 }}>
+        <div className="border px-4 py-3 text-sm" style={{ borderColor: "rgba(244,63,94,0.28)", background: "rgba(244,63,94,0.08)", color: "#be123c" }}>
           {error}
         </div>
       ) : null}
@@ -862,43 +1103,44 @@ export default function DashboardHomePage() {
       {data ? (
         <>
           {/* ===== SECCIÓN 1: OPERACIÓN ===== */}
-          <SectionHeader
+          <SectionShell
+            icon={TrendingUp}
+            tone="indigo"
             title="Operación"
-            description="Reservas, clientes, servicios y ocupación"
+            subtitle="Reservas, clientes y ocupación"
             action={premiumUnlocked ? <SectionExportButton tables={operacionTables} filename="operacion.csv" /> : undefined}
-          />
-
-          <section className="grid grid-cols-3 gap-2.5 lg:grid-cols-6">
-            <StatCard label="Reservas totales" value={String(data.basic.appointments.total)} />
-            <StatCard label="Completadas" value={String(data.basic.appointments.by_status.completed)} />
-            <StatCard label="Canceladas" value={String(data.basic.appointments.by_status.canceled)} tone={rateTone(data.basic.appointments.cancellation_rate, 15, 30)} />
-            <StatCard label="No-show" value={String(data.basic.appointments.by_status.no_show)} tone={rateTone(data.basic.appointments.no_show_rate, 10, 25)} />
-            <StatCard label="Tasa no-show" value={formatPct(data.basic.appointments.no_show_rate)} tone={rateTone(data.basic.appointments.no_show_rate, 10, 25)} />
-            <StatCard label="Tasa cancelación" value={formatPct(data.basic.appointments.cancellation_rate)} tone={rateTone(data.basic.appointments.cancellation_rate, 15, 30)} />
-          </section>
-
-          <StatPanel title="Clientes">
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              <StatCard label="Clientes totales" value={String(data.basic.customers.total)} />
-              <StatCard label="Nuevos en el período" value={String(data.basic.customers.new_in_period)} />
+          >
+            <div className="grid grid-cols-3 gap-2.5 lg:grid-cols-6">
+              <Kpi icon={Calendar} tone="indigo" label="Reservas totales" value={String(data.basic.appointments.total)} />
+              <Kpi icon={CheckCircle2} tone="green" label="Completadas" value={String(data.basic.appointments.by_status.completed)} valueColor={TONE.green.solid} />
+              <Kpi icon={XCircle} tone="red" label="Canceladas" value={String(data.basic.appointments.by_status.canceled)} valueColor={TONE.red.solid} />
+              <Kpi icon={UserX} tone="gray" label="No-show" value={String(data.basic.appointments.by_status.no_show)} />
+              <Kpi icon={Percent} tone="blue" label="Tasa no-show" value={formatPct(data.basic.appointments.no_show_rate)} />
+              <Kpi icon={Percent} tone="red" label="Tasa cancelación" value={formatPct(data.basic.appointments.cancellation_rate)} valueColor={TONE.red.solid} />
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-4 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
+            <SubHeading>Clientes</SubHeading>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <Kpi icon={Users} tone="indigo" label="Clientes totales" value={String(data.basic.customers.total)} />
+              <Kpi icon={UserPlus} tone="indigo" label="Nuevos en el período" value={String(data.basic.customers.new_in_period)} />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
                   Inactividad:
                 </span>
-                <div className="flex items-center border" style={{ borderColor: "var(--border-color)", borderRadius: 3, overflow: "hidden" }}>
-                  {INACTIVE_PRESETS.map((p) => (
+                <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
+                  {INACTIVE_PRESETS.map((p, idx) => (
                     <button
                       key={p.key}
                       type="button"
                       onClick={() => setInactivePreset(p.key)}
-                      className="h-7 px-2 text-[11px] font-medium"
+                      className="h-7 px-2.5 text-[11px] font-bold"
                       style={{
-                        background: inactivePreset === p.key ? "#2563eb" : "var(--bg-card)",
-                        color: inactivePreset === p.key ? "#fff" : "var(--text-main)",
-                        borderRight: p.key !== "custom" ? "1px solid var(--border-color)" : "none",
+                        background: inactivePreset === p.key ? TONE.indigo.solid : "#ffffff",
+                        color: inactivePreset === p.key ? "#fff" : INK,
+                        borderRight: idx !== INACTIVE_PRESETS.length - 1 ? `1px solid ${PANEL_BORDER}` : "none",
                       }}
                     >
                       {p.label}
@@ -913,26 +1155,26 @@ export default function DashboardHomePage() {
                     value={customInactiveDays}
                     onChange={(e) => setCustomInactiveDays(e.target.value)}
                     className="h-7 w-16 border px-2 text-[11px] outline-none"
-                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", borderRadius: 3 }}
+                    style={{ borderColor: PANEL_BORDER, color: INK }}
                   />
                 ) : null}
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
                   Mostrar:
                 </span>
-                <div className="flex items-center border" style={{ borderColor: "var(--border-color)", borderRadius: 3, overflow: "hidden" }}>
+                <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
                   {CUSTOMER_LIMIT_OPTIONS.map((n, idx) => (
                     <button
                       key={n}
                       type="button"
                       onClick={() => setCustomerLimit(n)}
-                      className="h-7 px-2.5 text-[11px] font-medium"
+                      className="h-7 px-3 text-[11px] font-bold"
                       style={{
-                        background: customerLimit === n ? "#2563eb" : "var(--bg-card)",
-                        color: customerLimit === n ? "#fff" : "var(--text-main)",
-                        borderRight: idx !== CUSTOMER_LIMIT_OPTIONS.length - 1 ? "1px solid var(--border-color)" : "none",
+                        background: customerLimit === n ? TONE.indigo.solid : "#ffffff",
+                        color: customerLimit === n ? "#fff" : INK,
+                        borderRight: idx !== CUSTOMER_LIMIT_OPTIONS.length - 1 ? `1px solid ${PANEL_BORDER}` : "none",
                       }}
                     >
                       {n}
@@ -942,11 +1184,8 @@ export default function DashboardHomePage() {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <div>
-                <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                  Más activos / recurrentes
-                </h4>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Panel icon={TrendingUp} title="Más activos / recurrentes">
                 <CustomerRankingList
                   items={data.basic.customer_ranking.active}
                   limit={customerLimit}
@@ -955,12 +1194,9 @@ export default function DashboardHomePage() {
                   mode="active"
                   emptyText="Sin clientes activos en este segmento."
                 />
-              </div>
+              </Panel>
 
-              <div>
-                <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                  Inactivos (+{inactiveDays} días sin visita)
-                </h4>
+              <Panel icon={User} title={`Inactivos (+${inactiveDays} días sin visita)`}>
                 <CustomerRankingList
                   items={data.basic.customer_ranking.inactive}
                   limit={customerLimit}
@@ -969,309 +1205,395 @@ export default function DashboardHomePage() {
                   mode="inactive"
                   emptyText="Sin clientes inactivos."
                 />
-              </div>
+              </Panel>
             </div>
-          </StatPanel>
 
-          <StatPanel title="Servicios más reservados">
-            <RankingList
-              items={data.basic.top_services.map((s) => ({ id: s.service_id, name: s.name, value: s.total }))}
-              formatValue={(n) => `${n} reservas`}
-              emptyText="Sin reservas en el período seleccionado."
-            />
-          </StatPanel>
+            <Panel icon={Star} title="Servicios más reservados">
+              <RankingList
+                items={data.basic.top_services.map((s) => ({ id: s.service_id, name: s.name, value: s.total }))}
+                formatValue={(n) => `${n} reservas`}
+                emptyText="Sin reservas en el período seleccionado."
+              />
+            </Panel>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                {premiumUnlocked && data.premium ? (
+                  <Panel icon={Calendar} title="Ocupación por día y hora">
+                    <OccupancyHeatmap cells={data.premium.occupancy_heatmap} />
+                  </Panel>
+                ) : (
+                  <LockedBlock requiredPlanLabel="Premium" description="Heatmap de horarios más pedidos por día y hora." />
+                )}
+              </div>
               {premiumUnlocked && data.premium ? (
-                <StatPanel title="Ocupación por día y hora">
-                  <OccupancyHeatmap cells={data.premium.occupancy_heatmap} />
-                </StatPanel>
+                <LeadTimeCard hours={data.premium.avg_lead_time_hours} />
               ) : (
-                <LockedBlock requiredPlanLabel="Premium" description="Heatmap de horarios más pedidos por día y hora." />
+                <LockedBlock requiredPlanLabel="Premium" description="Anticipación promedio de reserva." />
               )}
             </div>
-            {premiumUnlocked && data.premium ? (
-              <StatCard
-                label="Anticipación promedio de reserva"
-                value={data.premium.avg_lead_time_hours === null ? "—" : `${data.premium.avg_lead_time_hours}h`}
-                hint="Tiempo entre creación y hora de la cita"
-              />
-            ) : (
-              <LockedBlock requiredPlanLabel="Premium" description="Anticipación promedio de reserva." />
-            )}
-          </div>
 
-          {data.is_vet_mode && data.basic.vet ? (
-            <StatPanel title="Mascotas">
-              <div className="grid grid-cols-2 gap-2.5">
-                <StatCard label="Mascotas registradas" value={String(data.basic.vet.pets_count)} />
-                <StatCard label="Controles pendientes" value={String(data.basic.vet.pending_followups)} />
-              </div>
-            </StatPanel>
-          ) : null}
+            {data.is_vet_mode && data.basic.vet ? (
+              <>
+                <SubHeading icon={PawPrint}>Mascotas</SubHeading>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Kpi icon={PawPrint} tone="indigo" label="Mascotas registradas" value={String(data.basic.vet.pets_count)} />
+                  <Kpi icon={ClipboardList} tone="indigo" label="Controles pendientes" value={String(data.basic.vet.pending_followups)} />
+                </div>
+              </>
+            ) : null}
+          </SectionShell>
 
           {/* ===== SECCIÓN 2: INGRESOS Y DESEMPEÑO ===== */}
-          <SectionHeader
+          <SectionShell
+            icon={TrendingUp}
+            tone="indigo"
             title="Ingresos y desempeño"
-            description="Ingresos estimados, desempeño por profesional y por sucursal"
+            subtitle="Ingresos estimados, desempeño por profesional y por sucursal"
             action={premiumUnlocked ? <SectionExportButton tables={ingresosTables} filename="ingresos_y_desempeno.csv" /> : undefined}
-          />
+          >
+            {premiumUnlocked && data.premium ? (
+              <>
+                <Panel badge={<EstimatedBadge />} />
 
-          {premiumUnlocked && data.premium ? (
-            <>
-              <StatPanel title="Ingresos estimados" badge={<EstimatedBadge />} description={data.premium.revenue_estimated.note}>
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  <div>
-                    <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                      Por servicio
-                    </h4>
-                    <RankingList
+                <div className={`grid grid-cols-1 gap-4 ${multiBranch ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
+                  <Panel icon={ShoppingBag} iconVariant="solid" tone="violet" tint="violet" title="Por servicio">
+                    <MiniBarChart
                       items={data.premium.revenue_estimated.by_service.map((r) => ({ id: r.service_id || r.name, name: r.name, value: r.total }))}
-                      formatValue={formatCLP}
-                      emptyText="Sin datos en el período."
+                      tone="violet"
+                      valueFormatter={formatCLP}
                     />
-                  </div>
-                  <div>
-                    <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                      Por profesional
-                    </h4>
-                    <RankingList
+                  </Panel>
+                  <Panel icon={User} iconVariant="solid" tone="green" tint="green" title="Por profesional">
+                    <MiniBarChart
                       items={data.premium.revenue_estimated.by_staff.map((r) => ({ id: r.staff_id || r.name, name: r.name, value: r.total }))}
-                      formatValue={formatCLP}
-                      emptyText="Sin datos en el período."
+                      tone="green"
+                      valueFormatter={formatCLP}
                     />
-                  </div>
+                  </Panel>
                   {multiBranch ? (
-                    <div>
-                      <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--text-main)" }}>
-                        Por sucursal
-                      </h4>
-                      <RankingList
+                    <Panel icon={Building2} iconVariant="solid" tone="blue" tint="blue" title="Por sucursal">
+                      <MiniBarChart
                         items={data.premium.revenue_estimated.by_branch.map((r) => ({ id: r.branch_id || r.name, name: r.name, value: r.total }))}
-                        formatValue={formatCLP}
-                        emptyText="Sin datos en el período."
+                        tone="blue"
+                        valueFormatter={formatCLP}
                       />
-                    </div>
+                    </Panel>
                   ) : null}
                 </div>
-              </StatPanel>
 
-              <StatPanel title="Desempeño por profesional">
-                {data.premium.staff_performance.length === 0 ? (
-                  <EmptyState text="Sin reservas asignadas a profesionales en el período." />
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr style={{ color: "var(--text-muted)" }}>
-                          <th className="pb-2 font-semibold">Profesional</th>
-                          <th className="pb-2 text-right font-semibold">Reservas</th>
-                          <th className="pb-2 text-right font-semibold">Tasa no-show</th>
-                          <th className="pb-2 text-right font-semibold">Tasa cancelación</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-                        {data.premium.staff_performance.map((s) => (
-                          <tr key={s.staff_id}>
-                            <td className="py-1.5 font-medium" style={{ color: "var(--text-main)" }}>
-                              {s.name}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {s.total}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: toneColor(rateTone(s.no_show_rate, 10, 25)) }}>
-                              {formatPct(s.no_show_rate)}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: toneColor(rateTone(s.cancellation_rate, 15, 30)) }}>
-                              {formatPct(s.cancellation_rate)}
-                            </td>
+                <Panel icon={BarChart3} title="Desempeño por profesional">
+                  {data.premium.staff_performance.length === 0 ? (
+                    <EmptyState text="Sin reservas asignadas a profesionales en el período." />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr style={{ background: "#f5f4fc" }}>
+                            <th className="px-3 py-2.5 font-bold" style={{ color: INK }}>
+                              Profesional
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              <span className="inline-flex items-center gap-1.5">
+                                <Calendar size={13} style={{ color: TONE.blue.solid }} />
+                                Reservas
+                              </span>
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              <span className="inline-flex items-center gap-1.5">
+                                <User size={13} style={{ color: TONE.green.solid }} />
+                                Tasa no-show
+                              </span>
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              <span className="inline-flex items-center gap-1.5">
+                                <XCircle size={13} style={{ color: TONE.red.solid }} />
+                                Tasa cancelación
+                              </span>
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </StatPanel>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: PANEL_BORDER }}>
+                          {data.premium.staff_performance.map((s) => (
+                            <tr key={s.staff_id}>
+                              <td className="px-3 py-2.5">
+                                <div className="flex items-center gap-2.5">
+                                  <span
+                                    className="flex h-7 w-7 shrink-0 items-center justify-center text-[11px] font-extrabold"
+                                    style={{ background: TONE.indigo.tint, color: TONE.indigo.solid }}
+                                  >
+                                    {getInitials(s.name)}
+                                  </span>
+                                  <span className="font-bold" style={{ color: INK }}>
+                                    {s.name}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-2.5 text-right font-extrabold tabular-nums" style={{ color: TONE.blue.solid }}>
+                                {s.total}
+                              </td>
+                              <td className="px-3 py-2.5 text-right font-extrabold tabular-nums" style={{ color: TONE.green.solid }}>
+                                {formatPct(s.no_show_rate)}
+                              </td>
+                              <td className="px-3 py-2.5 text-right font-extrabold tabular-nums" style={{ color: TONE.red.solid }}>
+                                {formatPct(s.cancellation_rate)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Panel>
 
-              {multiBranch ? (
-                <StatPanel title="Desempeño por sucursal">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {data.premium.branch_activity.map((b) => (
-                      <div key={b.branch_id} className="border p-3" style={{ borderColor: "var(--border-color)", borderRadius: 3 }}>
-                        <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                          {b.name}
-                        </p>
-                        <p className="mt-1 text-lg font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
-                          {b.total_appointments} <span className="text-xs font-normal" style={{ color: "var(--text-muted)" }}>reservas</span>
-                        </p>
-                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                          {b.active_customers} clientes activos
-                        </p>
+                {multiBranch ? (
+                  <Panel icon={Building2} title="Desempeño por sucursal">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {data.premium.branch_activity.map((b) => (
+                        <div key={b.branch_id} className="p-3" style={{ border: `1px solid ${PANEL_BORDER}`, background: TONE.blue.tint }}>
+                          <p className="truncate text-sm font-bold" style={{ color: INK }}>
+                            {b.name}
+                          </p>
+                          <p className="mt-1 text-lg font-extrabold tabular-nums" style={{ color: INK }}>
+                            {b.total_appointments}{" "}
+                            <span className="text-xs font-normal" style={{ color: MUTED }}>
+                              reservas
+                            </span>
+                          </p>
+                          <p className="text-xs" style={{ color: MUTED }}>
+                            {b.active_customers} clientes activos
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </Panel>
+                ) : null}
+
+                {data.premium.group_capacity.length > 0 ? (
+                  <Panel icon={ClipboardList} title="Cupos ocupados en reservas grupales">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr style={{ background: "#f5f4fc" }}>
+                            <th className="px-3 py-2.5 font-bold" style={{ color: INK }}>
+                              Servicio
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              Sesiones
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              Cupo/sesión
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              Ocupados
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              % Ocupación
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: PANEL_BORDER }}>
+                          {data.premium.group_capacity.map((g) => (
+                            <tr key={g.service_id}>
+                              <td className="px-3 py-2.5 font-bold" style={{ color: INK }}>
+                                {g.name}
+                              </td>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: INK }}>
+                                {g.sessions}
+                              </td>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: INK }}>
+                                {g.capacity_per_session}
+                              </td>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: INK }}>
+                                {g.total_booked}
+                              </td>
+                              <td className="px-3 py-2.5 text-right font-extrabold tabular-nums" style={{ color: toneTextColor(rateTone(100 - g.occupancy_rate, 40, 70)) }}>
+                                {formatPct(g.occupancy_rate)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Panel>
+                ) : null}
+              </>
+            ) : (
+              <LockedBlock
+                requiredPlanLabel="Premium"
+                description="Ingresos estimados por servicio/profesional/sucursal, desempeño por profesional y por sucursal, y cupos ocupados en reservas grupales."
+              />
+            )}
+          </SectionShell>
+
+          {/* ===== SECCIÓN 3: MARKETING Y SUSCRIPCIÓN ===== */}
+          <SectionShell
+            icon={Megaphone}
+            iconVariant="solid"
+            tone="violet"
+            title="Marketing y suscripción"
+            subtitle="Cupos, campañas y add-ons"
+            action={premiumUnlocked ? <SectionExportButton tables={marketingTables} filename="marketing_y_suscripcion.csv" /> : undefined}
+          >
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Panel icon={WhatsAppGlyph} iconVariant="solid" tone="green" title="Cupo WhatsApp confirmación + recordatorio">
+                <UsageBar label="Mensajes usados este mes" usage={data.basic.wa_confirmacion_usage} tone="green" />
+              </Panel>
+
+              <Panel icon={Puzzle} iconVariant="solid" tone="violet" title="Add-ons activos">
+                {data.basic.addons.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-6">
+                    <div className="relative flex h-16 w-16 items-center justify-center" style={{ background: TONE.violet.tint, color: TONE.violet.solid }}>
+                      <PackageOpen size={30} strokeWidth={1.8} />
+                      <Sparkles size={14} className="absolute -right-1.5 -top-1.5" />
+                      <Sparkles size={10} className="absolute -bottom-1 -left-1.5" />
+                    </div>
+                    <p className="text-sm" style={{ color: MUTED }}>
+                      No tienes add-ons activos.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y" style={{ borderColor: PANEL_BORDER }}>
+                    {data.basic.addons.map((a) => (
+                      <div key={a.addon_key} className="flex items-center justify-between gap-2 py-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold" style={{ color: INK }}>
+                            {a.name}
+                          </p>
+                          <p className="text-[11px]" style={{ color: MUTED }}>
+                            {a.quantity} unidad{a.quantity === 1 ? "" : "es"} · {a.billing_cycle}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-sm font-extrabold tabular-nums" style={{ color: INK }}>
+                          Saldo: {a.balance}
+                        </span>
                       </div>
                     ))}
                   </div>
-                </StatPanel>
-              ) : null}
+                )}
+              </Panel>
+            </div>
 
-              {data.premium.group_capacity.length > 0 ? (
-                <StatPanel title="Cupos ocupados en reservas grupales">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr style={{ color: "var(--text-muted)" }}>
-                          <th className="pb-2 font-semibold">Servicio</th>
-                          <th className="pb-2 text-right font-semibold">Sesiones</th>
-                          <th className="pb-2 text-right font-semibold">Cupo/sesión</th>
-                          <th className="pb-2 text-right font-semibold">Ocupados</th>
-                          <th className="pb-2 text-right font-semibold">% Ocupación</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-                        {data.premium.group_capacity.map((g) => (
-                          <tr key={g.service_id}>
-                            <td className="py-1.5 font-medium" style={{ color: "var(--text-main)" }}>
-                              {g.name}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {g.sessions}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {g.capacity_per_session}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {g.total_booked}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: toneColor(rateTone(100 - g.occupancy_rate, 40, 70)) }}>
-                              {formatPct(g.occupancy_rate)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </StatPanel>
-              ) : null}
-            </>
-          ) : (
-            <LockedBlock
-              requiredPlanLabel="Premium"
-              description="Ingresos estimados por servicio/profesional/sucursal, desempeño por profesional y por sucursal, y cupos ocupados en reservas grupales."
-            />
-          )}
+            {businessUnlocked && data.business ? (
+              <>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <Panel icon={WhatsAppGlyph} iconVariant="solid" tone="green" title="Cupo campañas WhatsApp">
+                    <UsageBar label="Mensajes usados este mes" usage={data.business.campanas_wa_usage} tone="green" />
+                  </Panel>
+                  <Panel icon={Mail} iconVariant="solid" tone="blue" title="Cupo campañas Email">
+                    <UsageBar label="Emails usados este mes" usage={data.business.emails_campana_usage} tone="blue" />
+                  </Panel>
+                </div>
 
-          {/* ===== SECCIÓN 3: MARKETING Y SUSCRIPCIÓN ===== */}
-          <SectionHeader
-            title="Marketing y suscripción"
-            description="Cupos, campañas y add-ons"
-            action={premiumUnlocked ? <SectionExportButton tables={marketingTables} filename="marketing_y_suscripcion.csv" /> : undefined}
-          />
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <StatPanel title="Cupo WhatsApp confirmación + recordatorio">
-              <UsageBar label="Mensajes usados este mes" usage={data.basic.wa_confirmacion_usage} />
-            </StatPanel>
-
-            <StatPanel title="Add-ons activos">
-              {data.basic.addons.length === 0 ? (
-                <EmptyState text="No tienes add-ons activos." />
-              ) : (
-                <div className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-                  {data.basic.addons.map((a) => (
-                    <div key={a.addon_key} className="flex items-center justify-between gap-2 py-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium" style={{ color: "var(--text-main)" }}>
-                          {a.name}
-                        </p>
-                        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                          {a.quantity} unidad{a.quantity === 1 ? "" : "es"} · {a.billing_cycle}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: "var(--text-main)" }}>
-                        Saldo: {a.balance}
+                <Panel
+                  icon={Calendar}
+                  iconVariant="solid"
+                  tone="violet"
+                  title="Historial de campañas"
+                  meta={
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-semibold" style={{ color: INK }}>
+                      <span>
+                        Enviados: <b className="tabular-nums">{data.business.campaign_history.totals.sent}</b>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2" style={{ borderRadius: 9999, background: TONE.red.solid }} />
+                        Fallidos: <b className="tabular-nums">{data.business.campaign_history.totals.failed}</b>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2" style={{ borderRadius: 9999, background: TONE.amber.solid }} />
+                        Omitidos: <b className="tabular-nums">{data.business.campaign_history.totals.skipped}</b>
                       </span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </StatPanel>
-          </div>
-
-          {businessUnlocked && data.business ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <StatPanel title="Cupo campañas WhatsApp">
-                  <UsageBar label="Mensajes usados este mes" usage={data.business.campanas_wa_usage} />
-                </StatPanel>
-                <StatPanel title="Cupo campañas Email">
-                  <UsageBar label="Emails usados este mes" usage={data.business.emails_campana_usage} />
-                </StatPanel>
-              </div>
-
-              <StatPanel
-                title="Historial de campañas"
-                description={`Enviados: ${data.business.campaign_history.totals.sent} · Fallidos: ${data.business.campaign_history.totals.failed} · Omitidos: ${data.business.campaign_history.totals.skipped}`}
-              >
-                {data.business.campaign_history.rows.length === 0 ? (
-                  <EmptyState text="Sin campañas enviadas en el período seleccionado." />
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr style={{ color: "var(--text-muted)" }}>
-                          <th className="pb-2 font-semibold">Campaña</th>
-                          <th className="pb-2 font-semibold">Canal</th>
-                          <th className="pb-2 text-right font-semibold">Enviados</th>
-                          <th className="pb-2 text-right font-semibold">Fallidos</th>
-                          <th className="pb-2 text-right font-semibold">Omitidos</th>
-                          <th className="pb-2 text-right font-semibold">Fecha</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-                        {data.business.campaign_history.rows.map((c) => (
-                          <tr key={c.id}>
-                            <td className="py-1.5 font-medium" style={{ color: "var(--text-main)" }}>
-                              {c.campaign_name || "Sin nombre"}
-                            </td>
-                            <td className="py-1.5 capitalize" style={{ color: "var(--text-main)" }}>
-                              {c.channel}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {c.sent_count}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {c.failed_count}
-                            </td>
-                            <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-main)" }}>
-                              {c.skipped_count}
-                            </td>
-                            <td className="py-1.5 text-right" style={{ color: "var(--text-muted)" }}>
-                              {formatDateCL(c.created_at)}
-                            </td>
+                  }
+                >
+                  {data.business.campaign_history.rows.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-2 border border-dashed py-8" style={{ borderColor: PANEL_BORDER }}>
+                      <Inbox size={26} style={{ color: "#c4b5fd" }} />
+                      <p className="text-sm" style={{ color: MUTED }}>
+                        Sin campañas enviadas en el período seleccionado.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr style={{ background: "#f5f4fc" }}>
+                            <th className="px-3 py-2.5 font-bold" style={{ color: INK }}>
+                              Campaña
+                            </th>
+                            <th className="px-3 py-2.5 font-bold" style={{ color: INK }}>
+                              Canal
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              Enviados
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              Fallidos
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              Omitidos
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-bold" style={{ color: INK }}>
+                              Fecha
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </StatPanel>
-            </>
-          ) : (
-            <LockedBlock requiredPlanLabel="Business" description="Cupos de campañas WhatsApp/Email e historial de campañas enviadas." />
-          )}
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: PANEL_BORDER }}>
+                          {data.business.campaign_history.rows.map((c) => (
+                            <tr key={c.id}>
+                              <td className="px-3 py-2.5 font-bold" style={{ color: INK }}>
+                                {c.campaign_name || "Sin nombre"}
+                              </td>
+                              <td className="px-3 py-2.5 capitalize" style={{ color: INK }}>
+                                {c.channel}
+                              </td>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: INK }}>
+                                {c.sent_count}
+                              </td>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: INK }}>
+                                {c.failed_count}
+                              </td>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: INK }}>
+                                {c.skipped_count}
+                              </td>
+                              <td className="px-3 py-2.5 text-right" style={{ color: MUTED }}>
+                                {formatDateCL(c.created_at)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Panel>
+              </>
+            ) : (
+              <LockedBlock requiredPlanLabel="Business" description="Cupos de campañas WhatsApp/Email e historial de campañas enviadas." />
+            )}
 
-          {premiumUnlocked && data.premium ? (
-            <StatPanel title="Entrega WhatsApp Marketing" badge={<RealDataBadge />}>
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                <StatCard label="Entregados" value={String(data.premium.whatsapp_marketing_delivery.delivered + data.premium.whatsapp_marketing_delivery.read)} />
-                <StatCard label="Fallidos" value={String(data.premium.whatsapp_marketing_delivery.failed + data.premium.whatsapp_marketing_delivery.undelivered)} />
-                <StatCard label="Total enviados" value={String(data.premium.whatsapp_marketing_delivery.total)} />
-                <StatCard label="Tasa de entrega" value={formatPct(data.premium.whatsapp_marketing_delivery.delivery_rate)} />
-              </div>
-            </StatPanel>
-          ) : (
-            <LockedBlock requiredPlanLabel="Premium" description="Tasa de entrega real de WhatsApp Marketing por destinatario." />
-          )}
+            {premiumUnlocked && data.premium ? (
+              <Panel icon={WhatsAppGlyph} iconVariant="solid" tone="green" title="Entrega WhatsApp Marketing" badge={<RealDataBadge />}>
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                  <Kpi
+                    icon={Send}
+                    tone="green"
+                    label="Entregados"
+                    value={String(data.premium.whatsapp_marketing_delivery.delivered + data.premium.whatsapp_marketing_delivery.read)}
+                  />
+                  <Kpi
+                    icon={XCircle}
+                    tone="red"
+                    label="Fallidos"
+                    value={String(data.premium.whatsapp_marketing_delivery.failed + data.premium.whatsapp_marketing_delivery.undelivered)}
+                  />
+                  <Kpi icon={Mail} tone="blue" label="Total enviados" value={String(data.premium.whatsapp_marketing_delivery.total)} />
+                  <Kpi icon={Clock} tone="amber" label="Tasa de entrega" value={formatPct(data.premium.whatsapp_marketing_delivery.delivery_rate)} />
+                </div>
+              </Panel>
+            ) : (
+              <LockedBlock requiredPlanLabel="Premium" description="Tasa de entrega real de WhatsApp Marketing por destinatario." />
+            )}
+          </SectionShell>
         </>
       ) : null}
     </div>
