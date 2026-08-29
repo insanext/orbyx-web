@@ -40,6 +40,10 @@ export function PhoneCountryInput({
       ? COUNTRIES.filter((c) => allowedCountries.includes(c.iso2))
       : COUNTRIES;
 
+  // Cuando solo hay un país disponible (ej. reserva pública restringida a
+  // Chile) no tiene sentido abrir un buscador de países sin nada que elegir.
+  const isFixedCountry = availableCountries.length === 1;
+
   useEffect(() => {
     if (open) {
       setSearch("");
@@ -56,37 +60,66 @@ export function PhoneCountryInput({
   return (
     <div style={{ position: "relative" }}>
       <div className={isLight ? "flex gap-2" : undefined} style={isLight ? undefined : { display: "flex", gap: 8 }}>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => setOpen((v) => !v)}
-          className={
-            isLight
-              ? "flex h-11 flex-shrink-0 items-center gap-1.5 rounded-xl border border-indigo-100 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-3.5"
-              : undefined
-          }
-          style={
-            isLight
-              ? { cursor: disabled ? "not-allowed" : "pointer" }
-              : {
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "12px 10px",
-                  background: "#1e293b",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  borderRadius: 10,
-                  color: "#f1f5f9",
-                  fontSize: 14,
-                  cursor: disabled ? "not-allowed" : "pointer",
-                  flexShrink: 0,
-                }
-          }
-        >
-          <span style={{ fontSize: 18, lineHeight: 1 }}>{flagEmoji(country.iso2)}</span>
-          <span>+{country.dialCode}</span>
-          <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
-        </button>
+        {isFixedCountry ? (
+          <div
+            className={
+              isLight
+                ? "flex h-11 flex-shrink-0 items-center gap-1.5 rounded-none border border-indigo-100 bg-white px-3 text-sm text-slate-700 md:h-12 md:px-3.5"
+                : undefined
+            }
+            style={
+              isLight
+                ? undefined
+                : {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "12px 10px",
+                    background: "#1e293b",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    borderRadius: 10,
+                    color: "#f1f5f9",
+                    fontSize: 14,
+                    flexShrink: 0,
+                  }
+            }
+          >
+            <span style={{ fontSize: 18, lineHeight: 1 }}>{flagEmoji(country.iso2)}</span>
+            <span>+{country.dialCode}</span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setOpen((v) => !v)}
+            className={
+              isLight
+                ? "flex h-11 flex-shrink-0 items-center gap-1.5 rounded-none border border-indigo-100 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 md:h-12 md:px-3.5"
+                : undefined
+            }
+            style={
+              isLight
+                ? { cursor: disabled ? "not-allowed" : "pointer" }
+                : {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "12px 10px",
+                    background: "#1e293b",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    borderRadius: 10,
+                    color: "#f1f5f9",
+                    fontSize: 14,
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    flexShrink: 0,
+                  }
+            }
+          >
+            <span style={{ fontSize: 18, lineHeight: 1 }}>{flagEmoji(country.iso2)}</span>
+            <span>+{country.dialCode}</span>
+            <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
+          </button>
+        )}
 
         <input
           type="tel"
@@ -98,7 +131,7 @@ export function PhoneCountryInput({
           autoComplete="tel-national"
           className={
             isLight
-              ? "h-11 min-w-0 flex-1 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
+              ? "h-11 min-w-0 flex-1 rounded-none border border-indigo-100 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 md:h-12 md:px-4"
               : undefined
           }
           style={
@@ -129,7 +162,7 @@ export function PhoneCountryInput({
           <div
             className={
               isLight
-                ? "absolute left-0 top-[calc(100%+6px)] z-50 flex max-h-80 w-[300px] max-w-[90vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_28px_90px_-38px_rgba(15,23,42,0.55)]"
+                ? "absolute left-0 top-[calc(100%+6px)] z-50 flex max-h-80 w-[300px] max-w-[90vw] flex-col overflow-hidden rounded-none border border-slate-200 bg-white shadow-[0_28px_90px_-38px_rgba(15,23,42,0.55)]"
                 : undefined
             }
             style={
@@ -164,7 +197,7 @@ export function PhoneCountryInput({
                 placeholder="Buscar país"
                 className={
                   isLight
-                    ? "w-full rounded-lg border border-indigo-100 bg-white px-2.5 py-2 text-[13px] text-slate-900 outline-none transition focus:border-indigo-400"
+                    ? "w-full rounded-none border border-indigo-100 bg-white px-2.5 py-2 text-[13px] text-slate-900 outline-none transition focus:border-indigo-400"
                     : undefined
                 }
                 style={

@@ -429,7 +429,7 @@ function StaffPhotoPreview({
 }) {
   return (
     <div className="relative group">
-      <div className="h-12 w-12 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 md:h-14 md:w-14">
+      <div className="h-12 w-12 overflow-hidden rounded-none border border-slate-200 bg-slate-100 md:h-14 md:w-14">
         {staff.photo_url ? (
           <img
             src={staff.photo_url}
@@ -450,7 +450,7 @@ function StaffPhotoPreview({
             : "absolute left-full top-1/2 ml-5"
         }`}
       >
-        <div className="w-[320px] overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_28px_80px_-35px_rgba(15,23,42,0.45)]">
+        <div className="w-[320px] overflow-hidden rounded-none border border-slate-200 bg-white shadow-[0_28px_80px_-35px_rgba(15,23,42,0.45)]">
           <div className="h-[220px] bg-slate-100">
             {staff.photo_url ? (
               <img
@@ -534,16 +534,16 @@ function BusinessBannerCard({
   const showBranchSelector = branches.length > 1;
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:rounded-[28px] md:p-7">
+    <div className="min-w-0 overflow-hidden rounded-none border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:rounded-none md:p-7">
       <div className="flex min-w-0 items-start gap-4 md:gap-5">
         {business?.logo_url ? (
           <img
             src={business.logo_url}
             alt={business?.name || slug || "Logo"}
-            className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28"
+            className="h-20 w-20 shrink-0 rounded-none object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28"
           />
         ) : (
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-2xl font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28 md:text-3xl">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-none bg-slate-950 text-2xl font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28 md:text-3xl">
             {getBusinessInitials(business?.name || slug)}
           </div>
         )}
@@ -567,7 +567,7 @@ function BusinessBannerCard({
               <select
                 value={selectedBranchId}
                 onChange={(e) => onBranchChange(e.target.value)}
-                className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
+                className="h-11 w-full rounded-none border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
               >
                 {branches.map((branch) => (
                   <option key={branch.id} value={branch.id}>
@@ -605,7 +605,7 @@ function CatalogSidebar({
   onCategoryChange: (key: string) => void;
 }) {
   return (
-    <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+    <div className="space-y-4 rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
       <div className="relative">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -625,7 +625,7 @@ function CatalogSidebar({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="¿Qué servicio buscas?"
-          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white"
+          className="h-11 w-full rounded-none border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white"
         />
       </div>
 
@@ -633,7 +633,7 @@ function CatalogSidebar({
         <button
           type="button"
           onClick={() => onCategoryChange("todos")}
-          className={`flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2.5 text-left text-sm transition lg:w-full lg:rounded-l-none lg:rounded-r-xl ${
+          className={`flex shrink-0 items-center gap-2 rounded-none px-3.5 py-2.5 text-left text-sm transition lg:w-full lg:rounded-l-none lg:rounded-r-none ${
             activeCategoryKey === "todos"
               ? "border-l-[3px] border-indigo-600 bg-[#EDEBFB] font-semibold text-indigo-700"
               : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
@@ -647,7 +647,7 @@ function CatalogSidebar({
             key={category.key}
             type="button"
             onClick={() => onCategoryChange(category.key)}
-            className={`flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2.5 text-left text-sm transition lg:w-full lg:rounded-l-none lg:rounded-r-xl ${
+            className={`flex shrink-0 items-center gap-2 rounded-none px-3.5 py-2.5 text-left text-sm transition lg:w-full lg:rounded-l-none lg:rounded-r-none ${
               activeCategoryKey === category.key
                 ? "border-l-[3px] border-indigo-600 bg-[#EDEBFB] font-semibold text-indigo-700"
                 : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
@@ -676,7 +676,7 @@ function ServiceCatalogAccordion({
 }) {
   if (categories.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+      <div className="rounded-none border border-slate-100 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
         No hay servicios disponibles.
       </div>
     );
@@ -690,7 +690,7 @@ function ServiceCatalogAccordion({
         return (
           <div
             key={category.key}
-            className="overflow-hidden rounded-2xl border border-slate-100 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.2)]"
+            className="overflow-hidden rounded-none border border-slate-100 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.2)]"
           >
             <button
               type="button"
@@ -813,7 +813,7 @@ function BusinessLocationPanel({
   const hasHours = weeklyHours.some((row) => row.enabled);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)]">
+    <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)]">
       {instagramUrl || facebookUrl ? (
         <div className="flex items-center justify-end gap-2 border-b border-slate-100 px-3 py-2">
           {instagramUrl ? (
@@ -822,7 +822,7 @@ function BusinessLocationPanel({
               target="_blank"
               rel="noreferrer"
               aria-label="Instagram"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              className="flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -845,7 +845,7 @@ function BusinessLocationPanel({
               target="_blank"
               rel="noreferrer"
               aria-label="Facebook"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              className="flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -1006,7 +1006,7 @@ function ProfessionalsPanel({
   onSeeAll: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] md:p-5">
+    <div className="rounded-none border border-slate-200 bg-white p-4 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] md:p-5">
       <p className="mb-3 text-sm font-bold text-slate-950">Profesionales</p>
 
       {!hasSelectedService ? (
@@ -1020,7 +1020,7 @@ function ProfessionalsPanel({
           <div className="space-y-3">
             {staff.slice(0, 6).map((member) => (
               <div key={member.id} className="flex items-center gap-3">
-                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-none border border-slate-200 bg-slate-100">
                   {member.photo_url ? (
                     <img
                       src={member.photo_url}
@@ -1064,7 +1064,7 @@ function ProfessionalsPanel({
 
 function OrbyxPromoFooter() {
   return (
-    <div className="mt-6 flex flex-col items-center gap-2.5 rounded-2xl bg-[#F0EEFC] px-5 py-4 text-center shadow-sm sm:flex-row sm:justify-center sm:text-left md:mt-10">
+    <div className="mt-6 flex flex-col items-center gap-2.5 rounded-none bg-[#F0EEFC] px-5 py-4 text-center shadow-sm sm:flex-row sm:justify-center sm:text-left md:mt-10">
       <img src="/orbyx-mark.png" alt="Orbyx" className="h-6 w-6 shrink-0" />
       <p className="text-xs text-slate-600 sm:text-sm">
         Gestiona tu negocio y reservas de forma fácil y profesional con Orbyx.{" "}
@@ -2399,7 +2399,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
                 <div className="min-w-0 space-y-4">
                   {loadingServices ? (
-                    <div className="rounded-2xl border border-slate-100 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+                    <div className="rounded-none border border-slate-100 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
                       Cargando servicios...
                     </div>
                   ) : (
@@ -2426,7 +2426,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     <button
                       type="button"
                       onClick={goToBooking}
-                      className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95"
+                      className="flex h-12 w-full items-center justify-center gap-2 rounded-none bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95"
                     >
                       Ir a Agendar
                       <span aria-hidden="true">→</span>
@@ -2486,9 +2486,9 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:mt-6 md:gap-4 xl:grid-cols-[300px_1fr] xl:gap-6">
-          <div className="space-y-3 md:space-y-4 xl:space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[26px] md:p-4">
+        <div className="mt-4 grid gap-3 md:mt-6 md:gap-4">
+          <div className="space-y-3 md:space-y-4">
+            <div className="rounded-none border border-slate-200 bg-white p-3.5 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4">
               <button
                 type="button"
                 onClick={backToCatalog}
@@ -2497,7 +2497,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 <span aria-hidden="true">←</span> Volver al catálogo
               </button>
 
-              <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-2xl md:p-4">
+              <div className="rounded-none border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-none md:p-4">
                 <p className="text-sm font-semibold text-slate-900">
                   {selectedService.name}
                 </p>
@@ -2519,7 +2519,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               </div>
             </div>
 
-            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[26px] md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] xl:min-h-[860px]">
+            <div className="flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
               <div className="space-y-2.5 md:space-y-4">
                                 {selectedService ? (
                   <div>
@@ -2533,7 +2533,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     </div>
 
                     {loadingStaff ? (
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                      <div className="rounded-none border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
                         Cargando profesionales...
                       </div>
                     ) : (
@@ -2544,14 +2544,14 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                             setSelectedStaffId("");
                             setSelectedSlot(null);
                           }}
-                          className={`w-full rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer md:rounded-2xl md:p-5 ${
+                          className={`w-full rounded-none border p-3 text-left transition-all duration-200 cursor-pointer md:rounded-none md:p-5 ${
   selectedStaffId === ""
     ? "border-indigo-600 bg-indigo-50 shadow-md scale-[1.01]"
     : "border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm hover:scale-[1.01]"
 }`}
                         >
                           <div className="flex items-center gap-3 md:gap-5">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700 md:h-20 md:w-20 md:rounded-2xl md:text-2xl">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-none border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700 md:h-20 md:w-20 md:rounded-none md:text-2xl">
                               *
                             </div>
 
@@ -2574,14 +2574,14 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                               setSelectedStaffId(staff.id);
                               setSelectedSlot(null);
                             }}
-                            className={`w-full rounded-xl border p-3 text-left transition md:rounded-2xl md:p-5 ${
+                            className={`w-full rounded-none border p-3 text-left transition md:rounded-none md:p-5 ${
                               selectedStaffId === staff.id
                                 ? "border-indigo-500 bg-indigo-50 shadow-sm"
                                 : "border-slate-200 bg-white hover:border-slate-300"
                             }`}
                           >
                             <div className="flex items-center gap-3 md:gap-5">
-                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 md:h-20 md:w-20 md:rounded-2xl">
+                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-none border border-slate-200 bg-slate-100 md:h-20 md:w-20 md:rounded-none">
                                 {staff.photo_url ? (
                                   <img
                                     src={staff.photo_url}
@@ -2623,7 +2623,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                               setStaffSearchQuery("");
                               setShowStaffDrawer(true);
                             }}
-                            className="flex h-11 w-full items-center justify-center rounded-xl border border-indigo-200 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm md:h-12 md:rounded-2xl"
+                            className="flex h-11 w-full items-center justify-center rounded-none border border-indigo-200 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm md:h-12 md:rounded-none"
                           >
                             Ver todos los profesionales ({staffOptions.length})
                           </button>
@@ -2638,13 +2638,13 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
           </div>
 
-          <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-[26px] md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] xl:min-h-[860px]">
+          <div className="flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
             <div className="mb-3 flex flex-col gap-3 md:mb-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => moveSelectedWeek(-7)}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 md:h-11 md:w-11 md:rounded-2xl"
+                  className="flex h-10 w-10 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 md:h-11 md:w-11 md:rounded-none"
                   aria-label="Semana anterior"
                 >
                   ‹
@@ -2653,7 +2653,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 <button
                   type="button"
                   onClick={() => setShowDatePopover((current) => !current)}
-                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 text-xs font-bold text-slate-950 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 sm:flex-none md:h-11 md:rounded-2xl md:px-4 md:text-sm"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-none border border-indigo-200 bg-white px-3 text-xs font-bold text-slate-950 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 sm:flex-none md:h-11 md:rounded-none md:px-4 md:text-sm"
                 >
                   <span>{weekRangeLabel}</span>
                   <svg
@@ -2675,14 +2675,14 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 <button
                   type="button"
                   onClick={() => moveSelectedWeek(7)}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 md:h-11 md:w-11 md:rounded-2xl"
+                  className="flex h-10 w-10 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 md:h-11 md:w-11 md:rounded-none"
                   aria-label="Semana siguiente"
                 >
                   ›
                 </button>
 
                 {showDatePopover ? (
-                  <div className="absolute left-0 top-14 z-40 w-[310px] overflow-hidden rounded-[26px] border border-slate-200 bg-white p-3 shadow-[0_28px_90px_-38px_rgba(15,23,42,0.55)] [&_.react-calendar]:w-full [&_.react-calendar]:max-w-full [&_.react-calendar]:border-0">
+                  <div className="absolute left-0 top-14 z-40 w-[310px] overflow-hidden rounded-none border border-slate-200 bg-white p-3 shadow-[0_28px_90px_-38px_rgba(15,23,42,0.55)] [&_.react-calendar]:w-full [&_.react-calendar]:max-w-full [&_.react-calendar]:border-0">
                     <Calendar
                       minDate={new Date()}
                       onChange={(value: unknown) => {
@@ -2708,7 +2708,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
             </div>
 
             {!selectedService ? (
-              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm">
+              <div className="mb-6 rounded-none border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm">
                 <div>
                   <p className="text-sm font-semibold text-amber-900">
                     Primero debes seleccionar un servicio
@@ -2731,7 +2731,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 return (
                   <div
                     key={dateKey}
-                    className={`rounded-2xl border p-3 transition ${
+                    className={`rounded-none border p-3 transition ${
                       isToday
   ? "border-sky-500 bg-sky-100 shadow-md"
                         : isClosedDay
@@ -2783,7 +2783,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
     Selecciona un servicio.
   </p>
 ) : slots.length === 0 ? (
-  <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-rose-100 bg-white/35 px-3 text-center">
+  <div className="flex min-h-[360px] items-center justify-center rounded-none border border-rose-100 bg-white/35 px-3 text-center">
     <div>
       <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-500">
         <svg
@@ -2821,7 +2821,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
             });
           }, 120);
         }}
-className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2 rounded-xl border px-2.5 py-1.5 text-left transition md:min-h-[34px] md:flex-col md:justify-center md:px-2 md:py-1 md:text-center ${
+className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2 rounded-none border px-2.5 py-1.5 text-left transition md:min-h-[34px] md:flex-col md:justify-center md:px-2 md:py-1 md:text-center ${
   selectedSlot?.slot_start === slot.slot_start
     ? "border-indigo-700 bg-indigo-700 text-white shadow-sm"
     : slot.is_group && (slot.available_spots || 0) === 0
@@ -2894,7 +2894,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         setSelectedDate(dateObj);
                         setSelectedSlot(null);
                       }}
-                      className={`min-w-[68px] snap-start rounded-2xl border px-2.5 py-2 text-left transition ${
+                      className={`min-w-[68px] snap-start rounded-none border px-2.5 py-2 text-left transition ${
                         isActiveMobileDay
                           ? "border-indigo-600 bg-indigo-600 text-white shadow-[0_14px_28px_-20px_rgba(79,70,229,0.85)]"
                           : isClosedDay
@@ -2935,7 +2935,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 })}
               </div>
 
-              <div className="rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm">
+              <div className="rounded-none border border-slate-200 bg-white p-3 shadow-sm">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
                   <p className="text-sm font-bold text-slate-950">
@@ -2962,16 +2962,16 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     {[0, 1, 2, 3].map((item) => (
                       <div
                         key={item}
-                        className="h-[54px] animate-pulse rounded-2xl border border-slate-100 bg-slate-100"
+                        className="h-[54px] animate-pulse rounded-none border border-slate-100 bg-slate-100"
                       />
                     ))}
                   </div>
                 ) : !selectedService ? (
-                  <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+                  <div className="rounded-none border border-amber-100 bg-amber-50 px-4 py-4 text-sm text-amber-800">
                     Selecciona un servicio para ver horarios disponibles.
                   </div>
                 ) : mobileSelectedDateSlots.length === 0 ? (
-                  <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-5 text-center">
+                  <div className="rounded-none border border-rose-100 bg-rose-50 px-4 py-5 text-center">
                     <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-rose-200" />
                     <p className="text-sm font-bold text-rose-700">
                       Sin horario disponible
@@ -2999,7 +2999,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                             });
                           }, 120);
                         }}
-                        className={`min-h-[54px] rounded-2xl border px-3 py-2.5 text-center transition ${
+                        className={`min-h-[54px] rounded-none border px-3 py-2.5 text-center transition ${
                           selectedSlot?.slot_start === slot.slot_start
                             ? "border-indigo-700 bg-indigo-700 text-white shadow-[0_16px_28px_-20px_rgba(79,70,229,0.9)]"
                             : slot.is_group && (slot.available_spots || 0) === 0
@@ -3031,7 +3031,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             </div>
 
 {selectedService && noSlotsThisWeek ? (
-  <div className="mt-4 rounded-[22px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-3.5 shadow-sm md:mt-6 md:rounded-[26px] md:p-5">
+  <div className="mt-4 rounded-none border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-3.5 shadow-sm md:mt-6 md:rounded-none md:p-5">
 
     {loadingNextSlots ? (
   <div className="flex items-center gap-2 animate-pulse">
@@ -3056,7 +3056,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
       {nextAvailableDays.map((day) => (
         <div
           key={day.date}
-          className="rounded-2xl border border-white bg-white/90 p-3 shadow-sm md:p-4"
+          className="rounded-none border border-white bg-white/90 p-3 shadow-sm md:p-4"
         >
           <p className="text-sm font-semibold text-slate-900">
             {formatFullDate(day.slots[0].slot_start)}
@@ -3080,7 +3080,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     });
                   }, 120);
                 }}
-                className="min-h-10 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50"
+                className="min-h-10 rounded-none border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50"
               >
                 {formatHour(slot.slot_start)}
               </button>
@@ -3102,7 +3102,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
       setMobileSelectedDateKey(formatDate(nextSlotDate));
       setSelectedSlot(null);
     }}
-    className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90 sm:w-auto"
+    className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-none bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90 sm:w-auto"
   >
     Ir a semana con disponibilidad
   </button>
@@ -3114,7 +3114,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             {selectedSlot ? (
               <div
                 ref={formRef}
-                className="mt-4 overflow-hidden rounded-[22px] border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 shadow-[0_24px_65px_-45px_rgba(79,70,229,0.55)] md:mt-6 md:rounded-[30px] md:shadow-[0_30px_80px_-45px_rgba(79,70,229,0.5)]"
+                className="mt-4 overflow-hidden rounded-none border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 shadow-[0_24px_65px_-45px_rgba(79,70,229,0.55)] md:mt-6 md:rounded-none md:shadow-[0_30px_80px_-45px_rgba(79,70,229,0.5)]"
               >
                 <div className="h-1.5 bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500" />
 
@@ -3133,7 +3133,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      <div className="rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-2xl md:px-4 md:py-3">
+                      <div className="rounded-none border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-none md:px-4 md:py-3">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 md:text-[11px] md:tracking-[0.16em]">
                           Fecha
                         </p>
@@ -3142,7 +3142,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         </p>
                       </div>
 
-                      <div className="rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-2xl md:px-4 md:py-3">
+                      <div className="rounded-none border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-none md:px-4 md:py-3">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 md:text-[11px] md:tracking-[0.16em]">
                           Hora
                         </p>
@@ -3152,7 +3152,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       </div>
 
                       {selectedService ? (
-                        <div className="rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-2xl md:px-4 md:py-3">
+                        <div className="rounded-none border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-none md:px-4 md:py-3">
                           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 md:text-[11px] md:tracking-[0.16em]">
                             Servicio
                           </p>
@@ -3163,7 +3163,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       ) : null}
 
                       {selectedStaffId ? (
-                        <div className="rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-2xl md:px-4 md:py-3">
+                        <div className="rounded-none border border-white/80 bg-white/90 px-3 py-2 shadow-sm md:rounded-none md:px-4 md:py-3">
                           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 md:text-[11px] md:tracking-[0.16em]">
                             Profesional
                           </p>
@@ -3182,7 +3182,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       required
                       value={customerData.name || ""}
                       onChange={(e) => updateCustomerField("name", e.target.value)}
-                      className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
+                      className="h-11 rounded-none border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-none md:px-4"
                     />
 
                     <PhoneCountryInput
@@ -3201,12 +3201,12 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       required
                       value={customerData.email || ""}
                       onChange={(e) => updateCustomerField("email", e.target.value)}
-                      className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:h-12 md:rounded-2xl md:px-4"
+                      className="h-11 rounded-none border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:h-12 md:rounded-none md:px-4"
                     />
 
                     {isVeterinaria && (
                       <div className="space-y-3 md:col-span-2">
-                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-3 md:p-4">
+                        <div className="rounded-none border border-emerald-100 bg-emerald-50/80 p-3 md:p-4">
                           <p className="text-sm font-semibold text-emerald-900">
                             Datos de la mascota
                           </p>
@@ -3243,7 +3243,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                       applyPetToForm(selected);
                                     }
                                   }}
-                                  className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-medium transition md:h-11 md:px-4 md:py-0 ${
+                                  className={`min-h-11 rounded-none border px-3 py-2 text-sm font-medium transition md:h-11 md:px-4 md:py-0 ${
                                     petMode === "existing"
                                       ? "border-emerald-600 bg-emerald-600 text-white"
                                       : "border-slate-300 bg-white text-slate-700 hover:border-emerald-300"
@@ -3260,7 +3260,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                     updateCustomerField("pet_name", "");
                                     updateCustomerField("pet_species", "");
                                   }}
-                                  className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-medium transition md:h-11 md:px-4 md:py-0 ${
+                                  className={`min-h-11 rounded-none border px-3 py-2 text-sm font-medium transition md:h-11 md:px-4 md:py-0 ${
                                     petMode === "new"
                                       ? "border-slate-900 bg-slate-900 text-white"
                                       : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
@@ -3287,7 +3287,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             setSelectedPetId(pet.id);
             applyPetToForm(pet);
           }}
-          className={`w-full rounded-2xl border p-3 text-left transition ${
+          className={`w-full rounded-none border p-3 text-left transition ${
             isSelected
               ? "border-emerald-600 bg-emerald-50 shadow-sm"
               : "border-slate-200 bg-white hover:border-emerald-300"
@@ -3325,7 +3325,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                               updateCustomerField("pet_name", e.target.value)
                             }
                             disabled={petMode === "existing" && pets.length > 0}
-                            className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400 md:h-12 md:rounded-2xl md:px-4"
+                            className="h-11 rounded-none border border-indigo-100 bg-white px-3.5 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400 md:h-12 md:rounded-none md:px-4"
                           />
 
                           <input
@@ -3336,14 +3336,14 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                               updateCustomerField("pet_species", e.target.value)
                             }
                             disabled={petMode === "existing" && pets.length > 0}
-                            className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400 md:h-12 md:rounded-2xl md:px-4"
+                            className="h-11 rounded-none border border-indigo-100 bg-white px-3.5 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-emerald-400 md:h-12 md:rounded-none md:px-4"
                           />
                         </div>
                       </div>
                     )}
 
                     {visibleSubtypeBookingFields.length > 0 ? (
-                      <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 md:col-span-2">
+                      <div className="space-y-3 rounded-none border border-indigo-100 bg-indigo-50/50 p-4 md:col-span-2">
                         <div>
                           <p className="text-sm font-semibold text-slate-900">
                             Datos de unidad/equipo
@@ -3369,7 +3369,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                   onChange={(e) =>
                                     updateCustomerField(field.key, e.target.value)
                                   }
-                                  className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
+                                  className="h-11 rounded-none border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-none md:px-4"
                                 >
                                   <option value="">
                                     {field.required
@@ -3398,7 +3398,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                 onChange={(e) =>
                                   updateCustomerField(field.key, e.target.value)
                                 }
-                                className="min-h-[88px] rounded-xl border border-indigo-100 bg-white px-3.5 py-3 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:min-h-[96px] md:rounded-2xl md:px-4"
+                                className="min-h-[88px] rounded-none border border-indigo-100 bg-white px-3.5 py-3 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:min-h-[96px] md:rounded-none md:px-4"
                               />
                             ) : (
                               <input
@@ -3413,7 +3413,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                 onChange={(e) =>
                                   updateCustomerField(field.key, e.target.value)
                                 }
-                                className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-2xl md:px-4"
+                                className="h-11 rounded-none border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:h-12 md:rounded-none md:px-4"
                               />
                             );
                           })}
@@ -3430,13 +3430,13 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         onChange={(e) =>
                           updateCustomerField(field.key, e.target.value)
                         }
-                        className="h-11 rounded-xl border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:h-12 md:rounded-2xl md:px-4"
+                        className="h-11 rounded-none border border-indigo-100 bg-white px-3.5 text-sm outline-none transition focus:border-indigo-400 md:col-span-2 md:h-12 md:rounded-none md:px-4"
                       />
                     ))}
                   </div>
 
                   {business?.deposit_required ? (
-                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 md:rounded-3xl md:p-5">
+                    <div className="mt-4 rounded-none border border-amber-200 bg-amber-50/70 p-4 md:rounded-none md:p-5">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
                         Depósito requerido para confirmar
                       </p>
@@ -3445,7 +3445,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         Transfiere a la siguiente cuenta y sube tu comprobante:
                       </p>
 
-                      <div className="mt-3 grid gap-1.5 rounded-xl border border-amber-100 bg-white p-3 text-sm text-slate-700 sm:grid-cols-2">
+                      <div className="mt-3 grid gap-1.5 rounded-none border border-amber-100 bg-white p-3 text-sm text-slate-700 sm:grid-cols-2">
                         {business.deposit_bank_name ? (
                           <p>
                             <span className="font-semibold text-slate-950">Banco:</span>{" "}
@@ -3504,7 +3504,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                           }
                           setDepositReceiptFile(file);
                         }}
-                        className="mt-1.5 block w-full text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-950 file:px-3.5 file:py-2 file:text-sm file:font-semibold file:text-white"
+                        className="mt-1.5 block w-full text-sm text-slate-700 file:mr-3 file:rounded-none file:border-0 file:bg-slate-950 file:px-3.5 file:py-2 file:text-sm file:font-semibold file:text-white"
                       />
                       {depositReceiptFile ? (
                         <p className="mt-1.5 text-xs text-emerald-700">
@@ -3515,12 +3515,12 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                   ) : null}
 
                   {submitError ? (
-                    <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    <div className="mt-4 rounded-none border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                       {submitError}
                     </div>
                   ) : null}
 
-                  <div className="sticky bottom-3 z-20 -mx-1 mt-5 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.75)] backdrop-blur md:static md:mx-0 md:flex-row md:items-center md:justify-between md:gap-3 md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-0">
+                  <div className="sticky bottom-3 z-20 -mx-1 mt-5 flex flex-col gap-2 rounded-none border border-slate-200 bg-white/95 p-2 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.75)] backdrop-blur md:static md:mx-0 md:flex-row md:items-center md:justify-between md:gap-3 md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-0">
                     <p className="px-1 text-xs text-slate-500 md:px-0 md:text-sm">
                       Revisa bien tus datos antes de confirmar.
                     </p>
@@ -3529,7 +3529,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       type="button"
                       onClick={handleSubmitBooking}
                       disabled={submitting}
-                      className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto md:font-medium md:shadow-none"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-none bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto md:font-medium md:shadow-none"
                     >
                       {submitting ? "Confirmando..." : "Confirmar hora"}
                     </button>
@@ -3539,10 +3539,10 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             ) : null}
 
 
-            <div className="mt-auto grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4 lg:pt-6">
-              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
+            <div className="mt-5 grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4 lg:pt-6">
+              <div className="rounded-none border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-none border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -3575,9 +3575,9 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
+              <div className="rounded-none border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-100 bg-violet-50 text-violet-600 shadow-sm">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-none border border-violet-100 bg-violet-50 text-violet-600 shadow-sm">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -3606,9 +3606,9 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
+              <div className="rounded-none border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-none border border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -3641,9 +3641,9 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-4 shadow-sm">
+              <div className="rounded-none border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-4 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-sm">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-none bg-emerald-500 text-white shadow-sm">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -3696,7 +3696,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 <button
                   type="button"
                   onClick={() => setShowStaffDrawer(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 text-xl text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                  className="flex h-10 w-10 items-center justify-center rounded-none border border-slate-200 text-xl text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
                   aria-label="Cerrar"
                 >
                   ×
@@ -3723,7 +3723,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     value={staffSearchQuery}
                     onChange={(e) => setStaffSearchQuery(e.target.value)}
                     placeholder="Buscar profesional..."
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
+                    className="h-12 w-full rounded-none border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
                   />
                 </div>
               </div>
@@ -3736,14 +3736,14 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     setSelectedSlot(null);
                     setShowStaffDrawer(false);
                   }}
-                  className={`w-full rounded-2xl border p-4 text-left transition ${
+                  className={`w-full rounded-none border p-4 text-left transition ${
                     selectedStaffId === ""
                       ? "border-indigo-500 bg-indigo-50 shadow-sm"
                       : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-lg font-bold text-indigo-700">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-none border border-indigo-100 bg-indigo-50 text-lg font-bold text-indigo-700">
                       *
                     </div>
                     <div className="min-w-0">
@@ -3760,7 +3760,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 {filteredDrawerStaff.map((staff) => (
                   <div
                     key={staff.id}
-                    className={`rounded-2xl border bg-white p-4 transition ${
+                    className={`rounded-none border bg-white p-4 transition ${
                       selectedStaffId === staff.id
                         ? "border-indigo-500 shadow-sm"
                         : "border-slate-200 hover:border-indigo-300"
@@ -3785,7 +3785,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                           setSelectedSlot(null);
                           setShowStaffDrawer(false);
                         }}
-                        className="h-10 rounded-xl border border-indigo-300 px-4 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
+                        className="h-10 rounded-none border border-indigo-300 px-4 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
                       >
                         Elegir
                       </button>
@@ -3794,7 +3794,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 ))}
 
                 {filteredDrawerStaff.length === 0 ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                  <div className="rounded-none border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
                     No encontramos profesionales con ese nombre.
                   </div>
                 ) : null}
