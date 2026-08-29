@@ -323,9 +323,7 @@ function formatHourLabel(time?: string | null) {
   if (!time) return "";
   const [h, m] = time.split(":").map(Number);
   if (Number.isNaN(h) || Number.isNaN(m)) return time;
-  const period = h >= 12 ? "pm" : "am";
-  const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return m === 0 ? `${hour12} ${period}` : `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+  return `${h}:${String(m).padStart(2, "0")}`;
 }
 
 const UNGROUPED_CATEGORY_KEY = "__sin_categoria__";
@@ -540,10 +538,10 @@ function BusinessBannerCard({
           <img
             src={business.logo_url}
             alt={business?.name || slug || "Logo"}
-            className="h-20 w-20 shrink-0 rounded-none object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28"
+            className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28"
           />
         ) : (
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-none bg-slate-950 text-2xl font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28 md:text-3xl">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-2xl font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28 md:text-3xl">
             {getBusinessInitials(business?.name || slug)}
           </div>
         )}
@@ -822,7 +820,7 @@ function BusinessLocationPanel({
               target="_blank"
               rel="noreferrer"
               aria-label="Instagram"
-              className="flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -845,7 +843,7 @@ function BusinessLocationPanel({
               target="_blank"
               rel="noreferrer"
               aria-label="Facebook"
-              className="flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -982,7 +980,7 @@ function BusinessLocationPanel({
                     <span>{row.label}</span>
                     <span className={row.enabled ? "font-medium text-slate-800" : "text-slate-400"}>
                       {row.enabled
-                        ? `${formatHourLabel(row.start_time)} – ${formatHourLabel(row.end_time)}`
+                        ? `${formatHourLabel(row.start_time)} a ${formatHourLabel(row.end_time)} hrs`
                         : "Cerrado"}
                     </span>
                   </div>
@@ -2426,7 +2424,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     <button
                       type="button"
                       onClick={goToBooking}
-                      className="flex h-12 w-full items-center justify-center gap-2 rounded-none bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95"
+                      className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95"
                     >
                       Ir a Agendar
                       <span aria-hidden="true">→</span>
@@ -2462,6 +2460,13 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
         {viewStep === "booking" && selectedService ? (
         <>
+        <button
+          type="button"
+          onClick={backToCatalog}
+          className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:underline md:mb-4"
+        >
+          <span aria-hidden="true">←</span> Volver al catálogo
+        </button>
         <div className="flex flex-col gap-4 md:flex-row md:items-start">
           <div className="min-w-0 md:flex-1">
             <BusinessBannerCard
@@ -2486,159 +2491,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:mt-6 md:gap-4">
-          <div className="space-y-3 md:space-y-4">
-            <div className="rounded-none border border-slate-200 bg-white p-3.5 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4">
-              <button
-                type="button"
-                onClick={backToCatalog}
-                className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:underline"
-              >
-                <span aria-hidden="true">←</span> Volver al catálogo
-              </button>
-
-              <div className="rounded-none border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-none md:p-4">
-                <p className="text-sm font-semibold text-slate-900">
-                  {selectedService.name}
-                </p>
-
-                {selectedService.description?.trim() ? (
-                  <p className="mt-1.5 text-xs leading-5 text-slate-600 md:text-sm">
-                    {selectedService.description.trim()}
-                  </p>
-                ) : null}
-
-                <div className="mt-2 flex flex-wrap gap-2 text-xs md:mt-3">
-                  <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
-                    {selectedService.duration_minutes || 0} min
-                  </span>
-                  <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
-                    {formatPrice(selectedService.price)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
-              <div className="space-y-2.5 md:space-y-4">
-                                {selectedService ? (
-                  <div>
-                    <div className="mb-2.5 md:mb-3">
-                      <p className="text-sm font-semibold text-slate-900">
-  Profesional preferente (opcional)
-</p>
-                      <p className="text-xs text-slate-500">
-  Puedes elegir uno específico o dejar que asignemos cualquiera disponible.
-</p>
-                    </div>
-
-                    {loadingStaff ? (
-                      <div className="rounded-none border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                        Cargando profesionales...
-                      </div>
-                    ) : (
-                      <div className="space-y-2 md:space-y-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedStaffId("");
-                            setSelectedSlot(null);
-                          }}
-                          className={`w-full rounded-none border p-3 text-left transition-all duration-200 cursor-pointer md:rounded-none md:p-5 ${
-  selectedStaffId === ""
-    ? "border-indigo-600 bg-indigo-50 shadow-md scale-[1.01]"
-    : "border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm hover:scale-[1.01]"
-}`}
-                        >
-                          <div className="flex items-center gap-3 md:gap-5">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-none border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700 md:h-20 md:w-20 md:rounded-none md:text-2xl">
-                              *
-                            </div>
-
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-900 md:text-base">
-                                Cualquiera disponible
-                              </p>
-                              <p className="mt-1 text-xs leading-5 text-slate-500 md:text-sm">
-                                Orbyx asignará un profesional con horario disponible
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-
-                        {visibleStaffOptions.map((staff) => (
-                          <button
-                            key={staff.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedStaffId(staff.id);
-                              setSelectedSlot(null);
-                            }}
-                            className={`w-full rounded-none border p-3 text-left transition md:rounded-none md:p-5 ${
-                              selectedStaffId === staff.id
-                                ? "border-indigo-500 bg-indigo-50 shadow-sm"
-                                : "border-slate-200 bg-white hover:border-slate-300"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3 md:gap-5">
-                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-none border border-slate-200 bg-slate-100 md:h-20 md:w-20 md:rounded-none">
-                                {staff.photo_url ? (
-                                  <img
-                                    src={staff.photo_url}
-                                    alt={staff.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-700 md:text-2xl">
-                                    {getStaffInitial(staff.name)}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-slate-900 md:text-base">
-                                  {staff.name}
-                                </p>
-
-                                {staff.role?.trim() ? (
-                                  <p className="mt-1 truncate text-xs font-semibold text-indigo-600 md:text-sm">
-                                    {staff.role.trim()}
-                                  </p>
-                                ) : null}
-
-                                <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 md:text-sm">
-                                  {staff.role?.trim()
-                                    ? `Especialista en ${staff.role.trim().toLowerCase()}.`
-                                    : "Profesional disponible para esta reserva."}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-
-                        {staffOptions.length > visibleStaffOptions.length ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStaffSearchQuery("");
-                              setShowStaffDrawer(true);
-                            }}
-                            className="flex h-11 w-full items-center justify-center rounded-none border border-indigo-200 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm md:h-12 md:rounded-none"
-                          >
-                            Ver todos los profesionales ({staffOptions.length})
-                          </button>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                ) : null}
-
-              </div>
-            </div>
-
-          </div>
-
-          <div className="flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+        <div className="mt-4 grid gap-4 md:mt-6 lg:grid-cols-[1fr_290px] lg:items-start lg:gap-6 xl:grid-cols-[1fr_300px]">
+          <div className="min-w-0 flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
             <div className="mb-3 flex flex-col gap-3 md:mb-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative flex flex-wrap items-center gap-2">
                 <button
@@ -3529,7 +3383,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       type="button"
                       onClick={handleSubmitBooking}
                       disabled={submitting}
-                      className="inline-flex h-12 w-full items-center justify-center rounded-none bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto md:font-medium md:shadow-none"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto md:font-medium md:shadow-none"
                     >
                       {submitting ? "Confirmando..." : "Confirmar hora"}
                     </button>
@@ -3666,6 +3520,149 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-3 md:space-y-4">
+            <div className="rounded-none border border-slate-200 bg-white p-3.5 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4">
+              <div className="rounded-none border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-none md:p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  {selectedService.name}
+                </p>
+
+                {selectedService.description?.trim() ? (
+                  <p className="mt-1.5 text-xs leading-5 text-slate-600 md:text-sm">
+                    {selectedService.description.trim()}
+                  </p>
+                ) : null}
+
+                <div className="mt-2 flex flex-wrap gap-2 text-xs md:mt-3">
+                  <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
+                    {selectedService.duration_minutes || 0} min
+                  </span>
+                  <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
+                    {formatPrice(selectedService.price)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+              <div className="space-y-2.5 md:space-y-4">
+                                {selectedService ? (
+                  <div>
+                    <div className="mb-2.5 md:mb-3">
+                      <p className="text-sm font-semibold text-slate-900">
+  Profesional preferente (opcional)
+</p>
+                      <p className="text-xs text-slate-500">
+  Puedes elegir uno específico o dejar que asignemos cualquiera disponible.
+</p>
+                    </div>
+
+                    {loadingStaff ? (
+                      <div className="rounded-none border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                        Cargando profesionales...
+                      </div>
+                    ) : (
+                      <div className="space-y-2 md:space-y-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedStaffId("");
+                            setSelectedSlot(null);
+                          }}
+                          className={`w-full rounded-none border p-3 text-left transition-all duration-200 cursor-pointer md:rounded-none md:p-5 ${
+  selectedStaffId === ""
+    ? "border-indigo-600 bg-indigo-50 shadow-md scale-[1.01]"
+    : "border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm hover:scale-[1.01]"
+}`}
+                        >
+                          <div className="flex items-center gap-3 md:gap-5">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-none border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700 md:h-20 md:w-20 md:rounded-none md:text-2xl">
+                              *
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-slate-900 md:text-base">
+                                Cualquiera disponible
+                              </p>
+                              <p className="mt-1 text-xs leading-5 text-slate-500 md:text-sm">
+                                Orbyx asignará un profesional con horario disponible
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+
+                        {visibleStaffOptions.map((staff) => (
+                          <button
+                            key={staff.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedStaffId(staff.id);
+                              setSelectedSlot(null);
+                            }}
+                            className={`w-full rounded-none border p-3 text-left transition md:rounded-none md:p-5 ${
+                              selectedStaffId === staff.id
+                                ? "border-indigo-500 bg-indigo-50 shadow-sm"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 md:gap-5">
+                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-none border border-slate-200 bg-slate-100 md:h-20 md:w-20 md:rounded-none">
+                                {staff.photo_url ? (
+                                  <img
+                                    src={staff.photo_url}
+                                    alt={staff.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-700 md:text-2xl">
+                                    {getStaffInitial(staff.name)}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900 md:text-base">
+                                  {staff.name}
+                                </p>
+
+                                {staff.role?.trim() ? (
+                                  <p className="mt-1 truncate text-xs font-semibold text-indigo-600 md:text-sm">
+                                    {staff.role.trim()}
+                                  </p>
+                                ) : null}
+
+                                <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 md:text-sm">
+                                  {staff.role?.trim()
+                                    ? `Especialista en ${staff.role.trim().toLowerCase()}.`
+                                    : "Profesional disponible para esta reserva."}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+
+                        {staffOptions.length > visibleStaffOptions.length ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStaffSearchQuery("");
+                              setShowStaffDrawer(true);
+                            }}
+                            className="flex h-11 w-full items-center justify-center rounded-none border border-indigo-200 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm md:h-12 md:rounded-none"
+                          >
+                            Ver todos los profesionales ({staffOptions.length})
+                          </button>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+              </div>
+            </div>
+
           </div>
         </div>
         </>
