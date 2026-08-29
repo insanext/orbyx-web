@@ -169,8 +169,8 @@ function rateTone(rate: number, warnAt: number, dangerAt: number): "default" | "
 }
 
 function toneTextColor(tone: "default" | "warning" | "danger") {
-  if (tone === "danger") return "#dc2626";
-  if (tone === "warning") return "#d97706";
+  if (tone === "danger") return TONE.red.solid;
+  if (tone === "warning") return TONE.amber.solid;
   return INK;
 }
 
@@ -204,31 +204,41 @@ function downloadMultiTableCsv(filename: string, tables: CsvTable[]) {
 }
 
 // ============================================================================
-// Sistema visual "ejecutivo" del módulo Indicadores — paleta y esquinas fijas
-// (no depende del theme claro/oscuro del resto del dashboard), reproduciendo
-// las referencias de diseño acordadas: fondo blanco/lavanda pálido, acento de
-// color sólido por categoría, esquinas rectas en todos los paneles/tarjetas/
-// botones/inputs. Las únicas formas circulares son indicadores de estado
-// puntuales (puntos de color, marcadores de gráfico) — nunca esquinas de
-// tarjetas/paneles/botones.
+// Sistema visual "ejecutivo" del módulo Indicadores — paleta y esquinas rectas
+// fijas, reproduciendo las referencias de diseño acordadas: fondo blanco/
+// lavanda pálido, acento de color sólido por categoría, esquinas rectas en
+// todos los paneles/tarjetas/botones/inputs. Las únicas formas circulares son
+// indicadores de estado puntuales (puntos de color, marcadores de gráfico) —
+// nunca esquinas de tarjetas/paneles/botones.
+//
+// Los valores son variables CSS (var(--ind-...)), NO hex fijos: se definen en
+// el bloque <style jsx> del componente, con un juego de valores para modo
+// claro y otro para modo oscuro, reaccionando al MISMO atributo
+// data-theme="clasico"|"nocturno" que ya usa el toggle sol/luna del dashboard
+// (ver lib/use-theme.ts) — mismo mecanismo que PageHeader y Agenda, no uno
+// nuevo. Al ser variables CSS heredadas, el cambio de tema se aplica en vivo
+// sin volver a renderizar estos componentes.
 // ============================================================================
 type Tone = "indigo" | "green" | "red" | "gray" | "blue" | "violet" | "amber";
 
 const TONE: Record<Tone, { solid: string; tint: string; text: string }> = {
-  indigo: { solid: "#4f46e5", tint: "#eef0ff", text: "#3730a3" },
-  green: { solid: "#16a34a", tint: "#eafbf1", text: "#15803d" },
-  red: { solid: "#dc2626", tint: "#fdf0f1", text: "#b91c1c" },
-  gray: { solid: "#64748b", tint: "#f3f4f6", text: "#475569" },
-  blue: { solid: "#2563eb", tint: "#edf3ff", text: "#1d4ed8" },
-  violet: { solid: "#7c3aed", tint: "#f4f0ff", text: "#6d28d9" },
-  amber: { solid: "#d97706", tint: "#fff6e8", text: "#b45309" },
+  indigo: { solid: "var(--ind-indigo-solid)", tint: "var(--ind-indigo-tint)", text: "var(--ind-indigo-text)" },
+  green: { solid: "var(--ind-green-solid)", tint: "var(--ind-green-tint)", text: "var(--ind-green-text)" },
+  red: { solid: "var(--ind-red-solid)", tint: "var(--ind-red-tint)", text: "var(--ind-red-text)" },
+  gray: { solid: "var(--ind-gray-solid)", tint: "var(--ind-gray-tint)", text: "var(--ind-gray-text)" },
+  blue: { solid: "var(--ind-blue-solid)", tint: "var(--ind-blue-tint)", text: "var(--ind-blue-text)" },
+  violet: { solid: "var(--ind-violet-solid)", tint: "var(--ind-violet-tint)", text: "var(--ind-violet-text)" },
+  amber: { solid: "var(--ind-amber-solid)", tint: "var(--ind-amber-tint)", text: "var(--ind-amber-text)" },
 };
 
-const INK = "#0f172a";
-const MUTED = "#64748b";
-const SHELL_BORDER = "#e2e0f3";
-const PANEL_BORDER = "#e7e5f1";
-const TRACK_BG = "#eef0f4";
+const INK = "var(--ind-ink)";
+const MUTED = "var(--ind-muted)";
+const SHELL_BORDER = "var(--ind-shell-border)";
+const PANEL_BORDER = "var(--ind-panel-border)";
+const TRACK_BG = "var(--ind-track-bg)";
+const PANEL_BG = "var(--ind-panel-bg)";
+const SHELL_HEADER_BG = "var(--ind-shell-header-bg)";
+const TABLE_HEAD_BG = "var(--ind-table-head-bg)";
 
 function WhatsAppGlyph({ size = 18 }: { size?: number; strokeWidth?: number }) {
   return (
@@ -273,8 +283,8 @@ function SectionExportButton({ tables, filename }: { tables: CsvTable[]; filenam
       type="button"
       onClick={() => downloadMultiTableCsv(filename, tables)}
       disabled={!hasData}
-      className="inline-flex h-9 items-center gap-2 border bg-white px-3.5 text-[11px] font-extrabold uppercase tracking-[0.06em] transition disabled:cursor-not-allowed disabled:opacity-40"
-      style={{ borderColor: TONE.indigo.solid, color: TONE.indigo.solid }}
+      className="inline-flex h-9 items-center gap-2 border px-3.5 text-[11px] font-extrabold uppercase tracking-[0.06em] transition disabled:cursor-not-allowed disabled:opacity-40"
+      style={{ borderColor: TONE.indigo.solid, color: TONE.indigo.solid, background: PANEL_BG }}
     >
       <Download size={14} />
       Exportar sección (CSV)
@@ -300,10 +310,10 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-white" style={{ border: `1px solid ${SHELL_BORDER}`, borderTop: `3px solid ${TONE[tone].solid}` }}>
+    <section style={{ border: `1px solid ${SHELL_BORDER}`, borderTop: `3px solid ${TONE[tone].solid}`, background: PANEL_BG }}>
       <div
         className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3.5 sm:px-5"
-        style={{ borderColor: SHELL_BORDER, background: "linear-gradient(180deg,#ffffff,#faf9ff)" }}
+        style={{ borderColor: SHELL_BORDER, background: SHELL_HEADER_BG }}
       >
         <div className="flex items-center gap-3">
           <IconBox icon={icon} tone={tone} variant={iconVariant} size={40} />
@@ -356,7 +366,7 @@ function Panel({
   children?: React.ReactNode;
 }) {
   return (
-    <section style={{ border: `1px solid ${PANEL_BORDER}`, background: tint ? TONE[tint].tint : "#ffffff" }}>
+    <section style={{ border: `1px solid ${PANEL_BORDER}`, background: tint ? TONE[tint].tint : PANEL_BG }}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style={{ borderColor: PANEL_BORDER }}>
         <div className="flex items-center gap-2.5">
           {icon ? <IconBox icon={icon} tone={tone} variant={iconVariant} size={28} /> : null}
@@ -440,7 +450,7 @@ function EmptyState({ text }: { text: string }) {
 
 function LockedBlock({ requiredPlanLabel, description }: { requiredPlanLabel: string; description: string }) {
   return (
-    <div className="flex items-start gap-3 border border-dashed bg-white p-4" style={{ borderColor: PANEL_BORDER }}>
+    <div className="flex items-start gap-3 border border-dashed p-4" style={{ borderColor: PANEL_BORDER, background: PANEL_BG }}>
       <IconBox icon={Lock} tone="blue" variant="tint" size={36} iconSize={16} />
       <div>
         <span
@@ -491,7 +501,7 @@ function RankingList({
           <div className="ml-9 mt-1.5 h-1.5" style={{ background: TRACK_BG }}>
             <div
               className="h-1.5"
-              style={{ width: `${Math.max((item.value / max) * 100, 4)}%`, background: "linear-gradient(90deg, #4f46e5, #7c3aed)" }}
+              style={{ width: `${Math.max((item.value / max) * 100, 4)}%`, background: `linear-gradient(90deg, ${TONE.indigo.solid}, ${TONE.violet.solid})` }}
             />
           </div>
         </div>
@@ -649,10 +659,12 @@ function OccupancyHeatmap({ cells }: { cells: HeatCell[] }) {
 // detalle decorativo sutil (ondas) en la esquina inferior derecha.
 function LeadTimeCard({ hours }: { hours: number | null }) {
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-white p-5" style={{ border: `1px solid ${PANEL_BORDER}` }}>
+    <div className="relative flex h-full flex-col overflow-hidden p-5" style={{ border: `1px solid ${PANEL_BORDER}`, background: PANEL_BG }}>
       <svg className="pointer-events-none absolute bottom-0 right-0 h-28 w-40" viewBox="0 0 160 112" fill="none">
-        <path d="M0 92 Q40 62 80 92 T170 92" stroke="#efe9ff" strokeWidth="10" />
-        <path d="M10 108 Q55 82 100 108 T190 108" stroke="#f5f1ff" strokeWidth="10" />
+        {/* Trazos traslúcidos (no hex opacos) para que el detalle decorativo
+            se vea bien tanto sobre la tarjeta clara como sobre la oscura. */}
+        <path d="M0 92 Q40 62 80 92 T170 92" stroke="rgba(124,58,237,0.12)" strokeWidth="10" />
+        <path d="M10 108 Q55 82 100 108 T190 108" stroke="rgba(124,58,237,0.07)" strokeWidth="10" />
       </svg>
       <div className="relative z-10 flex items-center gap-3">
         <IconBox icon={Clock} tone="violet" variant="tint" size={40} iconSize={19} />
@@ -1021,7 +1033,7 @@ export default function DashboardHomePage() {
   }, [data]);
 
   return (
-    <div className="space-y-4">
+    <div className="orbyx-indicadores-page space-y-4">
       <PageHeader
         eyebrow="Análisis"
         title="Indicadores"
@@ -1138,7 +1150,7 @@ export default function DashboardHomePage() {
                       onClick={() => setInactivePreset(p.key)}
                       className="h-7 px-2.5 text-[11px] font-bold"
                       style={{
-                        background: inactivePreset === p.key ? TONE.indigo.solid : "#ffffff",
+                        background: inactivePreset === p.key ? TONE.indigo.solid : PANEL_BG,
                         color: inactivePreset === p.key ? "#fff" : INK,
                         borderRight: idx !== INACTIVE_PRESETS.length - 1 ? `1px solid ${PANEL_BORDER}` : "none",
                       }}
@@ -1172,7 +1184,7 @@ export default function DashboardHomePage() {
                       onClick={() => setCustomerLimit(n)}
                       className="h-7 px-3 text-[11px] font-bold"
                       style={{
-                        background: customerLimit === n ? TONE.indigo.solid : "#ffffff",
+                        background: customerLimit === n ? TONE.indigo.solid : PANEL_BG,
                         color: customerLimit === n ? "#fff" : INK,
                         borderRight: idx !== CUSTOMER_LIMIT_OPTIONS.length - 1 ? `1px solid ${PANEL_BORDER}` : "none",
                       }}
@@ -1289,7 +1301,7 @@ export default function DashboardHomePage() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
-                          <tr style={{ background: "#f5f4fc" }}>
+                          <tr style={{ background: TABLE_HEAD_BG }}>
                             <th className="px-3 py-2.5 font-bold" style={{ color: INK }}>
                               Profesional
                             </th>
@@ -1374,7 +1386,7 @@ export default function DashboardHomePage() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
-                          <tr style={{ background: "#f5f4fc" }}>
+                          <tr style={{ background: TABLE_HEAD_BG }}>
                             <th className="px-3 py-2.5 font-bold" style={{ color: INK }}>
                               Servicio
                             </th>
@@ -1517,7 +1529,7 @@ export default function DashboardHomePage() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
-                          <tr style={{ background: "#f5f4fc" }}>
+                          <tr style={{ background: TABLE_HEAD_BG }}>
                             <th className="px-3 py-2.5 font-bold" style={{ color: INK }}>
                               Campaña
                             </th>
@@ -1596,6 +1608,72 @@ export default function DashboardHomePage() {
           </SectionShell>
         </>
       ) : null}
+
+      <style jsx>{`
+        .orbyx-indicadores-page {
+          --ind-ink: #0f172a;
+          --ind-muted: #64748b;
+          --ind-shell-border: #e2e0f3;
+          --ind-panel-border: #e7e5f1;
+          --ind-track-bg: #eef0f4;
+          --ind-panel-bg: #ffffff;
+          --ind-shell-header-bg: linear-gradient(180deg, #ffffff, #faf9ff);
+          --ind-table-head-bg: #f5f4fc;
+          --ind-indigo-solid: #4f46e5;
+          --ind-indigo-tint: #eef0ff;
+          --ind-indigo-text: #3730a3;
+          --ind-green-solid: #16a34a;
+          --ind-green-tint: #eafbf1;
+          --ind-green-text: #15803d;
+          --ind-red-solid: #dc2626;
+          --ind-red-tint: #fdf0f1;
+          --ind-red-text: #b91c1c;
+          --ind-gray-solid: #64748b;
+          --ind-gray-tint: #f3f4f6;
+          --ind-gray-text: #475569;
+          --ind-blue-solid: #2563eb;
+          --ind-blue-tint: #edf3ff;
+          --ind-blue-text: #1d4ed8;
+          --ind-violet-solid: #7c3aed;
+          --ind-violet-tint: #f4f0ff;
+          --ind-violet-text: #6d28d9;
+          --ind-amber-solid: #d97706;
+          --ind-amber-tint: #fff6e8;
+          --ind-amber-text: #b45309;
+        }
+
+        :global(:root[data-theme="nocturno"]) .orbyx-indicadores-page {
+          --ind-ink: #e6ebf5;
+          --ind-muted: #94a3bb;
+          --ind-shell-border: #203a61;
+          --ind-panel-border: #203a61;
+          --ind-track-bg: #16223d;
+          --ind-panel-bg: #101b31;
+          --ind-shell-header-bg: linear-gradient(180deg, #101b31, #0b1526);
+          --ind-table-head-bg: #16223d;
+          --ind-indigo-solid: #6366f1;
+          --ind-indigo-tint: #1e1b3a;
+          --ind-indigo-text: #a5b4fc;
+          --ind-green-solid: #22c55e;
+          --ind-green-tint: #123329;
+          --ind-green-text: #6ee7b7;
+          --ind-red-solid: #ef4444;
+          --ind-red-tint: #3a151a;
+          --ind-red-text: #fca5a5;
+          --ind-gray-solid: #94a3b8;
+          --ind-gray-tint: #1e2530;
+          --ind-gray-text: #cbd5e1;
+          --ind-blue-solid: #3b82f6;
+          --ind-blue-tint: #132a44;
+          --ind-blue-text: #93c5fd;
+          --ind-violet-solid: #8b5cf6;
+          --ind-violet-tint: #241f3d;
+          --ind-violet-text: #c4b5fd;
+          --ind-amber-solid: #f59e0b;
+          --ind-amber-tint: #3a2a18;
+          --ind-amber-text: #fcd34d;
+        }
+      `}</style>
     </div>
   );
 }
