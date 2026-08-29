@@ -394,7 +394,10 @@ export default function StaffPage() {
   const [calendarId, setCalendarId] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
-  const [loadingBranches, setLoadingBranches] = useState(false);
+  // Empieza en true (no false) para no mostrar el aviso "Debes seleccionar
+  // una sucursal activa" durante la ventana entre el mount y el momento en
+  // que loadBranches() efectivamente arranca — mismo fix que agenda/page.tsx.
+  const [loadingBranches, setLoadingBranches] = useState(true);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -627,6 +630,10 @@ async function uploadStaffImage(file: File, staffId: string) {
             ? error.message
             : "No se pudo cargar el módulo staff"
         );
+        // Si el fetch de negocio falla antes de llegar a loadBranches(), esta
+        // nunca se ejecuta — sin esto el aviso de "Cargando sucursal activa..."
+        // quedaría pegado para siempre en vez de ceder paso al error real.
+        setLoadingBranches(false);
       } finally {
         setLoading(false);
       }
@@ -2001,7 +2008,11 @@ function validateStaffHours() {
       </section>
 
       {loadingBranches && !selectedBranchId ? (
-        <div className="rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
+        <div className="flex items-center gap-2.5 rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
+          <span
+            className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2"
+            style={{ borderColor: "var(--text-muted)", borderTopColor: "transparent" }}
+          />
           <span style={{ color: "var(--text-muted)" }}>
             Cargando sucursal activa...
           </span>

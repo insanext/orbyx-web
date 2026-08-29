@@ -405,7 +405,12 @@ const [slotMinutes, setSlotMinutes] = useState(30);
 const [calendarId, setCalendarId] = useState("");
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
-  const [loadingBranches, setLoadingBranches] = useState(false);
+  // Empieza en true (no false) para no mostrar el aviso "Debes seleccionar
+  // una sucursal activa" durante la ventana entre el mount y el momento en
+  // que loadBranches() efectivamente arranca (carrera: antes recién se ponía
+  // en true dentro de loadBranches, dejando un hueco donde ya no estaba
+  // cargando "de verdad" pero tampoco había determinado nada).
+  const [loadingBranches, setLoadingBranches] = useState(true);
 
   const [staffList, setStaffList] = useState<StaffItem[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
@@ -2524,6 +2529,10 @@ setDepositRequired(Boolean(businessData.business.deposit_required));
 ]);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "No se pudo cargar agenda");
+        // Si el fetch de negocio falla antes de llegar a loadBranches(), esta
+        // nunca se ejecuta — sin esto el aviso de "Cargando sucursal activa..."
+        // quedaría pegado para siempre en vez de ceder paso al error real.
+        setLoadingBranches(false);
       }
     }
 
@@ -3543,13 +3552,17 @@ const hasPendingClose = pendingCloseCount > 0;
 
       {loadingBranches && !selectedBranchId ? (
         <div
-          className="rounded-xl border px-4 py-3 text-sm"
+          className="flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-soft)",
             color: "var(--text-muted)",
           }}
         >
+          <span
+            className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2"
+            style={{ borderColor: "var(--text-muted)", borderTopColor: "transparent" }}
+          />
           Cargando sucursal activa...
         </div>
       ) : null}
