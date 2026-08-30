@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
-import { Building2, HelpCircle } from "lucide-react";
+import { Building2, HelpCircle, User, Phone, Mail, Share2, Link2, Calendar } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 import { usePermissions } from "../../../../lib/permissions-context";
@@ -2801,16 +2801,19 @@ function updateHourByIndex(
         {
           label: "Nombre",
           value: loading ? "Cargando..." : form.name || "No definido",
+          icon: User,
         },
         {
           label: "Contacto",
           value: loading
             ? "Cargando..."
             : form.phone || form.whatsapp || "No definido",
+          icon: Phone,
         },
         {
           label: "Correo",
           value: loading ? "Cargando..." : form.email || "No definido",
+          icon: Mail,
         },
         {
           label: "Redes",
@@ -2819,47 +2822,62 @@ function updateHourByIndex(
             : form.instagram_url || form.facebook_url
               ? "Configuradas"
             : "No configuradas",
+          icon: Share2,
         },
         {
           label: "URL pública",
           value: publicUrl,
+          icon: Link2,
         },
         {
           label: "Google Calendar",
           value: loading ? "Cargando..." : googleConnected ? "Conectado" : "Pendiente",
+          icon: Calendar,
         },
       ].map((item) => (
         <div
           key={item.label}
-          className="rounded-none border px-4 py-3"
+          className="flex items-center gap-3 rounded-none border px-4 py-3"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--biz-summary-tint)",
           }}
         >
-          <p
-            className="text-[10px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: "var(--text-muted)" }}
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+            style={{ background: "var(--biz-summary-icon-bg)", color: "var(--biz-summary-icon-color)" }}
           >
-            {item.label}
-          </p>
+            <item.icon className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p
+              className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {item.label}
+            </p>
 
-          <p
-            className="mt-1 truncate text-sm font-semibold"
-            style={{ color: "var(--text-main)" }}
-            title={item.value}
-          >
-            {item.value}
-          </p>
+            <p
+              className="mt-1 truncate text-sm font-semibold"
+              style={{ color: "var(--text-main)" }}
+              title={item.value}
+            >
+              {item.value}
+            </p>
+          </div>
         </div>
       ))}
     </div>
     <style jsx>{`
       .orbyx-biz-summary {
         --biz-summary-tint: #eff6ff;
+        --biz-summary-icon-bg: #dbeafe;
+        --biz-summary-icon-color: #2563eb;
       }
       :global(:root[data-theme="nocturno"]) .orbyx-biz-summary {
         --biz-summary-tint: #132a44;
+        --biz-summary-icon-bg: #1e3a5f;
+        --biz-summary-icon-color: #93c5fd;
       }
     `}</style>
 
