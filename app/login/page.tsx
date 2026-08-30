@@ -39,9 +39,17 @@ async function resolveTenantDestination({
 
   if (!tenantUserRow) {
     const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const provisionRes = await fetch(`${backend}/tenants/provision`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
+      },
       body: JSON.stringify({ user_id: userId, email: userEmail, plan, phone: phone || null }),
     });
     const provisionData = await provisionRes.json();
