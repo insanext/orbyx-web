@@ -1161,39 +1161,29 @@ const [loadingNextSlots, setLoadingNextSlots] = useState(false);
     useState<BookingSuccessData | null>(null);
 
   const [depositReceiptFile, setDepositReceiptFile] = useState<File | null>(null);
+  // Paso intermedio: la reserva ya existe (hora bloqueada) pero el cliente
+  // todavía no sube el comprobante — se muestra la ficha bancaria + el
+  // cronómetro real acá, antes de que haya algo que hacer, no después.
+  const [depositAwaitingUpload, setDepositAwaitingUpload] =
+    useState<DepositPendingData | null>(null);
+  // Paso final: comprobante ya subido, esperando que el tenant lo revise.
+  // Una vez acá ya no hay ningún plazo real corriendo contra el cliente
+  // (ver fix de releaseExpiredDeposits en server.js), así que esta pantalla
+  // no muestra cronómetro.
   const [depositPending, setDepositPending] = useState<DepositPendingData | null>(null);
   const [depositUploading, setDepositUploading] = useState(false);
   const [depositUploaded, setDepositUploaded] = useState(false);
   const [depositUploadError, setDepositUploadError] = useState("");
   const [depositRemainingSeconds, setDepositRemainingSeconds] = useState(0);
 
-  // El flujo de depósito (datos bancarios + cronómetro + comprobante
-  // obligatorio) aplica solo si se cumplen las 3 condiciones: el interruptor
-  // maestro del tenant, el servicio puntual seleccionado (requires_deposit,
-  // igual que ya valida el backend en POST /appointments/slot) y que el
-  // tenant haya cargado los 5 datos bancarios completos — si falta alguno,
-  // se trata como si el servicio no pidiera depósito (no bloquea la reserva
-  // por un dato de configuración que el cliente no puede resolver).
-  const depositBankFieldsComplete = Boolean(
-    business?.deposit_bank_name?.trim() &&
-      business?.deposit_account_type?.trim() &&
-      business?.deposit_account_number?.trim() &&
-      business?.deposit_holder_rut?.trim() &&
-      business?.deposit_holder_name?.trim()
-  );
-  const depositFlowApplies = Boolean(
-    business?.deposit_required &&
-      selectedService?.requires_deposit &&
-      depositBankFieldsComplete
-  );
-
   // Cronómetro informativo — la ventana de 10 min la libera de verdad el
   // cron del backend (POST /appointments/maintenance/release-expired-deposits),
-  // esto solo le muestra al cliente cuánto tiempo le queda al negocio para
-  // revisar el comprobante.
+  // esto solo le muestra al cliente cuánto tiempo le queda para transferir y
+  // subir el comprobante. Corre solo mientras el comprobante no se ha
+  // subido — una vez subido (depositPending) ya no hay plazo real corriendo.
   useEffect(() => {
-    if (!depositPending) return;
-    const expiresAt = new Date(depositPending.holdExpiresAt).getTime();
+    if (!depositAwaitingUpload) return;
+    const expiresAt = new Date(depositAwaitingUpload.holdExpiresAt).getTime();
 
     function tick() {
       setDepositRemainingSeconds(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)));
@@ -1202,7 +1192,7 @@ const [loadingNextSlots, setLoadingNextSlots] = useState(false);
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [depositPending]);
+  }, [depositAwaitingUpload]);
 
   const formRef = useRef<HTMLDivElement | null>(null);
 
@@ -1894,7 +1884,11 @@ finally {
   ]);
 
 
-  async function uploadDepositReceipt(appointmentId: string, token: string, file: File) {
+  async function uploadDepositReceipt(
+    appointmentId: string,
+    token: string,
+    file: File
+  ): Promise<boolean> {
     setDepositUploadError("");
     setDepositUploading(true);
     try {
@@ -1926,12 +1920,38 @@ finally {
       }
 
       setDepositUploaded(true);
+      return true;
     } catch (error: unknown) {
       setDepositUploadError(
         error instanceof Error ? error.message : "No se pudo subir el comprobante."
       );
+      return false;
     } finally {
       setDepositUploading(false);
+    }
+  }
+
+  // Paso 2 del flujo de depósito: sube el comprobante contra la reserva ya
+  // creada en el paso 1 y, solo si sale bien, pasa a la pantalla final de
+  // "Pendiente de confirmación" (ver depositAwaitingUpload/depositPending).
+  async function handleSubmitDepositReceipt() {
+    if (!depositAwaitingUpload) return;
+
+    if (!depositReceiptFile) {
+      setDepositUploadError("Debes adjuntar tu comprobante de transferencia.");
+      return;
+    }
+
+    const pending = depositAwaitingUpload;
+    const ok = await uploadDepositReceipt(
+      pending.appointmentId,
+      pending.uploadToken,
+      depositReceiptFile
+    );
+
+    if (ok) {
+      setDepositPending(pending);
+      setDepositAwaitingUpload(null);
     }
   }
 
@@ -1957,11 +1977,6 @@ finally {
       const validationError = validateForm();
       if (validationError) {
         setSubmitError(validationError);
-        return;
-      }
-
-      if (depositFlowApplies && !depositReceiptFile) {
-        setSubmitError("Debes subir tu comprobante de depósito antes de continuar.");
         return;
       }
 
@@ -2042,7 +2057,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
       if (data?.deposit_required) {
         setDepositUploaded(false);
         setDepositUploadError("");
-        setDepositPending({
+        setDepositReceiptFile(null);
+        setDepositAwaitingUpload({
           appointmentId: data.appointment.id,
           uploadToken: data.deposit_upload_token,
           holdExpiresAt: data.deposit_hold_expires_at,
@@ -2050,9 +2066,6 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           date: formatFullDate(selectedSlot.slot_start),
           time: formatHour(selectedSlot.slot_start),
         });
-        if (depositReceiptFile) {
-          await uploadDepositReceipt(data.appointment.id, data.deposit_upload_token, depositReceiptFile);
-        }
       } else {
         setBookingSuccess({
           serviceName: selectedService.name,
@@ -2108,12 +2121,167 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
     }
   }
 
-  if (depositPending) {
+  if (depositAwaitingUpload) {
     const minutes = Math.floor(depositRemainingSeconds / 60);
     const seconds = depositRemainingSeconds % 60;
     const countdownLabel = `${minutes}:${String(seconds).padStart(2, "0")}`;
     const expired = depositRemainingSeconds <= 0;
 
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-sky-50 px-3 py-4 sm:px-4 md:px-8 md:py-10">
+        <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-3xl items-center justify-center md:min-h-[calc(100vh-5rem)]">
+          <div className="w-full overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-[0_35px_90px_-45px_rgba(217,119,6,0.42)] md:rounded-[34px]">
+            <div className="h-2 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400" />
+
+            <div className="p-4 md:p-10">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-orange-100 text-3xl shadow-sm ring-8 ring-amber-50 md:h-24 md:w-24 md:text-5xl">
+                ⏳
+              </div>
+
+              <div className="mt-6 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-600">
+                  Reserva online
+                </p>
+                <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 md:text-4xl">
+                  Un último paso: sube tu comprobante
+                </h1>
+                <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
+                  Reservamos tu hora para <strong>{depositAwaitingUpload.serviceName}</strong> el{" "}
+                  {depositAwaitingUpload.date} a las {depositAwaitingUpload.time}. Transfiere el
+                  depósito a la cuenta de abajo y sube tu comprobante antes de que se acabe el
+                  tiempo.
+                </p>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-center md:mt-8 md:rounded-3xl md:p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                  {expired ? "Tiempo agotado" : "Tiempo restante para subir tu comprobante"}
+                </p>
+                <p className="mt-2 text-4xl font-bold tabular-nums text-slate-950 md:text-5xl">
+                  {expired ? "00:00" : countdownLabel}
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {expired
+                    ? "El tiempo para subir tu comprobante se agotó y tu hora puede haberse liberado. Si ya transferiste, contacta al negocio directamente."
+                    : "Es el tiempo que el negocio tiene reservado tu horario mientras transfieres y subes el comprobante."}
+                </p>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 md:rounded-3xl md:p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                  Datos para transferir
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  {Number(selectedService?.deposit_amount) > 0 ? (
+                    <>
+                      Debes transferir{" "}
+                      <strong>{formatPrice(selectedService?.deposit_amount)}</strong> para
+                      reservar este servicio.
+                    </>
+                  ) : (
+                    // Servicio marcado con requires_deposit pero sin deposit_amount
+                    // (dato legado o el tenant lo dejó vacío) — no se oculta el
+                    // depósito por completo, solo el mensaje genérico hasta que se
+                    // complete (ver 2026-08-30-services-deposit-amount.sql).
+                    <>Este negocio pide un depósito antes de confirmar tu hora en firme.</>
+                  )}
+                </p>
+
+                <div className="mt-3 grid gap-1.5 rounded-2xl border border-amber-100 bg-white p-3 text-sm text-slate-700 sm:grid-cols-2">
+                  {business?.deposit_bank_name ? (
+                    <p>
+                      <span className="font-semibold text-slate-950">Banco:</span>{" "}
+                      {business.deposit_bank_name}
+                    </p>
+                  ) : null}
+                  {business?.deposit_account_type ? (
+                    <p>
+                      <span className="font-semibold text-slate-950">Tipo de cuenta:</span>{" "}
+                      {business.deposit_account_type}
+                    </p>
+                  ) : null}
+                  {business?.deposit_account_number ? (
+                    <p>
+                      <span className="font-semibold text-slate-950">N° de cuenta:</span>{" "}
+                      {business.deposit_account_number}
+                    </p>
+                  ) : null}
+                  {business?.deposit_holder_rut ? (
+                    <p>
+                      <span className="font-semibold text-slate-950">RUT titular:</span>{" "}
+                      {business.deposit_holder_rut}
+                    </p>
+                  ) : null}
+                  {business?.deposit_holder_name ? (
+                    <p className="sm:col-span-2">
+                      <span className="font-semibold text-slate-950">Nombre titular:</span>{" "}
+                      {business.deposit_holder_name}
+                    </p>
+                  ) : null}
+                </div>
+
+                <label className="mt-3 block text-xs font-semibold text-slate-700">
+                  Comprobante de transferencia (JPG, PNG o PDF, máx. 5MB) *
+                </label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setDepositUploadError("");
+                    if (
+                      file &&
+                      !["image/jpeg", "image/png", "application/pdf"].includes(file.type)
+                    ) {
+                      setDepositUploadError("El comprobante debe ser JPG, PNG o PDF.");
+                      setDepositReceiptFile(null);
+                      e.target.value = "";
+                      return;
+                    }
+                    if (file && file.size > 5 * 1024 * 1024) {
+                      setDepositUploadError("El comprobante no puede superar los 5MB.");
+                      setDepositReceiptFile(null);
+                      e.target.value = "";
+                      return;
+                    }
+                    setDepositReceiptFile(file);
+                  }}
+                  className="mt-1.5 block w-full text-sm text-slate-700 file:mr-3 file:rounded-none file:border-0 file:bg-slate-950 file:px-3.5 file:py-2 file:text-sm file:font-semibold file:text-white"
+                />
+                {depositReceiptFile ? (
+                  <p className="mt-1.5 text-xs text-emerald-700">
+                    Archivo seleccionado: {depositReceiptFile.name}
+                  </p>
+                ) : null}
+                {depositUploadError ? (
+                  <p className="mt-1.5 text-xs font-semibold text-rose-600">
+                    {depositUploadError}
+                  </p>
+                ) : null}
+              </div>
+
+              <p className="mt-4 text-center text-xs text-slate-500">
+                Te llegará una notificación cuando el negocio confirme tu depósito.
+              </p>
+
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleSubmitDepositReceipt}
+                  disabled={depositUploading}
+                  className="inline-flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-6 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {depositUploading ? "Subiendo..." : "Subir comprobante"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (depositPending) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-sky-50 px-3 py-4 sm:px-4 md:px-8 md:py-10">
         <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-3xl items-center justify-center md:min-h-[calc(100vh-5rem)]">
@@ -2141,50 +2309,12 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
               <div className="mt-6 rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-center md:mt-8 md:rounded-3xl md:p-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-                  {expired ? "Ventana de espera terminada" : "Tiempo estimado de espera"}
-                </p>
-                <p className="mt-2 text-4xl font-bold tabular-nums text-slate-950 md:text-5xl">
-                  {expired ? "00:00" : countdownLabel}
+                  Comprobante recibido
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  {expired
-                    ? "Si el negocio todavía no confirma tu hora, contáctalo directamente para asegurarla."
-                    : "Es el tiempo que el negocio tiene reservado tu horario mientras revisa el comprobante — la confirmación la hace el negocio, no necesitas hacer nada más acá."}
+                  El negocio va a revisar tu comprobante y te vamos a notificar apenas confirme tu
+                  hora — no necesitas hacer nada más.
                 </p>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Comprobante
-                </p>
-                {depositUploading ? (
-                  <p className="mt-2 text-sm text-slate-600">Subiendo tu comprobante…</p>
-                ) : depositUploaded ? (
-                  <p className="mt-2 text-sm font-semibold text-emerald-600">
-                    Comprobante recibido correctamente.
-                  </p>
-                ) : depositUploadError ? (
-                  <div className="mt-2">
-                    <p className="text-sm font-semibold text-rose-600">{depositUploadError}</p>
-                    {depositReceiptFile ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          uploadDepositReceipt(
-                            depositPending.appointmentId,
-                            depositPending.uploadToken,
-                            depositReceiptFile
-                          )
-                        }
-                        className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:opacity-90"
-                      >
-                        Reintentar subir comprobante
-                      </button>
-                    ) : null}
-                  </div>
-                ) : (
-                  <p className="mt-2 text-sm text-slate-600">Comprobante no subido.</p>
-                )}
               </div>
 
               <div className="mt-6 flex justify-center">
@@ -3295,101 +3425,6 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       />
                     ))}
                   </div>
-
-                  {business && depositFlowApplies ? (
-                    <div className="mt-4 rounded-none border border-amber-200 bg-amber-50/70 p-4 md:rounded-none md:p-5">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-                        Depósito requerido para confirmar
-                      </p>
-                      <p className="mt-2 text-sm text-slate-700">
-                        {Number(selectedService?.deposit_amount) > 0 ? (
-                          <>
-                            Debes transferir{" "}
-                            <strong>{formatPrice(selectedService?.deposit_amount)}</strong> para
-                            reservar este servicio. Transfiere a la siguiente cuenta y sube tu
-                            comprobante:
-                          </>
-                        ) : (
-                          // Servicio marcado con requires_deposit pero sin deposit_amount
-                          // (dato legado o el tenant lo dejó vacío) — no se oculta el
-                          // depósito por completo, solo el mensaje genérico hasta que se
-                          // complete (ver 2026-08-30-services-deposit-amount.sql).
-                          <>
-                            Este negocio pide un depósito antes de confirmar tu hora en firme.
-                            Transfiere el monto correspondiente a la siguiente cuenta y sube tu
-                            comprobante:
-                          </>
-                        )}
-                      </p>
-
-                      <div className="mt-3 grid gap-1.5 rounded-none border border-amber-100 bg-white p-3 text-sm text-slate-700 sm:grid-cols-2">
-                        {business.deposit_bank_name ? (
-                          <p>
-                            <span className="font-semibold text-slate-950">Banco:</span>{" "}
-                            {business.deposit_bank_name}
-                          </p>
-                        ) : null}
-                        {business.deposit_account_type ? (
-                          <p>
-                            <span className="font-semibold text-slate-950">Tipo de cuenta:</span>{" "}
-                            {business.deposit_account_type}
-                          </p>
-                        ) : null}
-                        {business.deposit_account_number ? (
-                          <p>
-                            <span className="font-semibold text-slate-950">N° de cuenta:</span>{" "}
-                            {business.deposit_account_number}
-                          </p>
-                        ) : null}
-                        {business.deposit_holder_rut ? (
-                          <p>
-                            <span className="font-semibold text-slate-950">RUT titular:</span>{" "}
-                            {business.deposit_holder_rut}
-                          </p>
-                        ) : null}
-                        {business.deposit_holder_name ? (
-                          <p className="sm:col-span-2">
-                            <span className="font-semibold text-slate-950">Nombre titular:</span>{" "}
-                            {business.deposit_holder_name}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <label className="mt-3 block text-xs font-semibold text-slate-700">
-                        Comprobante de transferencia (JPG, PNG o PDF, máx. 5MB) *
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,application/pdf"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null;
-                          setSubmitError("");
-                          if (
-                            file &&
-                            !["image/jpeg", "image/png", "application/pdf"].includes(file.type)
-                          ) {
-                            setSubmitError("El comprobante debe ser JPG, PNG o PDF.");
-                            setDepositReceiptFile(null);
-                            e.target.value = "";
-                            return;
-                          }
-                          if (file && file.size > 5 * 1024 * 1024) {
-                            setSubmitError("El comprobante no puede superar los 5MB.");
-                            setDepositReceiptFile(null);
-                            e.target.value = "";
-                            return;
-                          }
-                          setDepositReceiptFile(file);
-                        }}
-                        className="mt-1.5 block w-full text-sm text-slate-700 file:mr-3 file:rounded-none file:border-0 file:bg-slate-950 file:px-3.5 file:py-2 file:text-sm file:font-semibold file:text-white"
-                      />
-                      {depositReceiptFile ? (
-                        <p className="mt-1.5 text-xs text-emerald-700">
-                          Archivo seleccionado: {depositReceiptFile.name}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
 
                   {submitError ? (
                     <div className="mt-4 rounded-none border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
