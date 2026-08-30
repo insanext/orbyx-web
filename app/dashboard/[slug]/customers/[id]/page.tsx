@@ -315,6 +315,21 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Par label/valor de solo lectura para el perfil del paciente (Tarea B,
+// restaurado) — mismo look que el resto del módulo para datos no editables.
+function ReadField({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </p>
+      <p className="mt-0.5 text-sm" style={{ color: value ? "var(--text-main)" : "var(--text-muted)" }}>
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
 // Campo de nota clínica con ícono + label chico junto al campo (Tarea C) —
 // `tinted` agrega el fondo de color suave que pide la imagen solo para
 // Diagnóstico/Tratamiento; el resto solo lleva el ícono de color.
@@ -429,10 +444,11 @@ export default function CustomerDetailPage() {
 
   // Clínica humana (isClinica): edición de datos del paciente
   const [showResumenModal, setShowResumenModal] = useState(false);
-  // Vista "Historial de atenciones" a pantalla completa dentro de la misma
-  // página (sin ruta nueva) — se abre desde la ficha del paciente y su botón
-  // "Volver al paciente" simplemente vuelve a mostrar la ficha.
-  const [showHistorial, setShowHistorial] = useState(false);
+  // Ficha del paciente: perfil de solo lectura por defecto, con botón
+  // "Editar" que revela el formulario editable (mismos campos, mismo diseño
+  // visual nuevo) — el historial de atenciones queda siempre visible debajo,
+  // sin toggle propio.
+  const [editingPatient, setEditingPatient] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState("");
   const [savingNote, setSavingNote] = useState(false);
@@ -778,6 +794,7 @@ export default function CustomerDetailPage() {
             }
           : prev
       );
+      setEditingPatient(false);
     } catch (err: any) {
       setPetError(err?.message || "Error actualizando paciente");
     } finally {
@@ -1010,11 +1027,6 @@ export default function CustomerDetailPage() {
       hasAutoOpenedRef.current
     ) return;
     hasAutoOpenedRef.current = true;
-    // La ficha del paciente ahora vive dentro de una vista "Historial de
-    // atenciones" separada (Tarea C) — sin esto, el scroll a
-    // #historial-atenciones de abajo no encontraría el elemento porque
-    // seguiría oculto detrás de la ficha.
-    setShowHistorial(true);
 
     if (customer && !customer.phone && !customer.email) {
       setIncompleteProfileBanner(true);
@@ -1454,7 +1466,7 @@ const lastValidAppointment = validAppointments[0] || null;
 
   return (
   <div className="orbyx-patient-page space-y-6">
-    {(isClinica || isOdontologia) && !showHistorial ? (
+    {(isClinica || isOdontologia) ? (
       <button
         type="button"
         onClick={() => router.push(`/dashboard/${slug}/customers`)}
@@ -2661,8 +2673,6 @@ const lastValidAppointment = validAppointments[0] || null;
               </div>
             ) : null}
             {(isClinica || isOdontologia) ? (
-              <>
-              {!showHistorial ? (
                 <div className="space-y-4">
                   {/* Banner principal */}
                   <div
@@ -2705,17 +2715,34 @@ const lastValidAppointment = validAppointments[0] || null;
                           Datos del paciente e historial de atenciones clínicas.
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowResumenModal(true)}
-                        className="shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition"
-                        style={{ borderColor: "var(--pat-banner-border)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                      >
-                        Ver resumen
-                      </button>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowResumenModal(true)}
+                          className="shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition"
+                          style={{ borderColor: "var(--pat-banner-border)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                        >
+                          Ver resumen
+                        </button>
+                        {!editingPatient ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditPatientForm(patientFormFromCustomer(customer));
+                              setEditingPatient(true);
+                            }}
+                            className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+                            style={{ background: "var(--pat-blue-solid)" }}
+                          >
+                            Editar
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
 
+                  {editingPatient ? (
+                    <>
                   {/* Datos del contacto */}
                   <SectionCard icon={User} tone="blue" title="Datos del contacto">
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -2851,7 +2878,10 @@ const lastValidAppointment = validAppointments[0] || null;
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
-                      onClick={() => setEditPatientForm(patientFormFromCustomer(customer))}
+                      onClick={() => {
+                        setEditPatientForm(patientFormFromCustomer(customer));
+                        setEditingPatient(false);
+                      }}
                       className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
                       style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                     >
@@ -2868,19 +2898,66 @@ const lastValidAppointment = validAppointments[0] || null;
                       {savingPet ? "Guardando..." : "Guardar cambios"}
                     </button>
                   </div>
-                </div>
-              ) : null}
+                    </>
+                  ) : (
+                    <>
+                      {/* Datos del contacto (lectura) */}
+                      <SectionCard icon={User} tone="blue" title="Datos del contacto">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <ReadField label="Nombre" value={customer?.name} />
+                          <ReadField label="Teléfono" value={customer?.phone} />
+                          <ReadField label="Email" value={customer?.email} />
+                          <ReadField label="RUT" value={customer?.rut} />
+                        </div>
+                      </SectionCard>
 
-              {showHistorial ? (
-                <div className="space-y-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowHistorial(false)}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium transition hover:underline"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    ← Volver al paciente
-                  </button>
+                      {/* Datos personales (lectura) */}
+                      <SectionCard icon={User} tone="green" title="Datos personales">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <ReadField label="Fecha de nacimiento" value={customer?.birth_date ? formatDate(customer.birth_date) : null} />
+                          <ReadField label="Sexo" value={customer?.sex} />
+                          <ReadField label="Ocupación" value={customer?.occupation} />
+                          <ReadField label="Previsión de salud" value={customer?.health_insurance} />
+                        </div>
+                      </SectionCard>
+
+                      {/* Contacto de emergencia (lectura) */}
+                      <SectionCard icon={Phone} tone="amber" title="Contacto de emergencia">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <ReadField label="Nombre" value={customer?.emergency_contact_name} />
+                          <ReadField label="Teléfono" value={customer?.emergency_contact_phone} />
+                        </div>
+                      </SectionCard>
+
+                      {/* Antecedentes médicos (lectura) */}
+                      <SectionCard icon={HeartPlus} tone="violet" title="Antecedentes médicos">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <ReadField label="Alergias conocidas" value={customer?.known_allergies} />
+                          <ReadField label="Patologías crónicas" value={customer?.chronic_conditions} />
+                        </div>
+                        {isOdontologia && ((customer as any)?.extra_fields?.grupo_sanguineo || (customer as any)?.extra_fields?.alergia_anestesia || (customer as any)?.extra_fields?.obs_generales_dental) ? (
+                          <div className="mt-4 space-y-3 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                              Antecedentes dentales
+                            </p>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <ReadField label="Grupo sanguíneo" value={(customer as any)?.extra_fields?.grupo_sanguineo} />
+                              <ReadField label="Alergias a anestesia" value={(customer as any)?.extra_fields?.alergia_anestesia} />
+                            </div>
+                            <ReadField label="Observaciones generales" value={(customer as any)?.extra_fields?.obs_generales_dental} />
+                          </div>
+                        ) : null}
+                      </SectionCard>
+
+                      {/* Antecedentes familiares (lectura) */}
+                      <SectionCard icon={Users} tone="rose" title="Antecedentes familiares">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <ReadField label="Enfermedades familiares" value={customer?.family_history} />
+                          <ReadField label="Hábitos" value={customer?.habits} />
+                        </div>
+                      </SectionCard>
+                    </>
+                  )}
 
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-lg font-bold" style={{ color: "var(--text-main)" }}>
@@ -3482,8 +3559,6 @@ const lastValidAppointment = validAppointments[0] || null;
                   </div>
                 </div>
               </div>
-              ) : null}
-              </>
             ) : null}
 
             {/* Historial de atenciones — negocios genéricos, columna izquierda */}
