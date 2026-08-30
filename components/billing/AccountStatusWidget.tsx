@@ -209,6 +209,21 @@ export function AccountStatusWidget({
   const [depositHolderName, setDepositHolderName] = useState("");
   const [savingDepositField, setSavingDepositField] = useState<string | null>(null);
   const [depositError, setDepositError] = useState("");
+  // Ficha de datos bancarios: mismo patrón ver/editar que "Editar cliente" en
+  // dashboard/[slug]/customers/[id]/page.tsx (editingCustomer/editCustomerForm)
+  // — modo lectura con botón "Editar" cuando los 5 campos están completos,
+  // formulario editable si no. El snapshot se toma al entrar a editar (no se
+  // usa `status.*`, que puede quedar desactualizado tras un guardado previo
+  // en la misma sesión) para que "Cancelar" revierta al último valor
+  // guardado, no al valor cargado al abrir la página.
+  const [editingDepositBankFields, setEditingDepositBankFields] = useState(false);
+  const [depositBankSnapshot, setDepositBankSnapshot] = useState({
+    bank_name: "",
+    account_type: "",
+    account_number: "",
+    holder_rut: "",
+    holder_name: "",
+  });
 
   const [depositServices, setDepositServices] = useState<
     { id: string; name: string; requires_deposit: boolean; deposit_amount: string }[]
@@ -488,6 +503,69 @@ export function AccountStatusWidget({
     }
   }
 
+  function startEditingDepositBankFields() {
+    setDepositBankSnapshot({
+      bank_name: depositBankName,
+      account_type: depositAccountType,
+      account_number: depositAccountNumber,
+      holder_rut: depositHolderRut,
+      holder_name: depositHolderName,
+    });
+    setDepositError("");
+    setEditingDepositBankFields(true);
+  }
+
+  function cancelEditingDepositBankFields() {
+    setDepositBankName(depositBankSnapshot.bank_name);
+    setDepositAccountType(depositBankSnapshot.account_type);
+    setDepositAccountNumber(depositBankSnapshot.account_number);
+    setDepositHolderRut(depositBankSnapshot.holder_rut);
+    setDepositHolderName(depositBankSnapshot.holder_name);
+    setDepositError("");
+    setEditingDepositBankFields(false);
+  }
+
+  // Guarda los 5 campos juntos en un solo PATCH (antes se guardaba cada uno
+  // por separado onBlur/onChange) y actualiza el estado local con la
+  // respuesta real del backend antes de volver a modo lectura — no basta con
+  // ocultar el formulario, porque si se hiciera solo eso la vista de lectura
+  // mostraría lo que el usuario escribió, no lo que efectivamente quedó
+  // guardado si el backend normalizó algo (ej. trim). Mecanismo de guardado
+  // (PATCH /tenants/:id/deposit-settings) y validación de los 5 campos sin
+  // cambios — solo cambia que ahora se mandan juntos en vez de uno a uno.
+  async function handleSaveDepositBankFields() {
+    setDepositError("");
+    setSavingDepositField("bank_fields");
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/tenants/${tenantId}/deposit-settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deposit_bank_name: depositBankName,
+          deposit_account_type: depositAccountType,
+          deposit_account_number: depositAccountNumber,
+          deposit_holder_rut: depositHolderRut,
+          deposit_holder_name: depositHolderName,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "No se pudo guardar");
+
+      setDepositBankName(data.deposit_bank_name ?? "");
+      setDepositAccountType(data.deposit_account_type ?? "");
+      setDepositAccountNumber(data.deposit_account_number ?? "");
+      setDepositHolderRut(data.deposit_holder_rut ?? "");
+      setDepositHolderName(data.deposit_holder_name ?? "");
+      setEditingDepositBankFields(false);
+    } catch (err) {
+      setDepositError(
+        err instanceof Error ? err.message : "No se pudo guardar los datos bancarios. Intenta de nuevo."
+      );
+    } finally {
+      setSavingDepositField(null);
+    }
+  }
+
   if (!status) return null;
 
   const liveWaConfirmacion: UsageCounter = {
@@ -749,87 +827,114 @@ export function AccountStatusWidget({
 
                 {depositRequired ? (
                   <div className="space-y-2 px-3 pb-3 pt-1">
-                    <input
-                      type="text"
-                      placeholder="Banco"
-                      value={depositBankName}
-                      disabled={savingDepositField === "deposit_bank_name"}
-                      onChange={(e) => setDepositBankName(e.target.value)}
-                      onBlur={() =>
-                        saveDepositSetting("deposit_bank_name", depositBankName, () =>
-                          setDepositBankName(status.deposit_bank_name)
-                        )
-                      }
-                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
-                      style={{ borderColor, background: dropdownBg, color: textMain }}
-                    />
-                    <select
-                      value={depositAccountType}
-                      disabled={savingDepositField === "deposit_account_type"}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setDepositAccountType(value);
-                        saveDepositSetting("deposit_account_type", value, () =>
-                          setDepositAccountType(status.deposit_account_type)
-                        );
-                      }}
-                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
-                      style={{ borderColor, background: dropdownBg, color: textMain }}
-                    >
-                      <option value="">Tipo de cuenta</option>
-                      {DEPOSIT_ACCOUNT_TYPES.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="Número de cuenta"
-                      value={depositAccountNumber}
-                      disabled={savingDepositField === "deposit_account_number"}
-                      onChange={(e) => setDepositAccountNumber(e.target.value)}
-                      onBlur={() =>
-                        saveDepositSetting("deposit_account_number", depositAccountNumber, () =>
-                          setDepositAccountNumber(status.deposit_account_number)
-                        )
-                      }
-                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
-                      style={{ borderColor, background: dropdownBg, color: textMain }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="RUT titular"
-                      value={depositHolderRut}
-                      disabled={savingDepositField === "deposit_holder_rut"}
-                      onChange={(e) => setDepositHolderRut(e.target.value)}
-                      onBlur={() =>
-                        saveDepositSetting("deposit_holder_rut", depositHolderRut, () =>
-                          setDepositHolderRut(status.deposit_holder_rut)
-                        )
-                      }
-                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
-                      style={{ borderColor, background: dropdownBg, color: textMain }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Nombre titular"
-                      value={depositHolderName}
-                      disabled={savingDepositField === "deposit_holder_name"}
-                      onChange={(e) => setDepositHolderName(e.target.value)}
-                      onBlur={() =>
-                        saveDepositSetting("deposit_holder_name", depositHolderName, () =>
-                          setDepositHolderName(status.deposit_holder_name)
-                        )
-                      }
-                      className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
-                      style={{ borderColor, background: dropdownBg, color: textMain }}
-                    />
-                    {!depositFieldsComplete ? (
-                      <p className="text-[10px] font-medium" style={{ color: "rgb(217,119,6)" }}>
-                        Completa los 5 datos — los clientes no verán esta sección hasta entonces.
-                      </p>
-                    ) : null}
+                    {depositFieldsComplete && !editingDepositBankFields ? (
+                      <div
+                        className="space-y-1 rounded-lg border p-2.5 text-xs"
+                        style={{ borderColor, color: textMain }}
+                      >
+                        <p>
+                          <span className="font-semibold">Banco:</span> {depositBankName}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Tipo de cuenta:</span> {depositAccountType}
+                        </p>
+                        <p>
+                          <span className="font-semibold">N° de cuenta:</span> {depositAccountNumber}
+                        </p>
+                        <p>
+                          <span className="font-semibold">RUT titular:</span> {depositHolderRut}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Nombre titular:</span> {depositHolderName}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={startEditingDepositBankFields}
+                          className="mt-1 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition hover:opacity-80"
+                          style={{ borderColor, color: textMain }}
+                        >
+                          Editar
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Banco"
+                          value={depositBankName}
+                          disabled={savingDepositField === "bank_fields"}
+                          onChange={(e) => setDepositBankName(e.target.value)}
+                          className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                          style={{ borderColor, background: dropdownBg, color: textMain }}
+                        />
+                        <select
+                          value={depositAccountType}
+                          disabled={savingDepositField === "bank_fields"}
+                          onChange={(e) => setDepositAccountType(e.target.value)}
+                          className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                          style={{ borderColor, background: dropdownBg, color: textMain }}
+                        >
+                          <option value="">Tipo de cuenta</option>
+                          {DEPOSIT_ACCOUNT_TYPES.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Número de cuenta"
+                          value={depositAccountNumber}
+                          disabled={savingDepositField === "bank_fields"}
+                          onChange={(e) => setDepositAccountNumber(e.target.value)}
+                          className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                          style={{ borderColor, background: dropdownBg, color: textMain }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="RUT titular"
+                          value={depositHolderRut}
+                          disabled={savingDepositField === "bank_fields"}
+                          onChange={(e) => setDepositHolderRut(e.target.value)}
+                          className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                          style={{ borderColor, background: dropdownBg, color: textMain }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Nombre titular"
+                          value={depositHolderName}
+                          disabled={savingDepositField === "bank_fields"}
+                          onChange={(e) => setDepositHolderName(e.target.value)}
+                          className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
+                          style={{ borderColor, background: dropdownBg, color: textMain }}
+                        />
+                        {!depositFieldsComplete ? (
+                          <p className="text-[10px] font-medium" style={{ color: "rgb(217,119,6)" }}>
+                            Completa los 5 datos — los clientes no verán esta sección hasta entonces.
+                          </p>
+                        ) : null}
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={handleSaveDepositBankFields}
+                            disabled={savingDepositField === "bank_fields"}
+                            className="rounded-lg px-3 py-1 text-[11px] font-semibold text-white transition disabled:opacity-60"
+                            style={{ background: "rgb(37,99,235)" }}
+                          >
+                            {savingDepositField === "bank_fields" ? "Guardando..." : "Guardar"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditingDepositBankFields}
+                            disabled={savingDepositField === "bank_fields"}
+                            className="rounded-lg border px-3 py-1 text-[11px] font-medium transition disabled:opacity-60"
+                            style={{ borderColor, color: textMuted }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </>
+                    )}
 
                     <div className="mt-2 border-t pt-2" style={{ borderColor }}>
                       <p className="text-[11px] font-semibold" style={{ color: textMain }}>
