@@ -2796,7 +2796,7 @@ function updateHourByIndex(
       </Panel>
     ) : null}
 
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
+    <div className="orbyx-biz-summary grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
       {[
         {
           label: "Nombre",
@@ -2831,11 +2831,10 @@ function updateHourByIndex(
       ].map((item) => (
         <div
           key={item.label}
-          className="rounded-2xl border px-4 py-3"
+          className="rounded-none border px-4 py-3"
           style={{
             borderColor: "var(--border-color)",
-            background:
-              "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+            background: "var(--biz-summary-tint)",
           }}
         >
           <p
@@ -2855,6 +2854,14 @@ function updateHourByIndex(
         </div>
       ))}
     </div>
+    <style jsx>{`
+      .orbyx-biz-summary {
+        --biz-summary-tint: #eff6ff;
+      }
+      :global(:root[data-theme="nocturno"]) .orbyx-biz-summary {
+        --biz-summary-tint: #132a44;
+      }
+    `}</style>
 
 </div>
 </div>
