@@ -49,6 +49,7 @@ type BusinessResponse = {
     slug: string;
     plan_slug?: string | null;
     business_category?: string | null;
+    deposit_required?: boolean | null;
   };
 };
 
@@ -63,7 +64,7 @@ type BranchItem = {
 
 type NotificationEvent = {
   id: string;
-  type: "new_booking" | "canceled" | "comment";
+  type: "new_booking" | "canceled" | "comment" | "deposit_receipt";
   customerName: string;
   serviceName: string;
   startAt: string;
@@ -101,6 +102,25 @@ function formatNotifGroupDate(ts: number) {
     month: "short",
     year: "numeric",
   });
+}
+
+// Permiso de notificación de escritorio (Web Notification API) para
+// depósitos pendientes — pedido no intrusivo: solo para tenants que usan
+// depósitos (no le pregunta a todo el mundo), solo si el navegador todavía
+// no tiene una respuesta guardada, y con un pequeño delay para no competir
+// con la carga inicial del dashboard. Si el tenant lo rechaza, el navegador
+// ya recuerda el rechazo y esto deja de pedirlo. Función plana (no un hook)
+// llamada directo desde el fetch de negocio ya existente en el componente,
+// para no sumar otro useState/useEffect a un componente que ya tiene un
+// early return antes de sus hooks (problema preexistente, fuera de alcance).
+function requestDepositNotificationPermissionIfNeeded(depositRequired: boolean | null | undefined) {
+  if (!depositRequired) return;
+  if (typeof window === "undefined" || typeof Notification === "undefined") return;
+  if (Notification.permission !== "default") return;
+
+  setTimeout(() => {
+    Notification.requestPermission().catch(() => {});
+  }, 3000);
 }
 
 const navItems = [
@@ -362,6 +382,11 @@ export default function DashboardLayout({
         setBusinessName(businessData.business.name || slug);
         setPlan(String(businessData.business.plan_slug || "pro").toLowerCase());
         setBusinessCategory(String(businessData.business.business_category || "").trim().toLowerCase());
+        // Pedido de permiso de notificación de escritorio para depósitos —
+        // llamado directo (no otro hook) para no sumar otro useState/useEffect
+        // a este componente, que ya tiene un early return (línea ~207) antes
+        // de sus hooks — un problema preexistente, fuera de alcance acá.
+        requestDepositNotificationPermissionIfNeeded(businessData.business.deposit_required);
 
         const branchesRes = await apiFetch(
           `${BACKEND_URL}/branches?tenant_id=${currentTenantId}`
@@ -583,6 +608,42 @@ export default function DashboardLayout({
               createdAt: now,
             };
             setNotifications((prev) => [event, ...prev].slice(0, 50));
+          }
+
+          // Depósito: comprobante recién subido (deposit_receipt_path pasó de
+          // vacío a tener valor, mientras sigue pending). No se dispara al
+          // crear la reserva ni al arrancar el cronómetro de 10 min — recién
+          // acá hay algo que el tenant puede revisar. Reutiliza esta misma
+          // suscripción Realtime (ya escucha UPDATE de appointments por
+          // tenant_id) en vez de abrir un canal nuevo.
+          if (
+            row.deposit_status === "pending" &&
+            row.deposit_receipt_path &&
+            !prevRow.deposit_receipt_path
+          ) {
+            const now = Date.now();
+            const event: NotificationEvent = {
+              id: `${row.id}-deposit-${now}`,
+              type: "deposit_receipt",
+              customerName: row.customer_name || "Cliente",
+              serviceName: row.service_name_snapshot || "Servicio",
+              startAt: row.start_at,
+              read: false,
+              createdAt: now,
+            };
+            setNotifications((prev) => [event, ...prev].slice(0, 50));
+
+            // Complemento del badge/campana, no un reemplazo — solo si el
+            // navegador ya tiene permiso concedido (pedido de forma no
+            // intrusiva en el useEffect de más abajo).
+            if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+              try {
+                new Notification("Depósito para revisar", {
+                  body: `${event.customerName} · ${event.serviceName}`,
+                  tag: `deposit-${row.id}`,
+                });
+              } catch {}
+            }
           }
         }
       )
@@ -1617,7 +1678,15 @@ export default function DashboardLayout({
                                 <div
                                   key={n.id}
                                   className="border-t px-4 py-3"
-                                  style={{ borderColor: sidebarBorder }}
+                                  style={{
+                                    borderColor: sidebarBorder,
+                                    cursor: n.type === "deposit_receipt" ? "pointer" : "default",
+                                  }}
+                                  onClick={() => {
+                                    if (n.type !== "deposit_receipt") return;
+                                    setNotifPanelOpen(false);
+                                    router.push(`/dashboard/${slug}/agenda?openDeposits=1`);
+                                  }}
                                 >
                                   <p
                                     className="text-sm font-semibold"
@@ -1627,6 +1696,8 @@ export default function DashboardLayout({
                                       ? "Nueva reserva"
                                       : n.type === "canceled"
                                       ? "Cita cancelada"
+                                      : n.type === "deposit_receipt"
+                                      ? "Depósito para revisar"
                                       : "Nuevo comentario en reserva"}
                                   </p>
                                   <p

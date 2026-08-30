@@ -2,7 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   Check,
@@ -386,6 +386,7 @@ function StatCard({
 export default function AgendaPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slug =
     ((params as { slug?: string })?.slug as string) ||
     ((params as { Slug?: string })?.Slug as string);
@@ -397,6 +398,14 @@ const [slotMinutes, setSlotMinutes] = useState(30);
   const [depositRequired, setDepositRequired] = useState(false);
   const [pendingDeposits, setPendingDeposits] = useState<PendingDeposit[]>([]);
   const [depositsModalOpen, setDepositsModalOpen] = useState(false);
+  // Permite abrir el modal directo desde un link externo (ej. el email de
+  // "depósito para revisar" y el ítem de la campana de notificaciones del
+  // header) sin tener que clickear el botón del toolbar primero.
+  useEffect(() => {
+    if (searchParams.get("openDeposits") === "1") {
+      setDepositsModalOpen(true);
+    }
+  }, [searchParams]);
   const [depositActionId, setDepositActionId] = useState<string | null>(null);
   const [depositActionError, setDepositActionError] = useState("");
   const [depositReceiptUrls, setDepositReceiptUrls] = useState<Record<string, string>>({});
