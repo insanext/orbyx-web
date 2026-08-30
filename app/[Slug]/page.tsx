@@ -24,6 +24,7 @@ type ServiceItem = {
   is_group?: boolean | null;
   capacity?: number | null;
   group_id?: string | null;
+  requires_deposit?: boolean | null;
 };
 
 type ServiceGroupItem = {
@@ -1165,6 +1166,26 @@ const [loadingNextSlots, setLoadingNextSlots] = useState(false);
   const [depositUploadError, setDepositUploadError] = useState("");
   const [depositRemainingSeconds, setDepositRemainingSeconds] = useState(0);
 
+  // El flujo de depósito (datos bancarios + cronómetro + comprobante
+  // obligatorio) aplica solo si se cumplen las 3 condiciones: el interruptor
+  // maestro del tenant, el servicio puntual seleccionado (requires_deposit,
+  // igual que ya valida el backend en POST /appointments/slot) y que el
+  // tenant haya cargado los 5 datos bancarios completos — si falta alguno,
+  // se trata como si el servicio no pidiera depósito (no bloquea la reserva
+  // por un dato de configuración que el cliente no puede resolver).
+  const depositBankFieldsComplete = Boolean(
+    business?.deposit_bank_name?.trim() &&
+      business?.deposit_account_type?.trim() &&
+      business?.deposit_account_number?.trim() &&
+      business?.deposit_holder_rut?.trim() &&
+      business?.deposit_holder_name?.trim()
+  );
+  const depositFlowApplies = Boolean(
+    business?.deposit_required &&
+      selectedService?.requires_deposit &&
+      depositBankFieldsComplete
+  );
+
   // Cronómetro informativo — la ventana de 10 min la libera de verdad el
   // cron del backend (POST /appointments/maintenance/release-expired-deposits),
   // esto solo le muestra al cliente cuánto tiempo le queda al negocio para
@@ -1938,7 +1959,7 @@ finally {
         return;
       }
 
-      if (business?.deposit_required && !depositReceiptFile) {
+      if (depositFlowApplies && !depositReceiptFile) {
         setSubmitError("Debes subir tu comprobante de depósito antes de continuar.");
         return;
       }
@@ -3274,7 +3295,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     ))}
                   </div>
 
-                  {business?.deposit_required ? (
+                  {business && depositFlowApplies ? (
                     <div className="mt-4 rounded-none border border-amber-200 bg-amber-50/70 p-4 md:rounded-none md:p-5">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
                         Depósito requerido para confirmar
