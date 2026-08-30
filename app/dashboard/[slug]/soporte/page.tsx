@@ -49,6 +49,14 @@ export default function SoportePage() {
   const [view, setView] = useState<'faq' | 'list' | 'new' | 'detail'>('faq')
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
+  // El bucket ticket-attachments es privado: lo guardado en attachments (una
+  // URL publica vieja, o un path) nunca se usa directo como src/href — se
+  // resuelve a un signed URL de corta duracion via el backend y se cachea
+  // acá por el valor original, para no repetir el pedido en cada render.
+  // Nombre distinto de la variable local `attachmentUrls` que ya existe en
+  // handleCreateTicket/handleReply (esa es el array recién subido, esto es
+  // el mapa valor-guardado -> signed url).
+  const [signedAttachmentUrls, setSignedAttachmentUrls] = useState<Record<string, string>>({})
 
   const [subject, setSubject] = useState('')
   const [category, setCategory] = useState('agenda_reservas')
@@ -123,6 +131,33 @@ export default function SoportePage() {
     return urls
   }
 
+  // Pide al backend un signed URL por cada adjunto todavía no resuelto
+  // (evita repetir el pedido si ya está en cache) y los agrega al mapa.
+  const resolveAttachmentUrls = async (ticketId: string, values: string[]) => {
+    const pending = Array.from(new Set(values.filter(v => v && !signedAttachmentUrls[v])))
+    if (pending.length === 0) return
+    const resolved = await Promise.all(
+      pending.map(async (value) => {
+        try {
+          const res = await apiFetch(
+            `${BACKEND_URL}/support/tickets/${ticketId}/attachment-url?tenant_id=${tenantId}&attachment=${encodeURIComponent(value)}`
+          )
+          const data = await res.json()
+          return [value, res.ok ? data.url : null] as const
+        } catch {
+          return [value, null] as const
+        }
+      })
+    )
+    setSignedAttachmentUrls(prev => {
+      const next = { ...prev }
+      for (const [value, url] of resolved) {
+        if (url) next[value] = url
+      }
+      return next
+    })
+  }
+
   const handleCreateTicket = async () => {
     if (!subject.trim() || !description.trim()) {
       setSubmitMsg('Completa el asunto y la descripción.')
@@ -166,7 +201,15 @@ export default function SoportePage() {
     setMessages([])
     const res = await apiFetch(`${BACKEND_URL}/support/tickets/${ticket.id}/messages?tenant_id=${tenantId}`)
     const data = await res.json()
-    setMessages(Array.isArray(data) ? data : [])
+    const msgs = Array.isArray(data) ? data : []
+    setMessages(msgs)
+    const allAttachments = [
+      ...(ticket.attachments ?? []),
+      ...msgs.flatMap((m: any) => m.attachments ?? []),
+    ]
+    if (allAttachments.length > 0) {
+      resolveAttachmentUrls(ticket.id, allAttachments)
+    }
     if (ticket.has_unread_for_customer) {
       await apiFetch(`${BACKEND_URL}/support/tickets/${ticket.id}/mark-read`, {
         method: 'PATCH',
@@ -195,6 +238,9 @@ export default function SoportePage() {
       const data = await res.json()
       if (res.ok) {
         setMessages(prev => [...prev, data])
+        if (attachmentUrls.length > 0) {
+          resolveAttachmentUrls(selectedTicket.id, attachmentUrls)
+        }
         setReplyText('')
         setReplyFiles([])
         loadTickets(tenantId)
@@ -439,11 +485,15 @@ export default function SoportePage() {
             <p className="text-sm" style={{ color: "var(--text-main)", opacity: 0.85 }}>{selectedTicket.description}</p>
             {selectedTicket.attachments?.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
-                {selectedTicket.attachments.map((url: string, i: number) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt="" className="w-20 h-20 object-cover rounded-lg border" style={{ borderColor: "var(--border-color)" }} />
-                  </a>
-                ))}
+                {selectedTicket.attachments.map((url: string, i: number) => {
+                  const signedUrl = signedAttachmentUrls[url]
+                  if (!signedUrl) return null
+                  return (
+                    <a key={i} href={signedUrl} target="_blank" rel="noopener noreferrer">
+                      <img src={signedUrl} alt="" className="w-20 h-20 object-cover rounded-lg border" style={{ borderColor: "var(--border-color)" }} />
+                    </a>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -489,11 +539,15 @@ export default function SoportePage() {
                   <p className="text-sm" style={{ color: "var(--text-main)" }}>{m.message}</p>
                   {m.attachments?.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {m.attachments.map((url: string, i: number) => (
-                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                          <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border" style={{ borderColor: "var(--border-color)" }} />
-                        </a>
-                      ))}
+                      {m.attachments.map((url: string, i: number) => {
+                        const signedUrl = signedAttachmentUrls[url]
+                        if (!signedUrl) return null
+                        return (
+                          <a key={i} href={signedUrl} target="_blank" rel="noopener noreferrer">
+                            <img src={signedUrl} alt="" className="w-16 h-16 object-cover rounded-lg border" style={{ borderColor: "var(--border-color)" }} />
+                          </a>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
