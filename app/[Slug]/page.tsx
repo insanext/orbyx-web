@@ -25,6 +25,7 @@ type ServiceItem = {
   capacity?: number | null;
   group_id?: string | null;
   requires_deposit?: boolean | null;
+  deposit_amount?: number | null;
 };
 
 type ServiceGroupItem = {
@@ -3301,8 +3302,24 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         Depósito requerido para confirmar
                       </p>
                       <p className="mt-2 text-sm text-slate-700">
-                        Este negocio pide un depósito antes de confirmar tu hora en firme.
-                        Transfiere a la siguiente cuenta y sube tu comprobante:
+                        {Number(selectedService?.deposit_amount) > 0 ? (
+                          <>
+                            Debes transferir{" "}
+                            <strong>{formatPrice(selectedService?.deposit_amount)}</strong> para
+                            reservar este servicio. Transfiere a la siguiente cuenta y sube tu
+                            comprobante:
+                          </>
+                        ) : (
+                          // Servicio marcado con requires_deposit pero sin deposit_amount
+                          // (dato legado o el tenant lo dejó vacío) — no se oculta el
+                          // depósito por completo, solo el mensaje genérico hasta que se
+                          // complete (ver 2026-08-30-services-deposit-amount.sql).
+                          <>
+                            Este negocio pide un depósito antes de confirmar tu hora en firme.
+                            Transfiere el monto correspondiente a la siguiente cuenta y sube tu
+                            comprobante:
+                          </>
+                        )}
                       </p>
 
                       <div className="mt-3 grid gap-1.5 rounded-none border border-amber-100 bg-white p-3 text-sm text-slate-700 sm:grid-cols-2">

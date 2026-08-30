@@ -211,7 +211,7 @@ export function AccountStatusWidget({
   const [depositError, setDepositError] = useState("");
 
   const [depositServices, setDepositServices] = useState<
-    { id: string; name: string; requires_deposit: boolean }[]
+    { id: string; name: string; requires_deposit: boolean; deposit_amount: string }[]
   >([]);
   const [depositServicesLoading, setDepositServicesLoading] = useState(false);
   const [depositServicesLoaded, setDepositServicesLoaded] = useState(false);
@@ -322,11 +322,14 @@ export function AccountStatusWidget({
         if (!res.ok) throw new Error(data?.error || "No se pudo cargar");
 
         setDepositServices(
-          (data.services || []).map((s: { id: string; name: string; requires_deposit?: boolean }) => ({
-            id: s.id,
-            name: s.name,
-            requires_deposit: Boolean(s.requires_deposit),
-          }))
+          (data.services || []).map(
+            (s: { id: string; name: string; requires_deposit?: boolean; deposit_amount?: number | null }) => ({
+              id: s.id,
+              name: s.name,
+              requires_deposit: Boolean(s.requires_deposit),
+              deposit_amount: s.deposit_amount != null ? String(s.deposit_amount) : "",
+            })
+          )
         );
         setDepositServicesLoaded(true);
       } catch {
@@ -339,32 +342,90 @@ export function AccountStatusWidget({
     loadDepositServices();
   }, [open, activeAccountTab, depositRequired, depositServicesLoaded, tenantId, slug]);
 
-  async function toggleServiceRequiresDeposit(service: {
+  type DepositServiceRow = {
     id: string;
     name: string;
     requires_deposit: boolean;
-  }) {
+    deposit_amount: string;
+  };
+
+  // Guarda requires_deposit + deposit_amount juntos en un solo PATCH — el
+  // backend (server.js, PATCH /services/:id) exige que si requires_deposit
+  // queda en true, deposit_amount venga y sea > 0, así que ambos campos
+  // viajan siempre coordinados.
+  async function saveServiceDeposit(
+    serviceId: string,
+    requiresDeposit: boolean,
+    depositAmount: string,
+    revert: () => void
+  ) {
+    setDepositServicesError("");
+    setSavingDepositServiceId(serviceId);
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/services/${serviceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          requires_deposit: requiresDeposit,
+          ...(requiresDeposit ? { deposit_amount: Number(depositAmount) } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "No se pudo guardar");
+    } catch (err) {
+      revert();
+      setDepositServicesError(
+        err instanceof Error ? err.message : "No se pudo guardar el cambio de un servicio. Intenta de nuevo."
+      );
+    } finally {
+      setSavingDepositServiceId(null);
+    }
+  }
+
+  function toggleServiceRequiresDeposit(service: DepositServiceRow) {
     const next = !service.requires_deposit;
     setDepositServicesError("");
     setDepositServices((prev) =>
       prev.map((s) => (s.id === service.id ? { ...s, requires_deposit: next } : s))
     );
-    setSavingDepositServiceId(service.id);
-    try {
-      const res = await apiFetch(`${BACKEND_URL}/services/${service.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenant_id: tenantId, requires_deposit: next }),
-      });
-      if (!res.ok) throw new Error("No se pudo guardar");
-    } catch {
-      setDepositServices((prev) =>
-        prev.map((s) => (s.id === service.id ? { ...s, requires_deposit: !next } : s))
+
+    if (!next) {
+      // Desmarcar no exige monto — se guarda de inmediato, igual que antes.
+      // deposit_amount no se toca (no se limpia), mismo criterio que el resto
+      // de los campos de depósito en este componente.
+      saveServiceDeposit(service.id, false, service.deposit_amount, () =>
+        setDepositServices((prev) =>
+          prev.map((s) => (s.id === service.id ? { ...s, requires_deposit: true } : s))
+        )
       );
-      setDepositServicesError("No se pudo guardar el cambio de un servicio. Intenta de nuevo.");
-    } finally {
-      setSavingDepositServiceId(null);
+      return;
     }
+
+    if (Number(service.deposit_amount) > 0) {
+      // Ya tenía un monto válido guardado de antes (ej. se desmarcó y se
+      // volvió a marcar en la misma sesión) — no hace falta pedirlo de nuevo.
+      saveServiceDeposit(service.id, true, service.deposit_amount, () =>
+        setDepositServices((prev) =>
+          prev.map((s) => (s.id === service.id ? { ...s, requires_deposit: false } : s))
+        )
+      );
+    }
+    // Si no hay monto válido todavía, no se guarda aún — el input de monto
+    // que aparece debajo dispara el guardado combinado en su onBlur
+    // (commitDepositServiceAmount).
+  }
+
+  function updateDepositServiceAmountDraft(serviceId: string, value: string) {
+    setDepositServices((prev) =>
+      prev.map((s) => (s.id === serviceId ? { ...s, deposit_amount: value } : s))
+    );
+  }
+
+  function commitDepositServiceAmount(service: DepositServiceRow) {
+    if (!service.requires_deposit) return;
+    if (!(Number(service.deposit_amount) > 0)) return;
+    saveServiceDeposit(service.id, true, service.deposit_amount, () => {});
   }
 
   async function saveWhatsAppSetting(
@@ -787,25 +848,62 @@ export function AccountStatusWidget({
                           No hay servicios activos en esta sucursal.
                         </p>
                       ) : (
-                        <div className="mt-1.5 max-h-40 space-y-0.5 overflow-y-auto">
-                          {depositServices.map((service) => (
-                            <label
-                              key={service.id}
-                              className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-xs"
-                              style={{
-                                color: textMain,
-                                opacity: savingDepositServiceId === service.id ? 0.6 : 1,
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={service.requires_deposit}
-                                disabled={savingDepositServiceId === service.id}
-                                onChange={() => toggleServiceRequiresDeposit(service)}
-                              />
-                              <span className="truncate">{service.name}</span>
-                            </label>
-                          ))}
+                        <div className="mt-1.5 max-h-52 space-y-1 overflow-y-auto">
+                          {depositServices.map((service) => {
+                            const amountMissing =
+                              service.requires_deposit && !(Number(service.deposit_amount) > 0);
+                            return (
+                              <div
+                                key={service.id}
+                                className="rounded-lg px-1.5 py-1"
+                                style={{ opacity: savingDepositServiceId === service.id ? 0.6 : 1 }}
+                              >
+                                <label className="flex items-center gap-2 text-xs" style={{ color: textMain }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={service.requires_deposit}
+                                    disabled={savingDepositServiceId === service.id}
+                                    onChange={() => toggleServiceRequiresDeposit(service)}
+                                  />
+                                  <span className="truncate">{service.name}</span>
+                                </label>
+                                {service.requires_deposit ? (
+                                  <div className="mt-1 pl-5">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-[11px]" style={{ color: textMuted }}>
+                                        $
+                                      </span>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        placeholder="Monto a transferir"
+                                        value={service.deposit_amount}
+                                        disabled={savingDepositServiceId === service.id}
+                                        onChange={(e) =>
+                                          updateDepositServiceAmountDraft(service.id, e.target.value)
+                                        }
+                                        onBlur={() => commitDepositServiceAmount(service)}
+                                        className="h-7 w-28 rounded-lg border px-2 text-xs outline-none disabled:opacity-60"
+                                        style={{ borderColor, background: dropdownBg, color: textMain }}
+                                      />
+                                      <span className="text-[10px]" style={{ color: textMuted }}>
+                                        CLP
+                                      </span>
+                                    </div>
+                                    {amountMissing ? (
+                                      <p
+                                        className="mt-0.5 text-[10px] font-medium"
+                                        style={{ color: "rgb(217,119,6)" }}
+                                      >
+                                        Falta el monto para activar el depósito en este servicio.
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
 
