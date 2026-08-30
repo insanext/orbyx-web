@@ -1,8 +1,26 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { StickyNote } from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import {
+  StickyNote,
+  User,
+  Phone,
+  HeartPlus,
+  Users,
+  Info,
+  Save,
+  NotebookPen,
+  MessageCircle,
+  ClipboardPen,
+  HeartPulse,
+  FileEdit,
+  Activity,
+  Pill,
+  ClipboardList,
+  Send,
+  CalendarCheck,
+} from "lucide-react";
 import { Panel } from "../../../../../components/dashboard/panel";
 import { apiFetch } from "@/lib/api";
 
@@ -31,6 +49,9 @@ type Customer = {
   chronic_conditions?: string | null;
   family_history?: string | null;
   habits?: string | null;
+  // Ya viene en la respuesta de GET /customers/:slug (mismo endpoint que usa
+  // el listado) — no es un campo nuevo, solo faltaba en este tipo local.
+  segment?: string;
 };
 
 type Pet = {
@@ -237,10 +258,96 @@ function EmptyState({
   );
 }
 
+/* ================= FICHA DEL PACIENTE — helpers visuales =================
+ * Paleta scoped a esta página (.orbyx-patient-page, ver <style jsx> al final
+ * del archivo) con variantes claro/oscuro reaccionando al mismo data-theme
+ * que ya usan Indicadores/Agenda/Clientes — mismo mecanismo, no uno nuevo. */
+type PatientTone = "blue" | "green" | "amber" | "violet" | "rose" | "teal" | "sky" | "orange";
+
+const PATIENT_TONE: Record<PatientTone, { solid: string; tint: string; text: string }> = {
+  blue: { solid: "var(--pat-blue-solid)", tint: "var(--pat-blue-tint)", text: "var(--pat-blue-text)" },
+  green: { solid: "var(--pat-green-solid)", tint: "var(--pat-green-tint)", text: "var(--pat-green-text)" },
+  amber: { solid: "var(--pat-amber-solid)", tint: "var(--pat-amber-tint)", text: "var(--pat-amber-text)" },
+  violet: { solid: "var(--pat-violet-solid)", tint: "var(--pat-violet-tint)", text: "var(--pat-violet-text)" },
+  rose: { solid: "var(--pat-rose-solid)", tint: "var(--pat-rose-tint)", text: "var(--pat-rose-text)" },
+  teal: { solid: "var(--pat-teal-solid)", tint: "var(--pat-teal-tint)", text: "var(--pat-teal-text)" },
+  sky: { solid: "var(--pat-sky-solid)", tint: "var(--pat-sky-tint)", text: "var(--pat-sky-text)" },
+  orange: { solid: "var(--pat-orange-solid)", tint: "var(--pat-orange-tint)", text: "var(--pat-orange-text)" },
+};
+
+function getInitials(name?: string | null) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "—";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function SectionCard({
+  icon: Icon,
+  tone,
+  title,
+  children,
+}: {
+  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+  tone: PatientTone;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const t = PATIENT_TONE[tone];
+  return (
+    <div className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: "var(--border-color)", background: t.tint }}>
+      <div className="mb-3 flex items-center gap-2">
+        <Icon size={16} style={{ color: t.solid }} />
+        <h3 className="text-sm font-bold" style={{ color: t.text }}>
+          {title}
+        </h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+      {children}
+    </label>
+  );
+}
+
+// Campo de nota clínica con ícono + label chico junto al campo (Tarea C) —
+// `tinted` agrega el fondo de color suave que pide la imagen solo para
+// Diagnóstico/Tratamiento; el resto solo lleva el ícono de color.
+function NoteField({
+  icon: Icon,
+  tone,
+  label,
+  tinted,
+  children,
+}: {
+  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+  tone: PatientTone;
+  label: string;
+  tinted?: boolean;
+  children: React.ReactNode;
+}) {
+  const t = PATIENT_TONE[tone];
+  return (
+    <div className={tinted ? "rounded-xl p-3" : ""} style={tinted ? { background: t.tint } : undefined}>
+      <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+        <Icon size={13} style={{ color: t.solid }} />
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
 /* ================= PAGE ================= */
 
 export default function CustomerDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params?.slug as string;
   const customerId = params?.id as string;
   const searchParams = useSearchParams();
@@ -321,9 +428,11 @@ export default function CustomerDetailPage() {
   const [viewingNoteId, setViewingNoteId] = useState<string | null>(null);
 
   // Clínica humana (isClinica): edición de datos del paciente
-  const [editingPatient, setEditingPatient] = useState(false);
-  const [showPatientProfile, setShowPatientProfile] = useState(false);
   const [showResumenModal, setShowResumenModal] = useState(false);
+  // Vista "Historial de atenciones" a pantalla completa dentro de la misma
+  // página (sin ruta nueva) — se abre desde la ficha del paciente y su botón
+  // "Volver al paciente" simplemente vuelve a mostrar la ficha.
+  const [showHistorial, setShowHistorial] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState("");
   const [savingNote, setSavingNote] = useState(false);
@@ -354,6 +463,40 @@ export default function CustomerDetailPage() {
   });
   // Notas clínicas de paciente (clave = "customer_${customerId}")
   const PATIENT_NOTES_KEY = `customer_${customerId}`;
+
+  function patientFormFromCustomer(c: Customer | null) {
+    return {
+      name: c?.name || "",
+      phone: c?.phone || "",
+      email: c?.email || "",
+      rut: c?.rut || "",
+      birth_date: c?.birth_date
+        ? new Date(c.birth_date).toISOString().slice(0, 10)
+        : "",
+      sex: c?.sex || "",
+      occupation: c?.occupation || "",
+      health_insurance: c?.health_insurance || "",
+      emergency_contact_name: c?.emergency_contact_name || "",
+      emergency_contact_phone: c?.emergency_contact_phone || "",
+      known_allergies: c?.known_allergies || "",
+      chronic_conditions: c?.chronic_conditions || "",
+      family_history: c?.family_history || "",
+      habits: c?.habits || "",
+    };
+  }
+  // La ficha del paciente ahora es un formulario siempre visible (ya no hay
+  // modo lectura/edición por separado — ver Tarea B). Se precarga una sola
+  // vez con los datos del cliente ni bien llegan; usar un ref (no el propio
+  // `customer`) evita que una actualización posterior de `customer` por otra
+  // acción de la página (ej. guardar una nota interna) pise cambios sin
+  // guardar que el usuario haya escrito en este formulario.
+  const patientFormInitializedRef = useRef(false);
+  useEffect(() => {
+    if (customer && !patientFormInitializedRef.current) {
+      patientFormInitializedRef.current = true;
+      setEditPatientForm(patientFormFromCustomer(customer));
+    }
+  }, [customer]);
 
   function todayISO() {
     return new Date().toISOString().split("T")[0];
@@ -635,7 +778,6 @@ export default function CustomerDetailPage() {
             }
           : prev
       );
-      setEditingPatient(false);
     } catch (err: any) {
       setPetError(err?.message || "Error actualizando paciente");
     } finally {
@@ -868,6 +1010,11 @@ export default function CustomerDetailPage() {
       hasAutoOpenedRef.current
     ) return;
     hasAutoOpenedRef.current = true;
+    // La ficha del paciente ahora vive dentro de una vista "Historial de
+    // atenciones" separada (Tarea C) — sin esto, el scroll a
+    // #historial-atenciones de abajo no encontraría el elemento porque
+    // seguiría oculto detrás de la ficha.
+    setShowHistorial(true);
 
     if (customer && !customer.phone && !customer.email) {
       setIncompleteProfileBanner(true);
@@ -1306,7 +1453,18 @@ const lastValidAppointment = validAppointments[0] || null;
   }
 
   return (
-  <div className="space-y-6">
+  <div className="orbyx-patient-page space-y-6">
+    {(isClinica || isOdontologia) && !showHistorial ? (
+      <button
+        type="button"
+        onClick={() => router.push(`/dashboard/${slug}/customers`)}
+        className="inline-flex items-center gap-1.5 text-sm font-medium transition hover:underline"
+        style={{ color: "var(--text-muted)" }}
+      >
+        ← Volver a clientes
+      </button>
+    ) : null}
+
     {clinicalMessage ? (
       <div
         className="fixed right-6 top-6 z-50 rounded-xl px-4 py-3 text-sm font-medium shadow-lg"
@@ -1332,7 +1490,7 @@ const lastValidAppointment = validAppointments[0] || null;
       ) : (
 
         <div className="grid gap-4 xl:grid-cols-[1.45fr_0.8fr]">
-          <div className={`space-y-4 ${isVeterinaria ? "xl:col-span-2" : ""}`}>
+          <div className={`space-y-4 ${isVeterinaria || isClinica || isOdontologia ? "xl:col-span-2" : ""}`}>
 
 {!isVeterinaria && !isClinica && !isOdontologia && <div
   className="rounded-3xl p-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
@@ -2495,415 +2653,251 @@ const lastValidAppointment = validAppointments[0] || null;
                 </p>
                 <button
                   type="button"
-                  onClick={() => { setIncompleteProfileBanner(false); setEditingPatient(true); }}
+                  onClick={() => setIncompleteProfileBanner(false)}
                   className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
                 >
-                  Completar consulta
+                  Entendido
                 </button>
               </div>
             ) : null}
             {(isClinica || isOdontologia) ? (
-              <Panel
-                title="Ficha del paciente"
-                description="Datos del paciente e historial de atenciones clínicas."
-              >
-                {/* ── Sección A: Datos del paciente ── */}
-                <div
-                  className="rounded-xl border p-3"
-                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
-                >
-                  {/* Header sección A */}
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-[14px] font-semibold" style={{ color: "var(--text-main)" }}>
-                      {customer?.name}
-                    </p>
-                    {!editingPatient ? (
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowPatientProfile((v) => !v)}
-                          className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
-                          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
-                        >
-                          {showPatientProfile ? "✕ Cerrar ficha" : "Ver ficha del paciente"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowPatientProfile(false);
-                            setEditingPatient(true);
-                            setEditPatientForm({
-                              name: customer?.name || "",
-                              phone: customer?.phone || "",
-                              email: customer?.email || "",
-                              rut: customer?.rut || "",
-                              birth_date: customer?.birth_date
-                                ? new Date(customer.birth_date).toISOString().slice(0, 10)
-                                : "",
-                              sex: customer?.sex || "",
-                              occupation: customer?.occupation || "",
-                              health_insurance: customer?.health_insurance || "",
-                              emergency_contact_name: customer?.emergency_contact_name || "",
-                              emergency_contact_phone: customer?.emergency_contact_phone || "",
-                              known_allergies: customer?.known_allergies || "",
-                              chronic_conditions: customer?.chronic_conditions || "",
-                              family_history: customer?.family_history || "",
-                              habits: customer?.habits || "",
-                            });
-                          }}
-                          className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
-                          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
-                        >
-                          Editar ficha del paciente
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowResumenModal(true)}
-                          className="shrink-0 rounded-xl border px-3 py-1 text-sm font-medium transition"
-                          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
-                        >
-                          Ver resumen
-                        </button>
+              <>
+              {!showHistorial ? (
+                <div className="space-y-4">
+                  {/* Banner principal */}
+                  <div
+                    className="relative overflow-hidden rounded-2xl border p-5"
+                    style={{ borderColor: "var(--pat-banner-border)", background: "var(--pat-banner-bg)" }}
+                  >
+                    <svg
+                      className="pointer-events-none absolute inset-0 h-full w-full"
+                      viewBox="0 0 400 140"
+                      fill="none"
+                      preserveAspectRatio="none"
+                    >
+                      <path d="M-20 100 Q80 70 180 100 T380 100 T580 100" stroke="var(--pat-banner-wave)" strokeWidth="16" />
+                      <path d="M-20 120 Q80 96 180 120 T380 120 T580 120" stroke="var(--pat-banner-wave-2)" strokeWidth="12" />
+                    </svg>
+                    <div className="relative flex flex-wrap items-center gap-4">
+                      <span
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
+                        style={{ background: "var(--pat-avatar-bg)" }}
+                      >
+                        {getInitials(customer?.name)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-lg font-bold" style={{ color: "var(--text-main)" }}>
+                            Ficha del paciente
+                          </h2>
+                          <span
+                            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                            style={
+                              customer?.segment === "inactive"
+                                ? { background: "var(--pat-rose-tint)", color: "var(--pat-rose-text)" }
+                                : { background: "var(--pat-green-tint)", color: "var(--pat-green-text)" }
+                            }
+                          >
+                            {customer?.segment === "inactive" ? "Inactivo" : "Activo"}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-sm" style={{ color: "var(--text-muted)" }}>
+                          Datos del paciente e historial de atenciones clínicas.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowResumenModal(true)}
+                        className="shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition"
+                        style={{ borderColor: "var(--pat-banner-border)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                      >
+                        Ver resumen
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Datos del contacto */}
+                  <SectionCard icon={User} tone="blue" title="Datos del contacto">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <FieldLabel>Nombre *</FieldLabel>
+                        <input type="text" placeholder="Nombre completo" value={editPatientForm.name} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                      <div>
+                        <FieldLabel>Teléfono</FieldLabel>
+                        <input type="text" placeholder="+56 9 1234 5678" value={editPatientForm.phone} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, phone: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                      <div>
+                        <FieldLabel>Email</FieldLabel>
+                        <input type="email" placeholder="correo@ejemplo.com" value={editPatientForm.email} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, email: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                      <div>
+                        <FieldLabel>RUT</FieldLabel>
+                        <input type="text" placeholder="12.345.678-9" value={editPatientForm.rut} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, rut: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                    </div>
+                  </SectionCard>
+
+                  {/* Datos personales */}
+                  <SectionCard icon={User} tone="green" title="Datos personales">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <FieldLabel>Fecha de nacimiento</FieldLabel>
+                        <input type="date" value={editPatientForm.birth_date} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, birth_date: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                      </div>
+                      <div>
+                        <FieldLabel>Sexo</FieldLabel>
+                        <select value={editPatientForm.sex} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, sex: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                          <option value="">Sin especificar</option>
+                          <option value="masculino">Masculino</option>
+                          <option value="femenino">Femenino</option>
+                          <option value="otro">Otro</option>
+                          <option value="prefiero no decir">Prefiero no decir</option>
+                        </select>
+                      </div>
+                      <div>
+                        <FieldLabel>Ocupación</FieldLabel>
+                        <input type="text" placeholder="ej. profesora" value={editPatientForm.occupation} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, occupation: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                      <div>
+                        <FieldLabel>Previsión de salud</FieldLabel>
+                        <select value={editPatientForm.health_insurance} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, health_insurance: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                          <option value="">Sin especificar</option>
+                          <option value="Fonasa">Fonasa</option>
+                          <option value="Isapre">Isapre</option>
+                          <option value="Capredena">Capredena</option>
+                          <option value="Dipreca">Dipreca</option>
+                          <option value="Particular / Ninguna">Particular / Ninguna</option>
+                        </select>
+                      </div>
+                    </div>
+                  </SectionCard>
+
+                  {/* Contacto de emergencia */}
+                  <SectionCard icon={Phone} tone="amber" title="Contacto de emergencia">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <FieldLabel>Nombre</FieldLabel>
+                        <input type="text" placeholder="ej. María González" value={editPatientForm.emergency_contact_name} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                      <div>
+                        <FieldLabel>Teléfono</FieldLabel>
+                        <input type="tel" placeholder="+56 9 8765 4321" value={editPatientForm.emergency_contact_phone} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_phone: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                    </div>
+                  </SectionCard>
+
+                  {/* Antecedentes médicos */}
+                  <SectionCard icon={HeartPlus} tone="violet" title="Antecedentes médicos">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <FieldLabel>Alergias conocidas</FieldLabel>
+                        <textarea rows={2} placeholder="ej. penicilina, látex…" value={editPatientForm.known_allergies} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, known_allergies: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                      <div>
+                        <FieldLabel>Patologías crónicas</FieldLabel>
+                        <textarea rows={2} placeholder="ej. hipertensión, diabetes…" value={editPatientForm.chronic_conditions} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, chronic_conditions: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                    </div>
+                    {isOdontologia ? (
+                      <div className="mt-4 space-y-3 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
+                          Antecedentes dentales
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <FieldLabel>Grupo sanguíneo</FieldLabel>
+                            <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.grupo_sanguineo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, grupo_sanguineo: e.target.value } }))}>
+                              <option value="">Seleccionar...</option>
+                              {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((g) => <option key={g}>{g}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <FieldLabel>Alergias a anestesia</FieldLabel>
+                            <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína" value={(editPatientForm as any).extra_fields?.alergia_anestesia ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, alergia_anestesia: e.target.value } }))} />
+                          </div>
+                        </div>
+                        <div>
+                          <FieldLabel>Observaciones generales</FieldLabel>
+                          <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Notas generales del paciente" value={(editPatientForm as any).extra_fields?.obs_generales_dental ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, obs_generales_dental: e.target.value } }))} />
+                        </div>
                       </div>
                     ) : null}
+                  </SectionCard>
+
+                  {/* Antecedentes familiares */}
+                  <SectionCard icon={Users} tone="rose" title="Antecedentes familiares">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <FieldLabel>Enfermedades familiares</FieldLabel>
+                        <textarea rows={2} placeholder="ej. diabetes materna, cáncer…" value={editPatientForm.family_history} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, family_history: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                      <div>
+                        <FieldLabel>Hábitos</FieldLabel>
+                        <textarea rows={2} placeholder="ej. fumador, sedentario…" value={editPatientForm.habits} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, habits: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                      </div>
+                    </div>
+                  </SectionCard>
+
+                  {/* Banner informativo */}
+                  <div className="flex items-center gap-2.5 rounded-xl px-4 py-3" style={{ background: "var(--bg-soft)" }}>
+                    <Info size={16} className="shrink-0" style={{ color: "var(--pat-blue-solid)" }} />
+                    <p className="text-sm" style={{ color: "var(--text-main)" }}>
+                      Asegúrate de revisar que toda la información sea correcta antes de guardar los cambios.
+                    </p>
                   </div>
 
-                  {/* Read mode */}
-                  <div
-                    className="overflow-hidden transition-all duration-200 ease-in-out"
-                    style={{ maxHeight: showPatientProfile && !editingPatient ? "900px" : "0" }}
-                  >
-                    <div className="space-y-4">
-                      {/* Datos de contacto */}
-                      <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
-                        {[
-                          { label: "Nombre",              value: customer?.name || null },
-                          { label: "Teléfono",            value: customer?.phone || null },
-                          { label: "Email",               value: customer?.email || null },
-                          { label: "RUT",                 value: customer?.rut || null },
-                          { label: "Fecha de nacimiento", value: customer?.birth_date ? formatDate(customer.birth_date) : null },
-                          { label: "Sexo",                value: customer?.sex || null },
-                          { label: "Ocupación",           value: customer?.occupation || null },
-                          { label: "Previsión",           value: customer?.health_insurance || null },
-                        ].map((item) => (
-                          <div key={item.label}>
-                            <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                              {item.label}
-                            </p>
-                            <p className="mt-0.5 text-[14px]" style={{ color: item.value ? "var(--text-main)" : "var(--text-muted)" }}>
-                              {item.value || "—"}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Contacto de emergencia */}
-                      {(customer?.emergency_contact_name || customer?.emergency_contact_phone) ? (
-                        <div>
-                          <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                            Contacto de emergencia
-                          </p>
-                          <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>
-                            {[customer?.emergency_contact_name, customer?.emergency_contact_phone].filter(Boolean).join(" · ")}
-                          </p>
-                        </div>
-                      ) : null}
-
-                      {/* Alergias y patologías */}
-                      {(customer?.known_allergies || customer?.chronic_conditions) ? (
-                        <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
-                          {customer?.known_allergies ? (
-                            <div>
-                              <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Alergias</p>
-                              <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{customer.known_allergies}</p>
-                            </div>
-                          ) : null}
-                          {customer?.chronic_conditions ? (
-                            <div>
-                              <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Patologías crónicas</p>
-                              <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{customer.chronic_conditions}</p>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      {customer?.family_history ? (
-                        <div>
-                          <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Antecedentes familiares</p>
-                          <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{customer.family_history}</p>
-                        </div>
-                      ) : null}
-                      {customer?.habits ? (
-                        <div>
-                          <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Hábitos</p>
-                          <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{customer.habits}</p>
-                        </div>
-                      ) : null}
-                      {/* Antecedentes dentales (solo odontología) */}
-                      {isOdontologia && ((customer as any).extra_fields?.grupo_sanguineo || (customer as any).extra_fields?.alergia_anestesia || (customer as any).extra_fields?.obs_generales_dental) ? (
-                        <div className="space-y-2 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
-                          <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: "var(--text-muted)" }}>Antecedentes dentales</p>
-                          <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
-                            {(customer as any).extra_fields?.grupo_sanguineo ? (
-                              <div>
-                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Grupo sanguíneo</p>
-                                <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{(customer as any).extra_fields.grupo_sanguineo}</p>
-                              </div>
-                            ) : null}
-                            {(customer as any).extra_fields?.alergia_anestesia ? (
-                              <div>
-                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Alergias a anestesia</p>
-                                <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{(customer as any).extra_fields.alergia_anestesia}</p>
-                              </div>
-                            ) : null}
-                            {(customer as any).extra_fields?.obs_generales_dental ? (
-                              <div className="sm:col-span-2">
-                                <p className="text-[11px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Observaciones generales</p>
-                                <p className="mt-0.5 text-[14px]" style={{ color: "var(--text-main)" }}>{(customer as any).extra_fields.obs_generales_dental}</p>
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {/* Edit mode */}
-                  <div
-                    className="overflow-hidden transition-all duration-200 ease-in-out"
-                    style={{ maxHeight: editingPatient ? "2400px" : "0" }}
-                  >
-                    <div className="space-y-5 pt-1">
-
-                      {/* ── Datos de contacto ── */}
-                      <div>
-                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                          Datos de contacto
-                        </p>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {[
-                            { key: "name",  label: "Nombre *",  type: "text",  placeholder: "Nombre completo" },
-                            { key: "phone", label: "Teléfono",  type: "text",  placeholder: "+56 9 1234 5678" },
-                            { key: "email", label: "Email",     type: "email", placeholder: "correo@ejemplo.com" },
-                            { key: "rut",   label: "RUT",       type: "text",  placeholder: "12.345.678-9" },
-                          ].map(({ key, label, type, placeholder }) => (
-                            <div key={key}>
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                                {label}
-                              </label>
-                              <input
-                                type={type}
-                                placeholder={placeholder}
-                                value={(editPatientForm as any)[key] ?? ""}
-                                onChange={(e) => setEditPatientForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                                className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* ── Datos personales ── */}
-                      <div>
-                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                          Datos personales
-                        </p>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Fecha de nacimiento
-                            </label>
-                            <input
-                              type="date"
-                              value={editPatientForm.birth_date}
-                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, birth_date: e.target.value }))}
-                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }}
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Sexo
-                            </label>
-                            <select
-                              value={editPatientForm.sex}
-                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, sex: e.target.value }))}
-                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                            >
-                              <option value="">Sin especificar</option>
-                              <option value="masculino">Masculino</option>
-                              <option value="femenino">Femenino</option>
-                              <option value="otro">Otro</option>
-                              <option value="prefiero no decir">Prefiero no decir</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Ocupación
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="ej. profesora"
-                              value={editPatientForm.occupation}
-                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, occupation: e.target.value }))}
-                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Previsión de salud
-                            </label>
-                            <select
-                              value={editPatientForm.health_insurance}
-                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, health_insurance: e.target.value }))}
-                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                            >
-                              <option value="">Sin especificar</option>
-                              <option value="Fonasa">Fonasa</option>
-                              <option value="Isapre">Isapre</option>
-                              <option value="Capredena">Capredena</option>
-                              <option value="Dipreca">Dipreca</option>
-                              <option value="Particular / Ninguna">Particular / Ninguna</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ── Contacto de emergencia ── */}
-                      <div>
-                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                          Contacto de emergencia
-                        </p>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Nombre
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="ej. María González"
-                              value={editPatientForm.emergency_contact_name}
-                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_name: e.target.value }))}
-                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                              Teléfono
-                            </label>
-                            <input
-                              type="tel"
-                              placeholder="+56 9 8765 4321"
-                              value={editPatientForm.emergency_contact_phone}
-                              onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_phone: e.target.value }))}
-                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
-                              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ── Antecedentes médicos ── */}
-                      <div>
-                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                          Antecedentes médicos
-                        </p>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {[
-                            { key: "known_allergies",   label: "Alergias conocidas",           placeholder: "ej. penicilina, látex…" },
-                            { key: "chronic_conditions", label: "Patologías crónicas",          placeholder: "ej. hipertensión, diabetes…" },
-                            { key: "family_history",    label: "Antecedentes familiares",       placeholder: "ej. diabetes materna, cáncer…" },
-                            { key: "habits",            label: "Hábitos",                       placeholder: "ej. fumador, sedentario…" },
-                          ].map(({ key, label, placeholder }) => (
-                            <div key={key}>
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-                                {label}
-                              </label>
-                              <textarea
-                                rows={2}
-                                placeholder={placeholder}
-                                value={(editPatientForm as any)[key] ?? ""}
-                                onChange={(e) => setEditPatientForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                                className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
-                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* ── Antecedentes dentales ── */}
-                      {isOdontologia && (
-                        <div className="space-y-3">
-                          <p className="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Antecedentes dentales</p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-[11px] uppercase tracking-wide text-gray-400">Grupo sanguíneo</label>
-                              <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition mt-1" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.grupo_sanguineo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, grupo_sanguineo: e.target.value } }))}>
-                                <option value="">Seleccionar...</option>
-                                {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((g) => <option key={g}>{g}</option>)}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-[11px] uppercase tracking-wide text-gray-400">Alergias a anestesia</label>
-                              <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition mt-1" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína" value={(editPatientForm as any).extra_fields?.alergia_anestesia ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, alergia_anestesia: e.target.value } }))} />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-[11px] uppercase tracking-wide text-gray-400">Observaciones generales</label>
-                            <textarea rows={3} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition mt-1" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Notas generales del paciente" value={(editPatientForm as any).extra_fields?.obs_generales_dental ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, obs_generales_dental: e.target.value } }))} />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── Acciones ── */}
-                      <div className="flex justify-end gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setEditingPatient(false)}
-                          className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700"
-                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleUpdateCustomer}
-                          disabled={savingPet}
-                          className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60"
-                          style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}
-                        >
-                          {savingPet ? "Guardando..." : "Guardar cambios"}
-                        </button>
-                      </div>
-
-                    </div>
+                  {/* Botones */}
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditPatientForm(patientFormFromCustomer(customer))}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUpdateCustomer}
+                      disabled={savingPet}
+                      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+                      style={{ background: "var(--pat-blue-solid)" }}
+                    >
+                      <Save size={14} />
+                      {savingPet ? "Guardando..." : "Guardar cambios"}
+                    </button>
                   </div>
                 </div>
+              ) : null}
 
-                {/* ── Sección B: Historial de atenciones ── */}
-                <div id="historial-atenciones" className="mt-5">
-                  <div className="border-t pt-4" style={{ borderColor: "var(--border-color)" }}>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
-                        Historial de atenciones
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowNewNoteForm((v) => !v)}
-                          className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
-                          style={{ borderColor: "var(--border-color)", background: showNewNoteForm ? "var(--bg-soft)" : "transparent", color: "var(--text-muted)" }}
-                        >
-                          {showNewNoteForm ? "Cerrar" : "＋ Nueva atención"}
-                        </button>
-                      </div>
-                    </div>
+              {showHistorial ? (
+                <div className="space-y-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowHistorial(false)}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium transition hover:underline"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    ← Volver al paciente
+                  </button>
 
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-lg font-bold" style={{ color: "var(--text-main)" }}>
+                      Historial de atenciones
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewNoteForm((v) => !v)}
+                      className="shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                      style={{ background: "var(--pat-blue-solid)" }}
+                    >
+                      {showNewNoteForm ? "Cerrar" : "＋ Nueva atención"}
+                    </button>
+                  </div>
+
+                  <div id="historial-atenciones">
+                    <div>
                     {/* Formulario inline nueva atención */}
                     <div
                       className="overflow-hidden transition-all duration-200 ease-in-out"
@@ -3194,74 +3188,90 @@ const lastValidAppointment = validAppointments[0] || null;
                                   {/* Inline edit form */}
                                   <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isEditingThisNote ? "1800px" : "0" }}>
                                     {isEditingThisNote && note.appointment_id ? (
-                                      <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-soft)" }}>
-                                        <div className="mb-3 border-b pb-3" style={{ borderColor: "var(--border-color)" }}>
-                                          <p className="text-[14px] font-medium" style={{ color: "var(--text-main)" }}>Editando nota clínica</p>
-                                          <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-muted)" }}>{appt.service_name_snapshot || "Atención"} · {formatDate(note.date)}</p>
+                                      <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-card)" }}>
+                                        <div className="mb-3 flex items-center gap-2 border-b pb-3" style={{ borderColor: "var(--border-color)" }}>
+                                          <NotebookPen size={16} style={{ color: "var(--pat-violet-solid)" }} />
+                                          <div>
+                                            <p className="text-[14px] font-medium" style={{ color: "var(--pat-violet-text)" }}>Editando nota clínica</p>
+                                            <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-muted)" }}>{appt.service_name_snapshot || "Atención"} · {formatDate(note.date)}</p>
+                                          </div>
                                         </div>
                                         <div className="space-y-3">
-                                          {[
-                                            { key: "reason", label: "Motivo", rows: 1, placeholder: "Motivo de la consulta" },
-                                            { key: "diagnosis", label: "Diagnóstico", rows: 2, placeholder: "Diagnóstico" },
-                                            { key: "treatment", label: "Tratamiento", rows: 2, placeholder: "Tratamiento indicado" },
-                                            { key: "notes", label: "Observaciones", rows: 3, placeholder: "Observaciones / notas clínicas..." },
-                                          ].map(({ key, label, rows, placeholder }) => (
-                                            <div key={key}>
-                                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>{label}</label>
-                                              {rows === 1 ? (
-                                                <input type="text" placeholder={placeholder} value={(clinicalFormState[formKey] as any)?.[key] ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], [key]: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
-                                              ) : (
-                                                <textarea rows={rows} placeholder={placeholder} value={(clinicalFormState[formKey] as any)?.[key] ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], [key]: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
-                                              )}
-                                            </div>
-                                          ))}
-                                          {/* Campos clínicos adicionales */}
+                                          <NoteField icon={MessageCircle} tone="violet" label="Motivo">
+                                            <input type="text" placeholder="Motivo de la consulta" value={clinicalFormState[formKey]?.reason ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], reason: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                          </NoteField>
+
+                                          <div className="grid gap-3 sm:grid-cols-2">
+                                            <NoteField icon={ClipboardPen} tone="rose" label="Diagnóstico" tinted>
+                                              <textarea rows={2} placeholder="Diagnóstico" value={clinicalFormState[formKey]?.diagnosis ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], diagnosis: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                            </NoteField>
+                                            <NoteField icon={HeartPulse} tone="green" label="Tratamiento" tinted>
+                                              <textarea rows={2} placeholder="Tratamiento indicado" value={clinicalFormState[formKey]?.treatment ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], treatment: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                            </NoteField>
+                                          </div>
+
+                                          <NoteField icon={FileEdit} tone="amber" label="Observaciones">
+                                            <textarea rows={3} placeholder="Observaciones / notas clínicas..." value={clinicalFormState[formKey]?.notes ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], notes: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                          </NoteField>
+
                                           {!isOdontologia && (
-                                            <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Síntomas</p>
-                                              <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                              <NoteField icon={Activity} tone="sky" label="Síntomas">
+                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
+                                              </NoteField>
+                                              <NoteField icon={Pill} tone="teal" label="Medicamentos recetados">
+                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                              </NoteField>
                                             </div>
                                           )}
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">{isOdontologia ? "Indicaciones post-operatorias" : "Medicamentos recetados"}</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder={isOdontologia ? "ej. Ibuprofeno 400mg c/8h por 3 días" : "Medicamentos, dosis e indicaciones"} value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
-                                          </div>
+                                          {isOdontologia && (
+                                            <NoteField icon={Pill} tone="teal" label="Indicaciones post-operatorias">
+                                              <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Ibuprofeno 400mg c/8h por 3 días" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                            </NoteField>
+                                          )}
+
                                           {!isOdontologia && (
-                                            <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Derivaciones</p>
-                                              <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                              <NoteField icon={ClipboardList} tone="violet" label="Derivaciones">
+                                                <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                              </NoteField>
+                                              <NoteField icon={Send} tone="orange" label="Notas de seguimiento">
+                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                              </NoteField>
                                             </div>
                                           )}
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">{isOdontologia ? "Plan de tratamiento" : "Notas de seguimiento"}</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder={isOdontologia ? "Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." : "Indicaciones para el próximo control"} value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
-                                          </div>
+                                          {isOdontologia && (
+                                            <NoteField icon={Send} tone="orange" label="Plan de tratamiento">
+                                              <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                            </NoteField>
+                                          )}
+
                                           {!isOdontologia && (
                                             <div className="grid grid-cols-3 gap-2">
                                               <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Peso (kg)</p>
-                                                <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                                <FieldLabel>Peso (kg)</FieldLabel>
+                                                <input type="number" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
                                               </div>
                                               <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Talla (cm)</p>
-                                                <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
+                                                <FieldLabel>Talla (cm)</FieldLabel>
+                                                <input type="number" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
                                               </div>
                                               <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">IMC</p>
-                                                <input type="text" readOnly className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-400 cursor-not-allowed" placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
+                                                <FieldLabel>IMC</FieldLabel>
+                                                <input type="text" readOnly className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)", cursor: "not-allowed" }} placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
                                               </div>
                                             </div>
                                           )}
                                           {isOdontologia && (
-                                            <div className="space-y-2">
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400">Campos dentales</p>
-                                              <div className="grid grid-cols-2 gap-2">
+                                            <div className="space-y-3">
+                                              <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Campos dentales</p>
+                                              <div className="grid gap-3 sm:grid-cols-2">
                                                 <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Pieza(s) dental(es)</p>
+                                                  <FieldLabel>Pieza(s) dental(es)</FieldLabel>
                                                   <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
                                                 </div>
                                                 <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Tipo de tratamiento</p>
+                                                  <FieldLabel>Tipo de tratamiento</FieldLabel>
                                                   <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
                                                     <option value="">Seleccionar...</option>
                                                     {["Extracción","Endodoncia","Obturación","Limpieza","Ortodoncia","Blanqueamiento","Implante","Corona","Consulta inicial","Control","Otro"].map((o) => <option key={o}>{o}</option>)}
@@ -3269,13 +3279,12 @@ const lastValidAppointment = validAppointments[0] || null;
                                                 </div>
                                               </div>
                                               <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Anestesia usada</p>
+                                                <FieldLabel>Anestesia usada</FieldLabel>
                                                 <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
                                               </div>
                                             </div>
                                           )}
-                                          <div>
-                                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Próximo control</label>
+                                          <NoteField icon={CalendarCheck} tone="green" label="Próximo control">
                                             <div className="mb-2 flex flex-wrap gap-1.5">
                                               {[7, 15, 30, 60].map((days) => {
                                                 const base = note.date ? new Date(note.date) : new Date();
@@ -3289,11 +3298,11 @@ const lastValidAppointment = validAppointments[0] || null;
                                               })}
                                             </div>
                                             <input type="date" value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
-                                          </div>
+                                          </NoteField>
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">
                                           <button type="button" onClick={() => setEditingNoteId(null)} className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>Cancelar</button>
-                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(note.appointment_id!, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null, (form as any)?.symptoms ?? null, (form as any)?.medications ?? null, (form as any)?.referrals ?? null, (form as any)?.follow_up_notes ?? null, (form as any)?.extra_fields ?? null); }} disabled={savingClinicalId === note.appointment_id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === note.appointment_id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === note.appointment_id ? "Guardando..." : "Guardar"}</button>
+                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(note.appointment_id!, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null, (form as any)?.symptoms ?? null, (form as any)?.medications ?? null, (form as any)?.referrals ?? null, (form as any)?.follow_up_notes ?? null, (form as any)?.extra_fields ?? null); }} disabled={savingClinicalId === note.appointment_id} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === note.appointment_id ? "rgba(37,99,235,0.5)" : "var(--pat-blue-solid)" }}><Save size={14} />{savingClinicalId === note.appointment_id ? "Guardando..." : "Guardar"}</button>
                                         </div>
                                       </div>
                                     ) : null}
@@ -3340,74 +3349,90 @@ const lastValidAppointment = validAppointments[0] || null;
                                   {/* Inline create form */}
                                   <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isCreatingNew ? "1800px" : "0" }}>
                                     {isCreatingNew ? (
-                                      <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-soft)" }}>
-                                        <div className="mb-3 border-b pb-3" style={{ borderColor: "var(--border-color)" }}>
-                                          <p className="text-[14px] font-medium" style={{ color: "var(--text-main)" }}>Nueva nota clínica</p>
-                                          <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-muted)" }}>{appt.service_name_snapshot || "Atención"} · {formatDateLong(appt.start_at)}</p>
+                                      <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-card)" }}>
+                                        <div className="mb-3 flex items-center gap-2 border-b pb-3" style={{ borderColor: "var(--border-color)" }}>
+                                          <NotebookPen size={16} style={{ color: "var(--pat-violet-solid)" }} />
+                                          <div>
+                                            <p className="text-[14px] font-medium" style={{ color: "var(--pat-violet-text)" }}>Nueva nota clínica</p>
+                                            <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-muted)" }}>{appt.service_name_snapshot || "Atención"} · {formatDateLong(appt.start_at)}</p>
+                                          </div>
                                         </div>
                                         <div className="space-y-3">
-                                          {[
-                                            { key: "reason", label: "Motivo", rows: 1, placeholder: "Motivo de la consulta" },
-                                            { key: "diagnosis", label: "Diagnóstico", rows: 2, placeholder: "Diagnóstico" },
-                                            { key: "treatment", label: "Tratamiento", rows: 2, placeholder: "Tratamiento indicado" },
-                                            { key: "notes", label: "Observaciones", rows: 3, placeholder: "Observaciones / notas clínicas..." },
-                                          ].map(({ key, label, rows, placeholder }) => (
-                                            <div key={key}>
-                                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>{label}</label>
-                                              {rows === 1 ? (
-                                                <input type="text" placeholder={placeholder} value={(clinicalFormState[formKey] as any)?.[key] ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], [key]: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
-                                              ) : (
-                                                <textarea rows={rows} placeholder={placeholder} value={(clinicalFormState[formKey] as any)?.[key] ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], [key]: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
-                                              )}
-                                            </div>
-                                          ))}
-                                          {/* Campos clínicos adicionales */}
+                                          <NoteField icon={MessageCircle} tone="violet" label="Motivo">
+                                            <input type="text" placeholder="Motivo de la consulta" value={clinicalFormState[formKey]?.reason ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], reason: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                          </NoteField>
+
+                                          <div className="grid gap-3 sm:grid-cols-2">
+                                            <NoteField icon={ClipboardPen} tone="rose" label="Diagnóstico" tinted>
+                                              <textarea rows={2} placeholder="Diagnóstico" value={clinicalFormState[formKey]?.diagnosis ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], diagnosis: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                            </NoteField>
+                                            <NoteField icon={HeartPulse} tone="green" label="Tratamiento" tinted>
+                                              <textarea rows={2} placeholder="Tratamiento indicado" value={clinicalFormState[formKey]?.treatment ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], treatment: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                            </NoteField>
+                                          </div>
+
+                                          <NoteField icon={FileEdit} tone="amber" label="Observaciones">
+                                            <textarea rows={3} placeholder="Observaciones / notas clínicas..." value={clinicalFormState[formKey]?.notes ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], notes: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                          </NoteField>
+
                                           {!isOdontologia && (
-                                            <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Síntomas</p>
-                                              <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                              <NoteField icon={Activity} tone="sky" label="Síntomas">
+                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
+                                              </NoteField>
+                                              <NoteField icon={Pill} tone="teal" label="Medicamentos recetados">
+                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                              </NoteField>
                                             </div>
                                           )}
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">{isOdontologia ? "Indicaciones post-operatorias" : "Medicamentos recetados"}</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder={isOdontologia ? "ej. Ibuprofeno 400mg c/8h por 3 días" : "Medicamentos, dosis e indicaciones"} value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
-                                          </div>
+                                          {isOdontologia && (
+                                            <NoteField icon={Pill} tone="teal" label="Indicaciones post-operatorias">
+                                              <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Ibuprofeno 400mg c/8h por 3 días" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                            </NoteField>
+                                          )}
+
                                           {!isOdontologia && (
-                                            <div>
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Derivaciones</p>
-                                              <input type="text" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                              <NoteField icon={ClipboardList} tone="violet" label="Derivaciones">
+                                                <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                              </NoteField>
+                                              <NoteField icon={Send} tone="orange" label="Notas de seguimiento">
+                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                              </NoteField>
                                             </div>
                                           )}
-                                          <div>
-                                            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">{isOdontologia ? "Plan de tratamiento" : "Notas de seguimiento"}</p>
-                                            <textarea rows={2} className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200 resize-none" placeholder={isOdontologia ? "Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." : "Indicaciones para el próximo control"} value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
-                                          </div>
+                                          {isOdontologia && (
+                                            <NoteField icon={Send} tone="orange" label="Plan de tratamiento">
+                                              <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                            </NoteField>
+                                          )}
+
                                           {!isOdontologia && (
                                             <div className="grid grid-cols-3 gap-2">
                                               <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Peso (kg)</p>
-                                                <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                                <FieldLabel>Peso (kg)</FieldLabel>
+                                                <input type="number" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
                                               </div>
                                               <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Talla (cm)</p>
-                                                <input type="number" className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-200" placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
+                                                <FieldLabel>Talla (cm)</FieldLabel>
+                                                <input type="number" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
                                               </div>
                                               <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">IMC</p>
-                                                <input type="text" readOnly className="w-full rounded-lg px-3 py-2 text-sm bg-white/5 border border-white/10 text-gray-400 cursor-not-allowed" placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
+                                                <FieldLabel>IMC</FieldLabel>
+                                                <input type="text" readOnly className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)", cursor: "not-allowed" }} placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
                                               </div>
                                             </div>
                                           )}
                                           {isOdontologia && (
-                                            <div className="space-y-2">
-                                              <p className="text-[11px] uppercase tracking-wide text-gray-400">Campos dentales</p>
-                                              <div className="grid grid-cols-2 gap-2">
+                                            <div className="space-y-3">
+                                              <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Campos dentales</p>
+                                              <div className="grid gap-3 sm:grid-cols-2">
                                                 <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Pieza(s) dental(es)</p>
+                                                  <FieldLabel>Pieza(s) dental(es)</FieldLabel>
                                                   <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
                                                 </div>
                                                 <div>
-                                                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Tipo de tratamiento</p>
+                                                  <FieldLabel>Tipo de tratamiento</FieldLabel>
                                                   <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
                                                     <option value="">Seleccionar...</option>
                                                     {["Extracción","Endodoncia","Obturación","Limpieza","Ortodoncia","Blanqueamiento","Implante","Corona","Consulta inicial","Control","Otro"].map((o) => <option key={o}>{o}</option>)}
@@ -3415,19 +3440,18 @@ const lastValidAppointment = validAppointments[0] || null;
                                                 </div>
                                               </div>
                                               <div>
-                                                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">Anestesia usada</p>
+                                                <FieldLabel>Anestesia usada</FieldLabel>
                                                 <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
                                               </div>
                                             </div>
                                           )}
-                                          <div>
-                                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Próximo control</label>
+                                          <NoteField icon={CalendarCheck} tone="green" label="Próximo control">
                                             <input type="date" value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
-                                          </div>
+                                          </NoteField>
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">
                                           <button type="button" onClick={() => setNewNoteApptId(null)} className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>Cancelar</button>
-                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(appt.id, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null, (form as any)?.symptoms ?? null, (form as any)?.medications ?? null, (form as any)?.referrals ?? null, (form as any)?.follow_up_notes ?? null, (form as any)?.extra_fields ?? null); }} disabled={savingClinicalId === appt.id} className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === appt.id ? "rgba(37,99,235,0.5)" : "linear-gradient(135deg, rgb(37 99 235), rgb(99 102 241))" }}>{savingClinicalId === appt.id ? "Guardando..." : "Guardar"}</button>
+                                          <button type="button" onClick={() => { const form = clinicalFormState[formKey]; handleSaveClinical(appt.id, form?.reason ?? "", form?.notes ?? "", form?.diagnosis ?? "", form?.treatment ?? "", form?.controlType ?? "Control general", form?.notes ?? "", form?.controlDate ?? null, (form as any)?.symptoms ?? null, (form as any)?.medications ?? null, (form as any)?.referrals ?? null, (form as any)?.follow_up_notes ?? null, (form as any)?.extra_fields ?? null); }} disabled={savingClinicalId === appt.id} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-85 disabled:opacity-60" style={{ background: savingClinicalId === appt.id ? "rgba(37,99,235,0.5)" : "var(--pat-blue-solid)" }}><Save size={14} />{savingClinicalId === appt.id ? "Guardando..." : "Guardar"}</button>
                                         </div>
                                       </div>
                                     ) : null}
@@ -3457,7 +3481,9 @@ const lastValidAppointment = validAppointments[0] || null;
                     })()}
                   </div>
                 </div>
-              </Panel>
+              </div>
+              ) : null}
+              </>
             ) : null}
 
             {/* Historial de atenciones — negocios genéricos, columna izquierda */}
@@ -3531,7 +3557,7 @@ const lastValidAppointment = validAppointments[0] || null;
 
           </div>
 
-          <div className={`space-y-4 ${isVeterinaria ? "xl:col-span-2" : ""} ${isVeterinaria && activeVetTab === "pets" ? "hidden" : ""}`}>
+          <div className={`space-y-4 ${isVeterinaria || isClinica || isOdontologia ? "xl:col-span-2" : ""} ${isVeterinaria && activeVetTab === "pets" ? "hidden" : ""}`}>
 
             {isVeterinaria && activeVetTab === "followups" ? (
               <Panel
@@ -3850,6 +3876,72 @@ const lastValidAppointment = validAppointments[0] || null;
           </div>
         </div>
       ) : null}
+
+      <style jsx>{`
+        .orbyx-patient-page {
+          --pat-banner-bg: linear-gradient(135deg, #f5f3ff, #eef2ff);
+          --pat-banner-border: #c7d2fe;
+          --pat-banner-wave: rgba(99, 102, 241, 0.16);
+          --pat-banner-wave-2: rgba(99, 102, 241, 0.09);
+          --pat-avatar-bg: #4f46e5;
+          --pat-blue-solid: #2563eb;
+          --pat-blue-tint: #eff6ff;
+          --pat-blue-text: #1d4ed8;
+          --pat-green-solid: #16a34a;
+          --pat-green-tint: #f0fdf4;
+          --pat-green-text: #15803d;
+          --pat-amber-solid: #d97706;
+          --pat-amber-tint: #fffbeb;
+          --pat-amber-text: #b45309;
+          --pat-violet-solid: #7c3aed;
+          --pat-violet-tint: #f5f3ff;
+          --pat-violet-text: #6d28d9;
+          --pat-rose-solid: #e11d48;
+          --pat-rose-tint: #fff1f2;
+          --pat-rose-text: #be123c;
+          --pat-teal-solid: #0d9488;
+          --pat-teal-tint: #f0fdfa;
+          --pat-teal-text: #0f766e;
+          --pat-sky-solid: #0284c7;
+          --pat-sky-tint: #f0f9ff;
+          --pat-sky-text: #0369a1;
+          --pat-orange-solid: #ea580c;
+          --pat-orange-tint: #fff7ed;
+          --pat-orange-text: #c2410c;
+        }
+
+        :global(:root[data-theme="nocturno"]) .orbyx-patient-page {
+          --pat-banner-bg: linear-gradient(135deg, #1e1b3a, #101b31);
+          --pat-banner-border: #3730a3;
+          --pat-banner-wave: rgba(129, 140, 248, 0.14);
+          --pat-banner-wave-2: rgba(129, 140, 248, 0.08);
+          --pat-avatar-bg: #6366f1;
+          --pat-blue-solid: #3b82f6;
+          --pat-blue-tint: #132a44;
+          --pat-blue-text: #93c5fd;
+          --pat-green-solid: #22c55e;
+          --pat-green-tint: #123329;
+          --pat-green-text: #6ee7b7;
+          --pat-amber-solid: #f59e0b;
+          --pat-amber-tint: #3a2a18;
+          --pat-amber-text: #fcd34d;
+          --pat-violet-solid: #8b5cf6;
+          --pat-violet-tint: #241f3d;
+          --pat-violet-text: #c4b5fd;
+          --pat-rose-solid: #fb7185;
+          --pat-rose-tint: #3a151a;
+          --pat-rose-text: #fda4af;
+          --pat-teal-solid: #2dd4bf;
+          --pat-teal-tint: #0f2e2b;
+          --pat-teal-text: #5eead4;
+          --pat-sky-solid: #38bdf8;
+          --pat-sky-tint: #0c2436;
+          --pat-sky-text: #7dd3fc;
+          --pat-orange-solid: #fb923c;
+          --pat-orange-tint: #3a2410;
+          --pat-orange-text: #fdba74;
+        }
+      `}</style>
     </div>
   );
 }

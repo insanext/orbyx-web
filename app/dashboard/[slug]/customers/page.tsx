@@ -251,8 +251,8 @@ export default function CustomersPage() {
           ) : null}
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-[1.2fr_1fr_220px]">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[200px] flex-1 basis-56">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
               style={{ color: "var(--cust-muted)" }}
@@ -270,14 +270,14 @@ export default function CustomersPage() {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {SEGMENT_OPTIONS.map((o) => {
               const active = segment === o.key;
               return (
                 <button
                   key={o.key}
                   onClick={() => setSegment(o.key)}
-                  className="rounded-xl border px-3 py-1.5 text-sm font-medium transition"
+                  className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
                   style={
                     active
                       ? { background: "var(--cust-blue-solid)", borderColor: "var(--cust-blue-solid)", color: "#ffffff" }
@@ -293,7 +293,7 @@ export default function CustomersPage() {
           <select
             value={inactiveDays}
             onChange={(e) => setInactiveDays(e.target.value)}
-            className="rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2"
+            className="shrink-0 rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2"
             style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
           >
             <option value="30">Inactivos: 30 días</option>
