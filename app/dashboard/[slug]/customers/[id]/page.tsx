@@ -444,10 +444,10 @@ export default function CustomerDetailPage() {
 
   // Clínica humana (isClinica): edición de datos del paciente
   const [showResumenModal, setShowResumenModal] = useState(false);
-  // Ficha del paciente: perfil de solo lectura por defecto, con botón
-  // "Editar" que revela el formulario editable (mismos campos, mismo diseño
-  // visual nuevo) — el historial de atenciones queda siempre visible debajo,
-  // sin toggle propio.
+  // Ficha del paciente: colapsada por defecto — "Ver ficha" la despliega en
+  // modo lectura, "Editar" la despliega directo en modo formulario. El
+  // historial de atenciones queda siempre visible debajo, sin toggle propio.
+  const [showPatientProfile, setShowPatientProfile] = useState(false);
   const [editingPatient, setEditingPatient] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState("");
@@ -791,10 +791,20 @@ export default function CustomerDetailPage() {
               email: (data?.customer?.email ?? editPatientForm.email) || null,
               rut: (data?.customer?.rut ?? editPatientForm.rut) || null,
               birth_date: (data?.customer?.birth_date ?? editPatientForm.birth_date) || null,
+              sex: (data?.customer?.sex ?? editPatientForm.sex) || null,
+              occupation: (data?.customer?.occupation ?? editPatientForm.occupation) || null,
+              health_insurance: (data?.customer?.health_insurance ?? editPatientForm.health_insurance) || null,
+              emergency_contact_name: (data?.customer?.emergency_contact_name ?? editPatientForm.emergency_contact_name) || null,
+              emergency_contact_phone: (data?.customer?.emergency_contact_phone ?? editPatientForm.emergency_contact_phone) || null,
+              known_allergies: (data?.customer?.known_allergies ?? editPatientForm.known_allergies) || null,
+              chronic_conditions: (data?.customer?.chronic_conditions ?? editPatientForm.chronic_conditions) || null,
+              family_history: (data?.customer?.family_history ?? editPatientForm.family_history) || null,
+              habits: (data?.customer?.habits ?? editPatientForm.habits) || null,
             }
           : prev
       );
       setEditingPatient(false);
+      setShowPatientProfile(false);
     } catch (err: any) {
       setPetError(err?.message || "Error actualizando paciente");
     } finally {
@@ -2716,31 +2726,44 @@ const lastValidAppointment = validAppointments[0] || null;
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowResumenModal(true)}
-                          className="shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition"
-                          style={{ borderColor: "var(--pat-banner-border)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                        >
-                          Ver resumen
-                        </button>
                         {!editingPatient ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditPatientForm(patientFormFromCustomer(customer));
-                              setEditingPatient(true);
-                            }}
-                            className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
-                            style={{ background: "var(--pat-blue-solid)" }}
-                          >
-                            Editar
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setShowPatientProfile((v) => !v)}
+                              className="shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition"
+                              style={{ borderColor: "var(--pat-banner-border)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            >
+                              {showPatientProfile ? "✕ Cerrar ficha" : "Ver ficha"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowResumenModal(true)}
+                              className="shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition"
+                              style={{ borderColor: "var(--pat-banner-border)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                            >
+                              Ver resumen
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditPatientForm(patientFormFromCustomer(customer));
+                                setShowPatientProfile(false);
+                                setEditingPatient(true);
+                              }}
+                              className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+                              style={{ background: "var(--pat-blue-solid)" }}
+                            >
+                              Editar
+                            </button>
+                          </>
                         ) : null}
                       </div>
                     </div>
                   </div>
 
+                  {showPatientProfile || editingPatient ? (
+                  <>
                   {editingPatient ? (
                     <>
                   {/* Datos del contacto */}
@@ -2766,7 +2789,7 @@ const lastValidAppointment = validAppointments[0] || null;
                   </SectionCard>
 
                   {/* Datos personales */}
-                  <SectionCard icon={User} tone="green" title="Datos personales">
+                  <SectionCard icon={User} tone="blue" title="Datos personales">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Fecha de nacimiento</FieldLabel>
@@ -2801,7 +2824,7 @@ const lastValidAppointment = validAppointments[0] || null;
                   </SectionCard>
 
                   {/* Contacto de emergencia */}
-                  <SectionCard icon={Phone} tone="amber" title="Contacto de emergencia">
+                  <SectionCard icon={Phone} tone="blue" title="Contacto de emergencia">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Nombre</FieldLabel>
@@ -2815,7 +2838,7 @@ const lastValidAppointment = validAppointments[0] || null;
                   </SectionCard>
 
                   {/* Antecedentes médicos */}
-                  <SectionCard icon={HeartPlus} tone="violet" title="Antecedentes médicos">
+                  <SectionCard icon={HeartPlus} tone="blue" title="Antecedentes médicos">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Alergias conocidas</FieldLabel>
@@ -2853,7 +2876,7 @@ const lastValidAppointment = validAppointments[0] || null;
                   </SectionCard>
 
                   {/* Antecedentes familiares */}
-                  <SectionCard icon={Users} tone="rose" title="Antecedentes familiares">
+                  <SectionCard icon={Users} tone="blue" title="Antecedentes familiares">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Enfermedades familiares</FieldLabel>
@@ -2912,7 +2935,7 @@ const lastValidAppointment = validAppointments[0] || null;
                       </SectionCard>
 
                       {/* Datos personales (lectura) */}
-                      <SectionCard icon={User} tone="green" title="Datos personales">
+                      <SectionCard icon={User} tone="blue" title="Datos personales">
                         <div className="grid gap-3 sm:grid-cols-2">
                           <ReadField label="Fecha de nacimiento" value={customer?.birth_date ? formatDate(customer.birth_date) : null} />
                           <ReadField label="Sexo" value={customer?.sex} />
@@ -2922,7 +2945,7 @@ const lastValidAppointment = validAppointments[0] || null;
                       </SectionCard>
 
                       {/* Contacto de emergencia (lectura) */}
-                      <SectionCard icon={Phone} tone="amber" title="Contacto de emergencia">
+                      <SectionCard icon={Phone} tone="blue" title="Contacto de emergencia">
                         <div className="grid gap-3 sm:grid-cols-2">
                           <ReadField label="Nombre" value={customer?.emergency_contact_name} />
                           <ReadField label="Teléfono" value={customer?.emergency_contact_phone} />
@@ -2930,7 +2953,7 @@ const lastValidAppointment = validAppointments[0] || null;
                       </SectionCard>
 
                       {/* Antecedentes médicos (lectura) */}
-                      <SectionCard icon={HeartPlus} tone="violet" title="Antecedentes médicos">
+                      <SectionCard icon={HeartPlus} tone="blue" title="Antecedentes médicos">
                         <div className="grid gap-3 sm:grid-cols-2">
                           <ReadField label="Alergias conocidas" value={customer?.known_allergies} />
                           <ReadField label="Patologías crónicas" value={customer?.chronic_conditions} />
@@ -2950,7 +2973,7 @@ const lastValidAppointment = validAppointments[0] || null;
                       </SectionCard>
 
                       {/* Antecedentes familiares (lectura) */}
-                      <SectionCard icon={Users} tone="rose" title="Antecedentes familiares">
+                      <SectionCard icon={Users} tone="blue" title="Antecedentes familiares">
                         <div className="grid gap-3 sm:grid-cols-2">
                           <ReadField label="Enfermedades familiares" value={customer?.family_history} />
                           <ReadField label="Hábitos" value={customer?.habits} />
@@ -2958,6 +2981,8 @@ const lastValidAppointment = validAppointments[0] || null;
                       </SectionCard>
                     </>
                   )}
+                  </>
+                  ) : null}
 
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-lg font-bold" style={{ color: "var(--text-main)" }}>
