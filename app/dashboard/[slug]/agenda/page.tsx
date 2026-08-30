@@ -4015,7 +4015,7 @@ const hasPendingClose = pendingCloseCount > 0;
                       <span className="hidden md:inline">Depósitos pendientes</span>
                       <span className="md:hidden">Depósitos</span>
                       {pendingDeposits.length > 0 ? (
-                        <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                        <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
                           {pendingDeposits.length > 9 ? "9+" : pendingDeposits.length}
                         </span>
                       ) : null}
