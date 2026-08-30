@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+const MAX_SIZE_BYTES = 2 * 1024 * 1024;
+const ALLOWED_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
 export async function POST(req: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,6 +21,26 @@ export async function POST(req: Request) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    // Esta ruta no pasa por middleware.ts (excluye /api/** a propósito), así
+    // que la validación de sesión + membership vive acá. apiFetch() del
+    // dashboard ya manda este header hoy — antes nadie lo leía.
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    if (!token) {
+      return NextResponse.json({ error: "Token requerido" }, { status: 401 });
+    }
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Token inválido o sesión expirada" },
+        { status: 401 }
+      );
+    }
 
     const formData = await req.formData();
     const file = formData.get("file");
@@ -33,7 +60,49 @@ export async function POST(req: Request) {
       );
     }
 
-    const fileExt = file.name.split(".").pop() || "jpg";
+    if (!ALLOWED_TYPES[file.type]) {
+      return NextResponse.json(
+        { error: "Formato inválido. Usa JPG, PNG o WebP" },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_SIZE_BYTES) {
+      return NextResponse.json(
+        { error: "El archivo supera los 2MB permitidos" },
+        { status: 400 }
+      );
+    }
+
+    const { data: staff, error: staffError } = await supabase
+      .from("staff")
+      .select("id, tenant_id")
+      .eq("id", staffId)
+      .single();
+
+    if (staffError || !staff) {
+      return NextResponse.json(
+        { error: "Staff no encontrado" },
+        { status: 404 }
+      );
+    }
+
+    const { data: membership } = await supabase
+      .from("tenant_users")
+      .select("tenant_id")
+      .eq("user_id", user.id)
+      .eq("tenant_id", staff.tenant_id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "No tienes acceso a este negocio" },
+        { status: 403 }
+      );
+    }
+
+    const fileExt = ALLOWED_TYPES[file.type];
     const fileName = `staff/${staffId}.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer();
@@ -42,7 +111,7 @@ export async function POST(req: Request) {
     const { error: uploadError } = await supabase.storage
       .from("staff-photos")
       .upload(fileName, buffer, {
-        contentType: file.type || "image/jpeg",
+        contentType: file.type,
         upsert: true,
       });
 

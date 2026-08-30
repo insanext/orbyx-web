@@ -9,14 +9,42 @@ const ALLOWED_TYPES: Record<string, string> = {
   "application/pdf": "pdf",
 };
 
-// Mismo patrón que upload-business-logo (formData -> service role -> Storage),
-// con dos diferencias a propósito: límite de 5MB (business-logo no tiene
-// límite) y el bucket es PRIVADO — un comprobante de transferencia es un
-// documento financiero, no se sirve desde una URL pública fija como el logo.
-// No hay public_url en la respuesta, solo el path; la vista del dashboard
-// pide un signed URL bajo demanda (GET /appointments/:id/deposit-receipt-url).
+// Ruta pública/anónima a propósito (el cliente todavía no tiene cuenta al
+// subir el comprobante) — no puede exigir sesión como upload-staff-photo o
+// upload-business-logo. Mitigación equivalente: exige que appointment_id +
+// tenant_id correspondan a una reserva real con deposit_status='pending'
+// (ventana de ~15 min, ver deposit-required.sql) antes de aceptar el
+// archivo, así no se puede subir a un tenant/appointment arbitrario o ya
+// resuelto. Rate limit best-effort en memoria por IP: al ser una función
+// serverless, no persiste entre instancias/cold starts — reduce ráfagas
+// desde una misma instancia pero no es una defensa distribuida real: si
+// se necesita eso, hace falta un store compartido (ej. Vercel KV/Upstash).
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX = 10;
+const rateLimitHits = new Map<string, { count: number; windowStart: number }>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitHits.get(ip);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitHits.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > RATE_LIMIT_MAX;
+}
+
 export async function POST(req: Request) {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+    if (isRateLimited(ip)) {
+      return NextResponse.json(
+        { error: "Demasiadas solicitudes. Intenta de nuevo en un momento." },
+        { status: 429 }
+      );
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -59,6 +87,21 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "El archivo supera los 5MB permitidos" },
         { status: 400 }
+      );
+    }
+
+    const { data: appointment, error: appointmentError } = await supabase
+      .from("appointments")
+      .select("id")
+      .eq("id", String(appointmentId))
+      .eq("tenant_id", String(tenantId))
+      .eq("deposit_status", "pending")
+      .maybeSingle();
+
+    if (appointmentError || !appointment) {
+      return NextResponse.json(
+        { error: "Reserva no encontrada o ya no está pendiente de depósito" },
+        { status: 404 }
       );
     }
 
