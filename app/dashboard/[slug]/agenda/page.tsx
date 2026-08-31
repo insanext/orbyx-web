@@ -399,6 +399,22 @@ const [slotMinutes, setSlotMinutes] = useState(30);
   const [depositRequired, setDepositRequired] = useState(false);
   const [pendingDeposits, setPendingDeposits] = useState<PendingDeposit[]>([]);
   const [depositsModalOpen, setDepositsModalOpen] = useState(false);
+  const [showStatusLegend, setShowStatusLegend] = useState(false);
+  const statusLegendRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showStatusLegend) return;
+    function handleClickOutsideLegend(event: MouseEvent) {
+      if (
+        statusLegendRef.current &&
+        !statusLegendRef.current.contains(event.target as Node)
+      ) {
+        setShowStatusLegend(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutsideLegend);
+    return () => document.removeEventListener("mousedown", handleClickOutsideLegend);
+  }, [showStatusLegend]);
   // Permite abrir el modal directo desde un link externo (ej. el email de
   // "depósito para revisar" y el ítem de la campana de notificaciones del
   // header) sin tener que clickear el botón del toolbar primero.
@@ -3382,7 +3398,7 @@ const hasPendingClose = pendingCloseCount > 0;
       </div>
 
       <div
-        className="rounded-2xl border p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.45)]"
+        className="rounded-none border p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.45)]"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--agenda-filter-bg)",
@@ -3821,38 +3837,79 @@ const hasPendingClose = pendingCloseCount > 0;
               `}</style>
 
               <div className="-mt-1 min-w-0">
-              <h2
-                className="text-base font-semibold leading-tight"
-                style={{ color: "var(--text-main)" }}
-              >
-                {agendaView === "week" ? "Calendario semanal" : "Día por profesional"}
-              </h2>
-              <div
-                className="mt-1 flex max-w-[520px] flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] font-medium"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {(
-                  [
-                    ["Confirmado", "confirmed"],
-                    ["Agendado", "booked"],
-                    ["No asistió", "no_show"],
-                    ["Reagendado", "rescheduled"],
-                    ["Cancelado", "canceled"],
-                    ["Falta cierre", "pending_close"],
-                    ["Actividad grupal", "group_activity"],
-                  ] as [string, keyof typeof APPOINTMENT_STATUS_COLORS][]
-                ).map(([label, colorKey]) => (
-                  <span key={label} className="inline-flex items-center gap-1.5 leading-none">
-                    <span
-                      className="h-2 w-2 rounded-full"
+              <div className="flex items-center gap-1.5">
+                <h2
+                  className="text-base font-semibold leading-tight"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  {agendaView === "week" ? "Calendario semanal" : "Día por profesional"}
+                </h2>
+
+                <div
+                  ref={statusLegendRef}
+                  className="relative"
+                  onMouseEnter={() => setShowStatusLegend(true)}
+                  onMouseLeave={() => setShowStatusLegend(false)}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setShowStatusLegend((prev) => !prev)}
+                    aria-label="Ver significado de los estados"
+                    aria-expanded={showStatusLegend}
+                    className="flex h-4 w-4 items-center justify-center rounded-full border text-[10px] font-bold leading-none transition hover:opacity-80"
+                    style={{
+                      borderColor: "var(--text-muted)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    !
+                  </button>
+
+                  {showStatusLegend ? (
+                    <div
+                      className="absolute left-0 top-full z-30 mt-2 w-[300px] rounded-xl border p-4 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.55)]"
                       style={{
-                        background: APPOINTMENT_STATUS_COLORS[colorKey].hex,
-                        boxShadow: statusGlow(colorKey, 0.8),
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
                       }}
-                    />
-                    {label}
-                  </span>
-                ))}
+                    >
+                      <p
+                        className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Estados de la agenda
+                      </p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {(
+                          [
+                            ["Confirmado", "confirmed"],
+                            ["Agendado", "booked"],
+                            ["No asistió", "no_show"],
+                            ["Reagendado", "rescheduled"],
+                            ["Cancelado", "canceled"],
+                            ["Falta cierre", "pending_close"],
+                            ["Actividad grupal", "group_activity"],
+                          ] as [string, keyof typeof APPOINTMENT_STATUS_COLORS][]
+                        ).map(([label, colorKey]) => (
+                          <span
+                            key={label}
+                            className="inline-flex items-center gap-2 text-xs font-medium leading-none"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            <span
+                              className="h-2 w-2 shrink-0 rounded-full"
+                              style={{
+                                background: APPOINTMENT_STATUS_COLORS[colorKey].hex,
+                                boxShadow: statusGlow(colorKey, 0.8),
+                              }}
+                            />
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               </div>
               </div>
 
