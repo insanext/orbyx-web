@@ -110,17 +110,46 @@ export default function AdminTenantDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+
   const getToken = useCallback(async () => {
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     return session?.access_token
   }, [])
 
-  const authFetch = useCallback(async (path: string) => {
+  const authFetch = useCallback(async (path: string, init?: RequestInit) => {
     const token = await getToken()
     if (!token) return null
-    return fetch(`${BACKEND_URL}${path}`, { headers: { Authorization: `Bearer ${token}` } })
+    return fetch(`${BACKEND_URL}${path}`, {
+      ...init,
+      headers: { ...(init?.headers || {}), Authorization: `Bearer ${token}` },
+    })
   }, [getToken])
+
+  const handleDeleteTenant = useCallback(async () => {
+    if (!data) return
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      const res = await authFetch(`/admin/tenants/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm_slug: confirmText }),
+      })
+      const json = res ? await res.json() : null
+      if (!res || !res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Error borrando el tenant')
+      }
+      router.push('/admin/tenants')
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Error borrando el tenant')
+      setDeleting(false)
+    }
+  }, [authFetch, confirmText, data, id, router])
 
   const loadTenant = useCallback(async () => {
     if (!id) return
@@ -168,11 +197,19 @@ export default function AdminTenantDetailPage() {
         ← Volver al directorio
       </button>
 
-      <div>
-        <h1 className="text-lg font-semibold text-white mb-1">{tenant.name}</h1>
-        <p className="text-sm text-blue-300/50">
-          {tenant.slug} · {tenant.business_category_label} · {STATUS_LABEL[plan.status] || plan.status}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-lg font-semibold text-white mb-1">{tenant.name}</h1>
+          <p className="text-sm text-blue-300/50">
+            {tenant.slug} · {tenant.business_category_label} · {STATUS_LABEL[plan.status] || plan.status}
+          </p>
+        </div>
+        <button
+          onClick={() => { setDeleteError(''); setConfirmText(''); setShowDeleteModal(true) }}
+          className="shrink-0 text-sm font-medium text-rose-300 border border-rose-900/40 rounded-lg px-3 py-1.5 hover:bg-rose-900/10 transition-colors"
+        >
+          Eliminar tenant
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -300,6 +337,55 @@ export default function AdminTenantDetailPage() {
           <p className="text-sm text-blue-300/40">{plan_change_history.note}</p>
         ) : null}
       </Section>
+
+      {showDeleteModal ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
+          <div
+            className="w-full max-w-md rounded-2xl border border-rose-900/40 p-5"
+            style={{ background: '#0f1729' }}
+          >
+            <h2 className="text-base font-semibold text-white mb-2">Eliminar tenant "{tenant.name}"</h2>
+            <p className="text-sm text-blue-300/60 mb-3">
+              Esta acción es <strong className="text-rose-300">irreversible</strong>. Se borrarán permanentemente:
+            </p>
+            <ul className="text-sm text-blue-100 list-disc list-inside space-y-0.5 mb-4">
+              <li>Reservas, clientes, pacientes y fichas clínicas</li>
+              <li>Servicios, staff, horarios y sucursales</li>
+              <li>Campañas, add-ons, suscripción y uso mensual</li>
+              <li>Tickets de soporte, invitaciones y aceptaciones legales</li>
+              <li>Archivos (logo, comprobantes de depósito, fotos de staff, imágenes de campañas)</li>
+              <li>El usuario de acceso del dueño, si no pertenece a otro negocio</li>
+            </ul>
+            <p className="text-sm text-blue-300/60 mb-2">
+              Para confirmar, escribe el slug exacto <strong className="text-white">{tenant.slug}</strong>:
+            </p>
+            <input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={tenant.slug}
+              className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-rose-500/50 mb-3"
+              autoFocus
+            />
+            {deleteError ? <p className="text-sm text-rose-300 mb-3">{deleteError}</p> : null}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="text-sm text-blue-300/60 hover:text-blue-200 px-3 py-1.5 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteTenant}
+                disabled={confirmText !== tenant.slug || deleting}
+                className="text-sm font-semibold text-white bg-rose-600 rounded-lg px-3 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-rose-500 transition-colors"
+              >
+                {deleting ? 'Eliminando...' : 'Eliminar definitivamente'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
