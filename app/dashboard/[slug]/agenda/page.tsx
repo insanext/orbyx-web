@@ -3256,7 +3256,7 @@ const hasPendingClose = pendingCloseCount > 0;
       `}</style>
       <style>{STATUS_STYLESHEET}</style>
 <div
-  className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(99,102,241,0.5),0_0_34px_-24px_rgba(59,130,246,0.42)]"
+  className="relative overflow-hidden rounded-none border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(99,102,241,0.5),0_0_34px_-24px_rgba(59,130,246,0.42)]"
   style={{
     borderColor: "var(--agenda-hero-border)",
     background: "var(--agenda-hero-bg)",
@@ -3589,7 +3589,7 @@ const hasPendingClose = pendingCloseCount > 0;
         <button
           type="button"
           onClick={() => setShowPendingClinicalPanel(true)}
-          className="w-full rounded-2xl border px-4 py-3 text-left transition hover:shadow-sm"
+          className="w-full rounded-none border px-4 py-3 text-left transition hover:shadow-sm"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-soft)",
@@ -4148,7 +4148,7 @@ const hasPendingClose = pendingCloseCount > 0;
                 <div
                   ref={dayTopScrollRef}
                   onScroll={() => syncDayGridScroll("top")}
-                  className="orbyx-day-scrollbar h-[22px] min-w-0 overflow-x-auto overflow-y-hidden rounded-lg border"
+                  className="orbyx-day-scrollbar h-[22px] min-w-0 overflow-x-auto overflow-y-hidden rounded-none border"
                   style={{
                     borderColor: "var(--border-color)",
                     background:
@@ -4160,7 +4160,7 @@ const hasPendingClose = pendingCloseCount > 0;
 
                 <div
                   ref={dayHeaderScrollRef}
-                  className="sticky z-20 overflow-x-hidden rounded-t-2xl border border-b-0 shadow-sm"
+                  className="sticky z-20 overflow-x-hidden rounded-none border border-b-0 shadow-sm"
                   style={{
                     top: "78px",
                     borderColor: "var(--border-color)",
@@ -4258,7 +4258,7 @@ const hasPendingClose = pendingCloseCount > 0;
                   onMouseLeave={() => stopDayGridDrag(true)}
                   onWheel={handleDayGridWheel}
                   onClickCapture={handleDayGridClickCapture}
-                  className={`orbyx-day-grid-scroll select-none overflow-x-auto overflow-y-visible rounded-b-2xl border md:overflow-x-hidden ${
+                  className={`orbyx-day-grid-scroll select-none overflow-x-auto overflow-y-visible rounded-none border md:overflow-x-hidden ${
                     isDayGridDragging ? "cursor-grabbing" : "cursor-grab"
                   }`}
                   style={{
@@ -4605,7 +4605,7 @@ const hasPendingClose = pendingCloseCount > 0;
             ) : (
               <div className="flex gap-3 overflow-x-auto pb-2 xl:grid xl:gap-0 xl:overflow-visible xl:pb-0 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))]">
                 <div
-                  className="sticky left-0 z-10 w-[54px] shrink-0 rounded-2xl border xl:static xl:z-auto xl:w-auto xl:shrink xl:rounded-l-2xl xl:rounded-r-none"
+                  className="sticky left-0 z-10 w-[54px] shrink-0 rounded-none border xl:static xl:z-auto xl:w-auto xl:shrink xl:rounded-l-none xl:rounded-r-none"
                   style={{
                     borderColor: "var(--agenda-calendar-line)",
                     background: "var(--agenda-calendar-time-bg)",
@@ -4722,7 +4722,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                           clearCalendarSelection();
                         }
                       }}
-                      className="min-h-[660px] w-[260px] shrink-0 rounded-2xl border first:xl:rounded-l-none last:xl:rounded-r-2xl xl:w-auto xl:shrink xl:rounded-none xl:border-l-0"
+                      className="min-h-[660px] w-[260px] shrink-0 rounded-none border first:xl:rounded-l-none last:xl:rounded-r-none xl:w-auto xl:shrink xl:rounded-none xl:border-l-0"
                       style={{
   borderColor: dayPendingCount > 0
     ? "rgba(244,63,94,0.28)"

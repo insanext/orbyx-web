@@ -1096,7 +1096,7 @@ export default function DashboardLayout({
                     <button
                       type="button"
                       onClick={() => setBranchDropdownOpen((prev) => !prev)}
-                      className="w-full rounded-2xl border px-3 py-2.5 text-left transition-colors duration-150"
+                      className="w-full rounded-none border px-3 py-2.5 text-left transition-colors duration-150"
                       style={{
                         background: branchDropdownOpen ? "rgba(37,99,235,0.08)" : softBg,
                         borderColor: branchDropdownOpen ? "rgba(37,99,235,0.40)" : sidebarBorder,
