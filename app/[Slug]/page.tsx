@@ -2317,6 +2317,20 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 </p>
               </div>
 
+              {visibleWhatsappNumber ? (
+                <p className="mt-4 text-center text-sm text-slate-500">
+                  ¿Tienes dudas o esto está tomando más tiempo del esperado?{" "}
+                  <a
+                    href={`https://wa.me/${visibleWhatsappNumber}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold text-emerald-600 underline underline-offset-2 hover:text-emerald-700"
+                  >
+                    Escríbenos por WhatsApp
+                  </a>
+                </p>
+              ) : null}
+
               <div className="mt-6 flex justify-center">
                 <button
                   type="button"
