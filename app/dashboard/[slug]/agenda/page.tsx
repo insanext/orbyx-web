@@ -73,6 +73,7 @@ type PendingDeposit = {
   service_name_snapshot: string | null;
   start_at: string;
   deposit_receipt_path: string | null;
+  deposit_receipt_uploaded_at: string | null;
   deposit_hold_expires_at: string | null;
 };
 
@@ -6872,6 +6873,22 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   const receiptUrl = depositReceiptUrls[deposit.id];
                   const acting = depositActionId === deposit.id;
 
+                  // Una vez que hay comprobante, ya no corre ningún plazo de
+                  // expiración automática (ver releaseExpiredDeposits en
+                  // server.js) — la reserva espera indefinidamente la
+                  // decisión del tenant. Mostrar la cuenta regresiva acá
+                  // sugiere falsamente que puede vencer. uploadedAtMs puede
+                  // faltar en comprobantes subidos antes de que existiera la
+                  // columna deposit_receipt_uploaded_at (2026-08-31) — en
+                  // ese caso se omite la hora/tiempo en vez de inventarlo.
+                  const hasReceipt = Boolean(deposit.deposit_receipt_path);
+                  const uploadedAtMs = deposit.deposit_receipt_uploaded_at
+                    ? new Date(deposit.deposit_receipt_uploaded_at).getTime()
+                    : 0;
+                  const waitingMinutes = uploadedAtMs
+                    ? Math.max(0, Math.floor((depositsNowTick - uploadedAtMs) / 60000))
+                    : 0;
+
                   return (
                     <div
                       key={deposit.id}
@@ -6895,15 +6912,43 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                            Tiempo restante
-                          </p>
-                          <p
-                            className="text-lg font-bold tabular-nums"
-                            style={{ color: remainingSec <= 0 ? "rgb(225,29,72)" : "var(--text-main)" }}
-                          >
-                            {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
-                          </p>
+                          {hasReceipt ? (
+                            <>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                                Esperando confirmación
+                              </p>
+                              <p className="text-xs font-semibold" style={{ color: "var(--text-main)" }}>
+                                {uploadedAtMs ? (
+                                  <>
+                                    Subido a las{" "}
+                                    {new Date(uploadedAtMs).toLocaleString("es-CL", {
+                                      timeZone: "America/Santiago",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                    {" · "}
+                                    {waitingMinutes <= 0
+                                      ? "hace instantes"
+                                      : `esperando hace ${waitingMinutes} min`}
+                                  </>
+                                ) : (
+                                  "Comprobante subido"
+                                )}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                                Tiempo restante
+                              </p>
+                              <p
+                                className="text-lg font-bold tabular-nums"
+                                style={{ color: remainingSec <= 0 ? "rgb(225,29,72)" : "var(--text-main)" }}
+                              >
+                                {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
+                              </p>
+                            </>
+                          )}
                         </div>
                       </div>
 
