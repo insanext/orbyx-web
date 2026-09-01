@@ -66,6 +66,13 @@ type TenantDetail = {
   error?: string
 }
 
+type AdminNote = {
+  id: string
+  admin_email: string | null
+  note: string
+  created_at: string
+}
+
 const STATUS_LABEL: Record<string, string> = {
   active: 'Activo',
   trial: 'En prueba',
@@ -116,6 +123,12 @@ export default function AdminTenantDetailPage() {
   const [deleteError, setDeleteError] = useState('')
   const [showFinalDeleteModal, setShowFinalDeleteModal] = useState(false)
   const [finalConfirmText, setFinalConfirmText] = useState('')
+
+  const [notes, setNotes] = useState<AdminNote[]>([])
+  const [notesLoading, setNotesLoading] = useState(true)
+  const [newNote, setNewNote] = useState('')
+  const [savingNote, setSavingNote] = useState(false)
+  const [noteError, setNoteError] = useState('')
 
   const getToken = useCallback(async () => {
     const supabase = createClient()
@@ -172,7 +185,45 @@ export default function AdminTenantDetailPage() {
     }
   }, [authFetch, id])
 
+  const loadNotes = useCallback(async () => {
+    if (!id) return
+    setNotesLoading(true)
+    try {
+      const res = await authFetch(`/admin/tenants/${id}/notes`)
+      const json = res ? await res.json() : null
+      setNotes(json?.ok ? json.notes : [])
+    } catch (e) {
+      console.error('Error cargando notas:', e)
+    } finally {
+      setNotesLoading(false)
+    }
+  }, [authFetch, id])
+
+  const handleAddNote = useCallback(async () => {
+    if (!newNote.trim()) return
+    setSavingNote(true)
+    setNoteError('')
+    try {
+      const res = await authFetch(`/admin/tenants/${id}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: newNote.trim() }),
+      })
+      const json = res ? await res.json() : null
+      if (!res || !res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Error agregando la nota')
+      }
+      setNotes((prev) => [json.note, ...prev])
+      setNewNote('')
+    } catch (e) {
+      setNoteError(e instanceof Error ? e.message : 'Error agregando la nota')
+    } finally {
+      setSavingNote(false)
+    }
+  }, [authFetch, id, newNote])
+
   useEffect(() => { loadTenant() }, [loadTenant])
+  useEffect(() => { loadNotes() }, [loadNotes])
 
   if (loading) {
     return <div className="p-6"><p className="text-sm text-blue-300/50">Cargando...</p></div>
@@ -338,6 +389,42 @@ export default function AdminTenantDetailPage() {
         {plan_change_history.entries.length === 0 ? (
           <p className="text-sm text-blue-300/40">{plan_change_history.note}</p>
         ) : null}
+      </Section>
+
+      <Section title="Notas internas (solo Super Admin)">
+        <div className="space-y-2 mb-4">
+          <textarea
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            placeholder="Agregar una nota interna sobre este tenant..."
+            rows={3}
+            className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-2 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50 resize-none"
+          />
+          {noteError ? <p className="text-sm text-rose-300">{noteError}</p> : null}
+          <div className="flex justify-end">
+            <button
+              onClick={handleAddNote}
+              disabled={!newNote.trim() || savingNote}
+              className="text-sm font-medium text-white bg-blue-600 rounded-lg px-3 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
+            >
+              {savingNote ? 'Guardando...' : 'Agregar nota'}
+            </button>
+          </div>
+        </div>
+        {notesLoading ? (
+          <p className="text-sm text-blue-300/40">Cargando notas...</p>
+        ) : notes.length === 0 ? (
+          <p className="text-sm text-blue-300/40">Sin notas registradas.</p>
+        ) : (
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {notes.map((n) => (
+              <div key={n.id} className="border-b border-blue-900/10 last:border-0 pb-2 last:pb-0">
+                <p className="text-sm text-white whitespace-pre-wrap">{n.note}</p>
+                <p className="text-xs text-blue-300/40 mt-0.5">{n.admin_email || 'admin'} · {formatDate(n.created_at)}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
 
       {showDeleteModal ? (
