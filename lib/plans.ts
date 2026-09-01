@@ -329,6 +329,15 @@ export function cycleTotalPrice(monthlyPrice: number, cycle: BillingCycle) {
   return Math.round(monthlyPrice * config.months * config.discount);
 }
 
+// Mismo IVA_RATE/applyIva que server.js -- fuente compartida para que
+// cualquier pantalla que muestre neto/IVA/total (planes, checkout-premium)
+// calcule exactamente lo mismo.
+export const IVA_RATE = 0.19;
+
+export function applyIva(netAmount: number) {
+  return Math.round(netAmount * (1 + IVA_RATE));
+}
+
 // Planes pagos que requieren tarjeta antes de crear el tenant (flujo
 // pago-primero de /signup/*, ver PAID_SIGNUP_PLANS en server.js). Starter
 // sigue el onboarding normal sin tarjeta (trial gratis).

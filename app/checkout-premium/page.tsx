@@ -7,6 +7,7 @@ import {
   plans,
   billingCycleConfig,
   cycleTotalPrice,
+  applyIva,
   PAID_PLAN_IDS,
   type BillingCycle,
 } from "@/lib/plans";
@@ -133,8 +134,9 @@ function CheckoutPremiumInner() {
     setFormError("");
 
     try {
-      const monto = cycleTotalPrice(plan.price, cycleParam);
-
+      // El backend calcula el monto real (neto + IVA) del lado del
+      // servidor a partir de plan_id/periodicidad -- no se manda ni se
+      // confía en un monto calculado en el cliente (fix 2026-09-01).
       const startRes = await fetch(`${BACKEND_URL}/signup/start-paid`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -144,7 +146,6 @@ function CheckoutPremiumInner() {
           phone: toE164(phoneIso2, phoneNumber),
           plan_id: plan.key,
           periodicidad: cycleParam,
-          monto,
         }),
       });
       const startData = await startRes.json();
@@ -177,7 +178,12 @@ function CheckoutPremiumInner() {
 
   const cycleLabel = billingCycleConfig[cycleParam].label;
   const cycleBadge = billingCycleConfig[cycleParam].badge;
-  const total = plan ? cycleTotalPrice(plan.price, cycleParam) : 0;
+  // Desglose neto/IVA/total -- debe calzar exactamente con el resumen de
+  // /planes (fix 2026-09-01: acá se mostraba antes un solo número (el
+  // precio neto del plan) mal etiquetado como "IVA incluido").
+  const subtotal = plan ? cycleTotalPrice(plan.price, cycleParam) : 0;
+  const total = applyIva(subtotal);
+  const iva = total - subtotal;
 
   return (
     <div
@@ -289,10 +295,23 @@ function CheckoutPremiumInner() {
                   {cycleBadge ? ` · ${cycleBadge}` : ""}
                 </span>
               </div>
-              <p className="text-2xl font-bold text-white mt-2">{formatCLP(total)}</p>
-              <p className="text-xs mt-1" style={{ color: "rgba(147,197,253,0.5)" }}>
-                Total del ciclo {cycleLabel.toLowerCase()}, IVA incluido.
-              </p>
+              <div className="mt-3 space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span style={{ color: "rgba(147,197,253,0.6)" }}>Subtotal</span>
+                  <span className="text-white">{formatCLP(subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span style={{ color: "rgba(147,197,253,0.6)" }}>IVA (19%)</span>
+                  <span className="text-white">{formatCLP(iva)}</span>
+                </div>
+                <div className="h-px my-1" style={{ background: "rgba(255,255,255,0.1)" }} />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold" style={{ color: "rgba(147,197,253,0.6)" }}>
+                    Total {cycleLabel.toLowerCase()}
+                  </span>
+                  <span className="text-2xl font-bold text-white">{formatCLP(total)}</span>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-3 mb-5">
