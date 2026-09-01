@@ -92,6 +92,12 @@ const TICKET_STATUS_LABEL: Record<string, string> = {
 
 const TICKET_OPEN_STATUSES = ['open', 'answered', 'waiting_confirmation', 'reopened']
 
+const CREDITABLE_ADDONS: Array<{ key: string; label: string }> = [
+  { key: 'wa_confirmacion', label: 'WA confirmación + recordatorio' },
+  { key: 'campanas_wa', label: 'Campañas WhatsApp' },
+  { key: 'emails_campana', label: 'Campañas email' },
+]
+
 const STATUS_LABEL: Record<string, string> = {
   active: 'Activo',
   trial: 'En prueba',
@@ -159,6 +165,11 @@ export default function AdminTenantDetailPage() {
   const [resendingWelcome, setResendingWelcome] = useState(false)
   const [sendingReset, setSendingReset] = useState(false)
   const [emailActionMessage, setEmailActionMessage] = useState('')
+
+  const [creditAddonKey, setCreditAddonKey] = useState(CREDITABLE_ADDONS[0].key)
+  const [creditAmount, setCreditAmount] = useState('')
+  const [creditingBalance, setCreditingBalance] = useState(false)
+  const [creditMessage, setCreditMessage] = useState('')
 
   const getToken = useCallback(async () => {
     const supabase = createClient()
@@ -310,6 +321,34 @@ export default function AdminTenantDetailPage() {
       setSendingReset(false)
     }
   }, [authFetch, id])
+
+  const handleCreditBalance = useCallback(async () => {
+    const amount = parseInt(creditAmount, 10)
+    if (!Number.isInteger(amount) || amount <= 0) {
+      setCreditMessage('Ingresa una cantidad entera mayor a 0.')
+      return
+    }
+    setCreditingBalance(true)
+    setCreditMessage('')
+    try {
+      const res = await authFetch(`/admin/tenants/${id}/credit-balance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ addon_key: creditAddonKey, amount }),
+      })
+      const json = res ? await res.json() : null
+      if (!res || !res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Error otorgando el crédito')
+      }
+      setCreditMessage(`Saldo actualizado: nuevo balance ${json.new_balance}.`)
+      setCreditAmount('')
+      loadTenant()
+    } catch (e) {
+      setCreditMessage(e instanceof Error ? e.message : 'Error otorgando el crédito')
+    } finally {
+      setCreditingBalance(false)
+    }
+  }, [authFetch, id, creditAddonKey, creditAmount, loadTenant])
 
   const loadTickets = useCallback(async () => {
     if (!id) return
@@ -518,6 +557,45 @@ export default function AdminTenantDetailPage() {
             </table>
           </div>
         )}
+      </Section>
+
+      <Section title="Otorgar crédito de saldo (compensación)">
+        <div className="flex flex-wrap items-end gap-2">
+          <div>
+            <p className="text-xs text-blue-300/50 mb-1">Recurso</p>
+            <select
+              value={creditAddonKey}
+              onChange={(e) => setCreditAddonKey(e.target.value)}
+              className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+            >
+              {CREDITABLE_ADDONS.map((a) => (
+                <option key={a.key} value={a.key}>{a.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <p className="text-xs text-blue-300/50 mb-1">Cantidad</p>
+            <input
+              type="number"
+              min={1}
+              value={creditAmount}
+              onChange={(e) => setCreditAmount(e.target.value)}
+              placeholder="Ej: 50"
+              className="w-28 bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50"
+            />
+          </div>
+          <button
+            onClick={handleCreditBalance}
+            disabled={creditingBalance || !creditAmount}
+            className="text-sm font-medium text-white bg-blue-600 rounded-lg px-3 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
+          >
+            {creditingBalance ? 'Otorgando...' : 'Otorgar crédito'}
+          </button>
+        </div>
+        {creditMessage ? <p className="mt-2 text-xs text-blue-300/60">{creditMessage}</p> : null}
+        <p className="mt-2 text-xs text-blue-300/40">
+          Se suma al saldo acumulado de add-ons del tenant (el mismo que usan los add-ons comprados) — se refleja automáticamente en su panel de Indicadores.
+        </p>
       </Section>
 
       <Section title="Tickets de soporte">
