@@ -153,6 +153,9 @@ export default function AdminTenantDetailPage() {
   const [ticketsLoading, setTicketsLoading] = useState(true)
   const [showAllTickets, setShowAllTickets] = useState(false)
 
+  const [viewSessionLoading, setViewSessionLoading] = useState(false)
+  const [viewSessionError, setViewSessionError] = useState('')
+
   const getToken = useCallback(async () => {
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
@@ -245,6 +248,31 @@ export default function AdminTenantDetailPage() {
     }
   }, [authFetch, id, newNote])
 
+  const handleViewAsTenant = useCallback(async () => {
+    if (!data) return
+    const confirmed = window.confirm(
+      `Vas a ver el dashboard de "${data.tenant.name}" con la sesión real de su dueño.\n\n` +
+      'Esto reemplazará tu sesión de administrador en este navegador: para volver al panel admin ' +
+      'vas a tener que iniciar sesión de nuevo (con MFA).\n\n¿Continuar?'
+    )
+    if (!confirmed) return
+
+    setViewSessionLoading(true)
+    setViewSessionError('')
+    try {
+      const res = await authFetch(`/admin/tenants/${id}/view-session`, { method: 'POST' })
+      const json = res ? await res.json() : null
+      if (!res || !res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Error generando la sesión de vista')
+      }
+      const hash = `access_token=${encodeURIComponent(json.access_token)}&refresh_token=${encodeURIComponent(json.refresh_token)}&slug=${encodeURIComponent(json.slug)}`
+      window.location.href = `/admin/view-tenant#${hash}`
+    } catch (e) {
+      setViewSessionError(e instanceof Error ? e.message : 'Error generando la sesión de vista')
+      setViewSessionLoading(false)
+    }
+  }, [authFetch, data, id])
+
   const loadTickets = useCallback(async () => {
     if (!id) return
     setTicketsLoading(true)
@@ -295,12 +323,24 @@ export default function AdminTenantDetailPage() {
             {tenant.slug} · {tenant.business_category_label} · {STATUS_LABEL[plan.status] || plan.status}
           </p>
         </div>
-        <button
-          onClick={() => { setDeleteError(''); setConfirmText(''); setShowDeleteModal(true) }}
-          className="shrink-0 text-sm font-medium text-rose-300 border border-rose-900/40 rounded-lg px-3 py-1.5 hover:bg-rose-900/10 transition-colors"
-        >
-          Eliminar tenant
-        </button>
+        <div className="shrink-0 flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleViewAsTenant}
+              disabled={viewSessionLoading}
+              className="text-sm font-medium text-blue-300 border border-blue-900/40 rounded-lg px-3 py-1.5 hover:bg-blue-900/10 transition-colors disabled:opacity-50"
+            >
+              {viewSessionLoading ? 'Generando sesión...' : 'Ver dashboard de este tenant'}
+            </button>
+            <button
+              onClick={() => { setDeleteError(''); setConfirmText(''); setShowDeleteModal(true) }}
+              className="text-sm font-medium text-rose-300 border border-rose-900/40 rounded-lg px-3 py-1.5 hover:bg-rose-900/10 transition-colors"
+            >
+              Eliminar tenant
+            </button>
+          </div>
+          {viewSessionError ? <p className="text-xs text-rose-300">{viewSessionError}</p> : null}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
