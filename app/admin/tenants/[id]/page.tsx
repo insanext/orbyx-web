@@ -73,6 +73,25 @@ type AdminNote = {
   created_at: string
 }
 
+type AdminTicket = {
+  id: string
+  subject: string
+  status: string
+  priority: string
+  category: string
+  created_at: string
+}
+
+const TICKET_STATUS_LABEL: Record<string, string> = {
+  open: 'Abierto',
+  answered: 'Respondido',
+  waiting_confirmation: 'Esperando confirmación',
+  reopened: 'Reabierto',
+  closed: 'Cerrado',
+}
+
+const TICKET_OPEN_STATUSES = ['open', 'answered', 'waiting_confirmation', 'reopened']
+
 const STATUS_LABEL: Record<string, string> = {
   active: 'Activo',
   trial: 'En prueba',
@@ -129,6 +148,10 @@ export default function AdminTenantDetailPage() {
   const [newNote, setNewNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [noteError, setNoteError] = useState('')
+
+  const [tickets, setTickets] = useState<AdminTicket[]>([])
+  const [ticketsLoading, setTicketsLoading] = useState(true)
+  const [showAllTickets, setShowAllTickets] = useState(false)
 
   const getToken = useCallback(async () => {
     const supabase = createClient()
@@ -222,8 +245,23 @@ export default function AdminTenantDetailPage() {
     }
   }, [authFetch, id, newNote])
 
+  const loadTickets = useCallback(async () => {
+    if (!id) return
+    setTicketsLoading(true)
+    try {
+      const res = await authFetch(`/admin/tickets?tenant_id=${id}`)
+      const json = res ? await res.json() : null
+      setTickets(Array.isArray(json) ? json : [])
+    } catch (e) {
+      console.error('Error cargando tickets:', e)
+    } finally {
+      setTicketsLoading(false)
+    }
+  }, [authFetch, id])
+
   useEffect(() => { loadTenant() }, [loadTenant])
   useEffect(() => { loadNotes() }, [loadNotes])
+  useEffect(() => { loadTickets() }, [loadTickets])
 
   if (loading) {
     return <div className="p-6"><p className="text-sm text-blue-300/50">Cargando...</p></div>
@@ -382,6 +420,48 @@ export default function AdminTenantDetailPage() {
               </tbody>
             </table>
           </div>
+        )}
+      </Section>
+
+      <Section title="Tickets de soporte">
+        {ticketsLoading ? (
+          <p className="text-sm text-blue-300/40">Cargando tickets...</p>
+        ) : tickets.length === 0 ? (
+          <p className="text-sm text-blue-300/40">Sin tickets de soporte.</p>
+        ) : (
+          (() => {
+            const openTickets = tickets.filter((t) => TICKET_OPEN_STATUSES.includes(t.status) && t.status !== 'closed')
+            const visible = showAllTickets ? tickets : openTickets
+            return (
+              <div className="space-y-2">
+                {visible.length === 0 ? (
+                  <p className="text-sm text-blue-300/40">Sin tickets abiertos/pendientes.</p>
+                ) : (
+                  visible.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => router.push(`/admin/tickets/${t.id}`)}
+                      className="w-full text-left rounded-lg border border-blue-900/20 hover:border-blue-700/40 px-3 py-2 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm text-white">{t.subject}</p>
+                        <span className="text-xs text-blue-300/50 shrink-0">{TICKET_STATUS_LABEL[t.status] || t.status}</span>
+                      </div>
+                      <p className="text-xs text-blue-300/40 mt-0.5">{t.category} · {formatDate(t.created_at)}</p>
+                    </button>
+                  ))
+                )}
+                {!showAllTickets && tickets.length > openTickets.length ? (
+                  <button
+                    onClick={() => setShowAllTickets(true)}
+                    className="text-xs text-blue-300/60 hover:text-blue-200 pt-1"
+                  >
+                    Ver todos ({tickets.length}) →
+                  </button>
+                ) : null}
+              </div>
+            )
+          })()
         )}
       </Section>
 
