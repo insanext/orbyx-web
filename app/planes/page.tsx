@@ -850,11 +850,17 @@ function PlanesPageContent() {
   // partir de key:count, nunca confía en un total). Formato
   // "key:count,key2:count2".
   const addonsQueryValue = extraItems.map((item) => `${item.key}:${item.count}`).join(",");
-  const publicCtaHref = isStarterSelected
-    ? "/signup?plan=starter"
-    : `/checkout-premium?plan=${selectedPlanKey}&cycle=${billingCycle}${
-        addonsQueryValue ? `&addons=${encodeURIComponent(addonsQueryValue)}` : ""
-      }`;
+  // Starter (gratis) con add-ons también pasa por checkout-premium (fix
+  // 2026-09-02): el plan en sí no se cobra, pero los add-ons sí -- antes
+  // se iba directo a /signup y esos add-ons se perdían sin cobrarse ni
+  // activarse nunca. Starter SIN add-ons sigue yendo directo a /signup,
+  // sin pedir tarjeta para nada.
+  const publicCtaHref =
+    isStarterSelected && !addonsQueryValue
+      ? "/signup?plan=starter"
+      : `/checkout-premium?plan=${selectedPlanKey}&cycle=${billingCycle}${
+          addonsQueryValue ? `&addons=${encodeURIComponent(addonsQueryValue)}` : ""
+        }`;
 
   const showTenantWarning = !tenantId && Boolean(from || slug);
 

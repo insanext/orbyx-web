@@ -12,6 +12,7 @@ import {
   ADDON_PRICING,
   ADDON_LABELS,
   tieredAddonCost,
+  TRIAL_LABEL,
   type BillingCycle,
   type ExtraKey,
 } from "@/lib/plans";
@@ -50,7 +51,6 @@ function CheckoutPremiumInner() {
   );
 
   const plan = plans.find((p) => p.key === planParam);
-  const planIsPaid = PAID_PLAN_IDS.includes(planParam);
 
   // Add-ons elegidos en /planes, pasados como "key:count,key2:count2"
   // (fix 2026-09-01, ver app/planes/page.tsx). Se ignora silenciosamente
@@ -66,6 +66,14 @@ function CheckoutPremiumInner() {
       return { key: key as ExtraKey, count };
     })
     .filter((item) => ADDON_PRICING[item.key] && Number.isInteger(item.count) && item.count > 0);
+
+  // Starter (gratis) solo entra a esta pantalla cuando trae add-ons (fix
+  // 2026-09-02): el plan no se cobra, pero los add-ons sí -- antes un
+  // starter con add-ons no pasaba por ningún lado que los cobrara.
+  // Starter sin add-ons nunca debería llegar acá (ver /planes), pero por
+  // si acaso se trata igual que "inválido" y vuelve a /planes.
+  const isFreeStarterWithAddons = planParam === "starter" && selectedAddons.length > 0;
+  const planIsPaid = PAID_PLAN_IDS.includes(planParam) || isFreeStarterWithAddons;
 
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
@@ -202,7 +210,9 @@ function CheckoutPremiumInner() {
   // Desglose neto/IVA/total -- debe calzar exactamente con el resumen de
   // /planes (fix 2026-09-01: acá se mostraba antes un solo número, el
   // precio neto del plan SIN add-ons, mal etiquetado como "IVA incluido").
-  const planNet = plan ? cycleTotalPrice(plan.price, cycleParam) : 0;
+  // Starter es gratis (trial) incluso con add-ons de por medio (fix
+  // 2026-09-02): el neto del plan es 0, solo se cobran los add-ons.
+  const planNet = plan && !isFreeStarterWithAddons ? cycleTotalPrice(plan.price, cycleParam) : 0;
   const addonsItems = selectedAddons.map((a) => ({
     key: a.key,
     count: a.count,
@@ -318,15 +328,19 @@ function CheckoutPremiumInner() {
                 <span className={`text-sm font-semibold ${plan.accentClass}`}>
                   Plan {plan.name}
                 </span>
-                <span className="text-xs" style={{ color: "rgba(147,197,253,0.6)" }}>
-                  {cycleLabel}
-                  {cycleBadge ? ` · ${cycleBadge}` : ""}
-                </span>
+                {!isFreeStarterWithAddons && (
+                  <span className="text-xs" style={{ color: "rgba(147,197,253,0.6)" }}>
+                    {cycleLabel}
+                    {cycleBadge ? ` · ${cycleBadge}` : ""}
+                  </span>
+                )}
               </div>
               <div className="mt-3 space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <span style={{ color: "rgba(147,197,253,0.6)" }}>Plan {plan.name}</span>
-                  <span className="text-white">{formatCLP(planNet)}</span>
+                  <span className="text-white">
+                    {isFreeStarterWithAddons ? `Gratis por ${TRIAL_LABEL}` : formatCLP(planNet)}
+                  </span>
                 </div>
                 {addonsItems.map((item) => (
                   <div key={item.key} className="flex items-center justify-between text-sm">
