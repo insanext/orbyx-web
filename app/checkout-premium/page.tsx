@@ -9,7 +9,11 @@ import {
   cycleTotalPrice,
   applyIva,
   PAID_PLAN_IDS,
+  ADDON_PRICING,
+  ADDON_LABELS,
+  tieredAddonCost,
   type BillingCycle,
+  type ExtraKey,
 } from "@/lib/plans";
 import { TermsAcceptanceCheckbox } from "@/components/auth/TermsAcceptanceCheckbox";
 import { PhoneCountryInput } from "@/components/auth/PhoneCountryInput";
@@ -47,6 +51,21 @@ function CheckoutPremiumInner() {
 
   const plan = plans.find((p) => p.key === planParam);
   const planIsPaid = PAID_PLAN_IDS.includes(planParam);
+
+  // Add-ons elegidos en /planes, pasados como "key:count,key2:count2"
+  // (fix 2026-09-01, ver app/planes/page.tsx). Se ignora silenciosamente
+  // cualquier entrada que no sea un ExtraKey conocido con pricing
+  // definido -- el backend valida de nuevo igual, esto es solo para el
+  // desglose visual.
+  const addonsParam = searchParams.get("addons") || "";
+  const selectedAddons = addonsParam
+    .split(",")
+    .map((entry) => {
+      const [key, countRaw] = entry.split(":");
+      const count = parseInt(countRaw, 10);
+      return { key: key as ExtraKey, count };
+    })
+    .filter((item) => ADDON_PRICING[item.key] && Number.isInteger(item.count) && item.count > 0);
 
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
@@ -134,9 +153,10 @@ function CheckoutPremiumInner() {
     setFormError("");
 
     try {
-      // El backend calcula el monto real (neto + IVA) del lado del
-      // servidor a partir de plan_id/periodicidad -- no se manda ni se
-      // confía en un monto calculado en el cliente (fix 2026-09-01).
+      // El backend calcula el monto real (neto + IVA, plan y add-ons) del
+      // lado del servidor a partir de plan_id/periodicidad/addons -- no se
+      // manda ni se confía en ningún monto calculado en el cliente (fix
+      // 2026-09-01).
       const startRes = await fetch(`${BACKEND_URL}/signup/start-paid`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,6 +166,7 @@ function CheckoutPremiumInner() {
           phone: toE164(phoneIso2, phoneNumber),
           plan_id: plan.key,
           periodicidad: cycleParam,
+          addons: selectedAddons.map((a) => ({ addon_key: a.key, quantity: a.count })),
         }),
       });
       const startData = await startRes.json();
@@ -179,9 +200,16 @@ function CheckoutPremiumInner() {
   const cycleLabel = billingCycleConfig[cycleParam].label;
   const cycleBadge = billingCycleConfig[cycleParam].badge;
   // Desglose neto/IVA/total -- debe calzar exactamente con el resumen de
-  // /planes (fix 2026-09-01: acá se mostraba antes un solo número (el
-  // precio neto del plan) mal etiquetado como "IVA incluido").
-  const subtotal = plan ? cycleTotalPrice(plan.price, cycleParam) : 0;
+  // /planes (fix 2026-09-01: acá se mostraba antes un solo número, el
+  // precio neto del plan SIN add-ons, mal etiquetado como "IVA incluido").
+  const planNet = plan ? cycleTotalPrice(plan.price, cycleParam) : 0;
+  const addonsItems = selectedAddons.map((a) => ({
+    key: a.key,
+    count: a.count,
+    amount: tieredAddonCost(ADDON_PRICING[a.key], a.count),
+  }));
+  const addonsNet = addonsItems.reduce((sum, item) => sum + item.amount, 0);
+  const subtotal = planNet + addonsNet;
   const total = applyIva(subtotal);
   const iva = total - subtotal;
 
@@ -296,6 +324,19 @@ function CheckoutPremiumInner() {
                 </span>
               </div>
               <div className="mt-3 space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span style={{ color: "rgba(147,197,253,0.6)" }}>Plan {plan.name}</span>
+                  <span className="text-white">{formatCLP(planNet)}</span>
+                </div>
+                {addonsItems.map((item) => (
+                  <div key={item.key} className="flex items-center justify-between text-sm">
+                    <span style={{ color: "rgba(147,197,253,0.6)" }}>
+                      {ADDON_LABELS[item.key]} x{item.count}
+                    </span>
+                    <span className="text-white">{formatCLP(item.amount)}</span>
+                  </div>
+                ))}
+                <div className="h-px my-1" style={{ background: "rgba(255,255,255,0.1)" }} />
                 <div className="flex items-center justify-between text-sm">
                   <span style={{ color: "rgba(147,197,253,0.6)" }}>Subtotal</span>
                   <span className="text-white">{formatCLP(subtotal)}</span>

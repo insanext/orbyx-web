@@ -338,6 +338,42 @@ export function applyIva(netAmount: number) {
   return Math.round(netAmount * (1 + IVA_RATE));
 }
 
+// Precios netos de add-ons (packs) -- misma fuente que app/planes/page.tsx
+// (extraConfig ahí también tiene textos/iconos, solo cosmético, no se
+// mueve acá) y que ADDON_CATALOG en server.js. Exportado para que
+// checkout-premium/page.tsx pueda recalcular el mismo neto de add-ons
+// que /planes ya calculó, en vez de tener una tercera copia de estos
+// números o (peor) confiar en un total pasado por query param.
+export type AddonPricing = { unitPrice: number; price_pack2: number; price_pack3: number; packSize: number };
+
+export const ADDON_PRICING: Record<ExtraKey, AddonPricing> = {
+  wa_confirmacion: { unitPrice: 2990, price_pack2: 2691, price_pack3: 2542, packSize: 50 },
+  campanas_wa: { unitPrice: 6990, price_pack2: 6291, price_pack3: 5942, packSize: 50 },
+  emails_campana: { unitPrice: 1990, price_pack2: 1791, price_pack3: 1692, packSize: 500 },
+  staff: { unitPrice: 5990, price_pack2: 5391, price_pack3: 5092, packSize: 1 },
+  sucursal: { unitPrice: 9990, price_pack2: 8991, price_pack3: 8492, packSize: 1 },
+  group_capacity: { unitPrice: 4990, price_pack2: 4491, price_pack3: 4242, packSize: 25 },
+};
+
+export const ADDON_LABELS: Record<ExtraKey, string> = {
+  wa_confirmacion: "WhatsApp confirmación",
+  campanas_wa: "Campañas WhatsApp",
+  emails_campana: "Emails campaña",
+  staff: "+ Profesional",
+  sucursal: "+ Sucursal",
+  group_capacity: "+ Cupos grupales",
+};
+
+// Precio escalonado: pack1=precio normal, pack2=-10%, pack3+=-15%. Misma
+// fórmula que tieredAddonCost() en app/planes/page.tsx y
+// tieredAddonChargeAmount() en server.js.
+export function tieredAddonCost(config: AddonPricing, count: number): number {
+  if (count <= 0) return 0;
+  if (count === 1) return config.unitPrice;
+  if (count === 2) return config.unitPrice + config.price_pack2;
+  return config.unitPrice + config.price_pack2 + (count - 2) * config.price_pack3;
+}
+
 // Planes pagos que requieren tarjeta antes de crear el tenant (flujo
 // pago-primero de /signup/*, ver PAID_SIGNUP_PLANS en server.js). Starter
 // sigue el onboarding normal sin tarjeta (trial gratis).

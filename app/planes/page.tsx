@@ -844,9 +844,17 @@ function PlanesPageContent() {
       ? "Registrar tarjeta"
       : "Cambiar ahora";
 
+  // Add-ons elegidos acá se pasan al checkout via query param (fix
+  // 2026-09-01: antes se perdían por completo al pasar de esta pantalla a
+  // "Confirma tu plan" -- checkout-premium recalcula el mismo neto a
+  // partir de key:count, nunca confía en un total). Formato
+  // "key:count,key2:count2".
+  const addonsQueryValue = extraItems.map((item) => `${item.key}:${item.count}`).join(",");
   const publicCtaHref = isStarterSelected
     ? "/signup?plan=starter"
-    : `/checkout-premium?plan=${selectedPlanKey}&cycle=${billingCycle}`;
+    : `/checkout-premium?plan=${selectedPlanKey}&cycle=${billingCycle}${
+        addonsQueryValue ? `&addons=${encodeURIComponent(addonsQueryValue)}` : ""
+      }`;
 
   const showTenantWarning = !tenantId && Boolean(from || slug);
 
