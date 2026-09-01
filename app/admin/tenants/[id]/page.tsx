@@ -114,6 +114,8 @@ export default function AdminTenantDetailPage() {
   const [confirmText, setConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [showFinalDeleteModal, setShowFinalDeleteModal] = useState(false)
+  const [finalConfirmText, setFinalConfirmText] = useState('')
 
   const getToken = useCallback(async () => {
     const supabase = createClient()
@@ -376,8 +378,48 @@ export default function AdminTenantDetailPage() {
                 Cancelar
               </button>
               <button
-                onClick={handleDeleteTenant}
+                onClick={() => { setFinalConfirmText(''); setShowFinalDeleteModal(true) }}
                 disabled={confirmText !== tenant.slug || deleting}
+                className="text-sm font-semibold text-white bg-rose-600 rounded-lg px-3 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-rose-500 transition-colors"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showFinalDeleteModal ? (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
+          <div
+            className="w-full max-w-md rounded-2xl border-2 border-rose-500 p-6"
+            style={{ background: '#1a0a0e' }}
+          >
+            <h2 className="text-xl font-bold text-rose-300 mb-3">
+              ¿Estás seguro que quieres eliminar el tenant "{tenant.name}"? Esta acción es irreversible.
+            </h2>
+            <p className="text-sm text-blue-300/60 mb-2">
+              Para confirmar, escribe <strong className="text-rose-300">BORRAR</strong>:
+            </p>
+            <input
+              value={finalConfirmText}
+              onChange={(e) => setFinalConfirmText(e.target.value)}
+              placeholder="BORRAR"
+              className="w-full bg-[#0a0f1e] border border-rose-900/50 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-rose-500 mb-3"
+              autoFocus
+            />
+            {deleteError ? <p className="text-sm text-rose-300 mb-3">{deleteError}</p> : null}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setShowFinalDeleteModal(false); setShowDeleteModal(false) }}
+                disabled={deleting}
+                className="text-sm text-blue-300/60 hover:text-blue-200 px-3 py-1.5 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteTenant}
+                disabled={finalConfirmText !== 'BORRAR' || deleting}
                 className="text-sm font-semibold text-white bg-rose-600 rounded-lg px-3 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-rose-500 transition-colors"
               >
                 {deleting ? 'Eliminando...' : 'Eliminar definitivamente'}
