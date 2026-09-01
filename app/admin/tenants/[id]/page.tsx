@@ -23,7 +23,7 @@ type TenantDetail = {
   }
   plan: {
     plan_slug: string
-    status: 'active' | 'trial' | 'expired_or_canceled'
+    status: 'active' | 'trial' | 'expired_or_canceled' | 'paused'
     amount: number
     subscription_status: string
     periodicidad: string | null
@@ -33,6 +33,7 @@ type TenantDetail = {
     scheduled_plan_slug: string | null
     scheduled_change_at: string | null
     pending_change_type: string | null
+    paused_at: string | null
   }
   addons: Array<{
     addon_key: string
@@ -102,6 +103,7 @@ const STATUS_LABEL: Record<string, string> = {
   active: 'Activo',
   trial: 'En prueba',
   expired_or_canceled: 'Vencido/cancelado',
+  paused: 'Pausado',
 }
 
 function formatCLP(value: number) {
@@ -170,6 +172,9 @@ export default function AdminTenantDetailPage() {
   const [creditAmount, setCreditAmount] = useState('')
   const [creditingBalance, setCreditingBalance] = useState(false)
   const [creditMessage, setCreditMessage] = useState('')
+
+  const [pauseLoading, setPauseLoading] = useState(false)
+  const [pauseError, setPauseError] = useState('')
 
   const getToken = useCallback(async () => {
     const supabase = createClient()
@@ -350,6 +355,49 @@ export default function AdminTenantDetailPage() {
     }
   }, [authFetch, id, creditAddonKey, creditAmount, loadTenant])
 
+  const handlePauseTenant = useCallback(async () => {
+    if (!data) return
+    const confirmed = window.confirm(
+      `¿Pausar "${data.tenant.name}"? Se cancelará su suscripción de cobro automático en Flow y quedará ` +
+      'bloqueado de su dashboard hasta que lo reactives.'
+    )
+    if (!confirmed) return
+    setPauseLoading(true)
+    setPauseError('')
+    try {
+      const res = await authFetch(`/admin/tenants/${id}/pause`, { method: 'POST' })
+      const json = res ? await res.json() : null
+      if (!res || !res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Error pausando el tenant')
+      }
+      loadTenant()
+    } catch (e) {
+      setPauseError(e instanceof Error ? e.message : 'Error pausando el tenant')
+    } finally {
+      setPauseLoading(false)
+    }
+  }, [authFetch, data, id, loadTenant])
+
+  const handleReactivateTenant = useCallback(async () => {
+    if (!data) return
+    const confirmed = window.confirm(`¿Reactivar "${data.tenant.name}"? Recuperará acceso a su dashboard.`)
+    if (!confirmed) return
+    setPauseLoading(true)
+    setPauseError('')
+    try {
+      const res = await authFetch(`/admin/tenants/${id}/reactivate`, { method: 'POST' })
+      const json = res ? await res.json() : null
+      if (!res || !res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Error reactivando el tenant')
+      }
+      loadTenant()
+    } catch (e) {
+      setPauseError(e instanceof Error ? e.message : 'Error reactivando el tenant')
+    } finally {
+      setPauseLoading(false)
+    }
+  }, [authFetch, data, id, loadTenant])
+
   const loadTickets = useCallback(async () => {
     if (!id) return
     setTicketsLoading(true)
@@ -409,6 +457,23 @@ export default function AdminTenantDetailPage() {
             >
               {viewSessionLoading ? 'Generando sesión...' : 'Ver dashboard de este tenant'}
             </button>
+            {plan.paused_at ? (
+              <button
+                onClick={handleReactivateTenant}
+                disabled={pauseLoading}
+                className="text-sm font-medium text-emerald-300 border border-emerald-900/40 rounded-lg px-3 py-1.5 hover:bg-emerald-900/10 transition-colors disabled:opacity-50"
+              >
+                {pauseLoading ? 'Reactivando...' : 'Reactivar tenant'}
+              </button>
+            ) : (
+              <button
+                onClick={handlePauseTenant}
+                disabled={pauseLoading}
+                className="text-sm font-medium text-amber-300 border border-amber-900/40 rounded-lg px-3 py-1.5 hover:bg-amber-900/10 transition-colors disabled:opacity-50"
+              >
+                {pauseLoading ? 'Pausando...' : 'Pausar tenant'}
+              </button>
+            )}
             <button
               onClick={() => { setDeleteError(''); setConfirmText(''); setShowDeleteModal(true) }}
               className="text-sm font-medium text-rose-300 border border-rose-900/40 rounded-lg px-3 py-1.5 hover:bg-rose-900/10 transition-colors"
@@ -417,6 +482,7 @@ export default function AdminTenantDetailPage() {
             </button>
           </div>
           {viewSessionError ? <p className="text-xs text-rose-300">{viewSessionError}</p> : null}
+          {pauseError ? <p className="text-xs text-rose-300">{pauseError}</p> : null}
         </div>
       </div>
 

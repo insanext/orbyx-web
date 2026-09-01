@@ -1793,17 +1793,21 @@ export default function DashboardLayout({
                     Acceso limitado al resto del panel
                   </p>
                   <p className="mt-1 text-sm" style={{ color: textMuted }}>
-                    {accountStatus?.blocked_reason === "trial_expired"
+                    {accountStatus?.blocked_reason === "paused"
+                      ? "Tu cuenta fue pausada temporalmente por Orbyx. Contacta a soporte para más información."
+                      : accountStatus?.blocked_reason === "trial_expired"
                       ? "Tu trial gratuito terminó y todavía no tienes un método de pago activo."
                       : "Tu suscripción no tiene un cobro válido."}
                   </p>
-                  <a
-                    href="#billing-flow-action"
-                    className="mt-3 inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
-                    style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
-                  >
-                    Pagar ahora
-                  </a>
+                  {accountStatus?.blocked_reason !== "paused" ? (
+                    <a
+                      href="#billing-flow-action"
+                      className="mt-3 inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+                      style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+                    >
+                      Pagar ahora
+                    </a>
+                  ) : null}
                 </div>
               ) : null}
               {isAccountBlocked ? (
@@ -1812,20 +1816,24 @@ export default function DashboardLayout({
                   style={{ borderColor: "rgba(244,63,94,0.4)", background: "rgba(244,63,94,0.08)" }}
                 >
                   <h2 className="text-lg font-semibold" style={{ color: textMain }}>
-                    Tu cuenta está en modo limitado
+                    {accountStatus?.blocked_reason === "paused" ? "Tu cuenta está pausada" : "Tu cuenta está en modo limitado"}
                   </h2>
                   <p className="mt-2 text-sm" style={{ color: textMuted }}>
-                    {accountStatus?.blocked_reason === "trial_expired"
+                    {accountStatus?.blocked_reason === "paused"
+                      ? "Tu cuenta fue pausada temporalmente por Orbyx. Contacta a soporte para más información."
+                      : accountStatus?.blocked_reason === "trial_expired"
                       ? "Tu trial gratuito terminó y todavía no tienes un método de pago activo. Inscribe una tarjeta para recuperar el acceso completo al panel."
                       : "Tu suscripción no tiene un cobro válido. Inscribe una tarjeta para recuperar el acceso completo al panel."}
                   </p>
-                  <Link
-                    href={`/dashboard/${slug}/billing`}
-                    className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white"
-                    style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
-                  >
-                    Ir a Suscripción
-                  </Link>
+                  {accountStatus?.blocked_reason !== "paused" ? (
+                    <Link
+                      href={`/dashboard/${slug}/billing`}
+                      className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white"
+                      style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+                    >
+                      Ir a Suscripción
+                    </Link>
+                  ) : null}
                 </div>
               ) : (
                 <PermissionsProvider

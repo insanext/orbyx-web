@@ -70,7 +70,7 @@ export async function middleware(request: NextRequest) {
     if (dashboardSlug) {
       const { data: tenant } = await supabase
         .from("tenants")
-        .select("id, trial_ends_at, billing_cycle_end")
+        .select("id, trial_ends_at, billing_cycle_end, paused_at")
         .eq("slug", dashboardSlug)
         .eq("is_active", true)
         .maybeSingle();
@@ -133,9 +133,13 @@ export async function middleware(request: NextRequest) {
         const trialEndsAt = tenant.trial_ends_at ? new Date(tenant.trial_ends_at) : null;
         const billingCycleEnd = tenant.billing_cycle_end ? new Date(tenant.billing_cycle_end) : null;
 
-        const trialActive = Boolean(trialEndsAt && now < trialEndsAt && !hasActiveSubscription);
+        const isPaused = Boolean(tenant.paused_at);
+        const trialActive = Boolean(!isPaused && trialEndsAt && now < trialEndsAt && !hasActiveSubscription);
         const awaitingPayment = !hasActiveSubscription && !trialActive && !isTrialingInFlow;
-        const blocked = Boolean(awaitingPayment && billingCycleEnd && now >= billingCycleEnd);
+        // Pausado por Super Admin bloquea igual que vencido, independiente
+        // del ciclo de facturación — mismo criterio que
+        // GET /billing/account-status en server.js.
+        const blocked = isPaused || Boolean(awaitingPayment && billingCycleEnd && now >= billingCycleEnd);
 
         // DIAGNOSTICO TEMPORAL — sacar despues de confirmar la causa del
         // bloqueo indebido en tenants con suscripcion activa (ver sesion

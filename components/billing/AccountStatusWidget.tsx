@@ -23,7 +23,7 @@ export type AccountStatus = {
   awaiting_payment: boolean;
   dias_restantes_pago: number | null;
   blocked: boolean;
-  blocked_reason: "trial_expired" | "payment_overdue" | null;
+  blocked_reason: "trial_expired" | "payment_overdue" | "paused" | null;
   wa_confirmacion: UsageCounter;
   wa_confirmation_enabled: boolean;
   wa_reminder_enabled: boolean;
