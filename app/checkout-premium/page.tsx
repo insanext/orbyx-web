@@ -303,7 +303,7 @@ function CheckoutPremiumInner() {
 
         {step === "form" && plan && (
           <div
-            className="rounded-2xl border border-blue-900/25 p-6"
+            className="rounded-none border border-blue-900/25 p-6"
             style={{ background: "#0f1729" }}
           >
             <h2 className="text-white font-semibold text-lg mb-1">Confirma tu plan</h2>
@@ -312,7 +312,7 @@ function CheckoutPremiumInner() {
             </p>
 
             <div
-              className={`rounded-2xl border px-4 py-4 mb-5 ${plan.borderClass} ${plan.softBgClass}`}
+              className={`rounded-none border px-4 py-4 mb-5 ${plan.borderClass} ${plan.softBgClass}`}
             >
               <div className="flex items-center justify-between">
                 <span className={`text-sm font-semibold ${plan.accentClass}`}>
@@ -403,6 +403,7 @@ function CheckoutPremiumInner() {
                   onChange={setPhoneNumber}
                   disabled={submitting}
                   required
+                  allowedCountries={["CL"]}
                 />
               </div>
             </div>
