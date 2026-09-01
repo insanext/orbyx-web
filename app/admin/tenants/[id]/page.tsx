@@ -156,6 +156,10 @@ export default function AdminTenantDetailPage() {
   const [viewSessionLoading, setViewSessionLoading] = useState(false)
   const [viewSessionError, setViewSessionError] = useState('')
 
+  const [resendingWelcome, setResendingWelcome] = useState(false)
+  const [sendingReset, setSendingReset] = useState(false)
+  const [emailActionMessage, setEmailActionMessage] = useState('')
+
   const getToken = useCallback(async () => {
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
@@ -273,6 +277,40 @@ export default function AdminTenantDetailPage() {
     }
   }, [authFetch, data, id])
 
+  const handleResendWelcomeEmail = useCallback(async () => {
+    setResendingWelcome(true)
+    setEmailActionMessage('')
+    try {
+      const res = await authFetch(`/admin/tenants/${id}/resend-welcome-email`, { method: 'POST' })
+      const json = res ? await res.json() : null
+      if (!res || !res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Error reenviando el email de bienvenida')
+      }
+      setEmailActionMessage(`Email de bienvenida reenviado a ${json.owner_email}.`)
+    } catch (e) {
+      setEmailActionMessage(e instanceof Error ? e.message : 'Error reenviando el email de bienvenida')
+    } finally {
+      setResendingWelcome(false)
+    }
+  }, [authFetch, id])
+
+  const handleSendPasswordReset = useCallback(async () => {
+    setSendingReset(true)
+    setEmailActionMessage('')
+    try {
+      const res = await authFetch(`/admin/tenants/${id}/send-password-reset`, { method: 'POST' })
+      const json = res ? await res.json() : null
+      if (!res || !res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Error enviando el reset de contraseña')
+      }
+      setEmailActionMessage(`Link de reset de contraseña enviado a ${json.owner_email}.`)
+    } catch (e) {
+      setEmailActionMessage(e instanceof Error ? e.message : 'Error enviando el reset de contraseña')
+    } finally {
+      setSendingReset(false)
+    }
+  }, [authFetch, id])
+
   const loadTickets = useCallback(async () => {
     if (!id) return
     setTicketsLoading(true)
@@ -370,6 +408,25 @@ export default function AdminTenantDetailPage() {
           <p className="mt-3 text-xs text-blue-300/40">
             Nombre del administrador no está modelado en ningún lugar hoy (solo email vía la cuenta de login). El teléfono sí se pide y guarda desde el registro de negocios nuevos — tenants anteriores a ese cambio quedan sin este dato.
           </p>
+          {owners.length > 0 ? (
+            <div className="mt-3 pt-3 border-t border-blue-900/15 flex flex-wrap gap-2 items-center">
+              <button
+                onClick={handleResendWelcomeEmail}
+                disabled={resendingWelcome}
+                className="text-xs font-medium text-blue-300 border border-blue-900/40 rounded-lg px-2.5 py-1 hover:bg-blue-900/10 transition-colors disabled:opacity-50"
+              >
+                {resendingWelcome ? 'Enviando...' : 'Reenviar email de bienvenida'}
+              </button>
+              <button
+                onClick={handleSendPasswordReset}
+                disabled={sendingReset}
+                className="text-xs font-medium text-blue-300 border border-blue-900/40 rounded-lg px-2.5 py-1 hover:bg-blue-900/10 transition-colors disabled:opacity-50"
+              >
+                {sendingReset ? 'Enviando...' : 'Enviar reset de contraseña'}
+              </button>
+            </div>
+          ) : null}
+          {emailActionMessage ? <p className="mt-2 text-xs text-blue-300/60">{emailActionMessage}</p> : null}
         </Section>
 
         <Section title="Identificación">
