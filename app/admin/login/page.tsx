@@ -14,11 +14,13 @@ export default function AdminLoginPage() {
   const [captchaToken, setCaptchaToken] = useState('')
   const turnstileRef = useRef<any>(null)
   const [totpCode, setTotpCode] = useState('')
-  const [step, setStep] = useState<'credentials' | 'totp'>('credentials')
+  const [step, setStep] = useState<'credentials' | 'totp' | 'enroll'>('credentials')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [factorId, setFactorId] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [enrollQrCode, setEnrollQrCode] = useState('')
+  const [enrollSecret, setEnrollSecret] = useState('')
 
   const handleLogin = async () => {
     setLoading(true)
@@ -40,16 +42,80 @@ export default function AdminLoginPage() {
       const { data: factors } = await supabase.auth.mfa.listFactors()
       const totp = factors?.totp?.find(f => f.status === 'verified')
 
-      if (!totp) {
-        setError('MFA no configurado en esta cuenta')
+      if (totp) {
+        setFactorId(totp.id)
+        setStep('totp')
         setLoading(false)
         return
       }
 
-      setFactorId(totp.id)
-      setStep('totp')
+      // Sin factor verificado: primera vez que esta cuenta entra al panel
+      // (ej. cuenta recién recreada tras un borrado) o quedó un intento de
+      // enrolamiento a medio hacer. Se limpia cualquier factor no
+      // verificado (no protege nada todavía, se puede borrar sin aal2) y
+      // se inscribe uno nuevo para mostrar QR + secreto en esta misma
+      // pantalla, en vez de dejar al usuario sin ninguna forma de
+      // continuar.
+      const staleFactors = factors?.all?.filter(f => f.factor_type === 'totp' && f.status === 'unverified') || []
+      for (const stale of staleFactors) {
+        await supabase.auth.mfa.unenroll({ factorId: stale.id })
+      }
+
+      const { data: enrolled, error: enrollErr } = await supabase.auth.mfa.enroll({ factorType: 'totp' })
+      if (enrollErr || !enrolled) {
+        setError('Error iniciando la inscripción MFA: ' + (enrollErr?.message || ''))
+        setLoading(false)
+        return
+      }
+
+      setFactorId(enrolled.id)
+      setEnrollQrCode(enrolled.totp.qr_code)
+      setEnrollSecret(enrolled.totp.secret)
+      setStep('enroll')
     } catch {
       setError('Error de conexión')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEnrollVerify = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const supabase = createClient()
+      const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId })
+      if (challengeErr) {
+        setError('Error iniciando verificación MFA')
+        setLoading(false)
+        return
+      }
+
+      const { error: verifyErr } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challenge.id,
+        code: totpCode,
+      })
+      if (verifyErr) {
+        setError('Código incorrecto')
+        setLoading(false)
+        return
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${BACKEND_URL}/admin/tickets?status=open`, {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      })
+      if (res.status === 403) {
+        const body = await res.json()
+        setError(body.error === 'mfa_required' ? 'MFA no verificado' : 'Acceso denegado')
+        setLoading(false)
+        return
+      }
+
+      router.push('/admin/tickets')
+    } catch {
+      setError('Error de verificación')
     } finally {
       setLoading(false)
     }
@@ -146,6 +212,42 @@ export default function AdminLoginPage() {
               className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-50"
             >
               {loading ? 'Verificando...' : 'Iniciar sesión'}
+            </button>
+          </div>
+        )}
+
+        {step === 'enroll' && (
+          <div className="space-y-4">
+            <p className="text-sm text-blue-300/60">
+              Esta cuenta todavía no tiene un segundo factor configurado. Escanea este código con tu app de autenticación (Google Authenticator, Authy, etc.) y luego ingresa el código de 6 dígitos para activarlo.
+            </p>
+            {enrollQrCode ? (
+              // qr_code viene de Supabase como data URI SVG listo para usar.
+              <img src={enrollQrCode} alt="Código QR MFA" className="mx-auto rounded-lg bg-white p-2" width={180} height={180} />
+            ) : null}
+            {enrollSecret ? (
+              <p className="text-xs text-blue-300/50 text-center break-all">
+                ¿No puedes escanear? Ingresa este código manualmente: <span className="font-mono text-blue-200">{enrollSecret}</span>
+              </p>
+            ) : null}
+            <input
+              value={totpCode}
+              onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="000000"
+              maxLength={6}
+              onKeyDown={e => e.key === 'Enter' && totpCode.length === 6 && handleEnrollVerify()}
+              className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-3 text-center text-lg tracking-[0.3em] text-white font-mono focus:outline-none focus:border-blue-500/50 transition-colors"
+            />
+            {error && <p className="text-xs text-red-400">{error}</p>}
+            <button
+              onClick={handleEnrollVerify}
+              disabled={loading || totpCode.length !== 6}
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-50"
+            >
+              {loading ? 'Activando...' : 'Activar MFA e iniciar sesión'}
             </button>
           </div>
         )}
