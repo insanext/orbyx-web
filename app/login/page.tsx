@@ -29,11 +29,18 @@ async function resolveTenantDestination({
   phone?: string;
   redirectTo: string | null;
 }): Promise<{ destination: string; replace?: boolean } | { error: string }> {
+  // order by created_at desc: si el mismo usuario terminó como owner de más
+  // de un tenant (ej. pruebas repetidas de checkout-premium con el mismo
+  // email, que no bloquea crear un tenant nuevo), sin este orden Postgres
+  // podía devolver cualquiera de los dos -- el más antiguo (ya con
+  // business_category asignado de una prueba previa) aparentaba "saltarse"
+  // el onboarding del tenant recién creado.
   let { data: tenantUserRow } = await supabase
     .from("tenant_users")
     .select("tenant_id")
     .eq("user_id", userId)
     .eq("is_active", true)
+    .order("created_at", { ascending: false })
     .limit(1)
     .single();
 
