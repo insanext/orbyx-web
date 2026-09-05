@@ -77,6 +77,7 @@ function CheckoutPremiumInner() {
 
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [phoneIso2, setPhoneIso2] = useState("CL");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
@@ -144,6 +145,10 @@ function CheckoutPremiumInner() {
       setFormError("Ingresa un correo electrónico válido.");
       return;
     }
+    if (!fullName.trim()) {
+      setFormError("Ingresa tu nombre y apellido.");
+      return;
+    }
     if (!isValidPhoneForCountry(phoneIso2, phoneNumber)) {
       setFormError("Ingresa un teléfono válido.");
       return;
@@ -171,6 +176,7 @@ function CheckoutPremiumInner() {
         body: JSON.stringify({
           email,
           business_name: businessName,
+          full_name: fullName.trim(),
           phone: toE164(phoneIso2, phoneNumber),
           plan_id: plan.key,
           periodicidad: cycleParam,
@@ -408,6 +414,22 @@ function CheckoutPremiumInner() {
                   className="text-xs mb-1.5 block"
                   style={{ color: "rgba(147,197,253,0.6)" }}
                 >
+                  Nombre y Apellido
+                </label>
+                <input
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  disabled={submitting}
+                  placeholder="Nombre y Apellido"
+                  className="w-full rounded-xl border px-3 py-2 text-sm text-white outline-none transition-colors"
+                  style={{ background: "#0a0f1e", borderColor: "rgba(37,99,235,0.3)" }}
+                />
+              </div>
+              <div>
+                <label
+                  className="text-xs mb-1.5 block"
+                  style={{ color: "rgba(147,197,253,0.6)" }}
+                >
                   Teléfono
                 </label>
                 <PhoneCountryInput
@@ -457,7 +479,7 @@ function CheckoutPremiumInner() {
 
             <button
               onClick={handleSubmit}
-              disabled={submitting || !businessName || !email || !captchaToken || !acceptedTerms}
+              disabled={submitting || !businessName || !email || !fullName.trim() || !captchaToken || !acceptedTerms}
               className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-40"
             >
               {submitting ? "Procesando..." : "Continuar al pago"}

@@ -78,7 +78,7 @@ function SignupInner() {
     setAccountAlreadyExists(false);
 
     if (!fullName.trim()) {
-      setMsg("Ingresa tu nombre completo.");
+      setMsg("Ingresa tu nombre y apellido.");
       return;
     }
     if (!isValidPhoneForCountry(phoneIso2, phoneNumber)) {
@@ -263,7 +263,7 @@ function SignupInner() {
         />
 
         <form onSubmit={handleSignup} style={{ display: "grid", gap: 16 }}>
-          {/* Nombre completo */}
+          {/* Nombre y Apellido */}
           <div style={{ position: "relative" }}>
             <span
               style={{
@@ -280,7 +280,7 @@ function SignupInner() {
             </span>
             <input
               type="text"
-              placeholder="Nombre completo"
+              placeholder="Nombre y Apellido"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               disabled={loading}
