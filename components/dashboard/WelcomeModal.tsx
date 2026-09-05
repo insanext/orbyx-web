@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
+import { StarsCanvas } from "../ui/stars-canvas";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -49,15 +50,27 @@ export function WelcomeModal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-          animate={{ opacity: 1, backdropFilter: "blur(10px)" }}
-          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
-          style={{ background: "rgba(2, 6, 23, 0.55)" }}
         >
+          {/* Fondo de estrellas en vez del blur del dashboard detrás -- ver
+              components/ui/stars-canvas.tsx. pointer-events: none ya viene
+              seteado en el propio componente, así que nunca intercepta
+              clicks del contenido de encima. maxStars/speedMultiplier bajos
+              a propósito: los defaults (1200 estrellas, velocidad 1) son
+              pensados para un fondo de página completa, acá es un modal
+              chico y a velocidad normal se veía vertiginoso. brightness en
+              0.8 (no el default de 10 del componente): su propio tipo lo
+              documenta como rango 0–1 -- fuera de ese rango, ctx.globalAlpha
+              ignora la asignación (valores inválidos no se clampean, quedan
+              en lo último válido) y el parpadeo de las estrellas no se ve. */}
+          <StarsCanvas maxStars={300} speedMultiplier={0.2} brightness={0.8} />
+
           <motion.div
-            className="flex max-w-lg flex-col items-center text-center"
+            className="relative z-10 flex max-w-lg flex-col items-center text-center"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
