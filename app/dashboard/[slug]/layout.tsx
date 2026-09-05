@@ -38,6 +38,7 @@ import { useTheme } from "../../../lib/use-theme";
 import { createClient } from "../../../lib/supabase/client";
 import { PermissionsProvider, ROLE_LABEL, type ModulePermissions } from "../../../lib/permissions-context";
 import { AccountStatusWidget, useAccountStatus } from "../../../components/billing/AccountStatusWidget";
+import { WelcomeModal } from "../../../components/dashboard/WelcomeModal";
 import { getPlanLabel } from "../../../lib/plans";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -282,6 +283,14 @@ export default function DashboardLayout({
   const { status: accountStatus } = useAccountStatus(tenantId);
   const isBillingPage = pathname === `/dashboard/${slug}/billing` || pathname?.startsWith(`/dashboard/${slug}/billing/`);
   const isAccountBlocked = Boolean(accountStatus?.blocked) && !isBillingPage;
+
+  // Modal de bienvenida (una sola vez por tenant, ver WelcomeModal +
+  // tenants.dashboard_welcome_seen_at) -- welcomeDismissedLocally solo evita
+  // que reaparezca un instante mientras se espera el próximo refresh de
+  // accountStatus tras cerrarlo; la fuente de verdad sigue siendo el backend.
+  const [welcomeDismissedLocally, setWelcomeDismissedLocally] = useState(false);
+  const showWelcomeModal =
+    Boolean(accountStatus) && accountStatus?.dashboard_welcome_seen === false && !welcomeDismissedLocally;
 
   useEffect(() => {
     if (!branchDropdownOpen) return;
@@ -1851,6 +1860,17 @@ export default function DashboardLayout({
           </main>
         </div>
       </div>
+
+      {mounted && typeof window !== "undefined" && tenantId
+        ? createPortal(
+            <WelcomeModal
+              tenantId={tenantId}
+              open={showWelcomeModal}
+              onDismiss={() => setWelcomeDismissedLocally(true)}
+            />,
+            document.body
+          )
+        : null}
 
       {mounted && typeof window !== "undefined" && toasts.length > 0
         ? createPortal(

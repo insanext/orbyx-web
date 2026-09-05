@@ -34,6 +34,7 @@ export type AccountStatus = {
   deposit_account_number: string;
   deposit_holder_rut: string;
   deposit_holder_name: string;
+  dashboard_welcome_seen: boolean;
 };
 
 const DEPOSIT_ACCOUNT_TYPES = ["Cuenta Corriente", "Cuenta Vista", "Cuenta de Ahorro"];
