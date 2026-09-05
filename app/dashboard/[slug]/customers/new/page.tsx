@@ -323,13 +323,13 @@ export default function NewCustomerPage() {
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Nombre *">
+            <Field label="Nombre y Apellido *">
               <input
                 className={INPUT_CLASS}
                 style={inputStyle()}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Nombre completo"
+                placeholder="Nombre y Apellido"
                 required
               />
             </Field>
@@ -417,7 +417,7 @@ export default function NewCustomerPage() {
             </Field>
 
             {/* Contacto de emergencia — misma fila */}
-            <Field label="Contacto de emergencia — nombre">
+            <Field label="Contacto de emergencia — Nombre y Apellido">
               <input
                 className={INPUT_CLASS}
                 style={inputStyle()}

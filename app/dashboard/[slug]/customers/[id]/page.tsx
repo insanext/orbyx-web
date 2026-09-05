@@ -2770,8 +2770,8 @@ const lastValidAppointment = validAppointments[0] || null;
                   <SectionCard icon={User} tone="blue" title="Datos del contacto">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
-                        <FieldLabel>Nombre *</FieldLabel>
-                        <input type="text" placeholder="Nombre completo" value={editPatientForm.name} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <FieldLabel>Nombre y Apellido *</FieldLabel>
+                        <input type="text" placeholder="Nombre y Apellido" value={editPatientForm.name} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                       <div>
                         <FieldLabel>Teléfono</FieldLabel>
@@ -2827,7 +2827,7 @@ const lastValidAppointment = validAppointments[0] || null;
                   <SectionCard icon={Phone} tone="blue" title="Contacto de emergencia">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
-                        <FieldLabel>Nombre</FieldLabel>
+                        <FieldLabel>Nombre y Apellido</FieldLabel>
                         <input type="text" placeholder="ej. María González" value={editPatientForm.emergency_contact_name} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                       <div>
@@ -2927,7 +2927,7 @@ const lastValidAppointment = validAppointments[0] || null;
                       {/* Datos del contacto (lectura) */}
                       <SectionCard icon={User} tone="blue" title="Datos del contacto">
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <ReadField label="Nombre" value={customer?.name} />
+                          <ReadField label="Nombre y Apellido" value={customer?.name} />
                           <ReadField label="Teléfono" value={customer?.phone} />
                           <ReadField label="Email" value={customer?.email} />
                           <ReadField label="RUT" value={customer?.rut} />
@@ -2947,7 +2947,7 @@ const lastValidAppointment = validAppointments[0] || null;
                       {/* Contacto de emergencia (lectura) */}
                       <SectionCard icon={Phone} tone="blue" title="Contacto de emergencia">
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <ReadField label="Nombre" value={customer?.emergency_contact_name} />
+                          <ReadField label="Nombre y Apellido" value={customer?.emergency_contact_name} />
                           <ReadField label="Teléfono" value={customer?.emergency_contact_phone} />
                         </div>
                       </SectionCard>

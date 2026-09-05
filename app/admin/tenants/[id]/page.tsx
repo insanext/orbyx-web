@@ -495,7 +495,16 @@ export default function AdminTenantDetailPage() {
               {owners.map((owner) => (
                 <div key={owner.user_id} className="grid grid-cols-3 gap-3">
                   <Field label="Email" value={owner.email} />
-                  <Field label="Nombre" value={<span className="text-blue-300/40 italic">No disponible — no se guarda hoy</span>} />
+                  <Field
+                    label="Nombre"
+                    value={
+                      owner.name || (
+                        <span className="text-blue-300/40 italic">
+                          No disponible — se registró antes de pedirse este dato
+                        </span>
+                      )
+                    }
+                  />
                   <Field
                     label="Teléfono"
                     value={
@@ -511,7 +520,7 @@ export default function AdminTenantDetailPage() {
             </div>
           )}
           <p className="mt-3 text-xs text-blue-300/40">
-            Nombre del administrador no está modelado en ningún lugar hoy (solo email vía la cuenta de login). El teléfono sí se pide y guarda desde el registro de negocios nuevos — tenants anteriores a ese cambio quedan sin este dato.
+            Nombre y teléfono del administrador se piden y guardan desde el registro de negocios nuevos — tenants anteriores a esos cambios quedan sin estos datos.
           </p>
           {owners.length > 0 ? (
             <div className="mt-3 pt-3 border-t border-blue-900/15 flex flex-wrap gap-2 items-center">

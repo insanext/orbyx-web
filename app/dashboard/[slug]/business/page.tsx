@@ -343,7 +343,7 @@ const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
 ];
 
 const lockedCustomerFields = [
-  { key: "name", label: "Nombre completo" },
+  { key: "name", label: "Nombre y Apellido" },
   { key: "phone", label: "Teléfono" },
   { key: "email", label: "Correo electrónico" },
 ];

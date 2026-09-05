@@ -10,6 +10,7 @@ type TenantRow = {
   id: string
   name: string
   slug: string
+  owner_name: string | null
   plan_slug: string
   amount: number
   addons_summary: string
@@ -184,6 +185,9 @@ export default function AdminTenantsPage() {
                     <td className="px-4 py-3">
                       <p className="text-white font-medium">{t.name}</p>
                       <p className="text-xs text-blue-300/40">{t.slug}</p>
+                      {t.owner_name ? (
+                        <p className="text-xs text-blue-300/40">👤 {t.owner_name}</p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-blue-100">{getPlanLabel(t.plan_slug)}</td>
                     <td className="px-4 py-3 text-right text-white">{formatCLP(t.amount)}</td>

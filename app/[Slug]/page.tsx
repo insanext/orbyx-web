@@ -3183,7 +3183,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
 
                   <div className="mt-4 grid gap-2.5 md:mt-6 md:grid-cols-2 md:gap-3">
                     <input
-                      placeholder="Nombre completo *"
+                      placeholder="Nombre y Apellido *"
                       required
                       value={customerData.name || ""}
                       onChange={(e) => updateCustomerField("name", e.target.value)}
