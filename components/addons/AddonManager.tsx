@@ -291,19 +291,20 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   >(null);
   const [consentChecked, setConsentChecked] = useState(false);
 
-  // Checkbox inline "dejar en cobro automático" por línea, dentro del
-  // modal de compra — se resetea cada vez que se abre el modal (ver
-  // onClick de "Confirmar y cobrar add-ons"). Solo aplica a los add-ons
-  // comprados en este lote que todavía no estén en renewal_mode
-  // "automatico" (ver purchaseAutoPayEligible).
-  const [purchaseAutoPayOptIn, setPurchaseAutoPayOptIn] = useState<
-    Partial<Record<ExtraKey, boolean>>
-  >({});
+  // Los add-ons de Orbyx son intencionalmente solo de cobro mensual
+  // recurrente vía Flow (decisión de producto cerrada) -- no existe un pago
+  // único real, así que toda compra/aumento de cantidad deja el add-on en
+  // renewal_mode "automatico" de inmediato (ver purchaseAutoPayEligible +
+  // handleConfirmAddonCharge), sin pedirle al tenant un opt-in aparte. El
+  // texto de consentimiento sigue mostrándose igual en el modal (ver más
+  // abajo), ahora informativo en vez de un checkbox.
 
-  // Mismo patrón que purchaseAutoPayOptIn, pero para el segundo checkbox
-  // inline (recarga automática por saldo bajo) — solo aplica a
-  // wa_confirmacion en la práctica (ver purchaseLowBalanceEligible), pero
-  // se mantiene keyed por ExtraKey por consistencia.
+  // Checkbox inline "dejar en cobro automático por saldo bajo" por línea,
+  // dentro del modal de compra — se resetea cada vez que se abre el modal
+  // (ver onClick de "Confirmar y cobrar add-ons"). A diferencia del cobro
+  // mensual de arriba, esta SÍ sigue siendo opt-in: es una recarga aparte
+  // por consumo bajo, no la renovación del propio add-on comprado — solo
+  // aplica a wa_confirmacion en la práctica (ver purchaseLowBalanceEligible).
   const [purchaseLowBalanceOptIn, setPurchaseLowBalanceOptIn] = useState<
     Partial<Record<ExtraKey, boolean>>
   >({});
@@ -443,11 +444,12 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     setExtraCount(key, current - 1);
   }
 
-  // Texto exacto mostrado en el checkbox de consentimiento al activar
-  // "Cobro automático mensual" — se manda tal cual al backend como
-  // text_shown, para que el registro en addon_auto_charge_consents
-  // coincida con lo que el tenant realmente vio (monto/cantidad ya
-  // interpolados en el momento del click, no un template server-side).
+  // Texto exacto mostrado junto al consentimiento de "Cobro automático
+  // mensual" (como info fija en el modal de compra, o en el checkbox del
+  // toggle standalone) — se manda tal cual al backend como text_shown, para
+  // que el registro en addon_auto_charge_consents coincida con lo que el
+  // tenant realmente vio (monto/cantidad ya interpolados en el momento del
+  // click, no un template server-side).
   function buildRenewalConsentTextRaw(
     config: ExtraConfig,
     quantity: number,
@@ -457,7 +459,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     const isPlural = quantity !== 1;
     const unidadPlural = isPlural ? "unidades" : "unidad";
     const activaPlural = isPlural ? "activas" : "activa";
-    return `Autorizo a que se me cobre automáticamente ${formatCLP(monto)} + IVA cada ~30 días mientras esta opción esté activa, para mantener mis ${quantity} ${unidadPlural} de ${config.title} ${activaPlural}. Este cobro no se prorratea: la renovación de este addon se calcula desde la fecha de tu último pago de este addon en particular, no desde la fecha de tu plan. Puedo desactivar esta opción cuando quiera.`;
+    return `Se te cobrará automáticamente ${formatCLP(monto)} + IVA cada ~30 días mientras este add-on esté activo, para mantener tus ${quantity} ${unidadPlural} de ${config.title} ${activaPlural}. Este cobro no se prorratea: la renovación de este addon se calcula desde la fecha de tu último pago de este addon en particular, no desde la fecha de tu plan. Puedes desactivar esta renovación cuando quieras desde "Mi suscripción" → Add-ons.`;
   }
 
   function buildRenewalConsentText(key: ExtraKey): string {
@@ -829,11 +831,11 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     };
   }, [addonPendingChanges]);
 
-  // Elegible para el checkbox inline "dejar en cobro automático" del modal
-  // de compra: la línea implica un cobro real hoy (compra nueva o aumento
-  // de cantidad, nunca una baja) y el addon todavía no está en
-  // renewal_mode "automatico" — si ya lo está, no hay nada que ofrecer acá
-  // (el toggle fuera del modal sigue siendo el lugar para desactivarlo).
+  // true si esta línea del modal de compra debe activar renewal_mode
+  // "automatico" al confirmarse: implica un cobro real hoy (compra nueva o
+  // aumento de cantidad, nunca una baja) y el addon todavía no está en
+  // "automatico" — si ya lo está, no hay nada que activar de nuevo (el
+  // toggle fuera del modal sigue siendo el lugar para desactivarlo).
   function purchaseAutoPayEligible(change: { key: ExtraKey; chargeAmount: number }): boolean {
     return (
       change.chargeAmount > 0 &&
@@ -906,14 +908,18 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
 
         results.push({ key: change.key, label: change.label, ok: true });
 
-        // Encadena la activación de cobro automático si el tenant marcó el
-        // checkbox inline para esta línea — mismo endpoint/consentimiento
-        // que el toggle "Cobro automático mensual" de fuera del modal, solo
-        // que acá se dispara automáticamente justo después de la compra en
-        // vez de requerir que el tenant vuelva a buscarlo por separado. Un
-        // fallo acá NO revierte ni oculta que la compra sí se hizo — solo
-        // se reporta aparte, y el tenant puede activar el toggle a mano.
-        if (purchaseAutoPayOptIn[change.key] && purchaseAutoPayEligible(change)) {
+        // Encadena la activación de cobro automático mensual siempre que
+        // aplique (fix 2026-09-05: antes dependía de un checkbox opt-in que
+        // quedaba sin marcar por defecto, y el add-on recién comprado
+        // quedaba con el toggle "Cobro automático mensual" apagado -- los
+        // add-ons de Orbyx son solo de cobro recurrente por decisión de
+        // producto, no tiene sentido que la compra deje esto en "manual"
+        // esperando una acción aparte). Mismo endpoint/consentimiento que el
+        // toggle de fuera del modal, solo que acá se dispara automáticamente
+        // justo después de la compra. Un fallo acá NO revierte ni oculta que
+        // la compra sí se hizo — solo se reporta aparte, y el tenant puede
+        // activar el toggle a mano si esto falla.
+        if (purchaseAutoPayEligible(change)) {
           try {
             const config = extraConfig[change.key];
             const projectedUnitPrice = addonUnitTierPrice(config, change.newQty - 1);
@@ -1338,7 +1344,6 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 type="button"
                 onClick={() => {
                   setAddonChangeResults([]);
-                  setPurchaseAutoPayOptIn({});
                   setPurchaseLowBalanceOptIn({});
                   setAddonConfirmModalOpen(true);
                 }}
@@ -1454,30 +1459,16 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                       </div>
 
                       {purchaseAutoPayEligible(change) ? (
-                        <label
-                          className="mt-2 flex cursor-pointer items-start gap-2 border-t pt-2"
-                          style={{ borderColor: "var(--border-color)" }}
+                        <p
+                          className="mt-2 border-t pt-2 text-xs leading-5"
+                          style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
                         >
-                          <input
-                            type="checkbox"
-                            checked={purchaseAutoPayOptIn[change.key] || false}
-                            onChange={(e) =>
-                              setPurchaseAutoPayOptIn((prev) => ({
-                                ...prev,
-                                [change.key]: e.target.checked,
-                              }))
-                            }
-                            disabled={addonSubmitting}
-                            className="mt-0.5 h-4 w-4 shrink-0"
-                          />
-                          <span className="text-xs leading-5" style={{ color: "var(--text-muted)" }}>
-                            {buildRenewalConsentTextForPurchase(
-                              change.key,
-                              change.newQty,
-                              addonUnitTierPrice(extraConfig[change.key], change.newQty - 1)
-                            )}
-                          </span>
-                        </label>
+                          {buildRenewalConsentTextForPurchase(
+                            change.key,
+                            change.newQty,
+                            addonUnitTierPrice(extraConfig[change.key], change.newQty - 1)
+                          )}
+                        </p>
                       ) : null}
 
                       {purchaseLowBalanceEligible(change) ? (

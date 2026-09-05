@@ -422,6 +422,18 @@ function CheckoutPremiumInner() {
               </div>
             </div>
 
+            {addonsItems.length > 0 && (
+              <p
+                className="mb-5 text-xs leading-5"
+                style={{ color: "rgba(147,197,253,0.6)" }}
+              >
+                Los add-ons ({addonsItems.map((item) => ADDON_LABELS[item.key]).join(", ")}) se
+                cobran automáticamente cada mes junto con tu suscripción. Puedes desactivar esa
+                renovación cuando quieras desde "Mi suscripción" → Add-ons, dentro del panel de tu
+                negocio.
+              </p>
+            )}
+
             <div className="mb-5">
               <TermsAcceptanceCheckbox
                 checked={acceptedTerms}
