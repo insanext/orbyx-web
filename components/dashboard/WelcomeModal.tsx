@@ -81,15 +81,21 @@ export function WelcomeModal({
               alt="¡Bienvenido a Orbyx!"
               className="max-h-[55vh] w-auto max-w-full rounded-3xl object-contain shadow-2xl"
             />
-            <button
+            <motion.button
               type="button"
               onClick={handleClose}
               disabled={dismissing}
-              className="mt-6 inline-flex h-12 items-center justify-center rounded-xl px-8 text-base font-semibold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="mt-6 inline-flex h-12 items-center justify-center rounded-xl px-8 text-base font-bold transition disabled:cursor-not-allowed disabled:opacity-60"
+              style={{
+                background: "linear-gradient(135deg, #00e5ff 0%, #0ea5e9 100%)",
+                color: "#0f172a",
+                boxShadow: "0 0 28px rgba(0,229,255,0.55), 0 10px 30px rgba(0,0,0,0.35)",
+              }}
             >
               Ir a mi panel
-            </button>
+            </motion.button>
           </motion.div>
         </motion.div>
       )}

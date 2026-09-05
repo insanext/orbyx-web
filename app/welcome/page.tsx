@@ -3,9 +3,14 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { WelcomeModal } from "../../components/dashboard/WelcomeModal";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
+// Paleta consolidada a un solo acento (NEON, cian) + grises slate + un verde
+// para "éxito/activo" -- antes se mezclaban cian, morado, índigo, ámbar y
+// verde en el mismo tour, lo que se veía recargado (feedback de Camilo).
 const NEON = "#00e5ff";
+const SUCCESS = "#10b981";
 const FONT = "'Inter','Segoe UI',system-ui,sans-serif";
 
 const cardBase: React.CSSProperties = {
@@ -61,12 +66,12 @@ function Slide1() {
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
-            background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)",
+            background: `${SUCCESS}1f`, border: `1px solid ${SUCCESS}4d`,
             borderRadius: 999, padding: "5px 14px",
           }}
         >
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 6px #22c55e" }} />
-          <span style={{ color: "#22c55e", fontSize: 12, fontWeight: 700 }}>Negocio activo</span>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: SUCCESS, display: "inline-block", boxShadow: `0 0 6px ${SUCCESS}` }} />
+          <span style={{ color: SUCCESS, fontSize: 12, fontWeight: 700 }}>Negocio activo</span>
         </motion.div>
       </div>
       <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9", marginBottom: 12 }}>
@@ -81,9 +86,9 @@ function Slide1() {
 
 // ─── Slide 2 — Agenda mockup ──────────────────────────────────────────────────
 const SLOTS = [
-  { time: "09:00", name: "María González", status: "Confirmada", color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.3)" },
-  { time: "11:00", name: "Carlos Muñoz",   status: "Atendido",   color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.3)" },
-  { time: "14:30", name: "Ana Pérez",      status: "Pendiente",  color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.3)" },
+  { time: "09:00", name: "María González", status: "Confirmada", color: NEON, bg: `${NEON}14`, border: `${NEON}4d` },
+  { time: "11:00", name: "Carlos Muñoz",   status: "Atendido",   color: SUCCESS, bg: `${SUCCESS}14`, border: `${SUCCESS}4d` },
+  { time: "14:30", name: "Ana Pérez",      status: "Pendiente",  color: "#94a3b8", bg: "rgba(148,163,184,0.1)",  border: "rgba(148,163,184,0.3)" },
 ];
 
 function Slide2() {
@@ -206,7 +211,7 @@ function Slide4({ slug }: { slug: string }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
         {MOCK_STAFF.map((s, i) => (
           <div key={i} style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg,${NEON}44,#818cf844)`, border: `1px solid ${NEON}44`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: NEON }}>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: `${NEON}1f`, border: `1px solid ${NEON}44`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: NEON }}>
               {s.initials}
             </div>
             <div style={{ textAlign: "center" }}>
@@ -233,29 +238,13 @@ function Slide4({ slug }: { slug: string }) {
   );
 }
 
-// ─── Slide 5 — Listo ──────────────────────────────────────────────────────────
-function Slide5() {
-  return (
-    <div style={{ textAlign: "center" }}>
-      <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        style={{ fontSize: 52, marginBottom: 16, lineHeight: 1 }}
-      >
-        🚀
-      </motion.div>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9", marginBottom: 12 }}>
-        ¡Todo listo para despegar!
-      </h2>
-      <p style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.7, margin: 0 }}>
-        Explora el panel, configura tu negocio y empieza a recibir reservas.{" "}
-        Si necesitas ayuda, escríbenos.
-      </p>
-    </div>
-  );
-}
-
 // ─── Inner component ──────────────────────────────────────────────────────────
+// La "Slide 5" (cohete, "¡Todo listo!") que cerraba este tour se reemplazó por
+// WelcomeModal (perrito + fondo de estrellas) -- mismo componente que ya se
+// usa como respaldo en el dashboard (ver dashboard/[slug]/layout.tsx) si el
+// tenant llega ahí sin haber pasado por acá. Evita el flash de dashboard
+// "pelado" antes de que aparezca: ahora se muestra ANTES de navegar, como
+// cierre del tour, en vez de después de montar el dashboard.
 function WelcomeInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -265,19 +254,33 @@ function WelcomeInner() {
 
   const [step, setStep] = useState(0);
   const [dir,  setDir]  = useState(1);
-  const TOTAL = 5;
+  const [modalOpen, setModalOpen] = useState(true);
+
+  const cardSlides = [
+    <Slide1 key="s1" />,
+    <Slide2 key="s2" />,
+    <Slide3 key="s3" slug={slug} />,
+    <Slide4 key="s4" slug={slug} />,
+  ];
+  // +1: el último "paso" ya no es una slide de tarjeta, es WelcomeModal.
+  const TOTAL = cardSlides.length + 1;
+  const isModalStep = step === TOTAL - 1;
 
   // Guard
   useEffect(() => {
     if (!slug) router.replace("/login");
   }, [slug, router]);
 
-  // Mark seen on slide 5
+  // Marca visto apenas se llega al paso del modal (no solo al cerrarlo): si
+  // el tenant cierra la pestaña justo acá, la próxima vez que entre al
+  // dashboard igual lo encontrará marcado -- el POST de WelcomeModal hace lo
+  // mismo contra el backend, esto es solo el flag legacy en localStorage que
+  // ya usaba este tour.
   useEffect(() => {
-    if (step === TOTAL - 1 && slug) {
+    if (isModalStep && slug) {
       try { localStorage.setItem(`orbyx_welcome_seen_${slug}`, "1"); } catch {}
     }
-  }, [step, slug]);
+  }, [isModalStep, slug]);
 
   function next() { setDir(1);  setStep((s) => Math.min(s + 1, TOTAL - 1)); }
   function prev() { setDir(-1); setStep((s) => Math.max(s - 1, 0)); }
@@ -287,28 +290,33 @@ function WelcomeInner() {
     router.push(`/dashboard/${slug}`);
   }
 
-  const slides = [
-    <Slide1 key="s1" />,
-    <Slide2 key="s2" />,
-    <Slide3 key="s3" slug={slug} />,
-    <Slide4 key="s4" slug={slug} />,
-    <Slide5 key="s5" />,
-  ];
+  // Deja que WelcomeModal termine su fade-out/scale-down (ver su duración de
+  // transición) antes de navegar -- si navegáramos de inmediato, la
+  // animación de salida se cortaría a mitad de camino.
+  function handleModalDismiss() {
+    setModalOpen(false);
+    setTimeout(finish, 350);
+  }
+
+  if (isModalStep) {
+    return <WelcomeModal tenantId={tenantId} open={modalOpen} onDismiss={handleModalDismiss} />;
+  }
+
+  const slides = cardSlides;
 
   const isFirst = step === 0;
-  const isLast  = step === TOTAL - 1;
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%)", padding: "24px 16px" }}>
       {/* Blobs */}
       <div style={{ position: "fixed", top: "8%", left: "4%", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,rgba(0,229,255,0.07) 0%,transparent 70%)", pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: "12%", right: "6%", width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle,rgba(129,140,248,0.07) 0%,transparent 70%)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "12%", right: "6%", width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle,rgba(14,165,233,0.07) 0%,transparent 70%)", pointerEvents: "none" }} />
 
       <div style={cardBase}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#a78bfa,#00e5ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#0f172a", boxShadow: "0 4px 14px rgba(0,229,255,0.28)" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#00e5ff,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#0f172a", boxShadow: "0 4px 14px rgba(0,229,255,0.28)" }}>
               ◆
             </div>
             <span style={{ fontSize: 19, fontWeight: 800, color: "#f1f5f9", letterSpacing: "-0.4px" }}>Orbyx</span>
@@ -349,33 +357,18 @@ function WelcomeInner() {
           )}
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={isLast ? finish : next}
+            onClick={next}
             style={{
               flex: 1, padding: "12px", borderRadius: 10, border: "none", cursor: "pointer",
               fontWeight: 700, fontSize: 15, fontFamily: FONT, letterSpacing: "0.2px",
-              background: isLast
-                ? "linear-gradient(135deg,#a78bfa 0%,#00e5ff 100%)"
-                : `linear-gradient(135deg,${NEON}cc 0%,#0ea5e9 50%,#06b6d4bb 100%)`,
+              background: `linear-gradient(135deg,${NEON}cc 0%,#0ea5e9 50%,#06b6d4bb 100%)`,
               color: "#0f172a",
               boxShadow: `0 6px 24px rgba(0,229,255,0.3)`,
             }}
           >
-            {isFirst ? "Comenzar tour →" : isLast ? "Ir a mi panel →" : "Siguiente →"}
+            {isFirst ? "Comenzar tour →" : "Siguiente →"}
           </motion.button>
         </div>
-
-        {/* Ver página pública solo en slide 5 */}
-        {isLast && (
-          <motion.button
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            onClick={() => window.open(`https://orbyx.cl/${slug}`, "_blank")}
-            style={{ width: "100%", marginTop: 10, padding: "11px", borderRadius: 10, border: `1px solid ${NEON}33`, background: "rgba(0,229,255,0.05)", color: NEON, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}
-          >
-            Ver mi página pública ↗
-          </motion.button>
-        )}
       </div>
     </div>
   );
