@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { compressImage } from "@/lib/imageCompression";
 
 const MAX_SIZE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_TYPES: Record<string, string> = {
@@ -102,16 +103,27 @@ export async function POST(req: Request) {
       );
     }
 
-    const fileExt = ALLOWED_TYPES[file.type];
-    const fileName = `staff/${staffId}.${fileExt}`;
-
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const rawBuffer = Buffer.from(arrayBuffer);
+    const { buffer, contentType, extension } = await compressImage(rawBuffer, "avatar");
+    const fileName = `staff/${staffId}.${extension}`;
+
+    // Best-effort: si esta foto ya existía con otra extensión (formato
+    // previo a agregar compresión), limpia esa variante para no dejar un
+    // archivo huérfano — mismo patrón de candidatos ya usado en
+    // DELETE /admin/tenants/:id (server.js) para este mismo bucket.
+    const otherExts = ["jpg", "png", "webp"].filter((ext) => ext !== extension);
+    if (otherExts.length) {
+      await supabase.storage
+        .from("staff-photos")
+        .remove(otherExts.map((ext) => `staff/${staffId}.${ext}`))
+        .catch(() => {});
+    }
 
     const { error: uploadError } = await supabase.storage
       .from("staff-photos")
       .upload(fileName, buffer, {
-        contentType: file.type,
+        contentType,
         upsert: true,
       });
 

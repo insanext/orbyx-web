@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { compressImage } from "@/lib/imageCompression";
 
 const BUCKET = "business-logos";
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -85,19 +86,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const fileExt = (file.name.split(".").pop() || "png").toLowerCase();
-    const safeExt = ["jpg", "jpeg", "png", "webp"].includes(fileExt)
-      ? fileExt
-      : "png";
     const version = `${Date.now()}-${crypto.randomUUID()}`;
-    const fileName = `tenants/${tenantId}/logo-${version}.${safeExt}`;
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const rawBuffer = Buffer.from(arrayBuffer);
+    const { buffer, contentType, extension } = await compressImage(rawBuffer, "avatar");
+    const fileName = `tenants/${tenantId}/logo-${version}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
       .upload(fileName, buffer, {
-        contentType: file.type || "image/png",
+        contentType,
         upsert: true,
       });
 
