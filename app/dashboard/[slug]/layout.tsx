@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useParams, useRouter } from "next/navigation";
 import {
@@ -32,6 +32,7 @@ import {
   Check,
   Moon,
   Sun,
+  MoreHorizontal,
 } from "lucide-react";
 import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
@@ -270,6 +271,8 @@ export default function DashboardLayout({
   const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const [userMenuMobileTop, setUserMenuMobileTop] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
@@ -278,7 +281,37 @@ export default function DashboardLayout({
   const [notifPanelOpen, setNotifPanelOpen] = useState(false);
   const [toasts, setToasts] = useState<NotificationEvent[]>([]);
   const notifPanelRef = useRef<HTMLDivElement>(null);
+  const notifTriggerRef = useRef<HTMLButtonElement>(null);
+  const [notifMobileTop, setNotifMobileTop] = useState<number | null>(null);
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
+
+  // Los paneles de notificaciones y de cuenta se anclan al botón que los abre
+  // con `absolute right-0`, lo que en mobile puede empujarlos fuera de
+  // pantalla si el botón no está pegado al borde derecho real. Mismo patrón
+  // ya usado en AccountStatusWidget.tsx: en <640px el panel pasa a `fixed`
+  // con el top medido en vivo contra el botón, y en >=640px mantiene el
+  // comportamiento original (absolute, anclado al botón).
+  useLayoutEffect(() => {
+    if (!notifPanelOpen) return;
+    if (typeof window === "undefined" || window.innerWidth >= 640) {
+      setNotifMobileTop(null);
+      return;
+    }
+    if (notifTriggerRef.current) {
+      setNotifMobileTop(notifTriggerRef.current.getBoundingClientRect().bottom + 8);
+    }
+  }, [notifPanelOpen]);
+
+  useLayoutEffect(() => {
+    if (!userMenuOpen) return;
+    if (typeof window === "undefined" || window.innerWidth >= 640) {
+      setUserMenuMobileTop(null);
+      return;
+    }
+    if (userMenuTriggerRef.current) {
+      setUserMenuMobileTop(userMenuTriggerRef.current.getBoundingClientRect().bottom + 8);
+    }
+  }, [userMenuOpen]);
 
   const { status: accountStatus } = useAccountStatus(tenantId);
   const isBillingPage = pathname === `/dashboard/${slug}/billing` || pathname?.startsWith(`/dashboard/${slug}/billing/`);
@@ -1452,6 +1485,44 @@ export default function DashboardLayout({
               <div className="flex-1 overflow-y-auto px-4 py-5">
                 <BranchSelectorBlock compact />
 
+                {/* En pantallas de celular (<768px) el header oculta el badge de
+                    plan, el widget de estado de cuenta y el botón de copiar
+                    enlace público para no saturar la barra superior (ver
+                    header más arriba, ocultos con `hidden md:...`) — se
+                    muestran acá para no perder el acceso a esa función. */}
+                <div className="mt-4 flex flex-wrap items-center gap-2 md:hidden">
+                  <span
+                    className="inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold"
+                    style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}
+                  >
+                    <Crown size={14} />
+                    Plan {planLabel}
+                  </span>
+                  {tenantId ? (
+                    <AccountStatusWidget
+                      tenantId={tenantId}
+                      slug={slug}
+                      isNocturno={isNocturno}
+                      isOwnerOrAdmin={isOwnerOrAdmin}
+                    />
+                  ) : null}
+                  {slug ? (
+                    <button
+                      type="button"
+                      onClick={copyPublicUrl}
+                      className="inline-flex h-7 items-center justify-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition"
+                      style={{
+                        background: copiedPublicUrl ? "rgba(16,185,129,0.12)" : softBg,
+                        borderColor: copiedPublicUrl ? "rgba(16,185,129,0.45)" : sidebarBorder,
+                        color: copiedPublicUrl ? "rgb(16 185 129)" : textMain,
+                      }}
+                    >
+                      {copiedPublicUrl ? <Check size={13} /> : <Link2 size={13} />}
+                      {copiedPublicUrl ? "URL copiada" : `orbyx.cl/${slug}`}
+                    </button>
+                  ) : null}
+                </div>
+
                 <div
                   className="mb-3 mt-5 px-3 text-[11px] font-semibold uppercase tracking-[0.18em]"
                   style={{ color: textMuted }}
@@ -1523,7 +1594,7 @@ export default function DashboardLayout({
                   type="button"
                   aria-label="Abrir menu"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition xl:hidden sm:h-11 sm:w-11"
+                  className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition md:inline-flex xl:hidden sm:h-11 sm:w-11"
                   style={{
                     background: softBg,
                     borderColor: sidebarBorder,
@@ -1547,17 +1618,19 @@ export default function DashboardLayout({
                   >
                     {businessName || slug || "Gestión del negocio"}
                   </h2>
-                  <span className="inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold sm:h-8 sm:gap-2 sm:px-3 sm:text-sm" style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
+                  <span className="hidden h-6 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold md:inline-flex sm:h-8 sm:gap-2 sm:px-3 sm:text-sm" style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
                     <Crown size={15} />
                     Plan {planLabel}
                   </span>
                   {tenantId ? (
-                    <AccountStatusWidget
-                      tenantId={tenantId}
-                      slug={slug}
-                      isNocturno={isNocturno}
-                      isOwnerOrAdmin={isOwnerOrAdmin}
-                    />
+                    <div className="hidden md:block">
+                      <AccountStatusWidget
+                        tenantId={tenantId}
+                        slug={slug}
+                        isNocturno={isNocturno}
+                        isOwnerOrAdmin={isOwnerOrAdmin}
+                      />
+                    </div>
                   ) : null}
                 </div>
                 </div>
@@ -1570,7 +1643,7 @@ export default function DashboardLayout({
                     onClick={copyPublicUrl}
                     aria-label="Copiar URL pública"
                     title={`Copiar ${publicUrl}`}
-                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-xs font-semibold transition sm:h-11 sm:px-3 sm:text-sm"
+                    className="hidden h-9 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-xs font-semibold transition md:inline-flex sm:h-11 sm:px-3 sm:text-sm"
                     style={{
                       background: copiedPublicUrl ? "rgba(16,185,129,0.12)" : softBg,
                       borderColor: copiedPublicUrl ? "rgba(16,185,129,0.45)" : sidebarBorder,
@@ -1621,6 +1694,7 @@ export default function DashboardLayout({
 
                 <div ref={notifPanelRef} className="relative">
                   <button
+                    ref={notifTriggerRef}
                     type="button"
                     aria-label="Notificaciones"
                     onClick={() => {
@@ -1650,8 +1724,9 @@ export default function DashboardLayout({
 
                   {notifPanelOpen ? (
                     <div
-                      className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border"
+                      className="fixed left-4 right-4 z-50 max-h-[70vh] w-auto overflow-hidden rounded-2xl border sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+8px)] sm:max-h-none sm:w-[min(20rem,calc(100vw-2rem))]"
                       style={{
+                        top: notifMobileTop !== null ? `${notifMobileTop}px` : undefined,
                         background: dropdownBg,
                         borderColor: sidebarBorder,
                         boxShadow:
@@ -1728,6 +1803,7 @@ export default function DashboardLayout({
 
                 <div ref={userMenuRef} className="relative border-l pl-2 sm:pl-3" style={{ borderColor: sidebarBorder }}>
                   <button
+                    ref={userMenuTriggerRef}
                     type="button"
                     onClick={() => setUserMenuOpen((prev) => !prev)}
                     className="flex items-center gap-2 rounded-2xl px-1 py-1 text-left transition sm:gap-3"
@@ -1738,11 +1814,11 @@ export default function DashboardLayout({
                         ? currentUserLabel.slice(0, 2).toUpperCase()
                         : slug.slice(0, 2).toUpperCase()}
                     </div>
-                    <div className="min-w-0">
+                    <div className="hidden min-w-0 sm:block">
                       <p className="truncate text-sm font-semibold" style={{ color: textMain }}>
                         {currentUserLabel || "Usuario"}
                       </p>
-                      <p className="hidden truncate text-xs sm:block" style={{ color: textMuted }}>
+                      <p className="truncate text-xs" style={{ color: textMuted }}>
                         {ROLE_LABEL[memberRole] || (memberLoaded ? memberRole : "")}
                       </p>
                     </div>
@@ -1750,8 +1826,9 @@ export default function DashboardLayout({
 
                   {userMenuOpen ? (
                     <div
-                      className="absolute right-0 top-[calc(100%+8px)] z-50 w-64 overflow-hidden rounded-2xl border"
+                      className="fixed left-4 right-4 z-50 overflow-hidden rounded-2xl border sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-64"
                       style={{
+                        top: userMenuMobileTop !== null ? `${userMenuMobileTop}px` : undefined,
                         background: dropdownBg,
                         borderColor: sidebarBorder,
                         boxShadow:
@@ -1785,7 +1862,7 @@ export default function DashboardLayout({
           </header>
 
           <main className="flex-1">
-            <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-5 sm:py-6 lg:px-8 xl:px-10 2xl:px-12">
+            <div className="mx-auto w-full max-w-[1600px] px-3 pb-24 pt-4 sm:px-5 sm:pb-6 sm:pt-6 lg:px-8 xl:px-10 2xl:px-12">
               {isBillingPage && accountStatus?.blocked ? (
                 // isAccountBlocked excluye /billing a propósito (reemplazaría
                 // el contenido de esta misma página, incluida la forma de
@@ -1860,6 +1937,53 @@ export default function DashboardLayout({
           </main>
         </div>
       </div>
+
+      {/* Barra de navegación inferior — solo celulares (<768px). Reemplaza al
+          menú hamburguesa como acceso principal a la navegación en ese rango
+          (ver botón "Más", que abre el mismo drawer `mobileMenuOpen`); desde
+          768px hacia arriba sigue existiendo el hamburguesa de siempre. */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t md:hidden"
+        style={{
+          background: isNocturno ? "rgba(17,24,39,0.94)" : "rgba(255,255,255,0.94)",
+          borderColor: sidebarBorder,
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        {[
+          { label: "Agenda", href: "/agenda", icon: CalendarDays },
+          { label: isPacientes ? "Pacientes" : "Clientes", href: "/customers", icon: Users },
+          { label: "Servicios", href: "/services", icon: Layers3 },
+          { label: "Campañas", href: "/campaigns", icon: Megaphone },
+        ]
+          .filter((item) => isOwnerOrAdmin || getModuleAccess(item.href) !== false)
+          .map((item) => {
+            const Icon = item.icon;
+            const fullHref = `/dashboard/${slug}${item.href}`;
+            const active = isItemActive(fullHref);
+            return (
+              <Link
+                key={item.href}
+                href={fullHref}
+                className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium"
+                style={{ color: active ? "#3B82F6" : textMuted }}
+              >
+                <Icon size={20} />
+                {item.label}
+              </Link>
+            );
+          })}
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Más opciones"
+          className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium"
+          style={{ color: mobileMenuOpen ? "#3B82F6" : textMuted }}
+        >
+          <MoreHorizontal size={20} />
+          Más
+        </button>
+      </nav>
 
       {mounted && typeof window !== "undefined" && tenantId
         ? createPortal(

@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -14,8 +15,11 @@ import {
   Lock,
   Mail,
   Phone,
+  Plus,
   RotateCcw,
   Search,
+  SlidersHorizontal,
+  Store,
   UserRound,
   UsersRound,
   X,
@@ -484,6 +488,14 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   const [closedScheduleDraft, setClosedScheduleDraft] =
     useState<ClosedScheduleDraft | null>(null);
   const [agendaView, setAgendaView] = useState<"week" | "day">("week");
+  // Vista mobile (<768px) — independiente de `agendaView` (que sigue
+  // controlando exclusivamente el layout de escritorio, sin tocar). Reusa
+  // los mismos datos ya cargados (appointments/weekDays/weekBaseDate); no
+  // dispara fetches nuevos.
+  const [mobileTab, setMobileTab] = useState<"week" | "day" | "list">("week");
+  const [mobileActiveDayKey, setMobileActiveDayKey] = useState("");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileBranchPickerOpen, setMobileBranchPickerOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
 const [showPendingPanel, setShowPendingPanel] = useState(false);
   const [clinicalPendingModal, setClinicalPendingModal] =
@@ -664,6 +676,23 @@ function getWeekdayLabel(date: Date) {
 
 function getWeekdaySoftBg(date: Date) {
   return `var(--agenda-day-${date.getDay()})`;
+}
+
+function formatMobileShortWeekday(date: Date) {
+  const text = date.toLocaleDateString("es-CL", { weekday: "short" }).replace(".", "");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function formatMobileDateLabel(date: Date) {
+  const text = date
+    .toLocaleDateString("es-CL", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
+    .replace(/\./g, "");
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
   function formatRangeTitle(start: Date, end: Date) {
@@ -2847,6 +2876,14 @@ loadPendingClinicalNotes();
     };
   }, [slug, selectedBranchId, weekStart.getTime(), selectedStaffId, weekDays]);
 
+  // Cantidad de filtros no-default para el badge del botón "Filtros" mobile.
+  const mobileActiveFilterCount = [
+    searchQuery.trim().length > 0,
+    Boolean(selectedStaffId),
+    Boolean(selectedServiceId),
+    activeFilter !== "active",
+  ].filter(Boolean).length;
+
   const filteredAppointments = useMemo(() => {
     return appointments.filter(
       (appt) =>
@@ -2880,6 +2917,100 @@ loadPendingClinicalNotes();
 
   const todayKey = formatDateYYYYMMDD(new Date());
   const appointmentsToday = appointmentsByDay[todayKey] || [];
+
+  // Día activo de la tira mobile: si el día actualmente elegido ya no cae
+  // dentro de la semana cargada (cambiaste de semana, o es la carga inicial)
+  // se reubica en "hoy" si hoy está en esa semana, si no en el primer día.
+  useEffect(() => {
+    const stillInWeek = weekDays.some(
+      (d) => formatDateYYYYMMDD(d) === mobileActiveDayKey
+    );
+    if (stillInWeek) return;
+
+    const fallbackKey = weekDays.some((d) => formatDateYYYYMMDD(d) === todayKey)
+      ? todayKey
+      : formatDateYYYYMMDD(weekDays[0]);
+    setMobileActiveDayKey(fallbackKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekDays]);
+
+  function mobileDayKeyToDate(key: string) {
+    const [y, m, d] = key.split("-").map(Number);
+    return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0);
+  }
+
+  function goMobilePrevDay() {
+    const current = mobileDayKeyToDate(mobileActiveDayKey || todayKey);
+    const prevKey = formatDateYYYYMMDD(addDays(current, -1));
+    if (weekDays.some((d) => formatDateYYYYMMDD(d) === prevKey)) {
+      setMobileActiveDayKey(prevKey);
+    } else {
+      goPrevWeek();
+      setMobileActiveDayKey(prevKey);
+    }
+  }
+
+  function goMobileNextDay() {
+    const current = mobileDayKeyToDate(mobileActiveDayKey || todayKey);
+    const nextKey = formatDateYYYYMMDD(addDays(current, 1));
+    if (weekDays.some((d) => formatDateYYYYMMDD(d) === nextKey)) {
+      setMobileActiveDayKey(nextKey);
+    } else {
+      goNextWeek();
+      setMobileActiveDayKey(nextKey);
+    }
+  }
+
+  function goMobileToday() {
+    goToday();
+    setMobileActiveDayKey(todayKey);
+  }
+
+  // Sucursal desde el pill mobile de Agenda — mismo patrón que
+  // persistSelectedBranch() en dashboard/[slug]/layout.tsx: persiste en el
+  // mismo localStorage key y despacha el mismo evento, que este componente
+  // ya escucha (handleBranchChanged más abajo) para actualizar su estado.
+  function persistSelectedBranchFromAgenda(branchId: string) {
+    if (typeof window === "undefined" || !branchStorageKey) return;
+    localStorage.setItem(branchStorageKey, branchId);
+    window.dispatchEvent(
+      new CustomEvent("orbyx-branch-changed", { detail: { slug, branchId } })
+    );
+  }
+
+  // Slot por defecto al crear una cita desde los accesos mobile (botón
+  // "Nueva cita" y el "+" flotante), que no parten de un clic sobre un slot
+  // puntual del grid como en escritorio. Usa el inicio de la ventana de
+  // disponibilidad ya calculada por getSelectedStaffDayWindow (mismo helper
+  // que arma el grid semanal) y, si ya pasó, la hora actual redondeada a los
+  // próximos 30 min — la reserva igual se valida contra el backend al
+  // confirmar, como cualquier reserva manual.
+  function getMobileDefaultSlotStart(day: Date) {
+    const win = getSelectedStaffDayWindow(day);
+    let startMinutes: number | null = null;
+
+    if ("windows" in win && Array.isArray(win.windows) && win.windows.length > 0) {
+      startMinutes = win.windows[0].start;
+    } else if ("startMinutes" in win && win.startMinutes !== null) {
+      startMinutes = win.startMinutes;
+    }
+
+    const base = new Date(day);
+    base.setSeconds(0, 0);
+    base.setHours(0, 0);
+    base.setMinutes(startMinutes ?? 10 * 60);
+
+    const now = new Date();
+    if (
+      formatDateYYYYMMDD(base) === formatDateYYYYMMDD(now) &&
+      base.getTime() < now.getTime()
+    ) {
+      base.setHours(now.getHours());
+      base.setMinutes(Math.ceil(now.getMinutes() / 30) * 30);
+    }
+
+    return base.toISOString();
+  }
 
   const selectedGroupAppointments = useMemo(() => {
     if (!selectedAppointment) return [];
@@ -3271,8 +3402,289 @@ const hasPendingClose = pendingCloseCount > 0;
         }
       `}</style>
       <style>{STATUS_STYLESHEET}</style>
+
+      {/* Cabecera compacta — solo celulares (<768px). La agenda debe ser lo
+          primero visible, así que acá no hay hero/ilustración: sucursal +
+          filtros + nueva cita en una sola fila, y el resto del layout mobile
+          (nav de fecha, toggle, tira de días, detalle) sigue justo debajo. */}
+      <div className="flex flex-wrap items-center gap-2 md:hidden">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setMobileBranchPickerOpen((prev) => !prev)}
+            disabled={branches.length <= 1}
+            className="flex h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold disabled:opacity-90"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <Store className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+            <span className="max-w-[110px] truncate">
+              {selectedBranchName || "Sucursal"}
+            </span>
+            {branches.length > 1 ? <ChevronDown className="h-3.5 w-3.5" /> : null}
+          </button>
+
+          {mobileBranchPickerOpen && branches.length > 1 ? (
+            <>
+              <button
+                type="button"
+                aria-label="Cerrar"
+                className="fixed inset-0 z-40"
+                onClick={() => setMobileBranchPickerOpen(false)}
+              />
+              <div
+                className="absolute left-0 top-[calc(100%+6px)] z-50 min-w-[200px] overflow-hidden rounded-2xl border"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  boxShadow: "0 12px 40px -8px rgba(0,0,0,0.28), 0 4px 16px -4px rgba(0,0,0,0.18)",
+                }}
+              >
+                {branches.map((branch) => (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    onClick={() => {
+                      persistSelectedBranchFromAgenda(branch.id);
+                      setMobileBranchPickerOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium"
+                    style={{
+                      background: branch.id === selectedBranchId ? "rgba(37,99,235,0.10)" : "transparent",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: branch.id === selectedBranchId ? "rgb(52 211 153)" : "transparent", border: branch.id === selectedBranchId ? "none" : "1.5px solid var(--border-color)" }}
+                    />
+                    {branch.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setMobileFiltersOpen(true)}
+          className="relative flex h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+            color: "var(--text-main)",
+          }}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          Filtros
+          {mobileActiveFilterCount > 0 ? (
+            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-bold text-white">
+              {mobileActiveFilterCount}
+            </span>
+          ) : null}
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            openManualBooking(
+              getMobileDefaultSlotStart(mobileDayKeyToDate(mobileActiveDayKey || todayKey))
+            )
+          }
+          className="ml-auto flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white"
+          style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+        >
+          <Plus className="h-4 w-4" />
+          Nueva cita
+        </button>
+      </div>
+
+      {mobileFiltersOpen ? (
+        <div className="fixed inset-0 z-[95] flex items-end justify-center md:hidden">
+          <button
+            type="button"
+            aria-label="Cerrar filtros"
+            className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+          <div
+            className="relative max-h-[85vh] w-full overflow-y-auto rounded-t-3xl border border-b-0 p-4 pb-6"
+            style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                Filtros
+              </p>
+              <button
+                type="button"
+                aria-label="Cerrar"
+                onClick={() => setMobileFiltersOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold" style={{ color: "var(--agenda-filter-label)" }}>
+                  Buscar
+                </label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSearchAppointments();
+                    }}
+                    placeholder="Buscar cliente o reserva..."
+                    className="h-11 w-full rounded-xl border py-2 pl-10 pr-3 text-sm outline-none"
+                    style={{
+                      borderColor: "rgba(148,163,184,0.28)",
+                      background: "var(--agenda-filter-control-bg)",
+                      color: "var(--agenda-filter-control-text)",
+                    }}
+                  />
+                </div>
+
+                {(searchError || searchResults.length > 0) && searchQuery.trim().length > 0 ? (
+                  <div className="mt-2 space-y-1.5">
+                    {searchError ? (
+                      <p className="text-xs font-medium text-amber-600">{searchError}</p>
+                    ) : null}
+                    {searchResults.slice(0, 6).map((appt) => (
+                      <button
+                        key={appt.id}
+                        type="button"
+                        onClick={() => {
+                          handleSelectAppointment(appt);
+                          setMobileFiltersOpen(false);
+                        }}
+                        className="flex w-full items-start justify-between gap-2 rounded-xl border p-2.5 text-left"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                            {appt.customer_name}
+                          </p>
+                          <p className="mt-0.5 truncate text-xs" style={{ color: "var(--text-muted)" }}>
+                            {appt.service_name_snapshot || "Reserva"} · {formatCompactDateTime(appt.start_at)}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(appt)}`}
+                        >
+                          {getStatusLabel(appt)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold" style={{ color: "var(--agenda-filter-label)" }}>
+                  Profesional
+                </label>
+                <select
+                  value={selectedStaffId}
+                  onChange={(e) => {
+                    setSelectedStaffId(e.target.value);
+                    setHoverCard(null);
+                    setSearchResults([]);
+                    setSearchError("");
+                  }}
+                  disabled={!selectedBranchId || loadingStaff}
+                  className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: "rgba(148,163,184,0.28)",
+                    background: "var(--agenda-filter-control-bg)",
+                    color: "var(--agenda-filter-control-text)",
+                  }}
+                >
+                  <option value="">Todos los profesionales</option>
+                  {staffList.map((staff) => (
+                    <option key={staff.id} value={staff.id}>
+                      {staff.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold" style={{ color: "var(--agenda-filter-label)" }}>
+                  Servicio
+                </label>
+                <select
+                  value={selectedServiceId}
+                  onChange={(e) => {
+                    setSelectedServiceId(e.target.value);
+                    setHoverCard(null);
+                  }}
+                  disabled={!selectedBranchId || loadingServices}
+                  className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: "rgba(148,163,184,0.28)",
+                    background: "var(--agenda-filter-control-bg)",
+                    color: "var(--agenda-filter-control-text)",
+                  }}
+                >
+                  <option value="">Todos los servicios</option>
+                  {services.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold" style={{ color: "var(--agenda-filter-label)" }}>
+                  Estado
+                </label>
+                <select
+                  value={activeFilter}
+                  onChange={(e) => {
+                    setActiveFilter(e.target.value as FilterValue);
+                    setHoverCard(null);
+                  }}
+                  className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none"
+                  style={{
+                    borderColor: "rgba(148,163,184,0.28)",
+                    background: "var(--agenda-filter-control-bg)",
+                    color: "var(--agenda-filter-control-text)",
+                  }}
+                >
+                  {(Object.keys(filterLabels) as FilterValue[]).map((filter) => (
+                    <option key={filter} value={filter}>
+                      {filterLabels[filter]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(false)}
+              className="mt-4 flex h-11 w-full items-center justify-center rounded-2xl text-sm font-semibold text-white"
+              style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+            >
+              Ver resultados
+            </button>
+          </div>
+        </div>
+      ) : null}
+
 <div
-  className="relative overflow-hidden rounded-none border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(99,102,241,0.5),0_0_34px_-24px_rgba(59,130,246,0.42)]"
+  className="relative hidden overflow-hidden rounded-none border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(99,102,241,0.5),0_0_34px_-24px_rgba(59,130,246,0.42)] md:block"
   style={{
     borderColor: "var(--agenda-hero-border)",
     background: "var(--agenda-hero-bg)",
@@ -3398,7 +3810,7 @@ const hasPendingClose = pendingCloseCount > 0;
       </div>
 
       <div
-        className="rounded-none border p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.45)]"
+        className="hidden rounded-none border p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.45)] md:block"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--agenda-filter-bg)",
@@ -3802,7 +4214,7 @@ const hasPendingClose = pendingCloseCount > 0;
       <div className="relative">
         <section className="space-y-6">
           <div>
-            <div className="mb-4 flex flex-col gap-3 min-[1700px]:flex-row min-[1700px]:items-center min-[1700px]:justify-between">
+            <div className="mb-4 hidden flex-col gap-3 md:flex min-[1700px]:flex-row min-[1700px]:items-center min-[1700px]:justify-between">
               <style>{`
                 .orbyx-header-btn {
                   transition: filter 150ms ease, background 150ms ease, border-color 150ms ease;
@@ -4101,6 +4513,266 @@ const hasPendingClose = pendingCloseCount > 0;
               </div>
             </div>
 
+            {/* ============ Mobile (<768px): nav de fecha + toggle + tira de
+                días + detalle. Reusa weekDays/appointmentsByDay/weekBaseDate
+                (mismos datos ya cargados por loadAppointments) — no dispara
+                fetches nuevos. El grid de escritorio de más abajo queda
+                oculto en este rango (`hidden ... md:...`). ============ */}
+            <div className="space-y-3 md:hidden">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goMobilePrevDay}
+                  aria-label="Día anterior"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-muted)" }}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goMobileToday}
+                  className="flex h-10 flex-1 flex-col items-center justify-center rounded-lg border leading-tight"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                >
+                  <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                    Hoy
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                    {formatMobileDateLabel(mobileDayKeyToDate(mobileActiveDayKey || todayKey))}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={goMobileNextDay}
+                  aria-label="Día siguiente"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-muted)" }}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div
+                className="flex items-center gap-1 rounded-lg border p-1"
+                style={{ borderColor: "var(--border-color)", background: "var(--agenda-calendar-header-bg)" }}
+              >
+                {(
+                  [
+                    ["week", "Semana"],
+                    ["day", "Día"],
+                    ["list", "Lista"],
+                  ] as [typeof mobileTab, string][]
+                ).map(([tab, label]) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setMobileTab(tab)}
+                    className="h-9 flex-1 rounded-md text-xs font-semibold"
+                    style={
+                      mobileTab === tab
+                        ? { background: "#3B82F6", color: "#fff" }
+                        : { background: "transparent", color: "var(--text-main)" }
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {mobileTab !== "list" ? (
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  {weekDays.map((day) => {
+                    const dayKey = formatDateYYYYMMDD(day);
+                    const dayAppts = appointmentsByDay[dayKey] || [];
+                    const hasActive = dayAppts.some((a) => a.status !== "canceled");
+                    const isActiveDay = dayKey === mobileActiveDayKey;
+                    const isTodayDay = dayKey === todayKey;
+
+                    return (
+                      <button
+                        key={dayKey}
+                        type="button"
+                        onClick={() => setMobileActiveDayKey(dayKey)}
+                        className="flex min-w-[46px] flex-col items-center gap-1 rounded-xl border px-2 py-2"
+                        style={{
+                          background: isActiveDay ? "#3B82F6" : "var(--bg-card)",
+                          borderColor: isActiveDay
+                            ? "#3B82F6"
+                            : isTodayDay
+                            ? "rgba(37,99,235,0.45)"
+                            : "var(--border-color)",
+                        }}
+                      >
+                        <span
+                          className="text-[10px] font-semibold uppercase"
+                          style={{ color: isActiveDay ? "rgba(255,255,255,0.85)" : "var(--text-muted)" }}
+                        >
+                          {formatMobileShortWeekday(day)}
+                        </span>
+                        <span
+                          className="text-sm font-bold"
+                          style={{ color: isActiveDay ? "#fff" : "var(--text-main)" }}
+                        >
+                          {day.getDate()}
+                        </span>
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{
+                            background: hasActive ? (isActiveDay ? "#fff" : "#3B82F6") : "transparent",
+                          }}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              {!selectedBranchId ? (
+                <div
+                  className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+                >
+                  Selecciona una sucursal para ver la agenda.
+                </div>
+              ) : loading ? (
+                <div
+                  className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+                >
+                  Cargando agenda...
+                </div>
+              ) : mobileTab === "list" ? (
+                <div className="space-y-4">
+                  {weekDays.map((day) => {
+                    const dayKey = formatDateYYYYMMDD(day);
+                    const dayGroups = groupAppointmentsByBlock(appointmentsByDay[dayKey] || []);
+                    if (dayGroups.length === 0) return null;
+
+                    return (
+                      <div key={dayKey}>
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                          {formatMobileShortWeekday(day)} {day.getDate()}
+                          {dayKey === todayKey ? " · Hoy" : ""}
+                        </p>
+                        <div className="space-y-2">
+                          {dayGroups.map((group) => {
+                            const first = group[0];
+                            if (!first) return null;
+                            const isGroupSlot = isGroupAppointment(first);
+                            const activeCount = group.filter((a) => a.status !== "canceled").length;
+                            const capacity = Number(first.service_capacity || 0) || activeCount || group.length;
+
+                            return (
+                              <button
+                                key={getAppointmentGroupKey(first)}
+                                type="button"
+                                onClick={() => handleSelectAppointment(first)}
+                                className="flex w-full items-center gap-3 rounded-xl border p-3 text-left"
+                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                              >
+                                <span className="w-12 shrink-0 text-sm font-bold" style={{ color: "var(--text-main)" }}>
+                                  {formatHour(first.start_at)}
+                                </span>
+                                <span
+                                  className="h-8 w-1 shrink-0 rounded-full"
+                                  style={{ background: APPOINTMENT_STATUS_COLORS[getStatusColorKey(first)].hex }}
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                                    {isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name}
+                                  </p>
+                                  <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
+                                    {isGroupSlot ? `${activeCount}/${capacity} inscritos` : (first.service_name_snapshot || "Reserva")}
+                                  </p>
+                                </div>
+                                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(first)}`}>
+                                  {getStatusLabel(first)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {weekDays.every((day) => (appointmentsByDay[formatDateYYYYMMDD(day)] || []).length === 0) ? (
+                    <div
+                      className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+                    >
+                      Sin reservas esta semana.
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {groupAppointmentsByBlock(appointmentsByDay[mobileActiveDayKey] || []).map((group) => {
+                    const first = group[0];
+                    if (!first) return null;
+                    const isGroupSlot = isGroupAppointment(first);
+                    const activeCount = group.filter((a) => a.status !== "canceled").length;
+                    const capacity = Number(first.service_capacity || 0) || activeCount || group.length;
+
+                    return (
+                      <button
+                        key={getAppointmentGroupKey(first)}
+                        type="button"
+                        onClick={() => handleSelectAppointment(first)}
+                        className="flex w-full items-center gap-3 rounded-xl border p-3 text-left"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                      >
+                        <span className="w-12 shrink-0 text-sm font-bold" style={{ color: "var(--text-main)" }}>
+                          {formatHour(first.start_at)}
+                        </span>
+                        <span
+                          className="h-8 w-1 shrink-0 rounded-full"
+                          style={{ background: APPOINTMENT_STATUS_COLORS[getStatusColorKey(first)].hex }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                            {isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name}
+                          </p>
+                          <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
+                            {isGroupSlot ? `${activeCount}/${capacity} inscritos` : (first.service_name_snapshot || "Reserva")}
+                          </p>
+                        </div>
+                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(first)}`}>
+                          {getStatusLabel(first)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {(appointmentsByDay[mobileActiveDayKey] || []).length === 0 ? (
+                    <div
+                      className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+                    >
+                      Sin reservas este día.
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
+            {selectedBranchId && !loading ? (
+              <button
+                type="button"
+                onClick={() =>
+                  openManualBooking(
+                    getMobileDefaultSlotStart(mobileDayKeyToDate(mobileActiveDayKey || todayKey))
+                  )
+                }
+                aria-label="Nueva cita"
+                className="fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg md:hidden"
+                style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))", boxShadow: "0 12px 28px -8px rgba(37,99,235,0.65)" }}
+              >
+                <Plus className="h-6 w-6" />
+              </button>
+            ) : null}
+
             <div className="hidden flex-wrap gap-2">
               {(Object.keys(filterLabels) as FilterValue[]).map((filter) => {
                 const count =
@@ -4135,7 +4807,7 @@ const hasPendingClose = pendingCloseCount > 0;
 
             {!selectedBranchId ? (
               <div
-                className="rounded-xl border border-dashed px-4 py-8 text-sm"
+                className="hidden rounded-xl border border-dashed px-4 py-8 text-sm md:block"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -4146,7 +4818,7 @@ const hasPendingClose = pendingCloseCount > 0;
               </div>
             ) : loading ? (
               <div
-                className="rounded-xl border border-dashed px-4 py-8 text-sm"
+                className="hidden rounded-xl border border-dashed px-4 py-8 text-sm md:block"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -4156,7 +4828,7 @@ const hasPendingClose = pendingCloseCount > 0;
                 Cargando agenda...
               </div>
             ) : agendaView === "day" ? (
-              <div className="space-y-4">
+              <div className="hidden space-y-4 md:block">
                 <style>{`
                   .orbyx-day-scrollbar {
                     scrollbar-width: auto;
@@ -4660,7 +5332,7 @@ const hasPendingClose = pendingCloseCount > 0;
                 </div>
               </div>
             ) : (
-              <div className="flex gap-3 overflow-x-auto pb-2 xl:grid xl:gap-0 xl:overflow-visible xl:pb-0 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))]">
+              <div className="hidden gap-3 overflow-x-auto pb-2 md:flex xl:grid xl:gap-0 xl:overflow-visible xl:pb-0 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))]">
                 <div
                   className="sticky left-0 z-10 w-[54px] shrink-0 rounded-none border xl:static xl:z-auto xl:w-auto xl:shrink xl:rounded-l-none xl:rounded-r-none"
                   style={{
