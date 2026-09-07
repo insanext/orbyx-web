@@ -238,6 +238,10 @@ type ManualBookingDraft = {
   pet_name: string;
   pet_species: string;
   note: string;
+  // true solo cuando el modal se abre sin un slot puntual del grid (botón
+  // genérico "+" en mobile) — habilita los inputs de fecha/hora editables
+  // en el paso "form" en vez del texto de fecha/hora fijo de siempre.
+  slot_editable?: boolean;
 };
 
 type FreeSlotActionDraft = {
@@ -2330,7 +2334,11 @@ next_control_custom_value:
     setManualBookingSaving(false);
   }
 
-  function openManualBooking(slotStart: string, staffId?: string | null) {
+  function openManualBooking(
+    slotStart: string,
+    staffId?: string | null,
+    opts?: { editableSlot?: boolean }
+  ) {
     setManualBookingDraft({
       slot_start: slotStart,
       staff_id: staffId || selectedStaffId || "",
@@ -2343,6 +2351,7 @@ next_control_custom_value:
       pet_name: "",
       pet_species: "",
       note: "",
+      slot_editable: Boolean(opts?.editableSlot),
     });
     setManualBookingStep("form");
     setManualBookingError("");
@@ -3487,20 +3496,6 @@ const hasPendingClose = pendingCloseCount > 0;
             </span>
           ) : null}
         </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            openManualBooking(
-              getMobileDefaultSlotStart(mobileDayKeyToDate(mobileActiveDayKey || todayKey))
-            )
-          }
-          className="ml-auto flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white"
-          style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
-        >
-          <Plus className="h-4 w-4" />
-          Nueva cita
-        </button>
       </div>
 
       {mobileFiltersOpen ? (
@@ -4516,14 +4511,16 @@ const hasPendingClose = pendingCloseCount > 0;
             {/* ============ Mobile (<768px): nav de fecha + toggle + tira de
                 días + detalle. Reusa weekDays/appointmentsByDay/weekBaseDate
                 (mismos datos ya cargados por loadAppointments) — no dispara
-                fetches nuevos. El grid de escritorio de más abajo queda
-                oculto en este rango (`hidden ... md:...`). ============ */}
+                fetches nuevos. "Semana" muestra el mismo grid de escritorio
+                (7 columnas × horas, scroll horizontal) en vez de una lista
+                aparte — ver el toggle `hidden`/`flex` agregado más abajo en
+                ese grid según `mobileTab`. ============ */}
             <div className="space-y-3 md:hidden">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={goMobilePrevDay}
-                  aria-label="Día anterior"
+                  onClick={() => (mobileTab === "day" ? goMobilePrevDay() : goPrevWeek())}
+                  aria-label={mobileTab === "day" ? "Día anterior" : "Semana anterior"}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
                   style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-muted)" }}
                 >
@@ -4532,22 +4529,24 @@ const hasPendingClose = pendingCloseCount > 0;
 
                 <button
                   type="button"
-                  onClick={goMobileToday}
+                  onClick={() => (mobileTab === "day" ? goMobileToday() : goToday())}
                   className="flex h-10 flex-1 flex-col items-center justify-center rounded-lg border leading-tight"
                   style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
                 >
                   <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                    Hoy
+                    {mobileTab === "day" ? "Hoy" : "Esta semana"}
                   </span>
                   <span className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                    {formatMobileDateLabel(mobileDayKeyToDate(mobileActiveDayKey || todayKey))}
+                    {mobileTab === "day"
+                      ? formatMobileDateLabel(mobileDayKeyToDate(mobileActiveDayKey || todayKey))
+                      : formatRangeTitle(weekStart, weekEnd)}
                   </span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={goMobileNextDay}
-                  aria-label="Día siguiente"
+                  onClick={() => (mobileTab === "day" ? goMobileNextDay() : goNextWeek())}
+                  aria-label={mobileTab === "day" ? "Día siguiente" : "Semana siguiente"}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
                   style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-muted)" }}
                 >
@@ -4582,7 +4581,7 @@ const hasPendingClose = pendingCloseCount > 0;
                 ))}
               </div>
 
-              {mobileTab !== "list" ? (
+              {mobileTab === "day" ? (
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
                   {weekDays.map((day) => {
                     const dayKey = formatDateYYYYMMDD(day);
@@ -4630,7 +4629,7 @@ const hasPendingClose = pendingCloseCount > 0;
                 </div>
               ) : null}
 
-              {!selectedBranchId ? (
+              {mobileTab === "week" ? null : !selectedBranchId ? (
                 <div
                   className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
                   style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
@@ -4669,6 +4668,7 @@ const hasPendingClose = pendingCloseCount > 0;
                               <button
                                 key={getAppointmentGroupKey(first)}
                                 type="button"
+                                data-calendar-selectable="true"
                                 onClick={() => handleSelectAppointment(first)}
                                 className="flex w-full items-center gap-3 rounded-xl border p-3 text-left"
                                 style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
@@ -4720,6 +4720,7 @@ const hasPendingClose = pendingCloseCount > 0;
                       <button
                         key={getAppointmentGroupKey(first)}
                         type="button"
+                        data-calendar-selectable="true"
                         onClick={() => handleSelectAppointment(first)}
                         className="flex w-full items-center gap-3 rounded-xl border p-3 text-left"
                         style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
@@ -4736,7 +4737,9 @@ const hasPendingClose = pendingCloseCount > 0;
                             {isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name}
                           </p>
                           <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
-                            {isGroupSlot ? `${activeCount}/${capacity} inscritos` : (first.service_name_snapshot || "Reserva")}
+                            {isGroupSlot
+                              ? `${activeCount}/${capacity} inscritos · ${getStaffName(first.staff_id) || "Sin profesional"}`
+                              : `${first.service_name_snapshot || "Reserva"} · Profesional: ${getStaffName(first.staff_id) || "Sin asignar"}`}
                           </p>
                         </div>
                         <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(first)}`}>
@@ -4762,7 +4765,9 @@ const hasPendingClose = pendingCloseCount > 0;
                 type="button"
                 onClick={() =>
                   openManualBooking(
-                    getMobileDefaultSlotStart(mobileDayKeyToDate(mobileActiveDayKey || todayKey))
+                    getMobileDefaultSlotStart(mobileDayKeyToDate(mobileActiveDayKey || todayKey)),
+                    null,
+                    { editableSlot: true }
                   )
                 }
                 aria-label="Nueva cita"
@@ -4807,7 +4812,7 @@ const hasPendingClose = pendingCloseCount > 0;
 
             {!selectedBranchId ? (
               <div
-                className="hidden rounded-xl border border-dashed px-4 py-8 text-sm md:block"
+                className={`${mobileTab === "week" ? "" : "hidden"} rounded-xl border border-dashed px-4 py-8 text-sm md:block`}
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -4818,7 +4823,7 @@ const hasPendingClose = pendingCloseCount > 0;
               </div>
             ) : loading ? (
               <div
-                className="hidden rounded-xl border border-dashed px-4 py-8 text-sm md:block"
+                className={`${mobileTab === "week" ? "" : "hidden"} rounded-xl border border-dashed px-4 py-8 text-sm md:block`}
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -5332,7 +5337,7 @@ const hasPendingClose = pendingCloseCount > 0;
                 </div>
               </div>
             ) : (
-              <div className="hidden gap-3 overflow-x-auto pb-2 md:flex xl:grid xl:gap-0 xl:overflow-visible xl:pb-0 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))]">
+              <div className={`${mobileTab === "week" ? "flex" : "hidden"} gap-3 overflow-x-auto pb-2 md:flex xl:grid xl:gap-0 xl:overflow-visible xl:pb-0 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))]`}>
                 <div
                   className="sticky left-0 z-10 w-[54px] shrink-0 rounded-none border xl:static xl:z-auto xl:w-auto xl:shrink xl:rounded-l-none xl:rounded-r-none"
                   style={{
@@ -6319,9 +6324,11 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   group.length;
 
                 return (
-                <div
+                <button
                   key={getAppointmentGroupKey(appt)}
-                  className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-1.5 py-2 text-[11px] transition hover:bg-blue-500/10"
+                  type="button"
+                  onClick={() => handleSelectAppointment(appt)}
+                  className="grid w-full grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-1.5 py-2 text-left text-[11px] transition hover:bg-blue-500/10"
                   style={{ color: "var(--text-main)" }}
                 >
                   <span className="flex min-w-0 items-center gap-2">
@@ -6348,7 +6355,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                       ? `${activeGroupCount}/${groupCapacity}`
                       : "-"}
                   </span>
-                </div>
+                </button>
                 );
               })}
             </div>
@@ -6356,7 +6363,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
             <button
               type="button"
               onClick={goToWeekGroupDetail}
-              className="mt-3 flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition hover:border-blue-300/65 hover:bg-blue-500/12"
+              className="mt-3 hidden w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition hover:border-blue-300/65 hover:bg-blue-500/12 md:flex"
               style={{
                 borderColor: "rgba(96,165,250,0.32)",
                 background:
@@ -7889,13 +7896,77 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   ? "¿Confirmar reserva?"
                   : "Nueva reserva"}
               </h3>
-              <p
-                className="mt-1 text-sm leading-6"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {formatLongDate(manualBookingDraft.slot_start)} ·{" "}
-                {formatHour(manualBookingDraft.slot_start)}
-              </p>
+              {manualBookingDraft.slot_editable && manualBookingStep === "form" ? (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <label
+                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Fecha *
+                    </label>
+                    <input
+                      type="date"
+                      value={formatDateYYYYMMDD(new Date(manualBookingDraft.slot_start))}
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        const [y, m, d] = e.target.value.split("-").map(Number);
+                        setManualBookingDraft((prev) => {
+                          if (!prev) return prev;
+                          const updated = new Date(prev.slot_start);
+                          updated.setFullYear(y, (m || 1) - 1, d || 1);
+                          return { ...prev, slot_start: updated.toISOString() };
+                        });
+                      }}
+                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Hora *
+                    </label>
+                    <input
+                      type="time"
+                      value={(() => {
+                        const d = new Date(manualBookingDraft.slot_start);
+                        return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                      })()}
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        const [hh, mm] = e.target.value.split(":").map(Number);
+                        setManualBookingDraft((prev) => {
+                          if (!prev) return prev;
+                          const updated = new Date(prev.slot_start);
+                          updated.setHours(hh || 0, mm || 0, 0, 0);
+                          return { ...prev, slot_start: updated.toISOString() };
+                        });
+                      }}
+                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-main)",
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p
+                  className="mt-1 text-sm leading-6"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {formatLongDate(manualBookingDraft.slot_start)} ·{" "}
+                  {formatHour(manualBookingDraft.slot_start)}
+                </p>
+              )}
             </div>
 
             {manualBookingStep === "confirm" ? (
