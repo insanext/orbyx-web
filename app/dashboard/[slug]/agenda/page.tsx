@@ -501,6 +501,9 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   // Sub-toggle solo dentro de la pestaña "Día": lista cronológica (como
   // siempre) o agrupada por profesional.
   const [mobileDayGroupBy, setMobileDayGroupBy] = useState<"hour" | "staff">("hour");
+  // Resalte breve al tocar una celda vacía del grid semanal mobile, antes de
+  // abrir "Nueva reserva" — confirma de un vistazo qué celda se tocó.
+  const [flashCellKey, setFlashCellKey] = useState<string | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileBranchPickerOpen, setMobileBranchPickerOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
@@ -4759,14 +4762,33 @@ const hasPendingClose = pendingCloseCount > 0;
                         );
                       })}
 
-                      {calendarTimeSlots.map((time) => (
+                      {calendarTimeSlots.map((time) => {
+                        // Anclas visuales: la línea/etiqueta de cada hora en
+                        // punto se refuerza (borde más grueso, texto en
+                        // negrita) para poder "bajar contando" de hora en
+                        // hora en vez de fila por fila. El tinte zebra
+                        // alterna por HORA COMPLETA (no por cada fila de 30
+                        // min) — mismo par de filas (":00" y ":30") comparte
+                        // tinte.
+                        const hourNum = parseInt(time.slice(0, 2), 10) || 0;
+                        const isHourMark = time.endsWith(":00");
+                        const isZebraHour = hourNum % 2 === 1;
+                        const topBorderWidth = isHourMark ? 2 : 1;
+                        const zebraBg = isZebraHour ? "rgba(148,163,184,0.10)" : "transparent";
+
+                        return (
                         <Fragment key={time}>
                           <div
-                            className="flex items-start justify-end border-r border-t px-0.5 pt-0.5 text-[7px] font-medium leading-none"
+                            className="flex items-start justify-end border-r px-0.5 pt-0.5 leading-none"
                             style={{
                               height: 30,
-                              borderColor: "var(--border-color)",
-                              color: "var(--text-muted)",
+                              borderRightColor: "var(--border-color)",
+                              borderTopWidth: topBorderWidth,
+                              borderTopStyle: "solid",
+                              borderTopColor: "var(--border-color)",
+                              color: isHourMark ? "var(--text-main)" : "var(--text-muted)",
+                              fontWeight: isHourMark ? 700 : 500,
+                              fontSize: 7,
                               background: "var(--agenda-calendar-time-bg)",
                             }}
                           >
@@ -4774,10 +4796,12 @@ const hasPendingClose = pendingCloseCount > 0;
                           </div>
                           {weekDays.map((day) => {
                             const dayKey = formatDateYYYYMMDD(day);
+                            const cellKey = `${dayKey}|${time}`;
                             const cellAppointments =
                               mobileWeekGridByDayTime[dayKey]?.[time] || [];
                             const slotDate = new Date(`${dayKey}T${time}:00`);
                             const isPast = slotDate.getTime() < Date.now();
+                            const isFlashing = flashCellKey === cellKey;
 
                             if (cellAppointments.length === 0) {
                               return (
@@ -4785,15 +4809,27 @@ const hasPendingClose = pendingCloseCount > 0;
                                   key={dayKey}
                                   type="button"
                                   disabled={isPast}
-                                  onClick={() =>
-                                    openFreeSlotActions(slotDate.toISOString(), selectedStaffId || null)
-                                  }
+                                  onClick={() => {
+                                    setFlashCellKey(cellKey);
+                                    setTimeout(() => {
+                                      openFreeSlotActions(slotDate.toISOString(), selectedStaffId || null);
+                                      setFlashCellKey((prev) => (prev === cellKey ? null : prev));
+                                    }, 130);
+                                  }}
                                   aria-label={`${formatMobileShortWeekday(day)} ${day.getDate()} · ${time}`}
-                                  className="border-r border-t last:border-r-0 disabled:cursor-default"
+                                  className="border-r last:border-r-0 disabled:cursor-default"
                                   style={{
                                     height: 30,
-                                    borderColor: "var(--border-color)",
-                                    background: isPast ? "var(--bg-soft)" : "transparent",
+                                    borderRightColor: "var(--border-color)",
+                                    borderTopWidth: topBorderWidth,
+                                    borderTopStyle: "solid",
+                                    borderTopColor: "var(--border-color)",
+                                    background: isFlashing
+                                      ? "rgba(59,130,246,0.35)"
+                                      : isPast
+                                      ? "var(--bg-soft)"
+                                      : zebraBg,
+                                    transition: "background 120ms ease-out",
                                   }}
                                 />
                               );
@@ -4806,8 +4842,14 @@ const hasPendingClose = pendingCloseCount > 0;
                               return (
                                 <div
                                   key={dayKey}
-                                  className="border-r border-t last:border-r-0"
-                                  style={{ height: 30, borderColor: "var(--border-color)" }}
+                                  className="border-r last:border-r-0"
+                                  style={{
+                                    height: 30,
+                                    borderRightColor: "var(--border-color)",
+                                    borderTopWidth: topBorderWidth,
+                                    borderTopStyle: "solid",
+                                    borderTopColor: "var(--border-color)",
+                                  }}
                                 />
                               );
                             }
@@ -4822,8 +4864,15 @@ const hasPendingClose = pendingCloseCount > 0;
                                   data-calendar-selectable="true"
                                   onClick={(event) => openWeekGroupedAppointments(event, blockGroups)}
                                   aria-label={`${blockGroups.length} citas a las ${time}`}
-                                  className="relative border-r border-t last:border-r-0"
-                                  style={{ height: 30, borderColor: "var(--border-color)", background: cellColor }}
+                                  className="relative border-r last:border-r-0"
+                                  style={{
+                                    height: 30,
+                                    borderRightColor: "var(--border-color)",
+                                    borderTopWidth: topBorderWidth,
+                                    borderTopStyle: "solid",
+                                    borderTopColor: "var(--border-color)",
+                                    background: cellColor,
+                                  }}
                                 >
                                   <span className="absolute inset-0 flex items-center justify-center">
                                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-black/45 text-[9px] font-bold leading-none text-white">
@@ -4841,13 +4890,21 @@ const hasPendingClose = pendingCloseCount > 0;
                                 data-calendar-selectable="true"
                                 onClick={() => handleSelectAppointment(first)}
                                 aria-label={`${isGroupAppointment(first) ? first.service_name_snapshot || "Actividad grupal" : first.customer_name} · ${time}`}
-                                className="border-r border-t last:border-r-0"
-                                style={{ height: 30, borderColor: "var(--border-color)", background: cellColor }}
+                                className="border-r last:border-r-0"
+                                style={{
+                                  height: 30,
+                                  borderRightColor: "var(--border-color)",
+                                  borderTopWidth: topBorderWidth,
+                                  borderTopStyle: "solid",
+                                  borderTopColor: "var(--border-color)",
+                                  background: cellColor,
+                                }}
                               />
                             );
                           })}
                         </Fragment>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )
