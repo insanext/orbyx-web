@@ -113,10 +113,13 @@ export default function AdminLoginPage() {
         return
       }
 
+      // No se resetea `loading` acá a propósito: se deja el botón
+      // deshabilitado/en curso hasta que router.push realmente cambie de
+      // página, para que no vuelva a verse "normal" mientras la nueva
+      // ruta todavía está cargando.
       router.push('/admin/tickets')
     } catch {
       setError('Error de verificación')
-    } finally {
       setLoading(false)
     }
   }
@@ -158,7 +161,6 @@ export default function AdminLoginPage() {
       router.push('/admin/tickets')
     } catch {
       setError('Error de verificación')
-    } finally {
       setLoading(false)
     }
   }

@@ -744,6 +744,65 @@ export default function DashboardLayout({
     : "linear-gradient(180deg, #f8fbff, #eef4ff)";
 
   function BranchSelectorBlock({ compact = false }: { compact?: boolean }) {
+    if (compact) {
+      if (loadingBranches) {
+        return (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs"
+            style={{ borderColor: sidebarBorder, background: softBg, color: textMuted }}
+          >
+            Cargando sucursales...
+          </span>
+        );
+      }
+
+      if (branchesError) {
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-700">
+            {branchesError}
+          </span>
+        );
+      }
+
+      if (branches.length === 0) {
+        return (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs"
+            style={{ borderColor: sidebarBorder, background: softBg, color: textMuted }}
+          >
+            No hay sucursales creadas.
+          </span>
+        );
+      }
+
+      return (
+        <div
+          className="inline-flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1.5"
+          style={{ borderColor: sidebarBorder, background: softBg }}
+        >
+          <Store size={14} className="shrink-0" style={{ color: textMuted }} />
+          {showBranchSelector ? (
+            <select
+              value={selectedBranchId}
+              onChange={(e) => persistSelectedBranch(e.target.value)}
+              className="max-w-[160px] truncate bg-transparent text-sm font-semibold outline-none"
+              style={{ color: textMain }}
+            >
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="max-w-[160px] truncate text-sm font-semibold" style={{ color: textMain }}>
+              {selectedBranchName || branches[0]?.name || "Sucursal"}
+            </span>
+          )}
+        </div>
+      );
+    }
+
     if (loadingBranches) {
       return (
         <div
@@ -1429,7 +1488,7 @@ export default function DashboardLayout({
         </aside>
 
         {mobileMenuOpen ? (
-          <div className="fixed inset-0 z-40 xl:hidden">
+          <div className="fixed inset-0 z-50 xl:hidden">
             <button
               type="button"
               aria-label="Cerrar menu"
@@ -1483,34 +1542,31 @@ export default function DashboardLayout({
               </div>
 
               <div className="flex-1 overflow-y-auto px-4 py-5">
-                <BranchSelectorBlock compact />
+                <NavLinks onNavigate={() => setMobileMenuOpen(false)} />
 
-                {/* En pantallas de celular (<768px) el header oculta el badge de
-                    plan, el widget de estado de cuenta y el botón de copiar
-                    enlace público para no saturar la barra superior (ver
-                    header más arriba, ocultos con `hidden md:...`) — se
-                    muestran acá para no perder el acceso a esa función. */}
-                <div className="mt-4 flex flex-wrap items-center gap-2 md:hidden">
-                  <span
-                    className="inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold"
-                    style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}
-                  >
-                    <Crown size={14} />
-                    Plan {planLabel}
-                  </span>
+                {/* Accesos secundarios — abajo del todo a propósito, no son
+                    lo primero que se debe ver al abrir el panel. El widget
+                    de estado de cuenta y "copiar enlace" solo viven acá en
+                    <768px (el header ya los oculta ahí, ver `hidden md:...`
+                    más arriba); el badge de plan se sacó de acá por
+                    completo — ahora vive siempre visible en el header. */}
+                <div className="mt-5 flex flex-wrap items-center gap-2 border-t pt-4" style={{ borderColor: sidebarBorder }}>
+                  <BranchSelectorBlock compact />
                   {tenantId ? (
-                    <AccountStatusWidget
-                      tenantId={tenantId}
-                      slug={slug}
-                      isNocturno={isNocturno}
-                      isOwnerOrAdmin={isOwnerOrAdmin}
-                    />
+                    <div className="md:hidden">
+                      <AccountStatusWidget
+                        tenantId={tenantId}
+                        slug={slug}
+                        isNocturno={isNocturno}
+                        isOwnerOrAdmin={isOwnerOrAdmin}
+                      />
+                    </div>
                   ) : null}
                   {slug ? (
                     <button
                       type="button"
                       onClick={copyPublicUrl}
-                      className="inline-flex h-7 items-center justify-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition"
+                      className="inline-flex h-7 items-center justify-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition md:hidden"
                       style={{
                         background: copiedPublicUrl ? "rgba(16,185,129,0.12)" : softBg,
                         borderColor: copiedPublicUrl ? "rgba(16,185,129,0.45)" : sidebarBorder,
@@ -1522,44 +1578,9 @@ export default function DashboardLayout({
                     </button>
                   ) : null}
                 </div>
-
-                <div
-                  className="mb-3 mt-5 px-3 text-[11px] font-semibold uppercase tracking-[0.18em]"
-                  style={{ color: textMuted }}
-                >
-                  Navegación
-                </div>
-
-                <NavLinks onNavigate={() => setMobileMenuOpen(false)} />
               </div>
 
               <div className="space-y-2 border-t p-4" style={{ borderColor: sidebarBorder }}>
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-medium transition"
-                  style={{
-                    background: softBg,
-                    borderColor: sidebarBorder,
-                    color: textMain,
-                  }}
-                >
-                  {mounted ? (
-                    theme === "clasico" ? (
-                      <>
-                        <Moon size={16} />
-                        Cambiar a Nocturno
-                      </>
-                    ) : (
-                      <>
-                        <Sun size={16} />
-                        Cambiar a Clásico
-                      </>
-                    )
-                  ) : (
-                    "Cambiar tema"
-                  )}
-                </button>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -1618,7 +1639,7 @@ export default function DashboardLayout({
                   >
                     {businessName || slug || "Gestión del negocio"}
                   </h2>
-                  <span className="hidden h-6 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold md:inline-flex sm:h-8 sm:gap-2 sm:px-3 sm:text-sm" style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
+                  <span className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold sm:h-8 sm:gap-2 sm:px-3 sm:text-sm" style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
                     <Crown size={15} />
                     Plan {planLabel}
                   </span>
@@ -1674,7 +1695,7 @@ export default function DashboardLayout({
                         : "Cambiar a clásico"
                       : "Cambiar tema"
                   }
-                  className="hidden h-11 w-11 items-center justify-center rounded-2xl border transition md:inline-flex"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition sm:h-11 sm:w-11"
                   style={{
                     background: softBg,
                     borderColor: sidebarBorder,

@@ -406,7 +406,7 @@ function Kpi({
     <div className="p-3" style={{ background: TONE[tone].tint, border: `1px solid ${PANEL_BORDER}`, borderTop: `3px solid ${TONE[tone].solid}` }}>
       <div className="flex items-center gap-2.5">
         <IconBox icon={icon} tone={tone} variant="solid" size={30} />
-        <p className="truncate text-[10px] font-bold uppercase leading-tight tracking-[0.06em]" style={{ color: MUTED }}>
+        <p className="text-[10px] font-bold uppercase leading-tight tracking-[0.06em]" style={{ color: MUTED }}>
           {label}
         </p>
       </div>
@@ -1122,7 +1122,7 @@ export default function DashboardHomePage() {
             subtitle="Reservas, clientes y ocupación"
             action={premiumUnlocked ? <SectionExportButton tables={operacionTables} filename="operacion.csv" /> : undefined}
           >
-            <div className="grid grid-cols-3 gap-2.5 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
               <Kpi icon={Calendar} tone="indigo" label="Reservas totales" value={String(data.basic.appointments.total)} />
               <Kpi icon={CheckCircle2} tone="green" label="Completadas" value={String(data.basic.appointments.by_status.completed)} valueColor={TONE.green.solid} />
               <Kpi icon={XCircle} tone="red" label="Canceladas" value={String(data.basic.appointments.by_status.canceled)} valueColor={TONE.red.solid} />
@@ -1138,7 +1138,7 @@ export default function DashboardHomePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
                   Inactividad:
                 </span>
@@ -1172,7 +1172,7 @@ export default function DashboardHomePage() {
                 ) : null}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
                   Mostrar:
                 </span>

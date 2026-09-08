@@ -188,12 +188,14 @@ function LoginForm() {
             ? "Email o contraseña incorrectos."
             : signInError.message
         );
+        setLoading(false);
         return;
       }
 
       const userId = data.user?.id;
       if (!userId) {
         setError("No se pudo verificar el usuario. Intenta nuevamente.");
+        setLoading(false);
         return;
       }
 
@@ -216,9 +218,17 @@ function LoginForm() {
 
       if ("error" in result) {
         setError(result.error);
+        setLoading(false);
         return;
       }
 
+      // No se resetea `loading` acá: se deja el botón en "Ingresando…"
+      // hasta que la navegación realmente reemplace esta página — si se
+      // resetea de inmediato después de router.push/replace (que no espera
+      // a que la nueva ruta termine de cargar), el botón vuelve a verse
+      // "normal" durante el tramo en que el navegador todavía está
+      // cargando el dashboard, dando la sensación de que el click no hizo
+      // nada.
       if (result.replace) {
         router.replace(result.destination);
       } else {
@@ -230,7 +240,6 @@ function LoginForm() {
       turnstileRef.current?.reset();
       setCaptchaToken("");
       setError(message);
-    } finally {
       setLoading(false);
     }
   }
