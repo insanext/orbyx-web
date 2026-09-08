@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -498,6 +498,9 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   // dispara fetches nuevos.
   const [mobileTab, setMobileTab] = useState<"week" | "day" | "list">("week");
   const [mobileActiveDayKey, setMobileActiveDayKey] = useState("");
+  // Sub-toggle solo dentro de la pestaña "Día": lista cronológica (como
+  // siempre) o agrupada por profesional.
+  const [mobileDayGroupBy, setMobileDayGroupBy] = useState<"hour" | "staff">("hour");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileBranchPickerOpen, setMobileBranchPickerOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterValue>("active");
@@ -685,6 +688,21 @@ function getWeekdaySoftBg(date: Date) {
 function formatMobileShortWeekday(date: Date) {
   const text = date.toLocaleDateString("es-CL", { weekday: "short" }).replace(".", "");
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function formatMobileWeekRangeLabel(start: Date, end: Date) {
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const startDay = start.getDate();
+  const endDay = end.getDate();
+  const year = end.getFullYear();
+  const endMonth = cap(end.toLocaleDateString("es-CL", { month: "short" }).replace(".", ""));
+
+  if (start.getMonth() === end.getMonth()) {
+    return `${startDay}–${endDay} ${endMonth} ${year}`;
+  }
+
+  const startMonth = cap(start.toLocaleDateString("es-CL", { month: "short" }).replace(".", ""));
+  return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${year}`;
 }
 
 function formatMobileDateLabel(date: Date) {
@@ -2927,6 +2945,24 @@ loadPendingClinicalNotes();
   const todayKey = formatDateYYYYMMDD(new Date());
   const appointmentsToday = appointmentsByDay[todayKey] || [];
 
+  // Lookup día+hora exacta -> reservas que empiezan justo ahí, para el grid
+  // semanal mobile (una celda por día×horario). No agrega fetches: solo
+  // reindexa appointmentsByDay (ya cargado) por getTimeKey(start_at).
+  const mobileWeekGridByDayTime = useMemo(() => {
+    const map: Record<string, Record<string, Appointment[]>> = {};
+    for (const day of weekDays) {
+      const dayKey = formatDateYYYYMMDD(day);
+      const dayMap: Record<string, Appointment[]> = {};
+      for (const appt of appointmentsByDay[dayKey] || []) {
+        const timeKey = getTimeKey(appt.start_at);
+        if (!dayMap[timeKey]) dayMap[timeKey] = [];
+        dayMap[timeKey].push(appt);
+      }
+      map[dayKey] = dayMap;
+    }
+    return map;
+  }, [weekDays, appointmentsByDay]);
+
   // Día activo de la tira mobile: si el día actualmente elegido ya no cae
   // dentro de la semana cargada (cambiaste de semana, o es la carga inicial)
   // se reubica en "hoy" si hoy está en esa semana, si no en el primer día.
@@ -4536,10 +4572,10 @@ const hasPendingClose = pendingCloseCount > 0;
                   <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
                     {mobileTab === "day" ? "Hoy" : "Esta semana"}
                   </span>
-                  <span className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                  <span className="whitespace-nowrap text-sm font-semibold" style={{ color: "var(--text-main)" }}>
                     {mobileTab === "day"
                       ? formatMobileDateLabel(mobileDayKeyToDate(mobileActiveDayKey || todayKey))
-                      : formatRangeTitle(weekStart, weekEnd)}
+                      : formatMobileWeekRangeLabel(weekStart, weekEnd)}
                   </span>
                 </button>
 
@@ -4629,7 +4665,193 @@ const hasPendingClose = pendingCloseCount > 0;
                 </div>
               ) : null}
 
-              {mobileTab === "week" ? null : !selectedBranchId ? (
+              {mobileTab === "day" ? (
+                <div className="flex items-center gap-1 rounded-lg border p-1 text-xs" style={{ borderColor: "var(--border-color)", background: "var(--agenda-calendar-header-bg)" }}>
+                  {(
+                    [
+                      ["hour", "Por hora"],
+                      ["staff", "Por profesional"],
+                    ] as [typeof mobileDayGroupBy, string][]
+                  ).map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setMobileDayGroupBy(mode)}
+                      className="h-8 flex-1 rounded-md font-semibold"
+                      style={
+                        mobileDayGroupBy === mode
+                          ? { background: "#3B82F6", color: "#fff" }
+                          : { background: "transparent", color: "var(--text-main)" }
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              {mobileTab === "week" ? (
+                !selectedBranchId ? (
+                  <div
+                    className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+                  >
+                    Selecciona una sucursal para ver la agenda.
+                  </div>
+                ) : loading ? (
+                  <div
+                    className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+                  >
+                    Cargando agenda...
+                  </div>
+                ) : (
+                  // Grid mobile real (NO el de escritorio) — 32px de columna de
+                  // horas + 7 columnas de día a partes iguales (`1fr` c/u), así
+                  // los 7 días siempre caben en el ancho de pantalla sin scroll
+                  // horizontal. Cada celda es un botón: vacía y tocable (abre
+                  // "Nueva reserva" con esa fecha/hora exacta), con 1 reserva
+                  // (color sólido según estado, sin texto — no entra legible a
+                  // este ancho), o con 2+ reservas simultáneas (mismo color +
+                  // badge numérico, abre la mini-lista ya existente).
+                  <div
+                    className="overflow-hidden rounded-xl border"
+                    style={{ borderColor: "var(--border-color)" }}
+                  >
+                    <div style={{ display: "grid", gridTemplateColumns: "32px repeat(7, 1fr)" }}>
+                      <div
+                        className="border-b border-r"
+                        style={{ borderColor: "var(--border-color)", background: "var(--agenda-calendar-header-bg)" }}
+                      />
+                      {weekDays.map((day) => {
+                        const dayKey = formatDateYYYYMMDD(day);
+                        const hasActive = (appointmentsByDay[dayKey] || []).some(
+                          (a) => a.status !== "canceled"
+                        );
+                        const isTodayDay = dayKey === todayKey;
+
+                        return (
+                          <div
+                            key={dayKey}
+                            className="flex flex-col items-center justify-center gap-0.5 border-b border-r py-1.5 last:border-r-0"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: isTodayDay ? "rgba(37,99,235,0.10)" : "var(--agenda-calendar-header-bg)",
+                            }}
+                          >
+                            <span
+                              className="text-[9px] font-semibold uppercase leading-none"
+                              style={{ color: isTodayDay ? "#3B82F6" : "var(--text-muted)" }}
+                            >
+                              {formatMobileShortWeekday(day)}
+                            </span>
+                            <span
+                              className="text-xs font-bold leading-none"
+                              style={{ color: isTodayDay ? "#3B82F6" : "var(--text-main)" }}
+                            >
+                              {day.getDate()}
+                            </span>
+                            <span
+                              className="h-1 w-1 rounded-full"
+                              style={{ background: hasActive ? "#3B82F6" : "transparent" }}
+                            />
+                          </div>
+                        );
+                      })}
+
+                      {calendarTimeSlots.map((time) => (
+                        <Fragment key={time}>
+                          <div
+                            className="flex items-start justify-end border-r border-t px-0.5 pt-0.5 text-[7px] font-medium leading-none"
+                            style={{
+                              height: 30,
+                              borderColor: "var(--border-color)",
+                              color: "var(--text-muted)",
+                              background: "var(--agenda-calendar-time-bg)",
+                            }}
+                          >
+                            {time}
+                          </div>
+                          {weekDays.map((day) => {
+                            const dayKey = formatDateYYYYMMDD(day);
+                            const cellAppointments =
+                              mobileWeekGridByDayTime[dayKey]?.[time] || [];
+                            const slotDate = new Date(`${dayKey}T${time}:00`);
+                            const isPast = slotDate.getTime() < Date.now();
+
+                            if (cellAppointments.length === 0) {
+                              return (
+                                <button
+                                  key={dayKey}
+                                  type="button"
+                                  disabled={isPast}
+                                  onClick={() =>
+                                    openFreeSlotActions(slotDate.toISOString(), selectedStaffId || null)
+                                  }
+                                  aria-label={`${formatMobileShortWeekday(day)} ${day.getDate()} · ${time}`}
+                                  className="border-r border-t last:border-r-0 disabled:cursor-default"
+                                  style={{
+                                    height: 30,
+                                    borderColor: "var(--border-color)",
+                                    background: isPast ? "var(--bg-soft)" : "transparent",
+                                  }}
+                                />
+                              );
+                            }
+
+                            const blockGroups = groupAppointmentsByBlock(cellAppointments);
+                            const first = blockGroups[0]?.[0];
+
+                            if (!first) {
+                              return (
+                                <div
+                                  key={dayKey}
+                                  className="border-r border-t last:border-r-0"
+                                  style={{ height: 30, borderColor: "var(--border-color)" }}
+                                />
+                              );
+                            }
+
+                            const cellColor = APPOINTMENT_STATUS_COLORS[getStatusColorKey(first)].hex;
+
+                            if (blockGroups.length > 1) {
+                              return (
+                                <button
+                                  key={dayKey}
+                                  type="button"
+                                  data-calendar-selectable="true"
+                                  onClick={(event) => openWeekGroupedAppointments(event, blockGroups)}
+                                  aria-label={`${blockGroups.length} citas a las ${time}`}
+                                  className="relative border-r border-t last:border-r-0"
+                                  style={{ height: 30, borderColor: "var(--border-color)", background: cellColor }}
+                                >
+                                  <span className="absolute inset-0 flex items-center justify-center">
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-black/45 text-[9px] font-bold leading-none text-white">
+                                      {blockGroups.length}
+                                    </span>
+                                  </span>
+                                </button>
+                              );
+                            }
+
+                            return (
+                              <button
+                                key={dayKey}
+                                type="button"
+                                data-calendar-selectable="true"
+                                onClick={() => handleSelectAppointment(first)}
+                                aria-label={`${isGroupAppointment(first) ? first.service_name_snapshot || "Actividad grupal" : first.customer_name} · ${time}`}
+                                className="border-r border-t last:border-r-0"
+                                style={{ height: 30, borderColor: "var(--border-color)", background: cellColor }}
+                              />
+                            );
+                          })}
+                        </Fragment>
+                      ))}
+                    </div>
+                  </div>
+                )
+              ) : !selectedBranchId ? (
                 <div
                   className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
                   style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
@@ -4707,6 +4929,93 @@ const hasPendingClose = pendingCloseCount > 0;
                     </div>
                   ) : null}
                 </div>
+              ) : mobileDayGroupBy === "staff" ? (
+                (appointmentsByDay[mobileActiveDayKey] || []).length === 0 ? (
+                  <div
+                    className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+                  >
+                    Sin reservas este día.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {(() => {
+                      const dayAppts = appointmentsByDay[mobileActiveDayKey] || [];
+                      const byStaff = new Map<string, Appointment[]>();
+                      for (const appt of dayAppts) {
+                        const key = appt.staff_id || "__none__";
+                        if (!byStaff.has(key)) byStaff.set(key, []);
+                        byStaff.get(key)!.push(appt);
+                      }
+                      const orderedIds = staffList.map((s) => s.id).filter((id) => byStaff.has(id));
+                      if (byStaff.has("__none__")) orderedIds.push("__none__");
+
+                      return orderedIds.map((staffId) => {
+                        const items = byStaff.get(staffId) || [];
+                        const isUnassigned = staffId === "__none__";
+                        const avatarUrl = isUnassigned ? "" : getStaffAvatar(staffId);
+                        const name = isUnassigned ? "Sin profesional asignado" : getStaffName(staffId);
+                        const blockGroups = groupAppointmentsByBlock(items);
+
+                        return (
+                          <div key={staffId}>
+                            <div className="mb-2 flex items-center gap-2">
+                              {avatarUrl ? (
+                                <img src={avatarUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                              ) : (
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-[10px] font-semibold text-blue-600">
+                                  {isUnassigned ? "-" : getStaffInitials(staffId)}
+                                </span>
+                              )}
+                              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                                {name}
+                              </p>
+                            </div>
+                            <div className="space-y-2">
+                              {blockGroups.map((group) => {
+                                const first = group[0];
+                                if (!first) return null;
+                                const isGroupSlot = isGroupAppointment(first);
+                                const activeCount = group.filter((a) => a.status !== "canceled").length;
+                                const capacity = Number(first.service_capacity || 0) || activeCount || group.length;
+
+                                return (
+                                  <button
+                                    key={getAppointmentGroupKey(first)}
+                                    type="button"
+                                    data-calendar-selectable="true"
+                                    onClick={() => handleSelectAppointment(first)}
+                                    className="flex w-full items-center gap-3 rounded-xl border p-3 text-left"
+                                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                                  >
+                                    <span className="w-12 shrink-0 text-sm font-bold" style={{ color: "var(--text-main)" }}>
+                                      {formatHour(first.start_at)}
+                                    </span>
+                                    <span
+                                      className="h-8 w-1 shrink-0 rounded-full"
+                                      style={{ background: APPOINTMENT_STATUS_COLORS[getStatusColorKey(first)].hex }}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                                        {isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name}
+                                      </p>
+                                      <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
+                                        {isGroupSlot ? `${activeCount}/${capacity} inscritos` : (first.service_name_snapshot || "Reserva")}
+                                      </p>
+                                    </div>
+                                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(first)}`}>
+                                      {getStatusLabel(first)}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )
               ) : (
                 <div className="space-y-2">
                   {groupAppointmentsByBlock(appointmentsByDay[mobileActiveDayKey] || []).map((group) => {
@@ -4812,7 +5121,7 @@ const hasPendingClose = pendingCloseCount > 0;
 
             {!selectedBranchId ? (
               <div
-                className={`${mobileTab === "week" ? "" : "hidden"} rounded-xl border border-dashed px-4 py-8 text-sm md:block`}
+                className="hidden rounded-xl border border-dashed px-4 py-8 text-sm md:block"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -4823,7 +5132,7 @@ const hasPendingClose = pendingCloseCount > 0;
               </div>
             ) : loading ? (
               <div
-                className={`${mobileTab === "week" ? "" : "hidden"} rounded-xl border border-dashed px-4 py-8 text-sm md:block`}
+                className="hidden rounded-xl border border-dashed px-4 py-8 text-sm md:block"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -5337,7 +5646,7 @@ const hasPendingClose = pendingCloseCount > 0;
                 </div>
               </div>
             ) : (
-              <div className={`${mobileTab === "week" ? "flex" : "hidden"} gap-3 overflow-x-auto pb-2 md:flex xl:grid xl:gap-0 xl:overflow-visible xl:pb-0 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))]`}>
+              <div className="hidden gap-3 overflow-x-auto pb-2 md:flex xl:grid xl:gap-0 xl:overflow-visible xl:pb-0 xl:grid-cols-[54px_repeat(7,minmax(0,1fr))]">
                 <div
                   className="sticky left-0 z-10 w-[54px] shrink-0 rounded-none border xl:static xl:z-auto xl:w-auto xl:shrink xl:rounded-l-none xl:rounded-r-none"
                   style={{
