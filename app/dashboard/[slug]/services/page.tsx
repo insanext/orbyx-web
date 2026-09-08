@@ -313,7 +313,7 @@ function SortableServiceRow({
         </div>
       </div>
       {readOnly ? null : (
-        <div className="flex gap-1.5 opacity-0 group-hover/row:opacity-100 transition-opacity flex-shrink-0">
+        <div className="flex gap-1.5 opacity-100 transition-opacity flex-shrink-0 md:opacity-0 md:group-hover/row:opacity-100">
           <button
             onClick={() => onEdit(service)}
             onPointerDown={(e) => e.stopPropagation()}
