@@ -493,9 +493,6 @@ const [photoUrl, setPhotoUrl] = useState("");
     [staff]
   );
 
-  const selectedBranchName =
-    branches.find((branch) => branch.id === selectedBranchId)?.name || "";
-
   const activeGoogleConnectionsByStaff = useMemo(() => {
     const map = new Map<string, CalendarConnectionItem>();
 
@@ -1907,34 +1904,25 @@ function validateStaffHours() {
             >
               Staff
             </h1>
-
-            <p
-              className="mt-0.5 max-w-2xl text-sm leading-5"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {selectedBranchName
-                ? `Administra el staff de la sucursal ${selectedBranchName}, sus servicios, horarios y días/horarios excepcionales.`
-                : "Administra las personas que atienden en tu negocio, sus servicios, horarios y días/horarios excepcionales."}
-            </p>
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 items-stretch">
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4 items-stretch">
             <div
-              className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+              className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
+                className="text-[9px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Total staff
               </p>
               <p
-                className="text-sm font-bold mt-0.5"
+                className="text-sm font-bold"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : staff.length}
@@ -1942,20 +1930,20 @@ function validateStaffHours() {
             </div>
 
             <div
-              className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+              className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
+                className="text-[9px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Activos
               </p>
               <p
-                className="text-sm font-bold mt-0.5"
+                className="text-sm font-bold"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : activeCount}
@@ -1963,20 +1951,20 @@ function validateStaffHours() {
             </div>
 
             <div
-              className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+              className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
+                className="text-[9px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Horario negocio
               </p>
               <p
-                className="text-sm font-bold mt-0.5"
+                className="text-sm font-bold"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : usingBusinessHoursCount}
@@ -1984,20 +1972,20 @@ function validateStaffHours() {
             </div>
 
             <div
-              className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+              className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
+                className="text-[9px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Límite del plan
               </p>
               <p
-                className="text-sm font-bold mt-0.5"
+                className="text-sm font-bold"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading || maxStaff == null ? "..." : `${activeCount}/${maxStaff}`}

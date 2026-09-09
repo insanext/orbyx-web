@@ -12,6 +12,7 @@ import {
   Layers3,
   Users,
   GitBranch,
+  ChevronDown,
   ChevronRight,
   ChevronUp,
   ChevronsLeft,
@@ -781,18 +782,21 @@ export default function DashboardLayout({
         >
           <Store size={14} className="shrink-0" style={{ color: textMuted }} />
           {showBranchSelector ? (
-            <select
-              value={selectedBranchId}
-              onChange={(e) => persistSelectedBranch(e.target.value)}
-              className="max-w-[160px] truncate bg-transparent text-sm font-semibold outline-none"
-              style={{ color: textMain }}
-            >
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                value={selectedBranchId}
+                onChange={(e) => persistSelectedBranch(e.target.value)}
+                className="max-w-[140px] truncate bg-transparent text-sm font-semibold outline-none"
+                style={{ color: textMain }}
+              >
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="shrink-0" style={{ color: textMuted }} />
+            </>
           ) : (
             <span className="max-w-[160px] truncate text-sm font-semibold" style={{ color: textMain }}>
               {selectedBranchName || branches[0]?.name || "Sucursal"}
@@ -1563,15 +1567,15 @@ export default function DashboardLayout({
               </div>
 
               <div className="flex-1 overflow-y-auto px-4 py-5">
-                <NavLinks onNavigate={() => setMobileMenuOpen(false)} />
-
-                {/* Accesos secundarios — abajo del todo a propósito, no son
-                    lo primero que se debe ver al abrir el panel. El widget
-                    de estado de cuenta y "copiar enlace" solo viven acá en
-                    <768px (el header ya los oculta ahí, ver `hidden md:...`
-                    más arriba); el badge de plan se sacó de acá por
-                    completo — ahora vive siempre visible en el header. */}
-                <div className="mt-5 flex flex-wrap items-center gap-2 border-t pt-4" style={{ borderColor: sidebarBorder }}>
+                {/* "Principal" (sucursal, se ve como selector con flechita) y
+                    "Mi cuenta" (widget de estado, se ve como botón) van
+                    arriba del todo — son los 2 accesos que Camilo pidió subir
+                    junto a la navegación, en vez de quedar al fondo cerca de
+                    Cerrar sesión. El widget de estado solo vive acá en
+                    <768px (el header ya lo muestra desde esa medida). El
+                    badge de plan y "copiar enlace" se sacaron de acá por
+                    completo — ahora viven siempre visibles en el header. */}
+                <div className="mb-4 flex flex-wrap items-center gap-2 border-b pb-4" style={{ borderColor: sidebarBorder }}>
                   <BranchSelectorBlock compact />
                   {tenantId ? (
                     <div className="md:hidden">
@@ -1583,22 +1587,9 @@ export default function DashboardLayout({
                       />
                     </div>
                   ) : null}
-                  {slug ? (
-                    <button
-                      type="button"
-                      onClick={copyPublicUrl}
-                      className="inline-flex h-7 items-center justify-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition md:hidden"
-                      style={{
-                        background: copiedPublicUrl ? "rgba(16,185,129,0.12)" : softBg,
-                        borderColor: copiedPublicUrl ? "rgba(16,185,129,0.45)" : sidebarBorder,
-                        color: copiedPublicUrl ? "rgb(16 185 129)" : textMain,
-                      }}
-                    >
-                      {copiedPublicUrl ? <Check size={13} /> : <Link2 size={13} />}
-                      {copiedPublicUrl ? "URL copiada" : `orbyx.cl/${slug}`}
-                    </button>
-                  ) : null}
                 </div>
+
+                <NavLinks onNavigate={() => setMobileMenuOpen(false)} />
               </div>
 
               <div className="space-y-2 border-t p-4" style={{ borderColor: sidebarBorder }}>
@@ -1693,7 +1684,7 @@ export default function DashboardLayout({
                     onClick={copyPublicUrl}
                     aria-label="Copiar URL pública"
                     title={`Copiar ${publicUrl}`}
-                    className="hidden h-9 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-xs font-semibold transition md:inline-flex sm:h-11 sm:px-3 sm:text-sm"
+                    className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-xs font-semibold transition sm:h-11 sm:px-3 sm:text-sm"
                     style={{
                       background: copiedPublicUrl ? "rgba(16,185,129,0.12)" : softBg,
                       borderColor: copiedPublicUrl ? "rgba(16,185,129,0.45)" : sidebarBorder,

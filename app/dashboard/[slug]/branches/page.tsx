@@ -1115,18 +1115,14 @@ export default function BranchesPage() {
             </div>
 
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-              <div className="grid gap-2 sm:grid-cols-3 items-stretch">
-                <div className="rounded-lg border px-3 py-2.5 flex flex-col gap-1" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
-                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Total sucursales</p>
-                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{branches.length}</p>
+              <div className="grid grid-cols-2 gap-2 items-stretch">
+                <div className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Total sucursales</p>
+                  <p className="text-sm font-bold" style={{ color: "var(--text-main)" }}>{branches.length}</p>
                 </div>
-                <div className="rounded-lg border px-3 py-2.5 flex flex-col gap-1" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
-                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Disponibles en plan</p>
-                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{maxBranches == null ? "..." : `${Math.max(maxBranches - activeBranchesCount, 0)} de ${maxBranches}`}</p>
-                </div>
-                <div className="rounded-lg border px-3 py-2.5 flex flex-col gap-1" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
-                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Plan actual</p>
-                  <p className="text-sm font-bold mt-0.5" style={{ color: "var(--text-main)" }}>{planLabel} · {activeBranchesCount}/{maxBranches ?? "..."}</p>
+                <div className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5" style={{ borderColor: "rgba(59,130,246,0.20)", background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] leading-tight" style={{ color: "var(--text-muted)" }}>Utilizadas</p>
+                  <p className="text-sm font-bold" style={{ color: "var(--text-main)" }}>{maxBranches == null ? "..." : `${activeBranchesCount} de ${maxBranches}`}</p>
                 </div>
               </div>
 
@@ -1264,7 +1260,7 @@ export default function BranchesPage() {
               style={{ borderColor: "var(--border-color)" }}
             >
               <div
-                className="hidden min-w-[1000px] grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.65fr] border-b px-4 py-3 text-xs font-semibold md:grid"
+                className="hidden grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.65fr] border-b px-4 py-3 text-xs font-semibold md:grid md:min-w-[1000px]"
                 style={{
                   borderColor: "var(--border-color)",
                   color: "var(--text-muted)",
@@ -1288,7 +1284,7 @@ export default function BranchesPage() {
                 return (
                   <div
                     key={branch.id}
-                    className="grid min-w-[1000px] gap-4 border-b p-4 transition last:border-b-0 md:grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.65fr] md:items-center"
+                    className="grid gap-4 border-b p-4 transition last:border-b-0 md:min-w-[1000px] md:grid-cols-[1.35fr_0.65fr_1.1fr_0.85fr_0.95fr_0.55fr_0.55fr_0.65fr] md:items-center"
                     style={{
                       borderColor: "var(--border-color)",
                       background: isEditing

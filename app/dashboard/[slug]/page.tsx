@@ -159,6 +159,29 @@ function formatDateCL(value: string | null | undefined) {
   return `${d}-${m}-${y}`;
 }
 
+// Rango compacto de una sola línea para el header de Indicadores — mismo
+// criterio que formatMobileWeekRangeLabel en Agenda.
+function formatCompactRangeLabel(fromValue: string, toValue: string) {
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const from = new Date(`${fromValue.slice(0, 10)}T12:00:00`);
+  const to = new Date(`${toValue.slice(0, 10)}T12:00:00`);
+  const toDay = to.getDate();
+  const toYear = to.getFullYear();
+  const toMonth = cap(to.toLocaleDateString("es-CL", { month: "short" }).replace(".", ""));
+
+  if (fromValue.slice(0, 10) === toValue.slice(0, 10)) {
+    return `${toDay} ${toMonth} ${toYear}`;
+  }
+
+  const fromDay = from.getDate();
+  if (from.getMonth() === to.getMonth() && from.getFullYear() === to.getFullYear()) {
+    return `${fromDay}–${toDay} ${toMonth} ${toYear}`;
+  }
+
+  const fromMonth = cap(from.toLocaleDateString("es-CL", { month: "short" }).replace(".", ""));
+  return `${fromDay} ${fromMonth} – ${toDay} ${toMonth} ${toYear}`;
+}
+
 // Umbral heurístico para colorear alertas en bloques que no tienen un color
 // fijo de categoría propio (ej. ocupación de cupos grupales) — no es un
 // benchmark de industria, solo un corte razonable para llamar la atención.
@@ -1037,7 +1060,7 @@ export default function DashboardHomePage() {
       <PageHeader
         eyebrow="Análisis"
         title="Indicadores"
-        description={`Panel de control del negocio · ${formatDateCL(range.from)} al ${formatDateCL(range.to)}`}
+        description={formatCompactRangeLabel(range.from, range.to)}
         icon={<BarChart3 className="h-4 w-4" />}
         actions={
           <div className="flex flex-wrap items-center gap-2">

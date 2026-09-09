@@ -4,7 +4,7 @@ import { CSSProperties, Suspense, useEffect, useMemo, useRef, useState } from "r
 import { apiFetch } from "@/lib/api";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ChevronRight, CreditCard } from "lucide-react";
+import { ChevronRight, CreditCard, Info, X } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { AddonManager } from "../../../../components/addons/AddonManager";
 import { cycleTotalPrice, getPlanLabel, PLAN_PRICES_ALL, type PlanSlug } from "@/lib/plans";
@@ -459,6 +459,7 @@ function BillingPageInner() {
   const [scheduledPlanSlug, setScheduledPlanSlug] = useState<PlanSlug | null>(null);
   const [scheduledChangeAt, setScheduledChangeAt] = useState<string | null>(null);
   const [pendingChangeType, setPendingChangeType] = useState<string | null>(null);
+  const [showScheduledChangeInfo, setShowScheduledChangeInfo] = useState(false);
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [staff, setStaff] = useState<StaffItem[]>([]);
@@ -1246,22 +1247,22 @@ function BillingPageInner() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-3 gap-2">
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-xl border px-2.5 py-1.5"
               style={{
                 borderColor: "rgba(34,197,94,0.22)",
                 background: "rgba(255,255,255,0.08)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[9px] font-semibold uppercase tracking-[0.1em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Plan actual
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="mt-0.5 text-sm font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : planLabel}
@@ -1269,20 +1270,20 @@ function BillingPageInner() {
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="rounded-xl border px-2.5 py-1.5"
               style={{
                 borderColor: "rgba(34,197,94,0.22)",
                 background: "rgba(255,255,255,0.08)",
               }}
             >
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                className="text-[9px] font-semibold uppercase tracking-[0.1em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
-                Próxima renovación
+                Próx. renovación
               </p>
               <p
-                className="mt-2 text-sm font-semibold"
+                className="mt-0.5 text-sm font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : formatDate(billingCycleEnd)}
@@ -1290,45 +1291,71 @@ function BillingPageInner() {
             </div>
 
             <div
-              className="rounded-2xl border px-4 py-3"
+              className="relative rounded-xl border px-2.5 py-1.5"
               style={{
                 borderColor: "rgba(34,197,94,0.22)",
                 background: "rgba(255,255,255,0.08)",
               }}
             >
+              <div className="flex items-center gap-1">
+                <p
+                  className="text-[9px] font-semibold uppercase tracking-[0.1em] leading-tight"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Cambio prog.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowScheduledChangeInfo((prev) => !prev)}
+                  aria-label="Qué significa Cambio programado"
+                  className="shrink-0"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  <Info className="h-3 w-3" />
+                </button>
+              </div>
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Cambio programado
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
+                className="mt-0.5 text-sm font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : scheduledPlanLabel || "Sin cambio"}
               </p>
-            </div>
 
-            <div
-              className="rounded-2xl border px-4 py-3"
-              style={{
-                borderColor: "rgba(34,197,94,0.22)",
-                background: "rgba(255,255,255,0.08)",
-              }}
-            >
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Problemas detectados
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : hasAnyExcess ? "Sí" : "No"}
-              </p>
+              {showScheduledChangeInfo ? (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Cerrar"
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowScheduledChangeInfo(false)}
+                  />
+                  <div
+                    className="absolute left-0 top-full z-50 mt-1.5 w-[min(15rem,calc(100vw-2.5rem))] rounded-xl border p-3 text-xs shadow-lg"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <p className="font-semibold">Cambio programado</p>
+                      <button
+                        type="button"
+                        aria-label="Cerrar"
+                        onClick={() => setShowScheduledChangeInfo(false)}
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <p style={{ color: "var(--text-muted)" }}>
+                      Si programaste un cambio de plan (upgrade o downgrade), acá se muestra a qué plan pasarás.
+                      El cambio se aplica recién en tu próxima renovación — hasta esa fecha sigues con tu plan y
+                      límites actuales.
+                    </p>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
