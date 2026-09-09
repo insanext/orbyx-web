@@ -2,7 +2,6 @@
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Layers3 } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -256,64 +255,66 @@ function SortableServiceRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 px-3 py-2.5 border-b border-blue-900/10 last:border-b-0 hover:bg-blue-950/20 transition-colors group/row cursor-grab active:cursor-grabbing touch-none"
+      className="flex flex-col gap-2 px-3 py-2.5 border-b border-blue-900/10 last:border-b-0 hover:bg-blue-950/20 transition-colors group/row cursor-grab active:cursor-grabbing touch-none md:flex-row md:items-center"
       {...attributes}
       {...listeners}
     >
-      <span className="text-blue-900/40 flex-shrink-0" aria-hidden="true">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-        >
-          <circle cx="9" cy="6" r="1.5" />
-          <circle cx="15" cy="6" r="1.5" />
-          <circle cx="9" cy="12" r="1.5" />
-          <circle cx="15" cy="12" r="1.5" />
-          <circle cx="9" cy="18" r="1.5" />
-          <circle cx="15" cy="18" r="1.5" />
-        </svg>
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate" style={{ color: "var(--text-main)" }}>
-          {service.name}
-        </p>
-        <div className="flex gap-2 flex-wrap mt-0.5">
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {service.duration_minutes} min
-          </span>
-          {service.price ? (
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="text-blue-900/40 flex-shrink-0" aria-hidden="true">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <circle cx="9" cy="6" r="1.5" />
+            <circle cx="15" cy="6" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" />
+            <circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="18" r="1.5" />
+            <circle cx="15" cy="18" r="1.5" />
+          </svg>
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate" style={{ color: "var(--text-main)" }}>
+            {service.name}
+          </p>
+          <div className="flex gap-2 flex-wrap mt-0.5">
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              ${Number(service.price).toLocaleString("es-CL")}
+              {service.duration_minutes} min
             </span>
-          ) : (
-            <span className="text-xs opacity-40" style={{ color: "var(--text-muted)" }}>
-              Sin precio
-            </span>
-          )}
-          {service.is_group && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
-              Grupal · cap {service.capacity}
-            </span>
-          )}
-          {!service.active && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/20">
-              Inactivo
-            </span>
-          )}
-          {!hasStaff && (
-            <span
-              className="text-[10px] px-1.5 py-0.5"
-              style={{ background: "transparent", border: "1.5px solid #d97706", color: "#d97706", borderRadius: 4 }}
-            >
-              ⚠ Sin profesional — no visible en tu página pública
-            </span>
-          )}
+            {service.price ? (
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                ${Number(service.price).toLocaleString("es-CL")}
+              </span>
+            ) : (
+              <span className="text-xs opacity-40" style={{ color: "var(--text-muted)" }}>
+                Sin precio
+              </span>
+            )}
+            {service.is_group && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                Grupal · cap {service.capacity}
+              </span>
+            )}
+            {!service.active && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/20">
+                Inactivo
+              </span>
+            )}
+            {!hasStaff && (
+              <span
+                className="text-[10px] px-1.5 py-0.5"
+                style={{ background: "transparent", border: "1.5px solid #d97706", color: "#d97706", borderRadius: 4 }}
+              >
+                ⚠ Sin profesional — no visible en tu página pública
+              </span>
+            )}
+          </div>
         </div>
       </div>
       {readOnly ? null : (
-        <div className="flex gap-1.5 opacity-100 transition-opacity flex-shrink-0 md:opacity-0 md:group-hover/row:opacity-100">
+        <div className="flex gap-1.5 pl-6 opacity-100 transition-opacity flex-shrink-0 md:pl-0 md:opacity-0 md:group-hover/row:opacity-100">
           <button
             onClick={() => onEdit(service)}
             onPointerDown={(e) => e.stopPropagation()}
@@ -408,8 +409,6 @@ const [editForm, setEditForm] = useState({
   customer_instructions: "",
 });
 
-  const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
-
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
   }, [slug]);
@@ -426,9 +425,6 @@ const [editForm, setEditForm] = useState({
 const isGroupBookingBusiness = businessCategory === "group_booking";
 
   const activeServicesCount = services.filter((service) => service.active).length;
-  const servicesWithDescriptionCount = services.filter(
-    (service) => String(service.description || "").trim() !== ""
-  ).length;
 
   const excessServices = Math.max(0, activeServicesCount - maxServices);
   const hasExcess = excessServices > 0;
@@ -1572,38 +1568,24 @@ customer_instructions: editForm.customer_instructions.trim() || null,
             </p>
             </div>
 
-            <div className="mt-4">
-              <Link
-                href={publicUrl}
-                target="_blank"
-                className="orbyx-services-energy orbyx-services-hero-link inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
-                style={{
-                  borderColor: "rgba(59,130,246,0.24)",
-                  background: "rgba(255,255,255,0.08)",
-                  color: "var(--text-main)",
-                }}
-              >
-                Ver página pública
-              </Link>
-            </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 items-stretch">
+          <div className="grid grid-cols-2 gap-2 items-stretch">
             <div
-              className="orbyx-services-hero-stat rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+              className="orbyx-services-hero-stat rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
+                className="text-[9px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Total servicios
               </p>
               <p
-                className="text-sm font-bold mt-0.5"
+                className="text-sm font-bold"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : services.length}
@@ -1611,65 +1593,23 @@ customer_instructions: editForm.customer_instructions.trim() || null,
             </div>
 
             <div
-              className="orbyx-services-hero-stat rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+              className="orbyx-services-hero-stat rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
               }}
             >
               <p
-                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
+                className="text-[9px] font-medium uppercase tracking-[0.08em] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 Activos
               </p>
               <p
-                className="text-sm font-bold mt-0.5"
+                className="text-sm font-bold"
                 style={{ color: "var(--text-main)" }}
               >
                 {loading ? "..." : activeServicesCount}
-              </p>
-            </div>
-
-            <div
-              className="orbyx-services-hero-stat rounded-lg border px-3 py-2.5 flex flex-col gap-1"
-              style={{
-                borderColor: "rgba(59,130,246,0.20)",
-                background: "rgba(255,255,255,0.06)",
-              }}
-            >
-              <p
-                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Con descripción
-              </p>
-              <p
-                className="text-sm font-bold mt-0.5"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : servicesWithDescriptionCount}
-              </p>
-            </div>
-
-            <div
-              className="orbyx-services-hero-stat rounded-lg border px-3 py-2.5 flex flex-col gap-1"
-              style={{
-                borderColor: "rgba(59,130,246,0.20)",
-                background: "rgba(255,255,255,0.06)",
-              }}
-            >
-              <p
-                className="text-[10px] font-medium uppercase tracking-[0.08em] leading-tight"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Servicios activos
-              </p>
-              <p
-                className="text-sm font-bold mt-0.5"
-                style={{ color: "var(--text-main)" }}
-              >
-                {loading ? "..." : `${activeServicesCount} · Sin límite`}
               </p>
             </div>
           </div>

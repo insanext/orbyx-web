@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { Search, UsersRound } from "lucide-react";
+import { Search, SlidersHorizontal, UsersRound, X } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
 
@@ -147,6 +147,7 @@ export default function CustomersPage() {
   const [search, setSearch] = useState("");
   const [segment, setSegment] = useState("all");
   const [inactiveDays, setInactiveDays] = useState("60");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [summary, setSummary] = useState({
     total: 0,
@@ -216,6 +217,12 @@ export default function CustomersPage() {
     return SEGMENT_OPTIONS.find((i) => i.key === segment)?.label || "Todos";
   }, [segment]);
 
+  const mobileActiveFilterCount = [
+    searchInput.trim().length > 0,
+    segment !== "all",
+    inactiveDays !== "60",
+  ].filter(Boolean).length;
+
   return (
     <div className="orbyx-customers-page space-y-6">
       <PageHeader
@@ -229,9 +236,138 @@ export default function CustomersPage() {
         }
       />
 
-      {/* FILTROS */}
+      {/* FILTROS — mobile: colapsados detrás de un botón "Filtros" (mismo
+          patrón que Agenda), igual que la sección completa de abajo pero
+          en una hoja inferior en vez de siempre expandida. */}
+      <div className="flex flex-wrap items-center gap-2 md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileFiltersOpen(true)}
+          className="relative flex h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold"
+          style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)", color: "var(--cust-ink)" }}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          Filtros
+          {mobileActiveFilterCount > 0 ? (
+            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-bold text-white">
+              {mobileActiveFilterCount}
+            </span>
+          ) : null}
+        </button>
+        {(isVeterinaria || isClinica) && canEditClientes ? (
+          <button
+            type="button"
+            onClick={() => router.push(`/dashboard/${slug}/customers/new`)}
+            className="ml-auto flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white transition hover:opacity-90"
+            style={{ background: "var(--cust-blue-solid)" }}
+          >
+            <span className="text-base leading-none">＋</span>
+            Crear ficha
+          </button>
+        ) : null}
+      </div>
+
+      {mobileFiltersOpen ? (
+        <div className="fixed inset-0 z-[95] flex items-end justify-center md:hidden">
+          <button
+            type="button"
+            aria-label="Cerrar filtros"
+            className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+          <div
+            className="relative max-h-[85vh] w-full overflow-y-auto rounded-t-3xl border border-b-0 p-4 pb-6"
+            style={{ background: "var(--cust-card-bg)", borderColor: "var(--cust-border)" }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold" style={{ color: "var(--cust-ink)" }}>
+                Filtros
+              </p>
+              <button
+                type="button"
+                aria-label="Cerrar"
+                onClick={() => setMobileFiltersOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full"
+                style={{ color: "var(--cust-muted)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="relative mb-3">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+                style={{ color: "var(--cust-muted)" }}
+              />
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Buscar cliente..."
+                className="w-full rounded-xl border pl-9 pr-4 py-2.5 text-sm outline-none transition"
+                style={{
+                  borderColor: "var(--cust-border)",
+                  background: "var(--cust-soft-bg)",
+                  color: "var(--cust-ink)",
+                }}
+              />
+            </div>
+
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {SEGMENT_OPTIONS.map((o) => {
+                const active = segment === o.key;
+                return (
+                  <button
+                    key={o.key}
+                    onClick={() => setSegment(o.key)}
+                    className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
+                    style={
+                      active
+                        ? { background: "var(--cust-blue-solid)", borderColor: "var(--cust-blue-solid)", color: "#ffffff" }
+                        : { background: "var(--cust-card-bg)", borderColor: "var(--cust-pill-border)", color: "var(--cust-ink)" }
+                    }
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <select
+              value={inactiveDays}
+              onChange={(e) => setInactiveDays(e.target.value)}
+              className="mb-3 w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition"
+              style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
+            >
+              <option value="30">Inactivos: 30 días</option>
+              <option value="60">Inactivos: 60 días</option>
+              <option value="90">Inactivos: 90 días</option>
+              <option value="120">Inactivos: 120 días</option>
+            </select>
+
+            <p className="mb-4 text-xs" style={{ color: "var(--cust-muted)" }}>
+              Viendo: <b style={{ color: "var(--cust-ink)" }}>{activeSegmentLabel}</b>
+              {search && (
+                <>
+                  {" "}
+                  · <span className="italic">{search}</span>
+                </>
+              )}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(false)}
+              className="flex h-11 w-full items-center justify-center rounded-2xl text-sm font-semibold text-white"
+              style={{ background: "var(--cust-blue-solid)" }}
+            >
+              Ver resultados
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <section
-        className="rounded-2xl border p-4 space-y-4"
+        className="hidden rounded-2xl border p-4 space-y-4 md:block"
         style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -371,46 +507,32 @@ export default function CustomersPage() {
                   <SegmentBadge segment={c.segment} />
                 </div>
 
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
-                      Contacto
+                <div className="mt-3">
+                  <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
+                    Contacto
+                  </p>
+                  <p className="mt-0.5 break-words text-xs" style={{ color: "var(--cust-ink)" }}>
+                    {c.email || c.phone || "Sin contacto"}
+                  </p>
+                  {c.email && c.phone && (
+                    <p className="break-words text-xs" style={{ color: "var(--cust-muted)" }}>
+                      {c.phone}
                     </p>
-                    <p className="mt-0.5 break-words text-xs" style={{ color: "var(--cust-ink)" }}>
-                      {c.email || c.phone || "Sin contacto"}
-                    </p>
-                    {c.email && c.phone && (
-                      <p className="break-words text-xs" style={{ color: "var(--cust-muted)" }}>
-                        {c.phone}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg px-3 py-2" style={{ background: "var(--cust-soft-bg)" }}>
-                      <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
-                        Visitas
-                      </p>
-                      <p className="mt-0.5 text-sm font-bold" style={{ color: "var(--cust-blue-solid)" }}>
-                        {c.total_visits}
-                      </p>
-                    </div>
-                    <div className="rounded-lg px-3 py-2" style={{ background: "var(--cust-soft-bg)" }}>
-                      <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
-                        Última visita
-                      </p>
-                      <p className="mt-0.5 text-xs font-medium" style={{ color: "var(--cust-ink)" }}>
-                        {formatDate(c.last_visit_at)}
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
+                {/* Visitas/Última visita se sacaron de la tarjeta — quedan
+                    solo en el detalle del cliente, la tarjeta muestra lo
+                    esencial (nombre + contacto). */}
                 <button
                   type="button"
                   onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
                   className="mt-4 w-full rounded-xl border px-4 py-2 text-sm font-medium transition"
-                  style={{ borderColor: "var(--cust-border)", color: "var(--cust-ink)" }}
+                  style={{
+                    background: "var(--cust-soft-bg)",
+                    borderColor: "var(--cust-border)",
+                    color: "var(--cust-ink)",
+                  }}
                 >
                   Ver detalle →
                 </button>

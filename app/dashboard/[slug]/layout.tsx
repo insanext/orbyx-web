@@ -24,7 +24,6 @@ import {
   Menu,
   Settings,
   Store,
-  Crown,
   Bell,
   X,
   Eye,
@@ -1052,6 +1051,28 @@ export default function DashboardLayout({
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+
+        .orbyx-plan-badge {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .orbyx-plan-badge::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -60%;
+          width: 40%;
+          height: 100%;
+          background: linear-gradient(115deg, transparent, rgba(255,255,255,0.75), transparent);
+          animation: orbyxPlanShine 3.2s ease-in-out infinite;
+        }
+
+        @keyframes orbyxPlanShine {
+          0% { left: -60%; }
+          55% { left: 130%; }
+          100% { left: 130%; }
+        }
       `}</style>
       <div className="flex min-h-screen">
         <aside
@@ -1639,8 +1660,16 @@ export default function DashboardLayout({
                   >
                     {businessName || slug || "Gestión del negocio"}
                   </h2>
-                  <span className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold sm:h-8 sm:gap-2 sm:px-3 sm:text-sm" style={{ borderColor: "rgba(139,92,246,0.48)", background: "rgba(139,92,246,0.14)", color: "rgb(196 181 253)" }}>
-                    <Crown size={15} />
+                  <span
+                    className="orbyx-plan-badge inline-flex h-6 shrink-0 items-center rounded-md border px-2 text-[10px] font-semibold sm:h-8 sm:px-3 sm:text-sm"
+                    style={{
+                      borderColor: isNocturno ? "rgba(203,213,225,0.45)" : "rgba(100,116,139,0.35)",
+                      background: isNocturno
+                        ? "linear-gradient(135deg, #64748b, #cbd5e1 45%, #94a3b8 55%, #e2e8f0)"
+                        : "linear-gradient(135deg, #94a3b8, #f1f5f9 45%, #cbd5e1 55%, #f8fafc)",
+                      color: isNocturno ? "#0f172a" : "#334155",
+                    }}
+                  >
                     Plan {planLabel}
                   </span>
                   {tenantId ? (

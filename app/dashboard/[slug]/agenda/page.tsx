@@ -4802,6 +4802,22 @@ const hasPendingClose = pendingCloseCount > 0;
                             const slotDate = new Date(`${dayKey}T${time}:00`);
                             const isPast = slotDate.getTime() < Date.now();
                             const isFlashing = flashCellKey === cellKey;
+                            // Columna de "hoy": borde izq/der reforzado en cada
+                            // celda de la columna para que la línea se vea
+                            // continua de arriba a abajo — nunca toca el
+                            // `background` (que sigue siendo el color de
+                            // estado de la reserva, o el zebra/isPast normal).
+                            const isTodayDay = dayKey === todayKey;
+                            const todayColumnBorder: CSSProperties = isTodayDay
+                              ? {
+                                  borderLeftWidth: 2,
+                                  borderLeftStyle: "solid",
+                                  borderLeftColor: "#3B82F6",
+                                  borderRightWidth: 2,
+                                  borderRightStyle: "solid",
+                                  borderRightColor: "#3B82F6",
+                                }
+                              : {};
 
                             if (cellAppointments.length === 0) {
                               return (
@@ -4830,6 +4846,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                       ? "var(--bg-soft)"
                                       : zebraBg,
                                     transition: "background 120ms ease-out",
+                                    ...todayColumnBorder,
                                   }}
                                 />
                               );
@@ -4849,6 +4866,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                     borderTopWidth: topBorderWidth,
                                     borderTopStyle: "solid",
                                     borderTopColor: "var(--border-color)",
+                                    ...todayColumnBorder,
                                   }}
                                 />
                               );
@@ -4872,6 +4890,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                     borderTopStyle: "solid",
                                     borderTopColor: "var(--border-color)",
                                     background: cellColor,
+                                    ...todayColumnBorder,
                                   }}
                                 >
                                   <span className="absolute inset-0 flex items-center justify-center">
@@ -4898,6 +4917,7 @@ const hasPendingClose = pendingCloseCount > 0;
                                   borderTopStyle: "solid",
                                   borderTopColor: "var(--border-color)",
                                   background: cellColor,
+                                  ...todayColumnBorder,
                                 }}
                               />
                             );
