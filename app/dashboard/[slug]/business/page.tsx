@@ -8,6 +8,9 @@ import { Panel } from "../../../../components/dashboard/panel";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 import { usePermissions } from "../../../../lib/permissions-context";
 
+// Debe coincidir con el límite de validateText("description", { maxLen: 1000 }) en server.js (PATCH /tenants/:id)
+const BUSINESS_DESCRIPTION_MAX_LENGTH = 1000;
+
 type BookingField = {
   key: string;
   label: string;
@@ -2241,19 +2244,23 @@ function updateHourByIndex(
 
         <div>
           <label
-            className="mb-2 block text-sm font-medium"
+            className="mb-2 flex items-center justify-between text-sm font-medium"
             style={{ color: "var(--text-main)" }}
           >
-            Descripción del negocio
+            <span>Descripción del negocio</span>
+            <span className="text-xs font-normal" style={{ color: "var(--text-muted)" }}>
+              {form.description.length}/{BUSINESS_DESCRIPTION_MAX_LENGTH}
+            </span>
           </label>
           <textarea
             value={form.description}
             onChange={(e) =>
               setForm((prev) => ({
                 ...prev,
-                description: e.target.value,
+                description: e.target.value.slice(0, BUSINESS_DESCRIPTION_MAX_LENGTH),
               }))
             }
+            maxLength={BUSINESS_DESCRIPTION_MAX_LENGTH}
             placeholder="Describe tu negocio, especialidad, estilo de atención y lo que te diferencia."
             className={textareaClass}
             style={{
