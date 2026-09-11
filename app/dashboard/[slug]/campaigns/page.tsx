@@ -1024,7 +1024,7 @@ function SoftChip({
       type="button"
       onClick={onClick}
       aria-current={active ? "true" : undefined}
-      className={`cursor-pointer rounded-xl border px-4 py-2 text-xs font-semibold transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
+      className={`cursor-pointer rounded-xl border px-4 py-2 text-xs font-semibold transition-colors duration-150 hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
         active ? "" : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
       }`}
       style={{

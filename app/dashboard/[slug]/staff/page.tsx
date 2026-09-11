@@ -2099,7 +2099,7 @@ function validateStaffHours() {
                         key={section.id}
                         type="button"
                         onClick={() => setActiveFormSection(section.id)}
-                        className={`inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
+                        className={`inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition-colors hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
                           active ? "" : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
                         }`}
                         style={{
