@@ -3,6 +3,7 @@ import clsx from "clsx";
 type PanelProps = {
   title?: string;
   description?: string;
+  headerAction?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 };
@@ -10,6 +11,7 @@ type PanelProps = {
 export function Panel({
   title,
   description,
+  headerAction,
   children,
   className,
 }: PanelProps) {
@@ -23,27 +25,33 @@ export function Panel({
     >
       {title || description ? (
         <div
-          className="mb-5 border-b pb-4"
+          className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b pb-4"
           style={{
             borderColor: "var(--border-color)",
           }}
         >
-          {title ? (
-            <h3
-              className="text-base font-semibold tracking-tight"
-              style={{ color: "var(--text-main)" }}
-            >
-              {title}
-            </h3>
-          ) : null}
+          <div>
+            {title ? (
+              <h3
+                className="text-base font-semibold tracking-tight"
+                style={{ color: "var(--text-main)" }}
+              >
+                {title}
+              </h3>
+            ) : null}
 
-          {description ? (
-            <p
-              className="mt-1 text-sm leading-6"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {description}
-            </p>
+            {description ? (
+              <p
+                className="mt-1 text-sm leading-6"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {description}
+              </p>
+            ) : null}
+          </div>
+
+          {headerAction ? (
+            <div className="flex shrink-0 flex-wrap gap-2">{headerAction}</div>
           ) : null}
         </div>
       ) : null}

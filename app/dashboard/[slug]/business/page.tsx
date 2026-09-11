@@ -807,6 +807,32 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
     ];
   }
 
+  // Solo modifica el estado local del formulario (igual que editar un bloque a
+  // mano) — el guardado real sigue pasando por "Guardar horario global".
+  function resetBusinessHoursToDefault() {
+    setBusinessHours(getDefaultHours());
+  }
+
+  // Sobrescribe los bloques únicamente de los días ya marcados como Activos
+  // con un solo bloque estándar 08:00-18:00. No activa días Inactivos.
+  function fillActiveDaysWithStandardHours() {
+    setBusinessHours((prev) => {
+      const activeDays = new Set(
+        prev.filter((b) => b.enabled).map((b) => b.day_of_week)
+      );
+      const untouched = prev.filter((b) => !activeDays.has(b.day_of_week));
+      const standardBlocks: BusinessHour[] = Array.from(activeDays).map(
+        (day_of_week) => ({
+          day_of_week,
+          enabled: true,
+          start_time: "08:00",
+          end_time: "18:00",
+        })
+      );
+      return [...untouched, ...standardBlocks];
+    });
+  }
+
   async function loadBookingFields() {
     try {
       const res = await apiFetch(
@@ -3547,7 +3573,37 @@ function updateHourByIndex(
   <Panel
     title="Horario global del negocio"
     description="Se aplicará a todas las sucursales que usen horario global."
-    className="bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+    className="!rounded-xl bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+    headerAction={
+      <>
+        <button
+          type="button"
+          onClick={resetBusinessHoursToDefault}
+          disabled={!canEditNegocio}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+            color: "var(--text-main)",
+          }}
+        >
+          ↺ Restablecer por defecto
+        </button>
+        <button
+          type="button"
+          onClick={fillActiveDaysWithStandardHours}
+          disabled={!canEditNegocio}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            borderColor: "rgba(37,99,235,0.32)",
+            background: "rgba(37,99,235,0.08)",
+            color: "rgb(37 99 235)",
+          }}
+        >
+          Rellenar días activos 08:00–18:00
+        </button>
+      </>
+    }
   >
     <div className="space-y-3">
       {displayOrder.map((dayIndex) => {
@@ -3560,7 +3616,7 @@ function updateHourByIndex(
             return (
               <div
                 key={dayIndex}
-                className="grid gap-3 rounded-2xl border p-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-start"
+                className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[150px_minmax(0,1fr)_auto] sm:items-center"
                 style={{
                   borderColor: enabled
                     ? "rgba(37,99,235,0.22)"
@@ -3570,60 +3626,25 @@ function updateHourByIndex(
                     : "var(--bg-card)",
                 }}
               >
-                <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-start">
-                  <div>
-                    <p
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--text-main)" }}
-                    >
-                      {days[dayIndex]}
-                    </p>
-                    <p
-                      className="mt-0.5 text-xs"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {enabled ? `${dayBlocks.length} bloque${dayBlocks.length === 1 ? "" : "s"}` : "Cerrado"}
-                    </p>
-                  </div>
-
-                  <label
-                    className={`orbyx-business-energy inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
-                      enabled ? "orbyx-business-energy-active" : ""
-                    }`}
-                    style={{
-                      borderColor: enabled
-                        ? "rgba(37,99,235,0.48)"
-                        : "var(--border-color)",
-                      background: enabled
-                        ? "rgba(37,99,235,0.10)"
-                        : "var(--bg-soft)",
-                      color: enabled ? "var(--text-main)" : "var(--text-muted)",
-                    }}
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={enabled}
-                      onChange={(e) => {
-                        const newValue = e.target.checked;
-
-                        setBusinessHours((prev) =>
-                          prev.map((item) =>
-                            item.day_of_week === dayIndex
-                              ? { ...item, enabled: newValue }
-                              : item
-                          )
-                        );
-                      }}
-                      className="h-4 w-4 rounded"
-                    />
-                    Activo
-                  </label>
+                    {days[dayIndex]}
+                  </p>
+                  <p
+                    className="mt-0.5 text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {enabled ? `${dayBlocks.length} bloque${dayBlocks.length === 1 ? "" : "s"}` : "Cerrado"}
+                  </p>
                 </div>
 
                 <div className="flex min-w-0 flex-col gap-2">
                   {!enabled ? (
                     <span
-                      className="inline-flex h-9 w-fit items-center rounded-full border px-3 text-xs font-semibold"
+                      className="inline-flex h-9 w-fit items-center rounded-lg border px-3 text-xs font-semibold"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-soft)",
@@ -3636,7 +3657,7 @@ function updateHourByIndex(
                     dayBlocks.map((block, i) => (
                       <div
                         key={i}
-                        className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-2xl border px-2 py-2"
+                        className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-lg border px-2 py-2"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-soft)",
@@ -3657,7 +3678,7 @@ updateHourByIndex(
             normalizeTimeInput(e.target.value)
           )
         }
-                          className="h-10 w-[150px] rounded-xl border px-3 text-sm outline-none transition sm:w-[160px]"
+                          className="h-10 w-[150px] rounded-lg border px-3 text-sm outline-none transition sm:w-[160px]"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-card)",
@@ -3689,7 +3710,7 @@ onChange={(e) =>
   )
 }
 
-                          className="h-10 w-[150px] rounded-xl border px-3 text-sm outline-none transition sm:w-[160px]"
+                          className="h-10 w-[150px] rounded-lg border px-3 text-sm outline-none transition sm:w-[160px]"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-card)",
@@ -3738,7 +3759,7 @@ onClick={() => {
                         },
                       ]);
                     }}
-                    className="orbyx-business-energy inline-flex h-8 w-fit items-center justify-center rounded-xl border px-3 text-xs font-medium text-blue-500 transition"
+                    className="orbyx-business-energy inline-flex h-8 w-fit items-center justify-center rounded-lg border px-3 text-xs font-medium text-blue-500 transition"
                     style={{
                       borderColor: "rgba(37,99,235,0.24)",
                       background: "rgba(37,99,235,0.06)",
@@ -3746,6 +3767,40 @@ onClick={() => {
                   >
                     + Agregar bloque
                   </button>
+                </div>
+
+                <div className="flex items-center gap-2 sm:justify-self-end">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={enabled}
+                    aria-label={`${enabled ? "Desactivar" : "Activar"} ${days[dayIndex]}`}
+                    disabled={!canEditNegocio}
+                    onClick={() => {
+                      const newValue = !enabled;
+
+                      setBusinessHours((prev) =>
+                        prev.map((item) =>
+                          item.day_of_week === dayIndex
+                            ? { ...item, enabled: newValue }
+                            : item
+                        )
+                      );
+                    }}
+                    className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ background: enabled ? "rgb(37 99 235)" : "var(--border-color)" }}
+                  >
+                    <span
+                      className="inline-block h-4 w-4 transform rounded-full bg-white transition"
+                      style={{ transform: enabled ? "translateX(22px)" : "translateX(4px)" }}
+                    />
+                  </button>
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: enabled ? "var(--text-main)" : "var(--text-muted)" }}
+                  >
+                    {enabled ? "Activo" : "Inactivo"}
+                  </span>
                 </div>
               </div>
             );
