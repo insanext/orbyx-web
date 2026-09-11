@@ -3578,14 +3578,14 @@ function updateHourByIndex(
   <Panel
     title="Horario global del negocio"
     description="Se aplicará a todas las sucursales que usen horario global."
-    className="!rounded-xl bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+    className="!rounded-md bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
     headerAction={
       <>
         <button
           type="button"
           onClick={resetBusinessHoursToDefault}
           disabled={!canEditNegocio}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-soft)",
@@ -3598,7 +3598,7 @@ function updateHourByIndex(
           type="button"
           onClick={fillActiveDaysWithStandardHours}
           disabled={!canEditNegocio}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
           style={{
             borderColor: "rgba(37,99,235,0.32)",
             background: "rgba(37,99,235,0.08)",
@@ -3621,7 +3621,7 @@ function updateHourByIndex(
             return (
               <div
                 key={dayIndex}
-                className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[150px_minmax(0,1fr)_auto] sm:items-center"
+                className="grid gap-3 rounded border p-3 sm:grid-cols-[150px_minmax(0,1fr)_auto] sm:items-center"
                 style={{
                   borderColor: enabled
                     ? "rgba(37,99,235,0.22)"
@@ -3649,7 +3649,7 @@ function updateHourByIndex(
                 <div className="flex min-w-0 flex-col gap-2">
                   {!enabled ? (
                     <span
-                      className="inline-flex h-9 w-fit items-center rounded-lg border px-3 text-xs font-semibold"
+                      className="inline-flex h-9 w-fit items-center rounded border px-3 text-xs font-semibold"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-soft)",
@@ -3662,7 +3662,7 @@ function updateHourByIndex(
                     dayBlocks.map((block, i) => (
                       <div
                         key={i}
-                        className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-lg border px-2 py-2"
+                        className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded border px-2 py-2"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-soft)",
@@ -3683,7 +3683,7 @@ updateHourByIndex(
             normalizeTimeInput(e.target.value)
           )
         }
-                          className="h-10 w-[150px] rounded-lg border px-3 text-sm outline-none transition sm:w-[160px]"
+                          className="h-10 w-[150px] rounded border px-3 text-sm outline-none transition sm:w-[160px]"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-card)",
@@ -3715,7 +3715,7 @@ onChange={(e) =>
   )
 }
 
-                          className="h-10 w-[150px] rounded-lg border px-3 text-sm outline-none transition sm:w-[160px]"
+                          className="h-10 w-[150px] rounded border px-3 text-sm outline-none transition sm:w-[160px]"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-card)",
@@ -3742,7 +3742,7 @@ onClick={() => {
   );
 }}
 
-                          className="orbyx-business-energy inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-300/50 bg-rose-500/10 p-0 text-sm font-semibold leading-none text-rose-400 transition hover:border-rose-300/70 hover:bg-rose-500/15 hover:shadow-[0_0_18px_rgba(244,63,94,0.16)]"
+                          className="orbyx-business-energy inline-flex h-8 w-8 items-center justify-center rounded border border-rose-300/50 bg-rose-500/10 p-0 text-sm font-semibold leading-none text-rose-400 transition hover:border-rose-300/70 hover:bg-rose-500/15 hover:shadow-[0_0_18px_rgba(244,63,94,0.16)]"
                           aria-label={`Eliminar bloque de ${days[dayIndex]}`}
                         >
                           x
@@ -3764,7 +3764,7 @@ onClick={() => {
                         },
                       ]);
                     }}
-                    className="orbyx-business-energy inline-flex h-8 w-fit items-center justify-center rounded-lg border px-3 text-xs font-medium text-blue-500 transition"
+                    className="orbyx-business-energy inline-flex h-8 w-fit items-center justify-center rounded border px-3 text-xs font-medium text-blue-500 transition"
                     style={{
                       borderColor: "rgba(37,99,235,0.24)",
                       background: "rgba(37,99,235,0.06)",
@@ -3849,7 +3849,7 @@ onClick={() => {
       4. Fechas especiales globales
     </p>
     <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
-      Fechas especiales globales
+      Excepciones y feriados
     </h2>
   </div>
 
@@ -3861,9 +3861,6 @@ onClick={() => {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
-            Fechas especiales globales
-          </p>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             Ejemplos: feriados generales, cierres corporativos o días con horario especial global.
           </p>
