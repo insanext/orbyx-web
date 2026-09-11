@@ -72,6 +72,8 @@ type StatsResponse = {
     campaign_history: { rows: CampaignRow[]; totals: { sent: number; failed: number; skipped: number } };
   } | null;
   premium: {
+    conversion_rate: number;
+    new_vs_recurring: { new_appointments: number; recurring_appointments: number; new_rate: number; recurring_rate: number };
     occupancy_heatmap: HeatCell[];
     avg_lead_time_hours: number | null;
     revenue_estimated: { note: string; by_service: RevenueRow[]; by_staff: RevenueRow[]; by_branch: RevenueRow[] };
@@ -490,6 +492,35 @@ function LockedBlock({ requiredPlanLabel, description }: { requiredPlanLabel: st
   );
 }
 
+// Selector "Mostrar: 3/5/10" — cada panel de ranking de clientes tiene el
+// suyo propio (independiente entre "Más activos" e "Inactivos").
+function MostrarControl({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
+        Mostrar:
+      </span>
+      <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
+        {CUSTOMER_LIMIT_OPTIONS.map((n, idx) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            className="h-7 px-3 text-[11px] font-bold"
+            style={{
+              background: value === n ? TONE.indigo.solid : PANEL_BG,
+              color: value === n ? "#fff" : INK,
+              borderRight: idx !== CUSTOMER_LIMIT_OPTIONS.length - 1 ? `1px solid ${PANEL_BORDER}` : "none",
+            }}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Lista numerada de "Servicios más reservados" — badge cuadrado indigo,
 // barra de progreso ancha con degradado indigo→violeta.
 function RankingList({
@@ -535,27 +566,38 @@ function RankingList({
 
 // Ranking de clientes: altura fija con scroll interno (no empuja el resto del
 // panel hacia abajo), click expande inline (acordeón) con teléfono/email.
+// "Mostrar" (pageSize) define el tamaño de página; "Ver más" revela la
+// página siguiente del mismo listado (items ya viene acotado a 15 desde el
+// backend) en vez de esconder el resto sin forma de verlo.
 function CustomerRankingList({
   items,
-  limit,
+  pageSize,
   expandedId,
   onToggle,
   mode,
   emptyText,
 }: {
   items: CustomerRow[];
-  limit: number;
+  pageSize: number;
   expandedId: string | null;
   onToggle: (id: string) => void;
   mode: "active" | "inactive";
   emptyText: string;
 }) {
-  const visible = items.slice(0, limit);
-  if (visible.length === 0) return <EmptyState text={emptyText} />;
+  const [visibleCount, setVisibleCount] = useState(pageSize);
+
+  useEffect(() => {
+    setVisibleCount(pageSize);
+  }, [pageSize, items]);
+
+  if (items.length === 0) return <EmptyState text={emptyText} />;
+  const visible = items.slice(0, visibleCount);
+  const hasMore = items.length > visibleCount;
   const max = Math.max(...visible.map((i) => i.total_visits), 1);
   const badgeTone: Tone = mode === "active" ? "indigo" : "red";
 
   return (
+    <div>
     <div className="max-h-80 space-y-1.5 overflow-y-auto pr-1">
       {visible.map((item, idx) => {
         const isOpen = expandedId === item.id;
@@ -605,6 +647,17 @@ function CustomerRankingList({
           </div>
         );
       })}
+    </div>
+    {hasMore ? (
+      <button
+        type="button"
+        onClick={() => setVisibleCount((prev) => prev + pageSize)}
+        className="mt-2 w-full border py-2 text-center text-[11px] font-bold uppercase tracking-[0.05em]"
+        style={{ borderColor: PANEL_BORDER, background: PANEL_BG, color: INK }}
+      >
+        Ver más
+      </button>
+    ) : null}
     </div>
   );
 }
@@ -824,7 +877,8 @@ export default function DashboardHomePage() {
 
   const [inactivePreset, setInactivePreset] = useState<InactivePresetKey>("60");
   const [customInactiveDays, setCustomInactiveDays] = useState("60");
-  const [customerLimit, setCustomerLimit] = useState<number>(5);
+  const [activeLimit, setActiveLimit] = useState<number>(5);
+  const [inactiveLimit, setInactiveLimit] = useState<number>(5);
   const [expandedCustomerId, setExpandedCustomerId] = useState<string | null>(null);
 
   const range = useMemo(() => computeRange(rangePreset, customFrom, customTo), [rangePreset, customFrom, customTo]);
@@ -1149,8 +1203,8 @@ export default function DashboardHomePage() {
               <Kpi icon={Calendar} tone="indigo" label="Reservas totales" value={String(data.basic.appointments.total)} />
               <Kpi icon={CheckCircle2} tone="green" label="Completadas" value={String(data.basic.appointments.by_status.completed)} valueColor={TONE.green.solid} />
               <Kpi icon={XCircle} tone="red" label="Canceladas" value={String(data.basic.appointments.by_status.canceled)} valueColor={TONE.red.solid} />
-              <Kpi icon={UserX} tone="gray" label="No-show" value={String(data.basic.appointments.by_status.no_show)} />
-              <Kpi icon={Percent} tone="blue" label="Tasa no-show" value={formatPct(data.basic.appointments.no_show_rate)} />
+              <Kpi icon={UserX} tone="gray" label="Inasistencia" value={String(data.basic.appointments.by_status.no_show)} />
+              <Kpi icon={Percent} tone="blue" label="Tasa de inasistencia" value={formatPct(data.basic.appointments.no_show_rate)} />
               <Kpi icon={Percent} tone="red" label="Tasa cancelación" value={formatPct(data.basic.appointments.cancellation_rate)} valueColor={TONE.red.solid} />
             </div>
 
@@ -1160,70 +1214,34 @@ export default function DashboardHomePage() {
               <Kpi icon={UserPlus} tone="indigo" label="Nuevos en el período" value={String(data.basic.customers.new_in_period)} />
             </div>
 
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
-                  Inactividad:
-                </span>
-                <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
-                  {INACTIVE_PRESETS.map((p, idx) => (
-                    <button
-                      key={p.key}
-                      type="button"
-                      onClick={() => setInactivePreset(p.key)}
-                      className="h-7 px-2.5 text-[11px] font-bold"
-                      style={{
-                        background: inactivePreset === p.key ? TONE.indigo.solid : PANEL_BG,
-                        color: inactivePreset === p.key ? "#fff" : INK,
-                        borderRight: idx !== INACTIVE_PRESETS.length - 1 ? `1px solid ${PANEL_BORDER}` : "none",
-                      }}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-                {inactivePreset === "custom" ? (
-                  <input
-                    type="number"
-                    min={1}
-                    max={365}
-                    value={customInactiveDays}
-                    onChange={(e) => setCustomInactiveDays(e.target.value)}
-                    className="h-7 w-16 border px-2 text-[11px] outline-none"
-                    style={{ borderColor: PANEL_BORDER, color: INK }}
-                  />
-                ) : null}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
-                  Mostrar:
-                </span>
-                <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
-                  {CUSTOMER_LIMIT_OPTIONS.map((n, idx) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setCustomerLimit(n)}
-                      className="h-7 px-3 text-[11px] font-bold"
-                      style={{
-                        background: customerLimit === n ? TONE.indigo.solid : PANEL_BG,
-                        color: customerLimit === n ? "#fff" : INK,
-                        borderRight: idx !== CUSTOMER_LIMIT_OPTIONS.length - 1 ? `1px solid ${PANEL_BORDER}` : "none",
-                      }}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <SubHeading icon={Percent}>Conversión y fidelización</SubHeading>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              {premiumUnlocked && data.premium ? (
+                <Kpi icon={Percent} tone="green" label="Tasa de conversión" value={formatPct(data.premium.conversion_rate)} valueColor={TONE.green.solid} />
+              ) : (
+                <LockedBlock requiredPlanLabel="Premium" description="% de las reservas del período que terminaron en una visita completada." />
+              )}
+              {premiumUnlocked && data.premium ? (
+                <Kpi
+                  icon={Users}
+                  tone="violet"
+                  label="Nuevos vs. recurrentes"
+                  value={`${formatPct(data.premium.new_vs_recurring.new_rate)} / ${formatPct(data.premium.new_vs_recurring.recurring_rate)}`}
+                />
+              ) : (
+                <LockedBlock requiredPlanLabel="Premium" description="Qué porcentaje de las reservas del período es de clientes nuevos vs. recurrentes." />
+              )}
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Panel icon={TrendingUp} title="Más activos / recurrentes">
+              <Panel
+                icon={TrendingUp}
+                title="Más activos / recurrentes"
+                action={<MostrarControl value={activeLimit} onChange={setActiveLimit} />}
+              >
                 <CustomerRankingList
                   items={data.basic.customer_ranking.active}
-                  limit={customerLimit}
+                  pageSize={activeLimit}
                   expandedId={expandedCustomerId}
                   onToggle={toggleCustomer}
                   mode="active"
@@ -1231,10 +1249,49 @@ export default function DashboardHomePage() {
                 />
               </Panel>
 
-              <Panel icon={User} title={`Inactivos (+${inactiveDays} días sin visita)`}>
+              <Panel
+                icon={User}
+                title={`Inactivos (+${inactiveDays} días sin visita)`}
+                action={<MostrarControl value={inactiveLimit} onChange={setInactiveLimit} />}
+                meta={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
+                      Inactividad:
+                    </span>
+                    <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
+                      {INACTIVE_PRESETS.map((p, idx) => (
+                        <button
+                          key={p.key}
+                          type="button"
+                          onClick={() => setInactivePreset(p.key)}
+                          className="h-7 px-2.5 text-[11px] font-bold"
+                          style={{
+                            background: inactivePreset === p.key ? TONE.indigo.solid : PANEL_BG,
+                            color: inactivePreset === p.key ? "#fff" : INK,
+                            borderRight: idx !== INACTIVE_PRESETS.length - 1 ? `1px solid ${PANEL_BORDER}` : "none",
+                          }}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                    {inactivePreset === "custom" ? (
+                      <input
+                        type="number"
+                        min={1}
+                        max={365}
+                        value={customInactiveDays}
+                        onChange={(e) => setCustomInactiveDays(e.target.value)}
+                        className="h-7 w-16 border px-2 text-[11px] outline-none"
+                        style={{ borderColor: PANEL_BORDER, color: INK }}
+                      />
+                    ) : null}
+                  </div>
+                }
+              >
                 <CustomerRankingList
                   items={data.basic.customer_ranking.inactive}
-                  limit={customerLimit}
+                  pageSize={inactiveLimit}
                   expandedId={expandedCustomerId}
                   onToggle={toggleCustomer}
                   mode="inactive"
