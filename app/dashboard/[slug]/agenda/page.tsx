@@ -4468,8 +4468,8 @@ const hasPendingClose = pendingCloseCount > 0;
                       style={
                         agendaView === "week"
                           ? {
-                              borderColor: "#3B82F6",
-                              background: "#3B82F6",
+                              borderColor: "var(--accent-solid)",
+                              background: "var(--accent-solid)",
                               color: "#fff",
                             }
                           : {
@@ -4488,8 +4488,8 @@ const hasPendingClose = pendingCloseCount > 0;
                       style={
                         agendaView === "day"
                           ? {
-                              borderColor: "#3B82F6",
-                              background: "#3B82F6",
+                              borderColor: "var(--accent-solid)",
+                              background: "var(--accent-solid)",
                               color: "#fff",
                             }
                           : {

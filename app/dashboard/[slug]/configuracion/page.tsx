@@ -402,9 +402,7 @@ export default function ConfiguracionPage() {
               type="button"
               onClick={() => setActiveTab(t.tab)}
               aria-current={activeTab === t.tab ? "step" : undefined}
-              className={`group flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
-                activeTab === t.tab ? "orbyx-campaign-energy-active" : ""
-              }`}
+              className="group flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               style={{
                 borderColor: activeTab === t.tab ? "rgba(37,99,235,0.55)" : "transparent",
                 background: activeTab === t.tab

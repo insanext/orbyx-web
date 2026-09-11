@@ -2099,13 +2099,13 @@ function validateStaffHours() {
                         key={section.id}
                         type="button"
                         onClick={() => setActiveFormSection(section.id)}
-                        className={`orbyx-staff-energy inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:border-blue-400/50 focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
-                          active ? "orbyx-staff-energy-active" : ""
+                        className={`inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
+                          active ? "" : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
                         }`}
                         style={{
-                          borderColor: active ? "rgba(37,99,235,0.55)" : "transparent",
-                          background: active ? "rgba(37,99,235,0.14)" : "transparent",
-                          color: active ? "var(--text-main)" : "var(--text-muted)",
+                          borderColor: active ? "var(--accent-solid)" : "transparent",
+                          background: active ? "var(--accent-solid)" : "transparent",
+                          color: active ? "#ffffff" : "var(--text-muted)",
                         }}
                         aria-current={active ? "page" : undefined}
                       >

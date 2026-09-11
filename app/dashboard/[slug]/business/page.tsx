@@ -1873,18 +1873,13 @@ function updateHourByIndex(
                 type="button"
                 onClick={() => setActiveSection(item.id)}
                 aria-current={active ? "page" : undefined}
-                className={`orbyx-business-energy cursor-pointer whitespace-nowrap rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
-                  active ? "orbyx-business-energy-active" : ""
+                className={`cursor-pointer whitespace-nowrap rounded-2xl border px-5 py-3 text-sm font-semibold transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
+                  active ? "" : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
                 }`}
                 style={{
-                  borderColor: active ? "rgba(37,99,235,0.36)" : "transparent",
-                  background: active
-                    ? "linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.07))"
-                    : "transparent",
-                  color: active ? "var(--text-main)" : "var(--text-muted)",
-                  boxShadow: active
-                    ? "inset 0 0 0 1px rgba(37,99,235,0.22)"
-                    : "none",
+                  borderColor: active ? "var(--accent-solid)" : "transparent",
+                  background: active ? "var(--accent-solid)" : "transparent",
+                  color: active ? "#ffffff" : "var(--text-muted)",
                 }}
               >
                 {item.label}
@@ -3494,11 +3489,16 @@ function updateHourByIndex(
                 setSlotMinutesMode("preset");
                 setSlotMinutes(val);
               }}
-              className={`orbyx-business-energy px-4 py-2 rounded-xl border text-sm font-medium transition ${
+              className={`px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${
                 slotMinutesMode === "preset" && slotMinutes === val
-                  ? "orbyx-business-energy-active bg-indigo-600 text-white border-indigo-600"
-                  : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
+                  ? ""
+                  : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
               }`}
+              style={
+                slotMinutesMode === "preset" && slotMinutes === val
+                  ? { background: "var(--accent-solid)", borderColor: "var(--accent-solid)", color: "#ffffff" }
+                  : { background: "var(--bg-card)", borderColor: "var(--border-color)", color: "var(--text-main)" }
+              }
             >
               {val} min
             </button>
@@ -3509,11 +3509,16 @@ function updateHourByIndex(
                 setSlotMinutesMode("custom");
                 setSlotMinutes(customSlotMinutes);
               }}
-            className={`orbyx-business-energy px-4 py-2 rounded-xl border text-sm font-medium transition ${
+            className={`px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${
               slotMinutesMode === "custom"
-                ? "orbyx-business-energy-active bg-indigo-600 text-white border-indigo-600"
-                : "border-slate-300 bg-white text-slate-700 hover:border-indigo-300"
+                ? ""
+                : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
             }`}
+            style={
+              slotMinutesMode === "custom"
+                ? { background: "var(--accent-solid)", borderColor: "var(--accent-solid)", color: "#ffffff" }
+                : { background: "var(--bg-card)", borderColor: "var(--border-color)", color: "var(--text-main)" }
+            }
           >
             Personalizado
           </button>
