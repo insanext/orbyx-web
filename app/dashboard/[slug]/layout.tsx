@@ -33,7 +33,11 @@ import {
   Moon,
   Sun,
   MoreHorizontal,
+  Star,
+  QrCode,
+  Download,
 } from "lucide-react";
+import QRCode from "qrcode";
 import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
 import { createClient } from "../../../lib/supabase/client";
@@ -180,6 +184,7 @@ const navSections = [
     items: [
       { label: "Agenda", href: "/agenda", icon: CalendarDays },
       { label: "Clientes", href: "/customers", icon: Users },
+      { label: "Reseñas", href: "/reviews", icon: Star },
       { label: "Campañas", href: "/campaigns", icon: Megaphone },
       { label: "Servicios", href: "/services", icon: Layers3 },
       { label: "Staff", href: "/staff", icon: Users },
@@ -208,6 +213,7 @@ const navSections = [
 const NAV_MODULE_MAP: Record<string, string> = {
   "/agenda": "agenda",
   "/customers": "clientes",
+  "/reviews": "clientes",
   "/campaigns": "campanas",
   "/services": "servicios",
   "/staff": "staff",
@@ -245,6 +251,26 @@ export default function DashboardLayout({
       setTimeout(() => setCopiedPublicUrl(false), 1500);
     } catch {
       alert("No se pudo copiar la URL");
+    }
+  }
+
+  // QR de la página pública — se genera en el cliente (librería `qrcode`,
+  // sin backend) al abrir el modal, apuntando siempre a publicUrl.
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [qrError, setQrError] = useState("");
+
+  async function openQrModal() {
+    setShowQrModal(true);
+    setQrError("");
+    try {
+      const dataUrl = await QRCode.toDataURL(publicUrl, {
+        width: 512,
+        margin: 1,
+      });
+      setQrDataUrl(dataUrl);
+    } catch {
+      setQrError("No se pudo generar el código QR");
     }
   }
 
@@ -1698,6 +1724,23 @@ export default function DashboardLayout({
                   </button>
                 ) : null}
 
+                {slug ? (
+                  <button
+                    type="button"
+                    onClick={openQrModal}
+                    aria-label="Generar QR de la página pública"
+                    title="Generar QR"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition sm:h-11 sm:w-11"
+                    style={{
+                      background: softBg,
+                      borderColor: sidebarBorder,
+                      color: textMain,
+                    }}
+                  >
+                    <QrCode size={16} />
+                  </button>
+                ) : null}
+
                 <button
                   type="button"
                   onClick={toggleTheme}
@@ -2086,6 +2129,70 @@ export default function DashboardLayout({
                   </p>
                 </div>
               ))}
+            </div>,
+            document.body
+          )
+        : null}
+
+      {mounted && typeof window !== "undefined" && showQrModal
+        ? createPortal(
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <button
+                type="button"
+                aria-label="Cerrar"
+                className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
+                onClick={() => setShowQrModal(false)}
+              />
+
+              <div
+                className="relative w-full max-w-sm rounded-3xl border p-6 text-center shadow-2xl"
+                style={{ background: dropdownBg, borderColor: sidebarBorder }}
+              >
+                <button
+                  type="button"
+                  aria-label="Cerrar"
+                  onClick={() => setShowQrModal(false)}
+                  className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none transition"
+                  style={{ color: textMuted }}
+                >
+                  ×
+                </button>
+
+                <p className="text-sm font-semibold" style={{ color: textMain }}>
+                  QR de tu página de reservas
+                </p>
+                <p className="mt-1 text-xs" style={{ color: textMuted }}>
+                  {publicUrl}
+                </p>
+
+                <div className="mt-4 flex items-center justify-center">
+                  {qrError ? (
+                    <p className="py-10 text-sm text-rose-500">{qrError}</p>
+                  ) : qrDataUrl ? (
+                    <img
+                      src={qrDataUrl}
+                      alt={`Código QR de ${publicUrl}`}
+                      className="h-64 w-64 rounded-2xl border p-2"
+                      style={{ borderColor: sidebarBorder, background: "#fff" }}
+                    />
+                  ) : (
+                    <div className="flex h-64 w-64 items-center justify-center text-sm" style={{ color: textMuted }}>
+                      Generando...
+                    </div>
+                  )}
+                </div>
+
+                {qrDataUrl ? (
+                  <a
+                    href={qrDataUrl}
+                    download={`orbyx-qr-${slug}.png`}
+                    className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    <Download size={16} />
+                    Descargar QR
+                  </a>
+                ) : null}
+              </div>
             </div>,
             document.body
           )

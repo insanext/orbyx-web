@@ -126,6 +126,43 @@ type PublicServicesResponse = {
   business_hours?: BusinessHourDay[];
 };
 
+type ReviewItem = {
+  id: string;
+  client_name?: string | null;
+  rating: number;
+  comment?: string | null;
+  created_at: string;
+};
+
+type ReviewsSummary = {
+  average: number;
+  count: number;
+  reviews: ReviewItem[];
+};
+
+function formatReviewDate(value: string) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("es-CL", { dateStyle: "medium" }).format(d);
+}
+
+function StarIcon({ filled, className }: { filled: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+    >
+      <path
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        d="M10 1.5l2.6 5.6 6.1.6-4.6 4.2 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.2 6.1-.6z"
+      />
+    </svg>
+  );
+}
+
 type BookingSuccessData = {
   serviceName: string;
   date: string;
@@ -524,12 +561,16 @@ function BusinessBannerCard({
   branches,
   selectedBranchId,
   onBranchChange,
+  reviewSummary,
+  onOpenReviews,
 }: {
   business: BusinessItem | null;
   slug: string;
   branches: BranchItem[];
   selectedBranchId: string;
   onBranchChange: (branchId: string) => void;
+  reviewSummary: ReviewsSummary | null;
+  onOpenReviews: () => void;
 }) {
   const showBranchSelector = branches.length > 1;
 
@@ -557,6 +598,31 @@ function BusinessBannerCard({
             <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 line-clamp-3">
               {business.description.trim()}
             </p>
+          ) : null}
+
+          {reviewSummary && reviewSummary.count > 0 ? (
+            <button
+              type="button"
+              onClick={onOpenReviews}
+              className="mt-2 flex items-center gap-1.5 text-sm"
+            >
+              <span className="flex items-center gap-0.5 text-amber-400">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <StarIcon
+                    key={star}
+                    filled={star <= Math.round(reviewSummary.average)}
+                    className="h-4 w-4"
+                  />
+                ))}
+              </span>
+              <span className="font-semibold text-slate-800">
+                {reviewSummary.average.toFixed(1)}
+              </span>
+              <span className="text-slate-500 underline decoration-slate-300 underline-offset-2">
+                (Ver {reviewSummary.count}{" "}
+                {reviewSummary.count === 1 ? "reseña" : "reseñas"})
+              </span>
+            </button>
           ) : null}
 
           {showBranchSelector ? (
@@ -1095,6 +1161,8 @@ export default function Page() {
   const slug = slugFromParams || slugFromPathname;
 
   const [business, setBusiness] = useState<BusinessItem | null>(null);
+  const [reviewSummary, setReviewSummary] = useState<ReviewsSummary | null>(null);
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
   const isVeterinaria =
     business?.business_category === "veterinaria" ||
     business?.business_category === "vet";
@@ -1572,6 +1640,25 @@ const nextAvailableDays = useMemo(() => {
     }
 
     loadInitial();
+  }, [slug]);
+
+  useEffect(() => {
+    if (!slug) return;
+
+    async function loadReviewSummary() {
+      try {
+        const res = await fetch(`/api/public-reviews/${slug}`, {
+          cache: "no-store",
+        });
+        const data: ReviewsSummary = await res.json();
+        if (!res.ok) throw new Error();
+        setReviewSummary(data);
+      } catch {
+        setReviewSummary(null);
+      }
+    }
+
+    loadReviewSummary();
   }, [slug]);
 
   useEffect(() => {
@@ -2546,6 +2633,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 branches={branches}
                 selectedBranchId={selectedBranchId}
                 onBranchChange={handleBranchChange}
+                reviewSummary={reviewSummary}
+                onOpenReviews={() => setShowReviewsModal(true)}
               />
 
               <div className="grid gap-4 lg:grid-cols-[230px_1fr] lg:gap-5 xl:gap-6">
@@ -2641,6 +2730,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               branches={branches}
               selectedBranchId={selectedBranchId}
               onBranchChange={handleBranchChange}
+              reviewSummary={reviewSummary}
+              onOpenReviews={() => setShowReviewsModal(true)}
             />
 
           <div className="min-w-0 flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
@@ -3881,6 +3972,84 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 ) : null}
               </div>
             </aside>
+          </div>
+        ) : null}
+
+        {showReviewsModal ? (
+          <div className="fixed inset-0 z-50">
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-950/35 backdrop-blur-sm"
+              aria-label="Cerrar reseñas"
+              onClick={() => setShowReviewsModal(false)}
+            />
+
+            <div className="absolute inset-0 flex items-center justify-center p-4">
+              <div className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl border border-slate-200 bg-white shadow-[0_30px_100px_-45px_rgba(15,23,42,0.7)]">
+                <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                  <div>
+                    <p className="text-lg font-bold text-slate-950">Reseñas</p>
+                    {reviewSummary ? (
+                      <p className="mt-1 text-xs text-slate-500">
+                        {reviewSummary.average.toFixed(1)} de 5 ·{" "}
+                        {reviewSummary.count}{" "}
+                        {reviewSummary.count === 1 ? "reseña" : "reseñas"}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewsModal(false)}
+                    className="flex h-10 w-10 items-center justify-center rounded-none border border-slate-200 text-xl text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                    aria-label="Cerrar"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
+                  {(reviewSummary?.reviews || []).map((review) => (
+                    <div
+                      key={review.id}
+                      className="rounded-xl border border-slate-100 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="truncate text-sm font-semibold text-slate-800">
+                          {review.client_name?.trim() || "Cliente"}
+                        </p>
+                        <span className="shrink-0 text-xs text-slate-400">
+                          {formatReviewDate(review.created_at)}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-0.5 text-amber-400">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <StarIcon
+                            key={star}
+                            filled={star <= review.rating}
+                            className="h-3.5 w-3.5"
+                          />
+                        ))}
+                      </div>
+                      {review.comment ? (
+                        <p className="mt-1.5 text-sm leading-5 text-slate-600">
+                          {review.comment}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-slate-100 px-5 py-3">
+                  <a
+                    href={`/${slug}/opinar`}
+                    className="block w-full rounded-none border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-center text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                  >
+                    Dejar una reseña
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         ) : null}
 

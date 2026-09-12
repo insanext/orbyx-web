@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { Search, SlidersHorizontal, UsersRound, X } from "lucide-react";
+import { Search, SlidersHorizontal, Star, UsersRound, X } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
 
@@ -30,6 +30,7 @@ type Customer = {
   updated_at: string;
   segment?: CustomerSegment;
   pets?: Pet[];
+  has_completed_visit?: boolean;
 };
 
 type CustomersResponse = {
@@ -111,6 +112,25 @@ function Avatar({ id, name }: { id: string; name: string }) {
   );
 }
 
+// Mismo criterio que customers/[id]/page.tsx: solo dígitos, sin "+", que es
+// lo que espera un link wa.me.
+function normalizeWhatsappNumber(value?: string | null) {
+  if (!value) return "";
+  return value.replace(/\D/g, "");
+}
+
+function buildReviewRequestUrl(customerPhone: string | null, businessName: string, slug: string) {
+  const whatsappNumber = normalizeWhatsappNumber(customerPhone);
+  if (!whatsappNumber) return "";
+
+  const reviewUrl = `https://orbyx.cl/${slug}/opinar`;
+  const message = `¡Hola! Gracias por visitarnos${
+    businessName ? ` en ${businessName}` : ""
+  }. ¿Nos ayudarías dejando una reseña? Aquí puedes hacerlo: ${reviewUrl}`;
+
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+}
+
 function SegmentBadge({ segment }: { segment?: string }) {
   const map: Record<string, { label: string; tone: SegmentTone }> = {
     frequent: { label: "Frecuente", tone: "emerald" },
@@ -139,6 +159,7 @@ export default function CustomersPage() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [businessCategory, setBusinessCategory] = useState("");
+  const [businessName, setBusinessName] = useState("");
   const isVeterinaria = businessCategory === "veterinaria" || businessCategory === "vet";
   const isClinica = businessCategory === "clinica";
   const [selectedBranchId, setSelectedBranchId] = useState("");
@@ -194,6 +215,7 @@ export default function CustomersPage() {
       const b = await business.json();
 
       setBusinessCategory(b?.business?.business_category || "");
+      setBusinessName(b?.business?.name || "");
 
       const params = new URLSearchParams();
       if (search) params.set("q", search);
@@ -524,18 +546,36 @@ export default function CustomersPage() {
                 {/* Visitas/Última visita se sacaron de la tarjeta — quedan
                     solo en el detalle del cliente, la tarjeta muestra lo
                     esencial (nombre + contacto). */}
-                <button
-                  type="button"
-                  onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
-                  className="mt-4 w-full rounded-xl border px-4 py-2 text-sm font-medium transition"
-                  style={{
-                    background: "var(--cust-soft-bg)",
-                    borderColor: "var(--cust-border)",
-                    color: "var(--cust-ink)",
-                  }}
-                >
-                  Ver detalle →
-                </button>
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
+                    className="flex-1 rounded-xl border px-4 py-2 text-sm font-medium transition"
+                    style={{
+                      background: "var(--cust-soft-bg)",
+                      borderColor: "var(--cust-border)",
+                      color: "var(--cust-ink)",
+                    }}
+                  >
+                    Ver detalle →
+                  </button>
+                  {c.has_completed_visit && c.phone ? (
+                    <a
+                      href={buildReviewRequestUrl(c.phone, businessName, String(slug || ""))}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Pedir reseña por WhatsApp"
+                      aria-label="Pedir reseña por WhatsApp"
+                      className="flex items-center justify-center rounded-xl border px-3 text-sm font-medium transition"
+                      style={{
+                        borderColor: "var(--cust-emerald-solid)",
+                        color: "var(--cust-emerald-solid)",
+                      }}
+                    >
+                      <Star className="h-4 w-4" />
+                    </a>
+                  ) : null}
+                </div>
               </article>
             ))}
           </div>
@@ -561,6 +601,9 @@ export default function CustomersPage() {
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "var(--cust-table-head-text)" }}>
                     Última visita
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "var(--cust-table-head-text)" }}>
+                    Acción
                   </th>
                 </tr>
               </thead>
@@ -607,6 +650,26 @@ export default function CustomersPage() {
 
                     <td className="px-4 py-3.5 text-xs" style={{ color: "var(--cust-ink)" }}>
                       {formatDate(c.last_visit_at)}
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      {c.has_completed_visit && c.phone ? (
+                        <a
+                          href={buildReviewRequestUrl(c.phone, businessName, String(slug || ""))}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Pedir reseña por WhatsApp"
+                          aria-label="Pedir reseña por WhatsApp"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition hover:opacity-80"
+                          style={{
+                            borderColor: "var(--cust-emerald-solid)",
+                            color: "var(--cust-emerald-solid)",
+                          }}
+                        >
+                          <Star className="h-4 w-4" />
+                        </a>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
