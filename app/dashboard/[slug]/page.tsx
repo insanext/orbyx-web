@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
   Lock,
@@ -106,6 +106,16 @@ const INACTIVE_PRESETS = [
 type InactivePresetKey = (typeof INACTIVE_PRESETS)[number]["key"];
 
 const CUSTOMER_LIMIT_OPTIONS = [3, 5, 10] as const;
+
+// ---- Pestañas del panel (reorganización 2026-09-13) — mismo patrón `?tab=`
+// vía router.replace (sin recargar) que ya usa "Mi Negocio"
+// (business/page.tsx). "operacion" es el default (sin query param). ----
+type IndicadoresTabId = "operacion" | "addons" | "marketing";
+const INDICADORES_TABS: { id: IndicadoresTabId; label: string }[] = [
+  { id: "operacion", label: "Operación" },
+  { id: "addons", label: "Add-ons y suscripción" },
+  { id: "marketing", label: "Marketing" },
+];
 
 function toKey(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -308,7 +318,7 @@ function SectionExportButton({ tables, filename }: { tables: CsvTable[]; filenam
       type="button"
       onClick={() => downloadMultiTableCsv(filename, tables)}
       disabled={!hasData}
-      className="inline-flex h-9 items-center gap-2 border px-3.5 text-[11px] font-extrabold uppercase tracking-[0.06em] transition disabled:cursor-not-allowed disabled:opacity-40"
+      className="inline-flex h-9 items-center gap-2 border px-3.5 text-[11px] uppercase tracking-[0.06em] transition disabled:cursor-not-allowed disabled:opacity-40"
       style={{ borderColor: TONE.indigo.solid, color: TONE.indigo.solid, background: PANEL_BG }}
     >
       <Download size={14} />
@@ -431,11 +441,11 @@ function Kpi({
     <div className="p-3" style={{ background: TONE[tone].tint, border: `1px solid ${PANEL_BORDER}`, borderTop: `3px solid ${TONE[tone].solid}` }}>
       <div className="flex items-center gap-2.5">
         <IconBox icon={icon} tone={tone} variant="solid" size={30} />
-        <p className="text-[10px] font-bold uppercase leading-tight tracking-[0.06em]" style={{ color: MUTED }}>
+        <p className="text-[10px] uppercase leading-tight tracking-[0.06em]" style={{ color: MUTED }}>
           {label}
         </p>
       </div>
-      <p className="mt-2.5 text-2xl font-extrabold leading-none tabular-nums" style={{ color: valueColor || INK }}>
+      <p className="mt-2.5 text-2xl leading-none tabular-nums" style={{ color: valueColor || INK }}>
         {value}
       </p>
     </div>
@@ -445,7 +455,7 @@ function Kpi({
 function EstimatedBadge() {
   return (
     <span
-      className="inline-flex h-5 items-center px-2 text-[10px] font-extrabold uppercase tracking-[0.08em] text-white"
+      className="inline-flex h-5 items-center px-2 text-[10px] uppercase tracking-[0.08em] text-white"
       style={{ background: TONE.violet.solid }}
       title="Calculado con el precio actual del servicio — puede no calzar con el histórico si hubo cambios de precio."
     >
@@ -457,7 +467,7 @@ function EstimatedBadge() {
 function RealDataBadge() {
   return (
     <span
-      className="inline-flex h-5 items-center px-2 text-[10px] font-extrabold uppercase tracking-[0.08em]"
+      className="inline-flex h-5 items-center px-2 text-[10px] uppercase tracking-[0.08em]"
       style={{ background: TONE.green.tint, color: TONE.green.text }}
     >
       Dato real
@@ -473,13 +483,18 @@ function EmptyState({ text }: { text: string }) {
   );
 }
 
+// Única excepción al criterio de esquinas rectas de Indicadores (ver
+// comentario "Sistema visual ejecutivo" arriba): tarjeta bloqueada con
+// bordes redondeados y degradado del azul de marca hacia un azul más
+// claro, para diferenciarla visualmente como CTA de upgrade — no cambia
+// el sistema de bordes cuadrados del resto del módulo.
 function LockedBlock({ requiredPlanLabel, description }: { requiredPlanLabel: string; description: string }) {
   return (
-    <div className="flex items-start gap-3 border border-dashed p-4" style={{ borderColor: PANEL_BORDER, background: PANEL_BG }}>
+    <div className="flex items-start gap-3 rounded border p-4" style={{ borderColor: "var(--ind-locked-border)", background: "var(--ind-locked-bg)" }}>
       <IconBox icon={Lock} tone="blue" variant="tint" size={36} iconSize={16} />
       <div>
         <span
-          className="inline-flex h-5 items-center px-2 text-[10px] font-extrabold uppercase tracking-[0.08em] text-white"
+          className="inline-flex h-5 items-center px-2 text-[10px] uppercase tracking-[0.08em] text-white"
           style={{ background: TONE.blue.solid }}
         >
           Desde {requiredPlanLabel}
@@ -497,7 +512,7 @@ function LockedBlock({ requiredPlanLabel, description }: { requiredPlanLabel: st
 function MostrarControl({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
+      <span className="text-[11px]" style={{ color: MUTED }}>
         Mostrar:
       </span>
       <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
@@ -506,7 +521,7 @@ function MostrarControl({ value, onChange }: { value: number; onChange: (n: numb
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className="h-7 px-3 text-[11px] font-bold"
+            className="h-7 px-3 text-[11px]"
             style={{
               background: value === n ? TONE.indigo.solid : PANEL_BG,
               color: value === n ? "#fff" : INK,
@@ -545,10 +560,10 @@ function RankingList({
             >
               {String(idx + 1).padStart(2, "0")}
             </span>
-            <span className="min-w-0 flex-1 truncate text-sm font-bold" style={{ color: INK }}>
+            <span className="min-w-0 flex-1 truncate text-sm" style={{ color: INK }}>
               {item.name}
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: INK }}>
+            <span className="shrink-0 text-sm tabular-nums" style={{ color: INK }}>
               {formatValue ? formatValue(item.value) : item.value}
             </span>
           </div>
@@ -617,16 +632,16 @@ function CustomerRankingList({
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-bold" style={{ color: INK }}>
+                  <span className="truncate text-sm" style={{ color: INK }}>
                     {item.name || "Cliente"}
                   </span>
-                  <span className="shrink-0 text-sm font-bold tabular-nums" style={{ color: INK }}>
+                  <span className="shrink-0 text-sm tabular-nums" style={{ color: INK }}>
                     {mode === "active" ? `${item.total_visits} visita${item.total_visits === 1 ? "" : "s"}` : "—"}
                   </span>
                 </div>
                 {mode === "active" ? (
                   <>
-                    <p className="text-[11px] font-bold" style={{ color: TONE.indigo.solid }}>
+                    <p className="text-[11px]" style={{ color: TONE.indigo.solid }}>
                       {item.segment === "frequent" ? "Frecuente" : "Recurrente"}
                     </p>
                     <div className="mt-1.5 h-1 w-full" style={{ background: TRACK_BG }}>
@@ -652,7 +667,7 @@ function CustomerRankingList({
       <button
         type="button"
         onClick={() => setVisibleCount((prev) => prev + pageSize)}
-        className="mt-2 w-full border py-2 text-center text-[11px] font-bold uppercase tracking-[0.05em]"
+        className="mt-2 w-full border py-2 text-center text-[11px] uppercase tracking-[0.05em]"
         style={{ borderColor: PANEL_BORDER, background: PANEL_BG, color: INK }}
       >
         Ver más
@@ -744,11 +759,11 @@ function LeadTimeCard({ hours }: { hours: number | null }) {
       </svg>
       <div className="relative z-10 flex items-center gap-3">
         <IconBox icon={Clock} tone="violet" variant="tint" size={40} iconSize={19} />
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.06em]" style={{ color: INK }}>
+        <p className="text-[11px] uppercase tracking-[0.06em]" style={{ color: INK }}>
           Anticipación promedio de reserva
         </p>
       </div>
-      <p className="relative z-10 mt-4 text-4xl font-extrabold tabular-nums" style={{ color: INK }}>
+      <p className="relative z-10 mt-4 text-4xl tabular-nums" style={{ color: INK }}>
         {hours === null ? "—" : `${hours}h`}
       </p>
       <p className="relative z-10 mt-1.5 text-xs" style={{ color: MUTED }}>
@@ -823,10 +838,10 @@ function UsageBar({ label, usage, tone }: { label: string; usage: UsageInfo; ton
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold" style={{ color: INK }}>
+        <span className="text-xs" style={{ color: INK }}>
           {label}
         </span>
-        <span className="text-xs font-bold tabular-nums" style={{ color: INK }}>
+        <span className="text-xs tabular-nums" style={{ color: INK }}>
           {usage.used} / {usage.limit}
         </span>
       </div>
@@ -836,10 +851,10 @@ function UsageBar({ label, usage, tone }: { label: string; usage: UsageInfo; ton
 
       <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3" style={{ borderColor: PANEL_BORDER }}>
         <div>
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.08em]" style={{ color: MUTED }}>
+          <p className="text-[9.5px] uppercase tracking-[0.08em]" style={{ color: MUTED }}>
             Cupo del plan
           </p>
-          <p className="text-sm font-extrabold tabular-nums" style={{ color: t.solid }}>
+          <p className="text-sm tabular-nums" style={{ color: t.solid }}>
             {planRemaining} / {usage.base}
             <span className="ml-1.5 text-[10px] font-normal" style={{ color: MUTED }}>
               restante, resetea cada mes
@@ -847,10 +862,10 @@ function UsageBar({ label, usage, tone }: { label: string; usage: UsageInfo; ton
           </p>
         </div>
         <div>
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.08em]" style={{ color: MUTED }}>
+          <p className="text-[9.5px] uppercase tracking-[0.08em]" style={{ color: MUTED }}>
             Saldo add-ons
           </p>
-          <p className="text-sm font-extrabold tabular-nums" style={{ color: INK }}>
+          <p className="text-sm tabular-nums" style={{ color: INK }}>
             {usage.addon}
             <span className="ml-1.5 text-[10px] font-normal" style={{ color: MUTED }}>
               acumulable
@@ -864,7 +879,19 @@ function UsageBar({ label, usage, tone }: { label: string; usage: UsageInfo; ton
 
 export default function DashboardHomePage() {
   const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const slug = ((params as { slug?: string })?.slug as string) || ((params as { Slug?: string })?.Slug as string) || "";
+
+  const activeTab: IndicadoresTabId = (() => {
+    const t = searchParams.get("tab");
+    return t === "addons" || t === "marketing" ? t : "operacion";
+  })();
+
+  function setTab(tab: IndicadoresTabId) {
+    const query = tab === "operacion" ? "" : `?tab=${tab}`;
+    router.replace(`/dashboard/${slug}${query}`, { scroll: false });
+  }
 
   const [data, setData] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1047,14 +1074,18 @@ export default function DashboardHomePage() {
     ];
   }, [data]);
 
-  const marketingTables: CsvTable[] = useMemo(() => {
+  // Split en 2 memos (antes uno solo "marketingTables") para que cada
+  // export CSV siga acotado a lo que esa pestaña muestra, tras separar la
+  // vieja sección "Marketing y suscripción" en "Add-ons y suscripción" +
+  // "Marketing" — mismos títulos/columnas/filas que antes, solo repartidos.
+  const addonsTables: CsvTable[] = useMemo(() => {
     if (!data) return [];
     const cupoRows: Record<string, unknown>[] = [{ recurso: "WhatsApp confirmación + recordatorio", ...data.basic.wa_confirmacion_usage }];
     if (data.business) {
       cupoRows.push({ recurso: "Campañas WhatsApp", ...data.business.campanas_wa_usage });
       cupoRows.push({ recurso: "Campañas Email", ...data.business.emails_campana_usage });
     }
-    const tables: CsvTable[] = [
+    return [
       {
         title: "Cupos mensuales",
         columns: [
@@ -1078,6 +1109,11 @@ export default function DashboardHomePage() {
         rows: data.basic.addons,
       },
     ];
+  }, [data]);
+
+  const campaignsTables: CsvTable[] = useMemo(() => {
+    if (!data) return [];
+    const tables: CsvTable[] = [];
     if (data.business) {
       tables.push({
         title: "Historial de campañas",
@@ -1191,6 +1227,36 @@ export default function DashboardHomePage() {
 
       {data ? (
         <>
+          {/* Selector de pestañas (reorganización 2026-09-13) — mismo
+              patrón `?tab=` + pill bar con scroll horizontal en mobile que
+              ya usa "Mi Negocio" (BusinessPanel.tsx, sub-tabs General/
+              Campos/Horarios/Fechas especiales). */}
+          <nav className="-mx-1 overflow-x-auto px-1" aria-label="Secciones de Indicadores">
+            <div className="flex min-w-max gap-2 border p-1.5" style={{ borderColor: SHELL_BORDER, background: PANEL_BG }}>
+              {INDICADORES_TABS.map((tab) => {
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setTab(tab.id)}
+                    aria-current={active ? "page" : undefined}
+                    className="cursor-pointer whitespace-nowrap border px-5 py-3 text-sm transition-colors duration-150"
+                    style={{
+                      borderColor: active ? TONE.indigo.solid : "transparent",
+                      background: active ? TONE.indigo.solid : "transparent",
+                      color: active ? "#ffffff" : MUTED,
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
+          {activeTab === "operacion" ? (
+            <>
           {/* ===== SECCIÓN 1: OPERACIÓN ===== */}
           <SectionShell
             icon={TrendingUp}
@@ -1255,7 +1321,7 @@ export default function DashboardHomePage() {
                 action={<MostrarControl value={inactiveLimit} onChange={setInactiveLimit} />}
                 meta={
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[11px] font-semibold" style={{ color: MUTED }}>
+                    <span className="text-[11px]" style={{ color: MUTED }}>
                       Inactividad:
                     </span>
                     <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
@@ -1264,7 +1330,7 @@ export default function DashboardHomePage() {
                           key={p.key}
                           type="button"
                           onClick={() => setInactivePreset(p.key)}
-                          className="h-7 px-2.5 text-[11px] font-bold"
+                          className="h-7 px-2.5 text-[11px]"
                           style={{
                             background: inactivePreset === p.key ? TONE.indigo.solid : PANEL_BG,
                             color: inactivePreset === p.key ? "#fff" : INK,
@@ -1416,18 +1482,18 @@ export default function DashboardHomePage() {
                                   >
                                     {getInitials(s.name)}
                                   </span>
-                                  <span className="font-bold" style={{ color: INK }}>
+                                  <span style={{ color: INK }}>
                                     {s.name}
                                   </span>
                                 </div>
                               </td>
-                              <td className="px-3 py-2.5 text-right font-extrabold tabular-nums" style={{ color: TONE.blue.solid }}>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: TONE.blue.solid }}>
                                 {s.total}
                               </td>
-                              <td className="px-3 py-2.5 text-right font-extrabold tabular-nums" style={{ color: TONE.green.solid }}>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: TONE.green.solid }}>
                                 {formatPct(s.no_show_rate)}
                               </td>
-                              <td className="px-3 py-2.5 text-right font-extrabold tabular-nums" style={{ color: TONE.red.solid }}>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: TONE.red.solid }}>
                                 {formatPct(s.cancellation_rate)}
                               </td>
                             </tr>
@@ -1443,10 +1509,10 @@ export default function DashboardHomePage() {
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {data.premium.branch_activity.map((b) => (
                         <div key={b.branch_id} className="p-3" style={{ border: `1px solid ${PANEL_BORDER}`, background: TONE.blue.tint }}>
-                          <p className="truncate text-sm font-bold" style={{ color: INK }}>
+                          <p className="truncate text-sm" style={{ color: INK }}>
                             {b.name}
                           </p>
-                          <p className="mt-1 text-lg font-extrabold tabular-nums" style={{ color: INK }}>
+                          <p className="mt-1 text-lg tabular-nums" style={{ color: INK }}>
                             {b.total_appointments}{" "}
                             <span className="text-xs font-normal" style={{ color: MUTED }}>
                               reservas
@@ -1487,7 +1553,7 @@ export default function DashboardHomePage() {
                         <tbody className="divide-y" style={{ borderColor: PANEL_BORDER }}>
                           {data.premium.group_capacity.map((g) => (
                             <tr key={g.service_id}>
-                              <td className="px-3 py-2.5 font-bold" style={{ color: INK }}>
+                              <td className="px-3 py-2.5" style={{ color: INK }}>
                                 {g.name}
                               </td>
                               <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: INK }}>
@@ -1499,7 +1565,7 @@ export default function DashboardHomePage() {
                               <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: INK }}>
                                 {g.total_booked}
                               </td>
-                              <td className="px-3 py-2.5 text-right font-extrabold tabular-nums" style={{ color: toneTextColor(rateTone(100 - g.occupancy_rate, 40, 70)) }}>
+                              <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: toneTextColor(rateTone(100 - g.occupancy_rate, 40, 70)) }}>
                                 {formatPct(g.occupancy_rate)}
                               </td>
                             </tr>
@@ -1518,56 +1584,59 @@ export default function DashboardHomePage() {
             )}
           </SectionShell>
 
-          {/* ===== SECCIÓN 3: MARKETING Y SUSCRIPCIÓN ===== */}
-          <SectionShell
-            icon={Megaphone}
-            iconVariant="solid"
-            tone="violet"
-            title="Marketing y suscripción"
-            subtitle="Cupos, campañas y add-ons"
-            action={premiumUnlocked ? <SectionExportButton tables={marketingTables} filename="marketing_y_suscripcion.csv" /> : undefined}
-          >
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Panel icon={WhatsAppGlyph} iconVariant="solid" tone="green" title="Cupo WhatsApp confirmación + recordatorio">
-                <UsageBar label="Mensajes usados este mes" usage={data.basic.wa_confirmacion_usage} tone="green" />
-              </Panel>
+            </>
+          ) : null}
 
-              <Panel icon={Puzzle} iconVariant="solid" tone="violet" title="Add-ons activos">
-                {data.basic.addons.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-6">
-                    <div className="relative flex h-16 w-16 items-center justify-center" style={{ background: TONE.violet.tint, color: TONE.violet.solid }}>
-                      <PackageOpen size={30} strokeWidth={1.8} />
-                      <Sparkles size={14} className="absolute -right-1.5 -top-1.5" />
-                      <Sparkles size={10} className="absolute -bottom-1 -left-1.5" />
-                    </div>
-                    <p className="text-sm" style={{ color: MUTED }}>
-                      No tienes add-ons activos.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="divide-y" style={{ borderColor: PANEL_BORDER }}>
-                    {data.basic.addons.map((a) => (
-                      <div key={a.addon_key} className="flex items-center justify-between gap-2 py-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold" style={{ color: INK }}>
-                            {a.name}
-                          </p>
-                          <p className="text-[11px]" style={{ color: MUTED }}>
-                            {a.quantity} unidad{a.quantity === 1 ? "" : "es"} · {a.billing_cycle}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-sm font-extrabold tabular-nums" style={{ color: INK }}>
-                          Saldo: {a.balance}
-                        </span>
+          {/* ===== PESTAÑA: ADD-ONS Y SUSCRIPCIÓN ===== */}
+          {activeTab === "addons" ? (
+            <SectionShell
+              icon={Puzzle}
+              iconVariant="solid"
+              tone="violet"
+              title="Add-ons y suscripción"
+              subtitle="Cupos y add-ons activos"
+              action={premiumUnlocked ? <SectionExportButton tables={addonsTables} filename="addons_y_suscripcion.csv" /> : undefined}
+            >
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Panel icon={WhatsAppGlyph} iconVariant="solid" tone="green" title="Cupo WhatsApp confirmación + recordatorio">
+                  <UsageBar label="Mensajes usados este mes" usage={data.basic.wa_confirmacion_usage} tone="green" />
+                </Panel>
+
+                <Panel icon={Puzzle} iconVariant="solid" tone="violet" title="Add-ons activos">
+                  {data.basic.addons.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-3 py-6">
+                      <div className="relative flex h-16 w-16 items-center justify-center" style={{ background: TONE.violet.tint, color: TONE.violet.solid }}>
+                        <PackageOpen size={30} strokeWidth={1.8} />
+                        <Sparkles size={14} className="absolute -right-1.5 -top-1.5" />
+                        <Sparkles size={10} className="absolute -bottom-1 -left-1.5" />
                       </div>
-                    ))}
-                  </div>
-                )}
-              </Panel>
-            </div>
+                      <p className="text-sm" style={{ color: MUTED }}>
+                        No tienes add-ons activos.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y" style={{ borderColor: PANEL_BORDER }}>
+                      {data.basic.addons.map((a) => (
+                        <div key={a.addon_key} className="flex items-center justify-between gap-2 py-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm" style={{ color: INK }}>
+                              {a.name}
+                            </p>
+                            <p className="text-[11px]" style={{ color: MUTED }}>
+                              {a.quantity} unidad{a.quantity === 1 ? "" : "es"} · {a.billing_cycle}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-sm tabular-nums" style={{ color: INK }}>
+                            Saldo: {a.balance}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Panel>
+              </div>
 
-            {businessUnlocked && data.business ? (
-              <>
+              {businessUnlocked && data.business ? (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <Panel icon={WhatsAppGlyph} iconVariant="solid" tone="green" title="Cupo campañas WhatsApp">
                     <UsageBar label="Mensajes usados este mes" usage={data.business.campanas_wa_usage} tone="green" />
@@ -1576,24 +1645,40 @@ export default function DashboardHomePage() {
                     <UsageBar label="Emails usados este mes" usage={data.business.emails_campana_usage} tone="blue" />
                   </Panel>
                 </div>
+              ) : (
+                <LockedBlock requiredPlanLabel="Business" description="Cupos de campañas WhatsApp/Email." />
+              )}
+            </SectionShell>
+          ) : null}
 
+          {/* ===== PESTAÑA: MARKETING ===== */}
+          {activeTab === "marketing" ? (
+            <SectionShell
+              icon={Megaphone}
+              iconVariant="solid"
+              tone="violet"
+              title="Marketing"
+              subtitle="Historial de campañas y entrega"
+              action={premiumUnlocked ? <SectionExportButton tables={campaignsTables} filename="marketing.csv" /> : undefined}
+            >
+              {businessUnlocked && data.business ? (
                 <Panel
                   icon={Calendar}
                   iconVariant="solid"
                   tone="violet"
                   title="Historial de campañas"
                   meta={
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-semibold" style={{ color: INK }}>
+                    <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: INK }}>
                       <span>
-                        Enviados: <b className="tabular-nums">{data.business.campaign_history.totals.sent}</b>
+                        Enviados: <span className="tabular-nums">{data.business.campaign_history.totals.sent}</span>
                       </span>
                       <span className="flex items-center gap-1.5">
                         <span className="h-2 w-2" style={{ borderRadius: 9999, background: TONE.red.solid }} />
-                        Fallidos: <b className="tabular-nums">{data.business.campaign_history.totals.failed}</b>
+                        Fallidos: <span className="tabular-nums">{data.business.campaign_history.totals.failed}</span>
                       </span>
                       <span className="flex items-center gap-1.5">
                         <span className="h-2 w-2" style={{ borderRadius: 9999, background: TONE.amber.solid }} />
-                        Omitidos: <b className="tabular-nums">{data.business.campaign_history.totals.skipped}</b>
+                        Omitidos: <span className="tabular-nums">{data.business.campaign_history.totals.skipped}</span>
                       </span>
                     </div>
                   }
@@ -1633,7 +1718,7 @@ export default function DashboardHomePage() {
                         <tbody className="divide-y" style={{ borderColor: PANEL_BORDER }}>
                           {data.business.campaign_history.rows.map((c) => (
                             <tr key={c.id}>
-                              <td className="px-3 py-2.5 font-bold" style={{ color: INK }}>
+                              <td className="px-3 py-2.5" style={{ color: INK }}>
                                 {c.campaign_name || "Sin nombre"}
                               </td>
                               <td className="px-3 py-2.5 capitalize" style={{ color: INK }}>
@@ -1658,34 +1743,34 @@ export default function DashboardHomePage() {
                     </div>
                   )}
                 </Panel>
-              </>
-            ) : (
-              <LockedBlock requiredPlanLabel="Business" description="Cupos de campañas WhatsApp/Email e historial de campañas enviadas." />
-            )}
+              ) : (
+                <LockedBlock requiredPlanLabel="Business" description="Historial de campañas enviadas." />
+              )}
 
-            {premiumUnlocked && data.premium ? (
-              <Panel icon={WhatsAppGlyph} iconVariant="solid" tone="green" title="Entrega WhatsApp Marketing" badge={<RealDataBadge />}>
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                  <Kpi
-                    icon={Send}
-                    tone="green"
-                    label="Entregados"
-                    value={String(data.premium.whatsapp_marketing_delivery.delivered + data.premium.whatsapp_marketing_delivery.read)}
-                  />
-                  <Kpi
-                    icon={XCircle}
-                    tone="red"
-                    label="Fallidos"
-                    value={String(data.premium.whatsapp_marketing_delivery.failed + data.premium.whatsapp_marketing_delivery.undelivered)}
-                  />
-                  <Kpi icon={Mail} tone="blue" label="Total enviados" value={String(data.premium.whatsapp_marketing_delivery.total)} />
-                  <Kpi icon={Clock} tone="amber" label="Tasa de entrega" value={formatPct(data.premium.whatsapp_marketing_delivery.delivery_rate)} />
-                </div>
-              </Panel>
-            ) : (
-              <LockedBlock requiredPlanLabel="Premium" description="Tasa de entrega real de WhatsApp Marketing por destinatario." />
-            )}
-          </SectionShell>
+              {premiumUnlocked && data.premium ? (
+                <Panel icon={WhatsAppGlyph} iconVariant="solid" tone="green" title="Entrega WhatsApp Marketing" badge={<RealDataBadge />}>
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                    <Kpi
+                      icon={Send}
+                      tone="green"
+                      label="Entregados"
+                      value={String(data.premium.whatsapp_marketing_delivery.delivered + data.premium.whatsapp_marketing_delivery.read)}
+                    />
+                    <Kpi
+                      icon={XCircle}
+                      tone="red"
+                      label="Fallidos"
+                      value={String(data.premium.whatsapp_marketing_delivery.failed + data.premium.whatsapp_marketing_delivery.undelivered)}
+                    />
+                    <Kpi icon={Mail} tone="blue" label="Total enviados" value={String(data.premium.whatsapp_marketing_delivery.total)} />
+                    <Kpi icon={Clock} tone="amber" label="Tasa de entrega" value={formatPct(data.premium.whatsapp_marketing_delivery.delivery_rate)} />
+                  </div>
+                </Panel>
+              ) : (
+                <LockedBlock requiredPlanLabel="Premium" description="Tasa de entrega real de WhatsApp Marketing por destinatario." />
+              )}
+            </SectionShell>
+          ) : null}
         </>
       ) : null}
 
@@ -1720,6 +1805,9 @@ export default function DashboardHomePage() {
           --ind-amber-solid: #d97706;
           --ind-amber-tint: #fff6e8;
           --ind-amber-text: #b45309;
+
+          --ind-locked-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0.03) 55%, #ffffff 100%);
+          --ind-locked-border: rgba(37, 99, 235, 0.32);
         }
 
         :global(:root[data-theme="nocturno"]) .orbyx-indicadores-page {
@@ -1752,6 +1840,9 @@ export default function DashboardHomePage() {
           --ind-amber-solid: #f59e0b;
           --ind-amber-tint: #3a2a18;
           --ind-amber-text: #fcd34d;
+
+          --ind-locked-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(59, 130, 246, 0.05) 55%, #101b31 100%);
+          --ind-locked-border: rgba(59, 130, 246, 0.32);
         }
       `}</style>
     </div>
