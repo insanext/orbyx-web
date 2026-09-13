@@ -126,11 +126,19 @@ type PublicServicesResponse = {
   business_hours?: BusinessHourDay[];
 };
 
+type ReviewReplyItem = {
+  id: string;
+  message: string;
+  created_at: string;
+};
+
 type ReviewItem = {
   id: string;
   client_name?: string | null;
   rating: number;
   comment?: string | null;
+  reaction?: string | null;
+  replies?: ReviewReplyItem[];
   created_at: string;
 };
 
@@ -4035,6 +4043,26 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         <p className="mt-1.5 text-sm leading-5 text-slate-600">
                           {review.comment}
                         </p>
+                      ) : null}
+
+                      {review.reaction ? (
+                        <p className="mt-1.5 text-lg leading-none">{review.reaction}</p>
+                      ) : null}
+
+                      {review.replies && review.replies.length > 0 ? (
+                        <div className="mt-2 space-y-2 border-l-2 border-indigo-100 pl-3">
+                          {review.replies.map((reply) => (
+                            <div key={reply.id}>
+                              <p className="text-xs font-semibold text-indigo-600">
+                                Respuesta de {business?.name?.trim() || "el negocio"} ·{" "}
+                                {formatReviewDate(reply.created_at)}
+                              </p>
+                              <p className="mt-0.5 text-sm leading-5 text-slate-600">
+                                {reply.message}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       ) : null}
                     </div>
                   ))}

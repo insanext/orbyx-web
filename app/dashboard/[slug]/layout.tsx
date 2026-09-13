@@ -70,13 +70,21 @@ type BranchItem = {
 
 type NotificationEvent = {
   id: string;
-  type: "new_booking" | "canceled" | "comment" | "deposit_receipt";
+  type: "new_booking" | "canceled" | "comment" | "deposit_receipt" | "new_review";
   customerName: string;
   serviceName: string;
   startAt: string;
   read: boolean;
   createdAt: number;
 };
+
+function reviewNotificationSubtitle(rating: number, comment?: string | null) {
+  const stars = "⭐".repeat(Math.max(0, Math.min(5, rating)));
+  if (!comment) return stars;
+  const trimmed = comment.trim();
+  const excerpt = trimmed.length > 60 ? `${trimmed.slice(0, 60)}…` : trimmed;
+  return `${stars} — "${excerpt}"`;
+}
 
 function formatNotifTime(iso: string) {
   try {
@@ -713,6 +721,38 @@ export default function DashboardLayout({
               } catch {}
             }
           }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "reviews",
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          // Solo dispara en un INSERT real (reseña nueva) — si un cliente
+          // reenvía/actualiza la suya, POST /public/reviews/:slug hace un
+          // upsert que Postgres resuelve como UPDATE, no INSERT, así que no
+          // hay notificación duplicada por eso.
+          const row = payload.new as Record<string, any>;
+          const now = Date.now();
+          const event: NotificationEvent = {
+            id: `${row.id}-review-${now}`,
+            type: "new_review",
+            customerName: row.client_name || "Cliente",
+            serviceName: reviewNotificationSubtitle(Number(row.rating) || 0, row.comment),
+            startAt: row.created_at,
+            read: false,
+            createdAt: now,
+          };
+
+          setNotifications((prev) => [event, ...prev].slice(0, 50));
+          setToasts((prev) => [...prev, event]);
+          setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== event.id));
+          }, 15000);
         }
       )
       .subscribe((status) => console.log("[REALTIME]", status));
@@ -1848,12 +1888,21 @@ export default function DashboardLayout({
                                   className="border-t px-4 py-3"
                                   style={{
                                     borderColor: sidebarBorder,
-                                    cursor: n.type === "deposit_receipt" ? "pointer" : "default",
+                                    cursor:
+                                      n.type === "deposit_receipt" || n.type === "new_review"
+                                        ? "pointer"
+                                        : "default",
                                   }}
                                   onClick={() => {
-                                    if (n.type !== "deposit_receipt") return;
-                                    setNotifPanelOpen(false);
-                                    router.push(`/dashboard/${slug}/agenda?openDeposits=1`);
+                                    if (n.type === "deposit_receipt") {
+                                      setNotifPanelOpen(false);
+                                      router.push(`/dashboard/${slug}/agenda?openDeposits=1`);
+                                      return;
+                                    }
+                                    if (n.type === "new_review") {
+                                      setNotifPanelOpen(false);
+                                      router.push(`/dashboard/${slug}/reviews`);
+                                    }
                                   }}
                                 >
                                   <p
@@ -1866,6 +1915,8 @@ export default function DashboardLayout({
                                       ? "Cita cancelada"
                                       : n.type === "deposit_receipt"
                                       ? "Depósito para revisar"
+                                      : n.type === "new_review"
+                                      ? "Nueva reseña"
                                       : "Nuevo comentario en reserva"}
                                   </p>
                                   <p
@@ -2121,7 +2172,7 @@ export default function DashboardLayout({
                     className="text-sm font-semibold"
                     style={{ color: textMain }}
                   >
-                    Nueva reserva
+                    {t.type === "new_review" ? "Nueva reseña" : "Nueva reserva"}
                   </p>
                   <p className="mt-0.5 text-xs" style={{ color: textMuted }}>
                     {t.customerName} · {t.serviceName} ·{" "}
