@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { Check, Lock, MessageCircle, Search, SlidersHorizontal, Star, UsersRound, X } from "lucide-react";
-import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
 import { isPlanAtLeast } from "@/lib/plans";
@@ -126,7 +125,7 @@ function SegmentBadge({ segment }: { segment?: string }) {
   const t = SEGMENT_TONE[tone];
   return (
     <span
-      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+      className="inline-flex items-center rounded px-2.5 py-0.5 text-xs font-semibold"
       style={{ background: t.tint, color: t.text }}
     >
       {label}
@@ -281,16 +280,49 @@ export default function CustomersPage() {
 
   return (
     <div className="orbyx-customers-page space-y-6">
-      <PageHeader
-        eyebrow={isVeterinaria ? "Tutores y mascotas" : "Clientes"}
-        title="Base de clientes"
-        icon={<UsersRound className="h-4 w-4" />}
-        description={
-          selectedBranchId
-            ? "Clientes con actividad en la sucursal seleccionada."
-            : "Gestiona clientes, filtra y analiza su comportamiento."
-        }
-      />
+      {/* Hero page-local (no el <PageHeader> compartido, que queda
+          rounded-2xl) — mismas medidas/estructura que el hero de Agenda
+          ("Agenda semanal") y Reseñas: esquinas cuadradas (`rounded`),
+          icono en caja `rounded` (no círculo), franja de brillo superior. */}
+      <div
+        className="orbyx-customers-hero relative overflow-hidden rounded border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.5),0_0_34px_-24px_rgba(59,130,246,0.42)]"
+        style={{ borderColor: "var(--cust-hero-border)", background: "var(--cust-hero-bg)" }}
+      >
+        <div
+          className="pointer-events-none absolute inset-x-8 top-0 h-px"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, rgba(37,99,235,0.42), rgba(59,130,246,0.35), transparent)",
+          }}
+        />
+        <div className="relative flex items-center gap-3">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded border shadow-[0_18px_32px_-16px_rgba(37,99,235,0.85)]"
+            style={{
+              borderColor: "rgba(147,197,253,0.72)",
+              background: "linear-gradient(135deg, #3B82F6, #2563EB)",
+            }}
+          >
+            <UsersRound className="h-4 w-4 text-white" />
+          </div>
+          <div className="min-w-0">
+            <p
+              className="text-[10px] font-semibold uppercase tracking-[0.2em]"
+              style={{ color: "var(--cust-hero-eyebrow)" }}
+            >
+              {isVeterinaria ? "Tutores y mascotas" : "Clientes"}
+            </p>
+            <h1 className="mt-0.5 text-lg font-semibold" style={{ color: "var(--cust-hero-title)" }}>
+              Base de clientes
+            </h1>
+            <p className="mt-0.5 text-sm" style={{ color: "var(--cust-hero-muted)" }}>
+              {selectedBranchId
+                ? "Clientes con actividad en la sucursal seleccionada."
+                : "Gestiona clientes, filtra y analiza su comportamiento."}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Aviso de gating (Desde Business) del botón "Invitar por WhatsApp"
           — una sola vez acá, no repetido por fila (el ícono candado de cada
@@ -299,7 +331,7 @@ export default function CustomersPage() {
           fetch inicial. */}
       {planSlug && !whatsappInviteUnlocked ? (
         <div
-          className="flex items-start gap-3 rounded-2xl border border-dashed p-4"
+          className="flex items-start gap-3 rounded border border-dashed p-4"
           style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)" }}
         >
           <div
@@ -405,7 +437,7 @@ export default function CustomersPage() {
                   <button
                     key={o.key}
                     onClick={() => setSegment(o.key)}
-                    className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
+                    className="rounded border px-2.5 py-1 text-xs font-medium transition"
                     style={
                       active
                         ? { background: "var(--cust-blue-solid)", borderColor: "var(--cust-blue-solid)", color: "#ffffff" }
@@ -453,7 +485,7 @@ export default function CustomersPage() {
       ) : null}
 
       <section
-        className="hidden rounded-2xl border p-4 space-y-4 md:block"
+        className="hidden rounded border p-4 space-y-4 md:block"
         style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -499,7 +531,7 @@ export default function CustomersPage() {
                 <button
                   key={o.key}
                   onClick={() => setSegment(o.key)}
-                  className="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
+                  className="rounded border px-2.5 py-1 text-xs font-medium transition"
                   style={
                     active
                       ? { background: "var(--cust-blue-solid)", borderColor: "var(--cust-blue-solid)", color: "#ffffff" }
@@ -550,7 +582,7 @@ export default function CustomersPage() {
         {/* Estado vacío */}
         {customers.length === 0 && (
           <div
-            className="flex flex-col items-center justify-center rounded-2xl border py-16 text-center"
+            className="flex flex-col items-center justify-center rounded border py-16 text-center"
             style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}
           >
             <div className="mb-4 rounded-full p-4" style={{ background: "var(--cust-soft-bg)" }}>
@@ -573,7 +605,7 @@ export default function CustomersPage() {
             {customers.map((c) => (
               <article
                 key={c.id}
-                className="rounded-2xl border p-4 shadow-sm"
+                className="rounded border p-4 shadow-sm"
                 style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -610,11 +642,11 @@ export default function CustomersPage() {
                 {/* Visitas/Última visita se sacaron de la tarjeta — quedan
                     solo en el detalle del cliente, la tarjeta muestra lo
                     esencial (nombre + contacto). */}
-                <div className="mt-4 flex gap-2">
+                <div className="mt-4 flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
-                    className="flex-1 rounded-xl border px-4 py-2 text-sm font-medium transition"
+                    className="w-full rounded border px-4 py-2 text-sm font-medium transition"
                     style={{
                       background: "var(--cust-soft-bg)",
                       borderColor: "var(--cust-border)",
@@ -623,68 +655,75 @@ export default function CustomersPage() {
                   >
                     Ver detalle →
                   </button>
-                  {c.has_completed_visit && c.phone ? (
-                    c.has_review ? (
-                      <span
-                        title="Ya dejó su reseña"
-                        aria-label="Ya dejó su reseña"
-                        className="flex items-center justify-center gap-1 rounded-xl border px-3 text-xs font-semibold"
-                        style={{
-                          borderColor: "var(--cust-emerald-solid)",
-                          color: "var(--cust-emerald-text)",
-                          background: "var(--cust-emerald-tint)",
-                        }}
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                        Ya reseñó
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleRequestReview(c)}
-                        disabled={requestingReviewFor === c.id}
-                        title="Pedir reseña por WhatsApp"
-                        aria-label="Pedir reseña por WhatsApp"
-                        className="flex items-center justify-center rounded-xl border px-3 text-sm font-medium transition disabled:opacity-60"
-                        style={{
-                          borderColor: "var(--cust-emerald-solid)",
-                          color: "var(--cust-emerald-solid)",
-                        }}
-                      >
-                        <Star className="h-4 w-4" />
-                      </button>
-                    )
-                  ) : null}
-                  {c.phone ? (
-                    whatsappInviteUnlocked ? (
-                      <button
-                        type="button"
-                        onClick={() => handleInviteWhatsApp(c)}
-                        title="Invitar por WhatsApp"
-                        aria-label="Invitar por WhatsApp"
-                        className="flex items-center justify-center rounded-xl border px-3 text-sm font-medium transition"
-                        style={{
-                          borderColor: "var(--cust-blue-solid)",
-                          color: "var(--cust-blue-solid)",
-                        }}
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled
-                        title="Invitar por WhatsApp — Desde Business"
-                        aria-label="Invitar por WhatsApp — Desde Business"
-                        className="flex cursor-not-allowed items-center justify-center rounded-xl border px-3 text-sm font-medium opacity-60"
-                        style={{
-                          borderColor: "var(--cust-border)",
-                          color: "var(--cust-muted)",
-                        }}
-                      >
-                        <Lock className="h-4 w-4" />
-                      </button>
-                    )
+                  {(c.has_completed_visit && c.phone) || c.phone ? (
+                    <div className="flex gap-2">
+                      {c.has_completed_visit && c.phone ? (
+                        c.has_review ? (
+                          <span
+                            title="Ya dejó su reseña"
+                            aria-label="Ya dejó su reseña"
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold"
+                            style={{
+                              borderColor: "var(--cust-emerald-solid)",
+                              color: "var(--cust-emerald-text)",
+                              background: "var(--cust-emerald-tint)",
+                            }}
+                          >
+                            <Check className="h-3.5 w-3.5 shrink-0" />
+                            Ya reseñó
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleRequestReview(c)}
+                            disabled={requestingReviewFor === c.id}
+                            title="Pedir reseña por WhatsApp"
+                            aria-label="Pedir reseña por WhatsApp"
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold transition disabled:opacity-60"
+                            style={{
+                              borderColor: "var(--cust-emerald-solid)",
+                              color: "var(--cust-emerald-solid)",
+                            }}
+                          >
+                            <Star className="h-3.5 w-3.5 shrink-0" />
+                            Pedir reseña
+                          </button>
+                        )
+                      ) : null}
+                      {c.phone ? (
+                        whatsappInviteUnlocked ? (
+                          <button
+                            type="button"
+                            onClick={() => handleInviteWhatsApp(c)}
+                            title="Invitar por WhatsApp"
+                            aria-label="Invitar por WhatsApp"
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold transition"
+                            style={{
+                              borderColor: "var(--cust-blue-solid)",
+                              color: "var(--cust-blue-solid)",
+                            }}
+                          >
+                            <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                            Invitar
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            title="Invitar por WhatsApp — Desde Business"
+                            aria-label="Invitar por WhatsApp — Desde Business"
+                            className="flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold opacity-60"
+                            style={{
+                              borderColor: "var(--cust-border)",
+                              color: "var(--cust-muted)",
+                            }}
+                          >
+                            <Lock className="h-3.5 w-3.5 shrink-0" />
+                            Invitar
+                          </button>
+                        )
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
               </article>
@@ -694,7 +733,12 @@ export default function CustomersPage() {
 
         {/* Tabla desktop */}
         {customers.length > 0 && (
-          <div className="hidden overflow-hidden rounded-2xl border md:block" style={{ borderColor: "var(--cust-border)" }}>
+          <div className="hidden overflow-hidden rounded border md:block" style={{ borderColor: "var(--cust-border)" }}>
+            {/* overflow-x-auto interno: las columnas crecieron al agregar
+                labels de texto a los botones de WhatsApp, esto evita que
+                se corten en pantallas de escritorio angostas sin perder
+                las esquinas cuadradas del wrapper exterior. */}
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead style={{ background: "var(--cust-table-head-bg)" }}>
                 <tr>
@@ -764,19 +808,20 @@ export default function CustomersPage() {
                     </td>
 
                     <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {c.has_completed_visit && c.phone ? (
                           c.has_review ? (
                             <span
                               title="Ya dejó su reseña"
                               aria-label="Ya dejó su reseña"
-                              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
+                              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded border px-3 py-1.5 text-xs font-semibold"
                               style={{
+                                borderColor: "var(--cust-emerald-solid)",
                                 background: "var(--cust-emerald-tint)",
                                 color: "var(--cust-emerald-text)",
                               }}
                             >
-                              <Check className="h-3.5 w-3.5" />
+                              <Check className="h-3.5 w-3.5 shrink-0" />
                               Ya reseñó
                             </span>
                           ) : (
@@ -789,13 +834,14 @@ export default function CustomersPage() {
                               disabled={requestingReviewFor === c.id}
                               title="Pedir reseña por WhatsApp"
                               aria-label="Pedir reseña por WhatsApp"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition hover:opacity-80 disabled:opacity-60"
+                              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80 disabled:opacity-60"
                               style={{
                                 borderColor: "var(--cust-emerald-solid)",
                                 color: "var(--cust-emerald-solid)",
                               }}
                             >
-                              <Star className="h-4 w-4" />
+                              <Star className="h-3.5 w-3.5 shrink-0" />
+                              Pedir reseña
                             </button>
                           )
                         ) : null}
@@ -809,13 +855,14 @@ export default function CustomersPage() {
                               }}
                               title="Invitar por WhatsApp"
                               aria-label="Invitar por WhatsApp"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition hover:opacity-80"
+                              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80"
                               style={{
                                 borderColor: "var(--cust-blue-solid)",
                                 color: "var(--cust-blue-solid)",
                               }}
                             >
-                              <MessageCircle className="h-4 w-4" />
+                              <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                              Invitar
                             </button>
                           ) : (
                             <button
@@ -824,13 +871,14 @@ export default function CustomersPage() {
                               disabled
                               title="Invitar por WhatsApp — Desde Business"
                               aria-label="Invitar por WhatsApp — Desde Business"
-                              className="inline-flex h-9 w-9 cursor-not-allowed items-center justify-center rounded-full border opacity-60"
+                              className="inline-flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap rounded border px-3 py-1.5 text-xs font-semibold opacity-60"
                               style={{
                                 borderColor: "var(--cust-border)",
                                 color: "var(--cust-muted)",
                               }}
                             >
-                              <Lock className="h-4 w-4" />
+                              <Lock className="h-3.5 w-3.5 shrink-0" />
+                              Invitar
                             </button>
                           )
                         ) : null}
@@ -840,6 +888,7 @@ export default function CustomersPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </section>
@@ -862,6 +911,12 @@ export default function CustomersPage() {
           --cust-row-hover: #f8fafc;
           --cust-table-head-bg: #0f172a;
           --cust-table-head-text: #ffffff;
+
+          --cust-hero-bg: linear-gradient(135deg, #f0edff, #e8f1ff);
+          --cust-hero-border: rgba(37, 99, 235, 0.35);
+          --cust-hero-eyebrow: #2563eb;
+          --cust-hero-title: #172033;
+          --cust-hero-muted: #64748b;
 
           --cust-blue-solid: #2563eb;
           --cust-blue-tint: #eff6ff;
@@ -900,6 +955,12 @@ export default function CustomersPage() {
           --cust-row-hover: #16223d;
           --cust-table-head-bg: #060b16;
           --cust-table-head-text: #f1f5f9;
+
+          --cust-hero-bg: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(12,32,66,0.92) 50%, rgba(17,24,39,0.96));
+          --cust-hero-border: rgba(56, 189, 248, 0.28);
+          --cust-hero-eyebrow: #38bdf8;
+          --cust-hero-title: #f8fafc;
+          --cust-hero-muted: #cbd5e1;
 
           --cust-blue-solid: #3b82f6;
           --cust-blue-tint: #132a44;
