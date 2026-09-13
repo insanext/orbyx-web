@@ -7999,7 +7999,9 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                 const ab = branches.find((b) => b.id === selectedBranchId);
                 const isGlobal = ab?.use_global_hours === true;
                 const label = isGlobal ? "Configurar horario del negocio" : "Configurar horario de la sucursal";
-                const route = isGlobal ? `/dashboard/${slug}/business` : `/dashboard/${slug}/branches`;
+                const route = isGlobal
+                  ? `/dashboard/${slug}/business`
+                  : `/dashboard/${slug}/business?tab=sucursales`;
                 return (
                   <button
                     type="button"

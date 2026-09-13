@@ -196,8 +196,7 @@ const navSections = [
       { label: "Campañas", href: "/campaigns", icon: Megaphone },
       { label: "Servicios", href: "/services", icon: Layers3 },
       { label: "Staff", href: "/staff", icon: Users },
-      { label: "Sucursales", href: "/branches", icon: Store },
-      { label: "Negocio", href: "/business", icon: Briefcase },
+      { label: "Mi Negocio", href: "/business", icon: Briefcase },
       { label: "Mi suscripción", href: "/billing", icon: CreditCard },
     ],
   },
@@ -225,7 +224,6 @@ const NAV_MODULE_MAP: Record<string, string> = {
   "/campaigns": "campanas",
   "/services": "servicios",
   "/staff": "staff",
-  "/branches": "sucursales",
   "/business": "negocio",
 };
 

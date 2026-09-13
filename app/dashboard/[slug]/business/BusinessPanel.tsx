@@ -1,0 +1,4435 @@
+﻿"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { apiFetch } from "@/lib/api";
+import { useParams } from "next/navigation";
+import { Building2, HelpCircle, User, Phone, Mail, Share2, Link2, Calendar } from "lucide-react";
+import { Panel } from "../../../../components/dashboard/panel";
+import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
+import { usePermissions } from "../../../../lib/permissions-context";
+
+// Debe coincidir con el límite de validateText("description", { maxLen: 1000 }) en server.js (PATCH /tenants/:id)
+const BUSINESS_DESCRIPTION_MAX_LENGTH = 1000;
+
+type BookingField = {
+  key: string;
+  label: string;
+  enabled: boolean;
+  required: boolean;
+};
+
+type SubtypeBookingField = {
+  key: string;
+  label: string;
+  enabled: boolean;
+  required: boolean;
+  type: "text" | "textarea" | "select";
+  options?: string[];
+};
+
+type BusinessResponse = {
+  business: {
+    id: string;
+    name: string;
+    slug: string;
+    phone?: string | null;
+    address?: string | null;
+    email?: string | null;
+    whatsapp?: string | null;
+    logo_url?: string | null;
+    instagram_url?: string | null;
+    facebook_url?: string | null;
+    description?: string | null;
+    business_category?: string | null;
+    business_subtype?: string | null;
+    business_subtype_config?: Record<string, unknown> | null;
+    min_booking_notice_minutes?: number | null;
+    max_booking_days_ahead?: number | null;
+  };
+  calendar_id: string;
+slot_minutes?: number | null;
+  google_connected?: boolean;
+};
+
+type BusinessHour = {
+  day_of_week: number;
+  enabled: boolean;
+  start_time: string;
+  end_time: string;
+};
+
+type SpecialDate = {
+  id?: string;
+  date: string;
+  label: string;
+  is_closed: boolean;
+  start_time: string;
+  end_time: string;
+};
+
+type SpecialDateGroup = {
+  key: string;
+  items: SpecialDate[];
+  first: SpecialDate;
+  startDate: string;
+  endDate: string;
+  isRange: boolean;
+};
+
+type SpecialDateRangeForm = {
+  enabled: boolean;
+  type:
+    | "Vacaciones"
+    | "Feriado"
+    | "Mantención"
+    | "Cierre administrativo"
+    | "Capacitación interna"
+    | "Evento interno"
+    | "Inventario"
+    | "Emergencia operacional"
+    | "Día libre"
+    | "Otro";
+  date: string;
+  date_from: string;
+  date_to: string;
+  label: string;
+  is_closed: boolean;
+  start_time: string;
+  end_time: string;
+};
+
+type BranchItem = {
+  id: string;
+  name: string;
+  is_active?: boolean;
+};
+
+type BusinessSectionId = "general" | "reservas" | "horarios" | "fechas";
+
+function normalizeSpecialTime(value?: string | null) {
+  if (!value) return "";
+  const normalized = String(value).trim();
+  return /^\d{2}:\d{2}:\d{2}$/.test(normalized)
+    ? normalized.slice(0, 5)
+    : normalized;
+}
+
+function formatDateDisplay(dateString?: string | null) {
+  if (!dateString) return "";
+  const [year, month, day] = String(dateString).slice(0, 10).split("-");
+  if (!year || !month || !day) return String(dateString);
+  return `${day}-${month}-${year}`;
+}
+
+function parseDateDisplay(dateString?: string | null) {
+  const value = String(dateString || "").trim();
+  if (!/^\d{2}-\d{2}-\d{4}$/.test(value)) return "";
+  const [day, month, year] = value.split("-");
+  return `${year}-${month}-${day}`;
+}
+
+function isValidDisplayDate(dateString?: string | null) {
+  const value = String(dateString || "").trim();
+  const isoDate = parseDateDisplay(value);
+  if (!isoDate) return false;
+
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+function getNextDateIso(dateString: string) {
+  const date = new Date(`${dateString}T12:00:00`);
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function getSpecialDateGroupConfigKey(item: SpecialDate) {
+  return [
+    item.label || "",
+    item.is_closed ? "closed" : "partial",
+    normalizeSpecialTime(item.start_time),
+    normalizeSpecialTime(item.end_time),
+  ].join("|");
+}
+
+function groupSpecialDates(items: SpecialDate[]) {
+  const sorted = [...items]
+    .filter((item) => item.date)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+  const groups: SpecialDateGroup[] = [];
+
+  for (const item of sorted) {
+    const configKey = getSpecialDateGroupConfigKey(item);
+    const previous = groups[groups.length - 1];
+    const isConsecutive =
+      previous &&
+      previous.key === configKey &&
+      getNextDateIso(previous.endDate) === item.date;
+
+    if (isConsecutive) {
+      previous.items.push(item);
+      previous.endDate = item.date;
+      previous.isRange = previous.startDate !== previous.endDate;
+      continue;
+    }
+
+    groups.push({
+      key: configKey,
+      items: [item],
+      first: item,
+      startDate: item.date,
+      endDate: item.date,
+      isRange: false,
+    });
+  }
+
+  return groups;
+}
+
+function MapPreview({ address }: { address: string }) {
+  const cleanAddress = address.trim();
+
+  if (!cleanAddress) {
+    return (
+      <div
+        className="flex min-h-[180px] items-center justify-center rounded-2xl border border-dashed px-4 text-center text-sm"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-soft)",
+          color: "var(--text-muted)",
+        }}
+      >
+        Ingresa una dirección para previsualizar el mapa.
+      </div>
+    );
+  }
+
+  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
+    cleanAddress
+  )}&output=embed`;
+
+  return (
+    <div
+      className="overflow-hidden rounded-2xl border"
+      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+    >
+      <iframe
+        title="Mapa de la dirección"
+        src={mapUrl}
+        className="h-[220px] w-full"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+    </div>
+  );
+}
+
+const genericBusinessSubtypes = [
+  {
+    value: "",
+    label: "Sin subtipo",
+    description: "Experiencia genérica base.",
+  },
+  {
+    value: "belleza_estetica",
+    label: "Belleza y estética",
+    description: "Peluquerías, barberías, uñas, estética y similares.",
+  },
+  {
+    value: "salud_bienestar",
+    label: "Salud y bienestar",
+    description: "Terapias, bienestar, consultas no veterinarias.",
+  },
+  {
+    value: "taller_automotriz",
+    label: "Taller automotriz",
+    description: "Talleres, mantenciones y servicios para vehículos.",
+  },
+  {
+    value: "servicios_tecnicos",
+    label: "Servicios técnicos",
+    description: "Reparaciones, soporte técnico y visitas técnicas.",
+  },
+  {
+    value: "profesionales_cita",
+    label: "Profesionales con cita",
+    description: "Consultores, asesores y atención profesional.",
+  },
+  {
+    value: "educacion_individual",
+    label: "Educación individual",
+    description: "Clases uno a uno, tutorías y sesiones individuales.",
+  },
+  {
+    value: "servicios_creativos",
+    label: "Servicios creativos",
+    description: "Fotografía, diseño, producción y servicios creativos.",
+  },
+];
+
+const clinicaBusinessSubtypes = [
+  { value: "salud_general",        label: "Salud General" },
+  { value: "medicina_general",     label: "Médico general / Familiar" },
+  { value: "odontologia",          label: "Dentista / Odontología" },
+  { value: "psicologia",           label: "Psicología / Psiquiatría" },
+  { value: "kinesiologia",         label: "Kinesiología / Fisioterapia" },
+  { value: "nutricion",            label: "Nutrición / Dietética" },
+  { value: "fonoaudiologia",       label: "Fonoaudiología" },
+  { value: "oftalmologia",         label: "Oftalmología" },
+  { value: "dermatologia",         label: "Dermatología" },
+  { value: "ginecologia",          label: "Ginecología" },
+  { value: "pediatria",            label: "Pediatría" },
+  { value: "medicina_estetica",    label: "Medicina Estética" },
+  { value: "podologia",            label: "Podología" },
+  { value: "terapia_ocupacional",  label: "Terapia Ocupacional" },
+  { value: "osteopatia",           label: "Osteopatía / Quiropraxia" },
+];
+
+const tallerAutomotrizBookingFields: SubtypeBookingField[] = [
+  {
+    key: "unit_type",
+    label: "Tipo de vehículo/equipo",
+    enabled: true,
+    required: false,
+    type: "select",
+    options: ["Auto", "Moto", "Camión", "Maquinaria", "Bus"],
+  },
+  {
+    key: "brand",
+    label: "Marca",
+    enabled: true,
+    required: false,
+    type: "text",
+    options: [],
+  },
+  { key: "model", label: "Modelo", enabled: true, required: false, type: "text", options: [] },
+  { key: "year", label: "Año", enabled: false, required: false, type: "text", options: [] },
+  {
+    key: "unit_identifier",
+    label: "Patente / Identificador",
+    enabled: false,
+    required: false,
+    type: "text",
+    options: [],
+  },
+  {
+    key: "usage_value",
+    label: "Kilometraje / Horas de uso",
+    enabled: false,
+    required: false,
+    type: "text",
+    options: [],
+  },
+  {
+    key: "visit_reason",
+    label: "Motivo de la visita",
+    enabled: true,
+    required: false,
+    type: "textarea",
+    options: [],
+  },
+  {
+    key: "observations",
+    label: "Observaciones",
+    enabled: false,
+    required: false,
+    type: "textarea",
+    options: [],
+  },
+];
+
+const lockedCustomerFields = [
+  { key: "name", label: "Nombre y Apellido" },
+  { key: "phone", label: "Teléfono" },
+  { key: "email", label: "Correo electrónico" },
+];
+
+const lockedPetFields = [
+  { key: "pet_name", label: "Nombre de la mascota" },
+  { key: "pet_species", label: "Especie" },
+];
+
+const configurableBookingFields: BookingField[] = [
+  { key: "rut", label: "RUT", enabled: false, required: false },
+  { key: "address", label: "Dirección", enabled: false, required: false },
+  { key: "company", label: "Empresa", enabled: false, required: false },
+  {
+    key: "visit_reason",
+    label: "Motivo de consulta",
+    enabled: false,
+    required: false,
+  },
+];
+
+const lockedBookingFieldKeys = new Set([
+  "name",
+  "phone",
+  "email",
+  "pet_name",
+  "pet_species",
+]);
+
+function normalizeBookingFieldsConfig(fields?: unknown): BookingField[] {
+  const savedFields = Array.isArray(fields) ? fields : [];
+
+  return configurableBookingFields.map((baseField) => {
+    const savedField = savedFields.find((item) => {
+      if (!item || typeof item !== "object") return false;
+      return (item as { key?: unknown }).key === baseField.key;
+    }) as Partial<BookingField> | undefined;
+
+    const enabled =
+      typeof savedField?.enabled === "boolean"
+        ? savedField.enabled
+        : baseField.enabled;
+
+    return {
+      ...baseField,
+      enabled,
+      required:
+        enabled && typeof savedField?.required === "boolean"
+          ? savedField.required
+          : false,
+    };
+  });
+}
+
+function normalizeSubtypeBookingFields(
+  fields?: unknown
+): SubtypeBookingField[] {
+  const savedFields = Array.isArray(fields) ? fields : [];
+
+  return tallerAutomotrizBookingFields.map((baseField) => {
+    const savedField = savedFields.find((item) => {
+      if (!item || typeof item !== "object") return false;
+      return (item as { key?: unknown }).key === baseField.key;
+    }) as Partial<SubtypeBookingField> | undefined;
+    const savedType =
+      savedField?.type === "select" ||
+      savedField?.type === "textarea" ||
+      savedField?.type === "text"
+        ? savedField.type
+        : baseField.type;
+    const savedOptions = Array.isArray(savedField?.options)
+      ? savedField.options
+          .map((option) => String(option || "").trim())
+          .filter(Boolean)
+      : baseField.options || [];
+    const savedLabel =
+      typeof savedField?.label === "string" && savedField.label.trim()
+        ? savedField.label.trim()
+        : "";
+
+    return {
+      ...baseField,
+      label:
+        savedLabel && savedLabel !== "Tipo de unidad/equipo"
+          ? savedLabel
+          : baseField.label,
+      enabled:
+        typeof savedField?.enabled === "boolean"
+          ? savedField.enabled
+          : baseField.enabled,
+      required:
+        typeof savedField?.required === "boolean"
+          ? savedField.required
+          : baseField.required,
+      type: savedType,
+      options: savedType === "select" ? savedOptions : [],
+    };
+  });
+}
+
+const days = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+];
+
+const displayOrder = [1, 2, 3, 4, 5, 6, 0];
+
+export default function BusinessPage() {
+  const { canEdit } = usePermissions();
+  const canEditNegocio = canEdit("negocio");
+  const params = useParams();
+  const slug =
+    ((params as { slug?: string })?.slug as string) ||
+    ((params as { Slug?: string })?.Slug as string) ||
+    "";
+
+  const [tenantId, setTenantId] = useState("");
+  const logoFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState("");
+const [calendarId, setCalendarId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savingHours, setSavingHours] = useState(false);
+const [savingSlotMinutes, setSavingSlotMinutes] = useState(false);
+const [slotMinutesOk, setSlotMinutesOk] = useState("");
+const [slotMinutesError, setSlotMinutesError] = useState("");
+const [logoUploading, setLogoUploading] = useState(false);
+const [logoUploadError, setLogoUploadError] = useState("");
+const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+const [logoDraftUrl, setLogoDraftUrl] = useState("");
+const [logoDraftName, setLogoDraftName] = useState("");
+const [logoScale, setLogoScale] = useState(1);
+const [logoOffsetX, setLogoOffsetX] = useState(0);
+const [logoOffsetY, setLogoOffsetY] = useState(0);
+  const [savingFields, setSavingFields] = useState(false);
+  const [savingSpecialDates, setSavingSpecialDates] = useState(false);
+
+  const [loadError, setLoadError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saveOk, setSaveOk] = useState("");
+  const [hoursError, setHoursError] = useState("");
+  const [hoursOk, setHoursOk] = useState("");
+  const [specialDatesError, setSpecialDatesError] = useState("");
+  const [specialDatesOk, setSpecialDatesOk] = useState("");
+  const [specialDateRangeError, setSpecialDateRangeError] = useState("");
+  const [specialDateFormOpen, setSpecialDateFormOpen] = useState(false);
+
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
+  const [specialDates, setSpecialDates] = useState<SpecialDate[]>([]);
+  const [specialDateRangeForm, setSpecialDateRangeForm] =
+    useState<SpecialDateRangeForm>({
+      enabled: false,
+      type: "Vacaciones",
+      date: "",
+      date_from: "",
+      date_to: "",
+      label: "",
+      is_closed: true,
+      start_time: "",
+      end_time: "",
+    });
+  const [specialDateDisplay, setSpecialDateDisplay] = useState("");
+  const [specialDateFromDisplay, setSpecialDateFromDisplay] = useState("");
+  const [specialDateToDisplay, setSpecialDateToDisplay] = useState("");
+  const [editingSpecialDateId, setEditingSpecialDateId] = useState("");
+  const [bookingFields, setBookingFields] = useState<BookingField[]>([]);
+  const [businessSubtypeConfig, setBusinessSubtypeConfig] = useState<{
+    booking_fields: SubtypeBookingField[];
+  }>({ booking_fields: [] });
+  const [subtypeOptionDrafts, setSubtypeOptionDrafts] = useState<
+    Record<string, string>
+  >({});
+  const [businessCategory, setBusinessCategory] = useState("");
+const [slotMinutes, setSlotMinutes] = useState(30);
+const [customSlotMinutes, setCustomSlotMinutes] = useState(30);
+const [slotMinutesMode, setSlotMinutesMode] = useState<"preset" | "custom">("preset");
+const [minNoticeMode, setMinNoticeMode] = useState<"preset" | "custom">("preset");
+const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
+
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    email: "",
+    whatsapp: "",
+    logo_url: "",
+    instagram_url: "",
+    facebook_url: "",
+    description: "",
+    business_subtype: "",
+    min_booking_notice_minutes: 0,
+    max_booking_days_ahead: 60,
+  });
+
+  const publicUrl = useMemo(() => `https://orbyx.cl/${slug}`, [slug]);
+  const branchStorageKey = useMemo(() => {
+    return slug ? `orbyx_active_branch_${slug}` : "";
+  }, [slug]);
+  const [activeSection, setActiveSection] = useState<BusinessSectionId>("general");
+  const [horariosAyudaOpen, setHorariosAyudaOpen] = useState(false);
+
+  const businessSectionTabs: Array<{
+    id: BusinessSectionId;
+    label: string;
+  }> = [
+    { id: "general", label: "General" },
+    { id: "reservas", label: "Campos" },
+    { id: "horarios", label: "Horarios" },
+    { id: "fechas", label: "Fechas especiales" },
+  ];
+
+  const softCardClass = "rounded-2xl border p-4";
+  const inputClass =
+    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+  const textareaClass =
+    "min-h-[120px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition";
+  const selectClass =
+    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+  const primaryButtonClass =
+    "orbyx-business-energy inline-flex h-11 w-full items-center justify-center rounded-2xl border px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+  const secondaryButtonClass =
+    "orbyx-business-energy inline-flex h-11 w-full items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+  const specialInputClass =
+    "h-10 w-full rounded-xl border px-3 text-xs outline-none transition";
+  const specialSecondaryButtonClass =
+    "orbyx-business-energy inline-flex h-10 w-full items-center justify-center rounded-xl border px-4 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+  const calendarPickerClass =
+    "absolute inset-y-0 right-0 h-10 w-10 cursor-pointer opacity-0";
+  const groupedSpecialDates = useMemo(
+    () => groupSpecialDates(specialDates),
+    [specialDates]
+  );
+  const isVeterinaryCategory =
+    businessCategory === "veterinaria" || businessCategory === "vet";
+  const isMechanicSubtype =
+    businessCategory === "generic" &&
+    form.business_subtype === "taller_automotriz";
+  const previewLockedFields = isVeterinaryCategory
+    ? [...lockedCustomerFields, ...lockedPetFields]
+    : lockedCustomerFields;
+
+  function readStoredBranchId() {
+    if (typeof window === "undefined" || !branchStorageKey) return "";
+    return localStorage.getItem(branchStorageKey) || "";
+  }
+
+  function persistSelectedBranchId(branchId: string) {
+    setSelectedBranchId(branchId);
+
+    if (typeof window !== "undefined" && branchStorageKey) {
+      if (branchId) {
+        localStorage.setItem(branchStorageKey, branchId);
+      } else {
+        localStorage.removeItem(branchStorageKey);
+      }
+    }
+  }
+
+  useEffect(() => {
+    async function loadBusiness() {
+      try {
+        setLoading(true);
+        setLoadError("");
+
+        const res = await apiFetch(
+          `https://orbyx-backend.onrender.com/public/business/${slug}`
+        );
+
+        const data: BusinessResponse | { error?: string } = await res.json();
+
+        if (!res.ok) {
+          throw new Error(
+            "error" in data && data.error
+              ? data.error
+              : "No se pudo cargar el negocio"
+          );
+        }
+
+        if (!("business" in data)) {
+          throw new Error("Respuesta inválida del backend");
+        }
+
+        setTenantId(data.business.id);
+	setCalendarId(data.calendar_id);
+
+        const branchesRes = await apiFetch(
+          `https://orbyx-backend.onrender.com/branches?tenant_id=${data.business.id}`
+        );
+
+        const branchesData = await branchesRes.json();
+
+        if (!branchesRes.ok) {
+          throw new Error(
+            branchesData?.error || "No se pudieron cargar las sucursales"
+          );
+        }
+
+        const activeBranches: BranchItem[] = Array.isArray(branchesData.branches)
+          ? branchesData.branches.filter(
+              (branch: BranchItem) => branch.is_active !== false
+            )
+          : [];
+
+        const storedBranchId = readStoredBranchId();
+        const storedBranchExists = activeBranches.some(
+          (branch) => branch.id === storedBranchId
+        );
+        const activeBranchId = storedBranchExists
+          ? storedBranchId
+          : activeBranches[0]?.id || "";
+
+        if (!activeBranchId) {
+          throw new Error("No se encontró una sucursal activa");
+        }
+
+        persistSelectedBranchId(activeBranchId);
+        setGoogleConnected(Boolean(data.google_connected));
+        const normalizedCategory = String(
+          data.business.business_category || "generic"
+        )
+          .trim()
+          .toLowerCase();
+        setBusinessCategory(normalizedCategory);
+setSlotMinutes(Number(data.slot_minutes || 30));
+setCustomSlotMinutes(Number(data.slot_minutes || 30));
+        const normalizedSubtype =
+          normalizedCategory === "generic"
+            ? data.business.business_subtype || ""
+            : "";
+        const rawSubtypeConfig = data.business.business_subtype_config as
+          | { booking_fields?: unknown }
+          | null
+          | undefined;
+
+        setBusinessSubtypeConfig({
+          booking_fields:
+            normalizedSubtype === "taller_automotriz"
+              ? normalizeSubtypeBookingFields(rawSubtypeConfig?.booking_fields)
+              : [],
+        });
+
+        setForm({
+          name: data.business.name || "",
+          phone: data.business.phone || "",
+          address: data.business.address || "",
+          email: data.business.email || "",
+          whatsapp: data.business.whatsapp || "",
+          logo_url: data.business.logo_url || "",
+          instagram_url: data.business.instagram_url || "",
+          facebook_url: data.business.facebook_url || "",
+          description: data.business.description || "",
+          business_subtype: normalizedSubtype,
+          min_booking_notice_minutes: Number(
+            data.business.min_booking_notice_minutes || 0
+          ),
+          max_booking_days_ahead: Number(
+            data.business.max_booking_days_ahead || 60
+          ),
+        });
+
+        await loadBookingFields();
+      } catch (error: unknown) {
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo cargar el negocio"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (slug) {
+      loadBusiness();
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    return () => {
+      if (logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
+    };
+  }, [logoDraftUrl]);
+
+  function resetLogoDraft(revokeUrl = true) {
+    if (revokeUrl && logoDraftUrl) URL.revokeObjectURL(logoDraftUrl);
+
+    setSelectedLogoFile(null);
+    setLogoDraftUrl("");
+    setLogoDraftName("");
+    setLogoScale(1);
+    setLogoOffsetX(0);
+    setLogoOffsetY(0);
+  }
+
+  useEffect(() => {
+    function handleBranchChanged(event: Event) {
+      const customEvent = event as CustomEvent<{
+        slug?: string;
+        branchId?: string;
+      }>;
+
+      if (customEvent.detail?.slug !== slug) return;
+
+      setSelectedBranchId(customEvent.detail?.branchId || "");
+      setHoursError("");
+      setHoursOk("");
+      setSpecialDatesError("");
+      setSpecialDatesOk("");
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== branchStorageKey) return;
+
+      setSelectedBranchId(event.newValue || "");
+      setHoursError("");
+      setHoursOk("");
+      setSpecialDatesError("");
+      setSpecialDatesOk("");
+    }
+
+    window.addEventListener(
+      "orbyx-branch-changed",
+      handleBranchChanged as EventListener
+    );
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        "orbyx-branch-changed",
+        handleBranchChanged as EventListener
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [slug, branchStorageKey]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    loadBusinessHours(tenantId);
+    loadSpecialDates(tenantId);
+  }, [tenantId]);
+
+  function getDefaultHours(): BusinessHour[] {
+    return [
+      { day_of_week: 0, enabled: false, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 1, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 2, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 3, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 4, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 5, enabled: true, start_time: "09:00", end_time: "18:00" },
+      { day_of_week: 6, enabled: false, start_time: "09:00", end_time: "18:00" },
+    ];
+  }
+
+  // Solo modifica el estado local del formulario (igual que editar un bloque a
+  // mano) — el guardado real sigue pasando por "Guardar horario global".
+  function resetBusinessHoursToDefault() {
+    setBusinessHours(getDefaultHours());
+  }
+
+  // Sobrescribe los bloques únicamente de los días ya marcados como Activos
+  // con un solo bloque estándar 08:00-18:00. No activa días Inactivos.
+  function fillActiveDaysWithStandardHours() {
+    setBusinessHours((prev) => {
+      const activeDays = new Set(
+        prev.filter((b) => b.enabled).map((b) => b.day_of_week)
+      );
+      const untouched = prev.filter((b) => !activeDays.has(b.day_of_week));
+      const standardBlocks: BusinessHour[] = Array.from(activeDays).map(
+        (day_of_week) => ({
+          day_of_week,
+          enabled: true,
+          start_time: "08:00",
+          end_time: "18:00",
+        })
+      );
+      return [...untouched, ...standardBlocks];
+    });
+  }
+
+  async function loadBookingFields() {
+    try {
+      const res = await apiFetch(
+        `https://orbyx-backend.onrender.com/booking-fields/${slug}`
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error cargando campos de reserva");
+      }
+
+      setBookingFields(
+        normalizeBookingFieldsConfig(data.booking_fields_config)
+      );
+    } catch (err) {
+      console.error("Error cargando booking fields", err);
+      setBookingFields(normalizeBookingFieldsConfig([]));
+    }
+  }
+
+  async function loadBusinessHours(id: string) {
+    try {
+      const res = await apiFetch(
+        `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}&scope=global`
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        if (data.hours?.length) {
+          const grouped: Record<number, BusinessHour[]> = {};
+
+for (const item of data.hours) {
+  const day = Number(item.day_of_week);
+
+  if (!grouped[day]) grouped[day] = [];
+
+  grouped[day].push({
+    day_of_week: day,
+    enabled: Boolean(item.enabled),
+    start_time: String(item.start_time || "").slice(0, 5),
+    end_time: String(item.end_time || "").slice(0, 5),
+  });
+}
+
+const result: BusinessHour[] = [];
+
+for (const day of displayOrder) {
+  if (grouped[day] && grouped[day].length > 0) {
+    result.push(...grouped[day]);
+  } else {
+    result.push({
+      day_of_week: day,
+      enabled: false,
+      start_time: "09:00",
+      end_time: "18:00",
+    });
+  }
+}
+
+setBusinessHours(result);
+              
+
+        } else {
+          setBusinessHours(getDefaultHours());
+        }
+      }
+    } catch (err) {
+      console.error("Error cargando horarios", err);
+      setBusinessHours(getDefaultHours());
+    }
+  }
+
+  async function loadSpecialDates(id: string) {
+    try {
+      const res = await apiFetch(
+        `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}&scope=global`
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error cargando fechas especiales");
+      }
+
+      const normalized = Array.isArray(data.special_dates)
+        ? data.special_dates.map(
+            (item: {
+              id?: string;
+              date?: string;
+              label?: string;
+              is_closed?: boolean;
+              start_time?: string;
+              end_time?: string;
+            }) => ({
+              id: item.id,
+              date: item.date || "",
+              label: item.label || "",
+              is_closed: Boolean(item.is_closed),
+              start_time: String(item.start_time || "").slice(0, 5),
+              end_time: String(item.end_time || "").slice(0, 5),
+            })
+          )
+        : [];
+
+      setSpecialDates(normalized);
+    } catch (err) {
+      console.error("Error cargando fechas especiales", err);
+      setSpecialDates([]);
+    }
+  }
+
+  function addSpecialDate() {
+    setSpecialDateFormOpen(true);
+    setSpecialDateRangeError("");
+    setSpecialDatesError("");
+    setSpecialDatesOk("");
+    setSpecialDateDisplay("");
+    setSpecialDateFromDisplay("");
+    setSpecialDateToDisplay("");
+    setEditingSpecialDateId("");
+    setSpecialDateRangeForm({
+      enabled: false,
+      type: "Vacaciones",
+      date: "",
+      date_from: "",
+      date_to: "",
+      label: "",
+      is_closed: true,
+      start_time: "",
+      end_time: "",
+    });
+  }
+
+  function resetSpecialDateDraft() {
+    setSpecialDateFormOpen(false);
+    setSpecialDateRangeError("");
+    setSpecialDateDisplay("");
+    setSpecialDateFromDisplay("");
+    setSpecialDateToDisplay("");
+    setEditingSpecialDateId("");
+    setSpecialDateRangeForm({
+      enabled: false,
+      type: "Vacaciones",
+      date: "",
+      date_from: "",
+      date_to: "",
+      label: "",
+      is_closed: true,
+      start_time: "",
+      end_time: "",
+    });
+  }
+
+  function updateSpecialDateRange(
+    field: keyof SpecialDateRangeForm,
+    value: string | boolean
+  ) {
+    setSpecialDateRangeError("");
+    setSpecialDateRangeForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function getSpecialDateDraftTimeError() {
+    if (!specialDateRangeForm.is_closed) {
+      const startTime = String(specialDateRangeForm.start_time || "").trim();
+      const endTime = String(specialDateRangeForm.end_time || "").trim();
+
+      if (!isValidTime(startTime) || !isValidTime(endTime)) {
+        return "Formato inválido. Usa HH:mm entre 00:00 y 23:59.";
+      }
+
+      if (startTime >= endTime) {
+        return "La hora inicio debe ser menor que la hora fin.";
+      }
+    }
+
+    return "";
+  }
+
+  function getSpecialDateRangeError() {
+    if (!specialDateFormOpen) return "";
+
+    if (!specialDateRangeForm.enabled && !specialDateDisplay) {
+      return "Selecciona la fecha.";
+    }
+
+    if (!specialDateRangeForm.enabled && !isValidDisplayDate(specialDateDisplay)) {
+      return "Usa formato dd-mm-yyyy válido.";
+    }
+
+    if (specialDateRangeForm.enabled && !specialDateFromDisplay) {
+      return "Selecciona la fecha desde.";
+    }
+
+    if (specialDateRangeForm.enabled && !specialDateToDisplay) {
+      return "Selecciona la fecha hasta.";
+    }
+
+    if (
+      specialDateRangeForm.enabled &&
+      (!isValidDisplayDate(specialDateFromDisplay) ||
+        !isValidDisplayDate(specialDateToDisplay))
+    ) {
+      return "Usa formato dd-mm-yyyy válido.";
+    }
+
+    if (
+      specialDateRangeForm.enabled &&
+      parseDateDisplay(specialDateToDisplay) < parseDateDisplay(specialDateFromDisplay)
+    ) {
+      return "La fecha hasta no puede ser menor que la fecha desde.";
+    }
+
+    return getSpecialDateDraftTimeError();
+  }
+
+  function getDatesInRange(dateFrom: string, dateTo: string) {
+    const dates: string[] = [];
+    const current = new Date(`${dateFrom}T00:00:00Z`);
+    const end = new Date(`${dateTo}T00:00:00Z`);
+
+    while (current <= end) {
+      dates.push(current.toISOString().slice(0, 10));
+      current.setUTCDate(current.getUTCDate() + 1);
+    }
+
+    return dates;
+  }
+
+  function buildSpecialDateRangeItems() {
+    const dates = specialDateRangeForm.enabled
+      ? getDatesInRange(
+          parseDateDisplay(specialDateFromDisplay),
+          parseDateDisplay(specialDateToDisplay)
+        )
+      : [parseDateDisplay(specialDateDisplay)];
+    const label = specialDateRangeForm.label.trim() || specialDateRangeForm.type;
+
+    return dates.map((date) => ({
+      date,
+      label,
+      is_closed: specialDateRangeForm.is_closed,
+      start_time: specialDateRangeForm.is_closed
+        ? ""
+        : specialDateRangeForm.start_time.trim(),
+      end_time: specialDateRangeForm.is_closed
+        ? ""
+        : specialDateRangeForm.end_time.trim(),
+    }));
+  }
+
+  async function saveSpecialDateDraft() {
+    const error = getSpecialDateRangeError();
+
+    if (error) {
+      setSpecialDateRangeError(error);
+      return;
+    }
+
+    try {
+      setSavingSpecialDates(true);
+      setSpecialDatesError("");
+      setSpecialDatesOk("");
+
+      const items = buildSpecialDateRangeItems();
+
+      if (editingSpecialDateId) {
+        const item = items[0];
+        const res = await apiFetch(
+          `https://orbyx-backend.onrender.com/business-special-dates/${editingSpecialDateId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              tenant_id: tenantId,
+              branch_id: null,
+              scope: "global",
+              date: item.date,
+              label: item.label,
+              is_closed: item.is_closed,
+              start_time: item.is_closed ? item.start_time || null : item.start_time,
+              end_time: item.is_closed ? item.end_time || null : item.end_time,
+            }),
+          }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Error actualizando fecha especial");
+        }
+
+        await loadSpecialDates(tenantId);
+        resetSpecialDateDraft();
+        setSpecialDatesOk("Fecha especial actualizada correctamente");
+        return;
+      }
+
+      for (const item of items) {
+        const res = await apiFetch(
+          "https://orbyx-backend.onrender.com/business-special-dates",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              tenant_id: tenantId,
+              branch_id: null,
+              scope: "global",
+              date: item.date,
+              label: item.label,
+              is_closed: item.is_closed,
+              start_time: item.is_closed ? item.start_time || null : item.start_time,
+              end_time: item.is_closed ? item.end_time || null : item.end_time,
+            }),
+          }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Error creando fecha especial");
+        }
+      }
+
+      await loadSpecialDates(tenantId);
+      resetSpecialDateDraft();
+      setSpecialDatesOk(
+        items.length === 1
+          ? "Fecha especial guardada correctamente"
+          : `Rango guardado como ${items.length} fechas especiales`
+      );
+    } catch (err: unknown) {
+      setSpecialDatesError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo guardar la fecha especial"
+      );
+    } finally {
+      setSavingSpecialDates(false);
+    }
+  }
+
+async function removeSpecialDateGroup(group: SpecialDateGroup) {
+  const ids = group.items.map((item) => item.id).filter(Boolean) as string[];
+  if (ids.length === 0) return;
+
+  const confirmed = window.confirm(
+    group.isRange
+      ? "¿Seguro que quieres quitar este rango de fechas especiales?"
+      : "¿Seguro que quieres quitar esta fecha especial?"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    setSavingSpecialDates(true);
+    setSpecialDatesError("");
+    setSpecialDatesOk("");
+
+    for (const id of ids) {
+      const res = await apiFetch(
+        `https://orbyx-backend.onrender.com/business-special-dates/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error eliminando fecha especial");
+      }
+    }
+
+    setSpecialDates((prev) =>
+      prev.filter((item) => !item.id || !ids.includes(item.id))
+    );
+    setSpecialDatesOk(
+      group.isRange
+        ? "Rango de fechas especiales eliminado correctamente"
+        : "Fecha especial eliminada correctamente"
+    );
+  } catch (err: unknown) {
+    setSpecialDatesError(
+      err instanceof Error
+        ? err.message
+        : "No se pudo eliminar la fecha especial"
+    );
+  } finally {
+    setSavingSpecialDates(false);
+  }
+}
+
+function editSpecialDateGroup(group: SpecialDateGroup) {
+  const item = group.first;
+  setSpecialDateFormOpen(true);
+  setSpecialDateRangeError("");
+  setSpecialDatesError("");
+  setSpecialDatesOk("");
+  setSpecialDateDisplay(formatDateDisplay(item.date));
+  setSpecialDateFromDisplay("");
+  setSpecialDateToDisplay("");
+  setEditingSpecialDateId(item.id || "");
+  setSpecialDateRangeForm({
+    enabled: false,
+    type: "Otro",
+    date: item.date,
+    date_from: "",
+    date_to: "",
+    label: item.label || "",
+    is_closed: Boolean(item.is_closed),
+    start_time: normalizeSpecialTime(item.start_time) || "09:00",
+    end_time: normalizeSpecialTime(item.end_time) || "18:00",
+  });
+}
+
+  async function saveBusinessHours() {
+    try {
+      setSavingHours(true);
+      setHoursError("");
+      setHoursOk("");
+
+const grouped: Record<
+  number,
+  {
+    day_of_week: number;
+    enabled: boolean;
+    blocks: { start_time: string; end_time: string }[];
+  }
+> = {};
+
+for (const h of businessHours) {
+  if (!grouped[h.day_of_week]) {
+    grouped[h.day_of_week] = {
+      day_of_week: h.day_of_week,
+      enabled: h.enabled,
+      blocks: [],
+    };
+  }
+
+  if (h.enabled && h.start_time && h.end_time) {
+    grouped[h.day_of_week].blocks.push({
+      start_time: h.start_time,
+      end_time: h.end_time,
+    });
+  }
+}
+
+const cleanedHours = Object.values(grouped);
+
+      const res = await apiFetch(
+        "https://orbyx-backend.onrender.com/business-hours",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            branch_id: null,
+            scope: "global",
+            hours: cleanedHours,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error guardando horarios");
+      }
+
+      setHoursOk("Horarios guardados correctamente");
+    } catch (err: unknown) {
+      setHoursError(
+        err instanceof Error ? err.message : "Error guardando horarios"
+      );
+    } finally {
+      setSavingHours(false);
+    }
+  }
+
+  async function handleLogoUpload(file?: File | null) {
+    if (!file) return "";
+
+    try {
+      setLogoUploading(true);
+      setLogoUploadError("");
+
+      if (!tenantId) {
+        throw new Error("No se encontró el negocio");
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("tenant_id", tenantId);
+
+      const res = await apiFetch("/api/upload-business-logo", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo subir el logo");
+      }
+
+      const uploadedUrl = data.public_url || "";
+
+      setForm((prev) => ({
+        ...prev,
+        logo_url: uploadedUrl,
+      }));
+
+      return uploadedUrl;
+    } catch (err: unknown) {
+      setLogoUploadError(
+        err instanceof Error ? err.message : "No se pudo subir el logo"
+      );
+      return "";
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
+  function handleLogoFileSelected(file?: File | null) {
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setLogoUploadError("Formato inválido. Usa JPG, PNG o WebP");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoUploadError("El logo supera el máximo permitido de 2 MB");
+      return;
+    }
+
+    resetLogoDraft();
+
+    const nextPreviewUrl = URL.createObjectURL(file);
+    setLogoUploadError("");
+    setSelectedLogoFile(file);
+    setLogoDraftUrl(nextPreviewUrl);
+    setLogoDraftName(file.name || "logo");
+    setLogoScale(1);
+    setLogoOffsetX(0);
+    setLogoOffsetY(0);
+  }
+
+  async function renderLogoDraft(file: File) {
+    const sourceUrl = URL.createObjectURL(file);
+
+    const image = new Image();
+    image.src = sourceUrl;
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("No se pudo procesar el logo"));
+      });
+
+      const size = 512;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        throw new Error("No se pudo preparar el editor de logo");
+      }
+
+      ctx.clearRect(0, 0, size, size);
+
+      const baseScale = Math.min(size / image.width, size / image.height);
+      const drawWidth = image.width * baseScale * logoScale;
+      const drawHeight = image.height * baseScale * logoScale;
+      const drawX = (size - drawWidth) / 2 + (logoOffsetX / 100) * size;
+      const drawY = (size - drawHeight) / 2 + (logoOffsetY / 100) * size;
+
+      ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png", 0.92)
+      );
+
+      if (!blob) {
+        throw new Error("No se pudo generar el logo ajustado");
+      }
+
+      return new File([blob], "business-logo.png", { type: "image/png" });
+    } finally {
+      URL.revokeObjectURL(sourceUrl);
+    }
+  }
+
+  async function uploadAdjustedLogo() {
+    try {
+      setLogoUploading(true);
+      setLogoUploadError("");
+
+      if (!selectedLogoFile || !logoDraftUrl) {
+        throw new Error("Selecciona un logo antes de aplicar el ajuste");
+      }
+
+      const file = await renderLogoDraft(selectedLogoFile);
+      if (!file) return;
+
+      const uploadedUrl = await handleLogoUpload(file);
+
+      if (!uploadedUrl) {
+        throw new Error("El upload no devolvió una URL válida");
+      }
+
+      resetLogoDraft();
+      setForm((prev) => ({
+        ...prev,
+        logo_url: uploadedUrl,
+      }));
+    } catch (err: unknown) {
+      setLogoUploadError(
+        err instanceof Error ? err.message : "No se pudo guardar el logo"
+      );
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
+  function removeLogo() {
+    resetLogoDraft();
+    if (logoFileInputRef.current) {
+      logoFileInputRef.current.value = "";
+    }
+    setLogoUploadError("");
+    setForm((prev) => ({ ...prev, logo_url: "" }));
+  }
+
+  async function saveBookingFields() {
+    try {
+      setSavingFields(true);
+
+      const res = await apiFetch(
+        `https://orbyx-backend.onrender.com/booking-fields/${slug}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            booking_fields_config: bookingFields,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error guardando campos");
+      }
+
+      if (businessCategory === "generic") {
+        const tenantRes = await apiFetch(
+          `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...form,
+              business_subtype_config:
+                form.business_subtype === "taller_automotriz"
+                  ? businessSubtypeConfig
+                  : {},
+            }),
+          }
+        );
+
+        const tenantData = await tenantRes.json();
+
+        if (!tenantRes.ok) {
+          throw new Error(
+            tenantData?.error || "Error guardando campos del tipo de negocio"
+          );
+        }
+      }
+
+      alert("Campos guardados correctamente");
+    } catch (err: unknown) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "No se pudieron guardar los campos"
+      );
+    } finally {
+      setSavingFields(false);
+    }
+  }
+
+async function saveSlotMinutes() {
+  try {
+    setSavingSlotMinutes(true);
+    setSlotMinutesOk("");
+    setSlotMinutesError("");
+
+    const value = Number(slotMinutes || 30);
+
+    const res = await apiFetch(
+      `https://orbyx-backend.onrender.com/calendars/${calendarId}/slot-minutes`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slot_minutes: value,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "No se pudo guardar el intervalo");
+    }
+
+    setSlotMinutesOk("Intervalo guardado correctamente.");
+  } catch (err: unknown) {
+    setSlotMinutesError(
+      err instanceof Error ? err.message : "No se pudo guardar el intervalo"
+    );
+  } finally {
+    setSavingSlotMinutes(false);
+  }
+}
+
+
+  async function handleSave() {
+    try {
+      setSaving(true);
+      setSaveError("");
+      setSaveOk("");
+
+      if (!form.address.trim()) {
+        throw new Error("La dirección global del negocio es obligatoria.");
+      }
+
+      const tenantPayload = {
+        ...form,
+        logo_url: form.logo_url || "",
+        business_subtype_config:
+          isMechanicSubtype
+            ? businessSubtypeConfig
+            : {},
+      };
+
+      const res = await apiFetch(
+        `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(tenantPayload),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo guardar");
+      }
+
+      setSaveOk("Datos del negocio actualizados correctamente.");
+    } catch (error: unknown) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar la información"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+function updateHourByIndex(
+  index: number,
+  field: keyof BusinessHour,
+  value: string | boolean | number
+) {
+  setBusinessHours((prev) =>
+    prev.map((item, i) =>
+      i === index ? { ...item, [field]: value } : item
+    )
+  );
+}
+
+  function updateBookingField(
+    index: number,
+    field: keyof BookingField,
+    value: boolean
+  ) {
+    setBookingFields((prev) =>
+      prev.map((item, i) => {
+        if (i !== index || lockedBookingFieldKeys.has(item.key)) return item;
+
+        const nextItem = { ...item, [field]: value };
+
+        if (field === "enabled" && value === false) {
+          nextItem.required = false;
+        }
+
+        return nextItem;
+      })
+    );
+  }
+
+  function updateSubtypeBookingField(
+    index: number,
+    field: keyof Pick<
+      SubtypeBookingField,
+      "label" | "enabled" | "required" | "type" | "options"
+    >,
+    value: string | boolean | string[]
+  ) {
+    setBusinessSubtypeConfig((prev) => ({
+      booking_fields: prev.booking_fields.map((item, i) => {
+        if (i !== index) return item;
+
+        const nextItem = {
+          ...item,
+          [field]: value,
+        };
+
+        if (field === "enabled" && value === false) {
+          nextItem.required = false;
+        }
+
+        if (field === "type" && value !== "select") {
+          nextItem.options = [];
+        }
+
+        return nextItem;
+      }),
+    }));
+  }
+
+  function addSubtypeFieldOption(index: number, fieldKey: string) {
+    const option = String(subtypeOptionDrafts[fieldKey] || "").trim();
+    if (!option) return;
+
+    setBusinessSubtypeConfig((prev) => ({
+      booking_fields: prev.booking_fields.map((item, i) => {
+        if (i !== index) return item;
+
+        const currentOptions = item.options || [];
+        const exists = currentOptions.some(
+          (current) => current.toLowerCase() === option.toLowerCase()
+        );
+
+        return {
+          ...item,
+          options: exists ? currentOptions : [...currentOptions, option],
+        };
+      }),
+    }));
+
+    setSubtypeOptionDrafts((prev) => ({
+      ...prev,
+      [fieldKey]: "",
+    }));
+  }
+
+  function removeSubtypeFieldOption(index: number, optionToRemove: string) {
+    setBusinessSubtypeConfig((prev) => ({
+      booking_fields: prev.booking_fields.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              options: (item.options || []).filter(
+                (option) => option !== optionToRemove
+              ),
+            }
+          : item
+      ),
+    }));
+  }
+
+  function normalizeTimeInput(value: string) {
+    const cleaned = value.replace(/[^\d:]/g, "").slice(0, 5);
+
+    if (cleaned.length <= 2) {
+      return cleaned;
+    }
+
+    if (cleaned.includes(":")) {
+      const [h, m] = cleaned.split(":");
+      return `${h.slice(0, 2)}:${(m || "").slice(0, 2)}`;
+    }
+
+    return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`;
+  }
+
+  function isValidTime(value: string) {
+    return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+  }
+
+  return (
+    <div className="space-y-4 pb-6">
+      <style>{`
+        .orbyx-business-energy {
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          cursor: pointer;
+          border-color: rgba(147, 197, 253, 0.28);
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease,
+            background 180ms ease,
+            filter 180ms ease;
+        }
+
+        .orbyx-business-energy::after {
+          content: "";
+          position: absolute;
+          inset: -1px;
+          z-index: -1;
+          border-radius: inherit;
+          background:
+            radial-gradient(circle at 50% 0%, rgba(96, 165, 250, 0.28), transparent 42%),
+            linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(14, 165, 233, 0.1));
+          opacity: 0;
+          transform: scale(0.94);
+          transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .orbyx-business-energy:not(:disabled):hover {
+          border-color: rgba(96, 165, 250, 0.68) !important;
+          box-shadow:
+            0 0 0 1px rgba(59, 130, 246, 0.16),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 24px rgba(14, 165, 233, 0.16) !important;
+          filter: saturate(1.08);
+          transform: translateY(-1px);
+        }
+
+        .orbyx-business-energy:not(:disabled):hover::after {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        .orbyx-business-energy:not(:disabled):active {
+          animation: orbyx-business-energy-pulse 260ms ease-out;
+          box-shadow:
+            0 0 0 1px rgba(147, 197, 253, 0.36),
+            0 0 22px rgba(37, 99, 235, 0.28),
+            0 8px 22px rgba(37, 99, 235, 0.16) !important;
+          transform: translateY(0) scale(0.98);
+        }
+
+        .orbyx-business-energy-active {
+          border-color: rgba(96, 165, 250, 0.72) !important;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(14, 165, 233, 0.08)) !important;
+          box-shadow:
+            inset 0 0 0 1px rgba(147, 197, 253, 0.28),
+            0 12px 30px rgba(37, 99, 235, 0.16),
+            0 0 20px rgba(14, 165, 233, 0.14) !important;
+        }
+
+        @keyframes orbyx-business-energy-pulse {
+          0% {
+            box-shadow:
+              0 0 0 0 rgba(96, 165, 250, 0.36),
+              0 0 16px rgba(37, 99, 235, 0.22);
+          }
+          100% {
+            box-shadow:
+              0 0 0 10px rgba(96, 165, 250, 0),
+              0 0 24px rgba(37, 99, 235, 0.12);
+          }
+        }
+      `}</style>
+
+      <section
+        className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
+        style={{
+          borderColor: "rgba(59,130,246,0.25)",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
+        }}
+      >
+        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex max-w-3xl items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <div>
+<p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-600">Negocio</p>
+<h1 className="mt-0.5 text-lg font-semibold">
+  Configura tu negocio aquí
+</h1>
+
+
+            <p className="mt-0.5 text-sm leading-5">
+              Administra la configuración global, reservas, horarios por sucursal y excepciones del calendario.
+            </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {loadError ? (
+        <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
+          {loadError}
+        </div>
+      ) : null}
+
+      <nav
+        className="-mx-1 overflow-x-auto px-1"
+        aria-label="Secciones de configuración de negocio"
+      >
+        <div
+          className="flex min-w-max gap-2 rounded-[20px] border p-1.5 shadow-sm backdrop-blur"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-card)",
+          }}
+        >
+          {businessSectionTabs.map((item) => {
+            const active = activeSection === item.id;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveSection(item.id)}
+                aria-current={active ? "page" : undefined}
+                className={`cursor-pointer whitespace-nowrap rounded-2xl border px-5 py-3 text-sm font-semibold transition-colors duration-150 hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
+                  active ? "" : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
+                }`}
+                style={{
+                  borderColor: active ? "var(--accent-solid)" : "transparent",
+                  background: active ? "var(--accent-solid)" : "transparent",
+                  color: active ? "#ffffff" : "var(--text-muted)",
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{activeSection === "general" ? (
+<section className="space-y-3">
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+      1. Configuración global
+    </p>
+    <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+      Datos del negocio
+    </h2>
+  </div>
+
+<div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+  
+  <Panel
+    title="Información principal"
+    description="Edita los datos que verán tus clientes y que también podrá usar la IA."
+    className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
+  >
+    {loading ? (
+      <div
+        className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-soft)",
+          color: "var(--text-muted)",
+        }}
+      >
+        Cargando datos...
+      </div>
+    ) : (
+      <div className="space-y-5">
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Nombre del negocio
+          </label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, name: e.target.value }))
+            }
+            className={inputClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+        </div>
+
+        <div
+          className="rounded-2xl border p-4"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+          }}
+        >
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+            <div
+              className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+              }}
+            >
+              {logoDraftUrl || form.logo_url ? (
+                <img
+                  src={logoDraftUrl || form.logo_url}
+                  alt={form.name || "Logo del negocio"}
+                  className="h-full w-full object-contain"
+                  style={
+                    selectedLogoFile && logoDraftUrl
+                      ? {
+                          transform: `translate(${logoOffsetX}%, ${logoOffsetY}%) scale(${logoScale})`,
+                        }
+                      : undefined
+                  }
+                />
+              ) : (
+                <Building2 className="h-8 w-8" style={{ color: "var(--text-muted)" }} />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
+                Logo del negocio
+              </p>
+              <p className="mt-1 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                Este logo queda guardado a nivel global para identidad, sidebar, reservas y campañas futuras.
+              </p>
+
+              <input
+                ref={logoFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  handleLogoFileSelected(e.target.files?.[0]);
+                  e.currentTarget.value = "";
+                }}
+              />
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => logoFileInputRef.current?.click()}
+                  disabled={logoUploading || !tenantId || !canEditNegocio}
+                  className={secondaryButtonClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Subir logo
+                </button>
+
+                <button
+                  type="button"
+                  onClick={removeLogo}
+                  disabled={logoUploading || (!form.logo_url && !logoDraftUrl) || !canEditNegocio}
+                  className="orbyx-business-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Eliminar logo
+                </button>
+              </div>
+
+              {selectedLogoFile && logoDraftUrl ? (
+                <div className="mt-4 space-y-3">
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Ajustando: {logoDraftName}
+                  </p>
+
+                  <label className="block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                    Zoom
+                    <input
+                      type="range"
+                      min="0.6"
+                      max="2"
+                      step="0.05"
+                      value={logoScale}
+                      onChange={(e) => setLogoScale(Number(e.target.value))}
+                      className="mt-2 w-full"
+                    />
+                  </label>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                      Posición horizontal
+                      <input
+                        type="range"
+                        min="-35"
+                        max="35"
+                        step="1"
+                        value={logoOffsetX}
+                        onChange={(e) => setLogoOffsetX(Number(e.target.value))}
+                        className="mt-2 w-full"
+                      />
+                    </label>
+
+                    <label className="block text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                      Posición vertical
+                      <input
+                        type="range"
+                        min="-35"
+                        max="35"
+                        step="1"
+                        value={logoOffsetY}
+                        onChange={(e) => setLogoOffsetY(Number(e.target.value))}
+                        className="mt-2 w-full"
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={uploadAdjustedLogo}
+                    disabled={logoUploading || !selectedLogoFile || !logoDraftUrl}
+                    className={primaryButtonClass}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+                    }}
+                  >
+                    {logoUploading ? "Guardando logo..." : "Aplicar ajuste"}
+                  </button>
+                </div>
+              ) : null}
+
+              {logoUploadError ? (
+                <p className="mt-2 text-xs text-rose-300">{logoUploadError}</p>
+              ) : (
+                <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                  JPG, PNG o WebP. Máximo 2 MB.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label
+              className="mb-2 block text-sm font-medium"
+              style={{ color: "var(--text-main)" }}
+            >
+              Teléfono
+            </label>
+            <input
+              type="text"
+              value={form.phone}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, phone: e.target.value }))
+              }
+              placeholder="Ej: +56 9 1234 5678"
+              className={inputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            />
+          </div>
+
+          <div>
+            <label
+              className="mb-2 block text-sm font-medium"
+              style={{ color: "var(--text-main)" }}
+            >
+              WhatsApp
+            </label>
+            <input
+              type="text"
+              value={form.whatsapp}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, whatsapp: e.target.value }))
+              }
+              placeholder="Ej: +56 9 1234 5678"
+              className={inputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Correo de contacto
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, email: e.target.value }))
+            }
+            placeholder="Ej: contacto@tunegocio.cl"
+            className={inputClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+        </div>
+
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Dirección
+          </label>
+          <input
+            type="text"
+            required
+            value={form.address}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, address: e.target.value }))
+            }
+            placeholder="Ej: Avenida Principal 123, Concepción"
+            className={inputClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+          <div className="mt-3">
+            <MapPreview address={form.address} />
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label
+              className="mb-2 block text-sm font-medium"
+              style={{ color: "var(--text-main)" }}
+            >
+              Instagram
+            </label>
+            <input
+              type="text"
+              value={form.instagram_url}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  instagram_url: e.target.value,
+                }))
+              }
+              placeholder="Ej: https://instagram.com/tu_negocio"
+              className={inputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            />
+          </div>
+
+          <div>
+            <label
+              className="mb-2 block text-sm font-medium"
+              style={{ color: "var(--text-main)" }}
+            >
+              Facebook
+            </label>
+            <input
+              type="text"
+              value={form.facebook_url}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  facebook_url: e.target.value,
+                }))
+              }
+              placeholder="Ej: https://facebook.com/tu_negocio"
+              className={inputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            className="mb-2 flex items-center justify-between text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            <span>Descripción del negocio</span>
+            <span className="text-xs font-normal" style={{ color: "var(--text-muted)" }}>
+              {form.description.length}/{BUSINESS_DESCRIPTION_MAX_LENGTH}
+            </span>
+          </label>
+          <textarea
+            value={form.description}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                description: e.target.value.slice(0, BUSINESS_DESCRIPTION_MAX_LENGTH),
+              }))
+            }
+            maxLength={BUSINESS_DESCRIPTION_MAX_LENGTH}
+            placeholder="Describe tu negocio, especialidad, estilo de atención y lo que te diferencia."
+            className={textareaClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          />
+        </div>
+
+        {false ? (
+          <div
+            className="rounded-2xl border p-4"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+            }}
+          >
+            <div className="max-w-2xl">
+              <div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Tipo de negocio
+                </label>
+                <select
+                  value={form.business_subtype}
+                  onChange={(e) => {
+                    const nextSubtype = e.target.value;
+
+                    setForm((prev) => ({
+                      ...prev,
+                      business_subtype: nextSubtype,
+                    }));
+
+                    setBusinessSubtypeConfig({
+                      booking_fields:
+                        nextSubtype === "taller_automotriz"
+                          ? normalizeSubtypeBookingFields(
+                              businessSubtypeConfig.booking_fields
+                            )
+                          : [],
+                    });
+                  }}
+                  className={selectClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option value="">Selecciona tipo de negocio</option>
+                  {genericBusinessSubtypes
+                    .filter((item) => item.value)
+                    .map((item) => (
+                    <option key={item.value || "none"} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <p
+                  className="mt-2 text-xs leading-5"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {
+                    genericBusinessSubtypes.find(
+                      (item) => item.value === form.business_subtype
+                    )?.description
+                  }
+                </p>
+              </div>
+
+              {false ? (
+                <div className="lg:col-span-2">
+                  <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                    <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    Campos para unidad/equipo
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Se muestran en la reserva publica. Puedes usar texto libre, texto largo o select con opciones.
+                  </p>
+
+                  <div className="mt-3 space-y-2">
+                    {businessSubtypeConfig.booking_fields.map((field, index) => (
+                      <div
+                        key={field.key}
+                        className="grid gap-2 rounded-2xl border p-3 md:grid-cols-[1fr_150px_auto_auto]"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={field.label}
+                          onChange={(e) =>
+                            updateSubtypeBookingField(
+                              index,
+                              "label",
+                              e.target.value
+                            )
+                          }
+                          className="h-10 rounded-xl border px-3 text-sm outline-none transition"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
+                        />
+
+                        <select
+                          value={field.type}
+                          onChange={(e) =>
+                            updateSubtypeBookingField(
+                              index,
+                              "type",
+                              e.target.value
+                            )
+                          }
+                          className="h-10 rounded-xl border px-3 text-sm outline-none transition"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-soft)",
+                            color: "var(--text-main)",
+                          }}
+                        >
+                          <option value="text">Texto</option>
+                          <option value="select">Select</option>
+                          <option value="textarea">Texto largo</option>
+                        </select>
+
+                        <label
+                          className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                            field.enabled ? "orbyx-business-energy-active" : ""
+                          }`}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            color: "var(--text-main)",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={field.enabled}
+                            onChange={(e) =>
+                              updateSubtypeBookingField(
+                                index,
+                                "enabled",
+                                e.target.checked
+                              )
+                            }
+                          />
+                          Visible
+                        </label>
+
+                        <label
+                          className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                            field.required ? "orbyx-business-energy-active" : ""
+                          }`}
+                          style={{
+                            borderColor: "var(--border-color)",
+                            color: "var(--text-main)",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            disabled={!field.enabled}
+                            onChange={(e) =>
+                              updateSubtypeBookingField(
+                                index,
+                                "required",
+                                e.target.checked
+                              )
+                            }
+                          />
+                          Obligatorio
+                        </label>
+
+                        {field.type === "select" ? (
+                          <div className="md:col-span-4">
+                            <label
+                              className="mb-1 block text-xs font-medium"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Opciones del select, una por línea
+                            </label>
+                            <p
+                              className="mb-2 text-xs"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Escribe una opción y agrégala a la lista. Ejemplo: Auto, Moto, Camión.
+                            </p>
+
+                            {(field.options || []).length > 0 ? (
+                              <div className="mb-3 flex flex-wrap gap-2">
+                                {(field.options || []).map((option) => (
+                                  <span
+                                    key={option}
+                                    className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
+                                    style={{
+                                      borderColor: "var(--border-color)",
+                                      background: "var(--bg-soft)",
+                                      color: "var(--text-main)",
+                                    }}
+                                  >
+                                    {option}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        removeSubtypeFieldOption(index, option)
+                                      }
+                                      className="orbyx-business-energy inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/40 text-xs font-semibold text-rose-400 transition hover:text-rose-300"
+                                      aria-label={`Eliminar ${option}`}
+                                    >
+                                      x
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                              <input
+                                type="text"
+                                value={subtypeOptionDrafts[field.key] || ""}
+                                onChange={(e) =>
+                                  setSubtypeOptionDrafts((prev) => ({
+                                    ...prev,
+                                    [field.key]: e.target.value,
+                                  }))
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    addSubtypeFieldOption(index, field.key);
+                                  }
+                                }}
+                                placeholder={
+                                  field.key === "unit_type"
+                                    ? "Ej: Auto"
+                                    : "Ej: Toyota"
+                                }
+                                className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-soft)",
+                                  color: "var(--text-main)",
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  addSubtypeFieldOption(index, field.key)
+                                }
+                                className="orbyx-business-energy h-10 rounded-xl border px-4 text-sm font-medium transition hover:opacity-80"
+                                style={{
+                                  borderColor: "var(--border-color)",
+                                  background: "var(--bg-card)",
+                                  color: "var(--text-main)",
+                                }}
+                              >
+                                Agregar
+                              </button>
+                            </div>
+
+                            {(field.options || []).length === 0 ? (
+                              <p
+                                className="mt-1 text-xs"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                Si no hay opciones, en la reserva publica se mostrara como texto libre.
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                    </div>
+
+                    <div
+                      className="rounded-2xl border p-4"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                      }}
+                    >
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: "var(--text-main)" }}
+                      >
+                        Así verá este formulario tu cliente
+                      </p>
+                      <p
+                        className="mt-1 text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Vista previa de los campos visibles para la reserva pública.
+                      </p>
+
+                      <div className="mt-4 space-y-3">
+                        {businessSubtypeConfig.booking_fields.filter((field) => field.enabled).length === 0 ? (
+                          <div
+                            className="rounded-2xl border border-dashed px-4 py-5 text-sm"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            No hay campos visibles para mostrar.
+                          </div>
+                        ) : null}
+
+                        {businessSubtypeConfig.booking_fields
+                          .filter((field) => field.enabled)
+                          .map((field) => {
+                            const label = `${field.label}${field.required ? " *" : ""}`;
+
+                            if (field.type === "select" && (field.options || []).length > 0) {
+                              return (
+                                <div key={field.key}>
+                                  <label
+                                    className="mb-1 block text-xs font-medium"
+                                    style={{ color: "var(--text-muted)" }}
+                                  >
+                                    {label}
+                                    {field.required ? " · Obligatorio" : ""}
+                                  </label>
+                                  <select
+                                    disabled
+                                    className="h-10 w-full rounded-xl border px-3 text-sm"
+                                    style={{
+                                      borderColor: "var(--border-color)",
+                                      background: "var(--bg-soft)",
+                                      color: "var(--text-main)",
+                                    }}
+                                  >
+                                    <option>{field.label}</option>
+                                    {(field.options || []).map((option) => (
+                                      <option key={option}>{option}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              );
+                            }
+
+                            if (field.type === "textarea") {
+                              return (
+                                <div key={field.key}>
+                                  <label
+                                    className="mb-1 block text-xs font-medium"
+                                    style={{ color: "var(--text-muted)" }}
+                                  >
+                                    {label}
+                                    {field.required ? " · Obligatorio" : ""}
+                                  </label>
+                                  <textarea
+                                    disabled
+                                    placeholder={field.label}
+                                    className="min-h-[82px] w-full rounded-xl border px-3 py-2 text-sm"
+                                    style={{
+                                      borderColor: "var(--border-color)",
+                                      background: "var(--bg-soft)",
+                                      color: "var(--text-main)",
+                                    }}
+                                  />
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div key={field.key}>
+                                <label
+                                  className="mb-1 block text-xs font-medium"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  {label}
+                                  {field.required ? " · Obligatorio" : ""}
+                                </label>
+                                <input
+                                  disabled
+                                  placeholder={field.label}
+                                  className="h-10 w-full rounded-xl border px-3 text-sm"
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-soft)",
+                                    color: "var(--text-main)",
+                                  }}
+                                />
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {saveError ? (
+          <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+            {saveError}
+          </div>
+        ) : null}
+
+        {saveOk ? (
+          <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+            {saveOk}
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap gap-3 pt-2">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || !canEditNegocio}
+            className={primaryButtonClass}
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+            }}
+          >
+            {saving ? "Guardando..." : "Guardar cambios"}
+          </button>
+        </div>
+      </div>
+    )}
+  </Panel>
+
+  <div className="space-y-4">
+    {businessCategory === "generic" ? (
+      <Panel
+        title="Tipo de negocio"
+        description="Define la familia del negocio para preparar configuraciones específicas."
+        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+      >
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Tipo de negocio
+          </label>
+          <select
+            value={form.business_subtype}
+            onChange={(e) => {
+              const nextSubtype = e.target.value;
+
+              setForm((prev) => ({
+                ...prev,
+                business_subtype: nextSubtype,
+              }));
+
+              setBusinessSubtypeConfig({
+                booking_fields:
+                  nextSubtype === "taller_automotriz"
+                    ? normalizeSubtypeBookingFields(
+                        businessSubtypeConfig.booking_fields
+                      )
+                    : [],
+              });
+            }}
+            className={selectClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value="">Selecciona tipo de negocio</option>
+            {genericBusinessSubtypes
+              .filter((item) => item.value)
+              .map((item) => (
+                <option key={item.value || "none"} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+          </select>
+          <p
+            className="mt-2 text-xs leading-5"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {
+              genericBusinessSubtypes.find(
+                (item) => item.value === form.business_subtype
+              )?.description
+            }
+          </p>
+        </div>
+      </Panel>
+    ) : null}
+
+    {businessCategory === "clinica" ? (
+      <Panel
+        title="Especialidad clínica"
+        description="Define la especialidad de tu centro de salud. Esto activa campos específicos en las fichas clínicas."
+        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+      >
+        <div>
+          <label
+            className="mb-2 block text-sm font-medium"
+            style={{ color: "var(--text-main)" }}
+          >
+            Especialidad clínica
+          </label>
+          <select
+            value={form.business_subtype}
+            onChange={(e) => {
+              const nextSubtype = e.target.value;
+              setForm((prev) => ({
+                ...prev,
+                business_subtype: nextSubtype,
+              }));
+            }}
+            className={selectClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
+            }}
+          >
+            <option value="">Selecciona especialidad</option>
+            {clinicaBusinessSubtypes.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </Panel>
+    ) : null}
+
+    <div className="orbyx-biz-summary grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
+      {[
+        {
+          label: "Nombre",
+          value: loading ? "Cargando..." : form.name || "No definido",
+          icon: User,
+        },
+        {
+          label: "Contacto",
+          value: loading
+            ? "Cargando..."
+            : form.phone || form.whatsapp || "No definido",
+          icon: Phone,
+        },
+        {
+          label: "Correo",
+          value: loading ? "Cargando..." : form.email || "No definido",
+          icon: Mail,
+        },
+        {
+          label: "Redes",
+          value: loading
+            ? "Cargando..."
+            : form.instagram_url || form.facebook_url
+              ? "Configuradas"
+            : "No configuradas",
+          icon: Share2,
+        },
+        {
+          label: "URL pública",
+          value: publicUrl,
+          icon: Link2,
+        },
+        {
+          label: "Google Calendar",
+          value: loading ? "Cargando..." : googleConnected ? "Conectado" : "Pendiente",
+          icon: Calendar,
+        },
+      ].map((item) => (
+        <div
+          key={item.label}
+          className="flex items-center gap-3 rounded-none border px-4 py-3"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--biz-summary-tint)",
+          }}
+        >
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+            style={{ background: "var(--biz-summary-icon-bg)", color: "var(--biz-summary-icon-color)" }}
+          >
+            <item.icon className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p
+              className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {item.label}
+            </p>
+
+            <p
+              className="mt-1 truncate text-sm font-semibold"
+              style={{ color: "var(--text-main)" }}
+              title={item.value}
+            >
+              {item.value}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+    <style jsx>{`
+      .orbyx-biz-summary {
+        --biz-summary-tint: #eff6ff;
+        --biz-summary-icon-bg: #dbeafe;
+        --biz-summary-icon-color: #2563eb;
+      }
+      :global(:root[data-theme="nocturno"]) .orbyx-biz-summary {
+        --biz-summary-tint: #132a44;
+        --biz-summary-icon-bg: #1e3a5f;
+        --biz-summary-icon-color: #93c5fd;
+      }
+    `}</style>
+
+</div>
+</div>
+</section>
+) : null}
+
+{activeSection === "reservas" ? (
+<section className="space-y-3">
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+      2. Campos
+    </p>
+    <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+      Formulario de reserva pública
+    </h2>
+  </div>
+
+  <div
+    className={`grid gap-4 ${
+      isMechanicSubtype
+        ? "xl:grid-cols-[0.85fr_1.15fr]"
+        : "xl:grid-cols-[1fr_0.86fr]"
+    }`}
+  >
+    <div
+      className={`grid gap-4 ${
+        isMechanicSubtype
+          ? "xl:col-span-2 xl:grid-cols-[1.15fr_0.85fr]"
+          : "xl:col-start-2 xl:row-start-1"
+      }`}
+    >
+      {form.business_subtype === "taller_automotriz" ? (
+        <Panel
+          title="Campos de unidad/equipo"
+          description="Configura los datos adicionales que completará el cliente en la reserva pública."
+          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+        >
+          <div className="space-y-3">
+            {businessSubtypeConfig.booking_fields.map((field, index) => (
+              <div
+                key={field.key}
+                className="grid gap-2 rounded-2xl border p-3 md:grid-cols-[1fr_150px_auto_auto]"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <input
+                  type="text"
+                  value={field.label}
+                  onChange={(e) =>
+                    updateSubtypeBookingField(index, "label", e.target.value)
+                  }
+                  className="h-10 rounded-xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+
+                <select
+                  value={field.type}
+                  onChange={(e) =>
+                    updateSubtypeBookingField(index, "type", e.target.value)
+                  }
+                  className="h-10 rounded-xl border px-3 text-sm outline-none transition"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option value="text">Texto</option>
+                  <option value="select">Select</option>
+                  <option value="textarea">Texto largo</option>
+                </select>
+
+                <label
+                  className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                    field.enabled ? "orbyx-business-energy-active" : ""
+                  }`}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={field.enabled}
+                    onChange={(e) =>
+                      updateSubtypeBookingField(index, "enabled", e.target.checked)
+                    }
+                  />
+                  Visible
+                </label>
+
+                <label
+                  className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                    field.required ? "orbyx-business-energy-active" : ""
+                  }`}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={field.required}
+                    disabled={!field.enabled}
+                    onChange={(e) =>
+                      updateSubtypeBookingField(index, "required", e.target.checked)
+                    }
+                  />
+                  Obligatorio
+                </label>
+
+                {field.type === "select" ? (
+                  <div className="md:col-span-4">
+                    <label
+                      className="mb-1 block text-xs font-medium"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Opciones del select
+                    </label>
+                    <p
+                      className="mb-2 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Cada opción agregada será una opción para el cliente. Ejemplo: Auto, Moto, Camión.
+                    </p>
+
+                    {(field.options || []).length > 0 ? (
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        {(field.options || []).map((option) => (
+                          <span
+                            key={option}
+                            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-soft)",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            {option}
+                            <button
+                              type="button"
+                              onClick={() => removeSubtypeFieldOption(index, option)}
+                              className="orbyx-business-energy inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/40 text-xs font-semibold text-rose-400 transition hover:text-rose-300"
+                              aria-label={`Eliminar ${option}`}
+                            >
+                              x
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        value={subtypeOptionDrafts[field.key] || ""}
+                        onChange={(e) =>
+                          setSubtypeOptionDrafts((prev) => ({
+                            ...prev,
+                            [field.key]: e.target.value,
+                          }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addSubtypeFieldOption(index, field.key);
+                          }
+                        }}
+                        placeholder={
+                          field.key === "unit_type" ? "Ej: Auto" : "Ej: Toyota"
+                        }
+                        className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                          color: "var(--text-main)",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addSubtypeFieldOption(index, field.key)}
+                        className="orbyx-business-energy h-10 rounded-xl border px-4 text-sm font-medium transition hover:opacity-80"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-card)",
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        Agregar
+                      </button>
+                    </div>
+
+                    {(field.options || []).length === 0 ? (
+                      <p
+                        className="mt-1 text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Si no hay opciones, en la reserva pública se mostrará como texto libre.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
+
+      <Panel
+        title="Vista previa del formulario público"
+        description="Así se verán los campos configurados cuando el cliente reserve."
+        className={`bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)] ${
+          isMechanicSubtype ? "" : ""
+        }`}
+      >
+        <div
+          className="mx-auto max-w-[360px] rounded-[34px] border p-3 shadow-[0_22px_70px_rgba(15,23,42,0.18)]"
+          style={{
+            borderColor: "rgba(15,23,42,0.24)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.98))",
+          }}
+        >
+          <div
+            className="space-y-3 rounded-[26px] border p-4"
+            style={{
+              borderColor: "rgba(203,213,225,0.9)",
+              background: "white",
+            }}
+          >
+            <p
+              className="text-sm font-semibold text-slate-950"
+            >
+              Reserva tu hora
+            </p>
+            <p className="text-[11px] text-slate-500">
+              Completa la información para continuar con tu reserva.
+            </p>
+
+            {isMechanicSubtype ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-900">
+                  Datos del vehículo/equipo
+                </p>
+                {businessSubtypeConfig.booking_fields.filter((field) => field.enabled).map((field) => {
+                const label = `${field.label}${field.required ? " *" : ""}`;
+
+                if (field.type === "select" && (field.options || []).length > 0) {
+                  return (
+                    <div key={field.key}>
+                      <select
+                        disabled
+                        defaultValue=""
+                        className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500"
+                      >
+                        <option value="">{label}</option>
+                        {(field.options || []).map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
+
+                if (field.type === "textarea") {
+                  return (
+                    <div key={field.key}>
+                      <textarea
+                        disabled
+                        placeholder={label}
+                        className="min-h-[68px] w-full cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500"
+                      />
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={field.key}>
+                    <input
+                      disabled
+                      placeholder={label}
+                      className="h-9 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500"
+                    />
+                  </div>
+                );
+                })}
+              </div>
+            ) : null}
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-slate-900">Tus datos</p>
+              {previewLockedFields.map((field) => (
+                <input
+                  key={field.key}
+                  disabled
+                  placeholder={`${field.label} *`}
+                  className="h-9 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500"
+                />
+              ))}
+            </div>
+
+            {bookingFields.filter((field) => field.enabled).length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-900">
+                  Información adicional
+                </p>
+                {bookingFields.filter((field) => field.enabled).map((field) => (
+                  <input
+                    key={field.key}
+                    disabled
+                    placeholder={`${field.label}${field.required ? " *" : ""}`}
+                    className="h-9 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500"
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            <div className="h-10 rounded-lg bg-[linear-gradient(135deg,rgb(79,70,229),rgb(37,99,235))] text-center text-xs font-semibold leading-10 text-white">
+              Confirmar reserva
+            </div>
+          </div>
+        </div>
+      </Panel>
+    </div>
+
+    <div
+      className={
+        isMechanicSubtype ? "xl:col-span-2" : "xl:col-start-1 xl:row-start-1"
+      }
+    >
+    <Panel
+      title="Campos de reserva"
+      description="Define qué información solicitar al cliente al reservar."
+      className="flex flex-col bg-[linear-gradient(180deg,rgba(37,99,235,0.06),transparent_35%)]"
+    >
+      <div className="flex flex-col">
+        <div className="space-y-4">
+          {bookingFields.length === 0 ? (
+            <div
+              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-muted)",
+              }}
+            >
+              No hay campos configurables cargados aún.
+            </div>
+          ) : (
+            bookingFields.map((field, index) => (
+              <div
+                key={field.key}
+                className="flex items-center justify-between gap-4 rounded-2xl border p-4"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background:
+                    "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-card))",
+                }}
+              >
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {field.label}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    {field.enabled
+                      ? field.required
+                        ? "Obligatorio"
+                        : "Opcional"
+                      : "Desactivado"}
+                  </p>
+                </div>
+
+                <div
+                  className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:gap-4"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={field.enabled}
+                      onChange={(e) =>
+                        updateBookingField(index, "enabled", e.target.checked)
+                      }
+                    />
+                    Activo
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={field.required}
+                      disabled={!field.enabled}
+                      onChange={(e) =>
+                        updateBookingField(index, "required", e.target.checked)
+                      }
+                    />
+                    Obligatorio
+                  </label>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="pt-4">
+          <button
+            onClick={saveBookingFields}
+            disabled={savingFields || !canEditNegocio}
+            className={primaryButtonClass}
+            style={{
+              background:
+                "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+            }}
+          >
+            {savingFields ? "Guardando..." : "Guardar campos"}
+          </button>
+        </div>
+      </div>
+    </Panel>
+    </div>
+
+
+
+  </div>
+</section>
+) : null}
+
+{activeSection === "horarios" ? (
+<section className="space-y-3">
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+      3. Horarios por sucursal
+    </p>
+    <div className="mt-1 flex items-center gap-2">
+      <h2 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+        Disponibilidad semanal
+      </h2>
+      <button
+        type="button"
+        onClick={() => setHorariosAyudaOpen(true)}
+        title="¿Cómo funcionan los horarios?"
+        aria-label="¿Cómo funcionan los horarios?"
+        className="inline-flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-70"
+        style={{ color: "var(--text-muted)" }}
+      >
+        <HelpCircle size={16} />
+      </button>
+    </div>
+  </div>
+
+  <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+    <Panel
+      title="Reglas de reserva"
+      description="Define anticipación mínima y ventana máxima para reservar."
+      className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+    >
+      <div className="space-y-5">
+        <div>
+          <label className="mb-2 block text-sm font-medium" style={{ color: "var(--text-main)" }}>
+            Tiempo mínimo antes de reservar
+          </label>
+          <select
+            value={minNoticeMode === "custom" ? "custom" : form.min_booking_notice_minutes}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "custom") {
+                setMinNoticeMode("custom");
+                setForm((prev) => ({
+                  ...prev,
+                  min_booking_notice_minutes: prev.min_booking_notice_minutes || 180,
+                }));
+                return;
+              }
+              setMinNoticeMode("preset");
+              setForm((prev) => ({ ...prev, min_booking_notice_minutes: Number(val) }));
+            }}
+            className={selectClass}
+            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+          >
+            <option value={0}>Sin restricción</option>
+            <option value={15}>15 minutos</option>
+            <option value={30}>30 minutos</option>
+            <option value={60}>1 hora</option>
+            <option value={120}>2 horas</option>
+            <option value="custom">Personalizado</option>
+          </select>
+          {minNoticeMode === "custom" ? (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                step={5}
+                value={form.min_booking_notice_minutes}
+                onChange={(e) => setForm((prev) => ({ ...prev, min_booking_notice_minutes: Number(e.target.value) }))}
+                placeholder="Ej: 180"
+                className="h-11 w-full rounded-2xl border px-4 text-sm sm:w-28"
+                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+              />
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>minutos</span>
+            </div>
+          ) : null}
+          <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            Evita reservas inmediatas. Ej: si eliges 1 hora, los clientes solo podrán reservar con al menos 60 minutos de anticipación.
+          </p>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium" style={{ color: "var(--text-main)" }}>
+            Máximo días hacia adelante
+          </label>
+          <select
+            value={maxDaysMode === "custom" ? "custom" : form.max_booking_days_ahead}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "custom") {
+                setMaxDaysMode("custom");
+                setForm((prev) => ({
+                  ...prev,
+                  max_booking_days_ahead: prev.max_booking_days_ahead || 120,
+                }));
+                return;
+              }
+              setMaxDaysMode("preset");
+              setForm((prev) => ({ ...prev, max_booking_days_ahead: Number(val) }));
+            }}
+            className={selectClass}
+            style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+          >
+            <option value={7}>7 días</option>
+            <option value={14}>14 días</option>
+            <option value={30}>30 días</option>
+            <option value={60}>60 días</option>
+            <option value={90}>90 días</option>
+            <option value="custom">Personalizado</option>
+          </select>
+          {maxDaysMode === "custom" ? (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={form.max_booking_days_ahead}
+                onChange={(e) => setForm((prev) => ({ ...prev, max_booking_days_ahead: Number(e.target.value) }))}
+                placeholder="Ej: 120"
+                className="h-11 w-full rounded-2xl border px-4 text-sm sm:w-28"
+                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+              />
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>días</span>
+            </div>
+          ) : null}
+          <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            Limita cuántos días hacia el futuro pueden agendar los clientes.
+          </p>
+        </div>
+      </div>
+    </Panel>
+
+    <Panel
+      title="Intervalo de horarios"
+      description="Define cada cuántos minutos se mostrarán los horarios a tus clientes."
+      className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+    >
+      <div className="space-y-5">
+        <div className="flex flex-wrap gap-2">
+          {[15, 30, 45, 60].map((val) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => {
+                setSlotMinutesMode("preset");
+                setSlotMinutes(val);
+              }}
+              className={`px-4 py-2 rounded-xl border text-sm font-medium transition-colors hover:brightness-90 ${
+                slotMinutesMode === "preset" && slotMinutes === val
+                  ? ""
+                  : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
+              }`}
+              style={
+                slotMinutesMode === "preset" && slotMinutes === val
+                  ? { background: "var(--accent-solid)", borderColor: "var(--accent-solid)", color: "#ffffff" }
+                  : { background: "var(--bg-card)", borderColor: "var(--border-color)", color: "var(--text-main)" }
+              }
+            >
+              {val} min
+            </button>
+          ))}
+          <button
+            type="button"
+              onClick={() => {
+                setSlotMinutesMode("custom");
+                setSlotMinutes(customSlotMinutes);
+              }}
+            className={`px-4 py-2 rounded-xl border text-sm font-medium transition-colors hover:brightness-90 ${
+              slotMinutesMode === "custom"
+                ? ""
+                : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
+            }`}
+            style={
+              slotMinutesMode === "custom"
+                ? { background: "var(--accent-solid)", borderColor: "var(--accent-solid)", color: "#ffffff" }
+                : { background: "var(--bg-card)", borderColor: "var(--border-color)", color: "var(--text-main)" }
+            }
+          >
+            Personalizado
+          </button>
+        </div>
+        {slotMinutesMode === "custom" ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={5}
+              step={5}
+              value={customSlotMinutes}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setCustomSlotMinutes(val);
+                setSlotMinutes(val);
+              }}
+              className="h-11 w-full rounded-xl border px-3 text-sm sm:w-28"
+              style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+            />
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>minutos</span>
+          </div>
+        ) : null}
+        <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}>
+          <p className="mb-3 text-xs" style={{ color: "var(--text-muted)" }}>Vista previa de horarios</p>
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 8 }).map((_, i) => {
+              const base = 9 * 60;
+              const minutes = base + i * slotMinutes;
+              const hour = Math.floor(minutes / 60);
+              const min = minutes % 60;
+              const label = `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+              return (
+                <div key={i} className="rounded-xl border px-3 py-2 text-xs" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                  {label}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={saveSlotMinutes}
+            disabled={savingSlotMinutes || !calendarId || !canEditNegocio}
+            className={primaryButtonClass}
+            style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
+          >
+            {savingSlotMinutes ? "Guardando..." : "Guardar intervalo"}
+          </button>
+          {slotMinutesOk ? <span className="text-sm text-emerald-400">{slotMinutesOk}</span> : null}
+          {slotMinutesError ? <span className="text-sm text-rose-400">{slotMinutesError}</span> : null}
+        </div>
+      </div>
+    </Panel>
+  </div>
+
+  <Panel
+    title="Horario global del negocio"
+    description="Se aplicará a todas las sucursales que usen horario global."
+    className="!rounded-md bg-[linear-gradient(180deg,rgba(14,165,233,0.05),transparent_35%)]"
+    headerAction={
+      <>
+        <button
+          type="button"
+          onClick={resetBusinessHoursToDefault}
+          disabled={!canEditNegocio}
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+            color: "var(--text-main)",
+          }}
+        >
+          ↺ Restablecer por defecto
+        </button>
+        <button
+          type="button"
+          onClick={fillActiveDaysWithStandardHours}
+          disabled={!canEditNegocio}
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            borderColor: "rgba(37,99,235,0.32)",
+            background: "rgba(37,99,235,0.08)",
+            color: "rgb(37 99 235)",
+          }}
+        >
+          Rellenar días activos 08:00–18:00
+        </button>
+      </>
+    }
+  >
+    <div className="space-y-3">
+      {displayOrder.map((dayIndex) => {
+  const dayBlocks = businessHours.filter(
+    (d) => d.day_of_week === dayIndex
+  );
+
+  const enabled = dayBlocks.some((b) => b.enabled);
+
+            return (
+              <div
+                key={dayIndex}
+                className="grid gap-3 rounded border p-3 sm:grid-cols-[150px_minmax(0,1fr)_auto] sm:items-center"
+                style={{
+                  borderColor: enabled
+                    ? "rgba(37,99,235,0.22)"
+                    : "var(--border-color)",
+                  background: enabled
+                    ? "linear-gradient(135deg, rgba(37,99,235,0.05), var(--bg-card))"
+                    : "var(--bg-card)",
+                }}
+              >
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-main)" }}
+                  >
+                    {days[dayIndex]}
+                  </p>
+                  <p
+                    className="mt-0.5 text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {enabled ? `${dayBlocks.length} bloque${dayBlocks.length === 1 ? "" : "s"}` : "Cerrado"}
+                  </p>
+                </div>
+
+                <div className="flex min-w-0 flex-col gap-2">
+                  {!enabled ? (
+                    <span
+                      className="inline-flex h-9 w-fit items-center rounded border px-3 text-xs font-semibold"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-soft)",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      No disponible
+                    </span>
+                  ) : (
+                    dayBlocks.map((block, i) => (
+                      <div
+                        key={i}
+                        className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded border px-2 py-2"
+                        style={{
+                          borderColor: "var(--border-color)",
+                          background: "var(--bg-soft)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={block.start_time}
+                          onChange={(e) =>
+updateHourByIndex(
+  businessHours.findIndex(
+    (x) =>
+      x.day_of_week === dayIndex &&
+      x.start_time === block.start_time &&
+      x.end_time === block.end_time
+  ),
+  "start_time",
+            normalizeTimeInput(e.target.value)
+          )
+        }
+                          className="h-10 w-[150px] rounded border px-3 text-sm outline-none transition sm:w-[160px]"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        />
+
+                        <span
+                          className="text-sm"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          -
+                        </span>
+
+                        <input
+                          type="text"
+                          value={block.end_time}
+
+onChange={(e) =>
+  updateHourByIndex(
+    businessHours.findIndex(
+      (x) =>
+        x.day_of_week === dayIndex &&
+        x.start_time === block.start_time &&
+        x.end_time === block.end_time
+    ),
+    "end_time",
+    normalizeTimeInput(e.target.value)
+  )
+}
+
+                          className="h-10 w-[150px] rounded border px-3 text-sm outline-none transition sm:w-[160px]"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                            color: "var(--text-main)",
+                          }}
+                        />
+
+                        <button
+                          type="button"
+onClick={() => {
+  const realIndex = businessHours.findIndex(
+    (x, idx) =>
+      idx ===
+      businessHours.findIndex(
+        (y) =>
+          y.day_of_week === dayIndex &&
+          y.start_time === block.start_time &&
+          y.end_time === block.end_time
+      )
+  );
+
+  setBusinessHours((prev) =>
+    prev.filter((_, idx) => idx !== realIndex)
+  );
+}}
+
+                          className="orbyx-business-energy inline-flex h-8 w-8 items-center justify-center rounded border border-rose-300/50 bg-rose-500/10 p-0 text-sm font-semibold leading-none text-rose-400 transition hover:border-rose-300/70 hover:bg-rose-500/15 hover:shadow-[0_0_18px_rgba(244,63,94,0.16)]"
+                          aria-label={`Eliminar bloque de ${days[dayIndex]}`}
+                        >
+                          x
+                        </button>
+                      </div>
+                    ))
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusinessHours((prev) => [
+                        ...prev,
+                        {
+                          day_of_week: dayIndex,
+                          enabled: true,
+                          start_time: "09:00",
+                          end_time: "18:00",
+                        },
+                      ]);
+                    }}
+                    className="orbyx-business-energy inline-flex h-8 w-fit items-center justify-center rounded border px-3 text-xs font-medium text-blue-500 transition"
+                    style={{
+                      borderColor: "rgba(37,99,235,0.24)",
+                      background: "rgba(37,99,235,0.06)",
+                    }}
+                  >
+                    + Agregar bloque
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 sm:justify-self-end">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={enabled}
+                    aria-label={`${enabled ? "Desactivar" : "Activar"} ${days[dayIndex]}`}
+                    disabled={!canEditNegocio}
+                    onClick={() => {
+                      const newValue = !enabled;
+
+                      setBusinessHours((prev) =>
+                        prev.map((item) =>
+                          item.day_of_week === dayIndex
+                            ? { ...item, enabled: newValue }
+                            : item
+                        )
+                      );
+                    }}
+                    className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ background: enabled ? "rgb(37 99 235)" : "var(--border-color)" }}
+                  >
+                    <span
+                      className="inline-block h-4 w-4 transform rounded-full bg-white transition"
+                      style={{ transform: enabled ? "translateX(22px)" : "translateX(4px)" }}
+                    />
+                  </button>
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: enabled ? "var(--text-main)" : "var(--text-muted)" }}
+                  >
+                    {enabled ? "Activo" : "Inactivo"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+    </div>
+
+    <div className="mt-4 flex flex-wrap gap-3">
+      <button
+        onClick={saveBusinessHours}
+        disabled={savingHours || !canEditNegocio}
+        className={primaryButtonClass}
+        style={{
+          background:
+            "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
+        }}
+      >
+        {savingHours ? "Guardando..." : "Guardar horario global"}
+      </button>
+    </div>
+
+    {hoursError ? (
+      <div className="mt-4 rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+        {hoursError}
+      </div>
+    ) : null}
+
+    {hoursOk ? (
+      <div className="mt-4 rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+        {hoursOk}
+      </div>
+    ) : null}
+  </Panel>
+
+</section>
+) : null}
+
+{activeSection === "fechas" ? (
+<section className="space-y-3">
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
+      4. Fechas especiales globales
+    </p>
+    <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+      Excepciones y feriados
+    </h2>
+  </div>
+
+  <Panel
+    title="Fechas especiales globales"
+    description="Aplican a todo el negocio, salvo ajustes propios de una sucursal."
+    className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+  >
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Ejemplos: feriados generales, cierres corporativos o días con horario especial global.
+          </p>
+        </div>
+
+        {!specialDateFormOpen ? (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={addSpecialDate}
+              className={secondaryButtonClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              Agregar fecha especial
+            </button>
+            <p className="max-w-md text-xs" style={{ color: "var(--text-muted)" }}>
+              Agrega una fecha o rango global que quieras bloquear o ajustar para todas las sucursales.
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      {specialDateFormOpen ? (
+      <div
+        className="rounded-2xl border p-4"
+        style={{
+          borderColor: specialDateRangeForm.enabled
+            ? "rgba(37,99,235,0.36)"
+            : "var(--border-color)",
+          background: specialDateRangeForm.enabled
+            ? "linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg-card))"
+            : "var(--bg-card)",
+        }}
+      >
+        <div className="mt-1 grid gap-2 md:grid-cols-2 xl:grid-cols-[150px_170px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)] xl:items-end">
+          <div className="space-y-1">
+            <label
+              className="block text-[10px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Tipo de fecha
+            </label>
+            <select
+              value={specialDateRangeForm.enabled ? "range" : "single"}
+              onChange={(e) =>
+                updateSpecialDateRange("enabled", e.target.value === "range")
+              }
+              className={specialInputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              <option value="single">Un día</option>
+              <option value="range">Rango de fechas</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label
+              className="block text-[10px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Motivo
+            </label>
+            <select
+              value={specialDateRangeForm.type}
+              onChange={(e) =>
+                updateSpecialDateRange(
+                  "type",
+                  e.target.value as SpecialDateRangeForm["type"]
+                )
+              }
+              className={specialInputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              <option value="Vacaciones">Vacaciones</option>
+              <option value="Feriado">Feriado</option>
+              <option value="Mantención">Mantención</option>
+              <option value="Cierre administrativo">Cierre administrativo</option>
+              <option value="Capacitación interna">Capacitación interna</option>
+              <option value="Evento interno">Evento interno</option>
+              <option value="Inventario">Inventario</option>
+              <option value="Emergencia operacional">Emergencia operacional</option>
+              <option value="Día libre">Día libre</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+
+          {specialDateRangeForm.enabled ? (
+            <>
+              <div className="space-y-1">
+                <label
+                  className="block text-[10px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Desde
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="dd-mm-yyyy"
+                    value={specialDateFromDisplay}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSpecialDateFromDisplay(value);
+                      updateSpecialDateRange(
+                        "date_from",
+                        isValidDisplayDate(value) ? parseDateDisplay(value) : ""
+                      );
+                    }}
+                    className={`${specialInputClass} pr-10`}
+                    style={{
+                      borderColor:
+                        specialDateFromDisplay &&
+                        !isValidDisplayDate(specialDateFromDisplay)
+                          ? "rgba(244,63,94,0.62)"
+                          : "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                  <span
+                    className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                    aria-hidden="true"
+                  >
+                    ▦
+                  </span>
+                  <input
+                    type="date"
+                    value={specialDateRangeForm.date_from}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      updateSpecialDateRange("date_from", value);
+                      setSpecialDateFromDisplay(formatDateDisplay(value));
+                    }}
+                    className={calendarPickerClass}
+                    aria-label="Seleccionar fecha desde"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label
+                  className="block text-[10px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Hasta
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="dd-mm-yyyy"
+                    value={specialDateToDisplay}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSpecialDateToDisplay(value);
+                      updateSpecialDateRange(
+                        "date_to",
+                        isValidDisplayDate(value) ? parseDateDisplay(value) : ""
+                      );
+                    }}
+                    className={`${specialInputClass} pr-10`}
+                    style={{
+                      borderColor:
+                        specialDateToDisplay &&
+                        !isValidDisplayDate(specialDateToDisplay)
+                          ? "rgba(244,63,94,0.62)"
+                          : "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                  <span
+                    className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                    aria-hidden="true"
+                  >
+                    ▦
+                  </span>
+                  <input
+                    type="date"
+                    value={specialDateRangeForm.date_to}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      updateSpecialDateRange("date_to", value);
+                      setSpecialDateToDisplay(formatDateDisplay(value));
+                    }}
+                    className={calendarPickerClass}
+                    aria-label="Seleccionar fecha hasta"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-1">
+              <label
+                className="block text-[10px] font-semibold uppercase tracking-wide"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Fecha
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="dd-mm-yyyy"
+                  value={specialDateDisplay}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSpecialDateDisplay(value);
+                    updateSpecialDateRange(
+                      "date",
+                      isValidDisplayDate(value) ? parseDateDisplay(value) : ""
+                    );
+                  }}
+                  className={`${specialInputClass} pr-10`}
+                  style={{
+                    borderColor:
+                      specialDateDisplay && !isValidDisplayDate(specialDateDisplay)
+                        ? "rgba(244,63,94,0.62)"
+                        : "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+                <span
+                  className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                  aria-hidden="true"
+                >
+                  ▦
+                </span>
+                <input
+                  type="date"
+                  value={specialDateRangeForm.date}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    updateSpecialDateRange("date", value);
+                    setSpecialDateDisplay(formatDateDisplay(value));
+                  }}
+                  className={calendarPickerClass}
+                  aria-label="Seleccionar fecha"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <label
+              className="block text-[10px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Etiqueta
+            </label>
+            <input
+              type="text"
+              value={specialDateRangeForm.label}
+              onChange={(e) => updateSpecialDateRange("label", e.target.value)}
+              placeholder="Etiqueta opcional"
+              className={specialInputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            />
+          </div>
+
+        </div>
+
+        <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-[170px_130px_130px_auto_auto] lg:items-end">
+          <div className="space-y-1">
+            <label
+              className="block text-[10px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Tipo de cobertura
+            </label>
+            <select
+              value={specialDateRangeForm.is_closed ? "all_day" : "time_range"}
+              onChange={(e) =>
+                updateSpecialDateRange("is_closed", e.target.value === "all_day")
+              }
+              className={specialInputClass}
+              style={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-soft)",
+                color: "var(--text-main)",
+              }}
+            >
+              <option value="all_day">Todo el día</option>
+              <option value="time_range">Rango de horario</option>
+            </select>
+          </div>
+
+          {!specialDateRangeForm.is_closed ? (
+            <>
+              <div className="space-y-1">
+                <label
+                  className="block text-[10px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Desde
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="HH:mm"
+                  value={specialDateRangeForm.start_time}
+                  onChange={(e) =>
+                    updateSpecialDateRange("start_time", e.target.value)
+                  }
+                  onBlur={(e) =>
+                    updateSpecialDateRange("start_time", e.target.value.trim())
+                  }
+                  aria-invalid={
+                    !isValidTime(
+                      String(specialDateRangeForm.start_time || "").trim()
+                    )
+                  }
+                  className={specialInputClass}
+                  style={{
+                    borderColor: !isValidTime(
+                      String(specialDateRangeForm.start_time || "").trim()
+                    )
+                      ? "rgba(244,63,94,0.62)"
+                      : "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label
+                  className="block text-[10px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Hasta
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="HH:mm"
+                  value={specialDateRangeForm.end_time}
+                  onChange={(e) => updateSpecialDateRange("end_time", e.target.value)}
+                  onBlur={(e) =>
+                    updateSpecialDateRange("end_time", e.target.value.trim())
+                  }
+                  aria-invalid={
+                    !isValidTime(
+                      String(specialDateRangeForm.end_time || "").trim()
+                    )
+                  }
+                  className={specialInputClass}
+                  style={{
+                    borderColor: !isValidTime(
+                      String(specialDateRangeForm.end_time || "").trim()
+                    )
+                      ? "rgba(244,63,94,0.62)"
+                      : "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  }}
+                />
+              </div>
+            </>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={saveSpecialDateDraft}
+            disabled={
+              savingSpecialDates || Boolean(getSpecialDateDraftTimeError()) || !canEditNegocio
+            }
+            className={`${specialSecondaryButtonClass} ${
+              specialDateRangeForm.is_closed ? "lg:col-start-4" : ""
+            }`}
+            style={{
+              borderColor: "rgba(37,99,235,0.28)",
+              background: "rgba(37,99,235,0.08)",
+              color: "var(--text-main)",
+            }}
+          >
+            {savingSpecialDates
+              ? "Guardando..."
+              : editingSpecialDateId
+              ? "Guardar cambios"
+              : "Guardar fecha especial"}
+          </button>
+
+          <button
+            type="button"
+            onClick={resetSpecialDateDraft}
+            disabled={savingSpecialDates}
+            className={specialSecondaryButtonClass}
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+              color: "var(--text-main)",
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+
+          {!specialDateRangeForm.is_closed ? (
+            getSpecialDateDraftTimeError() ? (
+              <p className="mt-2 text-xs font-semibold text-rose-500">
+                {getSpecialDateDraftTimeError()}
+              </p>
+            ) : (
+              <p
+                className="mt-2 text-xs font-medium"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Formato 24 hrs. Ejemplo: 09:30
+              </p>
+            )
+          ) : null}
+
+        {specialDateRangeError ? (
+          <p className="mt-3 text-xs font-semibold text-rose-500">
+            {specialDateRangeError}
+          </p>
+        ) : null}
+      </div>
+      ) : null}
+
+      <div
+        className="space-y-3 rounded-2xl border p-4"
+        style={{
+          borderColor: "var(--border-color)",
+          background: "var(--bg-card)",
+        }}
+      >
+        <div>
+          <h4
+            className="text-sm font-semibold"
+            style={{ color: "var(--text-main)" }}
+          >
+            Historial global
+          </h4>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+            Días libres u horarios especiales configurados como base del negocio.
+          </p>
+        </div>
+
+        {groupedSpecialDates.length === 0 ? (
+          <div
+            className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-soft)",
+              color: "var(--text-muted)",
+            }}
+          >
+            Aún no has agregado fechas especiales.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {groupedSpecialDates.map((group) => {
+              const item = group.first;
+              const dateLabel = group.isRange
+                ? `${formatDateDisplay(group.startDate)} al ${formatDateDisplay(group.endDate)}`
+                : formatDateDisplay(group.startDate);
+              const timeLabel = item.is_closed
+                ? "Cerrado todo el día"
+                : `${normalizeSpecialTime(item.start_time) || "--:--"} a ${
+                    normalizeSpecialTime(item.end_time) || "--:--"
+                  }`;
+
+              return (
+                <div
+                  key={`${group.key}-${group.startDate}-${group.endDate}`}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background:
+                      "linear-gradient(135deg, rgba(37,99,235,0.06), var(--bg-soft))",
+                  }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "var(--text-main)" }}
+                    >
+                      {dateLabel}
+                    </p>
+                    <p
+                      className="mt-1 text-sm"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {item.label || "Sin etiqueta"} · {timeLabel}
+                    </p>
+                    {group.isRange ? (
+                      <p
+                        className="mt-1 text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Editar abre la primera fecha del rango.
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {canEditNegocio ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => editSpecialDateGroup(group)}
+                      className={secondaryButtonClass}
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => removeSpecialDateGroup(group)}
+                      className="orbyx-business-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {specialDatesError ? (
+        <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          {specialDatesError}
+        </div>
+      ) : null}
+
+      {specialDatesOk ? (
+        <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          {specialDatesOk}
+        </div>
+      ) : null}
+    </div>
+  </Panel>
+</section>
+) : null}
+
+      <HorariosAyudaModal
+        open={horariosAyudaOpen}
+        onClose={() => setHorariosAyudaOpen(false)}
+        capaActiva="negocio"
+      />
+    </div>
+  );
+}
