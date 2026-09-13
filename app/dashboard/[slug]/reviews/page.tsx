@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { Star, EyeOff, Eye, MessageCircle } from "lucide-react";
+import { Star, EyeOff, Eye, MessageCircle, Trash2 } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 import { usePermissions } from "../../../../lib/permissions-context";
@@ -12,6 +12,9 @@ const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 // Mismo set fijo que ALLOWED_REVIEW_REACTIONS en server.js.
 const REACTIONS = ["👍", "❤️", "🙏", "😊"];
+
+// Mismo set fijo que ALLOWED_HIDDEN_REASONS en server.js.
+const HIDDEN_REASONS = ["Spam", "Insultos", "Contenido inapropiado"];
 
 type ReviewStatus = "visible" | "hidden";
 
@@ -29,6 +32,7 @@ type Review = {
   comment: string | null;
   private_feedback: string | null;
   status: ReviewStatus;
+  hidden_reason: string | null;
   reaction: string | null;
   replies: ReviewReply[];
   created_at: string;
@@ -71,10 +75,12 @@ export default function ReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState("");
+  const [hidingReasonFor, setHidingReasonFor] = useState("");
   const [reactingId, setReactingId] = useState("");
   const [openReplyFor, setOpenReplyFor] = useState<Record<string, boolean>>({});
   const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
   const [sendingReplyFor, setSendingReplyFor] = useState("");
+  const [deletingReplyId, setDeletingReplyId] = useState("");
 
   async function loadReviews() {
     if (!slug) return;
@@ -102,6 +108,10 @@ export default function ReviewsPage() {
     [reviews]
   );
 
+  // El promedio/conteo público SÍ incluye las ocultas (ver server.js) — acá
+  // en el dashboard este resumen es solo informativo para el negocio, así
+  // que sigue mostrando "reseñas visibles" para que se entienda que ese es
+  // el subconjunto que puede editar/moderar en esta pantalla.
   const average = useMemo(() => {
     if (visibleReviews.length === 0) return 0;
     return (
@@ -109,21 +119,32 @@ export default function ReviewsPage() {
     );
   }, [visibleReviews]);
 
-  async function toggleStatus(review: Review) {
-    const nextStatus: ReviewStatus = review.status === "visible" ? "hidden" : "visible";
+  async function handleSetStatus(review: Review, nextStatus: ReviewStatus, reason?: string) {
     setUpdatingId(review.id);
     try {
       const res = await apiFetch(`${BACKEND_URL}/reviews/${review.id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify({
+          status: nextStatus,
+          hidden_reason: nextStatus === "hidden" ? reason : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "No se pudo actualizar la reseña");
 
       setReviews((prev) =>
-        prev.map((r) => (r.id === review.id ? { ...r, status: nextStatus } : r))
+        prev.map((r) =>
+          r.id === review.id
+            ? {
+                ...r,
+                status: nextStatus,
+                hidden_reason: nextStatus === "hidden" ? reason || null : null,
+              }
+            : r
+        )
       );
+      setHidingReasonFor("");
     } catch (err: any) {
       alert(err?.message || "No se pudo actualizar la reseña");
     } finally {
@@ -180,13 +201,39 @@ export default function ReviewsPage() {
     }
   }
 
+  async function handleDeleteReply(review: Review, reply: ReviewReply) {
+    if (!confirm("¿Borrar esta respuesta? No se puede deshacer.")) return;
+
+    setDeletingReplyId(reply.id);
+    try {
+      const res = await apiFetch(
+        `${BACKEND_URL}/reviews/${slug}/${review.id}/replies/${reply.id}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "No se pudo borrar la respuesta");
+
+      setReviews((prev) =>
+        prev.map((r) =>
+          r.id === review.id
+            ? { ...r, replies: r.replies.filter((rep) => rep.id !== reply.id) }
+            : r
+        )
+      );
+    } catch (err: any) {
+      alert(err?.message || "No se pudo borrar la respuesta");
+    } finally {
+      setDeletingReplyId("");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Reputación"
         title="Reseñas"
         icon={<Star className="h-4 w-4" />}
-        description="Reseñas de clientes verificados (con al menos una visita completada). Se publican de inmediato — puedes ocultar una puntual por abuso o spam, reaccionar y responder públicamente."
+        description="Reseñas de clientes verificados (con al menos una visita completada). Se publican de inmediato — puedes ocultar una puntual (con motivo) por abuso o spam, reaccionar y responder públicamente."
       />
 
       <Panel
@@ -228,7 +275,7 @@ export default function ReviewsPage() {
                       <StarRow rating={review.rating} />
                       {review.status === "hidden" ? (
                         <span className="inline-flex items-center rounded-full bg-slate-500/15 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                          Oculta
+                          Oculta{review.hidden_reason ? ` · ${review.hidden_reason}` : ""}
                         </span>
                       ) : null}
                     </div>
@@ -262,13 +309,28 @@ export default function ReviewsPage() {
                         style={{ borderColor: "var(--border-color)" }}
                       >
                         {review.replies.map((reply) => (
-                          <div key={reply.id}>
-                            <p className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
-                              Respuesta del negocio · {formatDate(reply.created_at)}
-                            </p>
-                            <p className="text-sm leading-6" style={{ color: "var(--text-main)" }}>
-                              {reply.message}
-                            </p>
+                          <div key={reply.id} className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                                Respuesta del negocio · {formatDate(reply.created_at)}
+                              </p>
+                              <p className="text-sm leading-6" style={{ color: "var(--text-main)" }}>
+                                {reply.message}
+                              </p>
+                            </div>
+                            {canEditClientes ? (
+                              <button
+                                type="button"
+                                disabled={deletingReplyId === reply.id}
+                                onClick={() => handleDeleteReply(review, reply)}
+                                aria-label="Borrar respuesta"
+                                title="Borrar respuesta"
+                                className="shrink-0 rounded-full p-1 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            ) : null}
                           </div>
                         ))}
                       </div>
@@ -353,23 +415,62 @@ export default function ReviewsPage() {
                   </div>
 
                   {canEditClientes ? (
-                    <button
-                      type="button"
-                      disabled={updatingId === review.id}
-                      onClick={() => toggleStatus(review)}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60"
-                      style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}
-                    >
-                      {review.status === "visible" ? (
-                        <>
-                          <EyeOff className="h-3.5 w-3.5" /> Ocultar
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-3.5 w-3.5" /> Mostrar
-                        </>
-                      )}
-                    </button>
+                    <div className="relative shrink-0">
+                      <button
+                        type="button"
+                        disabled={updatingId === review.id}
+                        onClick={() => {
+                          if (review.status === "visible") {
+                            setHidingReasonFor((prev) => (prev === review.id ? "" : review.id));
+                          } else {
+                            handleSetStatus(review, "visible");
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                        style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}
+                      >
+                        {review.status === "visible" ? (
+                          <>
+                            <EyeOff className="h-3.5 w-3.5" /> Ocultar
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3.5 w-3.5" /> Mostrar
+                          </>
+                        )}
+                      </button>
+
+                      {hidingReasonFor === review.id ? (
+                        <div
+                          className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border p-2 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.55)]"
+                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                        >
+                          <p className="mb-1.5 px-1 text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                            Motivo para ocultar
+                          </p>
+                          {HIDDEN_REASONS.map((reason) => (
+                            <button
+                              key={reason}
+                              type="button"
+                              disabled={updatingId === review.id}
+                              onClick={() => handleSetStatus(review, "hidden", reason)}
+                              className="block w-full rounded-lg px-2 py-1.5 text-left text-xs transition hover:bg-slate-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {reason}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setHidingReasonFor("")}
+                            className="mt-1 block w-full rounded-lg px-2 py-1.5 text-left text-xs"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
               </div>

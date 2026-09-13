@@ -134,8 +134,10 @@ type ReviewReplyItem = {
 
 type ReviewItem = {
   id: string;
+  status?: "visible" | "hidden";
+  hidden_reason?: string | null;
   client_name?: string | null;
-  rating: number;
+  rating?: number;
   comment?: string | null;
   reaction?: string | null;
   replies?: ReviewReplyItem[];
@@ -4017,55 +4019,67 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 </div>
 
                 <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
-                  {(reviewSummary?.reviews || []).map((review) => (
-                    <div
-                      key={review.id}
-                      className="rounded-xl border border-slate-100 p-3"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="truncate text-sm font-semibold text-slate-800">
-                          {review.client_name?.trim() || "Cliente"}
+                  {(reviewSummary?.reviews || []).map((review) =>
+                    review.status === "hidden" ? (
+                      <div
+                        key={review.id}
+                        className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3"
+                      >
+                        <p className="text-sm italic text-slate-500">
+                          Reseña oculta por el negocio
+                          {review.hidden_reason ? ` — Motivo: ${review.hidden_reason}` : ""}
                         </p>
-                        <span className="shrink-0 text-xs text-slate-400">
-                          {formatReviewDate(review.created_at)}
-                        </span>
                       </div>
-                      <div className="mt-1 flex items-center gap-0.5 text-amber-400">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <StarIcon
-                            key={star}
-                            filled={star <= review.rating}
-                            className="h-3.5 w-3.5"
-                          />
-                        ))}
-                      </div>
-                      {review.comment ? (
-                        <p className="mt-1.5 text-sm leading-5 text-slate-600">
-                          {review.comment}
-                        </p>
-                      ) : null}
-
-                      {review.reaction ? (
-                        <p className="mt-1.5 text-lg leading-none">{review.reaction}</p>
-                      ) : null}
-
-                      {review.replies && review.replies.length > 0 ? (
-                        <div className="mt-2 space-y-2 border-l-2 border-indigo-100 pl-3">
-                          {review.replies.map((reply) => (
-                            <div key={reply.id}>
-                              <p className="text-xs font-semibold text-indigo-600">
-                                Respuesta de {business?.name?.trim() || "el negocio"} ·{" "}
-                                {formatReviewDate(reply.created_at)}
-                              </p>
-                              <p className="mt-0.5 text-sm leading-5 text-slate-600">
-                                {reply.message}
-                              </p>
-                            </div>
+                    ) : (
+                      <div
+                        key={review.id}
+                        className="rounded-xl border border-slate-100 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="truncate text-sm font-semibold text-slate-800">
+                            {review.client_name?.trim() || "Cliente"}
+                          </p>
+                          <span className="shrink-0 text-xs text-slate-400">
+                            {formatReviewDate(review.created_at)}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center gap-0.5 text-amber-400">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <StarIcon
+                              key={star}
+                              filled={star <= (review.rating || 0)}
+                              className="h-3.5 w-3.5"
+                            />
                           ))}
                         </div>
-                      ) : null}
-                    </div>
-                  ))}
+                        {review.comment ? (
+                          <p className="mt-1.5 text-sm leading-5 text-slate-600">
+                            {review.comment}
+                          </p>
+                        ) : null}
+
+                        {review.reaction ? (
+                          <p className="mt-1.5 text-lg leading-none">{review.reaction}</p>
+                        ) : null}
+
+                        {review.replies && review.replies.length > 0 ? (
+                          <div className="mt-2 space-y-2 border-l-2 border-indigo-100 pl-3">
+                            {review.replies.map((reply) => (
+                              <div key={reply.id}>
+                                <p className="text-xs font-semibold text-indigo-600">
+                                  Respuesta de {business?.name?.trim() || "el negocio"} ·{" "}
+                                  {formatReviewDate(reply.created_at)}
+                                </p>
+                                <p className="mt-0.5 text-sm leading-5 text-slate-600">
+                                  {reply.message}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    )
+                  )}
                 </div>
 
                 <div className="border-t border-slate-100 px-5 py-3">

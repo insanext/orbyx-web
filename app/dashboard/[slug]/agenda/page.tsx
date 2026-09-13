@@ -443,6 +443,27 @@ const [slotMinutes, setSlotMinutes] = useState(30);
     document.addEventListener("mousedown", handleClickOutsideLegend);
     return () => document.removeEventListener("mousedown", handleClickOutsideLegend);
   }, [showStatusLegend]);
+
+  // Dropdown de filtros (Buscar/Profesional/Servicio/Estado) junto al título
+  // "Calendario semanal" — antes era una fila fija siempre visible arriba
+  // del calendario, ahora se abre bajo demanda. Mismo patrón de
+  // click-afuera que showStatusLegend, arriba.
+  const [showDesktopFilters, setShowDesktopFilters] = useState(false);
+  const desktopFiltersRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showDesktopFilters) return;
+    function handleClickOutsideFilters(event: MouseEvent) {
+      if (
+        desktopFiltersRef.current &&
+        !desktopFiltersRef.current.contains(event.target as Node)
+      ) {
+        setShowDesktopFilters(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutsideFilters);
+    return () => document.removeEventListener("mousedown", handleClickOutsideFilters);
+  }, [showDesktopFilters]);
   // Permite abrir el modal directo desde un link externo (ej. el email de
   // "depósito para revisar" y el ítem de la campana de notificaciones del
   // header) sin tener que clickear el botón del toolbar primero.
@@ -1395,6 +1416,14 @@ next_control_custom_unit: "days",
         ? { ...prev, appointment: updatedAppointment }
         : prev
     );
+
+    // Bug reportado: el badge "Sin pendientes"/"N pendientes" se quedaba con
+    // el conteo viejo hasta recargar la página, porque pendingCloseAllAppointments
+    // vive en un fetch aparte (loadPendingCloseAppointments, cubre TODA la
+    // agenda, no solo la semana visible) que nadie revalidaba después de
+    // Asistió/No asistió/Reagendó/Cancelar. Mismo patrón de refetch que ya
+    // usa el resto de la página en vez de duplicar la lógica de filtrado acá.
+    loadPendingCloseAppointments();
   }
 
   function getStaffName(staffId?: string | null) {
@@ -3155,6 +3184,12 @@ loadPendingClinicalNotes();
 const pendingCloseCount = pendingCloseAllAppointments.length;
 const hasPendingClose = pendingCloseCount > 0;
 
+const hasActiveFilters =
+  searchQuery.trim().length > 0 ||
+  selectedStaffId !== "" ||
+  selectedServiceId !== "" ||
+  activeFilter !== "active";
+
   const counts = useMemo(() => {
     return {
       active: appointments.filter(isVisibleAsActive).length,
@@ -3863,184 +3898,6 @@ const hasPendingClose = pendingCloseCount > 0;
         />
       </div>
 
-      <div
-        className="hidden rounded-none border p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.45)] md:block"
-        style={{
-          borderColor: "var(--border-color)",
-          background: "var(--agenda-filter-bg)",
-        }}
-      >
-        <div className="grid gap-4 xl:grid-cols-[minmax(260px,1fr)_220px_220px_220px] xl:items-end">
-          <div>
-            <label
-              className="mb-2 block text-xs font-semibold"
-              style={{ color: "var(--agenda-filter-label)" }}
-            >
-              Buscar
-            </label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearchAppointments();
-                  }
-                }}
-                placeholder="Buscar cliente o reserva..."
-                className="h-11 w-full rounded-xl border py-2 pl-10 pr-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10"
-                style={{
-                  borderColor: "rgba(148,163,184,0.28)",
-                  background: "var(--agenda-filter-control-bg)",
-                  color: "var(--agenda-filter-control-text)",
-                }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label
-              className="mb-2 block text-xs font-semibold"
-              style={{ color: "var(--agenda-filter-label)" }}
-            >
-              Profesional
-            </label>
-            <select
-              value={selectedStaffId}
-              onChange={(e) => {
-                setSelectedStaffId(e.target.value);
-                setHoverCard(null);
-                setSearchResults([]);
-                setSearchError("");
-              }}
-              disabled={!selectedBranchId || loadingStaff}
-              className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
-              style={{
-                borderColor: "rgba(148,163,184,0.28)",
-                background: "var(--agenda-filter-control-bg)",
-                color: "var(--agenda-filter-control-text)",
-              }}
-            >
-              <option value="">Todos los profesionales</option>
-              {staffList.map((staff) => (
-                <option key={staff.id} value={staff.id}>
-                  {staff.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              className="mb-2 block text-xs font-semibold"
-              style={{ color: "var(--agenda-filter-label)" }}
-            >
-              Servicio
-            </label>
-            <select
-              value={selectedServiceId}
-              onChange={(e) => {
-                setSelectedServiceId(e.target.value);
-                setHoverCard(null);
-              }}
-              disabled={!selectedBranchId || loadingServices}
-              className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
-              style={{
-                borderColor: "rgba(148,163,184,0.28)",
-                background: "var(--agenda-filter-control-bg)",
-                color: "var(--agenda-filter-control-text)",
-              }}
-            >
-              <option value="">Todos los servicios</option>
-              {services.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              className="mb-2 block text-xs font-semibold"
-              style={{ color: "var(--agenda-filter-label)" }}
-            >
-              Estado
-            </label>
-            <select
-              value={activeFilter}
-              onChange={(e) => {
-                setActiveFilter(e.target.value as FilterValue);
-                setHoverCard(null);
-              }}
-              className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
-              style={{
-                borderColor: "rgba(148,163,184,0.28)",
-                background: "var(--agenda-filter-control-bg)",
-                color: "var(--agenda-filter-control-text)",
-              }}
-            >
-              {(Object.keys(filterLabels) as FilterValue[]).map((filter) => (
-                <option key={filter} value={filter}>
-                  {filterLabels[filter]}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {(searchError || searchResults.length > 0) && searchQuery.trim().length > 0 ? (
-          <div className="mt-3">
-            {searchError ? (
-              <p className="text-xs font-medium text-amber-600">{searchError}</p>
-            ) : null}
-
-            {searchResults.length > 0 ? (
-              <div className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {searchResults.slice(0, 6).map((appt) => (
-                  <button
-                    key={appt.id}
-                    type="button"
-                    onClick={() => handleSelectAppointment(appt)}
-                    className="rounded-xl border p-3 text-left transition hover:shadow-sm"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p
-                          className="truncate text-sm font-semibold"
-                          style={{ color: "var(--text-main)" }}
-                        >
-                          {appt.customer_name}
-                        </p>
-                        <p
-                          className="mt-1 truncate text-xs"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          {appt.service_name_snapshot || "Reserva"} ·{" "}
-                          {formatCompactDateTime(appt.start_at)}
-                        </p>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(
-                          appt
-                        )}`}
-                      >
-                        {getStatusLabel(appt)}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
 
       {loadingBranches && !selectedBranchId ? (
         <div
@@ -4373,6 +4230,212 @@ const hasPendingClose = pendingCloseCount > 0;
                           </span>
                         ))}
                       </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div ref={desktopFiltersRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowDesktopFilters((prev) => !prev)}
+                    aria-label="Filtros"
+                    aria-expanded={showDesktopFilters}
+                    className="relative flex h-6 w-6 items-center justify-center rounded-full border transition hover:opacity-80"
+                    style={{
+                      borderColor: hasActiveFilters ? "var(--accent-solid)" : "var(--text-muted)",
+                      color: hasActiveFilters ? "var(--accent-solid)" : "var(--text-muted)",
+                    }}
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    {hasActiveFilters ? (
+                      <span
+                        className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full"
+                        style={{ background: "var(--accent-solid)" }}
+                      />
+                    ) : null}
+                  </button>
+
+                  {showDesktopFilters ? (
+                    <div
+                      className="absolute left-0 top-full z-30 mt-2 max-h-[70vh] w-[340px] overflow-y-auto rounded-xl border p-4 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.55)]"
+                      style={{
+                        borderColor: "var(--border-color)",
+                        background: "var(--bg-card)",
+                      }}
+                    >
+                      <div className="space-y-3">
+                        <div>
+                          <label
+                            className="mb-1.5 block text-xs font-semibold"
+                            style={{ color: "var(--agenda-filter-label)" }}
+                          >
+                            Buscar
+                          </label>
+                          <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <input
+                              type="text"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleSearchAppointments();
+                                }
+                              }}
+                              placeholder="Buscar cliente o reserva..."
+                              className="h-11 w-full rounded-xl border py-2 pl-10 pr-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10"
+                              style={{
+                                borderColor: "rgba(148,163,184,0.28)",
+                                background: "var(--agenda-filter-control-bg)",
+                                color: "var(--agenda-filter-control-text)",
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label
+                            className="mb-1.5 block text-xs font-semibold"
+                            style={{ color: "var(--agenda-filter-label)" }}
+                          >
+                            Profesional
+                          </label>
+                          <select
+                            value={selectedStaffId}
+                            onChange={(e) => {
+                              setSelectedStaffId(e.target.value);
+                              setHoverCard(null);
+                              setSearchResults([]);
+                              setSearchError("");
+                            }}
+                            disabled={!selectedBranchId || loadingStaff}
+                            className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{
+                              borderColor: "rgba(148,163,184,0.28)",
+                              background: "var(--agenda-filter-control-bg)",
+                              color: "var(--agenda-filter-control-text)",
+                            }}
+                          >
+                            <option value="">Todos los profesionales</option>
+                            {staffList.map((staff) => (
+                              <option key={staff.id} value={staff.id}>
+                                {staff.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label
+                            className="mb-1.5 block text-xs font-semibold"
+                            style={{ color: "var(--agenda-filter-label)" }}
+                          >
+                            Servicio
+                          </label>
+                          <select
+                            value={selectedServiceId}
+                            onChange={(e) => {
+                              setSelectedServiceId(e.target.value);
+                              setHoverCard(null);
+                            }}
+                            disabled={!selectedBranchId || loadingServices}
+                            className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{
+                              borderColor: "rgba(148,163,184,0.28)",
+                              background: "var(--agenda-filter-control-bg)",
+                              color: "var(--agenda-filter-control-text)",
+                            }}
+                          >
+                            <option value="">Todos los servicios</option>
+                            {services.map((service) => (
+                              <option key={service.id} value={service.id}>
+                                {service.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label
+                            className="mb-1.5 block text-xs font-semibold"
+                            style={{ color: "var(--agenda-filter-label)" }}
+                          >
+                            Estado
+                          </label>
+                          <select
+                            value={activeFilter}
+                            onChange={(e) => {
+                              setActiveFilter(e.target.value as FilterValue);
+                              setHoverCard(null);
+                            }}
+                            className="orbyx-agenda-filter-select h-11 w-full rounded-xl border px-3 text-sm outline-none transition"
+                            style={{
+                              borderColor: "rgba(148,163,184,0.28)",
+                              background: "var(--agenda-filter-control-bg)",
+                              color: "var(--agenda-filter-control-text)",
+                            }}
+                          >
+                            {(Object.keys(filterLabels) as FilterValue[]).map((filter) => (
+                              <option key={filter} value={filter}>
+                                {filterLabels[filter]}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {(searchError || searchResults.length > 0) && searchQuery.trim().length > 0 ? (
+                        <div className="mt-3">
+                          {searchError ? (
+                            <p className="text-xs font-medium text-amber-600">{searchError}</p>
+                          ) : null}
+
+                          {searchResults.length > 0 ? (
+                            <div className="mt-2 space-y-2">
+                              {searchResults.slice(0, 6).map((appt) => (
+                                <button
+                                  key={appt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    handleSelectAppointment(appt);
+                                    setShowDesktopFilters(false);
+                                  }}
+                                  className="w-full rounded-xl border p-3 text-left transition hover:shadow-sm"
+                                  style={{
+                                    borderColor: "var(--border-color)",
+                                    background: "var(--bg-soft)",
+                                  }}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p
+                                        className="truncate text-sm font-semibold"
+                                        style={{ color: "var(--text-main)" }}
+                                      >
+                                        {appt.customer_name}
+                                      </p>
+                                      <p
+                                        className="mt-1 truncate text-xs"
+                                        style={{ color: "var(--text-muted)" }}
+                                      >
+                                        {appt.service_name_snapshot || "Reserva"} ·{" "}
+                                        {formatCompactDateTime(appt.start_at)}
+                                      </p>
+                                    </div>
+                                    <span
+                                      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(
+                                        appt
+                                      )}`}
+                                    >
+                                      {getStatusLabel(appt)}
+                                    </span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
