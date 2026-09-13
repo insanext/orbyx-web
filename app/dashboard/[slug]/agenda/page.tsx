@@ -67,6 +67,7 @@ type BusinessResponse = {
     id: string;
     name: string;
     slug: string;
+    address?: string | null;
     business_category?: string | null;
     deposit_required?: boolean;
   };
@@ -410,6 +411,7 @@ export default function AgendaPage() {
     const [tenantId, setTenantId] = useState("");
 const [slotMinutes, setSlotMinutes] = useState(30);
   const [businessName, setBusinessName] = useState("");
+  const [businessAddress, setBusinessAddress] = useState<string | null>(null);
   const [requestingReview, setRequestingReview] = useState(false);
 
   async function handleRequestReview(appt: { customer_id?: string | null; customer_phone?: string | null }) {
@@ -441,9 +443,17 @@ const [slotMinutes, setSlotMinutes] = useState(30);
 
   function buildAppointmentWhatsAppMessage(appt: Appointment, kind: "confirm" | "reminder") {
     const branch = branches.find((b) => b.id === appt.branch_id);
+    // Fallback: muchos negocios de una sola sucursal nunca llenan el campo
+    // de dirección propio de esa sucursal (lo dejan solo en "Negocio") — en
+    // ese caso puntual (1 sola sucursal) se usa la dirección del negocio en
+    // vez de dejar el mensaje sin dirección. Con más de 1 sucursal no se
+    // aplica: cada una puede tener una dirección real distinta, y usar la
+    // del negocio ahí podría ser directamente incorrecta.
+    const resolvedAddress =
+      branch?.address || (branches.length === 1 ? businessAddress : null);
     const locationClause = branch
-      ? branch.address
-        ? ` en Sucursal ${branch.name} (${branch.address})`
+      ? resolvedAddress
+        ? ` en Sucursal ${branch.name}, dirección: ${resolvedAddress}`
         : ` en Sucursal ${branch.name}`
       : "";
 
@@ -2710,6 +2720,7 @@ setSlotMinutes(Number(businessData.slot_minutes || 30));
 setCalendarId(businessData.calendar_id || "");
 setTenantId(currentTenantId);
 setBusinessName(businessData.business.name || slug || "");
+setBusinessAddress(businessData.business.address || null);
 setBusinessCategory(
   String(businessData.business.business_category || "").trim().toLowerCase()
 );
