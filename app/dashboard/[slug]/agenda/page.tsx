@@ -8515,7 +8515,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     />
                   </div>
                 </div>
-              ) : (
+              ) : manualBookingStep !== "success" ? (
                 <p
                   className="mt-1 text-sm leading-6"
                   style={{ color: "var(--text-muted)" }}
@@ -8523,7 +8523,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   {formatLongDate(manualBookingDraft.slot_start)} ·{" "}
                   {formatHour(manualBookingDraft.slot_start)}
                 </p>
-              )}
+              ) : null}
             </div>
 
             {manualBookingStep === "confirm" ? (
@@ -8568,7 +8568,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : manualBookingStep === "form" ? (
               <div className="space-y-3">
                 {!manualBookingDraft.staff_locked ? (
                   <div>
@@ -8804,14 +8804,29 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   />
                 </div>
               </div>
-            )}
+            ) : null}
 
             {manualBookingStep === "success" && manualBookingResult ? (
               <div className="space-y-4">
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  Reserva creada para {manualBookingResult.customer_name} el{" "}
-                  {formatLongDate(manualBookingResult.start_at)} a las{" "}
-                  {formatHour(manualBookingResult.start_at)}.
+                <div
+                  className="rounded-xl border p-3 text-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                  }}
+                >
+                  <p className="font-semibold" style={{ color: "var(--text-main)" }}>
+                    {manualBookingResult.customer_name}
+                  </p>
+                  <p className="mt-1" style={{ color: "var(--text-muted)" }}>
+                    {manualBookingResult.customer_phone || "Sin teléfono"} ·{" "}
+                    {manualBookingResult.service_name_snapshot || "Servicio"} ·{" "}
+                    {getStaffName(manualBookingResult.staff_id)}
+                  </p>
+                  <p className="mt-1" style={{ color: "var(--text-muted)" }}>
+                    {formatLongDate(manualBookingResult.start_at)} ·{" "}
+                    {formatHour(manualBookingResult.start_at)}
+                  </p>
                 </div>
 
                 {manualBookingResult.wa_confirmacion_enviada ? (
