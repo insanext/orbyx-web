@@ -4,6 +4,7 @@ import { CSSProperties, Fragment, useEffect, useMemo, useRef, useState } from "r
 import { apiFetch } from "@/lib/api";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
+  BellRing,
   CalendarDays,
   Check,
   ChevronDown,
@@ -14,6 +15,7 @@ import {
   Landmark,
   Lock,
   Mail,
+  MessageCircle,
   Phone,
   Plus,
   RotateCcw,
@@ -28,7 +30,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
-import { requestReviewViaWhatsapp } from "@/lib/reviewRequest";
+import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
 import { createClient } from "../../../../lib/supabase/client";
 import {
   APPOINTMENT_STATUS_COLORS,
@@ -87,6 +89,7 @@ type BranchItem = {
   id: string;
   tenant_id?: string;
   name: string;
+  address?: string | null;
   is_active?: boolean;
   use_global_hours?: boolean;
 };
@@ -423,6 +426,44 @@ const [slotMinutes, setSlotMinutes] = useState(30);
     } finally {
       setRequestingReview(false);
     }
+  }
+
+  // "Confirmar por WhatsApp" / "Recordatorio manual" — canal 100% manual
+  // (wa.me con mensaje precargado, sin Twilio ni plantillas, el negocio
+  // edita/envía a mano), aparte del recordatorio/confirmación automático
+  // por WhatsApp que ya existe — no depende de si ese canal está activo ni
+  // de su cupo, es solo un atajo para insistirle al cliente cuantas veces
+  // el negocio quiera antes de la cita.
+  function isFutureBookedAppointment(appt: Appointment) {
+    return appt.status === "booked" && new Date(appt.start_at).getTime() > Date.now();
+  }
+
+  function buildAppointmentWhatsAppMessage(appt: Appointment, kind: "confirm" | "reminder") {
+    const branch = branches.find((b) => b.id === appt.branch_id);
+    const locationClause = branch
+      ? branch.address
+        ? ` en ${branch.name} (${branch.address})`
+        : ` en ${branch.name}`
+      : "";
+
+    const fecha = formatLongDate(appt.start_at);
+    const hora = formatHour(appt.start_at);
+
+    if (kind === "confirm") {
+      return `Hola ${appt.customer_name}, tu reserva en ${businessName} quedó agendada para el ${fecha} a las ${hora}${locationClause}. Cualquier duda para cancelar o reagendar, contáctanos. ¡Te esperamos!`;
+    }
+
+    return `Hola ${appt.customer_name}, te recordamos tu reserva en ${businessName} el ${fecha} a las ${hora}${locationClause}. Cualquier duda para cancelar o reagendar, contáctanos. ¡Nos vemos pronto!`;
+  }
+
+  function handleSendManualWhatsapp(appt: Appointment, kind: "confirm" | "reminder") {
+    const message = buildAppointmentWhatsAppMessage(appt, kind);
+    const link = buildWhatsAppLink(appt.customer_phone, message);
+    if (!link) {
+      alert("Este cliente no tiene un teléfono registrado.");
+      return;
+    }
+    window.open(link, "_blank", "noopener,noreferrer");
   }
   const [depositRequired, setDepositRequired] = useState(false);
   const [pendingDeposits, setPendingDeposits] = useState<PendingDeposit[]>([]);
@@ -7264,11 +7305,34 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               type="button"
                               onClick={() => handleRequestReview(selectedAppointment)}
                               disabled={requestingReview}
-                              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               <Star className="h-3.5 w-3.5" />
                               Pedir reseña
                             </button>
+                          ) : null}
+
+                          {isFutureBookedAppointment(selectedAppointment) &&
+                          selectedAppointment.customer_phone ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleSendManualWhatsapp(selectedAppointment, "confirm")}
+                                className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                              >
+                                <MessageCircle className="h-3.5 w-3.5" />
+                                Confirmar por WhatsApp
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleSendManualWhatsapp(selectedAppointment, "reminder")}
+                                className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+                              >
+                                <BellRing className="h-3.5 w-3.5" />
+                                Recordatorio manual
+                              </button>
+                            </>
                           ) : null}
                         </div>
 

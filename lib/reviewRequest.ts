@@ -1,9 +1,20 @@
-// Lógica compartida de "Pedir reseña" — usada desde el módulo Clientes y
-// desde el modal de Detalle de reserva de Agenda. No duplicar: ambos deben
-// generar el mismo link personalizado (con token) y el mismo mensaje.
+// Lógica compartida de mensajes manuales por WhatsApp (wa.me, sin Twilio,
+// sin plantillas — el negocio edita/envía manualmente) — usada desde el
+// módulo Clientes, y desde el modal de Detalle de reserva de Agenda
+// ("Pedir reseña", "Confirmar por WhatsApp", "Recordatorio manual"). No
+// duplicar la construcción del link en cada callsite.
 import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
+
+// Arma el link wa.me con el mensaje precargado. Devuelve null si el
+// teléfono no tiene dígitos (nada que limpiar/normalizar más allá de eso —
+// wa.me acepta el número con o sin "+").
+export function buildWhatsAppLink(phone: string | null | undefined, message: string): string | null {
+  const whatsappNumber = (phone || "").replace(/\D/g, "");
+  if (!whatsappNumber) return null;
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+}
 
 export async function requestReviewViaWhatsapp({
   slug,
@@ -16,8 +27,7 @@ export async function requestReviewViaWhatsapp({
   customerPhone?: string | null;
   businessName: string;
 }) {
-  const whatsappNumber = (customerPhone || "").replace(/\D/g, "");
-  if (!whatsappNumber) {
+  if (!(customerPhone || "").replace(/\D/g, "")) {
     throw new Error("Este cliente no tiene un teléfono registrado.");
   }
 
@@ -38,9 +48,10 @@ export async function requestReviewViaWhatsapp({
     businessName ? ` en ${businessName}` : ""
   }. ¿Nos ayudarías dejando una reseña? Aquí puedes hacerlo: ${reviewUrl}`;
 
-  window.open(
-    `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`,
-    "_blank",
-    "noopener,noreferrer"
-  );
+  const link = buildWhatsAppLink(customerPhone, message);
+  if (!link) {
+    throw new Error("Este cliente no tiene un teléfono registrado.");
+  }
+
+  window.open(link, "_blank", "noopener,noreferrer");
 }
