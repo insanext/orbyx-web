@@ -56,6 +56,7 @@ type Appointment = {
   status: string;
   notes?: string | null;
   wa_confirmacion_enviada?: boolean | null;
+  has_review?: boolean;
   customer_data?: {
     pet_name?: string;
     pet_species?: string;
@@ -7329,15 +7330,22 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                           {selectedAppointment.status === "completed" &&
                           selectedAppointment.customer_id &&
                           selectedAppointment.customer_phone ? (
-                            <button
-                              type="button"
-                              onClick={() => handleRequestReview(selectedAppointment)}
-                              disabled={requestingReview}
-                              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <Star className="h-3.5 w-3.5" />
-                              Pedir reseña
-                            </button>
+                            selectedAppointment.has_review ? (
+                              <div className="mt-2 flex items-center justify-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                                <Check className="h-3.5 w-3.5" />
+                                Ya reseñó
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleRequestReview(selectedAppointment)}
+                                disabled={requestingReview}
+                                className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <Star className="h-3.5 w-3.5" />
+                                Pedir reseña
+                              </button>
+                            )
                           ) : null}
 
                           {isFutureBookedAppointment(selectedAppointment) &&

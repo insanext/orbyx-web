@@ -1,8 +1,10 @@
 // Lógica compartida de mensajes manuales por WhatsApp (wa.me, sin Twilio,
 // sin plantillas — el negocio edita/envía manualmente) — usada desde el
 // módulo Clientes, y desde el modal de Detalle de reserva de Agenda
-// ("Pedir reseña", "Confirmar por WhatsApp", "Recordatorio manual"). No
-// duplicar la construcción del link en cada callsite.
+// ("Pedir reseña", "Confirmar por WhatsApp", "Recordatorio manual",
+// "Invitar por WhatsApp" — este último solo en Clientes, ver
+// handleInviteWhatsApp en customers/page.tsx). No duplicar la
+// construcción del link en cada callsite.
 import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";

@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { Search, SlidersHorizontal, Star, UsersRound, X } from "lucide-react";
+import { Check, Lock, MessageCircle, Search, SlidersHorizontal, Star, UsersRound, X } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
-import { requestReviewViaWhatsapp } from "@/lib/reviewRequest";
+import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
+import { isPlanAtLeast } from "@/lib/plans";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -32,6 +33,7 @@ type Customer = {
   segment?: CustomerSegment;
   pets?: Pet[];
   has_completed_visit?: boolean;
+  has_review?: boolean;
 };
 
 type CustomersResponse = {
@@ -142,9 +144,17 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [businessCategory, setBusinessCategory] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [planSlug, setPlanSlug] = useState("");
   const isVeterinaria = businessCategory === "veterinaria" || businessCategory === "vet";
   const isClinica = businessCategory === "clinica";
   const [selectedBranchId, setSelectedBranchId] = useState("");
+
+  // Gating por plan (Desde Business) del botón "Invitar por WhatsApp" —
+  // mismo mecanismo/lenguaje que LockedBlock en Indicadores
+  // (dashboard/[slug]/page.tsx), sin backend involucrado: el link wa.me es
+  // 100% frontend, esto es una decisión de producto/monetización, no
+  // técnica.
+  const whatsappInviteUnlocked = isPlanAtLeast(planSlug, "business");
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -168,6 +178,29 @@ export default function CustomersPage() {
     } finally {
       setRequestingReviewFor("");
     }
+  }
+
+  // "Invitar por WhatsApp" — igual que "Pedir reseña", 100% frontend
+  // (wa.me con mensaje precargado y editable, sin Twilio ni backend): a
+  // diferencia de esa, no requiere una visita completada, solo teléfono.
+  // El mensaje varía según el mismo `segment` que ya devuelve
+  // GET /customers/:slug (inactive = reactivación, resto = disponibilidad).
+  function handleInviteWhatsApp(customer: Customer) {
+    if (!customer.phone) return;
+
+    const publicUrl = `https://orbyx.cl/${slug}`;
+    const greeting = customer.name ? `¡Hola ${customer.name}!` : "¡Hola!";
+    const bizSuffix = businessName ? ` en ${businessName}` : "";
+
+    const message =
+      customer.segment === "inactive"
+        ? `${greeting} Te extrañamos${bizSuffix} 💙 Tenemos horarios disponibles para ti, agenda aquí: ${publicUrl}`
+        : `${greeting} Tenemos horarios disponibles${bizSuffix}. Agenda aquí: ${publicUrl}`;
+
+    const link = buildWhatsAppLink(customer.phone, message);
+    if (!link) return;
+
+    window.open(link, "_blank", "noopener,noreferrer");
   }
 
   const [summary, setSummary] = useState({
@@ -216,6 +249,7 @@ export default function CustomersPage() {
 
       setBusinessCategory(b?.business?.business_category || "");
       setBusinessName(b?.business?.name || "");
+      setPlanSlug(b?.business?.plan_slug || "");
 
       const params = new URLSearchParams();
       if (search) params.set("q", search);
@@ -257,6 +291,36 @@ export default function CustomersPage() {
             : "Gestiona clientes, filtra y analiza su comportamiento."
         }
       />
+
+      {/* Aviso de gating (Desde Business) del botón "Invitar por WhatsApp"
+          — una sola vez acá, no repetido por fila (el ícono candado de cada
+          fila ya lo indica al pasar el mouse, esto lo hace visible sin
+          hover). `planSlug &&` evita el flash antes de que cargue el
+          fetch inicial. */}
+      {planSlug && !whatsappInviteUnlocked ? (
+        <div
+          className="flex items-start gap-3 rounded-2xl border border-dashed p-4"
+          style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)" }}
+        >
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+            style={{ background: "var(--cust-blue-tint)", color: "var(--cust-blue-solid)" }}
+          >
+            <Lock className="h-4 w-4" />
+          </div>
+          <div>
+            <span
+              className="inline-flex h-5 items-center px-2 text-[10px] font-extrabold uppercase tracking-[0.08em] text-white"
+              style={{ background: "var(--cust-blue-solid)" }}
+            >
+              Desde Business
+            </span>
+            <p className="mt-1.5 text-xs" style={{ color: "var(--cust-muted)" }}>
+              Invita a tus clientes a reservar de nuevo por WhatsApp con un mensaje precargado y editable.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* FILTROS — mobile: colapsados detrás de un botón "Filtros" (mismo
           patrón que Agenda), igual que la sección completa de abajo pero
@@ -560,20 +624,67 @@ export default function CustomersPage() {
                     Ver detalle →
                   </button>
                   {c.has_completed_visit && c.phone ? (
-                    <button
-                      type="button"
-                      onClick={() => handleRequestReview(c)}
-                      disabled={requestingReviewFor === c.id}
-                      title="Pedir reseña por WhatsApp"
-                      aria-label="Pedir reseña por WhatsApp"
-                      className="flex items-center justify-center rounded-xl border px-3 text-sm font-medium transition disabled:opacity-60"
-                      style={{
-                        borderColor: "var(--cust-emerald-solid)",
-                        color: "var(--cust-emerald-solid)",
-                      }}
-                    >
-                      <Star className="h-4 w-4" />
-                    </button>
+                    c.has_review ? (
+                      <span
+                        title="Ya dejó su reseña"
+                        aria-label="Ya dejó su reseña"
+                        className="flex items-center justify-center gap-1 rounded-xl border px-3 text-xs font-semibold"
+                        style={{
+                          borderColor: "var(--cust-emerald-solid)",
+                          color: "var(--cust-emerald-text)",
+                          background: "var(--cust-emerald-tint)",
+                        }}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Ya reseñó
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleRequestReview(c)}
+                        disabled={requestingReviewFor === c.id}
+                        title="Pedir reseña por WhatsApp"
+                        aria-label="Pedir reseña por WhatsApp"
+                        className="flex items-center justify-center rounded-xl border px-3 text-sm font-medium transition disabled:opacity-60"
+                        style={{
+                          borderColor: "var(--cust-emerald-solid)",
+                          color: "var(--cust-emerald-solid)",
+                        }}
+                      >
+                        <Star className="h-4 w-4" />
+                      </button>
+                    )
+                  ) : null}
+                  {c.phone ? (
+                    whatsappInviteUnlocked ? (
+                      <button
+                        type="button"
+                        onClick={() => handleInviteWhatsApp(c)}
+                        title="Invitar por WhatsApp"
+                        aria-label="Invitar por WhatsApp"
+                        className="flex items-center justify-center rounded-xl border px-3 text-sm font-medium transition"
+                        style={{
+                          borderColor: "var(--cust-blue-solid)",
+                          color: "var(--cust-blue-solid)",
+                        }}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        title="Invitar por WhatsApp — Desde Business"
+                        aria-label="Invitar por WhatsApp — Desde Business"
+                        className="flex cursor-not-allowed items-center justify-center rounded-xl border px-3 text-sm font-medium opacity-60"
+                        style={{
+                          borderColor: "var(--cust-border)",
+                          color: "var(--cust-muted)",
+                        }}
+                      >
+                        <Lock className="h-4 w-4" />
+                      </button>
+                    )
                   ) : null}
                 </div>
               </article>
@@ -653,25 +764,77 @@ export default function CustomersPage() {
                     </td>
 
                     <td className="px-4 py-3.5">
-                      {c.has_completed_visit && c.phone ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRequestReview(c);
-                          }}
-                          disabled={requestingReviewFor === c.id}
-                          title="Pedir reseña por WhatsApp"
-                          aria-label="Pedir reseña por WhatsApp"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition hover:opacity-80 disabled:opacity-60"
-                          style={{
-                            borderColor: "var(--cust-emerald-solid)",
-                            color: "var(--cust-emerald-solid)",
-                          }}
-                        >
-                          <Star className="h-4 w-4" />
-                        </button>
-                      ) : null}
+                      <div className="flex items-center gap-2">
+                        {c.has_completed_visit && c.phone ? (
+                          c.has_review ? (
+                            <span
+                              title="Ya dejó su reseña"
+                              aria-label="Ya dejó su reseña"
+                              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
+                              style={{
+                                background: "var(--cust-emerald-tint)",
+                                color: "var(--cust-emerald-text)",
+                              }}
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                              Ya reseñó
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRequestReview(c);
+                              }}
+                              disabled={requestingReviewFor === c.id}
+                              title="Pedir reseña por WhatsApp"
+                              aria-label="Pedir reseña por WhatsApp"
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition hover:opacity-80 disabled:opacity-60"
+                              style={{
+                                borderColor: "var(--cust-emerald-solid)",
+                                color: "var(--cust-emerald-solid)",
+                              }}
+                            >
+                              <Star className="h-4 w-4" />
+                            </button>
+                          )
+                        ) : null}
+                        {c.phone ? (
+                          whatsappInviteUnlocked ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleInviteWhatsApp(c);
+                              }}
+                              title="Invitar por WhatsApp"
+                              aria-label="Invitar por WhatsApp"
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition hover:opacity-80"
+                              style={{
+                                borderColor: "var(--cust-blue-solid)",
+                                color: "var(--cust-blue-solid)",
+                              }}
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => e.stopPropagation()}
+                              disabled
+                              title="Invitar por WhatsApp — Desde Business"
+                              aria-label="Invitar por WhatsApp — Desde Business"
+                              className="inline-flex h-9 w-9 cursor-not-allowed items-center justify-center rounded-full border opacity-60"
+                              style={{
+                                borderColor: "var(--cust-border)",
+                                color: "var(--cust-muted)",
+                              }}
+                            >
+                              <Lock className="h-4 w-4" />
+                            </button>
+                          )
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
