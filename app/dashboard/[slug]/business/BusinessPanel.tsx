@@ -1818,35 +1818,6 @@ function updateHourByIndex(
         }
       `}</style>
 
-      <section
-        className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
-        style={{
-          borderColor: "rgba(59,130,246,0.25)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-        }}
-      >
-        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex max-w-3xl items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
-              <Building2 className="h-4 w-4" />
-            </div>
-            <div>
-<p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-600">Negocio</p>
-<h1 className="mt-0.5 text-lg font-semibold">
-  Configura tu negocio aquí
-</h1>
-
-
-            <p className="mt-0.5 text-sm leading-5">
-              Administra la configuración global, reservas, horarios por sucursal y excepciones del calendario.
-            </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {loadError ? (
         <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
           {loadError}
@@ -1911,19 +1882,16 @@ function updateHourByIndex(
 {activeSection === "general" ? (
 <section className="space-y-3">
   <div>
-    <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
-      1. Configuración global
-    </p>
-    <h2 className="mt-1 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+    <h2 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
       Datos del negocio
     </h2>
   </div>
 
 <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-  
+
   <Panel
     title="Información principal"
-    description="Edita los datos que verán tus clientes y que también podrá usar la IA."
+    description="Edita los datos que verán tus clientes."
     className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
   >
     {loading ? (
