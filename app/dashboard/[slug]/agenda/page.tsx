@@ -19,6 +19,7 @@ import {
   RotateCcw,
   Search,
   SlidersHorizontal,
+  Star,
   Store,
   UserRound,
   UsersRound,
@@ -27,6 +28,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
+import { requestReviewViaWhatsapp } from "@/lib/reviewRequest";
 import { createClient } from "../../../../lib/supabase/client";
 import {
   APPOINTMENT_STATUS_COLORS,
@@ -404,6 +406,24 @@ export default function AgendaPage() {
     const [tenantId, setTenantId] = useState("");
 const [slotMinutes, setSlotMinutes] = useState(30);
   const [businessName, setBusinessName] = useState("");
+  const [requestingReview, setRequestingReview] = useState(false);
+
+  async function handleRequestReview(appt: { customer_id?: string | null; customer_phone?: string | null }) {
+    if (!slug || !appt.customer_id || !appt.customer_phone) return;
+    setRequestingReview(true);
+    try {
+      await requestReviewViaWhatsapp({
+        slug,
+        customerId: appt.customer_id,
+        customerPhone: appt.customer_phone,
+        businessName,
+      });
+    } catch (err: any) {
+      alert(err?.message || "No se pudo generar el link de reseña.");
+    } finally {
+      setRequestingReview(false);
+    }
+  }
   const [depositRequired, setDepositRequired] = useState(false);
   const [pendingDeposits, setPendingDeposits] = useState<PendingDeposit[]>([]);
   const [depositsModalOpen, setDepositsModalOpen] = useState(false);
@@ -7173,6 +7193,20 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             <X className="h-3.5 w-3.5" />
                             Cancelar reserva
                           </button>
+
+                          {selectedAppointment.status === "completed" &&
+                          selectedAppointment.customer_id &&
+                          selectedAppointment.customer_phone ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRequestReview(selectedAppointment)}
+                              disabled={requestingReview}
+                              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Star className="h-3.5 w-3.5" />
+                              Pedir reseña
+                            </button>
+                          ) : null}
                         </div>
 
                         {selectedAppointment.customer_id ? (

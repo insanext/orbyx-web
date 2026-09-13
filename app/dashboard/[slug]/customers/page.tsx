@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { Search, SlidersHorizontal, Star, UsersRound, X } from "lucide-react";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
+import { requestReviewViaWhatsapp } from "@/lib/reviewRequest";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -112,25 +113,6 @@ function Avatar({ id, name }: { id: string; name: string }) {
   );
 }
 
-// Mismo criterio que customers/[id]/page.tsx: solo dígitos, sin "+", que es
-// lo que espera un link wa.me.
-function normalizeWhatsappNumber(value?: string | null) {
-  if (!value) return "";
-  return value.replace(/\D/g, "");
-}
-
-function buildReviewRequestUrl(customerPhone: string | null, businessName: string, slug: string) {
-  const whatsappNumber = normalizeWhatsappNumber(customerPhone);
-  if (!whatsappNumber) return "";
-
-  const reviewUrl = `https://orbyx.cl/${slug}/opinar`;
-  const message = `¡Hola! Gracias por visitarnos${
-    businessName ? ` en ${businessName}` : ""
-  }. ¿Nos ayudarías dejando una reseña? Aquí puedes hacerlo: ${reviewUrl}`;
-
-  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-}
-
 function SegmentBadge({ segment }: { segment?: string }) {
   const map: Record<string, { label: string; tone: SegmentTone }> = {
     frequent: { label: "Frecuente", tone: "emerald" },
@@ -169,6 +151,24 @@ export default function CustomersPage() {
   const [segment, setSegment] = useState("all");
   const [inactiveDays, setInactiveDays] = useState("60");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [requestingReviewFor, setRequestingReviewFor] = useState("");
+
+  async function handleRequestReview(customer: Customer) {
+    if (!customer.phone) return;
+    setRequestingReviewFor(customer.id);
+    try {
+      await requestReviewViaWhatsapp({
+        slug: String(slug || ""),
+        customerId: customer.id,
+        customerPhone: customer.phone,
+        businessName,
+      });
+    } catch (err: any) {
+      alert(err?.message || "No se pudo generar el link de reseña.");
+    } finally {
+      setRequestingReviewFor("");
+    }
+  }
 
   const [summary, setSummary] = useState({
     total: 0,
@@ -560,20 +560,20 @@ export default function CustomersPage() {
                     Ver detalle →
                   </button>
                   {c.has_completed_visit && c.phone ? (
-                    <a
-                      href={buildReviewRequestUrl(c.phone, businessName, String(slug || ""))}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => handleRequestReview(c)}
+                      disabled={requestingReviewFor === c.id}
                       title="Pedir reseña por WhatsApp"
                       aria-label="Pedir reseña por WhatsApp"
-                      className="flex items-center justify-center rounded-xl border px-3 text-sm font-medium transition"
+                      className="flex items-center justify-center rounded-xl border px-3 text-sm font-medium transition disabled:opacity-60"
                       style={{
                         borderColor: "var(--cust-emerald-solid)",
                         color: "var(--cust-emerald-solid)",
                       }}
                     >
                       <Star className="h-4 w-4" />
-                    </a>
+                    </button>
                   ) : null}
                 </div>
               </article>
@@ -654,21 +654,23 @@ export default function CustomersPage() {
 
                     <td className="px-4 py-3.5">
                       {c.has_completed_visit && c.phone ? (
-                        <a
-                          href={buildReviewRequestUrl(c.phone, businessName, String(slug || ""))}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRequestReview(c);
+                          }}
+                          disabled={requestingReviewFor === c.id}
                           title="Pedir reseña por WhatsApp"
                           aria-label="Pedir reseña por WhatsApp"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition hover:opacity-80"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition hover:opacity-80 disabled:opacity-60"
                           style={{
                             borderColor: "var(--cust-emerald-solid)",
                             color: "var(--cust-emerald-solid)",
                           }}
                         >
                           <Star className="h-4 w-4" />
-                        </a>
+                        </button>
                       ) : null}
                     </td>
                   </tr>
