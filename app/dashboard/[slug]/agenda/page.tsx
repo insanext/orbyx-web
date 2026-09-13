@@ -7331,32 +7331,14 @@ const appt = slotDisplayGroups[0]?.appointments[0];
 
                           {isFutureBookedAppointment(selectedAppointment) &&
                           selectedAppointment.customer_phone ? (
-                            <>
-                              {selectedAppointment.wa_confirmacion_enviada ? (
-                                <div className="mt-2 flex items-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
-                                  <Check className="h-3.5 w-3.5 shrink-0" />
-                                  Confirmación enviada automáticamente por WhatsApp
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleSendManualWhatsapp(selectedAppointment, "confirm")}
-                                  className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
-                                >
-                                  <MessageCircle className="h-3.5 w-3.5" />
-                                  Confirmar por WhatsApp
-                                </button>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() => handleSendManualWhatsapp(selectedAppointment, "reminder")}
-                                className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                              >
-                                <BellRing className="h-3.5 w-3.5" />
-                                Recordatorio manual
-                              </button>
-                            </>
+                            <button
+                              type="button"
+                              onClick={() => handleSendManualWhatsapp(selectedAppointment, "reminder")}
+                              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+                            >
+                              <BellRing className="h-3.5 w-3.5" />
+                              Recordar por WhatsApp
+                            </button>
                           ) : null}
                         </div>
 
