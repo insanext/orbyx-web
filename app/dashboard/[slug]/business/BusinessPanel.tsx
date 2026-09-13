@@ -1819,7 +1819,7 @@ function updateHourByIndex(
       `}</style>
 
       {loadError ? (
-        <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
+        <div className="rounded border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 shadow-sm">
           {loadError}
         </div>
       ) : null}
@@ -1829,7 +1829,7 @@ function updateHourByIndex(
         aria-label="Secciones de configuración de negocio"
       >
         <div
-          className="flex min-w-max gap-2 rounded-[20px] border p-1.5 shadow-sm backdrop-blur"
+          className="flex min-w-max gap-2 rounded border p-1.5 shadow-sm backdrop-blur"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-card)",
@@ -1844,7 +1844,7 @@ function updateHourByIndex(
                 type="button"
                 onClick={() => setActiveSection(item.id)}
                 aria-current={active ? "page" : undefined}
-                className={`cursor-pointer whitespace-nowrap rounded-2xl border px-5 py-3 text-sm font-semibold transition-colors duration-150 hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
+                className={`cursor-pointer whitespace-nowrap rounded border px-5 py-3 text-sm font-semibold transition-colors duration-150 hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
                   active ? "" : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
                 }`}
                 style={{
@@ -1892,11 +1892,11 @@ function updateHourByIndex(
   <Panel
     title="Información principal"
     description="Edita los datos que verán tus clientes."
-    className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
+    className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)] !rounded"
   >
     {loading ? (
       <div
-        className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+        className="rounded border border-dashed px-4 py-8 text-sm"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-soft)",
@@ -1930,7 +1930,7 @@ function updateHourByIndex(
         </div>
 
         <div
-          className="rounded-2xl border p-4"
+          className="rounded border p-4"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-soft)",
@@ -1938,7 +1938,7 @@ function updateHourByIndex(
         >
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
             <div
-              className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
+              className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded border"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-card)",
@@ -1986,7 +1986,7 @@ function updateHourByIndex(
                   type="button"
                   onClick={() => logoFileInputRef.current?.click()}
                   disabled={logoUploading || !tenantId || !canEditNegocio}
-                  className={secondaryButtonClass}
+                  className={`${secondaryButtonClass} !rounded`}
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-card)",
@@ -2000,7 +2000,7 @@ function updateHourByIndex(
                   type="button"
                   onClick={removeLogo}
                   disabled={logoUploading || (!form.logo_url && !logoDraftUrl) || !canEditNegocio}
-                  className="orbyx-business-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition disabled:cursor-not-allowed disabled:opacity-60"
+                  className="orbyx-business-energy inline-flex h-11 items-center justify-center rounded border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Eliminar logo
                 </button>
@@ -2057,7 +2057,7 @@ function updateHourByIndex(
                     type="button"
                     onClick={uploadAdjustedLogo}
                     disabled={logoUploading || !selectedLogoFile || !logoDraftUrl}
-                    className={primaryButtonClass}
+                    className={`${primaryButtonClass} !rounded`}
                     style={{
                       background:
                         "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
@@ -2660,13 +2660,13 @@ function updateHourByIndex(
         ) : null}
 
         {saveError ? (
-          <div className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          <div className="rounded border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
             {saveError}
           </div>
         ) : null}
 
         {saveOk ? (
-          <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          <div className="rounded border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
             {saveOk}
           </div>
         ) : null}
@@ -2676,7 +2676,7 @@ function updateHourByIndex(
             type="button"
             onClick={handleSave}
             disabled={saving || !canEditNegocio}
-            className={primaryButtonClass}
+            className={`${primaryButtonClass} !rounded`}
             style={{
               background:
                 "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
@@ -2694,7 +2694,7 @@ function updateHourByIndex(
       <Panel
         title="Tipo de negocio"
         description="Define la familia del negocio para preparar configuraciones específicas."
-        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)] !rounded"
       >
         <div>
           <label
@@ -2756,7 +2756,7 @@ function updateHourByIndex(
       <Panel
         title="Especialidad clínica"
         description="Define la especialidad de tu centro de salud. Esto activa campos específicos en las fichas clínicas."
-        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)]"
+        className="bg-[linear-gradient(180deg,rgba(37,99,235,0.05),transparent_35%)] !rounded"
       >
         <div>
           <label
