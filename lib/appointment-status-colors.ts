@@ -35,14 +35,16 @@ export const APPOINTMENT_STATUS_COLORS: Record<
   AppointmentStatusKey,
   AppointmentStatusColor
 > = {
-  confirmed: { rgb: "16,185,129", hex: "#10B981", onDark: "#ECFDF5", label: "Confirmado / Asistió" },
+  confirmed: { rgb: "16,185,129", hex: "#10B981", onDark: "#ECFDF5", label: "Asistió" },
   booked: { rgb: "59,130,246", hex: "#3B82F6", onDark: "#EFF6FF", label: "Agendado" },
   no_show: { rgb: "107,114,128", hex: "#6B7280", onDark: "#F3F4F6", label: "No asistió" },
   rescheduled: { rgb: "139,92,246", hex: "#8B5CF6", onDark: "#F5F3FF", label: "Reagendado" },
   canceled: { rgb: "239,68,68", hex: "#EF4444", onDark: "#FEF2F2", label: "Cancelado" },
   // Estado adicional (no viene en la tabla original de 7): cierre de asistencia
-  // pendiente. Usa rosa para no chocar con "Cancelado" (rojo).
-  pending_close: { rgb: "236,72,153", hex: "#EC4899", onDark: "#FDF2F8", label: "Falta cierre" },
+  // pendiente. Ya no aparece en la leyenda ninguna reserva "Cancelada" (las
+  // canceladas desaparecen del calendario, nunca se muestran como bloque),
+  // así que "Falta cierre" pasa a usar el rojo que queda libre.
+  pending_close: { rgb: "239,68,68", hex: "#EF4444", onDark: "#FEF2F2", label: "Falta cierre" },
   // Actividad grupal usa un morado/índigo distinto del de "Reagendado" para
   // que ambos se puedan diferenciar cuando aparecen cerca en el calendario.
   group_activity: { rgb: "99,102,241", hex: "#6366F1", onDark: "#EEF2FF", label: "Actividad grupal" },

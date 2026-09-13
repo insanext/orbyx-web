@@ -55,6 +55,7 @@ type Appointment = {
   service_capacity?: number | null;
   status: string;
   notes?: string | null;
+  wa_confirmacion_enviada?: boolean | null;
   customer_data?: {
     pet_name?: string;
     pet_species?: string;
@@ -442,8 +443,8 @@ const [slotMinutes, setSlotMinutes] = useState(30);
     const branch = branches.find((b) => b.id === appt.branch_id);
     const locationClause = branch
       ? branch.address
-        ? ` en ${branch.name} (${branch.address})`
-        : ` en ${branch.name}`
+        ? ` en Sucursal ${branch.name} (${branch.address})`
+        : ` en Sucursal ${branch.name}`
       : "";
 
     const fecha = formatLongDate(appt.start_at);
@@ -566,8 +567,11 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   const [manualBookingDraft, setManualBookingDraft] =
     useState<ManualBookingDraft | null>(null);
   const [manualBookingStep, setManualBookingStep] =
-    useState<"form" | "confirm">("form");
+    useState<"form" | "confirm" | "success">("form");
   const [manualBookingSaving, setManualBookingSaving] = useState(false);
+  // Reserva recién creada, mostrada en el paso "success" del modal (punto 4a:
+  // avisa si hay que confirmar por WhatsApp manualmente o si ya se mandó sola).
+  const [manualBookingResult, setManualBookingResult] = useState<Appointment | null>(null);
   const [manualBookingError, setManualBookingError] = useState("");
   const [freeSlotActionDraft, setFreeSlotActionDraft] =
     useState<FreeSlotActionDraft | null>(null);
@@ -2068,9 +2072,16 @@ function getSelectedStaffDayWindow(day: Date) {
 
 
 
-  async function loadAppointments(options?: { preserveSelected?: boolean }) {
+  async function loadAppointments(options?: { preserveSelected?: boolean; silent?: boolean }) {
     try {
-      setLoading(true);
+      // silent: revalida los datos sin tocar `loading` — evita el flash de
+      // "recarga completa" (loading=true desmonta la grilla del calendario
+      // entera, ver líneas donde se usa `!loading` para renderizarla). Usado
+      // después de crear una reserva manual: la grilla queda montada y solo
+      // se actualiza con los datos frescos (incluye el bloque nuevo), igual
+      // criterio que loadPendingCloseAppointments (fetch de fondo, sin flag
+      // de carga que tape nada).
+      if (!options?.silent) setLoading(true);
       setError("");
 
       if (!selectedBranchId) {
@@ -2129,7 +2140,7 @@ function getSelectedStaffDayWindow(day: Date) {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error cargando agenda");
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }
 
@@ -2443,6 +2454,7 @@ next_control_custom_value:
     setManualBookingError("");
     setModalServiceIds(null);
     setManualBookingSaving(false);
+    setManualBookingResult(null);
   }
 
   function openManualBooking(
@@ -2574,8 +2586,14 @@ next_control_custom_value:
         throw new Error(data?.error || "No se pudo crear la reserva.");
       }
 
-      closeManualBookingModal();
-      await loadAppointments({ preserveSelected: true });
+      // No se cierra el modal todavía — punto 4a: se muestra un paso final
+      // avisando si hace falta confirmar por WhatsApp a mano o si ya se
+      // mandó sola. loadAppointments en modo silent (punto 2): la grilla
+      // del calendario se actualiza con la reserva nueva sin el flash de
+      // "loading" que la desmontaba entera.
+      setManualBookingResult(data.appointment);
+      setManualBookingStep("success");
+      await loadAppointments({ preserveSelected: true, silent: true });
     } catch (err: unknown) {
       setManualBookingError(
         err instanceof Error ? err.message : "Error creando reserva"
@@ -4246,11 +4264,10 @@ const hasActiveFilters =
                       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                         {(
                           [
-                            ["Confirmado", "confirmed"],
+                            ["Asistió", "confirmed"],
                             ["Agendado", "booked"],
                             ["No asistió", "no_show"],
                             ["Reagendado", "rescheduled"],
-                            ["Cancelado", "canceled"],
                             ["Falta cierre", "pending_close"],
                             ["Actividad grupal", "group_activity"],
                           ] as [string, keyof typeof APPOINTMENT_STATUS_COLORS][]
@@ -7256,9 +7273,9 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                 handleUpdateStatus(selectedAppointment.id, "completed");
                               }}
                               disabled={statusSaving || closeSaving || selectedAppointment.status === "completed"}
-                              className="inline-flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="orbyx-status-badge-confirmed inline-flex h-9 items-center justify-center gap-1.5 rounded border px-2 text-xs font-semibold transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                              <Check className="h-4 w-4" />
+                              <Check className="h-3.5 w-3.5" />
                               Asistió
                             </button>
 
@@ -7266,9 +7283,9 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               type="button"
                               onClick={() => handleUpdateStatus(selectedAppointment.id, "no_show")}
                               disabled={statusSaving || selectedAppointment.status === "no_show"}
-                              className="inline-flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="orbyx-status-badge-no_show inline-flex h-9 items-center justify-center gap-1.5 rounded border px-2 text-xs font-semibold transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                              <XCircle className="h-4 w-4" />
+                              <XCircle className="h-3.5 w-3.5" />
                               No asistió
                             </button>
 
@@ -7276,9 +7293,9 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               type="button"
                               onClick={() => handleUpdateStatus(selectedAppointment.id, "rescheduled")}
                               disabled={statusSaving || selectedAppointment.status === "rescheduled"}
-                              className="inline-flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border border-violet-200 bg-violet-50 px-2 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex h-9 items-center justify-center gap-1.5 rounded border border-violet-200 bg-violet-50 px-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                              <RotateCcw className="h-4 w-4" />
+                              <RotateCcw className="h-3.5 w-3.5" />
                               Reagendó
                             </button>
                           </div>
@@ -7315,14 +7332,21 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                           {isFutureBookedAppointment(selectedAppointment) &&
                           selectedAppointment.customer_phone ? (
                             <>
-                              <button
-                                type="button"
-                                onClick={() => handleSendManualWhatsapp(selectedAppointment, "confirm")}
-                                className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
-                              >
-                                <MessageCircle className="h-3.5 w-3.5" />
-                                Confirmar por WhatsApp
-                              </button>
+                              {selectedAppointment.wa_confirmacion_enviada ? (
+                                <div className="mt-2 flex items-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                                  <Check className="h-3.5 w-3.5 shrink-0" />
+                                  Confirmación enviada automáticamente por WhatsApp
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSendManualWhatsapp(selectedAppointment, "confirm")}
+                                  className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                                >
+                                  <MessageCircle className="h-3.5 w-3.5" />
+                                  Confirmar por WhatsApp
+                                </button>
+                              )}
 
                               <button
                                 type="button"
@@ -8441,7 +8465,9 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                 className="text-lg font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
-                {manualBookingStep === "confirm"
+                {manualBookingStep === "success"
+                  ? "Reserva creada"
+                  : manualBookingStep === "confirm"
                   ? "¿Confirmar reserva?"
                   : "Nueva reserva"}
               </h3>
@@ -8798,6 +8824,37 @@ const appt = slotDisplayGroups[0]?.appointments[0];
               </div>
             )}
 
+            {manualBookingStep === "success" && manualBookingResult ? (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  Reserva creada para {manualBookingResult.customer_name} el{" "}
+                  {formatLongDate(manualBookingResult.start_at)} a las{" "}
+                  {formatHour(manualBookingResult.start_at)}.
+                </div>
+
+                {manualBookingResult.wa_confirmacion_enviada ? (
+                  <div className="flex items-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+                    <Check className="h-4 w-4 shrink-0" />
+                    Confirmación enviada automáticamente por WhatsApp
+                  </div>
+                ) : manualBookingResult.customer_phone ? (
+                  <div>
+                    <p className="mb-2 text-sm" style={{ color: "var(--text-main)" }}>
+                      Avísale al cliente que está lista su reserva
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleSendManualWhatsapp(manualBookingResult, "confirm")}
+                      className="inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      Confirmar por WhatsApp
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             {manualBookingError ? (
               <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                 {manualBookingError}
@@ -8805,50 +8862,62 @@ const appt = slotDisplayGroups[0]?.appointments[0];
             ) : null}
 
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={
-                  manualBookingStep === "confirm"
-                    ? () => setManualBookingStep("form")
-                    : closeManualBookingModal
-                }
-                disabled={manualBookingSaving}
-                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  borderColor: "var(--border-color)",
-                  background: "var(--bg-soft)",
-                  color: "var(--text-main)",
-                }}
-              >
-                {manualBookingStep === "confirm" ? "Volver" : "Cancelar"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (manualBookingStep === "confirm") {
-                    handleConfirmManualBooking();
-                    return;
-                  }
+              {manualBookingStep === "success" ? (
+                <button
+                  type="button"
+                  onClick={closeManualBookingModal}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  Listo
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={
+                      manualBookingStep === "confirm"
+                        ? () => setManualBookingStep("form")
+                        : closeManualBookingModal
+                    }
+                    disabled={manualBookingSaving}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    {manualBookingStep === "confirm" ? "Volver" : "Cancelar"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (manualBookingStep === "confirm") {
+                        handleConfirmManualBooking();
+                        return;
+                      }
 
-                  const validationError =
-                    validateManualBookingDraft(manualBookingDraft);
-                  if (validationError) {
-                    setManualBookingError(validationError);
-                    return;
-                  }
+                      const validationError =
+                        validateManualBookingDraft(manualBookingDraft);
+                      if (validationError) {
+                        setManualBookingError(validationError);
+                        return;
+                      }
 
-                  setManualBookingError("");
-                  setManualBookingStep("confirm");
-                }}
-                disabled={manualBookingSaving}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {manualBookingSaving
-                  ? "Creando..."
-                  : manualBookingStep === "confirm"
-                  ? "Confirmar reserva"
-                  : "Continuar"}
-              </button>
+                      setManualBookingError("");
+                      setManualBookingStep("confirm");
+                    }}
+                    disabled={manualBookingSaving}
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {manualBookingSaving
+                      ? "Creando..."
+                      : manualBookingStep === "confirm"
+                      ? "Confirmar reserva"
+                      : "Continuar"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
