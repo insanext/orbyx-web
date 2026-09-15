@@ -19,6 +19,7 @@ export type AccountStatus = {
   trial_active: boolean;
   trial_expired: boolean;
   dias_restantes_trial: number | null;
+  trial_ends_at: string | null;
   subscription_status: string;
   awaiting_payment: boolean;
   dias_restantes_pago: number | null;

@@ -176,6 +176,11 @@ export default function AdminTenantDetailPage() {
   const [pauseLoading, setPauseLoading] = useState(false)
   const [pauseError, setPauseError] = useState('')
 
+  const [trialEndInput, setTrialEndInput] = useState('')
+  const [trialEndSaving, setTrialEndSaving] = useState(false)
+  const [trialEndMessage, setTrialEndMessage] = useState('')
+  const [trialEndIsError, setTrialEndIsError] = useState(false)
+
   const getToken = useCallback(async () => {
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
@@ -398,6 +403,35 @@ export default function AdminTenantDetailPage() {
     }
   }, [authFetch, data, id, loadTenant])
 
+  const handleSaveTrialEnd = useCallback(async () => {
+    if (!trialEndInput) {
+      setTrialEndIsError(true)
+      setTrialEndMessage('Selecciona una fecha.')
+      return
+    }
+    setTrialEndSaving(true)
+    setTrialEndMessage('')
+    try {
+      const res = await authFetch(`/admin/tenants/${id}/trial-end`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trial_ends_at: trialEndInput }),
+      })
+      const json = res ? await res.json() : null
+      if (!res || !res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Error actualizando la fecha de prueba')
+      }
+      setTrialEndIsError(false)
+      setTrialEndMessage('✓ Fecha de vencimiento de prueba actualizada.')
+      loadTenant()
+    } catch (e) {
+      setTrialEndIsError(true)
+      setTrialEndMessage(e instanceof Error ? e.message : 'Error actualizando la fecha de prueba')
+    } finally {
+      setTrialEndSaving(false)
+    }
+  }, [authFetch, id, trialEndInput, loadTenant])
+
   const loadTickets = useCallback(async () => {
     if (!id) return
     setTicketsLoading(true)
@@ -415,6 +449,15 @@ export default function AdminTenantDetailPage() {
   useEffect(() => { loadTenant() }, [loadTenant])
   useEffect(() => { loadNotes() }, [loadNotes])
   useEffect(() => { loadTickets() }, [loadTickets])
+
+  // Precarga el date picker con la fecha actual cada vez que llega un
+  // trial_ends_at nuevo del backend (carga inicial, o tras guardar) --
+  // no en cada render, para no pisar lo que el admin está escribiendo.
+  useEffect(() => {
+    if (data?.plan.trial_ends_at) {
+      setTrialEndInput(data.plan.trial_ends_at.slice(0, 10))
+    }
+  }, [data?.plan.trial_ends_at])
 
   if (loading) {
     return <div className="p-6"><p className="text-sm text-blue-300/50">Cargando...</p></div>
@@ -561,7 +604,9 @@ export default function AdminTenantDetailPage() {
             <Field label="Monto" value={formatCLP(plan.amount)} />
             <Field label="Estado suscripción (Flow)" value={plan.subscription_status} />
             <Field label="Periodicidad" value={plan.periodicidad} />
-            <Field label="Fin de prueba" value={formatDate(plan.trial_ends_at)} />
+            {plan.status !== 'trial' ? (
+              <Field label="Fin de prueba" value={formatDate(plan.trial_ends_at)} />
+            ) : null}
             <Field label="Ciclo de facturación termina" value={formatDate(plan.billing_cycle_end)} />
             {plan.scheduled_plan_slug ? (
               <Field
@@ -570,6 +615,33 @@ export default function AdminTenantDetailPage() {
               />
             ) : null}
           </div>
+
+          {plan.status === 'trial' ? (
+            <div className="mt-4 border-t border-blue-900/25 pt-3">
+              <p className="text-xs text-blue-300/50 mb-1">Fin de prueba (editable mientras no tenga suscripción activa)</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="date"
+                  value={trialEndInput}
+                  onChange={(e) => setTrialEndInput(e.target.value)}
+                  className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                />
+                <button
+                  onClick={handleSaveTrialEnd}
+                  disabled={trialEndSaving || !trialEndInput}
+                  className="text-sm font-medium text-white bg-blue-600 rounded-lg px-3 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
+                >
+                  {trialEndSaving ? 'Guardando...' : 'Guardar fecha'}
+                </button>
+              </div>
+              {trialEndMessage ? (
+                <p className={`mt-2 text-xs ${trialEndIsError ? 'text-rose-400' : 'text-blue-300/60'}`}>{trialEndMessage}</p>
+              ) : null}
+              <p className="mt-2 text-xs text-blue-300/40">
+                Extiende o acorta la prueba gratuita del negocio (soporte a clientes reales, o pruebas internas). Solo disponible mientras el tenant no tenga una suscripción de pago activa.
+              </p>
+            </div>
+          ) : null}
         </Section>
 
         <Section title="Sucursales">

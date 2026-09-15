@@ -398,6 +398,29 @@ export default function DashboardLayout({
   const isBillingPage = pathname === `/dashboard/${slug}/billing` || pathname?.startsWith(`/dashboard/${slug}/billing/`);
   const isAccountBlocked = Boolean(accountStatus?.blocked) && !isBillingPage;
 
+  // Banner de vencimiento de prueba: solo tenants en trial sin suscripción
+  // de pago activa (trial_active/trial_expired ya excluyen
+  // hasActiveSubscription y el caso "trialing" en Flow -- tarjeta ya
+  // registrada -- del lado del backend, ver GET /billing/account-status).
+  // Un tenant que ya inscribió tarjeta nunca ve esto, sin importar cuántos
+  // días de trial le queden. trial_expired no trae dias_restantes_trial
+  // (queda null tras vencer), así que ese caso se calcula acá con la fecha
+  // cruda para poder seguir mostrando el aviso indefinidamente después del
+  // vencimiento.
+  const trialBannerDiasRestantes = accountStatus?.trial_active
+    ? accountStatus.dias_restantes_trial
+    : null;
+  const showTrialBanner = Boolean(
+    (accountStatus?.trial_active && trialBannerDiasRestantes != null && trialBannerDiasRestantes <= 5) ||
+      accountStatus?.trial_expired
+  );
+  const trialBannerBlinking = Boolean(
+    accountStatus?.trial_expired || (trialBannerDiasRestantes != null && trialBannerDiasRestantes <= 3)
+  );
+  const trialBannerMessage = accountStatus?.trial_expired
+    ? "Tu prueba gratuita ya terminó. Inscribe tu tarjeta para continuar con tu negocio."
+    : `Te quedan ${trialBannerDiasRestantes} día${trialBannerDiasRestantes === 1 ? "" : "s"} para terminar tu prueba gratuita. Inscribe tu tarjeta para continuar con tu negocio.`;
+
   // Modal de bienvenida (una sola vez por tenant, ver WelcomeModal +
   // tenants.dashboard_welcome_seen_at) -- welcomeDismissedLocally solo evita
   // que reaparezca un instante mientras se espera el próximo refresh de
@@ -1200,6 +1223,17 @@ export default function DashboardLayout({
           0% { left: -60%; }
           55% { left: 130%; }
           100% { left: 130%; }
+        }
+
+        /* Pulso sutil (opacidad), no parpadeo tipo alarma -- ver banner de
+           vencimiento de prueba en el header. */
+        @keyframes orbyxTrialBannerPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.55; }
+        }
+
+        .orbyx-trial-banner-blink {
+          animation: orbyxTrialBannerPulse 2.2s ease-in-out infinite;
         }
       `}</style>
       <div className="flex min-h-screen">
@@ -2051,6 +2085,29 @@ export default function DashboardLayout({
               </div>
             </div>
           </header>
+
+          {showTrialBanner ? (
+            <div
+              className={clsx(
+                "flex flex-wrap items-center justify-center gap-2 px-4 py-2.5 text-center text-sm font-medium text-white sm:gap-3",
+                trialBannerBlinking && "orbyx-trial-banner-blink"
+              )}
+              style={{
+                background: trialBannerBlinking
+                  ? "linear-gradient(135deg, rgb(190,18,60), rgb(225,29,72))"
+                  : "linear-gradient(135deg, rgb(217,119,6), rgb(245,158,11))",
+              }}
+              role="status"
+            >
+              <span>{trialBannerMessage}</span>
+              <Link
+                href={`/dashboard/${slug}/billing`}
+                className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl bg-white/20 px-3 text-xs font-semibold text-white transition hover:bg-white/30"
+              >
+                Inscribir tarjeta
+              </Link>
+            </div>
+          ) : null}
 
           <main className="flex-1">
             <div className="mx-auto w-full max-w-[1600px] px-3 pb-24 pt-4 sm:px-5 sm:pb-6 sm:pt-6 lg:px-8 xl:px-10 2xl:px-12">

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPlanLabel } from '@/lib/plans'
+import { buildWhatsAppLink } from '@/lib/reviewRequest'
 
 const BACKEND_URL = 'https://orbyx-backend.onrender.com'
 
@@ -11,14 +12,46 @@ type TenantRow = {
   name: string
   slug: string
   owner_name: string | null
+  owner_phone: string | null
   plan_slug: string
   amount: number
   addons_summary: string
   business_category: string
   business_category_label: string
   status: 'active' | 'trial' | 'expired_or_canceled'
+  trial_ends_at: string | null
   created_at: string
 }
+
+function diasRestantesTrial(trialEndsAt: string | null): number | null {
+  if (!trialEndsAt) return null
+  const msPerDay = 24 * 60 * 60 * 1000
+  return Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / msPerDay)
+}
+
+// Días vencido (positivo, cuenta hacia arriba desde el día de vencimiento) --
+// null si el trial nunca existió o todavía no vence, para distinguir de un
+// tenant "expired_or_canceled" por una suscripción de pago cancelada (esos
+// no tienen trial_ends_at).
+function diasVencidoTrial(trialEndsAt: string | null): number | null {
+  const restantes = diasRestantesTrial(trialEndsAt)
+  if (restantes === null || restantes > 0) return null
+  return Math.abs(restantes)
+}
+
+// bucket "expired_or_canceled" mezcla 2 casos (ver deriveTenantBucket en
+// server.js): trial vencido sin tarjeta, Y suscripción de pago
+// cancelada/con error. Solo el primero tiene trial_ends_at -- así se
+// distingue sin necesitar un campo nuevo del backend.
+function isExpiredTrial(t: TenantRow): boolean {
+  return t.status === 'expired_or_canceled' && diasVencidoTrial(t.trial_ends_at) !== null
+}
+
+const TRIAL_WHATSAPP_MESSAGE =
+  'Hola, vimos que tu prueba gratuita de Orbyx está por terminar. ¿Necesitas ayuda para inscribir tu tarjeta y seguir usando tu negocio sin interrupciones?'
+
+const EXPIRED_WHATSAPP_MESSAGE =
+  'Hola, tu prueba gratuita de Orbyx ya terminó y tu cuenta quedó pausada. ¿Te ayudo a inscribir tu tarjeta para reactivarla?'
 
 const STATUS_LABEL: Record<TenantRow['status'], string> = {
   active: 'Activo',
@@ -58,6 +91,9 @@ export default function AdminTenantsPage() {
   const [planFilter, setPlanFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
+
+  const [view, setView] = useState<'all' | 'trials' | 'expired'>('all')
+  const [trialSortDir, setTrialSortDir] = useState<'asc' | 'desc'>('asc')
 
   const getToken = useCallback(async () => {
     const supabase = createClient()
@@ -107,18 +143,40 @@ export default function AdminTenantsPage() {
       const matchesPlan = planFilter === 'all' || t.plan_slug === planFilter
       const matchesStatus = statusFilter === 'all' || t.status === statusFilter
       const matchesCategory = categoryFilter === 'all' || t.business_category === categoryFilter
-      return matchesSearch && matchesPlan && matchesStatus && matchesCategory
+      const matchesView =
+        view === 'all' ? true : view === 'trials' ? t.status === 'trial' : isExpiredTrial(t)
+      return matchesSearch && matchesPlan && matchesStatus && matchesCategory && matchesView
     })
-  }, [tenants, search, planFilter, statusFilter, categoryFilter])
+  }, [tenants, search, planFilter, statusFilter, categoryFilter, view])
+
+  const visibleTenants = useMemo(() => {
+    if (view === 'all') return filteredTenants
+    const metric = view === 'trials' ? diasRestantesTrial : diasVencidoTrial
+    const rows = [...filteredTenants]
+    rows.sort((a, b) => {
+      const da = metric(a.trial_ends_at) ?? Infinity
+      const db = metric(b.trial_ends_at) ?? Infinity
+      return trialSortDir === 'asc' ? da - db : db - da
+    })
+    return rows
+  }, [filteredTenants, view, trialSortDir])
 
   const selectClass = 'bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50'
+
+  function handleTrialWhatsApp(t: TenantRow, e: React.MouseEvent) {
+    e.stopPropagation()
+    const message = view === 'expired' ? EXPIRED_WHATSAPP_MESSAGE : TRIAL_WHATSAPP_MESSAGE
+    const link = buildWhatsAppLink(t.owner_phone, message)
+    if (!link) return
+    window.open(link, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-lg font-semibold text-white mb-1">Directorio de tenants</h1>
         <p className="text-sm text-blue-300/50 mb-6">
-          {loading ? 'Cargando...' : `${filteredTenants.length} de ${tenants.length} tenants`}
+          {loading ? 'Cargando...' : `${visibleTenants.length} de ${tenants.length} tenants`}
         </p>
       </div>
 
@@ -128,6 +186,26 @@ export default function AdminTenantsPage() {
           <button onClick={loadTenants} className="mt-2 text-xs text-rose-200 underline">Reintentar</button>
         </div>
       ) : null}
+
+      <div className="flex gap-1 border-b border-blue-900/25">
+        {(['all', 'trials', 'expired'] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              view === v
+                ? 'border-blue-500 text-white'
+                : 'border-transparent text-blue-300/50 hover:text-blue-200'
+            }`}
+          >
+            {v === 'all'
+              ? 'Todos'
+              : v === 'trials'
+              ? `Pruebas activas (${tenants.filter((t) => t.status === 'trial').length})`
+              : `Vencidas (${tenants.filter(isExpiredTrial).length})`}
+          </button>
+        ))}
+      </div>
 
       <div className="flex flex-wrap gap-3">
         <input
@@ -166,17 +244,30 @@ export default function AdminTenantsPage() {
                 <th className="px-4 py-2.5 font-medium">Add-ons activos</th>
                 <th className="px-4 py-2.5 font-medium">Tipo de negocio</th>
                 <th className="px-4 py-2.5 font-medium">Estado</th>
+                {view !== 'all' ? (
+                  <>
+                    <th className="px-4 py-2.5 font-medium">
+                      <button
+                        onClick={() => setTrialSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+                        className="flex items-center gap-1 hover:text-blue-200"
+                      >
+                        {view === 'trials' ? 'Días restantes' : 'Días vencido'} {trialSortDir === 'asc' ? '↑' : '↓'}
+                      </button>
+                    </th>
+                    <th className="px-4 py-2.5 font-medium">WhatsApp</th>
+                  </>
+                ) : null}
               </tr>
             </thead>
             <tbody>
-              {filteredTenants.length === 0 ? (
+              {visibleTenants.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-blue-300/40">
+                  <td colSpan={view !== 'all' ? 8 : 6} className="px-4 py-8 text-center text-blue-300/40">
                     No hay tenants que coincidan con los filtros.
                   </td>
                 </tr>
               ) : (
-                filteredTenants.map((t) => (
+                visibleTenants.map((t) => (
                   <tr
                     key={t.id}
                     onClick={() => router.push(`/admin/tenants/${t.id}`)}
@@ -196,6 +287,36 @@ export default function AdminTenantsPage() {
                     </td>
                     <td className="px-4 py-3 text-blue-100">{t.business_category_label}</td>
                     <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
+                    {view !== 'all' ? (
+                      <>
+                        <td className="px-4 py-3 text-blue-100">
+                          {view === 'trials'
+                            ? (() => {
+                                const dias = diasRestantesTrial(t.trial_ends_at)
+                                if (dias === null) return '—'
+                                return dias <= 0 ? 'Vencida' : `${dias} día${dias === 1 ? '' : 's'}`
+                              })()
+                            : (() => {
+                                const dias = diasVencidoTrial(t.trial_ends_at)
+                                if (dias === null) return '—'
+                                return `Vencida hace ${dias} día${dias === 1 ? '' : 's'}`
+                              })()}
+                        </td>
+                        <td className="px-4 py-3">
+                          {t.owner_phone ? (
+                            <button
+                              onClick={(e) => handleTrialWhatsApp(t, e)}
+                              title="Enviar WhatsApp"
+                              className="rounded-lg border border-emerald-700/40 px-2.5 py-1 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/20 transition-colors"
+                            >
+                              WhatsApp
+                            </button>
+                          ) : (
+                            <span className="text-xs text-blue-300/30">Sin teléfono</span>
+                          )}
+                        </td>
+                      </>
+                    ) : null}
                   </tr>
                 ))
               )}
