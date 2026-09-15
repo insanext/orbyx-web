@@ -63,7 +63,11 @@ async function resolveTenantDestination({
     });
     const provisionData = await provisionRes.json();
     if (!provisionRes.ok) {
-      return { error: provisionData?.error || "Error creando tu negocio. Intenta nuevamente." };
+      // admin_account: la cuenta autenticada es un Super Admin (admin_users)
+      // sin negocio propio -- mismo mensaje humano que ya arma el backend,
+      // en vez del código de error crudo. Nunca debería llegar acá para un
+      // usuario real sin admin_users; ver guardia en POST /tenants/provision.
+      return { error: provisionData?.message || provisionData?.error || "Error creando tu negocio. Intenta nuevamente." };
     }
     const params = new URLSearchParams({
       tenant_id: provisionData.tenant_id,
