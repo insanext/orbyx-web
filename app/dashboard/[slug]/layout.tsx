@@ -48,6 +48,55 @@ import { getPlanLabel } from "../../../lib/plans";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
+// Paleta del badge de plan del header (efecto "reluciente" ya existe vía
+// .orbyx-plan-badge::after / @keyframes orbyxPlanShine, no se toca acá).
+// Business mantiene exactamente los valores plateados que ya tenía antes de
+// este cambio (única fuente de verdad de ese look); Premium/Starter siguen
+// la misma estructura de gradiente diagonal (base -> brillo -> medio ->
+// pálido) solo cambiando la paleta a dorado/cobre. pro/vip/platinum
+// (legacy) heredan el tier de su plan nuevo equivalente más cercano, mismo
+// criterio que closestNewPlan()/PLAN_LEVEL en lib/plans.ts.
+type PlanBadgeTier = "starter" | "business" | "premium";
+
+const PLAN_BADGE_TIER: Record<string, PlanBadgeTier> = {
+  starter: "starter",
+  pro: "starter",
+  business: "business",
+  premium: "premium",
+  vip: "premium",
+  platinum: "premium",
+};
+
+const PLAN_BADGE_STYLES: Record<
+  PlanBadgeTier,
+  { borderLight: string; borderDark: string; bgLight: string; bgDark: string; textLight: string; textDark: string }
+> = {
+  business: {
+    borderLight: "rgba(100,116,139,0.35)",
+    borderDark: "rgba(203,213,225,0.45)",
+    bgLight: "linear-gradient(135deg, #94a3b8, #f1f5f9 45%, #cbd5e1 55%, #f8fafc)",
+    bgDark: "linear-gradient(135deg, #64748b, #cbd5e1 45%, #94a3b8 55%, #e2e8f0)",
+    textLight: "#334155",
+    textDark: "#0f172a",
+  },
+  premium: {
+    borderLight: "rgba(217,119,6,0.35)",
+    borderDark: "rgba(253,230,138,0.45)",
+    bgLight: "linear-gradient(135deg, #fbbf24, #fef3c7 45%, #fcd34d 55%, #fffbeb)",
+    bgDark: "linear-gradient(135deg, #d97706, #fcd34d 45%, #fbbf24 55%, #fde68a)",
+    textLight: "#78350f",
+    textDark: "#451a03",
+  },
+  starter: {
+    borderLight: "rgba(184,115,51,0.35)",
+    borderDark: "rgba(217,166,120,0.45)",
+    bgLight: "linear-gradient(135deg, #b87333, #f5dfc4 45%, #d99a5b 55%, #fdf6ee)",
+    bgDark: "linear-gradient(135deg, #92561f, #d99a5b 45%, #c97a3d 55%, #f0c896)",
+    textLight: "#5b3a1a",
+    textDark: "#2e1c0c",
+  },
+};
+
 type BusinessResponse = {
   business: {
     id: string;
@@ -391,6 +440,7 @@ export default function DashboardLayout({
   }, [userMenuOpen]);
 
   const planLabel = getPlanLabel(plan);
+  const planBadgeStyle = PLAN_BADGE_STYLES[PLAN_BADGE_TIER[plan] || "business"];
 
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
@@ -542,10 +592,20 @@ export default function DashboardLayout({
         const data = await res.json();
         if (!res.ok) return;
 
-        setCurrentUserLabel(String(user.user_metadata?.name || user.email || ""));
+        const own = (data.members || []).find((m: any) => m.user_id === user.id);
+
+        // tenant_users.full_name (guardado en el registro, ambos flujos) es
+        // la fuente real -- user_metadata.name solo queda poblado en el
+        // flujo gratis/Starter (supabase.auth.signUp con options.data), no
+        // en el flujo pago (el owner ahí se crea vía
+        // supabase.auth.admin.createUser en POST /signup/claim-account, sin
+        // user_metadata), que era por qué el header mostraba el correo en
+        // cuentas Business/Premium. Correo como último fallback si ninguno
+        // de los dos existe (cuentas viejas antes de 2026-09-05-owner-full-
+        // name.sql).
+        setCurrentUserLabel(String(own?.full_name || user.user_metadata?.name || user.email || ""));
         setCurrentUserEmail(String(user.email || ""));
 
-        const own = (data.members || []).find((m: any) => m.user_id === user.id);
         if (own) {
           setMemberRole(String(own.role || ""));
           setMemberPermissions(own.permissions || null);
@@ -1718,11 +1778,9 @@ export default function DashboardLayout({
                   <span
                     className="orbyx-plan-badge inline-flex h-6 shrink-0 items-center rounded-md border px-2 text-[10px] font-semibold sm:h-8 sm:px-3 sm:text-sm"
                     style={{
-                      borderColor: isNocturno ? "rgba(203,213,225,0.45)" : "rgba(100,116,139,0.35)",
-                      background: isNocturno
-                        ? "linear-gradient(135deg, #64748b, #cbd5e1 45%, #94a3b8 55%, #e2e8f0)"
-                        : "linear-gradient(135deg, #94a3b8, #f1f5f9 45%, #cbd5e1 55%, #f8fafc)",
-                      color: isNocturno ? "#0f172a" : "#334155",
+                      borderColor: isNocturno ? planBadgeStyle.borderDark : planBadgeStyle.borderLight,
+                      background: isNocturno ? planBadgeStyle.bgDark : planBadgeStyle.bgLight,
+                      color: isNocturno ? planBadgeStyle.textDark : planBadgeStyle.textLight,
                     }}
                   >
                     Plan {planLabel}
