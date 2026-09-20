@@ -39,6 +39,32 @@ export default function AdminLoginPage() {
         return
       }
 
+      // Fix 2026-09-20: antes de decidir login normal (ya tiene TOTP) vs
+      // pantalla de enrolamiento (no tiene TOTP), confirma que esta cuenta
+      // sea realmente un Super Admin (fila activa en admin_users) --
+      // signInWithPassword es válido para CUALQUIER cuenta de la
+      // plataforma (tenant o admin), y sin este chequeo cualquier cuenta
+      // autenticada sin TOTP configurado llegaba directo a la pantalla de
+      // enrolamiento (QR + secreto). No exige aal2 -- en este punto del
+      // flujo, legítimamente, todavía no existe para un admin que nunca
+      // configuró MFA. Ver GET /admin/access-check en server.js.
+      const { data: { session: preCheckSession } } = await supabase.auth.getSession()
+      const accessCheckRes = await fetch(`${BACKEND_URL}/admin/access-check`, {
+        headers: { Authorization: `Bearer ${preCheckSession?.access_token}` },
+      })
+      const accessCheckBody = accessCheckRes.ok ? await accessCheckRes.json() : null
+      if (!accessCheckBody?.is_admin) {
+        // scope: 'local' -- signOut() por defecto es global (invalida la
+        // sesión en todos los dispositivos/pestañas); acá solo se quiere
+        // limpiar esta pestaña de /admin/login, no cerrar sesión de un
+        // dashboard de tenant que la misma persona pueda tener abierto en
+        // otra pestaña con la misma cuenta.
+        await supabase.auth.signOut({ scope: 'local' })
+        setError('Esta cuenta no tiene acceso al panel de administración.')
+        setLoading(false)
+        return
+      }
+
       const { data: factors } = await supabase.auth.mfa.listFactors()
       const totp = factors?.totp?.find(f => f.status === 'verified')
 
