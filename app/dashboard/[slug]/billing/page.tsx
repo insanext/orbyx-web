@@ -8,6 +8,7 @@ import { ChevronRight, CreditCard, Info, X } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { AddonManager } from "../../../../components/addons/AddonManager";
 import { cycleTotalPrice, getPlanLabel, PLAN_PRICES_ALL, type PlanSlug } from "@/lib/plans";
+import { usePermissions } from "@/lib/permissions-context";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -452,6 +453,7 @@ function BillingPageInner() {
     ((params as { Slug?: string })?.Slug as string) ||
     "";
 
+  const { isOwnerOrAdmin } = usePermissions();
   const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [plan, setPlan] = useState<PlanSlug>("starter");
@@ -1209,6 +1211,30 @@ function BillingPageInner() {
     pendingChangeType === "downgrade" &&
     remainingDaysNumber !== null &&
     remainingDaysNumber <= 2;
+
+  // Mi suscripción es exclusiva del dueño del tenant, sin importar los
+  // toggles de módulo de una cuenta de equipo (auditoría 2026-09-20) --
+  // el sidebar ya ocultaba este link para no-owner/admin, pero navegar
+  // directo a la URL cargaba la página completa igual. El backend de
+  // /billing/flow/* ya rechazaba las escrituras (WRITE_ACCESS_MODULE_RULES,
+  // access: "owner_admin"); esto cierra el hueco del lado del frontend.
+  if (!isOwnerOrAdmin) {
+    return (
+      <div className="p-6">
+        <div
+          className="mx-auto mt-10 max-w-md rounded-2xl border p-6 text-center"
+          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+            Solo el propietario puede ver esta sección
+          </p>
+          <p className="mt-1.5 text-sm" style={{ color: "var(--text-muted)" }}>
+            La suscripción y facturación del negocio son exclusivas del dueño de la cuenta.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 pb-6">

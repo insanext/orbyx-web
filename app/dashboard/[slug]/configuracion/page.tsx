@@ -7,14 +7,43 @@ import { apiFetch } from "@/lib/api";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "@/components/ui/password-visibility-toggle";
 import { Pencil, Trash2 } from "lucide-react";
-import { ROLE_LABEL } from "@/lib/permissions-context";
+import { ROLE_LABEL, usePermissions } from "@/lib/permissions-context";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
+
+// Fuente única de los módulos de permisos por panel (Parte A, auditoría
+// 2026-09-20) -- reusado en el form de invitar y en el modal de editar
+// permisos, para no mantener 2 listas desincronizadas. "resenas" e
+// "indicadores" son nuevos: Reseñas es un panel real desde hace tiempo,
+// antes compartía el permiso "clientes" (server.js: WRITE_ACCESS_MODULE_
+// RULES prefix "/reviews"); Indicadores no tenía ningún toggle, estaba
+// hardcodeado a solo-owner/admin en el sidebar. "sucursales" y "negocio"
+// se mantienen separados a propósito aunque hoy compartan una sola ruta
+// (/business con pestañas) -- BranchesPage usa canEdit("sucursales") y
+// BusinessPanel usa canEdit("negocio") de forma independiente, así que
+// fusionarlos quitaría la posibilidad real de dar acceso a una pestaña
+// sin la otra.
+const PERMISSION_MODULES: Array<{ key: string; label: string }> = [
+  { key: "agenda", label: "Agenda" },
+  { key: "clientes", label: "Clientes" },
+  { key: "resenas", label: "Reseñas" },
+  { key: "campanas", label: "Campañas" },
+  { key: "servicios", label: "Servicios" },
+  { key: "staff", label: "Staff" },
+  { key: "sucursales", label: "Sucursales" },
+  { key: "negocio", label: "Negocio" },
+  { key: "indicadores", label: "Indicadores" },
+];
+
+const DEFAULT_PERMISSIONS: Record<string, "edit" | "view" | false> = Object.fromEntries(
+  PERMISSION_MODULES.map((m) => [m.key, false])
+) as Record<string, "edit" | "view" | false>;
 
 export default function ConfiguracionPage() {
   const params = useParams();
   const slug = params?.slug as string;
   const supabase = createClient();
+  const { isOwnerOrAdmin } = usePermissions();
 
   const [activeTab, setActiveTab] = useState<1 | 2>(1);
 
@@ -76,15 +105,7 @@ export default function ConfiguracionPage() {
   const [showInviteAuthPwd, setShowInviteAuthPwd] = useState(false);
   const [inviteCaptchaToken, setInviteCaptchaToken] = useState("");
   const inviteTurnstileRef = useRef<any>(null);
-  const [permissions, setPermissions] = useState<Record<string, "edit" | "view" | false>>({
-    agenda: false,
-    clientes: false,
-    campanas: false,
-    servicios: false,
-    staff: false,
-    sucursales: false,
-    negocio: false,
-  });
+  const [permissions, setPermissions] = useState<Record<string, "edit" | "view" | false>>(DEFAULT_PERMISSIONS);
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
@@ -293,10 +314,7 @@ export default function ConfiguracionPage() {
       setInviteEmail("");
       setInviteAuthPwd("");
       setSelectedBranchIds([]);
-      setPermissions({
-        agenda: false, clientes: false, campanas: false,
-        servicios: false, staff: false, sucursales: false, negocio: false,
-      });
+      setPermissions(DEFAULT_PERMISSIONS);
       setShowInviteForm(false);
       loadTeam(tenantId);
     } catch (e: any) {
@@ -567,7 +585,16 @@ export default function ConfiguracionPage() {
             )}
           </div>
 
-          {/* Bloque 3: Cambiar contraseña */}
+          {/* Bloque 3: Cambiar contraseña -- solo el dueño (owner/admin) del
+              tenant. Una cuenta de equipo no gestiona su propia contraseña
+              desde el dashboard; eso lo hace el dueño al crear/editar su
+              acceso (ver Bloque de "Crea acceso para tu equipo" más abajo).
+              Nota: esto es un control de UI -- supabase.auth.updateUser()
+              es una llamada directa del SDK de Supabase Auth contra la
+              cuenta ya autenticada del propio usuario, no pasa por
+              server.js, así que no existe un gate de backend posible para
+              esta acción específica; ocultarla acá es la mitigación real. */}
+          {isOwnerOrAdmin ? (
           <div className={card} style={cardStyle}>
             <h3 className="text-sm font-semibold mb-0.5" style={{ color: "var(--text-main)" }}>
               Cambiar contraseña
@@ -643,6 +670,7 @@ export default function ConfiguracionPage() {
               )}
             </div>
           </div>
+          ) : null}
         </div>
       )}
 
@@ -778,15 +806,7 @@ export default function ConfiguracionPage() {
             <div className="mb-5">
               <label className={label} style={{ color: "var(--text-muted)" }}>Acceso por módulo</label>
               <div className="space-y-2 mt-1.5">
-                {[
-                  { key: "agenda", label: "Agenda" },
-                  { key: "clientes", label: "Clientes" },
-                  { key: "campanas", label: "Campañas" },
-                  { key: "servicios", label: "Servicios" },
-                  { key: "staff", label: "Staff" },
-                  { key: "sucursales", label: "Sucursales" },
-                  { key: "negocio", label: "Negocio" },
-                ].map(({ key, label: modLabel }) => (
+                {PERMISSION_MODULES.map(({ key, label: modLabel }) => (
                   <div
                     key={key}
                     className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-blue-900/20"
@@ -917,7 +937,7 @@ export default function ConfiguracionPage() {
                   setInviteAuthPwd("");
                   setInviteCaptchaToken("");
                   setSelectedBranchIds([]);
-                  setPermissions({ agenda: false, clientes: false, campanas: false, servicios: false, staff: false, sucursales: false, negocio: false });
+                  setPermissions(DEFAULT_PERMISSIONS);
                   setInviteMsg("");
                 }}
                 className="px-4 py-2.5 rounded-xl border border-blue-900/30 text-sm transition-all active:scale-95 hover:border-blue-700/40"
@@ -946,15 +966,7 @@ export default function ConfiguracionPage() {
 
             {/* Permisos por módulo */}
             <div className="space-y-2 mb-5">
-              {[
-                { key: "agenda", label: "Agenda" },
-                { key: "clientes", label: "Clientes" },
-                { key: "campanas", label: "Campañas" },
-                { key: "servicios", label: "Servicios" },
-                { key: "staff", label: "Staff" },
-                { key: "sucursales", label: "Sucursales" },
-                { key: "negocio", label: "Negocio" },
-              ].map(({ key, label: modLabel }) => (
+              {PERMISSION_MODULES.map(({ key, label: modLabel }) => (
                 <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-blue-900/20" style={{ background: "rgba(10,15,30,0.5)" }}>
                   <span className="text-sm" style={{ color: "var(--text-main)" }}>{modLabel}</span>
                   <div className="flex items-center gap-3">

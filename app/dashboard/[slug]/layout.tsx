@@ -264,16 +264,22 @@ const navSections = [
 ];
 
 // Módulos de la sidebar cuyo acceso depende de permissions granulares.
-// Los items sin entrada acá (Métricas, Reportes, Soporte) no se restringen.
-// Configuración vive en el dropdown del header, no en la sidebar.
+// Los items sin entrada acá (Soporte) no se restringen. Configuración vive
+// en el dropdown del header, no en la sidebar. "/reviews" pasó de compartir
+// el permiso "clientes" a tener su propio módulo "resenas" (auditoría
+// 2026-09-20, ver server.js WRITE_ACCESS_MODULE_RULES) -- Reseñas es un
+// panel real desde hace tiempo, esto solo estaba desactualizado. "" es el
+// href de "Indicadores" (enruta a la raíz del dashboard) -- antes
+// hardcodeado a solo-owner/admin, ahora un módulo granular más.
 const NAV_MODULE_MAP: Record<string, string> = {
   "/agenda": "agenda",
   "/customers": "clientes",
-  "/reviews": "clientes",
+  "/reviews": "resenas",
   "/campaigns": "campanas",
   "/services": "servicios",
   "/staff": "staff",
   "/business": "negocio",
+  "": "indicadores",
 };
 
 
@@ -664,13 +670,17 @@ export default function DashboardLayout({
 
   const isOwnerOrAdmin = !memberLoaded || memberRole === "owner" || memberRole === "admin";
 
-  function getModuleAccess(href: string): boolean | "view" | "edit" {
-    const moduleKey = NAV_MODULE_MAP[href];
-    if (!moduleKey) return "edit";
+  function getModuleAccessByKey(moduleKey: string): boolean | "view" | "edit" {
     if (!memberPermissions) return "edit";
     const value = memberPermissions[moduleKey];
     if (value === undefined || value === null) return "edit";
     return value;
+  }
+
+  function getModuleAccess(href: string): boolean | "view" | "edit" {
+    const moduleKey = NAV_MODULE_MAP[href];
+    if (!moduleKey) return "edit";
+    return getModuleAccessByKey(moduleKey);
   }
 
   const visibleNavSections = useMemo(() => {
@@ -686,8 +696,15 @@ export default function DashboardLayout({
           .filter((item) => {
             if (blocked) return item.href === "/billing";
             if (item.href === "/billing") return isOwnerOrAdmin;
-            if (item.label === "Indicadores") return isOwnerOrAdmin;
             if (isOwnerOrAdmin) return true;
+            // "Mi Negocio" hospeda 2 pestañas (Negocio y Sucursales, ver
+            // business/page.tsx) con permisos independientes -- se
+            // muestra el link si tiene acceso a cualquiera de las dos,
+            // no solo a "negocio" (si no, alguien con acceso real a
+            // Sucursales pero no a Negocio se quedaría sin ver el link).
+            if (item.href === "/business") {
+              return getModuleAccess(item.href) !== false || getModuleAccessByKey("sucursales") !== false;
+            }
             return getModuleAccess(item.href) !== false;
           })
           .map((item) => ({

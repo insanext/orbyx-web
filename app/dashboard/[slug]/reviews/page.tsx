@@ -67,7 +67,10 @@ function StarRow({ rating }: { rating: number }) {
 
 export default function ReviewsPage() {
   const { canEdit } = usePermissions();
-  const canEditClientes = canEdit("clientes");
+  // "resenas" es su propio módulo desde la auditoría 2026-09-20 -- antes
+  // Reseñas compartía el permiso "clientes" (remanente de cuando el panel
+  // era nuevo y no tenía toggle propio).
+  const canEditResenas = canEdit("resenas");
   const params = useParams();
   const slug = (params as { slug?: string })?.slug || "";
 
@@ -476,7 +479,7 @@ export default function ReviewsPage() {
                               {reply.message}
                             </p>
                           </div>
-                          {canEditClientes ? (
+                          {canEditResenas ? (
                             <button
                               type="button"
                               disabled={deletingReplyId === reply.id}
@@ -494,7 +497,7 @@ export default function ReviewsPage() {
                     </div>
                   ) : null}
 
-                  {canEditClientes ? (
+                  {canEditResenas ? (
                     <div className="mt-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <button
@@ -574,7 +577,7 @@ export default function ReviewsPage() {
                   ) : null}
                 </div>
 
-                {canEditClientes ? (
+                {canEditResenas ? (
                   <div className="relative shrink-0">
                     <button
                       type="button"
