@@ -769,7 +769,7 @@ export function AccountStatusWidget({
                     <span className="font-semibold" style={{ color: "rgb(37,99,235)" }}>
                       Aún no activo.
                     </span>{" "}
-                    Los mensajes de WhatsApp y las campañas por email se activan cuando comienzas a pagar tu plan — también puedes comprar saldo ahora para empezar de inmediato.
+                    Los 100 mensajes de WhatsApp incluidos en tu plan Starter empiezan a correr desde el mes en que comienzas a pagar la suscripción. Mientras estás en la prueba gratuita, puedes comprar el add-on de WhatsApp para usarlo de inmediato, sin esperar.
                   </span>
                 </Link>
               ) : null}
