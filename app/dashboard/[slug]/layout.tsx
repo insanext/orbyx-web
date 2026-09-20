@@ -421,6 +421,17 @@ export default function DashboardLayout({
     ? "Tu prueba gratuita ya terminó. Inscribe tu tarjeta para continuar con tu negocio."
     : `Te quedan ${trialBannerDiasRestantes} día${trialBannerDiasRestantes === 1 ? "" : "s"} para terminar tu prueba gratuita. Inscribe tu tarjeta para continuar con tu negocio.`;
 
+  // Días vencido para la pantalla de bloqueo total (isAccountBlocked) --
+  // idem cálculo del banner, pero acá porque ese bloque solo se arma en el
+  // caso blocked_reason === "trial_expired".
+  const blockedDiasVencido =
+    accountStatus?.blocked_reason === "trial_expired" && accountStatus?.trial_ends_at
+      ? Math.max(
+          0,
+          Math.ceil((Date.now() - new Date(accountStatus.trial_ends_at).getTime()) / (24 * 60 * 60 * 1000))
+        )
+      : null;
+
   // Modal de bienvenida (una sola vez por tenant, ver WelcomeModal +
   // tenants.dashboard_welcome_seen_at) -- welcomeDismissedLocally solo evita
   // que reaparezca un instante mientras se espera el próximo refresh de
@@ -2156,7 +2167,11 @@ export default function DashboardLayout({
                     {accountStatus?.blocked_reason === "paused"
                       ? "Tu cuenta fue pausada temporalmente por Orbyx. Contacta a soporte para más información."
                       : accountStatus?.blocked_reason === "trial_expired"
-                      ? "Tu trial gratuito terminó y todavía no tienes un método de pago activo. Inscribe una tarjeta para recuperar el acceso completo al panel."
+                      ? `Tu trial gratuito terminó${
+                          blockedDiasVencido != null
+                            ? ` hace ${blockedDiasVencido} día${blockedDiasVencido === 1 ? "" : "s"}`
+                            : ""
+                        } y todavía no tienes un método de pago activo. Inscribe una tarjeta para recuperar el acceso completo al panel.`
                       : "Tu suscripción no tiene un cobro válido. Inscribe una tarjeta para recuperar el acceso completo al panel."}
                   </p>
                   {accountStatus?.blocked_reason !== "paused" ? (
