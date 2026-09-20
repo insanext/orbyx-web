@@ -275,6 +275,18 @@ const PANEL_BG = "var(--ind-panel-bg)";
 const SHELL_HEADER_BG = "var(--ind-shell-header-bg)";
 const TABLE_HEAD_BG = "var(--ind-table-head-bg)";
 
+// Redondeo + sombra suave del rediseño visual de Indicadores (referencia de
+// dashboard con tarjetas blancas, esquinas redondeadas y sombra sutil sobre
+// fondo gris claro — ver comentario "Sistema visual" más abajo). Excepción
+// deliberada solo para este panel: el resto del dashboard usa esquinas
+// cuadradas (ver [[project_dashboard_squared_corners_convention]]).
+const RADIUS_LG = "var(--ind-radius-lg)"; // SectionShell (contenedor de sección)
+const RADIUS = "var(--ind-radius)"; // Panel, Kpi, botones, inputs
+const RADIUS_SM = "var(--ind-radius-sm)"; // chips, badges, barras de progreso
+const RADIUS_PILL = "999px";
+const SHADOW = "var(--ind-shadow)";
+const SHADOW_SM = "var(--ind-shadow-sm)";
+
 function WhatsAppGlyph({ size = 18 }: { size?: number; strokeWidth?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -304,7 +316,13 @@ function IconBox({
   return (
     <div
       className="flex shrink-0 items-center justify-center"
-      style={{ width: size, height: size, background: variant === "solid" ? t.solid : t.tint, color: variant === "solid" ? "#ffffff" : t.solid }}
+      style={{
+        width: size,
+        height: size,
+        background: variant === "solid" ? t.solid : t.tint,
+        color: variant === "solid" ? "#ffffff" : t.solid,
+        borderRadius: Math.max(6, Math.round(size * 0.28)),
+      }}
     >
       <IconComp size={iconSize ?? Math.round(size * 0.55)} strokeWidth={2.25} />
     </div>
@@ -319,7 +337,7 @@ function SectionExportButton({ tables, filename }: { tables: CsvTable[]; filenam
       onClick={() => downloadMultiTableCsv(filename, tables)}
       disabled={!hasData}
       className="inline-flex h-9 items-center gap-2 border px-3.5 text-[11px] uppercase tracking-[0.06em] transition disabled:cursor-not-allowed disabled:opacity-40"
-      style={{ borderColor: TONE.indigo.solid, color: TONE.indigo.solid, background: PANEL_BG }}
+      style={{ borderColor: TONE.indigo.solid, color: TONE.indigo.solid, background: PANEL_BG, borderRadius: RADIUS_SM }}
     >
       <Download size={14} />
       Exportar sección (CSV)
@@ -345,7 +363,16 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <section style={{ border: `1px solid ${SHELL_BORDER}`, borderTop: `3px solid ${TONE[tone].solid}`, background: PANEL_BG }}>
+    <section
+      style={{
+        border: `1px solid ${SHELL_BORDER}`,
+        borderTop: `3px solid ${TONE[tone].solid}`,
+        background: PANEL_BG,
+        borderRadius: RADIUS_LG,
+        boxShadow: SHADOW,
+        overflow: "hidden",
+      }}
+    >
       <div
         className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2.5"
         style={{ borderColor: SHELL_BORDER, background: SHELL_HEADER_BG }}
@@ -401,7 +428,15 @@ function Panel({
   children?: React.ReactNode;
 }) {
   return (
-    <section style={{ border: `1px solid ${PANEL_BORDER}`, background: tint ? TONE[tint].tint : PANEL_BG }}>
+    <section
+      style={{
+        border: `1px solid ${PANEL_BORDER}`,
+        background: tint ? TONE[tint].tint : PANEL_BG,
+        borderRadius: RADIUS,
+        boxShadow: SHADOW_SM,
+        overflow: "hidden",
+      }}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style={{ borderColor: PANEL_BORDER }}>
         <div className="flex items-center gap-2.5">
           {icon ? <IconBox icon={icon} tone={tone} variant={iconVariant} size={28} /> : null}
@@ -438,7 +473,16 @@ function Kpi({
   valueColor?: string;
 }) {
   return (
-    <div className="p-3" style={{ background: TONE[tone].tint, border: `1px solid ${PANEL_BORDER}`, borderTop: `3px solid ${TONE[tone].solid}` }}>
+    <div
+      className="p-3"
+      style={{
+        background: TONE[tone].tint,
+        border: `1px solid ${PANEL_BORDER}`,
+        borderTop: `3px solid ${TONE[tone].solid}`,
+        borderRadius: RADIUS,
+        boxShadow: SHADOW_SM,
+      }}
+    >
       <div className="flex items-center gap-2.5">
         <IconBox icon={icon} tone={tone} variant="solid" size={30} />
         <p className="text-[10px] uppercase leading-tight tracking-[0.06em]" style={{ color: MUTED }}>
@@ -456,7 +500,7 @@ function EstimatedBadge() {
   return (
     <span
       className="inline-flex h-5 items-center px-2 text-[10px] uppercase tracking-[0.08em] text-white"
-      style={{ background: TONE.violet.solid }}
+      style={{ background: TONE.violet.solid, borderRadius: RADIUS_PILL }}
       title="Calculado con el precio actual del servicio — puede no calzar con el histórico si hubo cambios de precio."
     >
       Estimado
@@ -468,7 +512,7 @@ function RealDataBadge() {
   return (
     <span
       className="inline-flex h-5 items-center px-2 text-[10px] uppercase tracking-[0.08em]"
-      style={{ background: TONE.green.tint, color: TONE.green.text }}
+      style={{ background: TONE.green.tint, color: TONE.green.text, borderRadius: RADIUS_PILL }}
     >
       Dato real
     </span>
@@ -490,12 +534,15 @@ function EmptyState({ text }: { text: string }) {
 // el sistema de bordes cuadrados del resto del módulo.
 function LockedBlock({ requiredPlanLabel, description }: { requiredPlanLabel: string; description: string }) {
   return (
-    <div className="flex items-start gap-3 rounded border p-4" style={{ borderColor: "var(--ind-locked-border)", background: "var(--ind-locked-bg)" }}>
+    <div
+      className="flex items-start gap-3 border p-4"
+      style={{ borderColor: "var(--ind-locked-border)", background: "var(--ind-locked-bg)", borderRadius: RADIUS, boxShadow: SHADOW_SM }}
+    >
       <IconBox icon={Lock} tone="blue" variant="tint" size={36} iconSize={16} />
       <div>
         <span
           className="inline-flex h-5 items-center px-2 text-[10px] uppercase tracking-[0.08em] text-white"
-          style={{ background: TONE.blue.solid }}
+          style={{ background: TONE.blue.solid, borderRadius: RADIUS_PILL }}
         >
           Desde {requiredPlanLabel}
         </span>
@@ -515,7 +562,7 @@ function MostrarControl({ value, onChange }: { value: number; onChange: (n: numb
       <span className="text-[11px]" style={{ color: MUTED }}>
         Mostrar:
       </span>
-      <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
+      <div className="flex items-center border" style={{ borderColor: PANEL_BORDER, borderRadius: RADIUS_SM, overflow: "hidden" }}>
         {CUSTOMER_LIMIT_OPTIONS.map((n, idx) => (
           <button
             key={n}
@@ -556,7 +603,7 @@ function RankingList({
           <div className="flex items-center gap-3">
             <span
               className="flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-extrabold text-white"
-              style={{ background: TONE.indigo.solid }}
+              style={{ background: TONE.indigo.solid, borderRadius: 7 }}
             >
               {String(idx + 1).padStart(2, "0")}
             </span>
@@ -567,10 +614,14 @@ function RankingList({
               {formatValue ? formatValue(item.value) : item.value}
             </span>
           </div>
-          <div className="ml-9 mt-1.5 h-1.5" style={{ background: TRACK_BG }}>
+          <div className="ml-9 mt-1.5 h-1.5" style={{ background: TRACK_BG, borderRadius: RADIUS_PILL, overflow: "hidden" }}>
             <div
               className="h-1.5"
-              style={{ width: `${Math.max((item.value / max) * 100, 4)}%`, background: `linear-gradient(90deg, ${TONE.indigo.solid}, ${TONE.violet.solid})` }}
+              style={{
+                width: `${Math.max((item.value / max) * 100, 4)}%`,
+                background: `linear-gradient(90deg, ${TONE.indigo.solid}, ${TONE.violet.solid})`,
+                borderRadius: RADIUS_PILL,
+              }}
             />
           </div>
         </div>
@@ -622,11 +673,11 @@ function CustomerRankingList({
               type="button"
               onClick={() => onToggle(item.id)}
               className="flex w-full items-start gap-3 p-2.5 text-left"
-              style={{ background: mode === "inactive" ? TONE.red.tint : "transparent" }}
+              style={{ background: mode === "inactive" ? TONE.red.tint : "transparent", borderRadius: RADIUS_SM }}
             >
               <span
                 className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-extrabold text-white"
-                style={{ background: TONE[badgeTone].solid }}
+                style={{ background: TONE[badgeTone].solid, borderRadius: 7 }}
               >
                 {String(idx + 1).padStart(2, "0")}
               </span>
@@ -644,8 +695,11 @@ function CustomerRankingList({
                     <p className="text-[11px]" style={{ color: TONE.indigo.solid }}>
                       {item.segment === "frequent" ? "Frecuente" : "Recurrente"}
                     </p>
-                    <div className="mt-1.5 h-1 w-full" style={{ background: TRACK_BG }}>
-                      <div className="h-1" style={{ width: `${Math.max((item.total_visits / max) * 100, 4)}%`, background: TONE.indigo.solid }} />
+                    <div className="mt-1.5 h-1 w-full" style={{ background: TRACK_BG, borderRadius: RADIUS_PILL, overflow: "hidden" }}>
+                      <div
+                        className="h-1"
+                        style={{ width: `${Math.max((item.total_visits / max) * 100, 4)}%`, background: TONE.indigo.solid, borderRadius: RADIUS_PILL }}
+                      />
                     </div>
                   </>
                 ) : null}
@@ -668,7 +722,7 @@ function CustomerRankingList({
         type="button"
         onClick={() => setVisibleCount((prev) => prev + pageSize)}
         className="mt-2 w-full border py-2 text-center text-[11px] uppercase tracking-[0.05em]"
-        style={{ borderColor: PANEL_BORDER, background: PANEL_BG, color: INK }}
+        style={{ borderColor: PANEL_BORDER, background: PANEL_BG, color: INK, borderRadius: RADIUS_SM }}
       >
         Ver más
       </button>
@@ -722,6 +776,7 @@ function OccupancyHeatmap({ cells }: { cells: HeatCell[] }) {
                           height: 22,
                           width: 38,
                           background: count === 0 ? TRACK_BG : `rgba(79,70,229,${0.15 + intensity * 0.75})`,
+                          borderRadius: 4,
                         }}
                       />
                     </td>
@@ -735,7 +790,7 @@ function OccupancyHeatmap({ cells }: { cells: HeatCell[] }) {
 
       <div className="mt-3 flex items-center justify-center gap-2 text-[11px] font-medium" style={{ color: MUTED }}>
         <span>Baja ocupación</span>
-        <div className="flex h-2.5 w-24 overflow-hidden">
+        <div className="flex h-2.5 w-24 overflow-hidden" style={{ borderRadius: RADIUS_PILL }}>
           {legendSteps.map((op, i) => (
             <div key={i} className="h-full flex-1" style={{ background: `rgba(79,70,229,${op})` }} />
           ))}
@@ -750,7 +805,10 @@ function OccupancyHeatmap({ cells }: { cells: HeatCell[] }) {
 // detalle decorativo sutil (ondas) en la esquina inferior derecha.
 function LeadTimeCard({ hours }: { hours: number | null }) {
   return (
-    <div className="relative flex h-full flex-col overflow-hidden p-5" style={{ border: `1px solid ${PANEL_BORDER}`, background: PANEL_BG }}>
+    <div
+      className="relative flex h-full flex-col overflow-hidden p-5"
+      style={{ border: `1px solid ${PANEL_BORDER}`, background: PANEL_BG, borderRadius: RADIUS, boxShadow: SHADOW_SM }}
+    >
       <svg className="pointer-events-none absolute bottom-0 right-0 h-28 w-40" viewBox="0 0 160 112" fill="none">
         {/* Trazos traslúcidos (no hex opacos) para que el detalle decorativo
             se vea bien tanto sobre la tarjeta clara como sobre la oscura. */}
@@ -801,7 +859,7 @@ function MiniBarChart({
               title={hasData ? `${item.name}: ${valueFormatter(item.value)}` : undefined}
             >
               <span className="h-2 w-2 border-2" style={{ borderRadius: 9999, borderColor: TONE[tone].solid, background: "#ffffff" }} />
-              <div style={{ height: `${h}%`, width: 18, background: TONE[tone].solid }} />
+              <div style={{ height: `${h}%`, width: 18, background: TONE[tone].solid, borderRadius: 4 }} />
             </div>
           );
         })}
@@ -845,8 +903,8 @@ function UsageBar({ label, usage, tone }: { label: string; usage: UsageInfo; ton
           {usage.used} / {usage.limit}
         </span>
       </div>
-      <div className="mt-2 h-2.5 w-full" style={{ background: TRACK_BG }}>
-        <div className="h-2.5" style={{ width: `${pct}%`, background: t.solid }} />
+      <div className="mt-2 h-2.5 w-full" style={{ background: TRACK_BG, borderRadius: RADIUS_PILL, overflow: "hidden" }}>
+        <div className="h-2.5" style={{ width: `${pct}%`, background: t.solid, borderRadius: RADIUS_PILL }} />
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3" style={{ borderColor: PANEL_BORDER }}>
@@ -1159,7 +1217,7 @@ export default function DashboardHomePage() {
                 value={branchFilter}
                 onChange={(e) => setBranchFilter(e.target.value)}
                 className="h-9 border px-2.5 text-xs outline-none"
-                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", borderRadius: 3 }}
+                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", borderRadius: RADIUS_SM }}
               >
                 <option value="">Todas las sucursales</option>
                 {(data?.branches || []).map((b) => (
@@ -1170,7 +1228,7 @@ export default function DashboardHomePage() {
               </select>
             ) : null}
 
-            <div className="flex items-center border" style={{ borderColor: "var(--border-color)", borderRadius: 3, overflow: "hidden" }}>
+            <div className="flex items-center border" style={{ borderColor: "var(--border-color)", borderRadius: RADIUS_SM, overflow: "hidden" }}>
               {RANGE_PRESETS.map((preset) => (
                 <button
                   key={preset.key}
@@ -1195,7 +1253,7 @@ export default function DashboardHomePage() {
                   value={customFrom}
                   onChange={(e) => setCustomFrom(e.target.value)}
                   className="h-9 border px-2 text-xs outline-none"
-                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", borderRadius: 3 }}
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", borderRadius: RADIUS_SM }}
                 />
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                   a
@@ -1205,7 +1263,7 @@ export default function DashboardHomePage() {
                   value={customTo}
                   onChange={(e) => setCustomTo(e.target.value)}
                   className="h-9 border px-2 text-xs outline-none"
-                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", borderRadius: 3 }}
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", borderRadius: RADIUS_SM }}
                 />
               </div>
             ) : null}
@@ -1214,7 +1272,10 @@ export default function DashboardHomePage() {
       />
 
       {error ? (
-        <div className="border px-4 py-3 text-sm" style={{ borderColor: "rgba(244,63,94,0.28)", background: "rgba(244,63,94,0.08)", color: "#be123c" }}>
+        <div
+          className="border px-4 py-3 text-sm"
+          style={{ borderColor: "rgba(244,63,94,0.28)", background: "rgba(244,63,94,0.08)", color: "#be123c", borderRadius: RADIUS_SM }}
+        >
           {error}
         </div>
       ) : null}
@@ -1232,7 +1293,10 @@ export default function DashboardHomePage() {
               ya usa "Mi Negocio" (BusinessPanel.tsx, sub-tabs General/
               Campos/Horarios/Fechas especiales). */}
           <nav className="-mx-1 overflow-x-auto px-1" aria-label="Secciones de Indicadores">
-            <div className="flex min-w-max gap-2 border p-1.5" style={{ borderColor: SHELL_BORDER, background: PANEL_BG }}>
+            <div
+              className="flex min-w-max gap-2 border p-1.5"
+              style={{ borderColor: SHELL_BORDER, background: PANEL_BG, borderRadius: RADIUS, boxShadow: SHADOW_SM }}
+            >
               {INDICADORES_TABS.map((tab) => {
                 const active = activeTab === tab.id;
                 return (
@@ -1246,6 +1310,7 @@ export default function DashboardHomePage() {
                       borderColor: active ? TONE.indigo.solid : "transparent",
                       background: active ? TONE.indigo.solid : "transparent",
                       color: active ? "#ffffff" : MUTED,
+                      borderRadius: RADIUS_SM,
                     }}
                   >
                     {tab.label}
@@ -1324,7 +1389,7 @@ export default function DashboardHomePage() {
                     <span className="text-[11px]" style={{ color: MUTED }}>
                       Inactividad:
                     </span>
-                    <div className="flex items-center border" style={{ borderColor: PANEL_BORDER }}>
+                    <div className="flex items-center border" style={{ borderColor: PANEL_BORDER, borderRadius: RADIUS_SM, overflow: "hidden" }}>
                       {INACTIVE_PRESETS.map((p, idx) => (
                         <button
                           key={p.key}
@@ -1349,7 +1414,7 @@ export default function DashboardHomePage() {
                         value={customInactiveDays}
                         onChange={(e) => setCustomInactiveDays(e.target.value)}
                         className="h-7 w-16 border px-2 text-[11px] outline-none"
-                        style={{ borderColor: PANEL_BORDER, color: INK }}
+                        style={{ borderColor: PANEL_BORDER, color: INK, borderRadius: RADIUS_SM }}
                       />
                     ) : null}
                   </div>
@@ -1478,7 +1543,7 @@ export default function DashboardHomePage() {
                                 <div className="flex items-center gap-2.5">
                                   <span
                                     className="flex h-7 w-7 shrink-0 items-center justify-center text-[11px] font-extrabold"
-                                    style={{ background: TONE.indigo.tint, color: TONE.indigo.solid }}
+                                    style={{ background: TONE.indigo.tint, color: TONE.indigo.solid, borderRadius: 8 }}
                                   >
                                     {getInitials(s.name)}
                                   </span>
@@ -1508,7 +1573,11 @@ export default function DashboardHomePage() {
                   <Panel icon={Building2} title="Desempeño por sucursal">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {data.premium.branch_activity.map((b) => (
-                        <div key={b.branch_id} className="p-3" style={{ border: `1px solid ${PANEL_BORDER}`, background: TONE.blue.tint }}>
+                        <div
+                          key={b.branch_id}
+                          className="p-3"
+                          style={{ border: `1px solid ${PANEL_BORDER}`, background: TONE.blue.tint, borderRadius: RADIUS_SM }}
+                        >
                           <p className="truncate text-sm" style={{ color: INK }}>
                             {b.name}
                           </p>
@@ -1605,7 +1674,10 @@ export default function DashboardHomePage() {
                 <Panel icon={Puzzle} iconVariant="solid" tone="violet" title="Add-ons activos">
                   {data.basic.addons.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-3 py-6">
-                      <div className="relative flex h-16 w-16 items-center justify-center" style={{ background: TONE.violet.tint, color: TONE.violet.solid }}>
+                      <div
+                        className="relative flex h-16 w-16 items-center justify-center"
+                        style={{ background: TONE.violet.tint, color: TONE.violet.solid, borderRadius: RADIUS_PILL }}
+                      >
                         <PackageOpen size={30} strokeWidth={1.8} />
                         <Sparkles size={14} className="absolute -right-1.5 -top-1.5" />
                         <Sparkles size={10} className="absolute -bottom-1 -left-1.5" />
@@ -1684,7 +1756,10 @@ export default function DashboardHomePage() {
                   }
                 >
                   {data.business.campaign_history.rows.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center gap-2 border border-dashed py-8" style={{ borderColor: PANEL_BORDER }}>
+                    <div
+                      className="flex flex-col items-center justify-center gap-2 border border-dashed py-8"
+                      style={{ borderColor: PANEL_BORDER, borderRadius: RADIUS_SM }}
+                    >
                       <Inbox size={26} style={{ color: "#c4b5fd" }} />
                       <p className="text-sm" style={{ color: MUTED }}>
                         Sin campañas enviadas en el período seleccionado.
@@ -1808,6 +1883,12 @@ export default function DashboardHomePage() {
 
           --ind-locked-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0.03) 55%, #ffffff 100%);
           --ind-locked-border: rgba(37, 99, 235, 0.32);
+
+          --ind-radius-lg: 18px;
+          --ind-radius: 12px;
+          --ind-radius-sm: 8px;
+          --ind-shadow: 0 1px 2px rgba(30, 27, 75, 0.04), 0 12px 28px -14px rgba(30, 27, 75, 0.18);
+          --ind-shadow-sm: 0 1px 2px rgba(30, 27, 75, 0.05), 0 6px 16px -8px rgba(30, 27, 75, 0.14);
         }
 
         :global(:root[data-theme="nocturno"]) .orbyx-indicadores-page {
@@ -1843,6 +1924,9 @@ export default function DashboardHomePage() {
 
           --ind-locked-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(59, 130, 246, 0.05) 55%, #101b31 100%);
           --ind-locked-border: rgba(59, 130, 246, 0.32);
+
+          --ind-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 14px 28px -14px rgba(0, 0, 0, 0.55);
+          --ind-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px -8px rgba(0, 0, 0, 0.45);
         }
       `}</style>
     </div>
