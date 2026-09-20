@@ -117,6 +117,38 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat('es-CL', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }
 
+// trial_ends_at es una fecha calendario pura (America/Santiago), no un
+// instante que interese mostrar con hora -- a diferencia de formatDate()
+// de arriba (fechas de creación/timestamps reales), acá se necesita el
+// día calendario exacto en Santiago, sin pasar por la hora local del
+// navegador (que puede correr la fecha un día, ver Bug 2026-09-20).
+function santiagoDateParts(value?: string | null): { y: string; m: string; d: string } | null {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Santiago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+  const map = Object.fromEntries(parts.filter((p) => p.type !== 'literal').map((p) => [p.type, p.value]))
+  return { y: map.year, m: map.month, d: map.day }
+}
+
+// Para el value de <input type="date"> (exige YYYY-MM-DD).
+function toDateInputValue(value?: string | null): string {
+  const parts = santiagoDateParts(value)
+  return parts ? `${parts.y}-${parts.m}-${parts.d}` : ''
+}
+
+// Para texto de solo lectura -- dd-mm-yyyy, igual que el resto de fechas
+// de esta ficha.
+function formatTrialDate(value?: string | null): string {
+  const parts = santiagoDateParts(value)
+  return parts ? `${parts.d}-${parts.m}-${parts.y}` : 'Sin fecha'
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-blue-900/25 p-4" style={{ background: '#0f1729' }}>
@@ -453,9 +485,12 @@ export default function AdminTenantDetailPage() {
   // Precarga el date picker con la fecha actual cada vez que llega un
   // trial_ends_at nuevo del backend (carga inicial, o tras guardar) --
   // no en cada render, para no pisar lo que el admin está escribiendo.
+  // toDateInputValue() calcula el día calendario en America/Santiago, NO
+  // un .slice(0,10) del ISO crudo (que puede caer en el día siguiente en
+  // UTC y mostrar la fecha corrida, ver Bug 2026-09-20).
   useEffect(() => {
     if (data?.plan.trial_ends_at) {
-      setTrialEndInput(data.plan.trial_ends_at.slice(0, 10))
+      setTrialEndInput(toDateInputValue(data.plan.trial_ends_at))
     }
   }, [data?.plan.trial_ends_at])
 
@@ -477,6 +512,15 @@ export default function AdminTenantDetailPage() {
   }
 
   const { tenant, plan, addons, branches, owners, plan_change_history } = data
+
+  // Bug 2026-09-20: la condición original era "solo si plan.status ===
+  // 'trial'", pero un tenant ya VENCIDO (status 'expired_or_canceled',
+  // sin trial_ends_at futuro) es exactamente el caso de uso real de esta
+  // herramienta -- extenderle la prueba, o corregir un error. El criterio
+  // correcto es el mismo que ya usa el backend para rechazar el guardado
+  // (PATCH /admin/tenants/:id/trial-end): cualquier tenant sin
+  // suscripción "active" o "trialing" (tarjeta ya registrada en Flow).
+  const canEditTrialEnd = plan.subscription_status !== 'active' && plan.subscription_status !== 'trialing'
 
   return (
     <div className="p-6 space-y-6">
@@ -604,8 +648,8 @@ export default function AdminTenantDetailPage() {
             <Field label="Monto" value={formatCLP(plan.amount)} />
             <Field label="Estado suscripción (Flow)" value={plan.subscription_status} />
             <Field label="Periodicidad" value={plan.periodicidad} />
-            {plan.status !== 'trial' ? (
-              <Field label="Fin de prueba" value={formatDate(plan.trial_ends_at)} />
+            {!canEditTrialEnd ? (
+              <Field label="Fin de prueba" value={formatTrialDate(plan.trial_ends_at)} />
             ) : null}
             <Field label="Ciclo de facturación termina" value={formatDate(plan.billing_cycle_end)} />
             {plan.scheduled_plan_slug ? (
@@ -616,7 +660,7 @@ export default function AdminTenantDetailPage() {
             ) : null}
           </div>
 
-          {plan.status === 'trial' ? (
+          {canEditTrialEnd ? (
             <div className="mt-4 border-t border-blue-900/25 pt-3">
               <p className="text-xs text-blue-300/50 mb-1">Fin de prueba (editable mientras no tenga suscripción activa)</p>
               <div className="flex flex-wrap items-center gap-2">

@@ -665,7 +665,14 @@ export function AccountStatusWidget({
             </div>
           ) : null}
 
-          {isOwnerOrAdmin ? (
+          {/* Cuenta bloqueada (sin suscripción activa): estas pestañas son
+              ajustes operativos de un negocio que no puede operar hasta
+              reactivarse -- no tiene sentido exponerlas (ni sus datos,
+              como los toggles de WhatsApp o los datos bancarios de
+              depósito) mientras la cuenta está bloqueada. Solo queda el
+              mensaje de bloqueo de arriba y el link a Suscripción de
+              abajo. */}
+          {!status.blocked && isOwnerOrAdmin ? (
             <div className="mb-3 flex gap-1 rounded-xl border p-1" style={{ borderColor, background: softBg }}>
               {(
                 [
@@ -695,7 +702,7 @@ export function AccountStatusWidget({
             </div>
           ) : null}
 
-          {!isOwnerOrAdmin || activeAccountTab === "cuenta" ? (
+          {!status.blocked && (!isOwnerOrAdmin || activeAccountTab === "cuenta") ? (
             <div className="grid grid-cols-1 gap-2">
               <UsagePill
                 icon={MessageCircle}
@@ -710,7 +717,7 @@ export function AccountStatusWidget({
             </div>
           ) : null}
 
-          {isOwnerOrAdmin && activeAccountTab === "notificaciones" ? (
+          {!status.blocked && isOwnerOrAdmin && activeAccountTab === "notificaciones" ? (
             <div>
               <div className="overflow-hidden rounded-xl" style={{ background: softBg }}>
                 <div className="flex items-center justify-between gap-3 px-3 py-2.5">
@@ -803,7 +810,7 @@ export function AccountStatusWidget({
             </div>
           ) : null}
 
-          {isOwnerOrAdmin && activeAccountTab === "deposito" ? (
+          {!status.blocked && isOwnerOrAdmin && activeAccountTab === "deposito" ? (
             <div>
               <div className="overflow-hidden rounded-xl" style={{ background: softBg }}>
                 <div className="flex items-center justify-between gap-3 px-3 py-2.5">

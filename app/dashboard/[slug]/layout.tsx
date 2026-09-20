@@ -339,7 +339,12 @@ export default function DashboardLayout({
   const [tenantId, setTenantId] = useState("");
   const [unreadTickets, setUnreadTickets] = useState(0);
   const [businessName, setBusinessName] = useState("");
-  const [plan, setPlan] = useState("pro");
+  // "" (no plan legacy hardcodeado) hasta que llegue la respuesta real de
+  // GET /public/business/:slug -- antes usaba "pro" (plan legado) como
+  // valor inicial, lo que hacía parpadear "Plan Pro" una fracción de
+  // segundo en cada carga del dashboard, incluso para tenants que nunca
+  // tuvieron ese plan.
+  const [plan, setPlan] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [branchesError, setBranchesError] = useState("");
@@ -538,7 +543,10 @@ export default function DashboardLayout({
         const currentTenantId = businessData.business.id;
         setTenantId(currentTenantId);
         setBusinessName(businessData.business.name || slug);
-        setPlan(String(businessData.business.plan_slug || "pro").toLowerCase());
+        // Fallback defensivo si plan_slug viniera vacío (no debería pasar
+        // para un tenant real) -- "starter" (plan vigente), no "pro"
+        // (legado, ya no se asigna a nadie desde la migración a 3 planes).
+        setPlan(String(businessData.business.plan_slug || "starter").toLowerCase());
         setBusinessCategory(String(businessData.business.business_category || "").trim().toLowerCase());
         // Pedido de permiso de notificación de escritorio para depósitos —
         // llamado directo (no otro hook) para no sumar otro useState/useEffect
@@ -666,11 +674,17 @@ export default function DashboardLayout({
   }
 
   const visibleNavSections = useMemo(() => {
+    // Cuenta bloqueada (vencida/pausada, sin suscripción activa): el
+    // middleware ya redirige cualquier panel que no sea /billing hacia
+    // ahí, para cualquier rol -- el sidebar no debe ni mostrar el resto de
+    // las opciones, no solo bloquear el acceso al hacer click.
+    const blocked = Boolean(accountStatus?.blocked);
     return navSections
       .map((section) => ({
         ...section,
         items: section.items
           .filter((item) => {
+            if (blocked) return item.href === "/billing";
             if (item.href === "/billing") return isOwnerOrAdmin;
             if (item.label === "Indicadores") return isOwnerOrAdmin;
             if (isOwnerOrAdmin) return true;
@@ -683,7 +697,7 @@ export default function DashboardLayout({
       }))
       .filter((section) => section.items.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOwnerOrAdmin, memberPermissions]);
+  }, [isOwnerOrAdmin, memberPermissions, accountStatus?.blocked]);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -1820,16 +1834,18 @@ export default function DashboardLayout({
                   >
                     {businessName || slug || "Gestión del negocio"}
                   </h2>
-                  <span
-                    className="orbyx-plan-badge inline-flex h-6 shrink-0 items-center rounded-md border px-2 text-[10px] font-semibold sm:h-8 sm:px-3 sm:text-sm"
-                    style={{
-                      borderColor: isNocturno ? planBadgeStyle.borderDark : planBadgeStyle.borderLight,
-                      background: isNocturno ? planBadgeStyle.bgDark : planBadgeStyle.bgLight,
-                      color: isNocturno ? planBadgeStyle.textDark : planBadgeStyle.textLight,
-                    }}
-                  >
-                    Plan {planLabel}
-                  </span>
+                  {plan ? (
+                    <span
+                      className="orbyx-plan-badge inline-flex h-6 shrink-0 items-center rounded-md border px-2 text-[10px] font-semibold sm:h-8 sm:px-3 sm:text-sm"
+                      style={{
+                        borderColor: isNocturno ? planBadgeStyle.borderDark : planBadgeStyle.borderLight,
+                        background: isNocturno ? planBadgeStyle.bgDark : planBadgeStyle.bgLight,
+                        color: isNocturno ? planBadgeStyle.textDark : planBadgeStyle.textLight,
+                      }}
+                    >
+                      Plan {planLabel}
+                    </span>
+                  ) : null}
                   {tenantId ? (
                     <div className="hidden md:block">
                       <AccountStatusWidget
@@ -2112,7 +2128,7 @@ export default function DashboardLayout({
             >
               <span>{trialBannerMessage}</span>
               <Link
-                href={`/dashboard/${slug}/billing`}
+                href={`/dashboard/${slug}/billing#billing-flow-action`}
                 className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl bg-white/20 px-3 text-xs font-semibold text-white transition hover:bg-white/30"
               >
                 Inscribir tarjeta
@@ -2122,39 +2138,6 @@ export default function DashboardLayout({
 
           <main className="flex-1">
             <div className="mx-auto w-full max-w-[1600px] px-3 pb-24 pt-4 sm:px-5 sm:pb-6 sm:pt-6 lg:px-8 xl:px-10 2xl:px-12">
-              {isBillingPage && accountStatus?.blocked ? (
-                // isAccountBlocked excluye /billing a propósito (reemplazaría
-                // el contenido de esta misma página, incluida la forma de
-                // pagar, con un botón que apunta de vuelta acá). Un tenant
-                // bloqueado por middleware.ts SOLO puede llegar a /billing —
-                // nunca ve isAccountBlocked en ningún otro lado — así que
-                // sin este aviso no había ninguna indicación visible de por
-                // qué terminó acá.
-                <div
-                  className="mb-4 rounded-2xl border p-4"
-                  style={{ borderColor: "rgba(244,63,94,0.4)", background: "rgba(244,63,94,0.08)" }}
-                >
-                  <p className="text-sm font-semibold" style={{ color: textMain }}>
-                    Acceso limitado al resto del panel
-                  </p>
-                  <p className="mt-1 text-sm" style={{ color: textMuted }}>
-                    {accountStatus?.blocked_reason === "paused"
-                      ? "Tu cuenta fue pausada temporalmente por Orbyx. Contacta a soporte para más información."
-                      : accountStatus?.blocked_reason === "trial_expired"
-                      ? "Tu trial gratuito terminó y todavía no tienes un método de pago activo."
-                      : "Tu suscripción no tiene un cobro válido."}
-                  </p>
-                  {accountStatus?.blocked_reason !== "paused" ? (
-                    <a
-                      href="#billing-flow-action"
-                      className="mt-3 inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
-                      style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
-                    >
-                      Pagar ahora
-                    </a>
-                  ) : null}
-                </div>
-              ) : null}
               {isAccountBlocked ? (
                 <div
                   className="mx-auto mt-10 max-w-lg rounded-3xl border p-8 text-center"
