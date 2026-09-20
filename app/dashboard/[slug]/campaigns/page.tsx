@@ -17,7 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { usePermissions } from "../../../../lib/permissions-context";
-import { PLAN_LABELS, isKnownPlanSlug, type PlanSlug } from "../../../../lib/plans";
+import { PLAN_LABELS, isKnownPlanSlug, isPlanAtLeast, type PlanSlug } from "../../../../lib/plans";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -2847,7 +2847,13 @@ export default function CampaignsPage() {
         </section>
 
         <div className="grid gap-5 md:grid-cols-2">
-          {CHANNEL_OPTIONS.map((item) => {
+          {/* Starter accede al panel Campañas (auditoría 2026-09-20), pero
+              solo al canal Email -- WhatsApp de campañas sigue exclusivo de
+              Business/Premium. Se oculta la tarjeta por completo (no
+              bloqueada con candado) en vez de saltar directo al wizard de
+              Email, para no perder el resto del contenido de esta pantalla
+              (hero, botón "Ver historial"). */}
+          {CHANNEL_OPTIONS.filter((item) => item.key !== "whatsapp" || isPlanAtLeast(plan, "business")).map((item) => {
             const Icon = item.icon;
             const usage = item.key === "email" ? emailUsage : waUsage;
 
@@ -3027,6 +3033,28 @@ export default function CampaignsPage() {
       >
         ← Cambiar canal
       </button>
+
+      {/* Starter en trial: emailUsage.total en 0 solo puede pasar acá si el
+          cupo del plan todavía no arrancó (trial sin pagar, ver
+          checkMonthlyUsage/isStarterTenantInTrial en server.js) y no
+          compró saldo -- evita una llamada extra a account-status solo
+          para este aviso. Parte F.3, auditoría 2026-09-20. */}
+      {channel === "email" && plan === "starter" && emailUsage != null && emailUsage.total === 0 ? (
+        <div
+          className="rounded-2xl border px-4 py-3 text-sm"
+          style={{ borderColor: "rgba(37,99,235,0.35)", background: "rgba(37,99,235,0.08)", color: "var(--text-main)" }}
+        >
+          Las campañas por email se activan cuando comienzas a pagar tu plan — también puedes{" "}
+          <button
+            type="button"
+            onClick={() => router.push(`/dashboard/${slug}/billing#billing-flow-action`)}
+            className="font-semibold underline"
+          >
+            comprar saldo ahora
+          </button>{" "}
+          para empezar de inmediato.
+        </div>
+      ) : null}
 
       <div
         className="rounded-2xl border p-2"

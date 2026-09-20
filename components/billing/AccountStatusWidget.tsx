@@ -16,6 +16,7 @@ type UsageCounter = {
 
 export type AccountStatus = {
   ok: boolean;
+  plan_slug: string;
   trial_active: boolean;
   trial_expired: boolean;
   dias_restantes_trial: number | null;
@@ -192,7 +193,10 @@ export function AccountStatusWidget({
   // (absolute, anclado al botón).
   const [mobileTop, setMobileTop] = useState<number | null>(null);
 
-  const [activeAccountTab, setActiveAccountTab] = useState<"cuenta" | "notificaciones" | "deposito">(
+  // "cuenta" se eliminó como pestaña (Parte C, auditoría 2026-09-20) --
+  // su único contenido (el pill de uso de WA confirmación) se movió
+  // dentro de "notificaciones".
+  const [activeAccountTab, setActiveAccountTab] = useState<"notificaciones" | "deposito">(
     "notificaciones"
   );
 
@@ -585,13 +589,27 @@ export function AccountStatusWidget({
   const softBg = isNocturno ? "rgba(15,23,42,0.72)" : "rgba(220,232,255,0.72)";
   const dropdownBg = isNocturno ? "rgb(15,23,42)" : "rgb(236,244,255)";
 
+  // Starter en trial (o vencido sin pagar): WhatsApp de confirmación/
+  // recordatorio y Email de campañas arrancan en cupo 0 hasta que empieza
+  // a pagar (ver checkMonthlyUsage/isStarterTenantInTrial en server.js) --
+  // este aviso explica por qué, con salida directa a pagar o comprar
+  // saldo ahora (Parte D.2/F.3, auditoría 2026-09-20).
+  const isStarterInTrial =
+    status.plan_slug === "starter" && (status.trial_active || status.awaiting_payment);
+
   const urgent = status.blocked || status.trial_active || status.awaiting_payment;
   if (!urgent && status.wa_confirmacion.total <= 0) {
     // Nada relevante que mostrar (plan sin estos add-ons y sin trial/pago pendiente).
     return null;
   }
 
-  let pillLabel = "Mi cuenta";
+  // "Mi cuenta" -> "Activaciones" (Parte C, auditoría 2026-09-20): mismo
+  // popup y comportamiento, solo el nombre visible -- se busca que se
+  // sienta como acceso rápido para activar/desactivar WhatsApp y
+  // notificaciones, no como una sección de "mi cuenta" genérica. Los
+  // estados urgentes (bloqueada/trial/pago pendiente) siguen mostrando su
+  // propio texto específico, más útil que el nombre genérico en esos casos.
+  let pillLabel = "Activaciones";
   let pillTone: "danger" | "warning" | "info" | "neutral" = "neutral";
 
   if (status.blocked) {
@@ -642,7 +660,7 @@ export function AccountStatusWidget({
         >
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: textMuted }}>
-              Estado de mi cuenta
+              Activaciones
             </p>
             <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar" style={{ color: textMuted }}>
               <X size={16} />
@@ -676,7 +694,6 @@ export function AccountStatusWidget({
             <div className="mb-3 flex gap-1 rounded-xl border p-1" style={{ borderColor, background: softBg }}>
               {(
                 [
-                  { key: "cuenta", label: "Cuenta", icon: Clock, color: "rgb(37,99,235)" },
                   { key: "notificaciones", label: "Notificaciones", icon: MessageCircle, color: "rgb(16,185,129)" },
                   { key: "deposito", label: "Depósito previo", icon: Landmark, color: "rgb(99,102,241)" },
                 ] as const
@@ -702,7 +719,10 @@ export function AccountStatusWidget({
             </div>
           ) : null}
 
-          {!status.blocked && (!isOwnerOrAdmin || activeAccountTab === "cuenta") ? (
+          {/* Cuenta de equipo (no owner/admin): no ve pestañas (arriba,
+              gated a isOwnerOrAdmin), así que ve este pill directo, sin
+              contenedor de tabs. */}
+          {!status.blocked && !isOwnerOrAdmin ? (
             <div className="grid grid-cols-1 gap-2">
               <UsagePill
                 icon={MessageCircle}
@@ -719,6 +739,16 @@ export function AccountStatusWidget({
 
           {!status.blocked && isOwnerOrAdmin && activeAccountTab === "notificaciones" ? (
             <div>
+              {isStarterInTrial ? (
+                <Link
+                  href={`/dashboard/${slug}/billing#billing-flow-action`}
+                  onClick={() => setOpen(false)}
+                  className="mb-2.5 block rounded-xl border px-3 py-2.5 text-xs transition hover:opacity-90"
+                  style={{ borderColor: "rgba(37,99,235,0.35)", background: "rgba(37,99,235,0.08)", color: textMain }}
+                >
+                  Los mensajes de WhatsApp y las campañas por email se activan cuando comienzas a pagar tu plan — también puedes comprar saldo ahora para empezar de inmediato.
+                </Link>
+              ) : null}
               <div className="overflow-hidden rounded-xl" style={{ background: softBg }}>
                 <div className="flex items-center justify-between gap-3 px-3 py-2.5">
                   <div className="min-w-0">
@@ -800,13 +830,21 @@ export function AccountStatusWidget({
                 </p>
               ) : null}
 
-              <p className="mt-2.5 text-[11px]" style={{ color: textMuted }}>
-                Uso este mes:{" "}
-                <span className="font-semibold" style={{ color: textMain }}>
-                  {liveWaConfirmacion.used} / {liveWaConfirmacion.total}
-                </span>{" "}
-                mensajes
-              </p>
+              {/* Antes vivía en la pestaña "Cuenta" (eliminada, Parte C
+                  auditoría 2026-09-20) -- único contenido de esa pestaña,
+                  movido acá en vez de perderse. */}
+              <div className="mt-2.5 grid grid-cols-1 gap-2">
+                <UsagePill
+                  icon={MessageCircle}
+                  label="WA confirmación"
+                  usage={liveWaConfirmacion}
+                  textMuted={textMuted}
+                  textMain={textMain}
+                  borderColor={borderColor}
+                  bg={softBg}
+                  pulse={pulseField === "wa_confirmacion"}
+                />
+              </div>
             </div>
           ) : null}
 
