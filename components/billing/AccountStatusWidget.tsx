@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Clock, Landmark, MessageCircle, X } from "lucide-react";
+import { AlertTriangle, Clock, Landmark, Lock, MessageCircle, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { createClient } from "../../lib/supabase/client";
 
@@ -141,31 +141,44 @@ function UsagePill({
   );
 }
 
+// `locked`: mismo criterio visual de "bloqueado" que ya usan otros
+// candados del dashboard (botón "Invitar" gated a Business+ en
+// customers/page.tsx -- deshabilitado, opacidad reducida, ícono de
+// candado) aplicado acá para el trial de Starter sin suscripción activa.
+// A diferencia de `disabled` (que solo evita el click), `locked` también
+// ignora el valor guardado de `checked` para la posición/color del
+// switch -- el ajuste real puede seguir en true en la base de datos (el
+// dueño lo dejó configurado para cuando empiece a pagar), pero mientras
+// está bloqueado no debe leerse como "ya está operativo".
 function MiniToggle({
   checked,
   onChange,
   disabled,
+  locked,
   label,
 }: {
   checked: boolean;
   onChange: () => void;
   disabled?: boolean;
+  locked?: boolean;
   label: string;
 }) {
+  const visuallyOn = checked && !locked;
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
-      aria-label={label}
+      aria-label={locked ? `${label} — se activa cuando empiezas a pagar o compras el add-on` : label}
+      title={locked ? "Se activa cuando empiezas a pagar o compras el add-on ahora" : undefined}
       onClick={onChange}
-      disabled={disabled}
-      className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
-      style={{ background: checked ? "rgb(37 99 235)" : "var(--border-color)" }}
+      disabled={disabled || locked}
+      className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed"
+      style={{ background: visuallyOn ? "rgb(37 99 235)" : "var(--border-color)", opacity: locked ? 0.55 : disabled ? 0.6 : 1 }}
     >
       <span
         className="inline-block h-4 w-4 transform rounded-full bg-white transition"
-        style={{ transform: checked ? "translateX(22px)" : "translateX(4px)" }}
+        style={{ transform: visuallyOn ? "translateX(22px)" : "translateX(4px)" }}
       />
     </button>
   );
@@ -743,17 +756,29 @@ export function AccountStatusWidget({
                 <Link
                   href={`/dashboard/${slug}/billing#billing-flow-action`}
                   onClick={() => setOpen(false)}
-                  className="mb-2.5 block rounded-xl border px-3 py-2.5 text-xs transition hover:opacity-90"
-                  style={{ borderColor: "rgba(37,99,235,0.35)", background: "rgba(37,99,235,0.08)", color: textMain }}
+                  className="mb-2.5 flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-xs transition hover:opacity-90"
+                  style={{ borderColor: "rgba(37,99,235,0.4)", background: "rgba(37,99,235,0.12)", color: textMain }}
                 >
-                  Los mensajes de WhatsApp y las campañas por email se activan cuando comienzas a pagar tu plan — también puedes comprar saldo ahora para empezar de inmediato.
+                  <span
+                    className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: "rgba(37,99,235,0.18)", color: "rgb(37,99,235)" }}
+                  >
+                    <Lock size={12} />
+                  </span>
+                  <span>
+                    <span className="font-semibold" style={{ color: "rgb(37,99,235)" }}>
+                      Aún no activo.
+                    </span>{" "}
+                    Los mensajes de WhatsApp y las campañas por email se activan cuando comienzas a pagar tu plan — también puedes comprar saldo ahora para empezar de inmediato.
+                  </span>
                 </Link>
               ) : null}
               <div className="overflow-hidden rounded-xl" style={{ background: softBg }}>
-                <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5" style={{ opacity: isStarterInTrial ? 0.65 : 1 }}>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium" style={{ color: textMain }}>
+                    <p className="flex items-center gap-1.5 text-sm font-medium" style={{ color: textMain }}>
                       Confirmación al agendar
+                      {isStarterInTrial ? <Lock size={11} style={{ color: textMuted }} /> : null}
                     </p>
                     <p className="text-[11px]" style={{ color: textMuted }}>
                       Envía un WhatsApp apenas se crea la cita
@@ -762,6 +787,7 @@ export function AccountStatusWidget({
                   <MiniToggle
                     checked={waConfirmEnabled}
                     disabled={savingField === "wa_confirmation_enabled"}
+                    locked={isStarterInTrial}
                     label="Confirmación por WhatsApp al agendar"
                     onChange={() => {
                       const next = !waConfirmEnabled;
@@ -773,10 +799,11 @@ export function AccountStatusWidget({
 
                 <div className="h-px" style={{ background: borderColor }} />
 
-                <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5" style={{ opacity: isStarterInTrial ? 0.65 : 1 }}>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium" style={{ color: textMain }}>
+                    <p className="flex items-center gap-1.5 text-sm font-medium" style={{ color: textMain }}>
                       Recordatorio antes de la cita
+                      {isStarterInTrial ? <Lock size={11} style={{ color: textMuted }} /> : null}
                     </p>
                     <p className="text-[11px]" style={{ color: textMuted }}>
                       Envía un WhatsApp antes de que llegue el cliente
@@ -785,6 +812,7 @@ export function AccountStatusWidget({
                   <MiniToggle
                     checked={waReminderEnabled}
                     disabled={savingField === "wa_reminder_enabled"}
+                    locked={isStarterInTrial}
                     label="Recordatorio por WhatsApp antes de la cita"
                     onChange={() => {
                       const next = !waReminderEnabled;
@@ -794,7 +822,7 @@ export function AccountStatusWidget({
                   />
                 </div>
 
-                {waReminderEnabled ? (
+                {waReminderEnabled && !isStarterInTrial ? (
                   <div className="flex items-center justify-between gap-3 px-3 pb-2.5 pt-0.5">
                     <p className="text-[11px]" style={{ color: textMuted }}>
                       Enviar
