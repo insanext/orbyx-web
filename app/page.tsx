@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
@@ -20,6 +21,9 @@ import { TRIAL_LABEL } from "@/lib/plans";
 import { PublicThemeProvider } from "@/lib/public-theme";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
+import { AgendaMockup } from "@/components/landing/AgendaMockup";
+import { WhatsAppMockup } from "@/components/landing/WhatsAppMockup";
+import { RubrosCarousel } from "@/components/landing/RubrosCarousel";
 
 const serif = { fontFamily: "var(--font-dm-serif), Georgia, serif" };
 
@@ -63,26 +67,6 @@ function LandingContent() {
 
   const ctaBadges = [`${TRIAL_LABEL} gratis`, "Sin tarjeta de crédito", "Cancelas cuando quieras"];
 
-  const agendaStaff = [
-    { name: "Camila R.", role: "Estilista", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face" },
-    { name: "Andrés M.", role: "Barbero", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" },
-    { name: "Sofía P.", role: "Estilista", photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face" },
-  ];
-
-  const agendaHours = ["09:00", "10:00", "11:00", "12:00", "13:00"];
-
-  const agendaAppts = [
-    { col: 0, top: 0, h: 67, time: "09:00", service: "Corte", client: "M. González", status: "booked" as const },
-    { col: 0, top: 135, h: 90, time: "10:30", service: "Tinte", client: "P. Soto", status: "completed" as const },
-    { col: 0, top: 315, h: 45, time: "12:30", service: "Brushing", client: "L. Díaz", status: "booked" as const },
-    { col: 1, top: 45, h: 67, time: "09:30", service: "Manicure", client: "C. Rojas", status: "booked" as const },
-    { col: 1, top: 180, h: 45, time: "11:00", service: "Pedicure", client: "V. Torres", status: "booked" as const },
-    { col: 1, top: 360, h: 90, time: "13:00", service: "Uñas gel", client: "A. Muñoz", status: "completed" as const },
-    { col: 2, top: 0, h: 90, time: "09:00", service: "Masaje", client: "R. Silva", status: "booked" as const },
-    { col: 2, top: 135, h: 45, time: "10:30", service: "Facial", client: "I. Vargas", status: "completed" as const },
-    { col: 2, top: 270, h: 135, time: "12:00", service: "Depilación", client: "F. Herrera", status: "booked" as const },
-  ];
-
   return (
     <main
       style={{ fontFamily: "var(--font-dm-sans), system-ui, sans-serif" }}
@@ -95,21 +79,34 @@ function LandingContent() {
 
           <div className="grid gap-10 pb-8 pt-14 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-12 lg:pb-14 lg:pt-20">
             <div className="max-w-[660px]">
-              <h1
+              <motion.h1
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
                 style={serif}
                 className="text-[40px] leading-[1.05] tracking-[-0.02em] text-[var(--pub-text)] sm:text-[54px] lg:text-[66px]"
               >
                 Organiza tu agenda.
                 <span className="block">Haz que tus clientes vuelvan.</span>
-              </h1>
+              </motion.h1>
 
-              <p className="mt-6 max-w-[560px] text-base leading-8 text-[var(--pub-text-muted)] sm:text-lg">
+              <motion.p
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+                className="mt-6 max-w-[560px] text-base leading-8 text-[var(--pub-text-muted)] sm:text-lg"
+              >
                 Orbyx ordena tu día a día y te ayuda a mantener una relación
                 activa con tus clientes. Gestiona tus reservas, confirma sus
                 citas y vuelve a contactarlos cuando sea momento de regresar.
-              </p>
+              </motion.p>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <motion.div
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+                className="mt-8 flex flex-col gap-3 sm:flex-row"
+              >
                 <Link
                   href="/signup?plan=starter"
                   className="inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-[var(--pub-accent)] px-7 text-base font-bold text-[var(--pub-accent-text)] shadow-[0_8px_28px_var(--pub-shadow-color)] transition hover:-translate-y-0.5 hover:brightness-110"
@@ -123,46 +120,70 @@ function LandingContent() {
                 >
                   Ver planes
                 </Link>
-              </div>
+              </motion.div>
 
-              <div className="mt-8 flex flex-col gap-3 text-sm text-[var(--pub-text-muted)] sm:flex-row sm:flex-wrap">
+              <motion.div
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+                className="mt-8 flex flex-col gap-3 text-sm text-[var(--pub-text-muted)] sm:flex-row sm:flex-wrap"
+              >
                 {ctaBadges.map((badge) => (
                   <span key={badge} className="inline-flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-[var(--pub-accent)]" />
                     {badge}
                   </span>
                 ))}
-              </div>
+              </motion.div>
             </div>
 
             {/* Mascota de Orbyx — única protagonista del hero, sin nada superpuesto */}
             <div>
-              <div className="mx-auto max-w-[440px] overflow-hidden rounded-[28px] border border-[var(--pub-border)] shadow-[0_24px_60px_var(--pub-shadow-color)] lg:mx-0 lg:ml-10 lg:max-w-[480px]">
-                <img
-                  src="/orbyx-mascota-hero.png"
-                  alt="Mascota de Orbyx trabajando en su laptop"
-                  className="aspect-square w-full object-cover"
-                />
-              </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
+                className="mx-auto max-w-[440px] lg:mx-0 lg:ml-10 lg:max-w-[480px]"
+              >
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  className="overflow-hidden rounded-[28px] border border-[var(--pub-border)] shadow-[0_24px_60px_var(--pub-shadow-color)]"
+                >
+                  <img
+                    src="/orbyx-mascota-hero.png"
+                    alt="Mascota de Orbyx trabajando en su laptop"
+                    className="aspect-square w-full object-cover"
+                  />
+                </motion.div>
+              </motion.div>
 
               <div className="mx-auto mt-6 grid max-w-[440px] gap-3 sm:grid-cols-2 lg:ml-10 lg:max-w-[480px]">
-                {automationCards.map((card) => {
+                {automationCards.map((card, index) => {
                   const Icon = card.icon;
                   return (
-                    <div
+                    <motion.div
                       key={card.title}
-                      className="rounded-xl border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] p-4 shadow-sm"
+                      initial={{ opacity: 0, y: 18, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.5, delay: 0.5 + index * 0.1, ease: "easeOut" }}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--pub-accent-soft-bg)] text-[var(--pub-accent)]">
-                          <Icon className="h-5 w-5" />
+                      <motion.div
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: index * 0.4 }}
+                        className="rounded-xl border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] p-4 shadow-sm"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--pub-accent-soft-bg)] text-[var(--pub-accent)]">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-[var(--pub-text)]">{card.title}</p>
+                            <p className="mt-0.5 text-xs leading-5 text-[var(--pub-text-muted)]">{card.desc}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-[var(--pub-text)]">{card.title}</p>
-                          <p className="mt-0.5 text-xs leading-5 text-[var(--pub-text-muted)]">{card.desc}</p>
-                        </div>
-                      </div>
-                    </div>
+                      </motion.div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -196,166 +217,8 @@ function LandingContent() {
         <div className="relative mx-auto grid max-w-[1360px] gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           {/* Mockups: agenda (laptop) + WhatsApp, lado a lado */}
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-            {/* Laptop frame with JSX agenda mockup */}
-            <div className="relative flex-1">
-              <div className="overflow-hidden rounded-2xl border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] shadow-[0_16px_40px_var(--pub-shadow-color)]">
-                {/* Browser chrome */}
-                <div className="flex items-center gap-3 border-b border-[var(--pub-border-soft)] bg-[var(--pub-bg)] px-4 py-2.5">
-                  <div className="flex gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-[var(--pub-border)]" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-[var(--pub-border)]" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-[var(--pub-border)]" />
-                  </div>
-                  <div className="mx-auto rounded-md bg-[var(--pub-bg-soft)] px-4 py-1 text-[10px] text-[var(--pub-text-faint)]">
-                    orbyx.cl/dashboard/mi-negocio/agenda
-                  </div>
-                </div>
-
-                {/* Agenda content */}
-                <div className="h-[400px] overflow-hidden sm:h-[420px] lg:h-[440px]">
-                  {/* Staff header */}
-                  <div
-                    className="grid border-b border-[var(--pub-border-soft)]"
-                    style={{ gridTemplateColumns: "48px repeat(3, 1fr)" }}
-                  >
-                    <div className="flex items-center justify-center border-r border-[var(--pub-border-soft)] px-2 py-2.5 text-[10px] font-medium text-[var(--pub-text-faint)]">
-                      Hora
-                    </div>
-                    {agendaStaff.map((staff) => (
-                      <div
-                        key={staff.name}
-                        className="flex items-center gap-2 border-r border-[var(--pub-border-soft)] px-2 py-2.5 last:border-r-0"
-                      >
-                        <img
-                          src={staff.photo}
-                          alt={staff.name}
-                          className="h-8 w-8 shrink-0 rounded-full border border-[var(--pub-border)] object-cover"
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-[11px] font-semibold leading-tight text-[var(--pub-text)]">{staff.name}</p>
-                          <p className="truncate text-[9px] text-[var(--pub-text-faint)]">{staff.role}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Time grid + appointment columns */}
-                  <div
-                    className="grid"
-                    style={{ gridTemplateColumns: "48px repeat(3, 1fr)" }}
-                  >
-                    {/* Time labels column */}
-                    <div className="relative border-r border-[var(--pub-border-soft)]" style={{ height: 450 }}>
-                      {agendaHours.map((hour, i) => (
-                        <div
-                          key={hour}
-                          className="absolute left-0 right-0 border-t border-[var(--pub-border-soft)] px-1.5 pt-1 text-[10px] text-[var(--pub-text-faint)]"
-                          style={{ top: i * 90 }}
-                        >
-                          {hour}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Staff columns */}
-                    {agendaStaff.map((staff, colIndex) => (
-                      <div
-                        key={staff.name}
-                        className="relative border-r border-[var(--pub-border-soft)] last:border-r-0"
-                        style={{ height: 450 }}
-                      >
-                        {/* Hour grid lines */}
-                        {[90, 180, 270, 360].map((y) => (
-                          <div
-                            key={y}
-                            className="absolute left-0 right-0 border-t border-[var(--pub-border-soft)]"
-                            style={{ top: y }}
-                          />
-                        ))}
-                        {/* Half-hour lines */}
-                        {[45, 135, 225, 315, 405].map((y) => (
-                          <div
-                            key={y}
-                            className="absolute left-0 right-0 border-t border-dashed border-[var(--pub-border-soft)]"
-                            style={{ top: y }}
-                          />
-                        ))}
-                        {/* Appointment blocks */}
-                        {agendaAppts
-                          .filter((a) => a.col === colIndex)
-                          .map((appt) => (
-                            <div
-                              key={`${appt.time}-${appt.service}`}
-                              className="absolute left-1 right-1 overflow-hidden rounded-[4px] px-1.5 py-1 text-white"
-                              style={{
-                                top: appt.top,
-                                height: appt.h,
-                                background:
-                                  appt.status === "booked"
-                                    ? "linear-gradient(135deg, rgba(30,64,175,0.90), rgba(59,130,246,0.56))"
-                                    : "linear-gradient(135deg, rgba(6,95,70,0.90), rgba(16,185,129,0.56))",
-                                boxShadow:
-                                  appt.status === "booked"
-                                    ? "0 0 18px -10px rgba(96,165,250,0.85)"
-                                    : "0 0 18px -10px rgba(52,211,153,0.85)",
-                              }}
-                            >
-                              <p className="truncate text-[9px] font-semibold leading-tight">
-                                {appt.client} · {appt.service}
-                              </p>
-                              {appt.h > 50 && (
-                                <p className="mt-0.5 truncate text-[8px] text-white/70">{appt.time}</p>
-                              )}
-                            </div>
-                          ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Laptop base */}
-              <div className="mx-auto h-[6px] w-[45%] rounded-b-lg bg-[var(--pub-border)]" />
-            </div>
-
-            {/* WhatsApp mockup — campaña de reactivación, con forma de smartphone */}
-            <div className="mx-auto w-full max-w-[240px] shrink-0 rounded-[38px] border border-[var(--pub-border)] bg-[#1a1a1a] p-3 shadow-[0_20px_50px_var(--pub-shadow-color)]">
-              <div className="mb-2 flex justify-center">
-                <div className="h-1.5 w-14 rounded-full bg-[#3a3a3a]" />
-              </div>
-
-              <div className="rounded-[20px] border border-[#333] bg-[#efe7dc] p-2.5 text-slate-950">
-                <div className="mb-2.5 flex items-center justify-between rounded-t-[12px] bg-[#1a1a1a] px-2.5 py-2.5 text-white">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white">
-                      <img src="/orbyx-mark.png" alt="Orbyx" className="h-6 w-6 object-contain" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold">Orbyx</p>
-                      <p className="text-[10px] text-[#888]">Campaña automática</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 px-1 pb-1 text-xs">
-                  <div className="mx-auto max-w-[92%] rounded-full bg-black/5 px-2.5 py-1 text-center text-[9px] font-medium text-slate-500">
-                    Clientes sin reservar hace 30 días
-                  </div>
-                  <div className="max-w-[92%] rounded-xl rounded-tl-sm bg-white px-2.5 py-1.5 shadow-sm">
-                    <p>
-                      Hola Camila 👋 Hace 1 mes de tu última visita. Como
-                      cliente preferente, tienes 15% OFF en tu próxima
-                      reserva. Agenda nuevamente →
-                    </p>
-                    <p className="mt-1 text-right text-[9px] text-slate-400">10:02 a.m.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-2 flex justify-center">
-                <div className="h-1 w-20 rounded-full bg-[#3a3a3a]" />
-              </div>
-            </div>
+            <AgendaMockup className="flex-1" />
+            <WhatsAppMockup className="lg:mt-6" />
           </div>
 
           {/* Platform benefits */}
@@ -384,6 +247,13 @@ function LandingContent() {
               })}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── RUBROS ── */}
+      <section id="rubros" className="relative px-4 py-16 sm:px-6 lg:px-10">
+        <div className="mx-auto max-w-[1360px]">
+          <RubrosCarousel />
         </div>
       </section>
 
