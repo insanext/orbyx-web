@@ -18,12 +18,12 @@ const RUBROS: Rubro[] = [
   {
     name: "Veterinarias",
     phrase: "Cuida a sus mascotas, ellos confían en ti.",
-    image: "https://images.unsplash.com/photo-1581562324420-eff2f5aaa4b5?w=500&h=640&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1577175889968-f551f5944abd?w=500&h=640&fit=crop&q=80",
   },
   {
     name: "Peluquerías y barberías",
     phrase: "Cortes y estilo, cita a cita.",
-    image: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&h=640&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1659355751093-b43f6f011ad6?w=500&h=640&fit=crop&q=80",
   },
   {
     name: "Talleres mecánicos",

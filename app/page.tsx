@@ -123,9 +123,9 @@ function LandingContent() {
                   <span className="relative z-10">Ver planes</span>
                   <motion.span
                     aria-hidden
-                    initial={{ x: "-120%" }}
-                    animate={{ x: "220%" }}
-                    transition={{ duration: 1.3, ease: "easeInOut", repeat: Infinity, repeatDelay: 2.4 }}
+                    initial={{ x: "-150%" }}
+                    animate={{ x: "400%" }}
+                    transition={{ duration: 1.1, ease: "linear", repeat: Infinity, repeatDelay: 2.6 }}
                     className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-[var(--pub-accent)]/40 to-transparent"
                   />
                 </Link>

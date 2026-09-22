@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Instagram, Facebook } from "lucide-react";
 import { usePublicTheme, PublicThemeToggle } from "@/lib/public-theme";
 
 // Header compartido entre todas las páginas públicas de marketing
@@ -14,10 +15,30 @@ export function PublicHeader() {
 
   return (
     <header className="flex items-center justify-between gap-4">
-      <Link href="/" className="flex items-center gap-2.5">
-        <img src={markSrc} alt="Orbyx" className="h-9 w-9" />
-        <span className="text-2xl font-bold tracking-tight text-[var(--pub-text)]">Orbyx</span>
-      </Link>
+      <div className="flex items-center gap-3">
+        <div className="hidden items-center gap-1.5 sm:flex">
+          <a
+            href="https://www.instagram.com/orbyx.cl/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram de Orbyx"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--pub-text-muted)] transition hover:text-[var(--pub-accent)]"
+          >
+            <Instagram className="h-[18px] w-[18px]" />
+          </a>
+          <span
+            aria-label="Facebook de Orbyx (próximamente)"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--pub-text-faint)]"
+          >
+            <Facebook className="h-[18px] w-[18px]" />
+          </span>
+        </div>
+
+        <Link href="/" className="flex items-center gap-2.5">
+          <img src={markSrc} alt="Orbyx" className="h-9 w-9" />
+          <span className="text-2xl font-bold tracking-tight text-[var(--pub-text)]">Orbyx</span>
+        </Link>
+      </div>
 
       <nav className="hidden items-center gap-9 text-sm font-medium text-[var(--pub-text-muted)] lg:flex">
         <Link href="/#funciones" className="transition hover:text-[var(--pub-text)]">Funciones</Link>
