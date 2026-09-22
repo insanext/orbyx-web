@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Rubro = {
   name: string;
@@ -18,7 +17,7 @@ const RUBROS: Rubro[] = [
   {
     name: "Veterinarias",
     phrase: "Cuida a sus mascotas, ellos confían en ti.",
-    image: "https://images.unsplash.com/photo-1577042662593-b4d55517ce31?w=500&h=640&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1644675272883-0c4d582528d8?w=500&h=640&fit=crop&q=80",
   },
   {
     name: "Peluquerías y barberías",
@@ -264,24 +263,6 @@ export function RubrosCarousel() {
             );
           })}
         </div>
-
-        {/* Flechas */}
-        <button
-          type="button"
-          aria-label="Rubro anterior"
-          onClick={() => goTo(activeIndex - 1)}
-          className="absolute left-0 top-1/2 z-[60] hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] text-[var(--pub-text)] shadow-sm transition hover:border-[var(--pub-accent-soft-border)] hover:text-[var(--pub-accent)] sm:flex lg:left-4"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          aria-label="Siguiente rubro"
-          onClick={() => goTo(activeIndex + 1)}
-          className="absolute right-0 top-1/2 z-[60] hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] text-[var(--pub-text)] shadow-sm transition hover:border-[var(--pub-accent-soft-border)] hover:text-[var(--pub-accent)] sm:flex lg:right-4"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
       </div>
 
       {/* Indicadores */}
