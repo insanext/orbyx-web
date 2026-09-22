@@ -16,6 +16,11 @@ export function PublicHeader() {
   return (
     <header className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-2.5">
+          <img src={markSrc} alt="Orbyx" className="h-9 w-9" />
+          <span className="text-2xl font-bold tracking-tight text-[var(--pub-text)]">Orbyx</span>
+        </Link>
+
         <div className="hidden items-center gap-1.5 sm:flex">
           <a
             href="https://www.instagram.com/orbyx.cl/"
@@ -33,11 +38,6 @@ export function PublicHeader() {
             <Facebook className="h-[18px] w-[18px]" />
           </span>
         </div>
-
-        <Link href="/" className="flex items-center gap-2.5">
-          <img src={markSrc} alt="Orbyx" className="h-9 w-9" />
-          <span className="text-2xl font-bold tracking-tight text-[var(--pub-text)]">Orbyx</span>
-        </Link>
       </div>
 
       <nav className="hidden items-center gap-9 text-sm font-medium text-[var(--pub-text-muted)] lg:flex">
