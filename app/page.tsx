@@ -87,7 +87,9 @@ function LandingContent() {
                 className="text-[40px] leading-[1.05] tracking-[-0.02em] text-[var(--pub-text)] sm:text-[54px] lg:text-[66px]"
               >
                 Organiza tu agenda.
-                <span className="block">Haz que tus clientes vuelvan.</span>
+                <span className="block bg-gradient-to-r from-[var(--pub-accent)] to-[#38bdf8] bg-clip-text text-transparent">
+                  Haz que tus clientes vuelvan.
+                </span>
               </motion.h1>
 
               <motion.p
@@ -116,9 +118,16 @@ function LandingContent() {
                 </Link>
                 <Link
                   href="/planes"
-                  className="inline-flex h-14 items-center justify-center rounded-xl border border-[var(--pub-border)] px-7 text-base font-semibold text-[var(--pub-text)] transition hover:border-[var(--pub-accent-soft-border)] hover:bg-[var(--pub-bg-soft)]"
+                  className="group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-xl border-2 border-[var(--pub-accent)] px-7 text-base font-bold text-[var(--pub-accent)] shadow-[0_8px_28px_var(--pub-shadow-color)] transition hover:-translate-y-0.5 hover:bg-[var(--pub-accent-soft-bg)]"
                 >
-                  Ver planes
+                  <span className="relative z-10">Ver planes</span>
+                  <motion.span
+                    aria-hidden
+                    initial={{ x: "-120%" }}
+                    animate={{ x: "220%" }}
+                    transition={{ duration: 1.3, ease: "easeInOut", repeat: Infinity, repeatDelay: 2.4 }}
+                    className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-[var(--pub-accent)]/40 to-transparent"
+                  />
                 </Link>
               </motion.div>
 
@@ -140,22 +149,29 @@ function LandingContent() {
             {/* Mascota de Orbyx — única protagonista del hero, sin nada superpuesto */}
             <div>
               <motion.div
-                initial={{ opacity: 0, scale: 0.94 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 24, scale: 0.94 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
-                className="mx-auto max-w-[440px] lg:mx-0 lg:ml-10 lg:max-w-[480px]"
+                className="group relative mx-auto max-w-[440px] lg:mx-0 lg:ml-10 lg:max-w-[480px]"
               >
-                <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                  className="overflow-hidden rounded-[28px] border border-[var(--pub-border)] shadow-[0_24px_60px_var(--pub-shadow-color)]"
-                >
-                  <img
-                    src="/orbyx-mascota-hero.png"
-                    alt="Mascota de Orbyx trabajando en su laptop"
-                    className="aspect-square w-full object-cover"
+                {/* Marco: borde neón rotando en loop; en hover/press se detiene, se ilumina completo y la imagen se agranda */}
+                <div className="relative overflow-hidden rounded-[28px] p-[3px]">
+                  <div
+                    className="absolute inset-[-75%] [animation:spin_3.5s_linear_infinite] group-hover:[animation-play-state:paused] group-active:[animation-play-state:paused]"
+                    style={{
+                      background:
+                        "conic-gradient(from 0deg, transparent 0%, var(--pub-accent) 6%, transparent 16%, transparent 100%)",
+                    }}
                   />
-                </motion.div>
+                  <div className="relative overflow-hidden rounded-[25px] border border-[var(--pub-border)] shadow-[0_24px_60px_var(--pub-shadow-color)]">
+                    <img
+                      src="/orbyx-mascota-hero.png"
+                      alt="Mascota de Orbyx trabajando en su laptop"
+                      className="aspect-square w-full scale-100 object-cover transition-transform duration-300 group-hover:scale-[1.04] group-active:scale-[1.04]"
+                    />
+                  </div>
+                  <div className="pointer-events-none absolute inset-0 rounded-[28px] opacity-0 shadow-[0_0_0_2px_var(--pub-accent),0_0_46px_10px_var(--pub-accent-soft-bg)] transition-opacity duration-300 group-hover:opacity-100 group-active:opacity-100" />
+                </div>
               </motion.div>
 
               <div className="mx-auto mt-6 grid max-w-[440px] gap-3 sm:grid-cols-2 lg:ml-10 lg:max-w-[480px]">
@@ -167,22 +183,17 @@ function LandingContent() {
                       initial={{ opacity: 0, y: 18, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{ duration: 0.5, delay: 0.5 + index * 0.1, ease: "easeOut" }}
+                      className="rounded-xl border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] p-4 shadow-sm"
                     >
-                      <motion.div
-                        animate={{ y: [0, -5, 0] }}
-                        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: index * 0.4 }}
-                        className="rounded-xl border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)] p-4 shadow-sm"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--pub-accent-soft-bg)] text-[var(--pub-accent)]">
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-[var(--pub-text)]">{card.title}</p>
-                            <p className="mt-0.5 text-xs leading-5 text-[var(--pub-text-muted)]">{card.desc}</p>
-                          </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--pub-accent-soft-bg)] text-[var(--pub-accent)]">
+                          <Icon className="h-5 w-5" />
                         </div>
-                      </motion.div>
+                        <div>
+                          <p className="text-sm font-bold text-[var(--pub-text)]">{card.title}</p>
+                          <p className="mt-0.5 text-xs leading-5 text-[var(--pub-text-muted)]">{card.desc}</p>
+                        </div>
+                      </div>
                     </motion.div>
                   );
                 })}

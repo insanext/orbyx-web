@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Rubro = {
   name: string;
@@ -18,7 +18,7 @@ const RUBROS: Rubro[] = [
   {
     name: "Veterinarias",
     phrase: "Cuida a sus mascotas, ellos confían en ti.",
-    image: "https://images.unsplash.com/photo-1644675272883-0c4d582528d8?w=500&h=640&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1581562324420-eff2f5aaa4b5?w=500&h=640&fit=crop&q=80",
   },
   {
     name: "Peluquerías y barberías",
@@ -48,7 +48,7 @@ const RUBROS: Rubro[] = [
   {
     name: "Academias y cursos",
     phrase: "Inscripciones y clases bajo control.",
-    image: "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=500&h=640&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1758270704925-fa59d93119c1?w=500&h=640&fit=crop&q=80",
   },
 ];
 
@@ -211,14 +211,19 @@ export function RubrosCarousel() {
                 aria-hidden={!isCentered}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex((h) => (h === index ? null : h))}
-                className={`absolute left-1/2 top-1/2 w-[210px] sm:w-[250px] lg:w-[288px] ${
-                  isDragging ? "" : "transition-[transform,opacity] duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-                }`}
+                className="absolute left-1/2 top-1/2 w-[210px] sm:w-[250px] lg:w-[288px]"
                 style={{
                   zIndex,
                   opacity,
                   pointerEvents: dist > 3.4 ? "none" : "auto",
                   transform: `translate(-50%, -50%) translateX(${offset * gap}px) scale(${scale})`,
+                  // Inline: el reset global `* { transition: background-color/border-color/color/fill/stroke }`
+                  // de globals.css no está en capa (@layer) y por cascade layers le gana a
+                  // cualquier utilidad de Tailwind para transform/opacity — solo un estilo
+                  // inline (máxima prioridad) logra que la fila se deslice de verdad.
+                  transitionProperty: isDragging ? "none" : "transform, opacity",
+                  transitionDuration: isDragging ? "0ms" : "1050ms",
+                  transitionTimingFunction: "cubic-bezier(0,0,0.2,1)",
                 }}
               >
                 <div
@@ -254,12 +259,6 @@ export function RubrosCarousel() {
                       {rubro.phrase}
                     </p>
                   </div>
-
-                  {isCentered && (
-                    <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--pub-accent)] text-[var(--pub-accent-text)] shadow-[0_6px_16px_var(--pub-shadow-color)]">
-                      <ArrowRight className="h-4 w-4" />
-                    </span>
-                  )}
                 </div>
               </div>
             );
