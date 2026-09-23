@@ -17,7 +17,7 @@ const RUBROS: Rubro[] = [
   {
     name: "Veterinarias",
     phrase: "Cuida a sus mascotas, ellos confían en ti.",
-    image: "https://images.unsplash.com/photo-1644675272883-0c4d582528d8?w=500&h=640&fit=crop&q=80",
+    image: "/rubros/veterinarias.png",
   },
   {
     name: "Peluquerías y barberías",
@@ -32,7 +32,7 @@ const RUBROS: Rubro[] = [
   {
     name: "Spa y masajes",
     phrase: "Relájalos y que vuelvan seguido.",
-    image: "https://images.unsplash.com/photo-1639162906614-0603b0ae95fd?w=500&h=640&fit=crop&q=80",
+    image: "/rubros/spa-y-masajes.png",
   },
   {
     name: "Manicure y uñas",
@@ -42,12 +42,12 @@ const RUBROS: Rubro[] = [
   {
     name: "Clases grupales",
     phrase: "Cupos y horarios siempre claros.",
-    image: "https://images.unsplash.com/photo-1524594152303-9fd13543fe6e?w=500&h=640&fit=crop&q=80",
+    image: "/rubros/clases-grupales.png",
   },
   {
     name: "Academias y cursos",
     phrase: "Inscripciones y clases bajo control.",
-    image: "https://images.unsplash.com/photo-1758270704925-fa59d93119c1?w=500&h=640&fit=crop&q=80",
+    image: "/rubros/academias-y-cursos.png",
   },
 ];
 
