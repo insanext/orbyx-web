@@ -1389,27 +1389,11 @@ function BillingPageInner() {
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href={`/planes?current_plan=${plan}&from=billing&slug=${slug}&tenant_id=${tenantId}`}
-            className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
-            style={{
-              borderColor: "var(--border-color)",
-              background: "var(--bg-card)",
-              color: "var(--text-main)",
-            }}
+            className="inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
+            style={{ background: "var(--accent-solid)" }}
           >
-            Ver planes
+            Cambiar de Plan
           </Link>
-
-          <button
-            type="button"
-            onClick={() => loadAll()}
-            className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
-            style={{
-              background:
-                "linear-gradient(135deg, rgb(34 197 94), rgb(16 185 129))",
-            }}
-          >
-            Recargar
-          </button>
         </div>
       </section>
 

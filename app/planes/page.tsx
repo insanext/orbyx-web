@@ -1077,20 +1077,34 @@ function PlanesPageContent() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="hidden h-9 items-center justify-center rounded-lg border border-white/15 px-3 text-xs font-semibold text-white transition hover:border-white/35 hover:bg-white/8 sm:inline-flex lg:px-4 lg:text-sm"
-            >
-              Iniciar sesion
-            </Link>
-            <Link
-              href="/signup?plan=starter"
-              className="inline-flex h-9 items-center justify-center rounded-lg bg-[#21d6c5] px-3 text-xs font-bold text-slate-950 shadow-[0_14px_38px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] lg:px-4 lg:text-sm"
-            >
-              Probar gratis
-            </Link>
-          </div>
+          {/* Mismo criterio que el panel "Plan actual" (hasBillingContext):
+              si se llegó desde Facturación del dashboard, el usuario ya
+              tiene sesión — no tiene sentido ofrecerle login/registro. */}
+          {hasBillingContext && slug ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/dashboard/${slug}/billing`}
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-[#21d6c5] px-3 text-xs font-bold text-slate-950 shadow-[0_14px_38px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] lg:px-4 lg:text-sm"
+              >
+                Volver al panel
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="hidden h-9 items-center justify-center rounded-lg border border-white/15 px-3 text-xs font-semibold text-white transition hover:border-white/35 hover:bg-white/8 sm:inline-flex lg:px-4 lg:text-sm"
+              >
+                Iniciar sesion
+              </Link>
+              <Link
+                href="/signup?plan=starter"
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-[#21d6c5] px-3 text-xs font-bold text-slate-950 shadow-[0_14px_38px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] lg:px-4 lg:text-sm"
+              >
+                Probar gratis
+              </Link>
+            </div>
+          )}
         </header>
 
         <div className="grid gap-4 pt-5 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_410px] 2xl:grid-cols-[minmax(0,1fr)_460px]">
