@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { DateInputDMY } from "@/components/ui/date-input-dmy";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -305,10 +306,9 @@ export default function NewCustomerPage() {
             </div>
           ) : (
             <Field label="Fecha">
-              <input
+              <DateInputDMY
                 className={INPUT_CLASS}
                 style={inputStyle()}
-                type="date"
                 value={attendanceDate}
                 onChange={(e) => setAttendanceDate(e.target.value)}
               />
@@ -367,12 +367,11 @@ export default function NewCustomerPage() {
             </Field>
 
             <Field label="Fecha de nacimiento">
-              <input
+              <DateInputDMY
                 className={INPUT_CLASS}
                 style={inputStyle()}
                 value={birthDate}
                 onChange={(e) => setBirthDate(e.target.value)}
-                type="date"
               />
             </Field>
 

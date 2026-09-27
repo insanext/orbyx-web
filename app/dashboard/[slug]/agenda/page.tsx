@@ -39,6 +39,7 @@ import {
   statusGlow,
   type AppointmentStatusKey,
 } from "../../../../lib/appointment-status-colors";
+import { DateInputDMY } from "@/components/ui/date-input-dmy";
 
 type Appointment = {
   id: string;
@@ -4914,8 +4915,7 @@ const hasActiveFilters =
                     </button>
                   ) : null}
 
-                  <input
-                    type="date"
+                  <DateInputDMY
                     value={formatDateYYYYMMDD(weekBaseDate)}
                     onChange={(e) => {
                       if (!e.target.value) return;
@@ -9166,8 +9166,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     >
                       Fecha *
                     </label>
-                    <input
-                      type="date"
+                    <DateInputDMY
                       value={formatDateYYYYMMDD(new Date(manualBookingDraft.slot_start))}
                       onChange={(e) => {
                         if (!e.target.value) return;
@@ -10021,8 +10020,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
 
 {closeForm.next_control_mode === "exact_date" ? (
   <div className="mt-3">
-    <input
-      type="date"
+    <DateInputDMY
       value={closeForm.next_control_exact_date}
       onChange={(e) =>
         setCloseForm((prev) => ({

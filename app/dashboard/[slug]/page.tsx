@@ -33,6 +33,7 @@ import {
 import { PageHeader } from "../../../components/dashboard/page-header";
 import { apiFetch } from "@/lib/api";
 import { isPlanAtLeast } from "@/lib/plans";
+import { DateInputDMY } from "@/components/ui/date-input-dmy";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -1248,8 +1249,7 @@ export default function DashboardHomePage() {
 
             {rangePreset === "custom" ? (
               <div className="flex items-center gap-1.5">
-                <input
-                  type="date"
+                <DateInputDMY
                   value={customFrom}
                   onChange={(e) => setCustomFrom(e.target.value)}
                   className="h-9 border px-2 text-xs outline-none"
@@ -1258,8 +1258,7 @@ export default function DashboardHomePage() {
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                   a
                 </span>
-                <input
-                  type="date"
+                <DateInputDMY
                   value={customTo}
                   onChange={(e) => setCustomTo(e.target.value)}
                   className="h-9 border px-2 text-xs outline-none"

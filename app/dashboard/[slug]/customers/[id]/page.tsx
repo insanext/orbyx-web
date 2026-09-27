@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Panel } from "../../../../../components/dashboard/panel";
 import { apiFetch } from "@/lib/api";
+import { DateInputDMY } from "@/components/ui/date-input-dmy";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -2591,8 +2592,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                         );
                                                       })}
                                                     </div>
-                                                    <input
-                                                      type="date"
+                                                    <DateInputDMY
                                                       value={clinicalFormState[formKey]?.controlDate ?? ""}
                                                       onChange={(e) =>
                                                         setClinicalFormState((prev) => ({
@@ -2793,7 +2793,7 @@ const lastValidAppointment = validAppointments[0] || null;
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Fecha de nacimiento</FieldLabel>
-                        <input type="date" value={editPatientForm.birth_date} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, birth_date: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                        <DateInputDMY value={editPatientForm.birth_date} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, birth_date: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                       </div>
                       <div>
                         <FieldLabel>Sexo</FieldLabel>
@@ -3014,7 +3014,7 @@ const lastValidAppointment = validAppointments[0] || null;
                             <div className="grid gap-3 sm:grid-cols-2">
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Fecha de atención</label>
-                                <input type="date" value={newNoteForm.date} onChange={(e) => setNewNoteForm((p) => ({ ...p, date: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                                <DateInputDMY value={newNoteForm.date} onChange={(e) => setNewNoteForm((p) => ({ ...p, date: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                               </div>
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Tipo de control</label>
@@ -3089,7 +3089,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                   );
                                 })}
                               </div>
-                              <input type="date" value={newNoteForm.next_control_at} onChange={(e) => setNewNoteForm((p) => ({ ...p, next_control_at: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                              <DateInputDMY value={newNoteForm.next_control_at} onChange={(e) => setNewNoteForm((p) => ({ ...p, next_control_at: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                             </div>
                           </div>
 
@@ -3399,7 +3399,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                 );
                                               })}
                                             </div>
-                                            <input type="date" value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                                            <DateInputDMY value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                                           </NoteField>
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">
@@ -3548,7 +3548,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                             </div>
                                           )}
                                           <NoteField icon={CalendarCheck} tone="green" label="Próximo control">
-                                            <input type="date" value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                                            <DateInputDMY value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                                           </NoteField>
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">

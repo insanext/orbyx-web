@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPlanLabel } from '@/lib/plans'
+import { DateInputDMY } from '@/components/ui/date-input-dmy'
 
 const BACKEND_URL = 'https://orbyx-backend.onrender.com'
 
@@ -664,8 +665,7 @@ export default function AdminTenantDetailPage() {
             <div className="mt-4 border-t border-blue-900/25 pt-3">
               <p className="text-xs text-blue-300/50 mb-1">Fin de prueba (editable mientras no tenga suscripción activa)</p>
               <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="date"
+                <DateInputDMY
                   value={trialEndInput}
                   onChange={(e) => setTrialEndInput(e.target.value)}
                   className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"

@@ -9,6 +9,7 @@ import { Panel } from "../../../../components/dashboard/panel";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { getPlanLabel, NEXT_PLAN_SUGGESTION, type PlanSlug } from "../../../../lib/plans";
+import { DateInputDMY } from "@/components/ui/date-input-dmy";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -1694,7 +1695,7 @@ export default function BranchesPage() {
                           ) : (
                             <div className="space-y-3">
                               <div className="grid gap-2 md:grid-cols-[150px_minmax(0,1fr)_150px_120px_120px_auto] md:items-end">
-                                <input type="date" value={specialDateDraft.date} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, date: e.target.value }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                                <DateInputDMY value={specialDateDraft.date} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, date: e.target.value }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
                                 <input type="text" value={specialDateDraft.label} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, label: e.target.value }))} placeholder="Motivo" className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
                                 <select value={specialDateDraft.is_closed ? "closed" : "partial"} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, is_closed: e.target.value === "closed" }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}>
                                   <option value="closed">Todo el día</option>

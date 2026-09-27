@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { DateInputDMY } from '@/components/ui/date-input-dmy'
 
 const BACKEND_URL = 'https://orbyx-backend.onrender.com'
 
@@ -376,8 +377,7 @@ export default function AdminPlanesPage() {
                   <div />
                   <label className="flex flex-col gap-1">
                     <span className="text-xs text-blue-300/50">Desde</span>
-                    <input
-                      type="date"
+                    <DateInputDMY
                       value={addon.promo_starts_at ? addon.promo_starts_at.slice(0, 10) : ''}
                       onChange={(e) => updateAddonField(addon.addon_key, 'promo_starts_at', e.target.value || null)}
                       className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
@@ -385,8 +385,7 @@ export default function AdminPlanesPage() {
                   </label>
                   <label className="flex flex-col gap-1">
                     <span className="text-xs text-blue-300/50">Hasta</span>
-                    <input
-                      type="date"
+                    <DateInputDMY
                       value={addon.promo_ends_at ? addon.promo_ends_at.slice(0, 10) : ''}
                       onChange={(e) => updateAddonField(addon.addon_key, 'promo_ends_at', e.target.value || null)}
                       className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
