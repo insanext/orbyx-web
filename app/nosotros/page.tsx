@@ -1,13 +1,13 @@
 "use client";
 
 import {
-  Bot,
   Building2,
+  CalendarCheck,
+  Clock,
   Headset,
   Link2,
-  SlidersHorizontal,
-  Sparkles,
-  Zap,
+  Quote,
+  Store,
 } from "lucide-react";
 import { PublicThemeProvider } from "@/lib/public-theme";
 import { PublicHeader } from "@/components/public/PublicHeader";
@@ -29,17 +29,17 @@ function NosotrosContent() {
     { title: "Innovación con propósito", desc: "Creamos tecnología para resolver problemas reales." },
     { title: "Confianza", desc: "Construimos relaciones transparentes y protegemos la información de nuestros clientes." },
     { title: "Simplicidad", desc: "La mejor tecnología es aquella que cualquiera puede utilizar." },
-    { title: "Evolución constante", desc: "Aprendemos, mejoramos y evolucionamos junto con la inteligencia artificial." },
+    { title: "Evolución constante", desc: "Mejoramos el producto de forma continua a partir de lo que nos piden nuestros clientes." },
     { title: "Orientación al cliente", desc: "Cada solución nace desde las necesidades reales de nuestros clientes." },
     { title: "Excelencia", desc: "Buscamos calidad, estabilidad y precisión en todo lo que desarrollamos." },
   ];
 
   const porQueOrbyx = [
-    { icon: SlidersHorizontal, title: "Soluciones personalizadas" },
-    { icon: Zap, title: "Implementación rápida" },
-    { icon: Bot, title: "Tecnología basada en Inteligencia Artificial" },
-    { icon: Link2, title: "Integración con múltiples plataformas" },
-    { icon: Building2, title: "Escalabilidad para empresas de cualquier tamaño" },
+    { icon: Store, title: "Se adapta a tu rubro" },
+    { icon: Clock, title: "Configuración rápida, sin instalar nada" },
+    { icon: CalendarCheck, title: "Reservas online 24/7 con recordatorios por WhatsApp" },
+    { icon: Link2, title: "Integración con Google Calendar y WhatsApp" },
+    { icon: Building2, title: "Crece contigo: de un profesional a varias sucursales" },
     { icon: Headset, title: "Soporte cercano y confiable" },
   ];
 
@@ -71,9 +71,9 @@ function NosotrosContent() {
                 Sobre Orbyx
               </h1>
               <p className="mt-5 text-base leading-8 text-white/85 sm:text-lg">
-                Transformamos procesos mediante Inteligencia Artificial para
-                ayudar a las empresas a trabajar de forma más eficiente,
-                rápida y segura.
+                Ayudamos a negocios de servicios a organizar sus reservas, su
+                agenda y su equipo en un solo lugar, para que dediquen menos
+                tiempo a coordinar y más tiempo a atender a sus clientes.
               </p>
             </div>
           </div>
@@ -96,17 +96,18 @@ function NosotrosContent() {
 
             <div className="mt-6 space-y-4 text-base leading-8 text-[var(--pub-text-muted)]">
               <p>
-                Orbyx nace con un propósito simple: ayudar a las empresas a
-                dejar atrás las tareas repetitivas mediante soluciones de
-                automatización e inteligencia artificial.
+                Orbyx nace con un propósito simple: que los negocios de
+                servicios dejen de perder tiempo coordinando horas por
+                teléfono, mensajes y planillas.
               </p>
               <p>
-                Creemos que la tecnología debe ser accesible, útil y capaz de
-                generar un impacto real en la productividad de cualquier
-                organización.
+                Reunimos en una sola plataforma tu página de reservas, la
+                agenda de tu equipo, tus sucursales, los recordatorios por
+                WhatsApp y el historial de tus clientes, de forma simple y
+                accesible para cualquier negocio.
               </p>
-              <p className="font-semibold text-[var(--pub-text)]">No buscamos reemplazar a las personas.</p>
-              <p className="font-semibold text-[var(--pub-text)]">Buscamos potenciar su trabajo.</p>
+              <p className="font-semibold text-[var(--pub-text)]">Menos tiempo coordinando.</p>
+              <p className="font-semibold text-[var(--pub-text)]">Más tiempo atendiendo.</p>
             </div>
           </div>
 
@@ -114,13 +115,12 @@ function NosotrosContent() {
           <div className="relative">
             <div className="absolute -inset-4 -z-10 rounded-[32px] bg-[var(--pub-accent-soft-bg)] blur-2xl" />
             <div className="rounded-[28px] border border-[var(--pub-border)] bg-[var(--pub-bg-elevated)]/60 p-8 shadow-[0_24px_60px_var(--pub-shadow-color)] backdrop-blur-xl sm:p-10">
-              <Sparkles className="h-8 w-8 text-[var(--pub-accent)]" />
+              <Quote className="h-8 w-8 text-[var(--pub-accent)]" />
               <p
                 style={serif}
                 className="mt-6 text-2xl leading-[1.3] tracking-[-0.01em] text-[var(--pub-text)] sm:text-[28px]"
               >
-                "No buscamos reemplazar a las personas. Buscamos potenciar su
-                trabajo."
+                "Menos tiempo coordinando. Más tiempo atendiendo."
               </p>
             </div>
           </div>
@@ -137,10 +137,10 @@ function NosotrosContent() {
               </h3>
               <div className="mt-3 h-px w-12 bg-[var(--pub-accent)]" />
               <p className="mt-5 text-base leading-8 text-[var(--pub-text-muted)]">
-                Desarrollar soluciones de automatización e inteligencia
-                artificial que simplifiquen procesos, optimicen recursos y
-                mejoren la productividad de las empresas mediante
-                herramientas confiables, accesibles y fáciles de implementar.
+                Darles a los negocios de servicios una herramienta simple y
+                confiable para gestionar reservas, agenda, equipo y clientes,
+                automatizando las tareas repetitivas —como las confirmaciones
+                y los recordatorios— para que puedan enfocarse en atender bien.
               </p>
             </div>
 
@@ -150,10 +150,10 @@ function NosotrosContent() {
               </h3>
               <div className="mt-3 h-px w-12 bg-[var(--pub-accent)]" />
               <p className="mt-5 text-base leading-8 text-[var(--pub-text-muted)]">
-                Posicionarnos como una empresa competitiva en automatización
-                inteligente, reconocida por desarrollar soluciones
-                innovadoras, confiables y accesibles que impulsen la
-                transformación digital de las organizaciones.
+                Ser la plataforma de referencia en Chile para que los negocios
+                de servicios —desde un profesional independiente hasta
+                empresas con varias sucursales— gestionen sus reservas y su
+                operación diaria.
               </p>
             </div>
           </div>
