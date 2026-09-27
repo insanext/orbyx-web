@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Clock,
   FileText,
+  Info,
   Landmark,
   Lock,
   Mail,
@@ -8763,15 +8764,114 @@ const appt = slotDisplayGroups[0]?.appointments[0];
           setQuickBlockDraft((prev) =>
             prev ? { ...prev, ...patch, conflicts: null, error: "" } : prev
           );
-        const optionStyle = (selected: boolean): CSSProperties => ({
-          borderColor: selected ? "var(--accent-solid, #2563eb)" : "var(--border-color)",
-          background: selected
-            ? "color-mix(in srgb, var(--accent-solid, #2563eb) 12%, var(--bg-soft))"
-            : "var(--bg-soft)",
-          color: "var(--text-main)",
-        });
-        const optionClass =
-          "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50";
+        const accent = "var(--accent-solid, #2563eb)";
+        // Fila tipo radio button. `children` se despliega DENTRO de la misma
+        // fila (anidado) cuando está seleccionada — usado por "Un rango".
+        const renderRadioOption = (opts: {
+          selected: boolean;
+          disabled?: boolean;
+          onSelect: () => void;
+          label: string;
+          meta?: string;
+          hint?: string;
+          children?: React.ReactNode;
+        }) => (
+          <div
+            className="overflow-hidden rounded-xl border transition"
+            style={{
+              borderColor: opts.selected ? accent : "var(--border-color)",
+              background: opts.selected
+                ? `color-mix(in srgb, ${accent} 10%, var(--bg-card))`
+                : "var(--bg-card)",
+            }}
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={opts.selected}
+              disabled={opts.disabled}
+              onClick={opts.onSelect}
+              className="flex w-full items-center gap-3 px-3.5 py-3 text-left text-sm font-semibold transition disabled:cursor-not-allowed"
+              style={{ color: "var(--text-main)", opacity: opts.disabled && !opts.hint ? 0.5 : 1 }}
+            >
+              <span
+                aria-hidden="true"
+                className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2"
+                style={{
+                  borderColor: opts.selected ? accent : "var(--text-muted)",
+                  opacity: opts.disabled ? 0.45 : 1,
+                }}
+              >
+                {opts.selected ? (
+                  <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
+                ) : null}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block" style={{ opacity: opts.disabled ? 0.55 : 1 }}>
+                  {opts.label}
+                </span>
+                {opts.hint ? (
+                  <span
+                    className="mt-0.5 flex items-start gap-1 text-xs font-medium leading-5"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    {opts.hint}
+                  </span>
+                ) : null}
+              </span>
+              {opts.meta ? (
+                <span
+                  className="shrink-0 text-xs font-medium"
+                  style={{ color: "var(--text-muted)", opacity: opts.disabled ? 0.55 : 1 }}
+                >
+                  {opts.meta}
+                </span>
+              ) : null}
+            </button>
+            {opts.selected && opts.children ? (
+              <div
+                className="border-t px-3.5 pb-3.5 pt-3 pl-[44px]"
+                style={{ borderColor: `color-mix(in srgb, ${accent} 30%, transparent)` }}
+              >
+                {opts.children}
+              </div>
+            ) : null}
+          </div>
+        );
+        const renderQuestionGroup = (
+          step: number,
+          title: string,
+          answered: boolean,
+          content: React.ReactNode
+        ) => (
+          <div
+            role="radiogroup"
+            aria-label={title}
+            aria-required="true"
+            className="rounded-2xl border p-4"
+            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                <span
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                  style={{ background: answered ? "rgb(16,185,129)" : accent }}
+                >
+                  {answered ? <Check className="h-3 w-3" /> : step}
+                </span>
+                {title}
+              </p>
+              <span
+                className="shrink-0 text-[11px] font-medium"
+                style={{ color: answered ? "rgb(16,185,129)" : "var(--text-muted)" }}
+              >
+                {answered ? "Listo" : "Obligatorio"}
+              </span>
+            </div>
+            <div className="grid gap-2">{content}</div>
+          </div>
+        );
 
         return (
           <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
@@ -8792,112 +8892,93 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                 </p>
               </div>
 
-              <div className="mt-5 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                  ¿Qué quieres bloquear?
-                </p>
-                <button
-                  type="button"
-                  disabled={draft.saving}
-                  onClick={() => updateDraft({ variant: "slot" })}
-                  className={optionClass}
-                  style={optionStyle(draft.variant === "slot")}
-                >
-                  <span>Solo este bloque</span>
-                  <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                    {minutesToTimeString(slotStartMinutes)} – {minutesToTimeString(slotStartMinutes + slotMinutes)}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  disabled={draft.saving}
-                  onClick={() => updateDraft({ variant: "range" })}
-                  className={optionClass}
-                  style={optionStyle(draft.variant === "range")}
-                >
-                  <span>Un rango de horario</span>
-                  <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                    Mismo día
-                  </span>
-                </button>
-                {draft.variant === "range" ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="space-y-1 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                      Desde
-                      <input
-                        type="time"
-                        step={slotMinutes * 60}
-                        value={draft.range_start}
-                        disabled={draft.saving}
-                        onChange={(event) => updateDraft({ range_start: event.target.value })}
-                        className="h-10 w-full rounded-xl border px-3 text-sm"
-                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                      />
-                    </label>
-                    <label className="space-y-1 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                      Hasta
-                      <input
-                        type="time"
-                        step={slotMinutes * 60}
-                        value={draft.range_end}
-                        disabled={draft.saving}
-                        onChange={(event) => updateDraft({ range_end: event.target.value })}
-                        className="h-10 w-full rounded-xl border px-3 text-sm"
-                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
-                      />
-                    </label>
-                    {!rangeIsValid ? (
-                      <p className="col-span-2 text-xs font-medium text-rose-500">
-                        La hora de término debe ser posterior a la de inicio.
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <button
-                  type="button"
-                  disabled={draft.saving}
-                  onClick={() => updateDraft({ variant: "day" })}
-                  className={optionClass}
-                  style={optionStyle(draft.variant === "day")}
-                >
-                  <span>Todo el día</span>
-                </button>
-              </div>
+              <div className="mt-5 grid gap-4">
+                {renderQuestionGroup(
+                  1,
+                  "¿Qué quieres bloquear?",
+                  !!draft.variant,
+                  <>
+                    {renderRadioOption({
+                      selected: draft.variant === "slot",
+                      disabled: draft.saving,
+                      onSelect: () => updateDraft({ variant: "slot" }),
+                      label: "Solo este bloque",
+                      meta: `${minutesToTimeString(slotStartMinutes)} – ${minutesToTimeString(slotStartMinutes + slotMinutes)}`,
+                    })}
+                    {renderRadioOption({
+                      selected: draft.variant === "range",
+                      disabled: draft.saving,
+                      onSelect: () => updateDraft({ variant: "range" }),
+                      label: "Un rango de horario",
+                      meta: "Mismo día",
+                      children: (
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="space-y-1 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                        Desde
+                        <input
+                          type="time"
+                          step={slotMinutes * 60}
+                          value={draft.range_start}
+                          disabled={draft.saving}
+                          onChange={(event) => updateDraft({ range_start: event.target.value })}
+                          className="h-10 w-full rounded-xl border px-3 text-sm"
+                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                        />
+                      </label>
+                      <label className="space-y-1 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                        Hasta
+                        <input
+                          type="time"
+                          step={slotMinutes * 60}
+                          value={draft.range_end}
+                          disabled={draft.saving}
+                          onChange={(event) => updateDraft({ range_end: event.target.value })}
+                          className="h-10 w-full rounded-xl border px-3 text-sm"
+                          style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                        />
+                      </label>
+                      {!rangeIsValid ? (
+                        <p className="col-span-2 text-xs font-medium text-rose-500">
+                          La hora de término debe ser posterior a la de inicio.
+                        </p>
+                      ) : null}
+                    </div>
+                      ),
+                    })}
+                    {renderRadioOption({
+                      selected: draft.variant === "day",
+                      disabled: draft.saving,
+                      onSelect: () => updateDraft({ variant: "day" }),
+                      label: "Todo el día",
+                    })}
+                  </>
+                )}
 
-              <div className="mt-5 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                  ¿A quién aplica?
-                </p>
-                <button
-                  type="button"
-                  disabled={draft.saving || !draft.staff_id}
-                  onClick={() => updateDraft({ scope: "staff" })}
-                  className={optionClass}
-                  style={optionStyle(draft.scope === "staff")}
-                >
-                  <span>
-                    {draft.staff_id
-                      ? `Solo ${getStaffName(draft.staff_id)}`
-                      : "Solo un profesional"}
-                  </span>
-                  {!draft.staff_id ? (
-                    <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                      Elige un profesional en la vista
-                    </span>
-                  ) : null}
-                </button>
-                <button
-                  type="button"
-                  disabled={draft.saving}
-                  onClick={() => updateDraft({ scope: "branch" })}
-                  className={optionClass}
-                  style={optionStyle(draft.scope === "branch")}
-                >
-                  <span>Toda la sucursal</span>
-                  <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                    {activeBranchStaffCount} profesional{activeBranchStaffCount === 1 ? "" : "es"}
-                  </span>
-                </button>
+                {renderQuestionGroup(
+                  2,
+                  "¿A quién aplica?",
+                  !!draft.scope,
+                  <>
+                    {renderRadioOption({
+                      selected: draft.scope === "staff",
+                      disabled: draft.saving || !draft.staff_id,
+                      onSelect: () => updateDraft({ scope: "staff" }),
+                      label: draft.staff_id
+                        ? `Solo ${getStaffName(draft.staff_id)}`
+                        : "Solo un profesional",
+                      hint: draft.staff_id
+                        ? undefined
+                        : "No disponible en esta vista: cambia a \u201cDía por profesional\u201d o elige un profesional en el filtro para bloquear solo a uno.",
+                    })}
+                    {renderRadioOption({
+                      selected: draft.scope === "branch",
+                      disabled: draft.saving,
+                      onSelect: () => updateDraft({ scope: "branch" }),
+                      label: "Toda la sucursal",
+                      meta: `${activeBranchStaffCount} profesional${activeBranchStaffCount === 1 ? "" : "es"}`,
+                    })}
+                  </>
+                )}
               </div>
 
               {hasConflicts ? (
