@@ -40,6 +40,8 @@ import {
   type AppointmentStatusKey,
 } from "../../../../lib/appointment-status-colors";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
+import { PhoneCountryInput } from "@/components/auth/PhoneCountryInput";
+import { isValidPhoneForCountry, toE164 } from "@/components/auth/countries";
 
 type Appointment = {
   id: string;
@@ -253,9 +255,25 @@ type ManualBookingDraft = {
   pet_species: string;
   note: string;
   // true solo cuando el modal se abre sin un slot puntual del grid (botón
-  // genérico "+" en mobile) — habilita los inputs de fecha/hora editables
-  // en el paso "form" en vez del texto de fecha/hora fijo de siempre.
+  // genérico "+" en mobile): la fecha parte en hoy y no hay hora elegida.
   slot_editable?: boolean;
+  // Fecha elegida (YYYY-MM-DD). slot_start queda "" hasta que se elige un
+  // horario de la lista de disponibles (misma fuente que la reserva
+  // pública: /api/public-slots -> GET /public/slots/:slug/:service_id).
+  date: string;
+  // "+": si hoy no tiene horarios, al cargar la semana se salta al primer
+  // día con horarios (solo la primera vez).
+  auto_pick_date?: boolean;
+  // Hora del bloque tocado que resultó no disponible para el servicio.
+  requested_time_unavailable?: string;
+};
+
+type ManualBookingSlot = {
+  slot_start: string;
+  slot_end?: string;
+  staff_id?: string;
+  is_group?: boolean;
+  available_spots?: number;
 };
 
 type FreeSlotActionDraft = {
@@ -581,6 +599,12 @@ const [calendarId, setCalendarId] = useState("");
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [loadingServices, setLoadingServices] = useState(false);
   const [modalServiceIds, setModalServiceIds] = useState<string[] | null>(null);
+  // Modal "Nueva reserva": semana visible del selector de fecha y horarios
+  // disponibles por día (YYYY-MM-DD -> slots), igual que la reserva pública.
+  const [manualWeekStartKey, setManualWeekStartKey] = useState("");
+  const [manualWeekSlots, setManualWeekSlots] = useState<Record<string, ManualBookingSlot[]>>({});
+  const [manualSlotsLoading, setManualSlotsLoading] = useState(false);
+  const [manualSlotsError, setManualSlotsError] = useState("");
 
   const [businessHours, setBusinessHours] = useState<BusinessHourItem[]>([]);
   const [staffHours, setStaffHours] = useState<StaffHourItem[]>([]);
@@ -2506,6 +2530,8 @@ next_control_custom_value:
     setManualBookingStep("form");
     setManualBookingError("");
     setModalServiceIds(null);
+    setManualWeekSlots({});
+    setManualSlotsError("");
     setManualBookingSaving(false);
     setManualBookingResult(null);
   }
@@ -2515,8 +2541,23 @@ next_control_custom_value:
     staffId?: string | null,
     opts?: { editableSlot?: boolean }
   ) {
+    // "+" (sin bloque puntual): parte en hoy, sin hora. Desde un bloque:
+    // fecha y hora del bloque, que se confirman contra los horarios
+    // disponibles al cargar (si no está disponible para el servicio, se
+    // avisa y hay que elegir otra).
+    const editable = Boolean(opts?.editableSlot);
+    const initialDate = editable
+      ? formatDateYYYYMMDD(new Date())
+      : formatDateYYYYMMDD(new Date(slotStart));
+    setManualWeekStartKey(
+      formatDateYYYYMMDD(startOfWeek(new Date(`${initialDate}T12:00:00`)))
+    );
+    setManualWeekSlots({});
+    setManualSlotsError("");
     setManualBookingDraft({
-      slot_start: slotStart,
+      slot_start: editable ? "" : slotStart,
+      date: initialDate,
+      auto_pick_date: editable,
       staff_id: staffId || selectedStaffId || "",
       staff_locked: Boolean(staffId || selectedStaffId),
       service_id: selectedServiceId || "",
@@ -2746,8 +2787,15 @@ next_control_custom_value:
   }
 
   function openManualBookingForGroup(appt: Appointment) {
+    const groupDate = formatDateYYYYMMDD(new Date(appt.start_at));
+    setManualWeekStartKey(
+      formatDateYYYYMMDD(startOfWeek(new Date(`${groupDate}T12:00:00`)))
+    );
+    setManualWeekSlots({});
+    setManualSlotsError("");
     setManualBookingDraft({
       slot_start: appt.start_at,
+      date: groupDate,
       staff_id: appt.staff_id || "",
       staff_locked: true,
       service_id: appt.service_id || "",
@@ -2768,8 +2816,12 @@ next_control_custom_value:
     if (!selectedBranchId) return "Debes seleccionar una sucursal.";
     if (!draft.staff_id) return "Debes seleccionar un profesional.";
     if (!draft.service_id) return "Debes seleccionar un servicio.";
+    if (!draft.slot_start) return "Selecciona un horario disponible.";
     if (!draft.customer_name.trim()) return "Ingresa el nombre del cliente.";
     if (!draft.customer_phone.trim()) return "Ingresa el teléfono del cliente.";
+    if (!isValidPhoneForCountry("CL", draft.customer_phone)) {
+      return "Ingresa un celular chileno válido (9 dígitos, empieza con 9).";
+    }
     if (!draft.customer_email.trim()) return "Ingresa el correo del cliente.";
     if (isVeterinaria && !draft.pet_name.trim()) {
       return "Ingresa el nombre de la mascota.";
@@ -2810,10 +2862,11 @@ next_control_custom_value:
         branch_id: selectedBranchId || null,
         service_id: manualBookingDraft.service_id,
         staff_id: manualBookingDraft.staff_id,
-        date: formatDateYYYYMMDD(new Date(manualBookingDraft.slot_start)),
+        date: manualBookingDraft.date,
         slot_start: manualBookingDraft.slot_start,
         customer_name: manualBookingDraft.customer_name.trim(),
-        customer_phone: manualBookingDraft.customer_phone.trim(),
+        // Mismo formato que la reserva pública: +56 fijo fuera del campo.
+        customer_phone: toE164("CL", manualBookingDraft.customer_phone.trim()),
         customer_email: manualBookingDraft.customer_email.trim(),
         customer_data:
           Object.keys(customerData).length > 0 ? customerData : null,
@@ -2850,6 +2903,116 @@ next_control_custom_value:
       setManualBookingSaving(false);
     }
   }
+
+  // Modal "Nueva reserva": servicios que realiza el profesional elegido
+  // (antes se cargaba solo al cambiar el select; ahora también cuando el
+  // profesional viene fijo desde la columna/filtro).
+  const manualDraftStaffId = manualBookingDraft?.staff_id || "";
+  const manualDraftServiceId = manualBookingDraft?.service_id || "";
+  const manualDraftOpen = Boolean(manualBookingDraft);
+  useEffect(() => {
+    if (!manualDraftOpen || !manualDraftStaffId || !tenantId) {
+      setModalServiceIds(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const q = new URLSearchParams({ tenant_id: tenantId, staff_id: manualDraftStaffId, branch_id: selectedBranchId });
+        const res = await apiFetch(`${BACKEND_URL}/staff-services?${q.toString()}`);
+        const data = await res.json();
+        const ids: string[] = Array.isArray(data?.staff_services)
+          ? data.staff_services.map((ss: { service_id: string }) => ss.service_id)
+          : [];
+        if (!cancelled) setModalServiceIds(ids);
+      } catch {
+        if (!cancelled) setModalServiceIds(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [manualDraftOpen, manualDraftStaffId, tenantId, selectedBranchId]);
+
+  // Modal "Nueva reserva": horarios disponibles de la semana visible para
+  // Profesional + Servicio. Misma fuente y mismo patrón que la reserva
+  // pública (loadWeekSlots en app/[Slug]/page.tsx): /api/public-slots por
+  // cada día, en paralelo. Un día sin horarios queda deshabilitado.
+  useEffect(() => {
+    if (!manualDraftOpen || !manualDraftStaffId || !manualDraftServiceId || !slug || !manualWeekStartKey) {
+      setManualWeekSlots({});
+      setManualSlotsError("");
+      setManualSlotsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const weekStart = new Date(`${manualWeekStartKey}T12:00:00`);
+    const dates = Array.from({ length: 7 }, (_, i) => formatDateYYYYMMDD(addDays(weekStart, i)));
+    setManualSlotsLoading(true);
+    setManualSlotsError("");
+
+    Promise.all(
+      dates.map(async (date) => {
+        const q = new URLSearchParams({ date, staff_id: manualDraftStaffId });
+        if (selectedBranchId) q.set("branch_id", selectedBranchId);
+        const res = await fetch(`/api/public-slots/${slug}/${manualDraftServiceId}?${q.toString()}`, {
+          cache: "no-store",
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          throw new Error(data?.error || "No se pudieron cargar los horarios disponibles.");
+        }
+        const raw: ManualBookingSlot[] = Array.isArray(data?.slots) ? data.slots : [];
+        const seen = new Set<string>();
+        const slots = raw.filter((slot) => {
+          if (seen.has(slot.slot_start)) return false;
+          seen.add(slot.slot_start);
+          return true;
+        });
+        return [date, slots] as const;
+      })
+    )
+      .then((entries) => {
+        if (cancelled) return;
+        const map: Record<string, ManualBookingSlot[]> = Object.fromEntries(entries);
+        setManualWeekSlots(map);
+        setManualBookingDraft((prev) => {
+          if (!prev || prev.staff_id !== manualDraftStaffId || prev.service_id !== manualDraftServiceId) {
+            return prev;
+          }
+          const daySlots = map[prev.date];
+          if (!daySlots) return prev; // la fecha elegida está en otra semana
+          let next = prev;
+          if (prev.slot_start) {
+            const wantedTime = getTimeKey(prev.slot_start);
+            const match = daySlots.find((slot) => getTimeKey(slot.slot_start) === wantedTime);
+            next = match
+              ? { ...next, slot_start: match.slot_start, requested_time_unavailable: "" }
+              : { ...next, slot_start: "", requested_time_unavailable: wantedTime };
+          }
+          if (next.auto_pick_date) {
+            if (daySlots.length === 0 && !next.slot_start) {
+              const firstAvailable = dates.find((date) => (map[date] || []).length > 0);
+              if (firstAvailable) next = { ...next, date: firstAvailable };
+            }
+            next = { ...next, auto_pick_date: false };
+          }
+          return next;
+        });
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setManualWeekSlots({});
+        setManualSlotsError(err instanceof Error ? err.message : "No se pudieron cargar los horarios disponibles.");
+      })
+      .finally(() => {
+        if (!cancelled) setManualSlotsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [manualDraftOpen, manualDraftStaffId, manualDraftServiceId, manualWeekStartKey, selectedBranchId, slug]);
 
   useEffect(() => {
     if (!agendaStateStorageKey || typeof window === "undefined") return;
@@ -9248,68 +9411,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   ? "¿Confirmar reserva?"
                   : "Nueva reserva"}
               </h3>
-              {manualBookingDraft.slot_editable && manualBookingStep === "form" ? (
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div>
-                    <label
-                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      Fecha *
-                    </label>
-                    <DateInputDMY
-                      value={formatDateYYYYMMDD(new Date(manualBookingDraft.slot_start))}
-                      onChange={(e) => {
-                        if (!e.target.value) return;
-                        const [y, m, d] = e.target.value.split("-").map(Number);
-                        setManualBookingDraft((prev) => {
-                          if (!prev) return prev;
-                          const updated = new Date(prev.slot_start);
-                          updated.setFullYear(y, (m || 1) - 1, d || 1);
-                          return { ...prev, slot_start: updated.toISOString() };
-                        });
-                      }}
-                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-soft)",
-                        color: "var(--text-main)",
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      Hora *
-                    </label>
-                    <input
-                      type="time"
-                      value={(() => {
-                        const d = new Date(manualBookingDraft.slot_start);
-                        return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-                      })()}
-                      onChange={(e) => {
-                        if (!e.target.value) return;
-                        const [hh, mm] = e.target.value.split(":").map(Number);
-                        setManualBookingDraft((prev) => {
-                          if (!prev) return prev;
-                          const updated = new Date(prev.slot_start);
-                          updated.setHours(hh || 0, mm || 0, 0, 0);
-                          return { ...prev, slot_start: updated.toISOString() };
-                        });
-                      }}
-                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-soft)",
-                        color: "var(--text-main)",
-                      }}
-                    />
-                  </div>
-                </div>
-              ) : manualBookingStep !== "success" ? (
+              {manualBookingStep === "confirm" && manualBookingDraft.slot_start ? (
                 <p
                   className="mt-1 text-sm leading-6"
                   style={{ color: "var(--text-muted)" }}
@@ -9364,85 +9466,283 @@ const appt = slotDisplayGroups[0]?.appointments[0];
               </div>
             ) : manualBookingStep === "form" ? (
               <div className="space-y-3">
-                {!manualBookingDraft.staff_locked ? (
-                  <div>
-                    <label
-                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      Profesional *
-                    </label>
-                    <select
-                      value={manualBookingDraft.staff_id}
-                      onChange={async (event) => {
-                        const newStaffId = event.target.value;
-                        setManualBookingDraft((prev) =>
-                          prev ? { ...prev, staff_id: newStaffId, service_id: "" } : prev
-                        );
-                        if (!newStaffId) {
-                          setModalServiceIds(null);
-                          return;
-                        }
-                        try {
-                          const q = new URLSearchParams({ tenant_id: tenantId, staff_id: newStaffId, branch_id: selectedBranchId });
-                          const res = await apiFetch(`${BACKEND_URL}/staff-services?${q.toString()}`);
-                          const data = await res.json();
-                          const ids: string[] = Array.isArray(data?.staff_services)
-                            ? data.staff_services.map((ss: any) => ss.service_id as string)
-                            : [];
-                          setModalServiceIds(ids);
-                        } catch {
-                          setModalServiceIds(null);
-                        }
-                      }}
-                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-soft)",
-                        color: "var(--text-main)",
-                      }}
-                    >
-                      <option value="">Selecciona profesional</option>
-                      {staffList.map((staff) => (
-                        <option key={staff.id} value={staff.id}>
-                          {staff.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : null}
+                {(() => {
+                  // 1. Profesional -> 2. Servicio -> 3. Fecha -> 4. Hora.
+                  // Fecha y hora salen de los horarios disponibles reales
+                  // (efecto de arriba), no son de libre elección.
+                  const draft = manualBookingDraft;
+                  const labelClass = "mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]";
+                  const fieldClass = "h-10 w-full rounded-xl border px-3 text-sm outline-none transition";
+                  const fieldStyle: CSSProperties = {
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-main)",
+                  };
+                  const readyForSlots = Boolean(draft.staff_id && draft.service_id);
+                  const weekStart = manualWeekStartKey
+                    ? new Date(`${manualWeekStartKey}T12:00:00`)
+                    : startOfWeek(new Date());
+                  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+                  const currentWeekStartKey = formatDateYYYYMMDD(startOfWeek(new Date()));
+                  const todayDateKey = formatDateYYYYMMDD(new Date());
+                  const monthLabel = (() => {
+                    const text = new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(
+                      weekDates[3]
+                    );
+                    return text.charAt(0).toUpperCase() + text.slice(1);
+                  })();
+                  const daySlots = manualWeekSlots[draft.date] || [];
+                  const selectedDayInWeek = weekDates.some(
+                    (day) => formatDateYYYYMMDD(day) === draft.date
+                  );
 
-                {!manualBookingDraft.service_locked ? (
-                  <div>
-                    <label
-                      className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      Servicio *
-                    </label>
-                    <select
-                      value={manualBookingDraft.service_id}
-                      onChange={(event) =>
-                        setManualBookingDraft((prev) =>
-                          prev ? { ...prev, service_id: event.target.value } : prev
-                        )
-                      }
-                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-soft)",
-                        color: "var(--text-main)",
-                      }}
-                    >
-                      <option value="">Selecciona servicio</option>
-                      {(modalServiceIds ? services.filter((s) => modalServiceIds.includes(s.id)) : services).map((service) => (
-                        <option key={service.id} value={service.id}>
-                          {service.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : null}
+                  return (
+                    <>
+                      <div>
+                        <label className={labelClass} style={{ color: "var(--text-muted)" }}>
+                          Profesional *
+                        </label>
+                        {draft.staff_locked ? (
+                          <div className={`${fieldClass} flex items-center`} style={fieldStyle}>
+                            {getStaffName(draft.staff_id)}
+                          </div>
+                        ) : (
+                          <select
+                            value={draft.staff_id}
+                            onChange={(event) => {
+                              const newStaffId = event.target.value;
+                              setManualBookingDraft((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      staff_id: newStaffId,
+                                      service_id: prev.service_locked ? prev.service_id : "",
+                                      slot_start: "",
+                                      requested_time_unavailable: "",
+                                    }
+                                  : prev
+                              );
+                            }}
+                            className={fieldClass}
+                            style={fieldStyle}
+                          >
+                            <option value="">Selecciona profesional</option>
+                            {staffList.map((staff) => (
+                              <option key={staff.id} value={staff.id}>
+                                {staff.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className={labelClass} style={{ color: "var(--text-muted)" }}>
+                          Servicio *
+                        </label>
+                        {draft.service_locked ? (
+                          <div className={`${fieldClass} flex items-center`} style={fieldStyle}>
+                            {services.find((service) => service.id === draft.service_id)?.name || "Servicio"}
+                          </div>
+                        ) : (
+                          <select
+                            value={draft.service_id}
+                            disabled={!draft.staff_id}
+                            onChange={(event) =>
+                              setManualBookingDraft((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      service_id: event.target.value,
+                                      slot_start: "",
+                                      requested_time_unavailable: "",
+                                    }
+                                  : prev
+                              )
+                            }
+                            className={`${fieldClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                            style={fieldStyle}
+                          >
+                            <option value="">
+                              {draft.staff_id ? "Selecciona servicio" : "Primero elige profesional"}
+                            </option>
+                            {(modalServiceIds ? services.filter((s) => modalServiceIds.includes(s.id)) : services).map((service) => (
+                              <option key={service.id} value={service.id}>
+                                {service.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <label className={`${labelClass} mb-0`} style={{ color: "var(--text-muted)" }}>
+                            Fecha *
+                          </label>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              aria-label="Semana anterior"
+                              disabled={!readyForSlots || manualWeekStartKey <= currentWeekStartKey}
+                              onClick={() =>
+                                setManualWeekStartKey(formatDateYYYYMMDD(addDays(weekStart, -7)))
+                              }
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-40"
+                              style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </button>
+                            <span className="min-w-[7.5rem] text-center text-xs font-semibold" style={{ color: "var(--text-main)" }}>
+                              {monthLabel}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label="Semana siguiente"
+                              disabled={!readyForSlots}
+                              onClick={() =>
+                                setManualWeekStartKey(formatDateYYYYMMDD(addDays(weekStart, 7)))
+                              }
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-40"
+                              style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1.5">
+                          {weekDates.map((day) => {
+                            const dateKey = formatDateYYYYMMDD(day);
+                            const slotsForDay = manualWeekSlots[dateKey];
+                            const isPastDay = dateKey < todayDateKey;
+                            const hasSlots = Boolean(slotsForDay && slotsForDay.length > 0);
+                            const isDisabled =
+                              !readyForSlots || manualSlotsLoading || isPastDay || !hasSlots;
+                            const isSelected = draft.date === dateKey;
+                            return (
+                              <button
+                                key={dateKey}
+                                type="button"
+                                disabled={isDisabled}
+                                onClick={() =>
+                                  setManualBookingDraft((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          date: dateKey,
+                                          slot_start: "",
+                                          auto_pick_date: false,
+                                          requested_time_unavailable: "",
+                                        }
+                                      : prev
+                                  )
+                                }
+                                aria-pressed={isSelected}
+                                title={
+                                  readyForSlots && !manualSlotsLoading && !isPastDay && !hasSlots
+                                    ? "Sin horarios disponibles"
+                                    : undefined
+                                }
+                                className="flex flex-col items-center justify-center gap-0.5 rounded-xl border py-1.5 transition disabled:cursor-not-allowed"
+                                style={{
+                                  borderColor: isSelected ? "var(--accent-solid, #2563eb)" : "var(--border-color)",
+                                  background: isSelected
+                                    ? "var(--accent-solid, #2563eb)"
+                                    : isDisabled
+                                    ? "transparent"
+                                    : "var(--bg-soft)",
+                                  color: isSelected ? "#fff" : "var(--text-main)",
+                                  opacity: isDisabled && !isSelected ? 0.4 : 1,
+                                  textDecoration:
+                                    readyForSlots && !manualSlotsLoading && !hasSlots && !isSelected
+                                      ? "line-through"
+                                      : "none",
+                                }}
+                              >
+                                <span className="text-[10px] font-semibold uppercase">
+                                  {formatMobileShortWeekday(day)}
+                                </span>
+                                <span className="text-sm font-bold">{day.getDate()}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {!readyForSlots ? (
+                          <p className="mt-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                            Elige profesional y servicio para ver los días disponibles.
+                          </p>
+                        ) : manualSlotsError ? (
+                          <p className="mt-1.5 text-xs font-medium text-rose-500">{manualSlotsError}</p>
+                        ) : null}
+                      </div>
+
+                      <div>
+                        <label className={labelClass} style={{ color: "var(--text-muted)" }}>
+                          Hora *
+                        </label>
+                        {!readyForSlots ? (
+                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                            Los horarios aparecen al elegir profesional, servicio y fecha.
+                          </p>
+                        ) : manualSlotsLoading ? (
+                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                            Buscando horarios disponibles...
+                          </p>
+                        ) : !selectedDayInWeek ? (
+                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                            Elige un día de esta semana.
+                          </p>
+                        ) : daySlots.length === 0 ? (
+                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                            No hay horarios disponibles este día. Elige otro día.
+                          </p>
+                        ) : (
+                          <div className="grid max-h-44 grid-cols-4 gap-1.5 overflow-y-auto pr-0.5 sm:grid-cols-5">
+                            {daySlots.map((slot) => {
+                              const isSelected = draft.slot_start === slot.slot_start;
+                              return (
+                                <button
+                                  key={slot.slot_start}
+                                  type="button"
+                                  aria-pressed={isSelected}
+                                  onClick={() =>
+                                    setManualBookingDraft((prev) =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            slot_start: slot.slot_start,
+                                            requested_time_unavailable: "",
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                  className="flex h-9 flex-col items-center justify-center rounded-xl border text-sm font-semibold transition"
+                                  style={{
+                                    borderColor: isSelected ? "var(--accent-solid, #2563eb)" : "var(--border-color)",
+                                    background: isSelected ? "var(--accent-solid, #2563eb)" : "var(--bg-soft)",
+                                    color: isSelected ? "#fff" : "var(--text-main)",
+                                  }}
+                                >
+                                  <span className="leading-none">{formatHour(slot.slot_start)}</span>
+                                  {slot.is_group && typeof slot.available_spots === "number" ? (
+                                    <span className="mt-0.5 text-[9px] font-medium leading-none opacity-80">
+                                      {slot.available_spots} cupo{slot.available_spots === 1 ? "" : "s"}
+                                    </span>
+                                  ) : null}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {draft.requested_time_unavailable ? (
+                          <p className="mt-1.5 text-xs font-medium text-amber-600">
+                            Las {draft.requested_time_unavailable} no está disponible para este servicio. Elige otro horario.
+                          </p>
+                        ) : null}
+                      </div>
+                    </>
+                  );
+                })()}
 
                 <div>
                   <label
@@ -9452,6 +9752,8 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     Nombre *
                   </label>
                   <input
+                    placeholder="Ej: María González"
+                    autoComplete="off"
                     value={manualBookingDraft.customer_name}
                     onChange={(event) =>
                       setManualBookingDraft((prev) =>
@@ -9477,21 +9779,18 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     >
                       Teléfono *
                     </label>
-                    <input
+                    <PhoneCountryInput
+                      variant="theme"
+                      allowedCountries={["CL"]}
+                      iso2="CL"
+                      onIso2Change={() => {}}
                       value={manualBookingDraft.customer_phone}
-                      onChange={(event) =>
+                      onChange={(value) =>
                         setManualBookingDraft((prev) =>
-                          prev
-                            ? { ...prev, customer_phone: event.target.value }
-                            : prev
+                          prev ? { ...prev, customer_phone: value } : prev
                         )
                       }
-                      className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                      style={{
-                        borderColor: "var(--border-color)",
-                        background: "var(--bg-soft)",
-                        color: "var(--text-main)",
-                      }}
+                      required
                     />
                   </div>
 
@@ -9504,6 +9803,8 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     </label>
                     <input
                       type="email"
+                      placeholder="Ej: maria@correo.cl"
+                      autoComplete="off"
                       value={manualBookingDraft.customer_email}
                       onChange={(event) =>
                         setManualBookingDraft((prev) =>
@@ -9532,6 +9833,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                         Nombre de mascota *
                       </label>
                       <input
+                        placeholder="Ej: Luna"
                         value={manualBookingDraft.pet_name}
                         onChange={(event) =>
                           setManualBookingDraft((prev) =>
@@ -9555,6 +9857,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                         Especie *
                       </label>
                       <input
+                        placeholder="Ej: Perro"
                         value={manualBookingDraft.pet_species}
                         onChange={(event) =>
                           setManualBookingDraft((prev) =>

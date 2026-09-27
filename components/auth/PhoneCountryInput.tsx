@@ -22,7 +22,11 @@ export function PhoneCountryInput({
   // "dark": estilo original (signup, checkout-premium). "light": estilo
   // claro para calzar con el formulario público de reserva ([slug]/page.tsx),
   // que usa fondo blanco/indigo en vez del tema oscuro del onboarding.
-  variant?: "dark" | "light";
+  // "theme": usa las variables de color del dashboard (--bg-soft,
+  // --border-color, --text-main) para calzar con clásico/nocturno — usado
+  // en el modal "Nueva reserva" de la Agenda. El buscador de países (solo
+  // con más de un país permitido) cae al estilo "dark".
+  variant?: "dark" | "light" | "theme";
   // Lista opcional de códigos ISO2 a mostrar/seleccionar (ej. ["CL"]). Si se
   // omite, se comporta igual que antes (todos los países) — signup y
   // checkout-premium no la pasan y siguen sin restricción.
@@ -32,6 +36,12 @@ export function PhoneCountryInput({
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const isLight = variant === "light";
+  const isTheme = variant === "theme";
+  const themeBoxStyle = {
+    borderColor: "var(--border-color)",
+    background: "var(--bg-soft)",
+    color: "var(--text-main)",
+  };
 
   const country = getCountry(iso2);
 
@@ -59,17 +69,21 @@ export function PhoneCountryInput({
 
   return (
     <div style={{ position: "relative" }}>
-      <div className={isLight ? "flex gap-2" : undefined} style={isLight ? undefined : { display: "flex", gap: 8 }}>
+      <div className={isLight || isTheme ? "flex gap-2" : undefined} style={isLight || isTheme ? undefined : { display: "flex", gap: 8 }}>
         {isFixedCountry ? (
           <div
             className={
               isLight
                 ? "flex h-11 flex-shrink-0 items-center gap-1.5 rounded-none border border-indigo-100 bg-white px-3 text-sm text-slate-700 md:h-12 md:px-3.5"
+                : isTheme
+                ? "flex h-10 flex-shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm"
                 : undefined
             }
             style={
               isLight
                 ? undefined
+                : isTheme
+                ? themeBoxStyle
                 : {
                     display: "flex",
                     alignItems: "center",
@@ -95,11 +109,15 @@ export function PhoneCountryInput({
             className={
               isLight
                 ? "flex h-11 flex-shrink-0 items-center gap-1.5 rounded-none border border-indigo-100 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 md:h-12 md:px-3.5"
+                : isTheme
+                ? "flex h-10 flex-shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm outline-none transition"
                 : undefined
             }
             style={
               isLight
                 ? { cursor: disabled ? "not-allowed" : "pointer" }
+                : isTheme
+                ? { ...themeBoxStyle, cursor: disabled ? "not-allowed" : "pointer" }
                 : {
                     display: "flex",
                     alignItems: "center",
@@ -132,11 +150,15 @@ export function PhoneCountryInput({
           className={
             isLight
               ? "h-11 min-w-0 flex-1 rounded-none border border-indigo-100 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 md:h-12 md:px-4"
+              : isTheme
+              ? "h-10 min-w-0 flex-1 rounded-xl border px-3 text-sm outline-none transition"
               : undefined
           }
           style={
             isLight
               ? undefined
+              : isTheme
+              ? themeBoxStyle
               : {
                   flex: 1,
                   minWidth: 0,
