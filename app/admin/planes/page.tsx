@@ -41,7 +41,15 @@ type AddonConfig = {
 
 const ALL_PLANS = ['pro', 'premium', 'vip', 'platinum']
 
+// Planes vigentes (migración 3-tier 2026-08-21) para "Plan mínimo
+// requerido" / "Disponible para planes" de cada add-on -- mismos slugs que
+// PLAN_ORDER en server.js y que guarda addon_config. ALL_PLANS (arriba)
+// sigue siendo solo la lista de tarjetas de la sección Planes.
+const ADDON_PLAN_OPTIONS = ['starter', 'business', 'premium']
+
 const PLAN_LABEL: Record<string, string> = {
+  starter: 'Starter',
+  business: 'Business',
   pro: 'Pro',
   premium: 'Premium',
   vip: 'VIP',
@@ -317,7 +325,7 @@ export default function AdminPlanesPage() {
                   onChange={(e) => updateAddonField(addon.addon_key, 'min_plan', e.target.value)}
                   className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
                 >
-                  {ALL_PLANS.map((p) => (
+                  {ADDON_PLAN_OPTIONS.map((p) => (
                     <option key={p} value={p}>{PLAN_LABEL[p]}</option>
                   ))}
                 </select>
@@ -326,7 +334,7 @@ export default function AdminPlanesPage() {
               <div className="mb-3">
                 <span className="text-xs text-blue-300/50 block mb-1.5">Disponible para planes</span>
                 <div className="flex flex-wrap gap-3">
-                  {ALL_PLANS.map((p) => (
+                  {ADDON_PLAN_OPTIONS.map((p) => (
                     <ToggleField
                       key={p}
                       label={PLAN_LABEL[p]}
