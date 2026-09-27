@@ -266,6 +266,14 @@ type ManualBookingDraft = {
   auto_pick_date?: boolean;
   // Hora del bloque tocado que resultó no disponible para el servicio.
   requested_time_unavailable?: string;
+  // Abierto desde un bloque de la grilla: fecha y hora vienen fijas (solo
+  // lectura). Si la hora no cabe con el servicio elegido se libera la hora
+  // (y la fecha, si ese día no tiene ningún horario) y se sugieren los
+  // horarios más cercanos. origin_slot_start guarda el bloque original para
+  // volver a intentarlo si cambia profesional o servicio.
+  date_locked?: boolean;
+  time_locked?: boolean;
+  origin_slot_start?: string;
 };
 
 type ManualBookingSlot = {
@@ -605,6 +613,7 @@ const [calendarId, setCalendarId] = useState("");
   const [manualWeekSlots, setManualWeekSlots] = useState<Record<string, ManualBookingSlot[]>>({});
   const [manualSlotsLoading, setManualSlotsLoading] = useState(false);
   const [manualSlotsError, setManualSlotsError] = useState("");
+  const manualSuggestionScrollKeyRef = useRef("");
 
   const [businessHours, setBusinessHours] = useState<BusinessHourItem[]>([]);
   const [staffHours, setStaffHours] = useState<StaffHourItem[]>([]);
@@ -2558,6 +2567,9 @@ next_control_custom_value:
       slot_start: editable ? "" : slotStart,
       date: initialDate,
       auto_pick_date: editable,
+      date_locked: !editable,
+      time_locked: !editable,
+      origin_slot_start: editable ? "" : slotStart,
       staff_id: staffId || selectedStaffId || "",
       staff_locked: Boolean(staffId || selectedStaffId),
       service_id: selectedServiceId || "",
@@ -2572,6 +2584,32 @@ next_control_custom_value:
     });
     setManualBookingStep("form");
     setManualBookingError("");
+  }
+
+  // Al cambiar profesional/servicio en una reserva abierta desde un bloque,
+  // se vuelve a probar la fecha/hora original del bloque (fijas otra vez).
+  function restoreManualOriginSlot(draft: ManualBookingDraft): Partial<ManualBookingDraft> {
+    if (!draft.origin_slot_start) {
+      return { slot_start: "", requested_time_unavailable: "" };
+    }
+    const originDate = formatDateYYYYMMDD(new Date(draft.origin_slot_start));
+    return {
+      slot_start: draft.origin_slot_start,
+      date: originDate,
+      date_locked: true,
+      time_locked: true,
+      requested_time_unavailable: "",
+    };
+  }
+
+  // La franja semanal vuelve a la semana del bloque original (el usuario
+  // pudo haber navegado a otra semana tras liberarse la fecha).
+  function syncManualWeekToOrigin(draft: ManualBookingDraft) {
+    if (!draft.origin_slot_start) return;
+    const originDate = formatDateYYYYMMDD(new Date(draft.origin_slot_start));
+    setManualWeekStartKey(
+      formatDateYYYYMMDD(startOfWeek(new Date(`${originDate}T12:00:00`)))
+    );
   }
 
   function openFreeSlotActions(slotStart: string, staffId?: string | null) {
@@ -2796,6 +2834,9 @@ next_control_custom_value:
     setManualBookingDraft({
       slot_start: appt.start_at,
       date: groupDate,
+      date_locked: true,
+      time_locked: true,
+      origin_slot_start: appt.start_at,
       staff_id: appt.staff_id || "",
       staff_locked: true,
       service_id: appt.service_id || "",
@@ -2988,7 +3029,16 @@ next_control_custom_value:
             const match = daySlots.find((slot) => getTimeKey(slot.slot_start) === wantedTime);
             next = match
               ? { ...next, slot_start: match.slot_start, requested_time_unavailable: "" }
-              : { ...next, slot_start: "", requested_time_unavailable: wantedTime };
+              : {
+                  ...next,
+                  slot_start: "",
+                  requested_time_unavailable: wantedTime,
+                  // La hora del bloque pasa a ser preferencia: se libera
+                  // el selector de hora (y la fecha si ese día no tiene
+                  // ningún horario para este servicio).
+                  time_locked: false,
+                  date_locked: daySlots.length > 0 ? next.date_locked : false,
+                };
           }
           if (next.auto_pick_date) {
             if (daySlots.length === 0 && !next.slot_start) {
@@ -9492,6 +9542,30 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                     return text.charAt(0).toUpperCase() + text.slice(1);
                   })();
                   const daySlots = manualWeekSlots[draft.date] || [];
+                  // "No cabe": la hora del bloque es la preferencia; se
+                  // resaltan el horario disponible anterior y el siguiente.
+                  const preferredMinutes = draft.requested_time_unavailable
+                    ? timeStringToMinutes(draft.requested_time_unavailable)
+                    : null;
+                  const suggestedSlotStarts = new Set<string>();
+                  let primarySuggestion = "";
+                  if (preferredMinutes !== null && daySlots.length > 0) {
+                    const withMinutes = daySlots.map((slot) => ({
+                      slot,
+                      minutes: timeStringToMinutes(getTimeKey(slot.slot_start)) ?? 0,
+                    }));
+                    const before = [...withMinutes].reverse().find((item) => item.minutes < preferredMinutes);
+                    const after = withMinutes.find((item) => item.minutes > preferredMinutes);
+                    if (before) suggestedSlotStarts.add(before.slot.slot_start);
+                    if (after) suggestedSlotStarts.add(after.slot.slot_start);
+                    const nearest = [before, after]
+                      .filter((item): item is { slot: ManualBookingSlot; minutes: number } => Boolean(item))
+                      .sort(
+                        (a, b) =>
+                          Math.abs(a.minutes - preferredMinutes) - Math.abs(b.minutes - preferredMinutes)
+                      )[0];
+                    primarySuggestion = nearest ? nearest.slot.slot_start : "";
+                  }
                   const selectedDayInWeek = weekDates.some(
                     (day) => formatDateYYYYMMDD(day) === draft.date
                   );
@@ -9511,14 +9585,14 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             value={draft.staff_id}
                             onChange={(event) => {
                               const newStaffId = event.target.value;
+                              syncManualWeekToOrigin(draft);
                               setManualBookingDraft((prev) =>
                                 prev
                                   ? {
                                       ...prev,
                                       staff_id: newStaffId,
                                       service_id: prev.service_locked ? prev.service_id : "",
-                                      slot_start: "",
-                                      requested_time_unavailable: "",
+                                      ...restoreManualOriginSlot(prev),
                                     }
                                   : prev
                               );
@@ -9548,18 +9622,18 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                           <select
                             value={draft.service_id}
                             disabled={!draft.staff_id}
-                            onChange={(event) =>
+                            onChange={(event) => {
+                              syncManualWeekToOrigin(draft);
                               setManualBookingDraft((prev) =>
                                 prev
                                   ? {
                                       ...prev,
                                       service_id: event.target.value,
-                                      slot_start: "",
-                                      requested_time_unavailable: "",
+                                      ...restoreManualOriginSlot(prev),
                                     }
                                   : prev
-                              )
-                            }
+                              );
+                            }}
                             className={`${fieldClass} disabled:cursor-not-allowed disabled:opacity-60`}
                             style={fieldStyle}
                           >
@@ -9575,6 +9649,17 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                         )}
                       </div>
 
+                      {draft.date_locked ? (
+                        <div>
+                          <label className={labelClass} style={{ color: "var(--text-muted)" }}>
+                            Fecha *
+                          </label>
+                          <div className={`${fieldClass} flex items-center justify-between gap-2`} style={fieldStyle}>
+                            <span>{formatLongDate(`${draft.date}T12:00:00`)}</span>
+                            <Lock className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+                          </div>
+                        </div>
+                      ) : (
                       <div>
                         <div className="mb-1 flex items-center justify-between gap-2">
                           <label className={`${labelClass} mb-0`} style={{ color: "var(--text-muted)" }}>
@@ -9675,12 +9760,29 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                           <p className="mt-1.5 text-xs font-medium text-rose-500">{manualSlotsError}</p>
                         ) : null}
                       </div>
+                      )}
 
                       <div>
                         <label className={labelClass} style={{ color: "var(--text-muted)" }}>
                           Hora *
                         </label>
-                        {!readyForSlots ? (
+                        {draft.time_locked ? (
+                          <>
+                            <div className={`${fieldClass} flex items-center justify-between gap-2`} style={fieldStyle}>
+                              <span>{formatHour(draft.slot_start || draft.origin_slot_start || "")}</span>
+                              <Lock className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+                            </div>
+                            <p className="mt-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                              {!readyForSlots
+                                ? "Elige el servicio: se verificará que quepa en este horario."
+                                : manualSlotsLoading
+                                ? "Verificando que el servicio quepa en este horario..."
+                                : manualSlotsError
+                                ? manualSlotsError
+                                : "Horario del bloque seleccionado."}
+                            </p>
+                          </>
+                        ) : !readyForSlots ? (
                           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                             Los horarios aparecen al elegir profesional, servicio y fecha.
                           </p>
@@ -9700,11 +9802,29 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                           <div className="grid max-h-44 grid-cols-4 gap-1.5 overflow-y-auto pr-0.5 sm:grid-cols-5">
                             {daySlots.map((slot) => {
                               const isSelected = draft.slot_start === slot.slot_start;
+                              const isSuggested = suggestedSlotStarts.has(slot.slot_start);
+                              const isPrimarySuggestion = slot.slot_start === primarySuggestion;
                               return (
                                 <button
                                   key={slot.slot_start}
                                   type="button"
                                   aria-pressed={isSelected}
+                                  ref={
+                                    isPrimarySuggestion
+                                      ? (el) => {
+                                          // Una sola vez por "no cabe": lleva la
+                                          // vista a la franja original y enfoca
+                                          // la alternativa más cercana.
+                                          const scrollKey = `${draft.date}|${draft.service_id}|${draft.requested_time_unavailable}`;
+                                          if (!el || manualSuggestionScrollKeyRef.current === scrollKey) return;
+                                          manualSuggestionScrollKeyRef.current = scrollKey;
+                                          requestAnimationFrame(() => {
+                                            el.scrollIntoView({ block: "center", behavior: "smooth" });
+                                            el.focus({ preventScroll: true });
+                                          });
+                                        }
+                                      : undefined
+                                  }
                                   onClick={() =>
                                     setManualBookingDraft((prev) =>
                                       prev
@@ -9718,12 +9838,26 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                   }
                                   className="flex h-9 flex-col items-center justify-center rounded-xl border text-sm font-semibold transition"
                                   style={{
-                                    borderColor: isSelected ? "var(--accent-solid, #2563eb)" : "var(--border-color)",
-                                    background: isSelected ? "var(--accent-solid, #2563eb)" : "var(--bg-soft)",
+                                    borderColor: isSelected
+                                      ? "var(--accent-solid, #2563eb)"
+                                      : isSuggested
+                                      ? "rgb(245,158,11)"
+                                      : "var(--border-color)",
+                                    background: isSelected
+                                      ? "var(--accent-solid, #2563eb)"
+                                      : isSuggested
+                                      ? "rgba(245,158,11,0.14)"
+                                      : "var(--bg-soft)",
                                     color: isSelected ? "#fff" : "var(--text-main)",
+                                    boxShadow: isSuggested && !isSelected ? "0 0 0 1px rgb(245,158,11)" : "none",
                                   }}
                                 >
                                   <span className="leading-none">{formatHour(slot.slot_start)}</span>
+                                  {isSuggested && !isSelected ? (
+                                    <span className="mt-0.5 text-[9px] font-semibold leading-none text-amber-600">
+                                      sugerido
+                                    </span>
+                                  ) : null}
                                   {slot.is_group && typeof slot.available_spots === "number" ? (
                                     <span className="mt-0.5 text-[9px] font-medium leading-none opacity-80">
                                       {slot.available_spots} cupo{slot.available_spots === 1 ? "" : "s"}
@@ -9736,7 +9870,9 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                         )}
                         {draft.requested_time_unavailable ? (
                           <p className="mt-1.5 text-xs font-medium text-amber-600">
-                            Las {draft.requested_time_unavailable} no está disponible para este servicio. Elige otro horario.
+                            {daySlots.length > 0
+                              ? `Las ${draft.requested_time_unavailable} ya no cabe con este servicio. Te marcamos los horarios más cercanos.`
+                              : `Ese día no quedan horarios para este servicio (querías las ${draft.requested_time_unavailable}). Elige otra fecha.`}
                           </p>
                         ) : null}
                       </div>
