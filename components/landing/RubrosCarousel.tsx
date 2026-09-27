@@ -22,12 +22,12 @@ const RUBROS: Rubro[] = [
   {
     name: "Peluquerías y barberías",
     phrase: "Cortes y estilo, cita a cita.",
-    image: "https://images.unsplash.com/photo-1635273051937-a0ddef9573b6?w=500&h=640&fit=crop&q=80",
+    image: "/rubros/peluquerias-y-barberias.png",
   },
   {
     name: "Talleres mecánicos",
     phrase: "Organiza tus trabajos y citas.",
-    image: "https://images.unsplash.com/photo-1615906655593-ad0386982a0f?w=500&h=640&fit=crop&q=80",
+    image: "/rubros/talleres-mecanicos.png",
   },
   {
     name: "Spa y masajes",
