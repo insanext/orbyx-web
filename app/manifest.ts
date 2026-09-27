@@ -20,6 +20,10 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "es-CL",
     background_color: "#ffffff",
     theme_color: "#0B1428",
+    // Permite que el banner "Instalar app" pregunte desde Chrome Android si
+    // esta misma PWA ya está instalada (navigator.getInstalledRelatedApps)
+    // y no mostrarse en ese caso. La URL se resuelve contra la del manifest.
+    related_applications: [{ platform: "webapp", url: "/manifest.webmanifest" }],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },

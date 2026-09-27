@@ -8,6 +8,7 @@ import { createClient } from "../../lib/supabase/client";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "../../components/ui/password-visibility-toggle";
 import { ParticleBackground } from "../../components/ui/particle-background";
+import { clearInstallBannerDismissal } from "@/components/pwa/InstallAppBanner";
 
 // Resuelve a dónde debe ir un usuario ya autenticado: provisiona el tenant si
 // es su primer login, lo manda a /onboarding si el negocio no completó el
@@ -202,6 +203,10 @@ function LoginForm() {
         setLoading(false);
         return;
       }
+
+      // Login nuevo desde la web: el banner "Instalar app" del dashboard
+      // vuelve a mostrarse aunque se haya cerrado con la ✕ antes.
+      clearInstallBannerDismissal();
 
       const userEmail = data.user?.email || email;
       const plan = data.user?.user_metadata?.plan || "pro";
