@@ -161,6 +161,10 @@ type StaffSpecialDateItem = {
   is_closed: boolean;
   start_time: string | null;
   end_time: string | null;
+  // "quick_block" = creado desde el bloqueo rápido de la Agenda;
+  // "config" (o ausente) = creado desde Staff > Fechas especiales.
+  source?: string | null;
+  quick_block_group_id?: string | null;
 };
 
 type FilterValue =
@@ -261,6 +265,34 @@ type FreeSlotActionDraft = {
 type ClosedScheduleDraft = {
   staff_id: string;
   kind: "block" | "day";
+};
+
+type QuickBlockConflict = {
+  id: string;
+  start_at: string;
+  end_at: string;
+  customer_name: string | null;
+  staff_name: string | null;
+};
+
+type QuickBlockDraft = {
+  slot_start: string;
+  staff_id: string;
+  variant: "slot" | "range" | "day" | null;
+  range_start: string;
+  range_end: string;
+  scope: "staff" | "branch" | null;
+  conflicts: QuickBlockConflict[] | null;
+  saving: boolean;
+  error: string;
+};
+
+type QuickUnblockDraft = {
+  slot_start: string;
+  staff_id: string;
+  row: StaffSpecialDateItem;
+  saving: boolean;
+  error: string;
 };
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
@@ -586,6 +618,10 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   const [manualBookingError, setManualBookingError] = useState("");
   const [freeSlotActionDraft, setFreeSlotActionDraft] =
     useState<FreeSlotActionDraft | null>(null);
+  const [quickBlockDraft, setQuickBlockDraft] =
+    useState<QuickBlockDraft | null>(null);
+  const [quickUnblockDraft, setQuickUnblockDraft] =
+    useState<QuickUnblockDraft | null>(null);
   const [closedScheduleDraft, setClosedScheduleDraft] =
     useState<ClosedScheduleDraft | null>(null);
   const [agendaView, setAgendaView] = useState<"week" | "day">("week");
@@ -1646,6 +1682,7 @@ next_control_custom_unit: "days",
 
       return (
         sameBranch &&
+        item.source !== "quick_block" &&
         item.staff_id === selectedStaffId &&
         item.date === dayKey &&
         item.is_closed &&
@@ -1745,9 +1782,12 @@ function getSelectedStaffDayWindow(day: Date) {
       businessRows
     );
 
+    // Los bloqueos rápidos (source "quick_block") se excluyen acá y se
+    // pintan aparte (getQuickBlockForSlot), para poder distinguirlos de
+    // los cierres por configuración y ofrecer "Desbloquear" solo en ellos.
     const staffRows = staffSpecialDates.filter((item) => {
       const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
-      return sameBranch && item.staff_id === selectedStaffId && item.date === dayKey;
+      return sameBranch && item.source !== "quick_block" && item.staff_id === selectedStaffId && item.date === dayKey;
     });
 
     return applySpecialDateRulesToWindow(withBusinessRules, staffRows);
@@ -1776,7 +1816,7 @@ function getSelectedStaffDayWindow(day: Date) {
 
   const specialRows = staffSpecialDates.filter((item) => {
     const sameBranch = !item.branch_id || item.branch_id === selectedBranchId;
-    return sameBranch && item.staff_id === selectedStaffId && item.date === dayKey;
+    return sameBranch && item.source !== "quick_block" && item.staff_id === selectedStaffId && item.date === dayKey;
   });
 
   return applySpecialDateRulesToWindow(baseWindow, specialRows);
@@ -2507,6 +2547,200 @@ next_control_custom_value:
       staff_id: staffId || selectedStaffId || "",
       kind,
     });
+  }
+
+  function quickBlockCoversSlot(row: StaffSpecialDateItem, slotStart: string) {
+    if (row.date !== formatDateYYYYMMDD(new Date(slotStart))) return false;
+    if (!row.start_time && !row.end_time) return true;
+
+    const slotStartMinutes = timeStringToMinutes(getTimeKey(slotStart));
+    const blockStart = timeStringToMinutes(row.start_time);
+    const blockEnd = timeStringToMinutes(row.end_time);
+    if (slotStartMinutes === null || blockStart === null || blockEnd === null) {
+      return false;
+    }
+
+    return slotStartMinutes < blockEnd && slotStartMinutes + slotMinutes > blockStart;
+  }
+
+  // Devuelve la fila de bloqueo rápido que cubre este bloque, o null.
+  // Sin profesional en la vista (semana "todos"), el bloque solo se
+  // considera bloqueado si TODOS los profesionales activos lo tienen.
+  function getQuickBlockForSlot(slotStart: string, staffId?: string | null) {
+    const candidates = staffSpecialDates.filter(
+      (row) =>
+        row.source === "quick_block" &&
+        (!row.branch_id || row.branch_id === selectedBranchId) &&
+        quickBlockCoversSlot(row, slotStart)
+    );
+    if (!candidates.length) return null;
+
+    if (staffId) {
+      return candidates.find((row) => row.staff_id === staffId) || null;
+    }
+
+    const activeStaffIds = staffList
+      .filter((staff) => staff.is_active !== false)
+      .map((staff) => staff.id);
+    if (!activeStaffIds.length) return null;
+
+    const coveredIds = new Set(candidates.map((row) => row.staff_id));
+    if (!activeStaffIds.every((id) => coveredIds.has(id))) return null;
+
+    const groupSize = (row: StaffSpecialDateItem) =>
+      candidates.filter(
+        (other) =>
+          !!row.quick_block_group_id &&
+          other.quick_block_group_id === row.quick_block_group_id
+      ).length;
+
+    return [...candidates].sort((a, b) => groupSize(b) - groupSize(a))[0];
+  }
+
+  function getQuickBlockGroupRows(row: StaffSpecialDateItem) {
+    if (!row.quick_block_group_id) return [row];
+    return staffSpecialDates.filter(
+      (other) => other.quick_block_group_id === row.quick_block_group_id
+    );
+  }
+
+  function minutesToTimeString(minutes: number) {
+    const safe = Math.max(0, Math.min(minutes, 24 * 60));
+    return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
+  }
+
+  function formatQuickBlockRange(row: StaffSpecialDateItem) {
+    if (!row.start_time && !row.end_time) return "Todo el día";
+    return `${String(row.start_time || "").slice(0, 5)} – ${String(row.end_time || "").slice(0, 5)}`;
+  }
+
+  function openQuickBlock(slotStart: string, staffId: string) {
+    const startMinutes = timeStringToMinutes(getTimeKey(slotStart)) ?? 0;
+    setQuickBlockDraft({
+      slot_start: slotStart,
+      staff_id: staffId,
+      variant: null,
+      range_start: minutesToTimeString(startMinutes),
+      range_end: minutesToTimeString(Math.min(startMinutes + 60, 23 * 60 + 59)),
+      scope: null,
+      conflicts: null,
+      saving: false,
+      error: "",
+    });
+  }
+
+  function openQuickUnblock(
+    row: StaffSpecialDateItem,
+    slotStart: string,
+    staffId?: string | null
+  ) {
+    setQuickUnblockDraft({
+      slot_start: slotStart,
+      staff_id: staffId || "",
+      row,
+      saving: false,
+      error: "",
+    });
+  }
+
+  async function submitQuickBlock(confirmOverlap: boolean) {
+    const draft = quickBlockDraft;
+    if (!draft || !draft.variant || !draft.scope) return;
+    if (!tenantId || !selectedBranchId) {
+      setQuickBlockDraft({ ...draft, error: "Selecciona una sucursal antes de bloquear." });
+      return;
+    }
+
+    let startTime: string | null = null;
+    let endTime: string | null = null;
+
+    if (draft.variant === "slot") {
+      const startMinutes = timeStringToMinutes(getTimeKey(draft.slot_start)) ?? 0;
+      startTime = minutesToTimeString(startMinutes);
+      endTime = minutesToTimeString(startMinutes + slotMinutes);
+    } else if (draft.variant === "range") {
+      const startMinutes = timeStringToMinutes(draft.range_start);
+      const endMinutes = timeStringToMinutes(draft.range_end);
+      if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+        setQuickBlockDraft({ ...draft, error: "La hora de término debe ser posterior a la de inicio." });
+        return;
+      }
+      startTime = draft.range_start;
+      endTime = draft.range_end;
+    }
+
+    setQuickBlockDraft({ ...draft, saving: true, error: "" });
+
+    try {
+      const response = await apiFetch(`${BACKEND_URL}/agenda/quick-blocks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          branch_id: selectedBranchId,
+          date: formatDateYYYYMMDD(new Date(draft.slot_start)),
+          scope: draft.scope,
+          staff_id: draft.scope === "staff" ? draft.staff_id : undefined,
+          start_time: startTime,
+          end_time: endTime,
+          confirm_overlap: confirmOverlap,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (response.status === 409 && data?.requires_confirmation) {
+        setQuickBlockDraft({
+          ...draft,
+          saving: false,
+          error: "",
+          conflicts: Array.isArray(data.conflicts) ? data.conflicts : [],
+        });
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo bloquear el horario");
+      }
+
+      await loadStaffSpecialDates(tenantId);
+      setQuickBlockDraft(null);
+      clearCalendarSelection();
+    } catch (err) {
+      setQuickBlockDraft({
+        ...draft,
+        saving: false,
+        error: err instanceof Error ? err.message : "No se pudo bloquear el horario",
+      });
+    }
+  }
+
+  async function submitQuickUnblock(row: StaffSpecialDateItem, scope: "single" | "group") {
+    const draft = quickUnblockDraft;
+    if (!draft || !row.id || !tenantId) return;
+
+    setQuickUnblockDraft({ ...draft, saving: true, error: "" });
+
+    try {
+      const response = await apiFetch(
+        `${BACKEND_URL}/agenda/quick-blocks/${row.id}?tenant_id=${tenantId}&scope=${scope}`,
+        { method: "DELETE" }
+      );
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || "No se pudo desbloquear el horario");
+      }
+
+      await loadStaffSpecialDates(tenantId);
+      setQuickUnblockDraft(null);
+      clearCalendarSelection();
+    } catch (err) {
+      setQuickUnblockDraft({
+        ...draft,
+        saving: false,
+        error: err instanceof Error ? err.message : "No se pudo desbloquear el horario",
+      });
+    }
   }
 
   function openManualBookingForGroup(appt: Appointment) {
@@ -5653,7 +5887,13 @@ const hasActiveFilters =
                                 }
 
                                 if (slotGroups.length === 0) {
-                                  const isSlotDisabled = isSlotClosed || isPastSlot;
+                                  // Bloqueo rápido solo "manda" si el bloque no
+                                  // está ya cerrado por configuración de horario.
+                                  const quickBlock =
+                                    !isSlotClosed && !isPastSlot
+                                      ? getQuickBlockForSlot(slot, staff.id)
+                                      : null;
+                                  const isSlotDisabled = isSlotClosed || isPastSlot || !!quickBlock;
                                   return (
                                         <div
                                           key={slot}
@@ -5668,6 +5908,8 @@ const hasActiveFilters =
                                             staff.id,
                                             selectedDayIsUnavailable ? "day" : "block"
                                           );
+                                        } else if (quickBlock) {
+                                          openQuickUnblock(quickBlock, slot, staff.id);
                                         } else {
                                           openFreeSlotActions(slot, staff.id);
                                         }
@@ -5682,6 +5924,9 @@ const hasActiveFilters =
                                               staff.id,
                                               selectedDayIsUnavailable ? "day" : "block"
                                             );
+                                          } else if (quickBlock) {
+                                            selectEmptySlot(slot, staff.id);
+                                            openQuickUnblock(quickBlock, slot, staff.id);
                                           } else {
                                             selectEmptySlot(slot, staff.id);
                                             openFreeSlotActions(slot, staff.id);
@@ -5733,6 +5978,14 @@ const hasActiveFilters =
                                         >
                                           <Lock className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
                                           Horario bloqueado
+                                        </span>
+                                      ) : quickBlock ? (
+                                        <span
+                                          className="flex min-w-0 items-center gap-1 truncate"
+                                          style={{ color: "var(--agenda-closed-text)" }}
+                                        >
+                                          <Lock className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
+                                          Bloqueo manual
                                         </span>
                                       ) : (
                                         ""
@@ -6427,7 +6680,13 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             }
 
                             if (!appt || slotDisplayGroups.length === 0) {
-                              const isSlotDisabled = isSlotClosed || isPastSlot;
+                              // Bloqueo rápido solo "manda" si el bloque no
+                              // está ya cerrado por configuración de horario.
+                              const quickBlock =
+                                !isSlotClosed && !isPastSlot
+                                  ? getQuickBlockForSlot(slot, selectedStaffId || null)
+                                  : null;
+                              const isSlotDisabled = isSlotClosed || isPastSlot || !!quickBlock;
                               return (
                                 <div
                                   key={slot}
@@ -6442,6 +6701,8 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                         selectedStaffId,
                                         isClosedScheduleDay ? "day" : "block"
                                       );
+                                    } else if (quickBlock) {
+                                      openQuickUnblock(quickBlock, slot, selectedStaffId);
                                     } else {
                                       openFreeSlotActions(slot, selectedStaffId);
                                     }
@@ -6456,6 +6717,9 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                           selectedStaffId,
                                           isClosedScheduleDay ? "day" : "block"
                                         );
+                                      } else if (quickBlock) {
+                                        selectEmptySlot(slot, selectedStaffId);
+                                        openQuickUnblock(quickBlock, slot, selectedStaffId);
                                       } else {
                                         selectEmptySlot(slot, selectedStaffId);
                                         openFreeSlotActions(slot, selectedStaffId);
@@ -6507,6 +6771,14 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                     >
                                       <Lock className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
                                       Horario bloqueado
+                                    </span>
+                                  ) : quickBlock ? (
+                                    <span
+                                      className="flex min-w-0 items-center gap-1 truncate"
+                                      style={{ color: "var(--agenda-closed-text)" }}
+                                    >
+                                      <Lock className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
+                                      Bloqueo manual
                                     </span>
                                   ) : (
                                     ""
@@ -8392,6 +8664,23 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   >
                     Configurar horarios
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextDraft = freeSlotActionDraft;
+                      setFreeSlotActionDraft(null);
+                      openQuickBlock(nextDraft.slot_start, nextDraft.staff_id);
+                    }}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-18px_rgba(225,29,72,0.55)]"
+                    style={{
+                      borderColor: "rgba(225,29,72,0.35)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    <Lock className="h-4 w-4" />
+                    Bloquear horario
+                  </button>
                 </>
               ) : (
                 <>
@@ -8451,6 +8740,321 @@ const appt = slotDisplayGroups[0]?.appointments[0];
           </div>
         </div>
       ) : null}
+
+      {quickBlockDraft ? (() => {
+        const draft = quickBlockDraft;
+        const activeBranchStaffCount = staffList.filter(
+          (staff) => staff.is_active !== false
+        ).length;
+        const slotStartMinutes = timeStringToMinutes(getTimeKey(draft.slot_start)) ?? 0;
+        const rangeStartMinutes = timeStringToMinutes(draft.range_start);
+        const rangeEndMinutes = timeStringToMinutes(draft.range_end);
+        const rangeIsValid =
+          draft.variant !== "range" ||
+          (rangeStartMinutes !== null &&
+            rangeEndMinutes !== null &&
+            rangeEndMinutes > rangeStartMinutes);
+        const canSubmit =
+          !!draft.variant && !!draft.scope && rangeIsValid && !draft.saving;
+        const hasConflicts = !!draft.conflicts && draft.conflicts.length > 0;
+        // Cambiar tipo/alcance invalida el aviso de reservas: se vuelve a
+        // consultar al confirmar.
+        const updateDraft = (patch: Partial<QuickBlockDraft>) =>
+          setQuickBlockDraft((prev) =>
+            prev ? { ...prev, ...patch, conflicts: null, error: "" } : prev
+          );
+        const optionStyle = (selected: boolean): CSSProperties => ({
+          borderColor: selected ? "var(--accent-solid, #2563eb)" : "var(--border-color)",
+          background: selected
+            ? "color-mix(in srgb, var(--accent-solid, #2563eb) 12%, var(--bg-soft))"
+            : "var(--bg-soft)",
+          color: "var(--text-main)",
+        });
+        const optionClass =
+          "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50";
+
+        return (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
+            <div
+              className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl border p-6 shadow-[0_24px_80px_-30px_rgba(15,23,42,0.75)]"
+              style={{
+                borderColor: "var(--border-color)",
+                background:
+                  "linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 96%, transparent), var(--bg-card))",
+              }}
+            >
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+                  Bloquear horario
+                </h3>
+                <p className="text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                  {formatLongDate(draft.slot_start)} · {formatHour(draft.slot_start)}
+                </p>
+              </div>
+
+              <div className="mt-5 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                  ¿Qué quieres bloquear?
+                </p>
+                <button
+                  type="button"
+                  disabled={draft.saving}
+                  onClick={() => updateDraft({ variant: "slot" })}
+                  className={optionClass}
+                  style={optionStyle(draft.variant === "slot")}
+                >
+                  <span>Solo este bloque</span>
+                  <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                    {minutesToTimeString(slotStartMinutes)} – {minutesToTimeString(slotStartMinutes + slotMinutes)}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={draft.saving}
+                  onClick={() => updateDraft({ variant: "range" })}
+                  className={optionClass}
+                  style={optionStyle(draft.variant === "range")}
+                >
+                  <span>Un rango de horario</span>
+                  <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                    Mismo día
+                  </span>
+                </button>
+                {draft.variant === "range" ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="space-y-1 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                      Desde
+                      <input
+                        type="time"
+                        step={slotMinutes * 60}
+                        value={draft.range_start}
+                        disabled={draft.saving}
+                        onChange={(event) => updateDraft({ range_start: event.target.value })}
+                        className="h-10 w-full rounded-xl border px-3 text-sm"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                      />
+                    </label>
+                    <label className="space-y-1 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                      Hasta
+                      <input
+                        type="time"
+                        step={slotMinutes * 60}
+                        value={draft.range_end}
+                        disabled={draft.saving}
+                        onChange={(event) => updateDraft({ range_end: event.target.value })}
+                        className="h-10 w-full rounded-xl border px-3 text-sm"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                      />
+                    </label>
+                    {!rangeIsValid ? (
+                      <p className="col-span-2 text-xs font-medium text-rose-500">
+                        La hora de término debe ser posterior a la de inicio.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={draft.saving}
+                  onClick={() => updateDraft({ variant: "day" })}
+                  className={optionClass}
+                  style={optionStyle(draft.variant === "day")}
+                >
+                  <span>Todo el día</span>
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                  ¿A quién aplica?
+                </p>
+                <button
+                  type="button"
+                  disabled={draft.saving || !draft.staff_id}
+                  onClick={() => updateDraft({ scope: "staff" })}
+                  className={optionClass}
+                  style={optionStyle(draft.scope === "staff")}
+                >
+                  <span>
+                    {draft.staff_id
+                      ? `Solo ${getStaffName(draft.staff_id)}`
+                      : "Solo un profesional"}
+                  </span>
+                  {!draft.staff_id ? (
+                    <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                      Elige un profesional en la vista
+                    </span>
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  disabled={draft.saving}
+                  onClick={() => updateDraft({ scope: "branch" })}
+                  className={optionClass}
+                  style={optionStyle(draft.scope === "branch")}
+                >
+                  <span>Toda la sucursal</span>
+                  <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                    {activeBranchStaffCount} profesional{activeBranchStaffCount === 1 ? "" : "es"}
+                  </span>
+                </button>
+              </div>
+
+              {hasConflicts ? (
+                <div
+                  className="mt-5 rounded-xl border p-4 text-sm"
+                  style={{
+                    borderColor: "rgba(245,158,11,0.45)",
+                    background: "rgba(245,158,11,0.1)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <p className="font-semibold">
+                    Hay {draft.conflicts!.length} reserva{draft.conflicts!.length === 1 ? "" : "s"} confirmada{draft.conflicts!.length === 1 ? "" : "s"} en este horario:
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs">
+                    {draft.conflicts!.map((conflict) => (
+                      <li key={conflict.id}>
+                        {formatHour(conflict.start_at)} – {formatHour(conflict.end_at)} ·{" "}
+                        {conflict.customer_name || "Cliente"}
+                        {conflict.staff_name ? ` · con ${conflict.staff_name}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                    Si bloqueas igual, estas reservas NO se cancelan: siguen en la agenda.
+                    El bloqueo solo impide que entren reservas nuevas. Si necesitas
+                    anularlas, hazlo desde cada reserva.
+                  </p>
+                </div>
+              ) : null}
+
+              {draft.error ? (
+                <p className="mt-4 text-sm font-medium text-rose-500">{draft.error}</p>
+              ) : null}
+
+              <div className="mt-6 grid gap-2.5">
+                <button
+                  type="button"
+                  disabled={!canSubmit}
+                  onClick={() => submitQuickBlock(hasConflicts)}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                >
+                  <Lock className="h-4 w-4" />
+                  {draft.saving
+                    ? "Bloqueando..."
+                    : hasConflicts
+                    ? "Bloquear de todas formas"
+                    : "Bloquear"}
+                </button>
+                <button
+                  type="button"
+                  disabled={draft.saving}
+                  onClick={() => {
+                    setQuickBlockDraft(null);
+                    openFreeSlotActions(draft.slot_start, draft.staff_id || null);
+                  }}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:-translate-y-0.5"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Volver
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
+
+      {quickUnblockDraft ? (() => {
+        const draft = quickUnblockDraft;
+        const groupRows = getQuickBlockGroupRows(draft.row);
+        const isBranchWide = groupRows.length > 1;
+        // Fila de ESTE profesional dentro del grupo (para "solo este profesional").
+        const ownRow = draft.staff_id
+          ? groupRows.find((row) => row.staff_id === draft.staff_id) || null
+          : null;
+
+        return (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
+            <div
+              className="w-full max-w-md rounded-3xl border p-6 shadow-[0_24px_80px_-30px_rgba(15,23,42,0.75)]"
+              style={{
+                borderColor: "var(--border-color)",
+                background:
+                  "linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 96%, transparent), var(--bg-card))",
+              }}
+            >
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+                  Horario bloqueado manualmente
+                </h3>
+                <p className="text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                  {formatLongDate(draft.slot_start)} · {formatQuickBlockRange(draft.row)}
+                </p>
+                <p className="text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                  {isBranchWide
+                    ? `Aplica a toda la sucursal (${groupRows.length} profesionales).`
+                    : `Aplica solo a ${getStaffName(draft.row.staff_id)}.`}
+                </p>
+              </div>
+
+              {draft.error ? (
+                <p className="mt-4 text-sm font-medium text-rose-500">{draft.error}</p>
+              ) : null}
+
+              <div className="mt-6 grid gap-2.5">
+                <button
+                  type="button"
+                  disabled={draft.saving}
+                  onClick={() => submitQuickUnblock(draft.row, "group")}
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {draft.saving
+                    ? "Desbloqueando..."
+                    : isBranchWide
+                    ? "Desbloquear toda la sucursal"
+                    : "Desbloquear"}
+                </button>
+                {isBranchWide && ownRow ? (
+                  <button
+                    type="button"
+                    disabled={draft.saving}
+                    onClick={() => submitQuickUnblock(ownRow, "single")}
+                    className="inline-flex h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-soft)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    Desbloquear solo {getStaffName(ownRow.staff_id)}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={draft.saving}
+                  onClick={() => {
+                    setQuickUnblockDraft(null);
+                    clearCalendarSelection();
+                  }}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:-translate-y-0.5"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Volver
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
 
       {manualBookingDraft ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 px-4">
