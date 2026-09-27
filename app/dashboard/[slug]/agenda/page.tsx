@@ -3598,6 +3598,56 @@ const hasActiveFilters =
   const selectedDayAvailableSlotKeys = new Set(
     selectedDayAvailableSlots.map(getTimeKey)
   );
+  // Grilla semanal mobile: mismo criterio de "cerrado por horario" que la
+  // vista semanal de escritorio (showClosedBySchedule / hasNoWorkingWindow /
+  // sin slots), calculado una vez por día para marcar con candado las
+  // celdas fuera del horario configurado.
+  const mobileWeekDayAvailability = new Map(
+    weekDays.map((day) => {
+      const dayKey = formatDateYYYYMMDD(day);
+      const dayAppointments = appointmentsByDay[dayKey] || [];
+      const dayWindow = getSelectedStaffDayWindow(day);
+      const showClosedBySchedule =
+        !!selectedStaffId &&
+        dayWindow.hasConfiguredHours &&
+        dayWindow.fullyClosed &&
+        dayAppointments.length === 0;
+      const hasNoWorkingWindow =
+        !!selectedStaffId &&
+        dayWindow.hasConfiguredHours &&
+        !dayWindow.fullyClosed &&
+        !("windows" in dayWindow) &&
+        dayWindow.startMinutes === null &&
+        dayWindow.endMinutes === null &&
+        dayAppointments.length === 0;
+      let daySlots: string[] = [];
+      if (!showClosedBySchedule && !hasNoWorkingWindow) {
+        if ("windows" in dayWindow && Array.isArray(dayWindow.windows)) {
+          daySlots = generateSlotsFromWindows(day, dayWindow.windows);
+        } else if (
+          "startMinutes" in dayWindow &&
+          "endMinutes" in dayWindow &&
+          dayWindow.startMinutes !== null &&
+          dayWindow.endMinutes !== null
+        ) {
+          daySlots = generateDaySlots(day, {
+            startMinutes: dayWindow.startMinutes,
+            endMinutes: dayWindow.endMinutes,
+          });
+        }
+      }
+      return [
+        dayKey,
+        {
+          isClosedDay:
+            showClosedBySchedule ||
+            hasNoWorkingWindow ||
+            (daySlots.length === 0 && dayAppointments.length === 0),
+          availableKeys: new Set(daySlots.map(getTimeKey)),
+        },
+      ] as const;
+    })
+  );
   const dayTitle = new Intl.DateTimeFormat("es-CL", {
     weekday: "long",
     day: "numeric",
@@ -5208,6 +5258,27 @@ const hasActiveFilters =
                               : {};
 
                             if (cellAppointments.length === 0) {
+                              // Sin espacio para el texto de escritorio
+                              // ("Horario pasado/bloqueado", "Bloqueo manual"):
+                              // se muestra solo el candado.
+                              const dayAvailability = mobileWeekDayAvailability.get(dayKey);
+                              const isClosed =
+                                !isPast &&
+                                (!dayAvailability ||
+                                  dayAvailability.isClosedDay ||
+                                  !dayAvailability.availableKeys.has(time));
+                              const quickBlock =
+                                !isPast && !isClosed
+                                  ? getQuickBlockForSlot(slotDate.toISOString(), selectedStaffId || null)
+                                  : null;
+                              const isLocked = isPast || isClosed || !!quickBlock;
+                              const cellStateLabel = isPast
+                                ? "horario pasado"
+                                : isClosed
+                                ? "horario bloqueado"
+                                : quickBlock
+                                ? "bloqueo manual"
+                                : "";
                               return (
                                 <button
                                   key={dayKey}
@@ -5216,12 +5287,22 @@ const hasActiveFilters =
                                   onClick={() => {
                                     setFlashCellKey(cellKey);
                                     setTimeout(() => {
-                                      openFreeSlotActions(slotDate.toISOString(), selectedStaffId || null);
+                                      const slotIso = slotDate.toISOString();
+                                      if (isClosed) {
+                                        openClosedScheduleActions(
+                                          selectedStaffId,
+                                          dayAvailability?.isClosedDay ? "day" : "block"
+                                        );
+                                      } else if (quickBlock) {
+                                        openQuickUnblock(quickBlock, slotIso, selectedStaffId);
+                                      } else {
+                                        openFreeSlotActions(slotIso, selectedStaffId || null);
+                                      }
                                       setFlashCellKey((prev) => (prev === cellKey ? null : prev));
                                     }, 130);
                                   }}
-                                  aria-label={`${formatMobileShortWeekday(day)} ${day.getDate()} · ${time}`}
-                                  className="border-r last:border-r-0 disabled:cursor-default"
+                                  aria-label={`${formatMobileShortWeekday(day)} ${day.getDate()} · ${time}${cellStateLabel ? ` · ${cellStateLabel}` : ""}`}
+                                  className="flex items-center justify-center border-r last:border-r-0 disabled:cursor-default"
                                   style={{
                                     height: 30,
                                     borderRightColor: "var(--border-color)",
@@ -5232,11 +5313,21 @@ const hasActiveFilters =
                                       ? "rgba(59,130,246,0.35)"
                                       : isPast
                                       ? "var(--bg-soft)"
+                                      : isLocked
+                                      ? "var(--agenda-closed-bg)"
                                       : zebraBg,
                                     transition: "background 120ms ease-out",
                                     ...todayColumnBorder,
                                   }}
-                                />
+                                >
+                                  {isLocked ? (
+                                    <Lock
+                                      aria-hidden="true"
+                                      className="h-2.5 w-2.5"
+                                      style={{ color: "var(--agenda-closed-text)", opacity: isPast ? 0.55 : 0.9 }}
+                                    />
+                                  ) : null}
+                                </button>
                               );
                             }
 

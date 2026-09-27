@@ -8,8 +8,10 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/login",
-    name: "Orbyx",
-    short_name: "Orbyx",
+    // short_name es el texto bajo el ícono en la pantalla de inicio
+    // (Android e iOS); name se usa en el diálogo de instalación y el splash.
+    name: "Agenda Orbyx",
+    short_name: "Agenda Orbyx",
     description: "Agenda y reservas para tu negocio",
     start_url: "/login",
     scope: "/",

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, DM_Sans, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/pwa/ServiceWorkerRegister";
+import WelcomeSplash, { PWA_BOOT_SCRIPT } from "@/components/pwa/WelcomeSplash";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,8 @@ export const metadata: Metadata = {
   applicationName: "Orbyx",
   appleWebApp: {
     capable: true,
-    title: "Orbyx",
+    // Texto bajo el ícono al "Agregar a inicio" en iOS (igual que short_name).
+    title: "Agenda Orbyx",
     statusBarStyle: "default",
   },
 };
@@ -44,10 +46,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: PWA_BOOT_SCRIPT puede agregar la clase
+    // "orbyx-welcome" al <html> antes de que React hidrate.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Corre antes que React: captura beforeinstallprompt (banner
+            "Instalar" del dashboard) y activa la bienvenida de la PWA. */}
+        <script dangerouslySetInnerHTML={{ __html: PWA_BOOT_SCRIPT }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} ${dmSerif.variable} antialiased`}
       >
+        <WelcomeSplash />
         {children}
         <ServiceWorkerRegister />
       </body>

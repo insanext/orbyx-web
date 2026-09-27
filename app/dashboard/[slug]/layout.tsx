@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import InstallAppBanner from "@/components/pwa/InstallAppBanner";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useParams, useRouter } from "next/navigation";
@@ -2152,6 +2153,8 @@ export default function DashboardLayout({
               </Link>
             </div>
           ) : null}
+
+          <InstallAppBanner />
 
           <main className="flex-1">
             <div className="mx-auto w-full max-w-[1600px] px-3 pb-24 pt-4 sm:px-5 sm:pb-6 sm:pt-6 lg:px-8 xl:px-10 2xl:px-12">

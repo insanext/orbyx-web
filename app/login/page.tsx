@@ -448,8 +448,10 @@ function LoginForm() {
         {/* Nota inferior */}
         <p style={{ marginTop: 20, textAlign: "center", fontSize: 12, color: "#94a3b8" }}>
           ¿No tienes cuenta?{" "}
+          {/* A /planes (no directo a /signup, que es solo Starter): el
+              usuario elige plan primero y sigue el flujo normal desde ahí. */}
           <a
-            href="/signup"
+            href="/planes"
             style={{ color: "#60a5fa", fontWeight: 600, textDecoration: "none" }}
           >
             Regístrate aquí
