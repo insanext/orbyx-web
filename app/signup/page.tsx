@@ -159,8 +159,29 @@ function SignupInner() {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
+      /* Solo mobile (<640px): más compacto para que entre más del formulario
+         sin scrollear. Escritorio no cambia. !important porque los estilos
+         de esta página son inline. Los inputs mantienen font-size 14px:
+         bajarlo más haría que iOS haga zoom al enfocar el campo. */
+      @media (max-width: 639px) {
+        .su-page { padding: 12px !important; align-items: flex-start !important; }
+        .su-card { padding: 20px 18px !important; border-radius: 16px !important; }
+        .su-logo { margin-bottom: 12px !important; }
+        .su-logo-row { margin-bottom: 4px !important; }
+        .su-logo-img { width: 28px !important; height: 28px !important; }
+        .su-logo-text { font-size: 19px !important; }
+        .su-logo-sub { font-size: 12px !important; }
+        .su-badge { margin-bottom: 10px !important; }
+        .su-title { font-size: 19px !important; margin-bottom: 4px !important; margin-top: 0 !important; }
+        .su-divider { margin-bottom: 14px !important; }
+        .su-form { gap: 10px !important; }
+        .su-input { padding-top: 9px !important; padding-bottom: 9px !important; }
+        .su-submit { padding: 11px !important; }
+        .su-divider-bottom { margin: 14px 0 !important; }
+      }
     `}</style>
     <div
+      className="su-page"
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -173,6 +194,7 @@ function SignupInner() {
     >
       <ParticleBackground />
       <div
+        className="su-card"
         style={{
           width: "100%",
           maxWidth: 440,
@@ -188,8 +210,9 @@ function SignupInner() {
         }}
       >
         {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <div className="su-logo" style={{ textAlign: "center", marginBottom: 28 }}>
           <div
+            className="su-logo-row"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -200,9 +223,11 @@ function SignupInner() {
             <img
               src="/orbyx-mark-dark.png"
               alt="Orbyx"
+              className="su-logo-img"
               style={{ width: 36, height: 36 }}
             />
             <span
+              className="su-logo-text"
               style={{
                 fontSize: 22,
                 fontWeight: 800,
@@ -213,13 +238,13 @@ function SignupInner() {
               Orbyx
             </span>
           </div>
-          <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>
+          <p className="su-logo-sub" style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>
             Plataforma de reservas inteligente
           </p>
         </div>
 
         {/* Plan badge */}
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <div className="su-badge" style={{ textAlign: "center", marginBottom: 28 }}>
           <span
             style={{
               display: "inline-flex",
@@ -242,6 +267,7 @@ function SignupInner() {
         </div>
 
         <h1
+          className="su-title"
           style={{
             fontSize: 22,
             fontWeight: 700,
@@ -255,6 +281,7 @@ function SignupInner() {
 
         {/* Divider */}
         <div
+          className="su-divider"
           style={{
             height: 1,
             background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)",
@@ -262,7 +289,7 @@ function SignupInner() {
           }}
         />
 
-        <form onSubmit={handleSignup} style={{ display: "grid", gap: 16 }}>
+        <form onSubmit={handleSignup} className="su-form" style={{ display: "grid", gap: 16 }}>
           {/* Nombre y Apellido */}
           <div style={{ position: "relative" }}>
             <span
@@ -279,6 +306,7 @@ function SignupInner() {
               👤
             </span>
             <input
+              className="su-input"
               type="text"
               placeholder="Nombre y Apellido"
               value={fullName}
@@ -329,6 +357,7 @@ function SignupInner() {
               ✉
             </span>
             <input
+              className="su-input"
               type="email"
               placeholder="correo@empresa.com"
               value={email}
@@ -369,6 +398,7 @@ function SignupInner() {
                 🔒
               </span>
               <input
+                className="su-input"
                 type={showPassword ? "text" : "password"}
                 placeholder="Contraseña"
                 value={password}
@@ -423,6 +453,7 @@ function SignupInner() {
                 🔒
               </span>
               <input
+                className="su-input"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirmar contraseña"
                 value={confirmPassword}
@@ -522,6 +553,7 @@ function SignupInner() {
 
           <button
             type="submit"
+            className="su-submit"
             disabled={loading || !passwordValid || !passwordsMatch || !captchaToken || !acceptedTerms}
             style={{
               padding: "14px",
@@ -562,6 +594,7 @@ function SignupInner() {
 
         {/* Divider */}
         <div
+          className="su-divider-bottom"
           style={{
             height: 1,
             background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)",

@@ -279,7 +279,7 @@ function FeatureRow({
   const isEffectiveLocked = feature.locked || (feature.trialLocked && isTrial);
 
   return (
-    <div className={`flex items-start gap-3 ${alignRow ? "min-h-[36px]" : ""}`}>
+    <div className={`flex items-start gap-2 sm:gap-3 ${alignRow ? "sm:min-h-[36px]" : ""}`}>
       {isEffectiveLocked ? (
         <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
       ) : (
@@ -290,7 +290,7 @@ function FeatureRow({
         />
       )}
       <span
-        className={`text-[13px] leading-5 ${
+        className={`text-[12px] leading-[1.125rem] sm:text-[13px] sm:leading-5 ${
           isEffectiveLocked
             ? "text-slate-500"
             : feature.highlight
@@ -1289,13 +1289,13 @@ function PlanesPageContent() {
                     whileHover={{ y: isSelected ? -5 : -3 }}
                     animate={{ y: isSelected ? -5 : 0, scale: isSelected ? 1.01 : 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                    className={`relative isolate flex w-[85%] shrink-0 snap-center min-h-[320px] overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:w-[360px] sm:min-h-[370px] md:w-auto md:shrink md:snap-align-none 2xl:min-h-[390px] ${
+                    className={`relative isolate flex w-[85%] shrink-0 snap-center min-h-0 overflow-hidden rounded-[22px] border p-[1px] text-left transition sm:w-[360px] sm:min-h-[370px] md:w-auto md:shrink md:snap-align-none 2xl:min-h-[390px] ${
                       isSelected
                         ? `selected-plan-neon ${plan.borderClass} bg-cyan-300/25 shadow-[0_0_0_1px_rgba(34,211,238,0.42),0_0_26px_rgba(34,211,238,0.24),0_0_42px_rgba(168,85,247,0.18),0_18px_54px_rgba(34,211,238,0.16)]`
                         : "border-white/12 bg-white/[0.035] shadow-[0_18px_50px_rgba(0,0,0,0.18)] hover:border-white/25 hover:bg-white/[0.055]"
                     }`}
                   >
-                    <div className={`${isSelected ? "selected-plan-surface" : "relative z-10 rounded-[21px]"} flex h-full w-full flex-col overflow-hidden px-4 py-4 sm:px-5 sm:py-5`}>
+                    <div className={`${isSelected ? "selected-plan-surface" : "relative z-10 rounded-[21px]"} flex h-full w-full flex-col overflow-hidden px-3.5 py-3.5 sm:px-5 sm:py-5`}>
                     <div className={`absolute inset-0 -z-10 bg-gradient-to-b ${plan.gradientClass} ${isSelected ? "opacity-100" : "opacity-40"}`} />
                     <div className="absolute inset-x-5 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
@@ -1313,7 +1313,7 @@ function PlanesPageContent() {
 
                     <div className="flex w-full flex-col">
                       <span
-                        className={`inline-flex h-12 w-12 items-center justify-center rounded-full border ${
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border sm:h-12 sm:w-12 ${
                           isSelected
                             ? "border-cyan-300/25 bg-cyan-300/14 text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,0.28)]"
                             : "border-white/10 bg-white/7"
@@ -1325,20 +1325,20 @@ function PlanesPageContent() {
                       {/* Alto fijo: nombre+descripción+precio ocupan siempre el mismo
                           espacio entre las 3 tarjetas, así el botón de abajo queda
                           en la misma línea sin importar cuánto texto tenga cada plan. */}
-                      <div className="min-h-[180px]">
-                        <p className="mt-4 text-xl font-semibold text-white">{plan.name}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-300">
+                      <div className="sm:min-h-[180px]">
+                        <p className="mt-2.5 text-lg font-semibold text-white sm:mt-4 sm:text-xl">{plan.name}</p>
+                        <p className="mt-1 text-[13px] leading-5 text-slate-300 sm:mt-2 sm:text-sm sm:leading-6">
                           {plan.subtitle}
                         </p>
 
                         {billingCycle !== "mensual" ? (
-                          <p className="mt-3 text-sm font-semibold text-slate-500 line-through">
+                          <p className="mt-2 text-sm font-semibold text-slate-500 line-through sm:mt-3">
                             {formatCLP(plan.price * billingCycleConfig[billingCycle].months)}
                           </p>
                         ) : null}
 
-                        <div className={`${billingCycle !== "mensual" ? "mt-1" : "mt-3"} flex items-end gap-1`}>
-                          <span className="text-2xl font-semibold leading-none tracking-tight text-white sm:text-[1.75rem]">
+                        <div className={`${billingCycle !== "mensual" ? "mt-1" : "mt-2 sm:mt-3"} flex items-end gap-1`}>
+                          <span className="text-xl font-semibold leading-none tracking-tight text-white sm:text-[1.75rem]">
                             {formatCLP(cycleTotalPrice(plan.price, billingCycle))}
                           </span>
                           <span className="pb-1 text-sm text-slate-400">
@@ -1348,7 +1348,7 @@ function PlanesPageContent() {
                       </div>
 
                       <div
-                        className={`mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg border px-4 text-sm font-bold transition ${
+                        className={`mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg border px-4 text-sm font-bold transition sm:mt-4 sm:h-10 ${
                           isSelected
                             ? "border-cyan-300/20 bg-[#21d6c5] text-slate-950 shadow-[0_14px_34px_rgba(34,211,238,0.2)]"
                             : "border-white/15 bg-white/[0.035] text-white"
@@ -1370,7 +1370,7 @@ function PlanesPageContent() {
                           cambiar de plan, igual que antes de este cambio). */}
                       {isSelected && !hasBillingContext && extraSupported("staff") ? (
                         <div
-                          className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2.5"
+                          className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2 sm:mt-4 sm:py-2.5"
                           onClick={(event) => event.stopPropagation()}
                         >
                           <div className="min-w-0">
@@ -1423,12 +1423,12 @@ function PlanesPageContent() {
                         </div>
                       ) : null}
 
-                      <div className="mt-4 pb-1">
+                      <div className="mt-3 pb-1 sm:mt-4">
                         {/* Filas comparables (profesionales, sucursales, WhatsApp...)
                             alineadas en el mismo orden/altura entre las 3 tarjetas.
                             Lo exclusivo de cada plan va después, sin forzar alineación. */}
                         {aligned.length > 0 ? (
-                          <div className="space-y-2.5">
+                          <div className="space-y-1.5 sm:space-y-2.5">
                             {aligned.map((feature) => (
                               <FeatureRow
                                 key={`${plan.key}-${feature.title}`}
@@ -1442,8 +1442,8 @@ function PlanesPageContent() {
                         ) : null}
                         {exclusive.length > 0 ? (
                           <div
-                            className={`space-y-2.5 ${
-                              aligned.length > 0 ? "mt-3 border-t border-white/8 pt-3" : ""
+                            className={`space-y-1.5 sm:space-y-2.5 ${
+                              aligned.length > 0 ? "mt-2 border-t border-white/8 pt-2 sm:mt-3 sm:pt-3" : ""
                             }`}
                           >
                             {exclusive.map((feature) => (
@@ -1937,7 +1937,24 @@ function PlanesPageContent() {
                   </div>
                 ) : null}
 
-                <div className="mt-4 space-y-3">
+                {/* max-md:contents: en mobile este div no forma caja, así el
+                    bloque sticky de abajo se ancla al contenido completo del
+                    panel (un sticky solo se mueve dentro de su padre). */}
+                <div className="mt-4 space-y-3 max-md:contents">
+                  {/* Mobile: total + botón quedan pegados al fondo del panel
+                      (sticky dentro del contenedor scrolleable max-h-[75vh]),
+                      visibles apenas se abre; add-ons y desglose scrollean
+                      por encima. En md+ (panel lateral) no cambia nada. */}
+                  <div className="space-y-3 max-md:sticky max-md:mt-4 max-md:bottom-0 max-md:z-10 max-md:-mx-4 max-md:border-t max-md:border-white/10 max-md:bg-[#06101d] max-md:px-4 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))] max-md:pt-3 max-md:shadow-[0_-12px_24px_rgba(2,8,20,0.6)]">
+                  <div className="flex items-baseline justify-between gap-3 md:hidden">
+                    <span className="text-xs text-slate-400">
+                      Total mensual
+                      {!hasBillingContext && billingCycle !== "mensual"
+                        ? ` · ${formatCLP(cycleTotalWithIva)} por ${cycleMonths} meses`
+                        : ""}
+                    </span>
+                    <span className="text-base font-bold text-cyan-300">{formatCLP(summaryTotal)}</span>
+                  </div>
                   {hasBillingContext && previewType === "upgrade" && preview?.requires_card ? (
                     <Link
                       href={slug ? `/dashboard/${slug}/billing` : "#"}
@@ -1979,6 +1996,7 @@ function PlanesPageContent() {
                       ? `Versión de prueba ${TRIAL_LABEL}, sin tarjeta de crédito. Cancela cuando quieras.`
                       : "Cancela o cambia de plan cuando quieras."}
                   </p>
+                  </div>
 
                   {hasBillingContext ? (
                     <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">

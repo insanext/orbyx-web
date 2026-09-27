@@ -2,11 +2,11 @@
 // del splash estático del sistema operativo, que es blanco con el ícono —
 // background_color del manifest — por eso este fondo también es blanco).
 //
-// Es CSS/SVG puro, sin JS de React: el <div> se renderiza siempre oculto y
+// Es CSS puro, sin JS de React: el <div> se renderiza siempre oculto y
 // solo se muestra si el script de arranque (PWA_BOOT_SCRIPT, en el <head>)
 // agrega la clase "orbyx-welcome" al <html>. Eso pasa únicamente cuando la
 // app corre instalada (display-mode standalone) y una vez por apertura
-// (sessionStorage). La app real carga detrás mientras tanto; a los ~1,9 s
+// (sessionStorage). La app real carga detrás mientras tanto; a los ~2 s
 // la capa se desvanece y queda con visibility:hidden (no captura toques).
 
 export const PWA_BOOT_SCRIPT = `(function(){try{
@@ -15,37 +15,49 @@ var s=window.matchMedia('(display-mode: standalone)').matches||window.navigator.
 if(s&&!sessionStorage.getItem('orbyx_welcome_shown')){sessionStorage.setItem('orbyx_welcome_shown','1');document.documentElement.classList.add('orbyx-welcome');}
 }catch(e){}})();`;
 
+// Las 3 piezas del isotipo (public/welcome/logo-{orbit,arc,crescent}.png)
+// son capas recortadas del mismo lienzo 512x512 que public/orbyx-mark.png:
+// sin transform quedan exactamente superpuestas y forman el logo original
+// (verificado pixel a pixel), así que no hay fundido final — las piezas
+// simplemente llegan a su lugar. Cada una entra desde un borde distinto
+// con la misma curva ease-in-out y terminan juntas.
+// Van como background-image (no <img>): un elemento con display:none no
+// descarga su fondo, así el resto del sitio no paga estos bytes.
 const WELCOME_CSS = `
 #orbyx-welcome{display:none}
 html.orbyx-welcome #orbyx-welcome{
-  display:flex;position:fixed;inset:0;z-index:2147483000;
-  flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  display:flex;position:fixed;inset:0;z-index:2147483000;overflow:hidden;
+  flex-direction:column;align-items:center;justify-content:center;gap:22px;
   background:#ffffff;
-  animation:ow-out .35s ease-in 1.55s forwards;
+  animation:ow-out .35s ease-in-out 1.7s forwards;
 }
-#orbyx-welcome .ow-mark{position:relative;width:150px;height:150px}
-#orbyx-welcome .ow-mark svg,#orbyx-welcome .ow-mark img{position:absolute;inset:0;width:100%;height:100%}
-#orbyx-welcome .ow-line{fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1}
-#orbyx-welcome .ow-orbit{animation:ow-draw .85s cubic-bezier(.65,0,.35,1) forwards}
-#orbyx-welcome .ow-planet{animation:ow-draw .75s cubic-bezier(.65,0,.35,1) .15s forwards}
-#orbyx-welcome svg{animation:ow-fade-out .25s ease .95s forwards}
-#orbyx-welcome img{opacity:0;animation:ow-fade-in .3s ease .85s forwards}
+#orbyx-welcome .ow-mark{position:relative;width:156px;height:156px;animation:ow-settle .5s ease-in-out 1.2s both}
+#orbyx-welcome .ow-piece{
+  position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center;
+  will-change:transform,opacity;
+  animation:ow-join 1.2s cubic-bezier(.45,0,.2,1) both;
+}
+html.orbyx-welcome #orbyx-welcome .ow-orbit{background-image:url(/welcome/logo-orbit.png);--ow-from:translate(-72vw,18vh) rotate(-35deg) scale(1.25)}
+html.orbyx-welcome #orbyx-welcome .ow-arc{background-image:url(/welcome/logo-arc.png);--ow-from:translate(62vw,-46vh) rotate(55deg) scale(.8);animation-delay:.06s}
+html.orbyx-welcome #orbyx-welcome .ow-crescent{background-image:url(/welcome/logo-crescent.png);--ow-from:translate(48vw,52vh) rotate(-70deg) scale(.8);animation-delay:.12s;animation-duration:1.08s}
 #orbyx-welcome .ow-text{
   margin:0;font-family:var(--font-dm-sans),system-ui,sans-serif;
   font-size:17px;font-weight:600;letter-spacing:-.01em;color:#0B1428;
-  opacity:0;transform:translateY(6px);
-  animation:ow-text-in .4s ease .7s forwards;
+  opacity:0;transform:translateY(8px);
+  animation:ow-text-in .45s ease-in-out 1.05s forwards;
 }
 #orbyx-welcome .ow-text span{color:#1E6FD9}
-@keyframes ow-draw{to{stroke-dashoffset:0}}
-@keyframes ow-fade-in{to{opacity:1}}
-@keyframes ow-fade-out{to{opacity:0}}
+@keyframes ow-join{
+  0%{transform:var(--ow-from);opacity:0}
+  25%{opacity:1}
+  100%{transform:none;opacity:1}
+}
+@keyframes ow-settle{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
 @keyframes ow-text-in{to{opacity:1;transform:none}}
 @keyframes ow-out{to{opacity:0;visibility:hidden}}
 @media (prefers-reduced-motion: reduce){
-  html.orbyx-welcome #orbyx-welcome{animation-delay:.9s}
-  #orbyx-welcome svg{display:none}
-  #orbyx-welcome img,#orbyx-welcome .ow-text{animation:none;opacity:1;transform:none}
+  html.orbyx-welcome #orbyx-welcome{animation-delay:1s}
+  #orbyx-welcome .ow-mark,#orbyx-welcome .ow-piece,#orbyx-welcome .ow-text{animation:none;opacity:1;transform:none}
 }
 `;
 
@@ -54,33 +66,9 @@ export default function WelcomeSplash() {
     <div id="orbyx-welcome" aria-hidden="true">
       <style dangerouslySetInnerHTML={{ __html: WELCOME_CSS }} />
       <div className="ow-mark">
-        {/* Trazo simplificado del isotipo (órbita + planeta) sobre la
-            misma caja 512x512 que public/orbyx-mark.png, que aparece
-            encima al terminar el dibujo. */}
-        <svg viewBox="0 0 512 512">
-          <defs>
-            <linearGradient id="ow-planet-grad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#0B1F4B" />
-              <stop offset="1" stopColor="#1E6FD9" />
-            </linearGradient>
-          </defs>
-          <path
-            className="ow-line ow-planet"
-            pathLength={1}
-            d="M340.8 315.4 A125 125 0 1 1 365.7 202.6"
-            stroke="url(#ow-planet-grad)"
-            strokeWidth={30}
-          />
-          <path
-            className="ow-line ow-orbit"
-            pathLength={1}
-            d="M35.2 342.4 A235 78 -20 1 1 476.8 181.6 A235 78 -20 1 1 35.2 342.4"
-            stroke="#0B1F4B"
-            strokeWidth={22}
-          />
-        </svg>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/orbyx-mark.png" alt="" />
+        <div className="ow-piece ow-orbit" />
+        <div className="ow-piece ow-arc" />
+        <div className="ow-piece ow-crescent" />
       </div>
       <p className="ow-text">
         Orbyx, <span>tu agenda ordenada</span>
