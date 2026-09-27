@@ -350,7 +350,7 @@ export const ADDON_PRICING: Record<ExtraKey, AddonPricing> = {
   wa_confirmacion: { unitPrice: 2990, price_pack2: 2691, price_pack3: 2542, packSize: 50 },
   campanas_wa: { unitPrice: 6990, price_pack2: 6291, price_pack3: 5942, packSize: 50 },
   emails_campana: { unitPrice: 1990, price_pack2: 1791, price_pack3: 1692, packSize: 500 },
-  staff: { unitPrice: 5990, price_pack2: 5391, price_pack3: 5092, packSize: 1 },
+  staff: { unitPrice: 4990, price_pack2: 4491, price_pack3: 4242, packSize: 1 },
   sucursal: { unitPrice: 9990, price_pack2: 8991, price_pack3: 8492, packSize: 1 },
   group_capacity: { unitPrice: 4990, price_pack2: 4491, price_pack3: 4242, packSize: 25 },
 };

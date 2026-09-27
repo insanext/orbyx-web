@@ -61,9 +61,9 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
   },
   staff: {
     title: "+ 1 Profesional",
-    unitPrice: 5990,
-    price_pack2: 5391,
-    price_pack3: 5092,
+    unitPrice: 4990,
+    price_pack2: 4491,
+    price_pack3: 4242,
     unitLabel: "profesional",
     usageLabel: "1 staff adicional sobre el límite del plan",
     tooltip: "Agrega un profesional adicional sobre el límite de tu plan. Cada profesional tiene su propia agenda y disponibilidad.",

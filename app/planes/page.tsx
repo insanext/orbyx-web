@@ -52,6 +52,14 @@ type BillingPreviewResponse = {
   error?: string;
 };
 
+// GET /billing/downgrade-resources: staff/sucursales activas y límites
+// efectivos del plan destino (base + add-ons que sobreviven al cambio).
+type DowngradeResourceGroup<T> = { limit: number; exceeds: boolean; items: T[] };
+type DowngradeResources = {
+  staff: DowngradeResourceGroup<{ id: string; name: string; branch_id: string | null }>;
+  branches: DowngradeResourceGroup<{ id: string; name: string }>;
+};
+
 type ExtraConfig = {
   title: string;
   short: string;
@@ -120,9 +128,9 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     title: "+ 1 Profesional",
     short: "Agrega mas miembros a tu equipo.",
     detail: "por profesional",
-    unitPrice: 5990,
-    price_pack2: 5391,
-    price_pack3: 5092,
+    unitPrice: 4990,
+    price_pack2: 4491,
+    price_pack3: 4242,
     unitLabel: "profesional",
     usageLabel: "1 staff adicional sobre el limite del plan",
     availableFrom: "Starter, Business y Premium",
@@ -376,6 +384,13 @@ function PlanesPageContent() {
   const [downgradeModalOpen, setDowngradeModalOpen] = useState(false);
   const [downgradeChecking, setDowngradeChecking] = useState(false);
   const [downgradeBlockError, setDowngradeBlockError] = useState("");
+  // Si el downgrade excede el límite de staff/sucursales del plan destino,
+  // el tenant elige acá qué mantener. Se guarda con el downgrade programado
+  // y el backend lo aplica recién el día del cambio (no se desactiva nada
+  // al marcar).
+  const [downgradeResources, setDowngradeResources] = useState<DowngradeResources | null>(null);
+  const [keepStaffIds, setKeepStaffIds] = useState<string[]>([]);
+  const [keepBranchIds, setKeepBranchIds] = useState<string[]>([]);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
   // Add-ons reales del backend (solo con tenant_id; la página pública usa
@@ -533,6 +548,53 @@ function PlanesPageContent() {
     loadPreview();
   }, [hasBillingContext, initialPlan, tenantId, selectedPlanKey]);
 
+  const previewChangeType = preview?.change_type;
+
+  useEffect(() => {
+    setDowngradeResources(null);
+    setKeepStaffIds([]);
+    setKeepBranchIds([]);
+    setDowngradeBlockError("");
+
+    if (!hasBillingContext || !tenantId || previewChangeType !== "downgrade") return;
+
+    let cancelled = false;
+
+    async function loadDowngradeResources() {
+      try {
+        setDowngradeChecking(true);
+        const res = await apiFetch(
+          `${BACKEND_URL}/billing/downgrade-resources?tenant_id=${encodeURIComponent(
+            tenantId
+          )}&new_plan=${encodeURIComponent(selectedPlanKey)}`
+        );
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "No se pudieron revisar tus profesionales y sucursales");
+        }
+
+        if (!cancelled) setDowngradeResources(data as DowngradeResources);
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setDowngradeBlockError(
+            error instanceof Error
+              ? error.message
+              : "No se pudieron validar los limites del plan. Intenta de nuevo."
+          );
+        }
+      } finally {
+        if (!cancelled) setDowngradeChecking(false);
+      }
+    }
+
+    loadDowngradeResources();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasBillingContext, tenantId, previewChangeType, selectedPlanKey]);
+
   function setExtraCount(extraKey: ExtraKey, value: number) {
     if (extraKey === "staff") setStaffExtras(value);
     else if (extraKey === "sucursal") setSucursalExtras(value);
@@ -688,49 +750,97 @@ function PlanesPageContent() {
     return { featuresLost, addonsCanceled };
   }
 
-  // Cuenta staff y sucursales activos del tenant para bloquear downgrades
-  // que dejarian la cuenta sobre el limite del plan destino.
-  async function validateDowngradeLimits(target: Plan) {
-    const branchesRes = await apiFetch(
-      `${BACKEND_URL}/branches?tenant_id=${encodeURIComponent(tenantId)}`
-    );
-    const branchesData = await branchesRes.json();
+  // Selección de qué mantener (límites efectivos del backend, no los
+  // includedStaff/includedBranches base del plan -- el backend suma los
+  // add-ons de staff/sucursal que sobreviven al cambio).
+  const staffNeedsSelection = Boolean(downgradeResources?.staff.exceeds);
+  const branchesNeedSelection = Boolean(downgradeResources?.branches.exceeds);
+  const needsDowngradeSelection = staffNeedsSelection || branchesNeedSelection;
+  const downgradeSelectionValid =
+    Boolean(downgradeResources) &&
+    (!staffNeedsSelection ||
+      (keepStaffIds.length > 0 && keepStaffIds.length <= (downgradeResources?.staff.limit ?? 0))) &&
+    (!branchesNeedSelection ||
+      (keepBranchIds.length > 0 && keepBranchIds.length <= (downgradeResources?.branches.limit ?? 0)));
 
-    if (!branchesRes.ok) {
-      throw new Error(branchesData?.error || "No se pudo validar sucursales");
-    }
-
-    const branches: { id: string; is_active?: boolean }[] =
-      branchesData?.branches || [];
-    const activeBranches = branches.filter(
-      (branch) => branch.is_active !== false
-    );
-
-    let activeStaff = 0;
-    for (const branch of activeBranches) {
-      const staffRes = await apiFetch(
-        `${BACKEND_URL}/staff?tenant_id=${encodeURIComponent(
-          tenantId
-        )}&branch_id=${encodeURIComponent(branch.id)}&active=true`
+  function toggleKeepBranch(branchId: string) {
+    if (keepBranchIds.includes(branchId)) {
+      setKeepBranchIds(keepBranchIds.filter((id) => id !== branchId));
+      // Un profesional de una sucursal que no se mantiene no puede quedar
+      // "mantenido" (el backend lo rechaza igual).
+      const staffOfBranch = new Set(
+        (downgradeResources?.staff.items || [])
+          .filter((s) => s.branch_id === branchId)
+          .map((s) => s.id)
       );
-      const staffData = await staffRes.json();
-
-      if (!staffRes.ok) {
-        throw new Error(staffData?.error || "No se pudo validar profesionales");
-      }
-
-      activeStaff += Number(staffData?.total || 0);
+      setKeepStaffIds(keepStaffIds.filter((id) => !staffOfBranch.has(id)));
+    } else {
+      setKeepBranchIds([...keepBranchIds, branchId]);
     }
+  }
 
-    if (activeStaff > target.includedStaff) {
-      return `Tienes ${activeStaff} profesionales activos. El plan ${target.name} incluye solo ${target.includedStaff}. Desactiva profesionales antes de continuar.`;
-    }
+  function toggleKeepStaff(staffId: string) {
+    setKeepStaffIds(
+      keepStaffIds.includes(staffId)
+        ? keepStaffIds.filter((id) => id !== staffId)
+        : [...keepStaffIds, staffId]
+    );
+  }
 
-    if (activeBranches.length > target.includedBranches) {
-      return `Tienes ${activeBranches.length} sucursales activas. El plan ${target.name} incluye solo ${target.includedBranches}. Desactiva sucursales antes de continuar.`;
-    }
+  function renderKeepList(
+    title: string,
+    limit: number,
+    items: { id: string; name: string; hint?: string; blocked?: boolean }[],
+    selected: string[],
+    onToggle: (id: string) => void
+  ) {
+    const full = selected.length >= limit;
 
-    return "";
+    return (
+      <div className="mt-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-white">{title}</p>
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+              selected.length > 0 && selected.length <= limit
+                ? "bg-emerald-400/15 text-emerald-200"
+                : "bg-white/10 text-slate-300"
+            }`}
+          >
+            {selected.length} de {limit} permitidos
+          </span>
+        </div>
+        <div className="mt-2 space-y-1.5">
+          {items.map((item) => {
+            const checked = selected.includes(item.id);
+            const disabled = !checked && (full || Boolean(item.blocked));
+
+            return (
+              <label
+                key={item.id}
+                className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
+                  checked
+                    ? "border-cyan-300/40 bg-cyan-400/10 text-white"
+                    : "border-white/10 bg-white/[0.03] text-slate-300"
+                } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-white/[0.06]"}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={disabled}
+                  onChange={() => onToggle(item.id)}
+                  className="h-4 w-4 shrink-0 accent-cyan-400"
+                />
+                <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                {item.hint ? (
+                  <span className="shrink-0 text-xs text-slate-400">{item.hint}</span>
+                ) : null}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   async function handleApplyPlanChange() {
@@ -738,27 +848,22 @@ function PlanesPageContent() {
       setApplyError("");
       setApplyOk("");
       setDowngradeBlockError("");
-      setDowngradeChecking(true);
 
-      try {
-        const blockMessage = await validateDowngradeLimits(selectedPlan);
-
-        if (blockMessage) {
-          setDowngradeBlockError(blockMessage);
-          return;
-        }
-
-        setDowngradeModalOpen(true);
-      } catch (error: unknown) {
+      if (!downgradeResources) {
         setDowngradeBlockError(
-          error instanceof Error
-            ? error.message
-            : "No se pudieron validar los limites del plan. Intenta de nuevo."
+          "Todavía estamos revisando tus profesionales y sucursales. Intenta de nuevo en un momento."
         );
-      } finally {
-        setDowngradeChecking(false);
+        return;
       }
 
+      if (!downgradeSelectionValid) {
+        setDowngradeBlockError(
+          "Elige qué mantener activo dentro del límite del nuevo plan para continuar."
+        );
+        return;
+      }
+
+      setDowngradeModalOpen(true);
       return;
     }
 
@@ -791,6 +896,8 @@ function PlanesPageContent() {
         body: JSON.stringify({
           tenant_id: tenantId,
           new_plan: selectedPlanKey,
+          ...(staffNeedsSelection ? { keep_staff_ids: keepStaffIds } : {}),
+          ...(branchesNeedSelection ? { keep_branch_ids: keepBranchIds } : {}),
         }),
       });
 
@@ -808,7 +915,11 @@ function PlanesPageContent() {
         await refreshAddons();
       } else if (data?.change_type === "downgrade") {
         const dateText = formatDate(data?.tenant?.scheduled_change_at);
-        setApplyOk(`Downgrade programado correctamente para el ${dateText}.`);
+        setApplyOk(
+          needsDowngradeSelection
+            ? `Downgrade programado correctamente para el ${dateText}. Ese día quedará activo solo lo que elegiste.`
+            : `Downgrade programado correctamente para el ${dateText}.`
+        );
       } else {
         setApplyOk("Cambio aplicado correctamente.");
       }
@@ -1757,6 +1868,57 @@ function PlanesPageContent() {
                   ) : null}
                 </div>
 
+                {hasBillingContext &&
+                previewType === "downgrade" &&
+                downgradeResources &&
+                needsDowngradeSelection ? (
+                  <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-500/10 p-4">
+                    <p className="text-sm font-semibold text-amber-100">
+                      Elige qué mantener activo en el plan {selectedPlan.name}
+                    </p>
+                    <p className="mt-1.5 text-xs leading-5 text-amber-50/80">
+                      Hasta el {billingEndLabel} sigues usando todo lo de tu plan
+                      actual. Ese día desactivaremos lo que no marques; podrás
+                      reactivarlo desde el panel si vuelves a un plan con más cupo.
+                    </p>
+
+                    {branchesNeedSelection
+                      ? renderKeepList(
+                          "Sucursales",
+                          downgradeResources.branches.limit,
+                          downgradeResources.branches.items,
+                          keepBranchIds,
+                          toggleKeepBranch
+                        )
+                      : null}
+
+                    {staffNeedsSelection
+                      ? renderKeepList(
+                          "Profesionales",
+                          downgradeResources.staff.limit,
+                          downgradeResources.staff.items.map((s) => {
+                            const branchName =
+                              downgradeResources.branches.items.find((b) => b.id === s.branch_id)
+                                ?.name || "";
+                            const branchDropped =
+                              branchesNeedSelection &&
+                              Boolean(s.branch_id) &&
+                              !keepBranchIds.includes(s.branch_id as string);
+                            return {
+                              id: s.id,
+                              name: s.name,
+                              hint:
+                                downgradeResources.branches.items.length > 1 ? branchName : undefined,
+                              blocked: branchDropped,
+                            };
+                          }),
+                          keepStaffIds,
+                          toggleKeepStaff
+                        )
+                      : null}
+                  </div>
+                ) : null}
+
                 {applyError ? (
                   <div className="mt-4 rounded-xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
                     {applyError}
@@ -1787,7 +1949,13 @@ function PlanesPageContent() {
                     <button
                       type="button"
                       onClick={handleApplyPlanChange}
-                      disabled={applying || previewLoading || downgradeChecking || !tenantId}
+                      disabled={
+                        applying ||
+                        previewLoading ||
+                        downgradeChecking ||
+                        !tenantId ||
+                        (previewType === "downgrade" && !downgradeSelectionValid)
+                      }
                       className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-base font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.2)] transition hover:bg-[#45eadb] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {applying
@@ -1840,18 +2008,6 @@ function PlanesPageContent() {
                   ) : null}
                 </div>
 
-                {hasBillingContext && previewType === "downgrade" ? (
-                  <div className="mt-5 rounded-xl border border-amber-300/20 bg-amber-500/10 p-4">
-                    <p className="text-sm font-semibold text-amber-100">
-                      Importante para el downgrade
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-amber-50/90">
-                      Antes de la fecha de cambio, el panel debera permitirte elegir
-                      que profesionales o sucursales quieres mantener activos dentro
-                      del nuevo limite.
-                    </p>
-                  </div>
-                ) : null}
               </div>
               </div>
             </div>
@@ -1932,6 +2088,42 @@ function PlanesPageContent() {
                 </>
               );
             })()}
+
+            {needsDowngradeSelection && downgradeResources ? (() => {
+              const droppedBranches = branchesNeedSelection
+                ? downgradeResources.branches.items.filter((b) => !keepBranchIds.includes(b.id))
+                : [];
+              const droppedStaff = staffNeedsSelection
+                ? downgradeResources.staff.items.filter((s) => !keepStaffIds.includes(s.id))
+                : [];
+              const dropped = [
+                ...droppedBranches.map((b) => `Sucursal: ${b.name}`),
+                ...droppedStaff.map((s) => `Profesional: ${s.name}`),
+              ];
+              if (dropped.length === 0) return null;
+
+              return (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-white">
+                    Se desactivarán el día del cambio
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    {dropped.map((item) => (
+                      <li
+                        key={item}
+                        className="flex items-start gap-2 text-sm leading-5 text-slate-300"
+                      >
+                        <Minus className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Hasta esa fecha siguen activos igual que hoy.
+                  </p>
+                </div>
+              );
+            })() : null}
 
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
               <button
