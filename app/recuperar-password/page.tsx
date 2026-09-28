@@ -2,8 +2,9 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Turnstile } from "@marsidev/react-turnstile";
+
+const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 export default function RecuperarPasswordPage() {
   const [email, setEmail] = useState("");
@@ -19,22 +20,30 @@ export default function RecuperarPasswordPage() {
     setSubmitting(true);
 
     try {
-      const supabase = createClient();
-      const siteUrl = window.location.origin;
-
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteUrl}/actualizar-password`,
-        captchaToken,
+      // El backend genera el link con Supabase (admin.generateLink) y lo
+      // envía por Resend desde notificaciones.orbyx.cl — antes lo enviaba
+      // el mailer de Supabase Auth y Gmail lo marcaba sospechoso/sin link.
+      const res = await fetch(`${BACKEND_URL}/auth/password-reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), captcha_token: captchaToken }),
       });
+      const data = await res.json().catch(() => null);
 
-      // Mensaje genérico sin importar el resultado real: no confirmar ni
-      // negar si el email existe en el sistema (mismo criterio de
-      // seguridad aplicado al fix de acceso a tenants ajenos).
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo procesar la solicitud. Intenta de nuevo.");
+      }
+
+      // Mensaje genérico: el backend responde ok también si el email no
+      // existe (no confirmar ni negar cuentas). Un error real de envío sí
+      // llega como !res.ok y se muestra arriba.
       setSent(true);
-    } catch {
+    } catch (err) {
       turnstileRef.current?.reset();
       setCaptchaToken("");
-      setErrorMsg("No se pudo procesar la solicitud. Intenta de nuevo.");
+      setErrorMsg(
+        err instanceof Error ? err.message : "No se pudo procesar la solicitud. Intenta de nuevo."
+      );
     } finally {
       setSubmitting(false);
     }

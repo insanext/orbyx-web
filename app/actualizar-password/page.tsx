@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PasswordVisibilityToggle } from "@/components/ui/password-visibility-toggle";
 
+const recoveryVerifications = new Map<
+  string,
+  ReturnType<ReturnType<typeof createClient>["auth"]["verifyOtp"]>
+>();
+
 export default function ActualizarPasswordPage() {
   const router = useRouter();
 
@@ -26,6 +31,32 @@ export default function ActualizarPasswordPage() {
   useEffect(() => {
     const supabase = createClient();
     let mounted = true;
+
+    // Links nuevos (correo enviado por Resend, ver POST /auth/password-reset
+    // en server.js): ?token_hash=...&type=recovery -> se canjea acá con
+    // verifyOtp, que deja la sesión de recuperación en este navegador.
+    // Los links antiguos del mailer de Supabase (?code=...) los sigue
+    // procesando el cliente solo, como antes.
+    const params = new URLSearchParams(window.location.search);
+    const tokenHash = params.get("token_hash");
+    if (tokenHash && params.get("type") === "recovery") {
+      // El token es de un solo uso: si el efecto corre dos veces (Strict
+      // Mode en dev), ambas pasadas esperan la misma verificación.
+      let verification = recoveryVerifications.get(tokenHash);
+      if (!verification) {
+        verification = supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+        recoveryVerifications.set(tokenHash, verification);
+      }
+      verification.then(({ data, error }) => {
+          if (!mounted) return;
+          // Saca el token de la URL (es de un solo uso) sin recargar.
+          window.history.replaceState(null, "", window.location.pathname);
+          setStatus(!error && data?.session ? "ready" : "invalid");
+        });
+      return () => {
+        mounted = false;
+      };
+    }
 
     const {
       data: { subscription },
