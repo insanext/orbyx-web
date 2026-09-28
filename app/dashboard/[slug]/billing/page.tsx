@@ -1649,7 +1649,19 @@ function BillingPageInner() {
       ) : null}
 
       {activeTab === "addons" ? (
-        <AddonManager tenantId={tenantId} />
+        <AddonManager
+          tenantId={tenantId}
+          onRequestCardRegistration={() => {
+            // La inscripción de tarjeta está en la pestaña Suscripción
+            // (#billing-flow-action), que no existe mientras se ve Add-ons.
+            setActiveTab("suscripcion");
+            setTimeout(() => {
+              document
+                .getElementById("billing-flow-action")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 60);
+          }}
+        />
       ) : null}
 
       {activeTab === "historial" ? (

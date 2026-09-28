@@ -263,7 +263,24 @@ function formatDMYDate(date: Date): string {
 
 const ONE_TIME_ADDON_DAYS = 30;
 
-export function AddonManager({ tenantId }: { tenantId: string }) {
+// Packs de mensajes (resets_monthly en el catálogo del backend): comprados
+// con pago único NO vencen — el saldo se usa hasta agotarse y se cobra solo
+// lo que se agrega. La capacidad (profesionales, sucursales, cupos
+// grupales) sí vence a los 30 días y se paga por la cantidad total.
+const MESSAGE_PACK_KEYS: ExtraKey[] = ["wa_confirmacion", "campanas_wa", "emails_campana"];
+function isMessagePack(key: ExtraKey): boolean {
+  return MESSAGE_PACK_KEYS.includes(key);
+}
+
+export function AddonManager({
+  tenantId,
+  onRequestCardRegistration,
+}: {
+  tenantId: string;
+  // La inscripción de tarjeta vive en la pestaña "Suscripción" de
+  // Facturación y pago: la página la abre y lleva a #billing-flow-action.
+  onRequestCardRegistration?: () => void;
+}) {
   const [serverAddonAvailability, setServerAddonAvailability] = useState<Record<
     string,
     boolean
@@ -913,16 +930,22 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
         (!addonBaseline[change.key] || addonBaseline[change.key]?.renewal_mode === "pago_unico")
     );
   const oneTimeLines = addonPendingChanges.map((change) => {
-    const net = tieredAddonChargeAmount(extraConfig[change.key], 0, change.newQty);
-    return { ...change, net, total: applyIva(net) };
+    const isPack = isMessagePack(change.key);
+    const added = change.newQty - change.baselineQty;
+    const net = isPack
+      ? tieredAddonChargeAmount(extraConfig[change.key], change.baselineQty, added)
+      : tieredAddonChargeAmount(extraConfig[change.key], 0, change.newQty);
+    return { ...change, isPack, added, net, total: applyIva(net) };
   });
+  const oneTimeHasCapacity = oneTimeLines.some((line) => !line.isPack);
+  const oneTimeHasPacks = oneTimeLines.some((line) => line.isPack);
   const oneTimeTotalWithIva = oneTimeLines.reduce((sum, line) => sum + line.total, 0);
   const oneTimeBreakdown: AmountLineBreakdown = (() => {
     let fullNet = 0;
     let net = 0;
     let iva = 0;
     oneTimeLines.forEach((line) => {
-      fullNet += line.newQty * extraConfig[line.key].unitPrice;
+      fullNet += (line.isPack ? line.added : line.newQty) * extraConfig[line.key].unitPrice;
       net += line.net;
       iva += line.total - line.net;
     });
@@ -971,6 +994,10 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   function goToCardRegistration() {
     setAddonConfirmModalOpen(false);
     setAddonChangeResults([]);
+    if (onRequestCardRegistration) {
+      onRequestCardRegistration();
+      return;
+    }
     document.getElementById("billing-flow-action")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -1303,7 +1330,9 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                     }}
                   >
                     {isOneTimeRow && !hasUnconfirmedQuantityChange(item.key)
-                      ? `Pago único${oneTimeExpiry ? ` · vence el ${oneTimeExpiry}` : ""}. ${
+                      ? `Pago único${
+                          oneTimeExpiry ? ` · vence el ${oneTimeExpiry}` : isMessagePack(item.key) ? " · saldo sin vencimiento" : ""
+                        }. ${
                           hasPaymentMethod === false
                             ? "Inscribe una tarjeta para pasar a cobro automático."
                             : "Actívalo para renovar automáticamente con tu tarjeta."
@@ -1391,7 +1420,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
         title="Add-ons"
         description={
           hasPaymentMethod === false
-            ? "Agrega capacidad extra a tu plan. Sin tarjeta inscrita, puedes pagarlos una sola vez con Flow (duran 30 días)."
+            ? "Agrega capacidad extra a tu plan. Sin tarjeta inscrita, puedes pagarlos una sola vez con Flow."
             : "Agrega capacidad extra a tu plan. Los cambios se cobran de inmediato a tu tarjeta registrada al confirmar."
         }
       >
@@ -1416,7 +1445,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
           >
             <span>
               {addonPaymentNotice === "ok"
-                ? `Pago recibido: tus add-ons quedaron activos por ${ONE_TIME_ADDON_DAYS} días.`
+                ? "Pago recibido: tus add-ons ya están activos."
                 : addonPaymentNotice === "pending"
                 ? "Flow todavía está confirmando tu pago. Tus add-ons se activarán en unos minutos."
                 : addonPaymentNotice === "review"
@@ -1696,12 +1725,22 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                               className="mt-2 border-t pt-2 text-xs leading-5"
                               style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
                             >
-                              Pago único · activo hasta el{" "}
-                              <strong style={{ color: "var(--text-main)" }}>{oneTimeExpiryLabel}</strong> · no se
-                              renueva
-                              {line.baselineQty > 0
-                                ? `. Pagas las ${line.newQty} unidades y el plazo vuelve a contar 30 días.`
-                                : ""}
+                              {line.isPack ? (
+                                <>
+                                  Pago único · los mensajes <strong style={{ color: "var(--text-main)" }}>no vencen</strong>:
+                                  se usan hasta agotarse · no se renueva
+                                  {line.baselineQty > 0 ? `. Se suman ${line.added} pack${line.added === 1 ? "" : "s"} a tu saldo.` : ""}
+                                </>
+                              ) : (
+                                <>
+                                  Pago único · activo hasta el{" "}
+                                  <strong style={{ color: "var(--text-main)" }}>{oneTimeExpiryLabel}</strong> · no se
+                                  renueva
+                                  {line.baselineQty > 0
+                                    ? `. Pagas las ${line.newQty} unidades y el plazo vuelve a contar 30 días.`
+                                    : ""}
+                                </>
+                              )}
                             </p>
                           ) : null}
                         </li>
@@ -1747,7 +1786,11 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                           >
                             {oneTimeSubmitting ? "Abriendo Flow..." : "Pagar una vez con Flow"}
                             <span className="text-[11px] font-medium opacity-85">
-                              Activos 30 días hasta el {oneTimeExpiryLabel} · no se renuevan solos
+                              {oneTimeHasCapacity && oneTimeHasPacks
+                                ? `Capacidad activa hasta el ${oneTimeExpiryLabel} · mensajes sin vencimiento`
+                                : oneTimeHasPacks
+                                ? "Los mensajes no vencen: se usan hasta agotarse · no se renuevan"
+                                : `Activos 30 días hasta el ${oneTimeExpiryLabel} · no se renuevan solos`}
                             </span>
                           </button>
                           <button
@@ -1759,7 +1802,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                           >
                             Inscribir tarjeta y activar cobro automático
                             <span className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
-                              Inscribes tu tarjeta y luego confirmas el cobro de tus add-ons
+                              Te llevamos a Suscripción para inscribir tu tarjeta; luego confirmas tus add-ons
                             </span>
                           </button>
                           <button
@@ -1790,8 +1833,10 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                           Pagar add-ons una sola vez
                         </h3>
                         <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                          Pagas ahora con Flow (tarjeta de débito, crédito u otros medios). Los add-ons quedan activos
-                          por 30 días y <strong style={{ color: "var(--text-main)" }}>no se renuevan solos</strong>.
+                          Pagas ahora con Flow (tarjeta de débito, crédito u otros medios) y{" "}
+                          <strong style={{ color: "var(--text-main)" }}>no se renueva solo</strong>.
+                          {oneTimeHasCapacity ? " Profesionales, sucursales y cupos quedan activos por 30 días." : ""}
+                          {oneTimeHasPacks ? " Los packs de mensajes no vencen: se usan hasta agotarse." : ""}
                         </p>
                         {!oneTimeEligible ? (
                           <p className="mt-2 text-xs leading-5" style={{ color: "rgb(245 158 11)" }}>
@@ -1803,9 +1848,11 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                         <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
                           <AmountBreakdownRows breakdown={oneTimeBreakdown} totalLabel="Total a pagar" />
                         </div>
-                        <p className="mt-3 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
-                          Te avisaremos por correo antes del vencimiento para que puedas renovar.
-                        </p>
+                        {oneTimeHasCapacity ? (
+                          <p className="mt-3 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                            Te avisaremos por correo antes del vencimiento para que puedas renovar.
+                          </p>
+                        ) : null}
                         {oneTimeErrorBox}
                         <div className="mt-5 flex gap-3">
                           <button
@@ -1982,7 +2029,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                       className="font-semibold"
                       style={linkStyle}
                     >
-                      o pagar una sola vez con Flow (30 días, sin renovación)
+                      o pagar una sola vez con Flow (sin renovación automática)
                     </button>
                   </p>
                 ) : null}
