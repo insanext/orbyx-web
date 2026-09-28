@@ -219,7 +219,7 @@ function AmountBreakdownRows({
   );
 }
 
-type RenewalMode = "manual" | "automatico";
+type RenewalMode = "manual" | "automatico" | "pago_unico";
 
 type AddonBaselineEntry = {
   quantity: number;
@@ -227,6 +227,8 @@ type AddonBaselineEntry = {
   renewal_mode: RenewalMode;
   low_balance_recharge_enabled: boolean;
   low_balance_recharge_consented_at: string | null;
+  // Solo pago único: fecha en que vence (tenant_addons.expires_at).
+  expires_at: string | null;
 };
 
 // Umbral de mensajes restantes que dispara la recarga automática — debe
@@ -248,7 +250,18 @@ type AddonChangeResult = {
   ok: boolean;
   timedOut?: boolean;
   error?: string;
+  // "payment_method_required" (402): sin tarjeta inscrita.
+  code?: string;
 };
+
+// dd-mm-aaaa, mismo formato que el resto del dashboard.
+function formatDMYDate(date: Date): string {
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  return `${d}-${m}-${date.getFullYear()}`;
+}
+
+const ONE_TIME_ADDON_DAYS = 30;
 
 export function AddonManager({ tenantId }: { tenantId: string }) {
   const [serverAddonAvailability, setServerAddonAvailability] = useState<Record<
@@ -276,6 +289,17 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   const [addonConfirmModalOpen, setAddonConfirmModalOpen] = useState(false);
   const [addonSubmitting, setAddonSubmitting] = useState(false);
   const [addonChangeResults, setAddonChangeResults] = useState<AddonChangeResult[]>([]);
+
+  // Pago único (Flow /payment/create) — alternativa al cobro con tarjeta.
+  // hasPaymentMethod viene de GET /billing/addons (null = desconocido).
+  const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
+  const [addonModalMode, setAddonModalMode] = useState<"card" | "one_time">("card");
+  const [oneTimeSubmitting, setOneTimeSubmitting] = useState(false);
+  const [oneTimeError, setOneTimeError] = useState("");
+  // Resultado al volver de Flow (?addon_payment=ok|pending|failed|review).
+  const [addonPaymentNotice, setAddonPaymentNotice] = useState<
+    "ok" | "pending" | "failed" | "review" | null
+  >(null);
 
   const [renewalModeUpdating, setRenewalModeUpdating] = useState<ExtraKey | null>(null);
 
@@ -316,6 +340,33 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
   // refresh lento (cola de un cobro anterior) pise una seleccion local
   // mas reciente del usuario.
   const refreshTokenRef = useRef(0);
+
+  // Vuelta desde el checkout de Flow: muestra el resultado y limpia el
+  // parámetro de la URL. Si quedó "pending" (Flow aún no confirmó), vuelve
+  // a leer los add-ons unos segundos después.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const value = params.get("addon_payment");
+    if (!value) return;
+    if (value === "ok" || value === "pending" || value === "failed" || value === "review") {
+      setAddonPaymentNotice(value);
+    }
+    params.delete("addon_payment");
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`
+    );
+    if (value === "pending") {
+      const timer = setTimeout(() => {
+        refreshAddons();
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function setExtraCount(key: ExtraKey, value: number) {
     if (key === "staff") setStaffExtras(value);
@@ -390,6 +441,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
           renewal_mode?: string | null;
           low_balance_recharge_enabled?: boolean | null;
           low_balance_recharge_consented_at?: string | null;
+          expires_at?: string | null;
         }) => {
           if (!row?.addon_key) return;
           const qty = Number(row.quantity) || 0;
@@ -397,14 +449,23 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
           baseline[row.addon_key as ExtraKey] = {
             quantity: qty,
             unit_price: row.unit_price != null ? Number(row.unit_price) : null,
-            renewal_mode: row.renewal_mode === "automatico" ? "automatico" : "manual",
+            renewal_mode:
+              row.renewal_mode === "automatico"
+                ? "automatico"
+                : row.renewal_mode === "pago_unico"
+                ? "pago_unico"
+                : "manual",
             low_balance_recharge_enabled: row.low_balance_recharge_enabled === true,
             low_balance_recharge_consented_at: row.low_balance_recharge_consented_at ?? null,
+            expires_at: row.expires_at ?? null,
           };
         }
       );
 
       setServerAddonAvailability(availability);
+      setHasPaymentMethod(
+        typeof data?.has_payment_method === "boolean" ? data.has_payment_method : null
+      );
       setAddonBaseline(baseline);
       setStaffExtras(counts.staff || 0);
       setSucursalExtras(counts.sucursal || 0);
@@ -831,6 +892,88 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     };
   }, [addonPendingChanges]);
 
+  // ---- Pago único ----
+  // Regla aprobada 2026-09-28: se paga la CANTIDAD TOTAL nueva de cada
+  // add-on (tramos desde la 1ª unidad) y vence a los 30 días del pago. El
+  // backend (POST /billing/addons/checkout) recalcula y cobra lo mismo.
+  const addonChargeRequired = addonPendingChanges.some((change) => change.chargeAmount > 0);
+  // Aumentos sobre un add-on que ya es de pago único: solo por pago único.
+  const oneTimeRequired = addonPendingChanges.some(
+    (change) =>
+      change.newQty > change.baselineQty &&
+      addonBaseline[change.key]?.renewal_mode === "pago_unico"
+  );
+  // Aplica si todos los cambios son aumentos de add-ons nuevos o de pago
+  // único (sin reducciones ni add-ons con cobro a tarjeta en la misma compra).
+  const oneTimeEligible =
+    addonPendingChanges.length > 0 &&
+    addonPendingChanges.every(
+      (change) =>
+        change.newQty > change.baselineQty &&
+        (!addonBaseline[change.key] || addonBaseline[change.key]?.renewal_mode === "pago_unico")
+    );
+  const oneTimeLines = addonPendingChanges.map((change) => {
+    const net = tieredAddonChargeAmount(extraConfig[change.key], 0, change.newQty);
+    return { ...change, net, total: applyIva(net) };
+  });
+  const oneTimeTotalWithIva = oneTimeLines.reduce((sum, line) => sum + line.total, 0);
+  const oneTimeBreakdown: AmountLineBreakdown = (() => {
+    let fullNet = 0;
+    let net = 0;
+    let iva = 0;
+    oneTimeLines.forEach((line) => {
+      fullNet += line.newQty * extraConfig[line.key].unitPrice;
+      net += line.net;
+      iva += line.total - line.net;
+    });
+    const discountAmount = Math.max(0, fullNet - net);
+    return {
+      fullNet: formatCLP(fullNet),
+      discount: discountAmount > 0 ? `-${formatCLP(discountAmount)}` : null,
+      iva: formatCLP(iva),
+      total: formatCLP(net + iva),
+    };
+  })();
+  const oneTimeExpiryLabel = formatDMYDate(
+    new Date(Date.now() + ONE_TIME_ADDON_DAYS * 24 * 60 * 60 * 1000)
+  );
+
+  async function handleOneTimeCheckout() {
+    if (!tenantId || !oneTimeEligible) return;
+    setOneTimeSubmitting(true);
+    setOneTimeError("");
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/billing/addons/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          items: addonPendingChanges.map((change) => ({
+            addon_key: change.key,
+            quantity: change.newQty,
+          })),
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.checkout_url) {
+        throw new Error(data?.error || "No se pudo iniciar el pago en Flow.");
+      }
+      // Checkout de Flow; al terminar vuelve a esta página con ?addon_payment=
+      window.location.href = data.checkout_url;
+    } catch (error: unknown) {
+      setOneTimeError(error instanceof Error ? error.message : "No se pudo iniciar el pago en Flow.");
+      setOneTimeSubmitting(false);
+    }
+  }
+
+  // Inscripción de tarjeta: mismo flujo que ya existe en esta página
+  // (sección #billing-flow-action de Facturación y pago).
+  function goToCardRegistration() {
+    setAddonConfirmModalOpen(false);
+    setAddonChangeResults([]);
+    document.getElementById("billing-flow-action")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   // true si esta línea del modal de compra debe activar renewal_mode
   // "automatico" al confirmarse: implica un cobro real hoy (compra nueva o
   // aumento de cantidad, nunca una baja) y el addon todavía no está en
@@ -899,6 +1042,14 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
         if (!res.ok) {
           if (change.isNew && res.status === 403 && data?.upgrade_required) {
             throw new Error("Este add-on requiere un plan superior");
+          }
+          if (data?.code === "payment_method_required") {
+            setHasPaymentMethod(false);
+            const paymentError = new Error(
+              data?.error || "No tienes un medio de pago inscrito."
+            ) as Error & { code?: string };
+            paymentError.code = "payment_method_required";
+            throw paymentError;
           }
           throw new Error(
             data?.error ||
@@ -1020,6 +1171,7 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
             label: change.label,
             ok: false,
             error: error instanceof Error ? error.message : "Error desconocido",
+            code: (error as { code?: string })?.code,
           });
         }
       } finally {
@@ -1052,6 +1204,9 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     const config = extraConfig[item.key];
     const renewalMode = addonBaseline[item.key]?.renewal_mode || "manual";
     const isAutomatico = renewalMode === "automatico";
+    const isOneTimeRow = renewalMode === "pago_unico";
+    const oneTimeExpiresAt = addonBaseline[item.key]?.expires_at;
+    const oneTimeExpiry = oneTimeExpiresAt ? formatDMYDate(new Date(oneTimeExpiresAt)) : null;
     const isLowBalanceRechargeSupported = item.key === LOW_BALANCE_RECHARGE_ADDON_KEY;
     const isLowBalanceRechargeEnabled =
       addonBaseline[item.key]?.low_balance_recharge_enabled || false;
@@ -1147,7 +1302,13 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                           : "var(--text-muted)",
                     }}
                   >
-                    {!isAutomatico && hasUnconfirmedQuantityChange(item.key)
+                    {isOneTimeRow && !hasUnconfirmedQuantityChange(item.key)
+                      ? `Pago único${oneTimeExpiry ? ` · vence el ${oneTimeExpiry}` : ""}. ${
+                          hasPaymentMethod === false
+                            ? "Inscribe una tarjeta para pasar a cobro automático."
+                            : "Actívalo para renovar automáticamente con tu tarjeta."
+                        }`
+                      : !isAutomatico && hasUnconfirmedQuantityChange(item.key)
                       ? "Confirma tu cambio de cantidad pendiente antes de activar el cobro automático."
                       : isAutomatico
                       ? "Se renovará automáticamente cada mes."
@@ -1162,7 +1323,8 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                   onClick={() => handleToggleRenewalMode(item.key)}
                   disabled={
                     renewalModeUpdating === item.key ||
-                    (!isAutomatico && hasUnconfirmedQuantityChange(item.key))
+                    (!isAutomatico && hasUnconfirmedQuantityChange(item.key)) ||
+                    (isOneTimeRow && hasPaymentMethod === false)
                   }
                   className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60"
                   style={{
@@ -1227,8 +1389,51 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
     <div className="space-y-4">
       <Panel
         title="Add-ons"
-        description="Agrega capacidad extra a tu plan. Los cambios se cobran de inmediato a tu tarjeta registrada al confirmar."
+        description={
+          hasPaymentMethod === false
+            ? "Agrega capacidad extra a tu plan. Sin tarjeta inscrita, puedes pagarlos una sola vez con Flow (duran 30 días)."
+            : "Agrega capacidad extra a tu plan. Los cambios se cobran de inmediato a tu tarjeta registrada al confirmar."
+        }
       >
+        {addonPaymentNotice ? (
+          <div
+            className="mb-3 flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-sm"
+            style={{
+              borderColor:
+                addonPaymentNotice === "ok"
+                  ? "rgba(16,185,129,0.4)"
+                  : addonPaymentNotice === "pending"
+                  ? "rgba(245,158,11,0.4)"
+                  : "rgba(244,63,94,0.34)",
+              background:
+                addonPaymentNotice === "ok"
+                  ? "rgba(16,185,129,0.08)"
+                  : addonPaymentNotice === "pending"
+                  ? "rgba(245,158,11,0.08)"
+                  : "rgba(244,63,94,0.08)",
+              color: "var(--text-main)",
+            }}
+          >
+            <span>
+              {addonPaymentNotice === "ok"
+                ? `Pago recibido: tus add-ons quedaron activos por ${ONE_TIME_ADDON_DAYS} días.`
+                : addonPaymentNotice === "pending"
+                ? "Flow todavía está confirmando tu pago. Tus add-ons se activarán en unos minutos."
+                : addonPaymentNotice === "review"
+                ? "Recibimos tu pago, pero hubo un problema al activar tus add-ons. Escríbenos a soporte@orbyx.cl y lo resolvemos."
+                : "El pago no se completó y no se hizo ningún cobro. Puedes intentarlo de nuevo."}
+            </span>
+            <button
+              type="button"
+              onClick={() => setAddonPaymentNotice(null)}
+              className="shrink-0 text-xs font-semibold"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Cerrar
+            </button>
+          </div>
+        ) : null}
+
         {addonError ? (
           <div
             className="mb-3 rounded-2xl border px-4 py-3 text-sm"
@@ -1345,6 +1550,8 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 onClick={() => {
                   setAddonChangeResults([]);
                   setPurchaseLowBalanceOptIn({});
+                  setAddonModalMode("card");
+                  setOneTimeError("");
                   setAddonConfirmModalOpen(true);
                 }}
                 disabled={addonSubmitting}
@@ -1409,6 +1616,27 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                   })}
                 </ul>
 
+                {addonChangeResults.some((result) => result.code === "payment_method_required") ? (
+                  <div
+                    className="mt-3 rounded-lg border px-3 py-2 text-xs leading-5"
+                    style={{
+                      borderColor: "rgba(244,63,94,0.34)",
+                      background: "rgba(244,63,94,0.06)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    No pudimos cobrar porque no tienes un medio de pago inscrito.{" "}
+                    <button
+                      type="button"
+                      onClick={goToCardRegistration}
+                      className="font-semibold underline"
+                    >
+                      Inscribir tarjeta
+                    </button>{" "}
+                    o vuelve a elegir los add-ons y usa &ldquo;Pagar una vez con Flow&rdquo;.
+                  </div>
+                ) : null}
+
                 <div className="mt-5 flex justify-end">
                   <button
                     type="button"
@@ -1429,6 +1657,196 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
               </>
             ) : (
               <>
+                {(() => {
+                  const linkStyle = { color: "rgb(37 99 235)" };
+                  const detailsBox = (text: string) => (
+                    <details className="mt-1">
+                      <summary className="cursor-pointer text-xs font-semibold" style={linkStyle}>
+                        Ver autorización completa
+                      </summary>
+                      <p
+                        className="mt-1 rounded-md border px-2 py-1.5 text-xs leading-5"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-muted)" }}
+                      >
+                        {text}
+                      </p>
+                    </details>
+                  );
+                  const oneTimeLineList = (withTerms: boolean) => (
+                    <ul className="mt-4 space-y-2">
+                      {oneTimeLines.map((line) => (
+                        <li
+                          key={line.key}
+                          className="rounded-lg border px-3 py-2 text-sm"
+                          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span style={{ color: "var(--text-main)" }}>
+                              {line.label}{" "}
+                              <span style={{ color: "var(--text-muted)" }}>
+                                ({line.baselineQty} → {line.newQty})
+                              </span>
+                            </span>
+                            <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+                              {formatCLP(line.total)}
+                            </span>
+                          </div>
+                          {withTerms ? (
+                            <p
+                              className="mt-2 border-t pt-2 text-xs leading-5"
+                              style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                            >
+                              Pago único · activo hasta el{" "}
+                              <strong style={{ color: "var(--text-main)" }}>{oneTimeExpiryLabel}</strong> · no se
+                              renueva
+                              {line.baselineQty > 0
+                                ? `. Pagas las ${line.newQty} unidades y el plazo vuelve a contar 30 días.`
+                                : ""}
+                            </p>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                  const oneTimeErrorBox = oneTimeError ? (
+                    <p className="mt-3 text-xs leading-5" style={{ color: "rgb(244 63 94)" }}>
+                      {oneTimeError}
+                    </p>
+                  ) : null;
+
+                  // ---- Estado 2: sin medio de pago inscrito ----
+                  if (hasPaymentMethod === false && addonChargeRequired) {
+                    return (
+                      <>
+                        <h3 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+                          Activar add-ons
+                        </h3>
+                        <div
+                          className="mt-3 rounded-xl border px-3 py-2.5 text-sm leading-5"
+                          style={{ borderColor: "rgba(245,158,11,0.45)", background: "rgba(245,158,11,0.08)", color: "var(--text-main)" }}
+                        >
+                          <p className="font-semibold">No tienes un medio de pago inscrito</p>
+                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                            {oneTimeEligible
+                              ? "Elige cómo pagar estos add-ons."
+                              : "El pago único aplica a add-ons nuevos o de pago único, sin reducciones en la misma compra. Ajusta tu selección o inscribe tu tarjeta."}
+                          </p>
+                        </div>
+                        {oneTimeLineList(false)}
+                        <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
+                          <AmountBreakdownRows breakdown={oneTimeBreakdown} totalLabel="Total" />
+                        </div>
+                        {oneTimeErrorBox}
+                        <div className="mt-5 grid gap-2.5">
+                          <button
+                            type="button"
+                            disabled={!oneTimeEligible || oneTimeSubmitting}
+                            onClick={handleOneTimeCheckout}
+                            className="inline-flex flex-col items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
+                          >
+                            {oneTimeSubmitting ? "Abriendo Flow..." : "Pagar una vez con Flow"}
+                            <span className="text-[11px] font-medium opacity-85">
+                              Activos 30 días hasta el {oneTimeExpiryLabel} · no se renuevan solos
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={goToCardRegistration}
+                            disabled={oneTimeSubmitting}
+                            className="inline-flex flex-col items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                          >
+                            Inscribir tarjeta y activar cobro automático
+                            <span className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+                              Inscribes tu tarjeta y luego confirmas el cobro de tus add-ons
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAddonConfirmModalOpen(false)}
+                            disabled={oneTimeSubmitting}
+                            className="h-9 text-sm font-medium"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  // ---- Estado 1b: pago único ----
+                  if (addonModalMode === "one_time" || oneTimeRequired) {
+                    return (
+                      <>
+                        <span
+                          className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                          style={{ background: "rgba(14,165,233,0.14)", color: "rgb(3 105 161)" }}
+                        >
+                          Pago único
+                        </span>
+                        <h3 className="mt-2 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+                          Pagar add-ons una sola vez
+                        </h3>
+                        <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                          Pagas ahora con Flow (tarjeta de débito, crédito u otros medios). Los add-ons quedan activos
+                          por 30 días y <strong style={{ color: "var(--text-main)" }}>no se renuevan solos</strong>.
+                        </p>
+                        {!oneTimeEligible ? (
+                          <p className="mt-2 text-xs leading-5" style={{ color: "rgb(245 158 11)" }}>
+                            El pago único aplica a add-ons nuevos o de pago único, sin reducciones ni add-ons con cobro a
+                            tarjeta en la misma compra.
+                          </p>
+                        ) : null}
+                        {oneTimeLineList(true)}
+                        <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
+                          <AmountBreakdownRows breakdown={oneTimeBreakdown} totalLabel="Total a pagar" />
+                        </div>
+                        <p className="mt-3 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                          Te avisaremos por correo antes del vencimiento para que puedas renovar.
+                        </p>
+                        {oneTimeErrorBox}
+                        <div className="mt-5 flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setAddonConfirmModalOpen(false)}
+                            disabled={oneTimeSubmitting}
+                            className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!oneTimeEligible || oneTimeSubmitting}
+                            onClick={handleOneTimeCheckout}
+                            className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
+                          >
+                            {oneTimeSubmitting ? "Abriendo Flow..." : `Ir a pagar ${formatCLP(oneTimeTotalWithIva)}`}
+                          </button>
+                        </div>
+                        {!oneTimeRequired ? (
+                          <p className="mt-3 text-center text-sm">
+                            <button
+                              type="button"
+                              onClick={() => setAddonModalMode("card")}
+                              disabled={oneTimeSubmitting}
+                              className="font-semibold"
+                              style={linkStyle}
+                            >
+                              Prefiero cobro automático a mi tarjeta
+                            </button>
+                          </p>
+                        ) : null}
+                      </>
+                    );
+                  }
+
+                  // ---- Estado 1: cobro a la tarjeta inscrita (como antes) ----
+                  return (
+                    <>
                 <h3 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
                   Confirmar cobro de add-ons
                 </h3>
@@ -1437,7 +1855,9 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 </p>
 
                 <ul className="mt-4 space-y-2">
-                  {addonPendingChanges.map((change) => (
+                  {addonPendingChanges.map((change) => {
+                    const projectedUnitPrice = addonUnitTierPrice(extraConfig[change.key], change.newQty - 1);
+                    return (
                     <li
                       key={change.key}
                       className="rounded-lg border px-3 py-2 text-sm"
@@ -1459,42 +1879,52 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                       </div>
 
                       {purchaseAutoPayEligible(change) ? (
-                        <p
+                        <div
                           className="mt-2 border-t pt-2 text-xs leading-5"
                           style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
                         >
-                          {buildRenewalConsentTextForPurchase(
-                            change.key,
-                            change.newQty,
-                            addonUnitTierPrice(extraConfig[change.key], change.newQty - 1)
+                          <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+                            Renovación automática:
+                          </span>{" "}
+                          {formatCLP(projectedUnitPrice * change.newQty)} + IVA cada ~30 días · cancelable cuando
+                          quieras
+                          {detailsBox(
+                            buildRenewalConsentTextForPurchase(change.key, change.newQty, projectedUnitPrice)
                           )}
-                        </p>
+                        </div>
                       ) : null}
 
                       {purchaseLowBalanceEligible(change) ? (
-                        <label
-                          className="mt-2 flex cursor-pointer items-start gap-2 border-t pt-2"
-                          style={{ borderColor: "var(--border-color)" }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={purchaseLowBalanceOptIn[change.key] || false}
-                            onChange={(e) =>
-                              setPurchaseLowBalanceOptIn((prev) => ({
-                                ...prev,
-                                [change.key]: e.target.checked,
-                              }))
-                            }
-                            disabled={addonSubmitting}
-                            className="mt-0.5 h-4 w-4 shrink-0"
-                          />
-                          <span className="text-xs leading-5" style={{ color: "var(--text-muted)" }}>
-                            {buildLowBalanceConsentTextForQuantity(change.newQty)}
-                          </span>
-                        </label>
+                        <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--border-color)" }}>
+                          <label className="flex cursor-pointer items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={purchaseLowBalanceOptIn[change.key] || false}
+                              onChange={(e) =>
+                                setPurchaseLowBalanceOptIn((prev) => ({
+                                  ...prev,
+                                  [change.key]: e.target.checked,
+                                }))
+                              }
+                              disabled={addonSubmitting}
+                              className="mt-0.5 h-4 w-4 shrink-0"
+                            />
+                            <span className="text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+                                Recarga automática por saldo bajo
+                              </span>{" "}
+                              (opcional): {formatCLP(addonUnitTierPrice(extraConfig[change.key], change.newQty))} +
+                              IVA cuando te queden menos de {LOW_BALANCE_RECHARGE_THRESHOLD} mensajes
+                            </span>
+                          </label>
+                          <div className="pl-6">
+                            {detailsBox(buildLowBalanceConsentTextForQuantity(change.newQty))}
+                          </div>
+                        </div>
                       ) : null}
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
 
                 <div
@@ -1510,6 +1940,11 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                 <p className="mt-3 text-xs leading-5" style={{ color: "rgb(245 158 11)" }}>
                   Se cobrará {formatCLP(addonChargeTotalWithIva)} ahora mismo a tu tarjeta registrada.
                 </p>
+                {addonPendingChanges.some((change) => purchaseAutoPayEligible(change)) ? (
+                  <p className="mt-1 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                    Al confirmar autorizas el cobro de hoy y las renovaciones descritas arriba.
+                  </p>
+                ) : null}
 
                 <div className="mt-5 flex gap-3">
                   <button
@@ -1535,6 +1970,25 @@ export function AddonManager({ tenantId }: { tenantId: string }) {
                     {addonSubmitting ? "Cobrando..." : "Confirmar cobro"}
                   </button>
                 </div>
+                {oneTimeEligible ? (
+                  <p className="mt-3 text-center text-sm">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOneTimeError("");
+                        setAddonModalMode("one_time");
+                      }}
+                      disabled={addonSubmitting}
+                      className="font-semibold"
+                      style={linkStyle}
+                    >
+                      o pagar una sola vez con Flow (30 días, sin renovación)
+                    </button>
+                  </p>
+                ) : null}
+                    </>
+                  );
+                })()}
               </>
             )}
           </div>
