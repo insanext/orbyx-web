@@ -106,6 +106,8 @@ type BusinessResponse = {
     plan_slug?: string | null;
     business_category?: string | null;
     deposit_required?: boolean | null;
+    phone?: string | null;
+    address?: string | null;
   };
 };
 
@@ -346,6 +348,10 @@ export default function DashboardLayout({
   const [tenantId, setTenantId] = useState("");
   const [unreadTickets, setUnreadTickets] = useState(0);
   const [businessName, setBusinessName] = useState("");
+  // Teléfono/dirección del negocio (tenants.phone/address): si falta alguno,
+  // punto rojo junto a "Mi Negocio" (el correo de confirmación de reserva
+  // los necesita). null = todavía no cargado (no se muestra nada).
+  const [businessContact, setBusinessContact] = useState<{ phone: string; address: string } | null>(null);
   // "" (no plan legacy hardcodeado) hasta que llegue la respuesta real de
   // GET /public/business/:slug -- antes usaba "pro" (plan legado) como
   // valor inicial, lo que hacía parpadear "Plan Pro" una fracción de
@@ -550,6 +556,10 @@ export default function DashboardLayout({
         const currentTenantId = businessData.business.id;
         setTenantId(currentTenantId);
         setBusinessName(businessData.business.name || slug);
+        setBusinessContact({
+          phone: businessData.business.phone || "",
+          address: businessData.business.address || "",
+        });
         // Fallback defensivo si plan_slug viniera vacío (no debería pasar
         // para un tenant real) -- "starter" (plan vigente), no "pro"
         // (legado, ya no se asigna a nadie desde la migración a 3 planes).
@@ -625,6 +635,19 @@ export default function DashboardLayout({
 
     loadBranchesForSidebar();
   }, [slug, branchStorageKey]);
+
+  // Mi Negocio avisa al guardar (BusinessPanel -> "orbyx-business-updated",
+  // mismo patrón que "orbyx-branch-changed") para que el punto rojo de
+  // contacto faltante se apague sin recargar la página.
+  useEffect(() => {
+    function handleBusinessUpdated(event: Event) {
+      const detail = (event as CustomEvent<{ phone?: string; address?: string }>).detail;
+      if (!detail) return;
+      setBusinessContact({ phone: detail.phone || "", address: detail.address || "" });
+    }
+    window.addEventListener("orbyx-business-updated", handleBusinessUpdated);
+    return () => window.removeEventListener("orbyx-business-updated", handleBusinessUpdated);
+  }, []);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -1091,6 +1114,34 @@ export default function DashboardLayout({
     );
   }
 
+  const missingBusinessContact = businessContact
+    ? [
+        !businessContact.address.trim() ? "dirección" : null,
+        !businessContact.phone.trim() ? "teléfono" : null,
+      ].filter(Boolean)
+    : [];
+  const missingBusinessContactLabel =
+    missingBusinessContact.length > 0
+      ? `Falta ${missingBusinessContact.join(" y ")} del negocio: complétalo en Mi Negocio para que aparezca en los correos de reserva.`
+      : "";
+
+  // Punto rojo con pulso (solo CSS: animate-ping de Tailwind, respeta
+  // prefers-reduced-motion). Sin opción de descartarlo: desaparece solo
+  // cuando el negocio tiene teléfono y dirección.
+  function ContactMissingDot({ className = "" }: { className?: string }) {
+    if (!missingBusinessContactLabel) return null;
+    return (
+      <span
+        className={clsx("pointer-events-none absolute flex h-2.5 w-2.5", className)}
+        title={missingBusinessContactLabel}
+      >
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-70 motion-reduce:animate-none" />
+        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white/80" />
+        <span className="sr-only">{missingBusinessContactLabel}</span>
+      </span>
+    );
+  }
+
   function NavLinks({
     onNavigate,
     collapsed = false,
@@ -1136,7 +1187,13 @@ export default function DashboardLayout({
                   )}
                   <Link
                     href={fullHref}
-                    title={collapsed ? item.label : undefined}
+                    title={
+                      item.href === "/business" && missingBusinessContactLabel
+                        ? missingBusinessContactLabel
+                        : collapsed
+                        ? item.label
+                        : undefined
+                    }
                     onClick={onNavigate}
                     className={clsx(
                       "group flex items-center rounded-xl border text-sm font-semibold transition-all duration-200 hover:!border-cyan-300/30 hover:!bg-blue-500/10",
@@ -1162,7 +1219,7 @@ export default function DashboardLayout({
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:text-cyan-300"
+                        className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:text-cyan-300"
                         style={{
                           background: active
                             ? "rgba(255,255,255,0.12)"
@@ -1173,6 +1230,7 @@ export default function DashboardLayout({
                         }}
                       >
                         <Icon size={17} />
+                        {item.href === "/business" ? <ContactMissingDot className="-right-1 -top-1" /> : null}
                       </div>
                       {!collapsed ? (
                         <span className="truncate flex items-center gap-1.5">
@@ -2246,7 +2304,10 @@ export default function DashboardLayout({
           className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium"
           style={{ color: mobileMenuOpen ? "#3B82F6" : textMuted }}
         >
-          <MoreHorizontal size={20} />
+          <span className="relative inline-flex">
+            <MoreHorizontal size={20} />
+            <ContactMissingDot className="-right-1.5 -top-1" />
+          </span>
           Más
         </button>
       </nav>

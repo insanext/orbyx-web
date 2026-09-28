@@ -114,6 +114,18 @@ function normalizeSpecialTime(value?: string | null) {
     : normalized;
 }
 
+// Avisa al layout del dashboard (punto rojo junto a "Mi Negocio" cuando
+// falta teléfono o dirección del negocio) que estos datos cambiaron, para
+// que se actualice sin recargar. Mismo patrón que "orbyx-branch-changed".
+function notifyBusinessContactUpdated(phone?: string | null, address?: string | null) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("orbyx-business-updated", {
+      detail: { phone: phone || "", address: address || "" },
+    })
+  );
+}
+
 function formatDateDisplay(dateString?: string | null) {
   if (!dateString) return "";
   const [year, month, day] = String(dateString).slice(0, 10).split("-");
@@ -1520,6 +1532,7 @@ const cleanedHours = Object.values(grouped);
             tenantData?.error || "Error guardando campos del tipo de negocio"
           );
         }
+        notifyBusinessContactUpdated(form.phone, form.address);
       }
 
       alert("Campos guardados correctamente");
@@ -1607,6 +1620,7 @@ async function saveSlotMinutes() {
       }
 
       setSaveOk("Datos del negocio actualizados correctamente.");
+      notifyBusinessContactUpdated(form.phone, form.address);
     } catch (error: unknown) {
       setSaveError(
         error instanceof Error
