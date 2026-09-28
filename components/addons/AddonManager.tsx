@@ -271,6 +271,12 @@ const MESSAGE_PACK_KEYS: ExtraKey[] = ["wa_confirmacion", "campanas_wa", "emails
 function isMessagePack(key: ExtraKey): boolean {
   return MESSAGE_PACK_KEYS.includes(key);
 }
+// Mensajes por pack — mismo pack_size que ADDON_CATALOG en server.js.
+const MESSAGE_PACK_SIZE: Partial<Record<ExtraKey, number>> = {
+  wa_confirmacion: 50,
+  campanas_wa: 50,
+  emails_campana: 500,
+};
 
 export function AddonManager({
   tenantId,
@@ -310,7 +316,11 @@ export function AddonManager({
   // Pago único (Flow /payment/create) — alternativa al cobro con tarjeta.
   // hasPaymentMethod viene de GET /billing/addons (null = desconocido).
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
-  const [addonModalMode, setAddonModalMode] = useState<"card" | "one_time">("card");
+  // Compra individual por pago único (un add-on por vez, nunca mezclado con
+  // el carrito de cobro con tarjeta). buyQty: capacidad = unidades TOTALES;
+  // packs de mensajes = packs a AGREGAR.
+  const [buyModal, setBuyModal] = useState<{ key: ExtraKey } | null>(null);
+  const [buyQty, setBuyQty] = useState(1);
   const [oneTimeSubmitting, setOneTimeSubmitting] = useState(false);
   const [oneTimeError, setOneTimeError] = useState("");
   // Resultado al volver de Flow (?addon_payment=ok|pending|failed|review).
@@ -909,60 +919,61 @@ export function AddonManager({
     };
   }, [addonPendingChanges]);
 
-  // ---- Pago único ----
-  // Regla aprobada 2026-09-28: se paga la CANTIDAD TOTAL nueva de cada
-  // add-on (tramos desde la 1ª unidad) y vence a los 30 días del pago. El
-  // backend (POST /billing/addons/checkout) recalcula y cobra lo mismo.
-  const addonChargeRequired = addonPendingChanges.some((change) => change.chargeAmount > 0);
-  // Aumentos sobre un add-on que ya es de pago único: solo por pago único.
-  const oneTimeRequired = addonPendingChanges.some(
-    (change) =>
-      change.newQty > change.baselineQty &&
-      addonBaseline[change.key]?.renewal_mode === "pago_unico"
-  );
-  // Aplica si todos los cambios son aumentos de add-ons nuevos o de pago
-  // único (sin reducciones ni add-ons con cobro a tarjeta en la misma compra).
-  const oneTimeEligible =
-    addonPendingChanges.length > 0 &&
-    addonPendingChanges.every(
-      (change) =>
-        change.newQty > change.baselineQty &&
-        (!addonBaseline[change.key] || addonBaseline[change.key]?.renewal_mode === "pago_unico")
-    );
-  const oneTimeLines = addonPendingChanges.map((change) => {
-    const isPack = isMessagePack(change.key);
-    const added = change.newQty - change.baselineQty;
-    const net = isPack
-      ? tieredAddonChargeAmount(extraConfig[change.key], change.baselineQty, added)
-      : tieredAddonChargeAmount(extraConfig[change.key], 0, change.newQty);
-    return { ...change, isPack, added, net, total: applyIva(net) };
-  });
-  const oneTimeHasCapacity = oneTimeLines.some((line) => !line.isPack);
-  const oneTimeHasPacks = oneTimeLines.some((line) => line.isPack);
-  const oneTimeTotalWithIva = oneTimeLines.reduce((sum, line) => sum + line.total, 0);
-  const oneTimeBreakdown: AmountLineBreakdown = (() => {
-    let fullNet = 0;
-    let net = 0;
-    let iva = 0;
-    oneTimeLines.forEach((line) => {
-      fullNet += (line.isPack ? line.added : line.newQty) * extraConfig[line.key].unitPrice;
-      net += line.net;
-      iva += line.total - line.net;
-    });
-    const discountAmount = Math.max(0, fullNet - net);
-    return {
-      fullNet: formatCLP(fullNet),
-      discount: discountAmount > 0 ? `-${formatCLP(discountAmount)}` : null,
-      iva: formatCLP(iva),
-      total: formatCLP(net + iva),
-    };
-  })();
+  // ---- Pago único (compra individual) ----
+  // El carrito (+/- y "Confirmar y cobrar add-ons") es solo para add-ons
+  // cobrados con tarjeta. Los add-ons sin cobro automático (sin tarjeta
+  // inscrita, o ya en pago_unico) se compran de a uno con su propio botón y
+  // modal: nunca se mezcla una reducción con una compra en el mismo pago.
+  // Reglas (2026-09-28), mismas que POST /billing/addons/checkout:
+  // - Capacidad: se paga la cantidad TOTAL (tramos desde la 1ª unidad) y
+  //   vence a los 30 días del pago (una nueva compra reinicia el plazo).
+  // - Packs de mensajes: se cobran solo los packs agregados, se suman al
+  //   saldo y no vencen.
   const oneTimeExpiryLabel = formatDMYDate(
     new Date(Date.now() + ONE_TIME_ADDON_DAYS * 24 * 60 * 60 * 1000)
   );
 
+  // true si este add-on se compra/renueva por pago único (botón propio) en
+  // vez del carrito con tarjeta.
+  function usesOneTimePurchase(key: ExtraKey): boolean {
+    const row = addonBaseline[key];
+    if (row?.renewal_mode === "pago_unico") return true;
+    return !row && hasPaymentMethod === false;
+  }
+
+  function computeOneTimePurchase(key: ExtraKey, qtyInput: number) {
+    const config = extraConfig[key];
+    const currentQty = addonBaseline[key]?.quantity || 0;
+    const isPack = isMessagePack(key);
+    const added = isPack ? Math.max(1, qtyInput) : 0;
+    const totalQty = isPack ? currentQty + added : Math.max(currentQty, 1, qtyInput);
+    const net = isPack
+      ? tieredAddonChargeAmount(config, currentQty, added)
+      : tieredAddonChargeAmount(config, 0, totalQty);
+    const fullNet = (isPack ? added : totalQty) * config.unitPrice;
+    const discountAmount = Math.max(0, fullNet - net);
+    const total = applyIva(net);
+    const breakdown: AmountLineBreakdown = {
+      fullNet: formatCLP(fullNet),
+      discount: discountAmount > 0 ? `-${formatCLP(discountAmount)}` : null,
+      iva: formatCLP(total - net),
+      total: formatCLP(total),
+    };
+    return { config, currentQty, isPack, added, totalQty, net, total, breakdown };
+  }
+
+  function openBuyModal(key: ExtraKey) {
+    const currentQty = addonBaseline[key]?.quantity || 0;
+    // Capacidad: parte en la cantidad actual (renovar igual) o 1 si es nuevo.
+    // Packs: parte en 1 pack a agregar.
+    setBuyQty(isMessagePack(key) ? 1 : Math.max(1, currentQty));
+    setOneTimeError("");
+    setBuyModal({ key });
+  }
+
   async function handleOneTimeCheckout() {
-    if (!tenantId || !oneTimeEligible) return;
+    if (!tenantId || !buyModal) return;
+    const purchase = computeOneTimePurchase(buyModal.key, buyQty);
     setOneTimeSubmitting(true);
     setOneTimeError("");
     try {
@@ -971,10 +982,9 @@ export function AddonManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tenant_id: tenantId,
-          items: addonPendingChanges.map((change) => ({
-            addon_key: change.key,
-            quantity: change.newQty,
-          })),
+          // Un solo add-on por pago. quantity = cantidad total resultante
+          // (el backend cobra lo agregado para packs y el total para capacidad).
+          items: [{ addon_key: buyModal.key, quantity: purchase.totalQty }],
         }),
       });
       const data = await res.json().catch(() => null);
@@ -994,6 +1004,7 @@ export function AddonManager({
   function goToCardRegistration() {
     setAddonConfirmModalOpen(false);
     setAddonChangeResults([]);
+    setBuyModal(null);
     if (onRequestCardRegistration) {
       onRequestCardRegistration();
       return;
@@ -1277,6 +1288,22 @@ export function AddonManager({
               </div>
             </div>
 
+            {usesOneTimePurchase(item.key) ? (
+              <div className="mt-3 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => openBuyModal(item.key)}
+                  className="inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold text-white transition"
+                  style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
+                >
+                  {isMessagePack(item.key) ? "Comprar más packs" : "Renovar o ampliar"}
+                </button>
+              </div>
+            ) : hasPaymentMethod === false ? (
+              <p className="mt-3 text-right text-xs" style={{ color: "var(--text-muted)" }}>
+                Para cambiar la cantidad, inscribe una tarjeta.
+              </p>
+            ) : (
             <div className="mt-3 flex items-center justify-end">
               <div
                 className="flex items-center rounded-lg border"
@@ -1310,6 +1337,7 @@ export function AddonManager({
                 </button>
               </div>
             </div>
+            )}
 
             {!pending ? (
               <div
@@ -1526,7 +1554,9 @@ export function AddonManager({
                       <button
                         key={key}
                         type="button"
-                        onClick={() => increaseExtra(key)}
+                        onClick={() =>
+                          usesOneTimePurchase(key) ? openBuyModal(key) : increaseExtra(key)
+                        }
                         disabled={addonSubmitting}
                         title={config.tooltip}
                         className="flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40"
@@ -1543,7 +1573,11 @@ export function AddonManager({
                               {config.title}
                             </span>
                             <span className="block text-xs" style={{ color: "var(--text-muted)" }}>
-                              {formatCLP(config.unitPrice)} + IVA /mes
+                              {usesOneTimePurchase(key)
+                                ? `${formatCLP(config.unitPrice)} + IVA · pago único${
+                                    isMessagePack(key) ? " (no vence)" : " (30 días)"
+                                  }`
+                                : `${formatCLP(config.unitPrice)} + IVA /mes`}
                             </span>
                           </span>
                         </span>
@@ -1579,7 +1613,6 @@ export function AddonManager({
                 onClick={() => {
                   setAddonChangeResults([]);
                   setPurchaseLowBalanceOptIn({});
-                  setAddonModalMode("card");
                   setOneTimeError("");
                   setAddonConfirmModalOpen(true);
                 }}
@@ -1701,196 +1734,8 @@ export function AddonManager({
                       </p>
                     </details>
                   );
-                  const oneTimeLineList = (withTerms: boolean) => (
-                    <ul className="mt-4 space-y-2">
-                      {oneTimeLines.map((line) => (
-                        <li
-                          key={line.key}
-                          className="rounded-lg border px-3 py-2 text-sm"
-                          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <span style={{ color: "var(--text-main)" }}>
-                              {line.label}{" "}
-                              <span style={{ color: "var(--text-muted)" }}>
-                                ({line.baselineQty} → {line.newQty})
-                              </span>
-                            </span>
-                            <span className="font-semibold" style={{ color: "var(--text-main)" }}>
-                              {formatCLP(line.total)}
-                            </span>
-                          </div>
-                          {withTerms ? (
-                            <p
-                              className="mt-2 border-t pt-2 text-xs leading-5"
-                              style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
-                            >
-                              {line.isPack ? (
-                                <>
-                                  Pago único · los mensajes <strong style={{ color: "var(--text-main)" }}>no vencen</strong>:
-                                  se usan hasta agotarse · no se renueva
-                                  {line.baselineQty > 0 ? `. Se suman ${line.added} pack${line.added === 1 ? "" : "s"} a tu saldo.` : ""}
-                                </>
-                              ) : (
-                                <>
-                                  Pago único · activo hasta el{" "}
-                                  <strong style={{ color: "var(--text-main)" }}>{oneTimeExpiryLabel}</strong> · no se
-                                  renueva
-                                  {line.baselineQty > 0
-                                    ? `. Pagas las ${line.newQty} unidades y el plazo vuelve a contar 30 días.`
-                                    : ""}
-                                </>
-                              )}
-                            </p>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
-                  );
-                  const oneTimeErrorBox = oneTimeError ? (
-                    <p className="mt-3 text-xs leading-5" style={{ color: "rgb(244 63 94)" }}>
-                      {oneTimeError}
-                    </p>
-                  ) : null;
-
-                  // ---- Estado 2: sin medio de pago inscrito ----
-                  if (hasPaymentMethod === false && addonChargeRequired) {
-                    return (
-                      <>
-                        <h3 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
-                          Activar add-ons
-                        </h3>
-                        <div
-                          className="mt-3 rounded-xl border px-3 py-2.5 text-sm leading-5"
-                          style={{ borderColor: "rgba(245,158,11,0.45)", background: "rgba(245,158,11,0.08)", color: "var(--text-main)" }}
-                        >
-                          <p className="font-semibold">No tienes un medio de pago inscrito</p>
-                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                            {oneTimeEligible
-                              ? "Elige cómo pagar estos add-ons."
-                              : "El pago único aplica a add-ons nuevos o de pago único, sin reducciones en la misma compra. Ajusta tu selección o inscribe tu tarjeta."}
-                          </p>
-                        </div>
-                        {oneTimeLineList(false)}
-                        <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
-                          <AmountBreakdownRows breakdown={oneTimeBreakdown} totalLabel="Total" />
-                        </div>
-                        {oneTimeErrorBox}
-                        <div className="mt-5 grid gap-2.5">
-                          <button
-                            type="button"
-                            disabled={!oneTimeEligible || oneTimeSubmitting}
-                            onClick={handleOneTimeCheckout}
-                            className="inline-flex flex-col items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                            style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
-                          >
-                            {oneTimeSubmitting ? "Abriendo Flow..." : "Pagar una vez con Flow"}
-                            <span className="text-[11px] font-medium opacity-85">
-                              {oneTimeHasCapacity && oneTimeHasPacks
-                                ? `Capacidad activa hasta el ${oneTimeExpiryLabel} · mensajes sin vencimiento`
-                                : oneTimeHasPacks
-                                ? "Los mensajes no vencen: se usan hasta agotarse · no se renuevan"
-                                : `Activos 30 días hasta el ${oneTimeExpiryLabel} · no se renuevan solos`}
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={goToCardRegistration}
-                            disabled={oneTimeSubmitting}
-                            className="inline-flex flex-col items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
-                          >
-                            Inscribir tarjeta y activar cobro automático
-                            <span className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
-                              Te llevamos a Suscripción para inscribir tu tarjeta; luego confirmas tus add-ons
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setAddonConfirmModalOpen(false)}
-                            disabled={oneTimeSubmitting}
-                            className="h-9 text-sm font-medium"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </>
-                    );
-                  }
-
-                  // ---- Estado 1b: pago único ----
-                  if (addonModalMode === "one_time" || oneTimeRequired) {
-                    return (
-                      <>
-                        <span
-                          className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-                          style={{ background: "rgba(14,165,233,0.14)", color: "rgb(3 105 161)" }}
-                        >
-                          Pago único
-                        </span>
-                        <h3 className="mt-2 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
-                          Pagar add-ons una sola vez
-                        </h3>
-                        <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                          Pagas ahora con Flow (tarjeta de débito, crédito u otros medios) y{" "}
-                          <strong style={{ color: "var(--text-main)" }}>no se renueva solo</strong>.
-                          {oneTimeHasCapacity ? " Profesionales, sucursales y cupos quedan activos por 30 días." : ""}
-                          {oneTimeHasPacks ? " Los packs de mensajes no vencen: se usan hasta agotarse." : ""}
-                        </p>
-                        {!oneTimeEligible ? (
-                          <p className="mt-2 text-xs leading-5" style={{ color: "rgb(245 158 11)" }}>
-                            El pago único aplica a add-ons nuevos o de pago único, sin reducciones ni add-ons con cobro a
-                            tarjeta en la misma compra.
-                          </p>
-                        ) : null}
-                        {oneTimeLineList(true)}
-                        <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
-                          <AmountBreakdownRows breakdown={oneTimeBreakdown} totalLabel="Total a pagar" />
-                        </div>
-                        {oneTimeHasCapacity ? (
-                          <p className="mt-3 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
-                            Te avisaremos por correo antes del vencimiento para que puedas renovar.
-                          </p>
-                        ) : null}
-                        {oneTimeErrorBox}
-                        <div className="mt-5 flex gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setAddonConfirmModalOpen(false)}
-                            disabled={oneTimeSubmitting}
-                            className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-                            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!oneTimeEligible || oneTimeSubmitting}
-                            onClick={handleOneTimeCheckout}
-                            className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                            style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
-                          >
-                            {oneTimeSubmitting ? "Abriendo Flow..." : `Ir a pagar ${formatCLP(oneTimeTotalWithIva)}`}
-                          </button>
-                        </div>
-                        {!oneTimeRequired ? (
-                          <p className="mt-3 text-center text-sm">
-                            <button
-                              type="button"
-                              onClick={() => setAddonModalMode("card")}
-                              disabled={oneTimeSubmitting}
-                              className="font-semibold"
-                              style={linkStyle}
-                            >
-                              Prefiero cobro automático a mi tarjeta
-                            </button>
-                          </p>
-                        ) : null}
-                      </>
-                    );
-                  }
-
+                  // Carrito: solo cobro a la tarjeta inscrita (la compra por pago
+                  // único es individual, ver el modal "buyModal").
                   // ---- Estado 1: cobro a la tarjeta inscrita (como antes) ----
                   return (
                     <>
@@ -2017,22 +1862,6 @@ export function AddonManager({
                     {addonSubmitting ? "Cobrando..." : "Confirmar cobro"}
                   </button>
                 </div>
-                {oneTimeEligible ? (
-                  <p className="mt-3 text-center text-sm">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOneTimeError("");
-                        setAddonModalMode("one_time");
-                      }}
-                      disabled={addonSubmitting}
-                      className="font-semibold"
-                      style={linkStyle}
-                    >
-                      o pagar una sola vez con Flow (sin renovación automática)
-                    </button>
-                  </p>
-                ) : null}
                     </>
                   );
                 })()}
@@ -2041,6 +1870,138 @@ export function AddonManager({
           </div>
         </div>
       ) : null}
+
+      {buyModal ? (() => {
+        const purchase = computeOneTimePurchase(buyModal.key, buyQty);
+        const { config, currentQty, isPack, added, totalQty } = purchase;
+        const minQty = isPack ? 1 : Math.max(1, currentQty);
+        const maxQty = isPack ? Math.max(1, 50 - currentQty) : 50;
+        const stepperValue = isPack ? added : totalQty;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div
+              className="absolute inset-0"
+              style={{ background: "rgba(0,0,0,0.6)" }}
+              onClick={() => (oneTimeSubmitting ? null : setBuyModal(null))}
+            />
+            <div
+              className="relative z-10 mx-4 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
+              style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
+            >
+              <span
+                className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                style={{ background: "rgba(14,165,233,0.14)", color: "rgb(3 105 161)" }}
+              >
+                Pago único
+              </span>
+              <h3 className="mt-2 text-lg font-semibold" style={{ color: "var(--text-main)" }}>
+                {isPack ? `Comprar ${config.title}` : `Contratar ${config.title}`}
+              </h3>
+              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+                {isPack
+                  ? "Pagas ahora con Flow. Los mensajes se suman a tu saldo y no vencen: se usan hasta agotarse. No se renueva solo."
+                  : `Pagas ahora con Flow. Queda activo por 30 días (hasta el ${oneTimeExpiryLabel}) y no se renueva solo.`}
+              </p>
+
+              <div
+                className="mt-4 flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+                style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
+                    {isPack ? "Packs a comprar" : "Unidades"}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    {isPack
+                      ? `${added} pack${added === 1 ? "" : "s"} · ${added * (MESSAGE_PACK_SIZE[buyModal.key] || 0)} mensajes${
+                          currentQty > 0 ? " · se suman a tu saldo actual" : ""
+                        }`
+                      : currentQty > 0
+                      ? `Tienes ${currentQty}. Pagas el total y el plazo vuelve a contar 30 días.`
+                      : "Cantidad a contratar"}
+                  </p>
+                </div>
+                <div className="flex items-center rounded-lg border" style={{ borderColor: "var(--border-color)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setBuyQty((prev) => Math.max(minQty, (isPack ? prev : Math.max(prev, minQty)) - 1))}
+                    disabled={oneTimeSubmitting || stepperValue <= minQty}
+                    className="inline-flex h-9 w-9 items-center justify-center transition disabled:cursor-not-allowed disabled:opacity-40"
+                    style={{ color: "var(--text-main)" }}
+                    aria-label="Menos"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="min-w-8 text-center text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                    {stepperValue}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setBuyQty((prev) => Math.min(maxQty, (isPack ? prev : Math.max(prev, minQty)) + 1))}
+                    disabled={oneTimeSubmitting || stepperValue >= maxQty}
+                    className="inline-flex h-9 w-9 items-center justify-center transition disabled:cursor-not-allowed disabled:opacity-40"
+                    style={{ color: "var(--text-main)" }}
+                    aria-label="Más"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--border-color)" }}>
+                <AmountBreakdownRows breakdown={purchase.breakdown} totalLabel="Total a pagar" />
+              </div>
+
+              {!isPack ? (
+                <p className="mt-3 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
+                  Te avisaremos por correo antes del vencimiento para que puedas renovar.
+                </p>
+              ) : null}
+
+              {oneTimeError ? (
+                <p className="mt-3 text-xs leading-5" style={{ color: "rgb(244 63 94)" }}>
+                  {oneTimeError}
+                </p>
+              ) : null}
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setBuyModal(null)}
+                  disabled={oneTimeSubmitting}
+                  className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOneTimeCheckout}
+                  disabled={oneTimeSubmitting}
+                  className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
+                >
+                  {oneTimeSubmitting ? "Abriendo Flow..." : `Pagar ${formatCLP(purchase.total)} con Flow`}
+                </button>
+              </div>
+
+              {hasPaymentMethod === false ? (
+                <p className="mt-3 text-center text-sm">
+                  <button
+                    type="button"
+                    onClick={goToCardRegistration}
+                    disabled={oneTimeSubmitting}
+                    className="font-semibold"
+                    style={{ color: "rgb(37 99 235)" }}
+                  >
+                    Prefiero inscribir una tarjeta (cobro automático)
+                  </button>
+                </p>
+              ) : null}
+            </div>
+          </div>
+        );
+      })() : null}
 
       {consentModal ? (
         <AutoChargeConsentModal

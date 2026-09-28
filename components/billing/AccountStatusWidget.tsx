@@ -609,6 +609,12 @@ export function AccountStatusWidget({
   // saldo ahora (Parte D.2/F.3, auditoría 2026-09-20).
   const isStarterInTrial =
     status.plan_slug === "starter" && (status.trial_active || status.awaiting_payment);
+  // Los toggles de WhatsApp se desbloquean con la sola condición de tener
+  // saldo del add-on de WhatsApp, sea de cobro automático o de pago único:
+  // durante el trial el cupo del plan es 0, así que total = saldo del
+  // add-on (tenant_addons.balance, el mismo que descuenta checkMonthlyUsage
+  // al enviar). Sin saldo, quedan bloqueados como antes.
+  const waTogglesLocked = isStarterInTrial && liveWaConfirmacion.total <= 0;
 
   const urgent = status.blocked || status.trial_active || status.awaiting_payment;
   if (!urgent && status.wa_confirmacion.total <= 0) {
@@ -752,7 +758,7 @@ export function AccountStatusWidget({
 
           {!status.blocked && isOwnerOrAdmin && activeAccountTab === "notificaciones" ? (
             <div>
-              {isStarterInTrial ? (
+              {waTogglesLocked ? (
                 <Link
                   href={`/dashboard/${slug}/billing#billing-flow-action`}
                   onClick={() => setOpen(false)}
@@ -774,11 +780,11 @@ export function AccountStatusWidget({
                 </Link>
               ) : null}
               <div className="overflow-hidden rounded-xl" style={{ background: softBg }}>
-                <div className="flex items-center justify-between gap-3 px-3 py-2.5" style={{ opacity: isStarterInTrial ? 0.65 : 1 }}>
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5" style={{ opacity: waTogglesLocked ? 0.65 : 1 }}>
                   <div className="min-w-0">
                     <p className="flex items-center gap-1.5 text-sm font-medium" style={{ color: textMain }}>
                       Confirmación al agendar
-                      {isStarterInTrial ? <Lock size={11} style={{ color: textMuted }} /> : null}
+                      {waTogglesLocked ? <Lock size={11} style={{ color: textMuted }} /> : null}
                     </p>
                     <p className="text-[11px]" style={{ color: textMuted }}>
                       Envía un WhatsApp apenas se crea la cita
@@ -787,7 +793,7 @@ export function AccountStatusWidget({
                   <MiniToggle
                     checked={waConfirmEnabled}
                     disabled={savingField === "wa_confirmation_enabled"}
-                    locked={isStarterInTrial}
+                    locked={waTogglesLocked}
                     label="Confirmación por WhatsApp al agendar"
                     onChange={() => {
                       const next = !waConfirmEnabled;
@@ -799,11 +805,11 @@ export function AccountStatusWidget({
 
                 <div className="h-px" style={{ background: borderColor }} />
 
-                <div className="flex items-center justify-between gap-3 px-3 py-2.5" style={{ opacity: isStarterInTrial ? 0.65 : 1 }}>
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5" style={{ opacity: waTogglesLocked ? 0.65 : 1 }}>
                   <div className="min-w-0">
                     <p className="flex items-center gap-1.5 text-sm font-medium" style={{ color: textMain }}>
                       Recordatorio antes de la cita
-                      {isStarterInTrial ? <Lock size={11} style={{ color: textMuted }} /> : null}
+                      {waTogglesLocked ? <Lock size={11} style={{ color: textMuted }} /> : null}
                     </p>
                     <p className="text-[11px]" style={{ color: textMuted }}>
                       Envía un WhatsApp antes de que llegue el cliente
@@ -812,7 +818,7 @@ export function AccountStatusWidget({
                   <MiniToggle
                     checked={waReminderEnabled}
                     disabled={savingField === "wa_reminder_enabled"}
-                    locked={isStarterInTrial}
+                    locked={waTogglesLocked}
                     label="Recordatorio por WhatsApp antes de la cita"
                     onChange={() => {
                       const next = !waReminderEnabled;
