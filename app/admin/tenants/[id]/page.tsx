@@ -223,10 +223,28 @@ export default function AdminTenantDetailPage() {
   const authFetch = useCallback(async (path: string, init?: RequestInit) => {
     const token = await getToken()
     if (!token) return null
-    return fetch(`${BACKEND_URL}${path}`, {
+    const res = await fetch(`${BACKEND_URL}${path}`, {
       ...init,
       headers: { ...(init?.headers || {}), Authorization: `Bearer ${token}` },
     })
+    // El panel admin comparte la sesión de Supabase del navegador con la app
+    // de tenants (mismo dominio): abrir un link de reset/actualizar-password,
+    // entrar como tenant o "Ver como tenant" reemplaza la sesión de admin y
+    // requireAdminAuth responde 403 "Acceso denegado"/"mfa_required". Se
+    // traduce a un mensaje que explique qué pasó y cómo seguir.
+    if (res.status === 403) {
+      const body = await res.clone().json().catch(() => null)
+      if (body?.error === 'Acceso denegado' || body?.error === 'mfa_required') {
+        return new Response(
+          JSON.stringify({
+            error:
+              'Tu sesión de administrador ya no está activa en este navegador (se reemplazó al abrir un link de reset o entrar como un tenant). Vuelve a ingresar en /admin/login e intenta de nuevo.',
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+    return res
   }, [getToken])
 
   const handleDeleteTenant = useCallback(async () => {
