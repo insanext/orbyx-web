@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { ChevronRight, CreditCard, Info, X } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
+import { PageHeader } from "../../../../components/dashboard/page-header";
 import { AddonManager } from "../../../../components/addons/AddonManager";
 import { cycleTotalPrice, getPlanLabel, PLAN_PRICES_ALL, type PlanSlug } from "@/lib/plans";
 import { usePermissions } from "@/lib/permissions-context";
@@ -311,7 +312,7 @@ function Notice({
   const styles = getNoticeStyles(tone);
 
   return (
-    <div className="rounded-2xl border px-4 py-4 shadow-sm" style={styles.wrapper}>
+    <div className="rounded border px-4 py-4 shadow-sm" style={styles.wrapper}>
       <p className="text-sm font-semibold" style={styles.title}>
         {title}
       </p>
@@ -343,7 +344,7 @@ function GroupedChargeList({
   if (groups.length === 0) {
     return (
       <div
-        className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm"
+        className="rounded-md border border-dashed px-4 py-8 text-center text-sm"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-soft)",
@@ -375,7 +376,7 @@ function GroupedChargeList({
         return (
           <div
             key={group.dateKey}
-            className="overflow-hidden rounded-2xl border"
+            className="overflow-hidden rounded-md border"
             style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
           >
             <button
@@ -430,7 +431,7 @@ function GroupedChargeList({
         <button
           type="button"
           onClick={() => setVisibleCount((prev) => prev + CHARGE_GROUPS_PAGE_SIZE)}
-          className="w-full rounded-xl border px-4 py-2 text-center text-sm font-medium transition"
+          className="w-full rounded-md border px-4 py-2 text-center text-sm font-medium transition"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-soft)",
@@ -1222,7 +1223,7 @@ function BillingPageInner() {
     return (
       <div className="p-6">
         <div
-          className="mx-auto mt-10 max-w-md rounded-2xl border p-6 text-center"
+          className="mx-auto mt-10 max-w-md rounded border p-6 text-center"
           style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
         >
           <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
@@ -1238,44 +1239,19 @@ function BillingPageInner() {
 
   return (
     <div className="space-y-4 pb-6">
-      <section
-        className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
-        style={{
-          borderColor: "rgba(37,99,235,0.42)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-        }}
-      >
-        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex max-w-3xl items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
-              <CreditCard className="h-4 w-4" />
-            </div>
-            <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-600">Billing</p>
-
-            <h1
-              className="mt-0.5 text-lg font-semibold tracking-tight"
-              style={{ color: "var(--text-main)" }}
-            >
-              Facturación y pago
-            </h1>
-
-            <p
-              className="mt-0.5 max-w-2xl text-sm leading-5"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {loading
-                ? "Cargando información del negocio..."
-                : `Gestiona el plan y los límites de ${businessName}.`}
-            </p>
-            </div>
-          </div>
-
+      <PageHeader
+        eyebrow="Billing"
+        title="Facturación y pago"
+        icon={<CreditCard className="h-4 w-4" />}
+        description={
+          loading
+            ? "Cargando información del negocio..."
+            : `Gestiona el plan y los límites de ${businessName}.`
+        }
+        actions={
           <div className="grid grid-cols-3 gap-2">
             <div
-              className="rounded-xl border px-2.5 py-1.5"
+              className="rounded-md border px-2.5 py-1.5"
               style={{
                 borderColor: "rgba(34,197,94,0.22)",
                 background: "rgba(255,255,255,0.08)",
@@ -1296,7 +1272,7 @@ function BillingPageInner() {
             </div>
 
             <div
-              className="rounded-xl border px-2.5 py-1.5"
+              className="rounded-md border px-2.5 py-1.5"
               style={{
                 borderColor: "rgba(34,197,94,0.22)",
                 background: "rgba(255,255,255,0.08)",
@@ -1317,7 +1293,7 @@ function BillingPageInner() {
             </div>
 
             <div
-              className="relative rounded-xl border px-2.5 py-1.5"
+              className="relative rounded-md border px-2.5 py-1.5"
               style={{
                 borderColor: "rgba(34,197,94,0.22)",
                 background: "rgba(255,255,255,0.08)",
@@ -1356,7 +1332,7 @@ function BillingPageInner() {
                     onClick={() => setShowScheduledChangeInfo(false)}
                   />
                   <div
-                    className="absolute left-0 top-full z-50 mt-1.5 w-[min(15rem,calc(100vw-2.5rem))] rounded-xl border p-3 text-xs shadow-lg"
+                    className="absolute left-0 top-full z-50 mt-1.5 w-[min(15rem,calc(100vw-2.5rem))] rounded-md border p-3 text-xs shadow-lg"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-card)",
@@ -1384,18 +1360,18 @@ function BillingPageInner() {
               ) : null}
             </div>
           </div>
-        </div>
-
+        }
+      >
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href={`/planes?current_plan=${plan}&from=billing&slug=${slug}&tenant_id=${tenantId}`}
-            className="inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
+            className="inline-flex h-10 items-center justify-center rounded-md px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
             style={{ background: "var(--accent-solid)" }}
           >
             Cambiar de Plan
           </Link>
         </div>
-      </section>
+      </PageHeader>
 
       {loadError ? <Notice tone="danger" title={loadError} /> : null}
 
@@ -1404,7 +1380,7 @@ function BillingPageInner() {
         aria-label="Secciones de facturación y pago"
       >
         <div
-          className="flex min-w-max gap-2 rounded-[20px] border p-1.5 shadow-sm backdrop-blur"
+          className="flex min-w-max gap-2 rounded border p-1.5 shadow-sm backdrop-blur"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-card)",
@@ -1419,16 +1395,13 @@ function BillingPageInner() {
                 type="button"
                 onClick={() => setActiveTab(item.id)}
                 aria-current={active ? "page" : undefined}
-                className="cursor-pointer whitespace-nowrap rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                className={`cursor-pointer whitespace-nowrap rounded border px-5 py-3 text-sm font-semibold transition-colors duration-150 hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
+                  active ? "" : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
+                }`}
                 style={{
-                  borderColor: active ? "rgba(37,99,235,0.36)" : "transparent",
-                  background: active
-                    ? "linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.07))"
-                    : "transparent",
-                  color: active ? "var(--text-main)" : "var(--text-muted)",
-                  boxShadow: active
-                    ? "inset 0 0 0 1px rgba(37,99,235,0.22)"
-                    : "none",
+                  borderColor: active ? "var(--accent-solid)" : "transparent",
+                  background: active ? "var(--accent-solid)" : "transparent",
+                  color: active ? "#ffffff" : "var(--text-muted)",
                 }}
               >
                 {item.label}
@@ -1467,6 +1440,7 @@ function BillingPageInner() {
         ) : null}
 
         <Panel
+          className="!rounded"
         title="Mi suscripción"
         description="Plan, ciclo de cobro y estado de tu suscripción con Cargo Automático."
       >
@@ -1555,7 +1529,7 @@ function BillingPageInner() {
                     type="button"
                     onClick={onClick}
                     disabled={subscribing}
-                    className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                     style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
                   >
                     {label}
@@ -1574,6 +1548,7 @@ function BillingPageInner() {
 
       {subscriptionStatus?.has_subscription && subscriptionStatus.card ? (
         <Panel
+          className="!rounded"
           title="Mi tarjeta"
           description="Tarjeta usada para el Cargo Automático de tu suscripción."
         >
@@ -1586,7 +1561,7 @@ function BillingPageInner() {
                 type="button"
                 onClick={handleChangeCard}
                 disabled={changingCard}
-                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -1602,7 +1577,7 @@ function BillingPageInner() {
                     setDeleteCardError("");
                     setDeleteCardModalOpen(true);
                   }}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+                  className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium transition"
                   style={{
                     borderColor: "rgba(244,63,94,0.4)",
                     background: "var(--bg-card)",
@@ -1627,6 +1602,7 @@ function BillingPageInner() {
         subscriptionStatus.status === "card_registered" ||
         subscriptionStatus.status === "trialing") ? (
         <Panel
+          className="!rounded"
           title="Cancelar suscripción"
           description="Deja de renovar tu plan automáticamente."
         >
@@ -1636,7 +1612,7 @@ function BillingPageInner() {
               setCancelError("");
               setCancelModalOpen(true);
             }}
-            className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+            className="inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-semibold text-white transition"
             style={{
               background: "linear-gradient(135deg, rgb(244 63 94), rgb(225 29 72))",
             }}
@@ -1682,6 +1658,7 @@ function BillingPageInner() {
         </div>
 
         <Panel
+          className="!rounded"
           title="Cargos de tu suscripción"
           description="Cada cobro automático de Cargo Automático quedará listado aquí."
         >
@@ -1701,6 +1678,7 @@ function BillingPageInner() {
         </Panel>
 
         <Panel
+          className="!rounded"
           title="Cargos de add-ons"
           description="Cada cobro de un add-on contratado quedará listado aquí."
         >
@@ -1775,7 +1753,7 @@ function BillingPageInner() {
             type="button"
             onClick={applyFullAdjustment}
             disabled={saving}
-            className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 inline-flex h-11 items-center justify-center rounded-md px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
             style={{
               background: isUrgentAdjustment
                 ? "linear-gradient(135deg, rgb(244 63 94), rgb(225 29 72))"
@@ -1797,11 +1775,11 @@ function BillingPageInner() {
         <Panel
           title="Sucursales"
           description={`Selecciona las sucursales que deseas mantener activas (${activeBranches.length} / ${maxBranches ?? "..."})`}
-          className="bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
+          className="!rounded bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]"
         >
           {activeBranches.length === 0 ? (
             <div
-              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              className="rounded-md border border-dashed px-4 py-6 text-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -1815,7 +1793,7 @@ function BillingPageInner() {
               {activeBranches.map((branch) => (
                 <label
                   key={branch.id}
-                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                  className="flex items-center gap-3 rounded-md border px-4 py-3 text-sm"
                   style={{
                     borderColor: hasBranchExcess
                       ? selectedBranchesToKeep.includes(branch.id)
@@ -1849,11 +1827,11 @@ function BillingPageInner() {
         <Panel
           title="Profesionales"
           description={`Selecciona los profesionales que deseas mantener activos (${activeStaff.length} / ${maxStaff ?? "..."})`}
-          className="bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
+          className="!rounded bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
           {activeStaff.length === 0 ? (
             <div
-              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              className="rounded-md border border-dashed px-4 py-6 text-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -1867,7 +1845,7 @@ function BillingPageInner() {
               {activeStaff.map((item) => (
                 <label
                   key={item.id}
-                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                  className="flex items-center gap-3 rounded-md border px-4 py-3 text-sm"
                   style={{
                     borderColor: hasStaffExcess
                       ? selectedStaffToKeep.includes(item.id)
@@ -1904,11 +1882,11 @@ function BillingPageInner() {
         <Panel
           title="Servicios"
           description={`Selecciona los servicios que deseas mantener activos (${activeServices.length} / ${maxServices})`}
-          className="bg-[linear-gradient(180deg,rgba(34,197,94,0.06),transparent_40%)]"
+          className="!rounded bg-[linear-gradient(180deg,rgba(34,197,94,0.06),transparent_40%)]"
         >
           {activeServices.length === 0 ? (
             <div
-              className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+              className="rounded-md border border-dashed px-4 py-6 text-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -1922,7 +1900,7 @@ function BillingPageInner() {
               {activeServices.map((item) => (
                 <label
                   key={item.id}
-                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                  className="flex items-center gap-3 rounded-md border px-4 py-3 text-sm"
                   style={{
                     borderColor: hasServicesExcess
                       ? selectedServicesToKeep.includes(item.id)
@@ -1965,7 +1943,7 @@ function BillingPageInner() {
             onClick={() => (canceling ? null : setCancelModalOpen(false))}
           />
           <div
-            className="relative z-10 mx-4 w-full max-w-sm rounded-2xl border p-6 shadow-2xl"
+            className="relative z-10 mx-4 w-full max-w-sm rounded-md border p-6 shadow-2xl"
             style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
             <h3
@@ -1998,7 +1976,7 @@ function BillingPageInner() {
                 type="button"
                 onClick={() => setCancelModalOpen(false)}
                 disabled={canceling}
-                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-md border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -2011,7 +1989,7 @@ function BillingPageInner() {
                 type="button"
                 onClick={handleCancelSubscription}
                 disabled={canceling}
-                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-md text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   background: "linear-gradient(135deg, rgb(244 63 94), rgb(225 29 72))",
                 }}
@@ -2031,7 +2009,7 @@ function BillingPageInner() {
             onClick={() => (deletingCard ? null : setDeleteCardModalOpen(false))}
           />
           <div
-            className="relative z-10 mx-4 w-full max-w-sm rounded-2xl border p-6 shadow-2xl"
+            className="relative z-10 mx-4 w-full max-w-sm rounded-md border p-6 shadow-2xl"
             style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
             <h3
@@ -2059,7 +2037,7 @@ function BillingPageInner() {
                 type="button"
                 onClick={() => setDeleteCardModalOpen(false)}
                 disabled={deletingCard}
-                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-md border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -2072,7 +2050,7 @@ function BillingPageInner() {
                 type="button"
                 onClick={handleDeleteCard}
                 disabled={deletingCard}
-                className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-md text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   background: "linear-gradient(135deg, rgb(244 63 94), rgb(225 29 72))",
                 }}

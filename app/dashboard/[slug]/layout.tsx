@@ -1826,26 +1826,12 @@ export default function DashboardLayout({
               </div>
 
               <div className="flex-1 overflow-y-auto px-4 py-5">
-                {/* "Principal" (sucursal, se ve como selector con flechita) y
-                    "Mi cuenta" (widget de estado, se ve como botón) van
-                    arriba del todo — son los 2 accesos que Camilo pidió subir
-                    junto a la navegación, en vez de quedar al fondo cerca de
-                    Cerrar sesión. El widget de estado solo vive acá en
-                    <768px (el header ya lo muestra desde esa medida). El
-                    badge de plan y "copiar enlace" se sacaron de acá por
-                    completo — ahora viven siempre visibles en el header. */}
+                {/* "Principal" (sucursal, se ve como selector con flechita)
+                    va arriba del todo, junto a la navegación. "Activaciones"
+                    (widget de estado), el badge de plan y "copiar enlace" ya
+                    no viven acá — están siempre visibles en el header. */}
                 <div className="mb-4 flex flex-wrap items-center gap-2 border-b pb-4" style={{ borderColor: sidebarBorder }}>
                   <BranchSelectorBlock compact />
-                  {tenantId ? (
-                    <div className="md:hidden">
-                      <AccountStatusWidget
-                        tenantId={tenantId}
-                        slug={slug}
-                        isNocturno={isNocturno}
-                        isOwnerOrAdmin={isOwnerOrAdmin}
-                      />
-                    </div>
-                  ) : null}
                 </div>
 
                 <NavLinks onNavigate={() => setMobileMenuOpen(false)} />
@@ -1921,16 +1907,6 @@ export default function DashboardLayout({
                     >
                       Plan {planLabel}
                     </span>
-                  ) : null}
-                  {tenantId ? (
-                    <div className="hidden md:block">
-                      <AccountStatusWidget
-                        tenantId={tenantId}
-                        slug={slug}
-                        isNocturno={isNocturno}
-                        isOwnerOrAdmin={isOwnerOrAdmin}
-                      />
-                    </div>
                   ) : null}
                 </div>
                 </div>
@@ -2008,6 +1984,28 @@ export default function DashboardLayout({
                     <Moon size={16} />
                   )}
                 </button>
+
+                {/* "Activaciones" (2026-09-29): antes vivía en el sidebar
+                    mobile (y como pill con texto junto al nombre en >=768px).
+                    Ahora es un solo botón de ícono en esta fila, con el
+                    mismo tamaño/estilo que los demás, y reutiliza el
+                    accountStatus que este layout ya cargó -- sin fetch
+                    propio, así aparece de inmediato. */}
+                {tenantId ? (
+                  <AccountStatusWidget
+                    tenantId={tenantId}
+                    slug={slug}
+                    isNocturno={isNocturno}
+                    isOwnerOrAdmin={isOwnerOrAdmin}
+                    status={accountStatus}
+                    triggerClassName="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition sm:h-11 sm:w-11"
+                    neutralTriggerStyle={{
+                      background: softBg,
+                      borderColor: sidebarBorder,
+                      color: textMain,
+                    }}
+                  />
+                ) : null}
 
                 <div ref={notifPanelRef} className="relative">
                   <button

@@ -1289,12 +1289,12 @@ export function AddonManager({
     return (
       <div
         key={item.key}
-        className="rounded-2xl border px-4 py-3"
+        className="rounded-md border px-4 py-3"
         style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
       >
         <div className="flex items-start gap-3">
           <span
-            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${config.iconClass}`}
+            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${config.iconClass}`}
           >
             {config.icon}
           </span>
@@ -1305,7 +1305,7 @@ export function AddonManager({
                   {config.title}
                   {pending ? (
                     <span
-                      className="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                      className="ml-2 rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
                       style={{ background: "rgba(245,158,11,0.15)", color: "rgb(245 158 11)" }}
                     >
                       Pendiente de confirmar
@@ -1330,7 +1330,7 @@ export function AddonManager({
                 <button
                   type="button"
                   onClick={() => openBuyModal(item.key)}
-                  className="inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold text-white transition"
+                  className="inline-flex h-9 items-center justify-center rounded-md px-3 text-xs font-semibold text-white transition"
                   style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
                 >
                   {isMessagePack(item.key) ? "Comprar más packs" : "Renovar o ampliar"}
@@ -1343,7 +1343,7 @@ export function AddonManager({
             ) : (
             <div className="mt-3 flex items-center justify-end">
               <div
-                className="flex items-center rounded-lg border"
+                className="flex items-center rounded-md border"
                 style={{ borderColor: "var(--border-color)" }}
               >
                 <button
@@ -1482,6 +1482,7 @@ export function AddonManager({
   return (
     <div className="space-y-4">
       <Panel
+        className="!rounded"
         title="Add-ons"
         description={
           hasPaymentMethod === false
@@ -1491,7 +1492,7 @@ export function AddonManager({
       >
         {addonPaymentNotice ? (
           <div
-            className="mb-3 flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-sm"
+            className="mb-3 flex items-start justify-between gap-3 rounded-md border px-4 py-3 text-sm"
             style={{
               borderColor:
                 addonPaymentNotice === "ok"
@@ -1530,7 +1531,7 @@ export function AddonManager({
 
         {addonError ? (
           <div
-            className="mb-3 rounded-2xl border px-4 py-3 text-sm"
+            className="mb-3 rounded-md border px-4 py-3 text-sm"
             style={{
               borderColor: "rgba(244,63,94,0.34)",
               background: "rgba(244,63,94,0.08)",
@@ -1547,7 +1548,7 @@ export function AddonManager({
           </p>
         ) : !anyAddonAvailable ? (
           <div
-            className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+            className="rounded-md border border-dashed px-4 py-6 text-sm"
             style={{
               borderColor: "var(--border-color)",
               background: "var(--bg-soft)",
@@ -1560,7 +1561,7 @@ export function AddonManager({
           <>
             {extraItems.length === 0 && pendingNewItems.length === 0 ? (
               <div
-                className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+                className="rounded-md border border-dashed px-4 py-6 text-sm"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -1596,12 +1597,12 @@ export function AddonManager({
                         }
                         disabled={addonSubmitting}
                         title={config.tooltip}
-                        className="flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40"
                         style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
                       >
                         <span className="flex items-center gap-2">
                           <span
-                            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${config.iconClass}`}
+                            className={`inline-flex h-8 w-8 items-center justify-center rounded-md ${config.iconClass}`}
                           >
                             {config.icon}
                           </span>
@@ -1654,7 +1655,7 @@ export function AddonManager({
                   setAddonConfirmModalOpen(true);
                 }}
                 disabled={addonSubmitting}
-                className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-md px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
               >
                 Confirmar y cobrar add-ons
@@ -1672,7 +1673,7 @@ export function AddonManager({
             onClick={() => (addonSubmitting ? null : setAddonConfirmModalOpen(false))}
           />
           <div
-            className="relative z-10 mx-4 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
+            className="relative z-10 mx-4 w-full max-w-md rounded border p-6 shadow-2xl"
             style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
           >
             {addonChangeResults.length > 0 ? (
@@ -1698,7 +1699,7 @@ export function AddonManager({
                     return (
                       <li
                         key={result.key}
-                        className="rounded-lg border px-3 py-2 text-sm"
+                        className="rounded-md border px-3 py-2 text-sm"
                         style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
                       >
                         <span style={{ color: statusColor }}>
@@ -1717,7 +1718,7 @@ export function AddonManager({
 
                 {addonChangeResults.some((result) => result.code === "payment_method_required") ? (
                   <div
-                    className="mt-3 rounded-lg border px-3 py-2 text-xs leading-5"
+                    className="mt-3 rounded-md border px-3 py-2 text-xs leading-5"
                     style={{
                       borderColor: "rgba(244,63,94,0.34)",
                       background: "rgba(244,63,94,0.06)",
@@ -1743,7 +1744,7 @@ export function AddonManager({
                       setAddonChangeResults([]);
                       setAddonConfirmModalOpen(false);
                     }}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border px-5 text-sm font-medium transition"
+                    className="inline-flex h-10 items-center justify-center rounded-md border px-5 text-sm font-medium transition"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -1789,7 +1790,7 @@ export function AddonManager({
                     return (
                     <li
                       key={change.key}
-                      className="rounded-lg border px-3 py-2 text-sm"
+                      className="rounded-md border px-3 py-2 text-sm"
                       style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
                     >
                       <div className="flex items-center justify-between gap-3">
@@ -1880,7 +1881,7 @@ export function AddonManager({
                     type="button"
                     onClick={() => setAddonConfirmModalOpen(false)}
                     disabled={addonSubmitting}
-                    className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex-1 inline-flex h-10 items-center justify-center rounded-md border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -1893,7 +1894,7 @@ export function AddonManager({
                     type="button"
                     disabled={addonSubmitting}
                     onClick={handleConfirmAddonCharge}
-                    className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex-1 inline-flex h-10 items-center justify-center rounded-md text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                     style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
                   >
                     {addonSubmitting ? "Cobrando..." : "Confirmar cobro"}
@@ -1922,11 +1923,11 @@ export function AddonManager({
               onClick={() => (oneTimeSubmitting ? null : setBuyModal(null))}
             />
             <div
-              className="relative z-10 mx-4 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
+              className="relative z-10 mx-4 w-full max-w-md rounded border p-6 shadow-2xl"
               style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
             >
               <span
-                className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                className="inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
                 style={{ background: "rgba(14,165,233,0.14)", color: "rgb(3 105 161)" }}
               >
                 Pago único
@@ -1941,7 +1942,7 @@ export function AddonManager({
               </p>
 
               <div
-                className="mt-4 flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+                className="mt-4 flex items-center justify-between gap-3 rounded-md border px-3 py-2.5"
                 style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
               >
                 <div className="min-w-0">
@@ -1958,7 +1959,7 @@ export function AddonManager({
                       : "Cantidad a contratar"}
                   </p>
                 </div>
-                <div className="flex items-center rounded-lg border" style={{ borderColor: "var(--border-color)" }}>
+                <div className="flex items-center rounded-md border" style={{ borderColor: "var(--border-color)" }}>
                   <button
                     type="button"
                     onClick={() => setBuyQty((prev) => Math.max(minQty, (isPack ? prev : Math.max(prev, minQty)) - 1))}
@@ -2006,7 +2007,7 @@ export function AddonManager({
                   type="button"
                   onClick={() => setBuyModal(null)}
                   disabled={oneTimeSubmitting}
-                  className="flex-1 inline-flex h-10 items-center justify-center rounded-xl border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 inline-flex h-10 items-center justify-center rounded-md border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                   style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
                 >
                   Cancelar
@@ -2015,7 +2016,7 @@ export function AddonManager({
                   type="button"
                   onClick={handleOneTimeCheckout}
                   disabled={oneTimeSubmitting}
-                  className="flex-1 inline-flex h-10 items-center justify-center rounded-xl text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 inline-flex h-10 items-center justify-center rounded-md text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                   style={{ background: "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))" }}
                 >
                   {oneTimeSubmitting ? "Abriendo Flow..." : `Pagar ${formatCLP(purchase.total)} con Flow`}

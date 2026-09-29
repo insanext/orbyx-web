@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { Layers3 } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
+import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
 import {
   DndContext,
@@ -183,7 +184,7 @@ function Notice({
   const styles = getNoticeStyles(tone);
 
   return (
-    <div className="rounded-2xl border px-4 py-4 shadow-sm" style={styles.wrapper}>
+    <div className="rounded border px-4 py-4 shadow-sm" style={styles.wrapper}>
       <p className="text-sm font-semibold" style={styles.title}>
         {title}
       </p>
@@ -293,12 +294,12 @@ function SortableServiceRow({
               </span>
             )}
             {service.is_group && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
                 Grupal · cap {service.capacity}
               </span>
             )}
             {!service.active && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/20">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-400 border border-gray-500/20">
                 Inactivo
               </span>
             )}
@@ -318,7 +319,7 @@ function SortableServiceRow({
           <button
             onClick={() => onEdit(service)}
             onPointerDown={(e) => e.stopPropagation()}
-            className="text-xs px-2.5 py-1 rounded-lg border border-blue-900/30 hover:border-blue-500/40 transition-colors"
+            className="text-xs px-2.5 py-1 rounded-md border border-blue-900/30 hover:border-blue-500/40 transition-colors"
             style={{ color: "var(--text-muted)" }}
           >
             Editar
@@ -326,7 +327,7 @@ function SortableServiceRow({
           <button
             onClick={() => onDelete(service)}
             onPointerDown={(e) => e.stopPropagation()}
-            className="text-xs px-2.5 py-1 rounded-lg border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
+            className="text-xs px-2.5 py-1 rounded-md border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
             style={{ color: "var(--text-muted)" }}
           >
             Eliminar
@@ -510,7 +511,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
       return (
         <div
           key={service.id}
-          className="rounded-2xl border p-4 mx-3 mb-2"
+          className="rounded-md border p-4 mx-3 mb-2"
           style={{
             borderColor: "rgba(37,99,235,0.35)",
             background:
@@ -535,7 +536,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                 setEditForm((prev) => ({ ...prev, name: e.target.value }))
               }
               placeholder="Nombre del servicio"
-              className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-card)",
@@ -548,7 +549,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                 setEditForm((prev) => ({ ...prev, description: e.target.value }))
               }
               placeholder="Descripción"
-              className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-card)",
@@ -568,7 +569,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                   }))
                 }
                 placeholder="Ej: Trae tu carnet de identidad"
-                className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -595,7 +596,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                     }))
                   }
                   placeholder="Duración del servicio (min)"
-                  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-card)",
@@ -615,7 +616,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                     setEditForm((prev) => ({ ...prev, price: e.target.value }))
                   }
                   placeholder="Precio"
-                  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-card)",
@@ -627,7 +628,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
             {isGroupBookingBusiness ? (
               <div className="space-y-2">
                 <label
-                  className={`orbyx-services-energy flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${
+                  className={`orbyx-services-energy flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                     editForm.is_group ? "orbyx-services-energy-active" : ""
                   }`}
                   style={{
@@ -670,7 +671,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                           capacity: e.target.value,
                         }))
                       }
-                      className="w-full rounded-xl border px-4 py-2 text-sm"
+                      className="w-full rounded-md border px-4 py-2 text-sm"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-card)",
@@ -690,7 +691,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                   {staff.map((member) => (
                     <label
                       key={member.id}
-                      className="flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors"
+                      className="flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors"
                       style={{
                         borderColor: editForm.staff_ids.includes(member.id)
                           ? "rgba(37,99,235,0.50)"
@@ -721,7 +722,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                 type="button"
                 onClick={() => handleSaveEdit(service.id)}
                 disabled={saving}
-                className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "rgba(147,197,253,0.36)",
                   background:
@@ -734,7 +735,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                 type="button"
                 onClick={cancelEditing}
                 disabled={saving}
-                className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="orbyx-services-energy inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -1508,20 +1509,6 @@ customer_instructions: editForm.customer_instructions.trim() || null,
           }
         }
 
-        html[data-theme="nocturno"] .orbyx-services-hero {
-          border-color: rgba(56, 189, 248, 0.24) !important;
-          background:
-            linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.88) 54%, rgba(8, 47, 73, 0.78)) !important;
-          box-shadow:
-            0 24px 60px -34px rgba(14, 165, 233, 0.58),
-            inset 0 1px 0 rgba(255, 255, 255, 0.06),
-            inset 0 0 0 1px rgba(59, 130, 246, 0.12) !important;
-        }
-
-        html[data-theme="nocturno"] .orbyx-services-hero-kicker {
-          color: rgb(125, 211, 252) !important;
-        }
-
         html[data-theme="nocturno"] .orbyx-services-hero-stat,
         html[data-theme="nocturno"] .orbyx-services-hero-link {
           border-color: rgba(56, 189, 248, 0.18) !important;
@@ -1530,49 +1517,21 @@ customer_instructions: editForm.customer_instructions.trim() || null,
         }
       `}</style>
 
-      <section
-        className="orbyx-services-hero relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
-        style={{
-          borderColor: "var(--agenda-hero-border, rgba(37,99,235,0.42))",
-          background:
-            "var(--agenda-hero-bg, linear-gradient(135deg, rgba(248,251,255,0.98), rgba(224,238,255,0.9) 48%, rgba(241,248,255,0.98)))",
-        }}
-      >
-        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex max-w-3xl items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
-              <Layers3 className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-            <p className="orbyx-services-hero-kicker text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-600">
-              Servicios
-            </p>
-
-            <h1
-  className="mt-0.5 text-lg font-semibold tracking-tight"
-              style={{ color: "var(--agenda-hero-title, var(--text-main))" }}
-            >
-              Servicios del negocio
-            </h1>
-
-            <p
-              className="mt-0.5 max-w-2xl text-sm leading-5"
-              style={{ color: "var(--agenda-hero-muted, var(--text-muted))" }}
-            >
-              {selectedBranchName
-                ? `Gestiona los servicios de la sucursal ${selectedBranchName}.`
-                : `Gestiona los servicios que tus clientes podrán reservar en ${
-                    loading ? "tu negocio" : businessName
-                  }.`}
-            </p>
-            </div>
-
-          </div>
-
+      <PageHeader
+        eyebrow="Servicios"
+        title="Servicios del negocio"
+        icon={<Layers3 className="h-4 w-4" />}
+        description={
+          selectedBranchName
+            ? `Gestiona los servicios de la sucursal ${selectedBranchName}.`
+            : `Gestiona los servicios que tus clientes podrán reservar en ${
+                loading ? "tu negocio" : businessName
+              }.`
+        }
+        actions={
           <div className="grid grid-cols-2 gap-2 items-stretch">
             <div
-              className="orbyx-services-hero-stat rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
+              className="orbyx-services-hero-stat rounded-md border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
@@ -1593,7 +1552,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
             </div>
 
             <div
-              className="orbyx-services-hero-stat rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
+              className="orbyx-services-hero-stat rounded-md border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
@@ -1613,11 +1572,11 @@ customer_instructions: editForm.customer_instructions.trim() || null,
               </p>
             </div>
           </div>
-        </div>
-      </section>
+        }
+      />
 
       {loadingBranches && !selectedBranchId ? (
-        <div className="flex items-center gap-2.5 rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
+        <div className="flex items-center gap-2.5 rounded border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
           <span
             className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2"
             style={{ borderColor: "var(--text-muted)", borderTopColor: "transparent" }}
@@ -1643,7 +1602,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
 {saveOk ? <Notice tone="success" title={saveOk} /> : null}
 
       <section
-        className="space-y-6 rounded-3xl border p-6"
+        className="space-y-6 rounded border p-6"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
@@ -1667,7 +1626,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
               {selectedBranchId && !loading && (
                 <button
                   onClick={() => setShowNewGroupInput(true)}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border border-blue-900/30 hover:border-blue-500/40 transition-colors"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-blue-900/30 hover:border-blue-500/40 transition-colors"
                   style={{ color: "var(--text-muted)" }}
                 >
                   <svg
@@ -1701,7 +1660,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                     }
                   }}
                   placeholder="Nombre de la categoría..."
-                  className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors"
+                  className="flex-1 border rounded-md px-3 py-2 text-sm focus:outline-none transition-colors"
                   style={{
                     background: "var(--bg-card)",
                     borderColor: "var(--border-color)",
@@ -1732,7 +1691,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                     setShowNewGroupInput(false);
                   }}
                   disabled={!newGroupName.trim()}
-                  className="px-4 py-2 rounded-xl text-white text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-md text-white text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
                     background:
                       "linear-gradient(135deg, rgb(37 99 235), rgb(59 130 246))",
@@ -1745,7 +1704,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                     setShowNewGroupInput(false);
                     setNewGroupName("");
                   }}
-                  className="px-3 py-2 rounded-xl border text-sm transition-colors"
+                  className="px-3 py-2 rounded-md border text-sm transition-colors"
                   style={{
                     borderColor: "var(--border-color)",
                     color: "var(--text-muted)",
@@ -1784,7 +1743,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                   return (
                     <div
                       key={group.id}
-                      className="mb-3 rounded-xl border overflow-hidden"
+                      className="mb-3 rounded-md border overflow-hidden"
                       style={{ borderColor: "rgba(37,99,235,0.20)" }}
                     >
                       <div
@@ -1866,7 +1825,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                             </span>
                           )}
                           <span
-                            className="text-[10px] px-1.5 py-0.5 rounded-full border"
+                            className="text-[10px] px-1.5 py-0.5 rounded border"
                             style={{
                               background: "rgba(37,99,235,0.12)",
                               borderColor: "rgba(37,99,235,0.20)",
@@ -1890,7 +1849,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                               setEditingGroupId(group.id);
                               setEditingGroupName(group.name);
                             }}
-                            className="p-1.5 rounded-lg transition-colors"
+                            className="p-1.5 rounded-md transition-colors"
                             style={{ color: "var(--text-muted)" }}
                             title="Renombrar"
                           >
@@ -1916,7 +1875,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                                 name: group.name,
                               })
                             }
-                            className="p-1.5 rounded-lg transition-colors hover:text-red-400"
+                            className="p-1.5 rounded-md transition-colors hover:text-red-400"
                             style={{ color: "var(--text-muted)" }}
                             title="Eliminar grupo"
                           >
@@ -1986,7 +1945,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                   const isCollapsed = collapsedGroups.has("none");
                   return (
                     <div
-                      className="mb-3 rounded-xl border border-dashed overflow-hidden"
+                      className="mb-3 rounded-md border border-dashed overflow-hidden"
                       style={{ borderColor: "var(--border-color)" }}
                     >
                       <div
@@ -2019,7 +1978,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                             Sin categoría
                           </span>
                           <span
-                            className="text-[10px] px-1.5 py-0.5 rounded-full border"
+                            className="text-[10px] px-1.5 py-0.5 rounded border"
                             style={{
                               background: "rgba(0,0,0,0.10)",
                               borderColor: "var(--border-color)",
@@ -2073,7 +2032,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                 <DragOverlay>
                   {activeService ? (
                     <div
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-blue-500/40 shadow-lg"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-md border border-blue-500/40 shadow-lg"
                       style={{ background: "var(--bg-card)" }}
                     >
                       <p
@@ -2106,7 +2065,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, name: e.target.value }))
                 }
-                className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -2120,7 +2079,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, description: e.target.value }))
                 }
-                className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -2144,7 +2103,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                       customer_instructions: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-card)",
@@ -2174,7 +2133,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                       duration_minutes: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-card)",
@@ -2197,7 +2156,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, price: e.target.value }))
                   }
-                  className="w-full rounded-xl border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full rounded-md border px-4 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-card)",
@@ -2212,7 +2171,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
 {isGroupBookingBusiness ? (
   <div className="space-y-2">
     <label
-      className={`orbyx-services-energy flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${
+      className={`orbyx-services-energy flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
         form.is_group ? "orbyx-services-energy-active" : ""
       }`}
       style={{
@@ -2254,7 +2213,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
               capacity: e.target.value,
             }))
           }
-          className="w-full rounded-xl border px-4 py-2 text-sm"
+          className="w-full rounded-md border px-4 py-2 text-sm"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-card)",
@@ -2276,7 +2235,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                     {staff.map((member) => (
                       <label
                         key={member.id}
-                        className="flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors"
+                        className="flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors"
                         style={{
                           borderColor: form.staff_ids.includes(member.id)
                             ? "rgba(37,99,235,0.50)"
@@ -2307,7 +2266,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                 type="button"
                 onClick={handleCreateService}
                 disabled={saving || loading || !canEditServicios}
-                className="orbyx-services-energy w-full rounded-xl border py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="orbyx-services-energy w-full rounded-md border py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   borderColor: "rgba(147,197,253,0.36)",
                   background:
@@ -2330,7 +2289,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
               setConfirmModal({ open: false, type: null, id: null, name: null })
             }
           />
-          <div className="relative z-10 bg-[#0f1729] border border-blue-900/40 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl shadow-blue-950/50">
+          <div className="relative z-10 bg-[#0f1729] border border-blue-900/40 rounded p-6 w-full max-w-sm mx-4 shadow-2xl shadow-blue-950/50">
             <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 border border-red-500/30">
               <svg
                 className="w-6 h-6 text-red-400"
@@ -2378,7 +2337,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                     name: null,
                   })
                 }
-                className="flex-1 py-2.5 rounded-xl border border-blue-900/40 text-gray-400 hover:text-white hover:border-blue-700/60 text-sm font-medium transition-colors"
+                className="flex-1 py-2.5 rounded-md border border-blue-900/40 text-gray-400 hover:text-white hover:border-blue-700/60 text-sm font-medium transition-colors"
               >
                 Cancelar
               </button>
@@ -2409,7 +2368,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                     name: null,
                   });
                 }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 hover:border-red-500/50 transition-colors"
+                className="flex-1 py-2.5 rounded-md text-sm font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 hover:border-red-500/50 transition-colors"
               >
                 Sí, eliminar
               </button>

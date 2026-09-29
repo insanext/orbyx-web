@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { AlertTriangle, Clock, Landmark, Lock, MessageCircle, X } from "lucide-react";
+import { AlertTriangle, Clock, Landmark, Lock, MessageCircle, X, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { createClient } from "../../lib/supabase/client";
 
@@ -189,13 +189,28 @@ export function AccountStatusWidget({
   slug,
   isNocturno,
   isOwnerOrAdmin,
+  status: statusProp,
+  triggerClassName,
+  neutralTriggerStyle,
 }: {
   tenantId: string;
   slug: string;
   isNocturno: boolean;
   isOwnerOrAdmin: boolean;
+  // Estado ya cargado por el layout (useAccountStatus en dashboard/[slug]/
+  // layout.tsx). Cuando se pasa, el widget NO vuelve a pedir
+  // /billing/account-status: antes cada montaje hacía su propio fetch y el
+  // botón quedaba invisible (return null) hasta que respondía el backend --
+  // en el sidebar mobile, que se monta recién al abrirlo, eso era la demora
+  // visible al abrir el menú (2026-09-29).
+  status?: AccountStatus | null;
+  // Botón de ícono (sin texto) en la fila de íconos del header: el layout
+  // pasa las mismas clases/estilo que copiar link, QR, tema y notificaciones.
+  triggerClassName?: string;
+  neutralTriggerStyle?: CSSProperties;
 }) {
-  const { status } = useAccountStatus(tenantId);
+  const { status: fetchedStatus } = useAccountStatus(statusProp === undefined ? tenantId : "");
+  const status = statusProp === undefined ? fetchedStatus : statusProp;
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   // En mobile el trigger puede caer en cualquier x del header (wrap variable),
@@ -656,15 +671,25 @@ export function AccountStatusWidget({
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-8 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-semibold transition sm:h-11 sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-sm"
-        style={{ borderColor: tone.border, background: tone.bg, color: tone.text }}
+        aria-label={pillLabel}
+        title={pillLabel}
+        className={
+          triggerClassName ||
+          "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition sm:h-11 sm:w-11"
+        }
+        style={
+          pillTone === "neutral" && neutralTriggerStyle
+            ? neutralTriggerStyle
+            : { borderColor: tone.border, background: tone.bg, color: tone.text }
+        }
       >
         {pillTone === "danger" || pillTone === "warning" ? (
-          <AlertTriangle size={15} />
+          <AlertTriangle size={16} />
+        ) : pillTone === "info" ? (
+          <Clock size={16} />
         ) : (
-          <Clock size={15} />
+          <Zap size={16} />
         )}
-        {pillLabel}
       </button>
 
       {open ? (

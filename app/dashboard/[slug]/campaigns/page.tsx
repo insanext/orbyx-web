@@ -16,6 +16,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { PLAN_LABELS, isKnownPlanSlug, isPlanAtLeast, type PlanSlug } from "../../../../lib/plans";
 
@@ -822,7 +823,7 @@ function SectionCard({
 }) {
   return (
     <section
-      className={`rounded-[20px] border p-4 shadow-sm sm:p-5 ${className}`}
+      className={`rounded border p-4 shadow-sm sm:p-5 ${className}`}
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
@@ -875,7 +876,7 @@ function StatCard({
 }) {
   return (
     <div
-      className="rounded-[18px] border p-3"
+      className="rounded-md border p-3"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
@@ -899,7 +900,7 @@ function StatCard({
 
         {icon ? (
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
+            className="flex h-9 w-9 items-center justify-center rounded-md"
             style={{
               background:
                 "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.12))",
@@ -925,7 +926,7 @@ function MetricCard({
 }) {
   return (
     <div
-      className="rounded-[22px] border p-5"
+      className="rounded-md border p-5"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
@@ -966,7 +967,7 @@ function SegmentCard({
       type="button"
       onClick={onClick}
       aria-current={active ? "true" : undefined}
-      className="w-full cursor-pointer rounded-2xl border p-4 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+      className="w-full cursor-pointer rounded-md border p-4 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
       style={{
         borderColor: active ? "rgba(37,99,235,0.55)" : "var(--border-color)",
         background: active
@@ -1024,7 +1025,7 @@ function SoftChip({
       type="button"
       onClick={onClick}
       aria-current={active ? "true" : undefined}
-      className={`cursor-pointer rounded-xl border px-4 py-2 text-xs font-semibold transition-colors duration-150 hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
+      className={`cursor-pointer rounded-md border px-4 py-2 text-xs font-semibold transition-colors duration-150 hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
         active ? "" : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
       }`}
       style={{
@@ -1047,7 +1048,7 @@ function TinyMetric({
 }) {
   return (
     <div
-      className="rounded-2xl border px-4 py-3"
+      className="rounded-md border px-4 py-3"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
@@ -1077,7 +1078,7 @@ function MiniStat({
 }) {
   return (
     <div
-      className="rounded-[18px] border px-4 py-3"
+      className="rounded-md border px-4 py-3"
       style={{
         borderColor: "var(--border-color)",
         background: "var(--bg-card)",
@@ -1107,7 +1108,7 @@ function HistorySkeleton() {
       {Array.from({ length: 4 }).map((_, index) => (
         <div
           key={index}
-          className="rounded-[22px] border p-4"
+          className="rounded border p-4"
           style={{
             borderColor: "var(--border-color)",
             background: "var(--bg-card)",
@@ -1220,7 +1221,7 @@ function RichTextEditor({
         type="button"
         title={title}
         onClick={onClick}
-        className={`inline-flex h-10 min-w-[40px] items-center justify-center rounded-xl border px-3 text-sm font-semibold transition ${className}`}
+        className={`inline-flex h-10 min-w-[40px] items-center justify-center rounded-md border px-3 text-sm font-semibold transition ${className}`}
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
@@ -1242,7 +1243,7 @@ function RichTextEditor({
       </label>
 
       <div
-        className="overflow-hidden rounded-2xl border"
+        className="overflow-hidden rounded-md border"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
@@ -1258,7 +1259,7 @@ function RichTextEditor({
           <select
             value="p"
             onChange={(e) => applyFormatBlock(e.target.value as "p" | "h1" | "h2")}
-            className="h-10 rounded-xl border px-3 text-sm outline-none"
+            className="h-10 rounded-md border px-3 text-sm outline-none"
             style={{
               borderColor: "var(--border-color)",
               background: "var(--bg-card)",
@@ -1273,7 +1274,7 @@ function RichTextEditor({
           <select
             value={currentFontName}
             onChange={(e) => applyFontName(e.target.value)}
-            className="h-10 rounded-xl border px-3 text-sm outline-none"
+            className="h-10 rounded-md border px-3 text-sm outline-none"
             style={{
               borderColor: "var(--border-color)",
               background: "var(--bg-card)",
@@ -1290,7 +1291,7 @@ function RichTextEditor({
           <select
             value={currentFontSize}
             onChange={(e) => applyFontSize(e.target.value)}
-            className="h-10 rounded-xl border px-3 text-sm outline-none"
+            className="h-10 rounded-md border px-3 text-sm outline-none"
             style={{
               borderColor: "var(--border-color)",
               background: "var(--bg-card)",
@@ -1339,7 +1340,7 @@ function RichTextEditor({
           </ToolbarButton>
 
           <div
-            className="flex h-10 items-center gap-2 rounded-xl border px-3"
+            className="flex h-10 items-center gap-2 rounded-md border px-3"
             style={{
               borderColor: "var(--border-color)",
               background: "var(--bg-card)",
@@ -1604,15 +1605,15 @@ export default function CampaignsPage() {
   }
 
   const inputClass =
-    "h-12 w-full rounded-2xl border px-4 text-sm outline-none transition";
+    "h-12 w-full rounded-md border px-4 text-sm outline-none transition";
   const textareaClass =
-    "min-h-[140px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition";
+    "min-h-[140px] w-full rounded-md border px-4 py-3 text-sm outline-none transition";
   const selectClass =
-    "h-12 w-full rounded-2xl border px-4 text-sm outline-none transition";
+    "h-12 w-full rounded-md border px-4 text-sm outline-none transition";
   const primaryButtonClass =
-    "inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-12 items-center justify-center rounded-md px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
   const secondaryButtonClass =
-    "inline-flex h-12 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-12 items-center justify-center rounded-md border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
   const channelLimitInfo = useMemo(
     () => getCampaignChannelLimit(channel, emailUsage?.total ?? null, waUsage?.total ?? null),
@@ -2592,14 +2593,14 @@ export default function CampaignsPage() {
         description="Así verá el cliente tu campaña antes de enviarla."
       >
         <div
-          className="rounded-2xl border p-3 sm:p-4"
+          className="rounded-md border p-3 sm:p-4"
           style={{
             borderColor: "rgba(148,163,184,0.25)",
             background: "linear-gradient(180deg, #e2e8f0, #f8fafc)",
           }}
         >
           <div
-            className="overflow-hidden rounded-2xl border bg-white shadow-xl"
+            className="overflow-hidden rounded-md border bg-white shadow-xl"
             style={{ borderColor: "var(--border-color)" }}
           >
             <iframe
@@ -2644,7 +2645,7 @@ export default function CampaignsPage() {
         description="Vista rápida del mensaje antes de guardarlo o enviarlo."
       >
         <div
-          className="rounded-2xl border p-3 sm:p-4"
+          className="rounded-md border p-3 sm:p-4"
           style={{
             borderColor: "rgba(148,163,184,0.25)",
             background: "linear-gradient(180deg, #dcfce7, #bbf7d0)",
@@ -2798,43 +2799,16 @@ export default function CampaignsPage() {
   if (view === "landing") {
     return (
       <div className="space-y-5 pb-6">
-        <section
-          className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
-          style={{
-            borderColor: "rgba(37,99,235,0.42)",
-            background:
-              "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-          }}
-        >
-          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
-          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-600">
-                  Campañas
-                </p>
-                <h1
-                  className="relative mt-0.5 text-lg font-semibold tracking-tight"
-                  style={{ color: "var(--text-main)" }}
-                >
-                  Campañas y recuperación
-                </h1>
-                <p
-                  className="mt-0.5 max-w-2xl text-sm leading-5"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Elige un canal para armar tu campaña.
-                </p>
-              </div>
-            </div>
-
+        <PageHeader
+          eyebrow="Campañas"
+          title="Campañas y recuperación"
+          icon={<Sparkles className="h-4 w-4" />}
+          description="Elige un canal para armar tu campaña."
+          actions={
             <button
               type="button"
               onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
-              className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
+              className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium transition"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-card)",
@@ -2843,8 +2817,8 @@ export default function CampaignsPage() {
             >
               Ver historial Campañas
             </button>
-          </div>
-        </section>
+          }
+        />
 
         <div className="grid gap-5 md:grid-cols-2">
           {/* Starter accede al panel Campañas (auditoría 2026-09-20), pero
@@ -2866,7 +2840,7 @@ export default function CampaignsPage() {
                   setView("wizard");
                   setActiveStep(1);
                 }}
-                className="orbyx-campaign-energy group flex cursor-pointer flex-col gap-4 rounded-[24px] border p-6 text-left transition-all duration-200"
+                className="orbyx-campaign-energy group flex cursor-pointer flex-col gap-4 rounded border p-6 text-left transition-all duration-200"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -2874,7 +2848,7 @@ export default function CampaignsPage() {
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md"
                     style={{
                       background:
                         "linear-gradient(135deg, rgba(37,99,235,0.16), rgba(14,165,233,0.08))",
@@ -2898,7 +2872,7 @@ export default function CampaignsPage() {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div
-                    className="rounded-xl border px-2.5 py-2"
+                    className="rounded-md border px-2.5 py-2"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -2919,7 +2893,7 @@ export default function CampaignsPage() {
                   </div>
 
                   <div
-                    className="rounded-xl border px-2.5 py-2"
+                    className="rounded-md border px-2.5 py-2"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -2940,7 +2914,7 @@ export default function CampaignsPage() {
                   </div>
 
                   <div
-                    className="rounded-xl border px-2.5 py-2"
+                    className="rounded-md border px-2.5 py-2"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -2978,52 +2952,26 @@ export default function CampaignsPage() {
 
   return (
     <div className="space-y-5 pb-6">
-<section
-  className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
-  style={{
-    borderColor: "rgba(37,99,235,0.42)",
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-  }}
->
-<div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
-<div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-  <div className="flex items-center gap-3">
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
-      <Sparkles className="h-4 w-4" />
-    </div>
-  <div className="min-w-0">
-    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-600">Campañas</p>
-    <h1
-      className="relative mt-0.5 text-lg font-semibold tracking-tight"
-      style={{ color: "var(--text-main)" }}
-    >
-      Campañas y recuperación
-    </h1>
-
-    <p
-      className="mt-0.5 max-w-2xl text-sm leading-5"
-      style={{ color: "var(--text-muted)" }}
-    >
-      Planifica campañas automatizadas por email y WhatsApp para reactivar tu audiencia.
-    </p>
-  </div>
-  </div>
-
-  <button
-    type="button"
-    onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
-    className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition"
-    style={{
-      borderColor: "var(--border-color)",
-      background: "var(--bg-card)",
-      color: "var(--text-muted)",
-    }}
-  >
-    Ver historial Campañas
-  </button>
-</div>
-      </section>
+      <PageHeader
+        eyebrow="Campañas"
+        title="Campañas y recuperación"
+        icon={<Sparkles className="h-4 w-4" />}
+        description="Planifica campañas automatizadas por email y WhatsApp para reactivar tu audiencia."
+        actions={
+          <button
+            type="button"
+            onClick={() => router.push(`/dashboard/${slug}/campaigns/history`)}
+            className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium transition"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-muted)",
+            }}
+          >
+            Ver historial Campañas
+          </button>
+        }
+      />
 
       <button
         type="button"
@@ -3041,7 +2989,7 @@ export default function CampaignsPage() {
           para este aviso. Parte F.3, auditoría 2026-09-20. */}
       {channel === "email" && plan === "starter" && emailUsage != null && emailUsage.total === 0 ? (
         <div
-          className="rounded-2xl border px-4 py-3 text-sm"
+          className="rounded border px-4 py-3 text-sm"
           style={{ borderColor: "rgba(37,99,235,0.35)", background: "rgba(37,99,235,0.08)", color: "var(--text-main)" }}
         >
           Las campañas por email se activan cuando comienzas a pagar tu plan — también puedes{" "}
@@ -3057,7 +3005,7 @@ export default function CampaignsPage() {
       ) : null}
 
       <div
-        className="rounded-2xl border p-2"
+        className="rounded border p-2"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
@@ -3065,7 +3013,7 @@ export default function CampaignsPage() {
       >
         <div className="flex flex-wrap items-stretch gap-2">
           <div
-            className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+            className="rounded-md border px-3 py-2.5 flex flex-col gap-1"
             style={{
               borderColor: "rgba(59,130,246,0.20)",
               background: "rgba(255,255,255,0.06)",
@@ -3086,7 +3034,7 @@ export default function CampaignsPage() {
           </div>
 
           <div
-            className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+            className="rounded-md border px-3 py-2.5 flex flex-col gap-1"
             style={{
               borderColor: "rgba(59,130,246,0.20)",
               background: "rgba(255,255,255,0.06)",
@@ -3107,7 +3055,7 @@ export default function CampaignsPage() {
           </div>
 
           <div
-            className="rounded-lg border px-3 py-2.5 flex flex-col gap-1"
+            className="rounded-md border px-3 py-2.5 flex flex-col gap-1"
             style={{
               borderColor: "rgba(59,130,246,0.20)",
               background: "rgba(255,255,255,0.06)",
@@ -3146,7 +3094,7 @@ export default function CampaignsPage() {
       {toast ? (
         <div className="fixed right-5 top-5 z-[80] w-full max-w-md">
           <div
-            className="rounded-2xl border px-4 py-4 shadow-2xl backdrop-blur"
+            className="rounded border px-4 py-4 shadow-2xl backdrop-blur"
             style={{
               borderColor:
                 toast.type === "success"
@@ -3173,7 +3121,7 @@ export default function CampaignsPage() {
               <button
                 type="button"
                 onClick={() => setToast(null)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border text-sm font-semibold transition"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm font-semibold transition"
                 style={{
                   borderColor: "rgba(255,255,255,0.12)",
                   background: "rgba(15,23,42,0.16)",
@@ -3189,7 +3137,7 @@ export default function CampaignsPage() {
 
       {error ? (
         <div
-          className="rounded-2xl border px-4 py-3 text-sm"
+          className="rounded border px-4 py-3 text-sm"
           style={{
             borderColor: "rgba(244,63,94,0.26)",
             background: "rgba(244,63,94,0.08)",
@@ -3202,7 +3150,7 @@ export default function CampaignsPage() {
 
       {resultMessage ? (
         <div
-          className="rounded-2xl border px-4 py-3 text-sm"
+          className="rounded border px-4 py-3 text-sm"
           style={{
             borderColor: "rgba(16,185,129,0.24)",
             background: "rgba(16,185,129,0.08)",
@@ -3288,7 +3236,7 @@ export default function CampaignsPage() {
       `}</style>
 
       <section
-        className="overflow-hidden rounded-2xl border p-1"
+        className="overflow-hidden rounded border p-1"
         style={{
           borderColor: "var(--border-color)",
           background: "var(--bg-card)",
@@ -3320,7 +3268,7 @@ export default function CampaignsPage() {
               type="button"
               onClick={() => setActiveStep(step.step)}
               aria-current={activeStep === step.step ? "step" : undefined}
-              className={`orbyx-campaign-energy group flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
+              className={`orbyx-campaign-energy group flex cursor-pointer items-center gap-3 rounded-md border px-4 py-3 text-left transition-all duration-200 hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)] focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${
                 activeStep === step.step ? "orbyx-campaign-energy-active" : ""
               }`}
               style={{
@@ -3381,7 +3329,7 @@ export default function CampaignsPage() {
           title="Configurar campaña"
           description="Selecciona el segmento y el criterio de envío."
           rightSlot={
-            <div className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
+            <div className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -3455,7 +3403,7 @@ export default function CampaignsPage() {
                 </div>
               ) : (
                 <div
-                  className="rounded-2xl border p-3 sm:p-4"
+                  className="rounded-md border p-3 sm:p-4"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -3562,7 +3510,7 @@ export default function CampaignsPage() {
 
               {channel === "whatsapp" && audienceStats.excludedForInvalidPhone > 0 ? (
                 <div
-                  className="rounded-2xl border px-4 py-3 text-sm"
+                  className="rounded-md border px-4 py-3 text-sm"
                   style={{
                     borderColor: "rgba(244,63,94,0.24)",
                     background: "rgba(244,63,94,0.08)",
@@ -3579,7 +3527,7 @@ export default function CampaignsPage() {
               ) : null}
 
               <div
-                className="rounded-2xl border p-3 sm:p-4"
+                className="rounded-md border p-3 sm:p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -3667,7 +3615,7 @@ export default function CampaignsPage() {
               </div>
 
               <div
-                className="overflow-hidden rounded-2xl border"
+                className="overflow-hidden rounded-md border"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -3685,7 +3633,7 @@ export default function CampaignsPage() {
 </p>
 
                   <span
-                    className="rounded-full border px-3 py-1 text-xs font-semibold"
+                    className="rounded-md border px-3 py-1 text-xs font-semibold"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -3702,7 +3650,7 @@ export default function CampaignsPage() {
                       {Array.from({ length: 5 }).map((_, index) => (
                         <div
                           key={index}
-                          className="rounded-2xl border p-4"
+                          className="rounded-md border p-4"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-card)",
@@ -3739,7 +3687,7 @@ export default function CampaignsPage() {
     if ((e.target as HTMLElement).closest("button")) return;
     toggleRecipientIncluded(item.id);
   }}
-  className="flex flex-col gap-3 rounded-2xl border px-3 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between"
+  className="flex flex-col gap-3 rounded-md border px-3 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between"
   style={{
     cursor: "pointer",
     borderColor: "var(--border-color)",
@@ -3756,7 +3704,7 @@ export default function CampaignsPage() {
                                 </p>
 
                                 <span
-                                  className="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                                  className="inline-flex rounded border px-2.5 py-1 text-[11px] font-semibold"
                                   style={{
                                     background: isManual
                                       ? "rgba(245,158,11,0.12)"
@@ -3772,7 +3720,7 @@ export default function CampaignsPage() {
 
                                 {item.segment ? (
                                   <span
-                                    className="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                                    className="inline-flex rounded border px-2.5 py-1 text-[11px] font-semibold"
                                     style={{
                                       background: segmentMeta.bg,
                                       borderColor: segmentMeta.border,
@@ -3808,7 +3756,7 @@ export default function CampaignsPage() {
                               <button
   type="button"
   onClick={() => toggleRecipientIncluded(item.id)}
-  className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-xs font-semibold transition"
+  className="inline-flex h-10 items-center justify-center rounded-md px-4 text-xs font-semibold transition"
   style={{
     background: item.included
       ? "rgba(16,185,129,0.14)"
@@ -3832,7 +3780,7 @@ export default function CampaignsPage() {
     removeManualRecipient(item.id);
   }
 }}
-                                  className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-xs font-semibold transition"
+                                  className="inline-flex h-10 items-center justify-center rounded-md px-4 text-xs font-semibold transition"
                                   style={{
                                     background: "rgba(244,63,94,0.08)",
                                     border: "1px solid rgba(244,63,94,0.22)",
@@ -3975,7 +3923,7 @@ export default function CampaignsPage() {
                         type="color"
                         value={brandColor}
                         onChange={(e) => setBrandColor(e.target.value)}
-                        className="h-12 w-16 rounded-2xl border p-1"
+                        className="h-12 w-16 rounded-md border p-1"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-card)",
@@ -4038,7 +3986,7 @@ export default function CampaignsPage() {
                   </div>
 
                   <label
-                    className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm"
+                    className="flex items-center gap-3 rounded-md border px-4 py-3 text-sm"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -4057,7 +4005,7 @@ export default function CampaignsPage() {
 
                 <div className="space-y-5">
                   <div
-                    className="rounded-2xl border p-4"
+                    className="rounded-md border p-4"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -4070,7 +4018,7 @@ export default function CampaignsPage() {
                           setImageLibraryOpen(true);
                           if (slug) loadCampaignImages(slug);
                         }}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition"
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-md px-5 text-sm font-semibold transition"
                         style={{
                           background: "rgba(245, 158, 11, 0.14)",
                           border: "1px solid rgba(245, 158, 11, 0.38)",
@@ -4253,7 +4201,7 @@ export default function CampaignsPage() {
                         setSelectedTemplateId(tpl.id);
                         setTemplateVars({});
                       }}
-                      className="rounded-2xl border p-3 text-left transition-all duration-200 hover:border-blue-400/40"
+                      className="rounded-md border p-3 text-left transition-all duration-200 hover:border-blue-400/40"
                       style={{
                         borderColor:
                           selectedTemplateId === tpl.id
@@ -4284,7 +4232,7 @@ export default function CampaignsPage() {
 
               {selectedTemplate ? (
                 <div
-                  className="rounded-2xl border p-4"
+                  className="rounded-md border p-4"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -4418,7 +4366,7 @@ export default function CampaignsPage() {
 
             {waInsufficientBalance ? (
               <div
-                className="mt-4 rounded-2xl border px-4 py-3 text-sm"
+                className="mt-4 rounded-md border px-4 py-3 text-sm"
                 style={{
                   borderColor: "rgba(244,63,94,0.24)",
                   background: "rgba(244,63,94,0.08)",
@@ -4545,7 +4493,7 @@ export default function CampaignsPage() {
           style={{ background: "rgba(2, 6, 23, 0.78)" }}
         >
           <div
-            className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border shadow-2xl"
+            className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded border shadow-2xl"
             style={{
               borderColor: "rgba(59,130,246,0.22)",
               background:
@@ -4577,7 +4525,7 @@ export default function CampaignsPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => slug && loadCampaignImages(slug)}
-                  className="inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold transition"
+                  className="inline-flex h-11 items-center justify-center rounded-md px-5 text-sm font-semibold transition"
                   style={{
                     background: "rgba(15,23,42,0.9)",
                     border: "1px solid rgba(148,163,184,0.24)",
@@ -4589,7 +4537,7 @@ export default function CampaignsPage() {
 
                 <button
                   onClick={() => setImageLibraryOpen(false)}
-                  className="inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold transition"
+                  className="inline-flex h-11 items-center justify-center rounded-md px-5 text-sm font-semibold transition"
                   style={{
                     background: "rgba(15,23,42,0.9)",
                     border: "1px solid rgba(148,163,184,0.24)",
@@ -4604,7 +4552,7 @@ export default function CampaignsPage() {
             <div className="grid gap-6 overflow-y-auto p-6 xl:grid-cols-[340px_1fr]">
               <div className="space-y-4">
                 <div
-                  className="rounded-[26px] border p-4"
+                  className="rounded-md border p-4"
                   style={{
                     borderColor: "rgba(148,163,184,0.16)",
                     background: "rgba(15,23,42,0.9)",
@@ -4613,7 +4561,7 @@ export default function CampaignsPage() {
                   <p className="text-sm font-semibold text-white">Subir imagen</p>
 
                   <label
-                    className="mt-3 inline-flex h-11 cursor-pointer items-center justify-center rounded-xl px-4 text-sm font-semibold transition"
+                    className="mt-3 inline-flex h-11 cursor-pointer items-center justify-center rounded-md px-4 text-sm font-semibold transition"
                     style={{
                       background: imageUploading
                         ? "rgba(71,85,105,0.5)"
@@ -4656,7 +4604,7 @@ export default function CampaignsPage() {
 
                 {imageLibraryError ? (
                   <div
-                    className="rounded-xl border px-4 py-3 text-sm"
+                    className="rounded-md border px-4 py-3 text-sm"
                     style={{
                       borderColor: "rgba(244,63,94,0.26)",
                       background: "rgba(127,29,29,0.26)",
@@ -4669,7 +4617,7 @@ export default function CampaignsPage() {
 
                 {imageLibraryMessage ? (
                   <div
-                    className="rounded-xl border px-4 py-3 text-sm"
+                    className="rounded-md border px-4 py-3 text-sm"
                     style={{
                       borderColor: "rgba(16,185,129,0.24)",
                       background: "rgba(6,78,59,0.22)",
@@ -4682,7 +4630,7 @@ export default function CampaignsPage() {
               </div>
 
               <div
-                className="rounded-[26px] border p-5"
+                className="rounded-md border p-5"
                 style={{
                   borderColor: "rgba(148,163,184,0.14)",
                   background: "#000000",
@@ -4707,13 +4655,13 @@ export default function CampaignsPage() {
                     {campaignImages.map((image) => (
                       <div
                         key={image.id}
-                        className="group rounded-2xl border p-2"
+                        className="group rounded-md border p-2"
                         style={{
                           borderColor: "rgba(148,163,184,0.12)",
                           background: "rgba(15,23,42,0.72)",
                         }}
                       >
-                        <div className="relative overflow-hidden rounded-xl">
+                        <div className="relative overflow-hidden rounded-md">
                           <img
                             src={image.public_url || ""}
                             alt={getImageDisplayName(image)}
@@ -4726,7 +4674,7 @@ export default function CampaignsPage() {
                                 setHeroImageUrl(image.public_url || "");
                                 setImageLibraryOpen(false);
                               }}
-                              className="inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold text-white"
+                              className="inline-flex h-9 items-center justify-center rounded-md px-3 text-xs font-semibold text-white"
                               style={{
                                 background:
                                   "linear-gradient(135deg, rgb(37 99 235), rgb(14 165 233))",
@@ -4739,7 +4687,7 @@ export default function CampaignsPage() {
                             <button
                               onClick={() => handleDeleteCampaignImage(image.id)}
                               disabled={imageDeletingId === image.id}
-                              className="inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-semibold text-white disabled:opacity-60"
+                              className="inline-flex h-9 items-center justify-center rounded-md px-3 text-xs font-semibold text-white disabled:opacity-60"
                               style={{
                                 background:
                                   "linear-gradient(135deg, rgb(220 38 38), rgb(244 63 94))",
@@ -4775,7 +4723,7 @@ export default function CampaignsPage() {
           style={{ background: "rgba(2, 6, 23, 0.65)" }}
         >
           <div
-            className="w-full max-w-lg rounded-[28px] border p-6 shadow-2xl"
+            className="w-full max-w-lg rounded border p-6 shadow-2xl"
             style={{
               borderColor: "rgba(59,130,246,0.25)",
               background:
@@ -4814,7 +4762,7 @@ export default function CampaignsPage() {
 
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div
-                className="rounded-xl border px-3 py-3 text-sm"
+                className="rounded-md border px-3 py-3 text-sm"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -4827,7 +4775,7 @@ export default function CampaignsPage() {
               </div>
 
               <div
-                className="rounded-xl border px-3 py-3 text-sm"
+                className="rounded-md border px-3 py-3 text-sm"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -4840,7 +4788,7 @@ export default function CampaignsPage() {
               </div>
 
               <div
-                className="rounded-xl border px-3 py-3 text-sm"
+                className="rounded-md border px-3 py-3 text-sm"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",
@@ -4853,7 +4801,7 @@ export default function CampaignsPage() {
               </div>
 
               <div
-                className="rounded-xl border px-3 py-3 text-sm"
+                className="rounded-md border px-3 py-3 text-sm"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-soft)",

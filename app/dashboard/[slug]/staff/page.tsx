@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { HelpCircle, UsersRound } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
+import { PageHeader } from "../../../../components/dashboard/page-header";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 import { usePermissions } from "../../../../lib/permissions-context";
 
@@ -365,7 +366,7 @@ function Notice({
   const styles = getNoticeStyles(tone);
 
   return (
-    <div className="rounded-2xl border px-4 py-4 shadow-sm" style={styles.wrapper}>
+    <div className="rounded border px-4 py-4 shadow-sm" style={styles.wrapper}>
       <p className="text-sm font-semibold" style={styles.title}>
         {title}
       </p>
@@ -519,19 +520,19 @@ const [photoUrl, setPhotoUrl] = useState("");
   const hasExcess = excessStaff > 0;
 
   const inputClass =
-    "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition";
+    "h-11 w-full rounded-md border px-4 text-sm outline-none transition";
   const primaryButtonClass =
-  "orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+  "orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-md border px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60";
 
 const secondaryButtonClass =
-  "orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+  "orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-md border px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
 const specialInputClass =
-  "h-10 w-full rounded-xl border px-3 text-xs outline-none transition";
+  "h-10 w-full rounded-md border px-3 text-xs outline-none transition";
 const specialPrimaryButtonClass =
-  "orbyx-staff-energy inline-flex h-10 w-full items-center justify-center rounded-xl border px-4 text-xs font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+  "orbyx-staff-energy inline-flex h-10 w-full items-center justify-center rounded-md border px-4 text-xs font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
 const specialSecondaryButtonClass =
-  "orbyx-staff-energy inline-flex h-10 w-full items-center justify-center rounded-xl border px-4 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+  "orbyx-staff-energy inline-flex h-10 w-full items-center justify-center rounded-md border px-4 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
 
 const calendarPickerClass =
   "absolute inset-y-0 right-0 h-10 w-10 cursor-pointer opacity-0";
@@ -1881,35 +1882,15 @@ function validateStaffHours() {
         }
       `}</style>
 
-      <section
-  className="relative overflow-hidden rounded-2xl border px-4 py-2.5 shadow-[0_18px_46px_-28px_rgba(37,99,235,0.55),0_0_34px_-24px_rgba(56,189,248,0.48)]"
-        style={{
-          borderColor: "rgba(59,130,246,0.25)",
-          background:
-            "linear-gradient(135deg, rgba(37,99,235,0.18), rgba(14,165,233,0.08) 35%, var(--bg-card) 85%)",
-        }}
-      >
-        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(37,99,235,0.42),rgba(34,211,238,0.35),transparent)]" />
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex max-w-3xl items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-300/70 bg-[linear-gradient(135deg,rgb(37_99_235),rgb(14_165_233)_48%,rgb(79_70_229))] text-white shadow-[0_18px_32px_-16px_rgba(37,99,235,0.95),0_0_26px_-12px_rgba(56,189,248,0.85)]">
-              <UsersRound className="h-4 w-4" />
-            </div>
-            <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-600">Equipo</p>
-
-            <h1
-  className="mt-0.5 text-lg font-semibold tracking-tight"
-              style={{ color: "var(--text-main)" }}
-            >
-              Staff
-            </h1>
-            </div>
-          </div>
-
+      <PageHeader
+        eyebrow="Equipo"
+        title="Staff"
+        icon={<UsersRound className="h-4 w-4" />}
+        description="Administra a los integrantes de tu equipo, sus horarios y los servicios que realizan."
+        actions={
           <div className="grid grid-cols-2 gap-2 xl:grid-cols-4 items-stretch">
             <div
-              className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
+              className="rounded-md border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
@@ -1930,7 +1911,7 @@ function validateStaffHours() {
             </div>
 
             <div
-              className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
+              className="rounded-md border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
@@ -1951,7 +1932,7 @@ function validateStaffHours() {
             </div>
 
             <div
-              className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
+              className="rounded-md border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
@@ -1972,7 +1953,7 @@ function validateStaffHours() {
             </div>
 
             <div
-              className="rounded-lg border px-2.5 py-1.5 flex flex-col gap-0.5"
+              className="rounded-md border px-2.5 py-1.5 flex flex-col gap-0.5"
               style={{
                 borderColor: "rgba(59,130,246,0.20)",
                 background: "rgba(255,255,255,0.06)",
@@ -1992,11 +1973,11 @@ function validateStaffHours() {
               </p>
             </div>
           </div>
-        </div>
-      </section>
+        }
+      />
 
       {loadingBranches && !selectedBranchId ? (
-        <div className="flex items-center gap-2.5 rounded-2xl border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
+        <div className="flex items-center gap-2.5 rounded border border-slate-300/60 bg-slate-500/10 px-4 py-3 text-sm shadow-sm">
           <span
             className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2"
             style={{ borderColor: "var(--text-muted)", borderTopColor: "transparent" }}
@@ -2029,7 +2010,7 @@ function validateStaffHours() {
 
       <section className="space-y-6">
         {formOpen || editingId ? (
-        <Panel className="min-w-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]">
+        <Panel className="min-w-0 !rounded bg-[linear-gradient(180deg,rgba(37,99,235,0.08),transparent_35%)]">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-semibold tracking-tight" style={{ color: "var(--text-main)" }}>
@@ -2052,7 +2033,7 @@ function validateStaffHours() {
 
           {!selectedBranchId ? (
             <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              className="rounded-md border border-dashed px-4 py-8 text-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -2063,7 +2044,7 @@ function validateStaffHours() {
             </div>
           ) : loading ? (
             <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              className="rounded-md border border-dashed px-4 py-8 text-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -2082,7 +2063,7 @@ function validateStaffHours() {
             <div className="space-y-5">
               <div className="-mx-1 overflow-x-auto px-1" aria-label="Secciones de staff">
                 <div
-                  className="flex min-w-max gap-2 rounded-2xl border p-1.5"
+                  className="flex min-w-max gap-2 rounded-md border p-1.5"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -2099,7 +2080,7 @@ function validateStaffHours() {
                         key={section.id}
                         type="button"
                         onClick={() => setActiveFormSection(section.id)}
-                        className={`inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold transition-colors hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
+                        className={`inline-flex h-11 cursor-pointer items-center justify-center rounded-md border px-4 text-sm font-semibold transition-colors hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
                           active ? "" : "hover:border-blue-400/40 hover:bg-[rgba(37,99,235,0.07)]"
                         }`}
                         style={{
@@ -2120,7 +2101,7 @@ function validateStaffHours() {
                 <>
 
   <div
-    className="rounded-2xl border p-4"
+    className="rounded-md border p-4"
     style={{
       borderColor: "var(--border-color)",
       background: "var(--bg-card)",
@@ -2134,7 +2115,7 @@ function validateStaffHours() {
     </p>
 
     <div className="flex items-center gap-4">
-      <div className="h-24 w-24 overflow-hidden rounded-2xl border bg-slate-200">
+      <div className="h-24 w-24 overflow-hidden rounded-md border bg-slate-200">
         {photoUrl ? (
           <img src={photoUrl} className="h-full w-full object-cover" />
         ) : (
@@ -2145,7 +2126,7 @@ function validateStaffHours() {
       </div>
 
       <div className="flex items-center gap-3">
-        <label className="orbyx-staff-energy cursor-pointer rounded-xl border px-3 py-2 text-sm">
+        <label className="orbyx-staff-energy cursor-pointer rounded-md border px-3 py-2 text-sm">
           Subir foto
           <input
             type="file"
@@ -2174,7 +2155,7 @@ function validateStaffHours() {
           <button
             type="button"
             onClick={() => setPhotoUrl("")}
-            className="orbyx-staff-energy rounded-xl border px-3 py-2 text-sm"
+            className="orbyx-staff-energy rounded-md border px-3 py-2 text-sm"
             style={{
               borderColor: "rgba(244,63,94,0.28)",
               background: "rgba(244,63,94,0.08)",
@@ -2312,7 +2293,7 @@ function validateStaffHours() {
               </div>
 
               <div
-                className="w-full max-w-3xl rounded-2xl border p-4"
+                className="w-full max-w-3xl rounded-md border p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -2370,7 +2351,7 @@ function validateStaffHours() {
 
 
               <div
-  className="rounded-2xl border p-4"
+  className="rounded-md border p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -2393,7 +2374,7 @@ function validateStaffHours() {
 
                 {services.length === 0 ? (
                   <div
-                    className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+                    className="rounded-md border border-dashed px-4 py-6 text-sm"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -2410,7 +2391,7 @@ function validateStaffHours() {
                       return (
                         <label
                           key={service.id}
-                          className={`orbyx-staff-energy flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
+                          className={`orbyx-staff-energy flex cursor-pointer items-start gap-3 rounded-md border px-4 py-3 transition ${
                             checked ? "orbyx-staff-energy-active" : ""
                           }`}
                           style={{
@@ -2460,7 +2441,7 @@ function validateStaffHours() {
               {activeFormSection === "horarios" ? (
                 <>
               <div
-                className="rounded-2xl border p-4"
+                className="rounded-md border p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background:
@@ -2518,7 +2499,7 @@ function validateStaffHours() {
                             use_business_hours: option.value,
                           }))
                         }
-                        className={`orbyx-staff-energy orbyx-staff-schedule-option rounded-2xl border p-4 text-left ${
+                        className={`orbyx-staff-energy orbyx-staff-schedule-option rounded-md border p-4 text-left ${
                           selected ? "orbyx-staff-energy-active" : ""
                         }`}
                         style={{
@@ -2555,7 +2536,7 @@ function validateStaffHours() {
   />
 ) : (
   <div
-    className="rounded-2xl border p-4"
+    className="rounded-md border p-4"
     style={{
       borderColor: "var(--border-color)",
       background: "var(--bg-card)",
@@ -2581,7 +2562,7 @@ function validateStaffHours() {
         return (
           <div
             key={day.value}
-            className="grid gap-3 rounded-2xl border p-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-start"
+            className="grid gap-3 rounded-md border p-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-start"
             style={{
               borderColor: enabled
                 ? "rgba(37,99,235,0.22)"
@@ -2612,7 +2593,7 @@ function validateStaffHours() {
               </div>
 
               <label
-                className={`orbyx-staff-energy inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
+                className={`orbyx-staff-energy inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-medium ${
                   enabled ? "orbyx-staff-energy-active" : ""
                 }`}
                 style={{
@@ -2647,7 +2628,7 @@ function validateStaffHours() {
             <div className="flex min-w-0 flex-col gap-2">
               {!enabled ? (
                 <span
-                  className="inline-flex h-9 w-fit items-center rounded-full border px-3 text-xs font-semibold"
+                  className="inline-flex h-9 w-fit items-center rounded-md border px-3 text-xs font-semibold"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -2662,7 +2643,7 @@ function validateStaffHours() {
                   .map((block) => (
                     <div
                       key={block.block_order}
-                      className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-2xl border px-2 py-2"
+                      className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-md border px-2 py-2"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-soft)",
@@ -2681,7 +2662,7 @@ function validateStaffHours() {
                             e.target.value
                           )
                         }
-                        className="h-10 w-[150px] rounded-xl border px-3 text-sm outline-none transition sm:w-[160px]"
+                        className="h-10 w-[150px] rounded-md border px-3 text-sm outline-none transition sm:w-[160px]"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-card)",
@@ -2709,7 +2690,7 @@ function validateStaffHours() {
                             e.target.value
                           )
                         }
-                        className="h-10 w-[150px] rounded-xl border px-3 text-sm outline-none transition sm:w-[160px]"
+                        className="h-10 w-[150px] rounded-md border px-3 text-sm outline-none transition sm:w-[160px]"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-card)",
@@ -2730,7 +2711,7 @@ function validateStaffHours() {
                             )
                           );
                         }}
-                        className="orbyx-staff-energy inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-300/50 bg-rose-500/10 p-0 text-sm font-semibold leading-none text-rose-400 transition hover:border-rose-300/70 hover:bg-rose-500/15 hover:shadow-[0_0_18px_rgba(244,63,94,0.16)]"
+                        className="orbyx-staff-energy inline-flex h-8 w-8 items-center justify-center rounded-md border border-rose-300/50 bg-rose-500/10 p-0 text-sm font-semibold leading-none text-rose-400 transition hover:border-rose-300/70 hover:bg-rose-500/15 hover:shadow-[0_0_18px_rgba(244,63,94,0.16)]"
                         aria-label={`Eliminar bloque de ${day.label}`}
                       >
                         x
@@ -2761,7 +2742,7 @@ function validateStaffHours() {
                     ];
                   });
                 }}
-                className="orbyx-staff-energy inline-flex h-8 w-fit items-center justify-center rounded-xl border px-3 text-xs font-medium text-blue-500 transition"
+                className="orbyx-staff-energy inline-flex h-8 w-fit items-center justify-center rounded-md border px-3 text-xs font-medium text-blue-500 transition"
                 style={{
                   borderColor: "rgba(37,99,235,0.24)",
                   background: "rgba(37,99,235,0.06)",
@@ -2796,7 +2777,7 @@ function validateStaffHours() {
 
 
               <div
-                className="rounded-2xl border p-4"
+                className="rounded-md border p-4"
                 style={{
                   borderColor: "var(--border-color)",
                   background: "var(--bg-card)",
@@ -2850,7 +2831,7 @@ function validateStaffHours() {
 
                     {specialDateFormOpen ? (
                     <div
-                      className="rounded-2xl border p-3"
+                      className="rounded-md border p-3"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-soft)",
@@ -3325,7 +3306,7 @@ function validateStaffHours() {
                     ) : null}
 
                     <div
-                      className="space-y-3 rounded-2xl border p-4"
+                      className="space-y-3 rounded-md border p-4"
                       style={{
                         borderColor: "var(--border-color)",
                         background: "var(--bg-card)",
@@ -3348,7 +3329,7 @@ function validateStaffHours() {
 
                       {groupedStaffSpecialDates.length === 0 ? (
                         <div
-                          className="rounded-2xl border border-dashed px-4 py-6 text-sm"
+                          className="rounded-md border border-dashed px-4 py-6 text-sm"
                           style={{
                             borderColor: "var(--border-color)",
                             background: "var(--bg-soft)",
@@ -3373,7 +3354,7 @@ function validateStaffHours() {
                             return (
                             <div
                               key={`${group.key}-${group.startDate}-${group.endDate}`}
-                              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3"
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
                               style={{
                                 borderColor: "var(--border-color)",
                                 background:
@@ -3422,7 +3403,7 @@ function validateStaffHours() {
                                   onClick={() =>
                                     handleDeleteSpecialDateGroup(group)
                                   }
-                                  className="orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-2xl border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
+                                  className="orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-md border border-rose-300/60 bg-rose-500/10 px-5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/15"
                                 >
                                   Eliminar
                                 </button>
@@ -3459,7 +3440,7 @@ function validateStaffHours() {
     <div className="mt-1">
       <a
         href={`/planes?current_plan=${plan}&tenant_id=${tenantId}&slug=${slug}&from=staff`}
-        className="orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold text-white transition"
+        className="orbyx-staff-energy inline-flex h-11 items-center justify-center rounded-md border px-4 text-sm font-semibold text-white transition"
         style={{
           background:
             "linear-gradient(135deg, rgb(249 115 22), rgb(251 146 60))",
@@ -3510,7 +3491,7 @@ function validateStaffHours() {
 
         {!(formOpen || editingId) ? (
         <Panel
-          className="order-1 bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
+          className="order-1 !rounded bg-[linear-gradient(180deg,rgba(14,165,233,0.06),transparent_40%)]"
         >
           <div
             className="mb-6 flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-center sm:justify-between"
@@ -3552,7 +3533,7 @@ function validateStaffHours() {
 
           {!selectedBranchId ? (
             <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              className="rounded-md border border-dashed px-4 py-8 text-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -3563,7 +3544,7 @@ function validateStaffHours() {
             </div>
           ) : loading ? (
             <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              className="rounded-md border border-dashed px-4 py-8 text-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -3574,7 +3555,7 @@ function validateStaffHours() {
             </div>
           ) : staff.length === 0 ? (
             <div
-              className="rounded-2xl border border-dashed px-4 py-8 text-sm"
+              className="rounded-md border border-dashed px-4 py-8 text-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -3601,7 +3582,7 @@ function validateStaffHours() {
                 return (
                   <div
                     key={item.id}
-                    className="relative flex min-h-[360px] min-w-0 flex-col gap-4 overflow-visible rounded-3xl border p-4 text-center transition hover:z-30 hover:border-blue-400/40"
+                    className="relative flex min-h-[360px] min-w-0 flex-col gap-4 overflow-visible rounded-md border p-4 text-center transition hover:z-30 hover:border-blue-400/40"
                     style={{
                       borderColor: isSelected
                         ? "rgba(37,99,235,0.45)"
@@ -3613,7 +3594,7 @@ function validateStaffHours() {
                   >
                     <div className="flex items-center justify-start">
                       <span
-                        className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                        className="rounded px-2.5 py-1 text-[11px] font-semibold"
                         style={{
                           background: item.is_active
                             ? "rgba(16,185,129,0.14)"
@@ -3670,7 +3651,7 @@ function validateStaffHours() {
 
                     <div className="grid grid-cols-3 gap-2">
                       <span
-                        className="hidden rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                        className="hidden rounded px-2 py-0.5 text-[10px] font-semibold"
                         style={{
                           background: item.is_active
                             ? "rgba(16,185,129,0.14)"
@@ -3688,7 +3669,7 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => startEdit(item)}
-                        className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                        className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-md border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-card)",
@@ -3701,7 +3682,7 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => handleToggleClick(item)}
-                        className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                        className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-md border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
                         style={{
                           borderColor: item.is_active
                             ? "rgba(245,158,11,0.34)"
@@ -3718,7 +3699,7 @@ function validateStaffHours() {
                       <button
                         type="button"
                         onClick={() => handleDeleteClick(item)}
-                        className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-xl border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-300 transition hover:bg-rose-500/15"
+                        className="orbyx-staff-energy inline-flex h-9 items-center justify-center rounded-md border border-rose-300/60 bg-rose-500/10 px-3 text-xs font-medium text-rose-300 transition hover:bg-rose-500/15"
                       >
                         Eliminar
                       </button>
@@ -3729,7 +3710,7 @@ function validateStaffHours() {
                     <button
                       type="button"
                       onClick={() => setCalendarModalStaff(item)}
-                      className={`orbyx-staff-energy flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                      className={`orbyx-staff-energy flex w-full items-center justify-between gap-3 rounded-md border px-3 py-3 text-left transition ${
                         calendarConnection ? "orbyx-staff-energy-active" : ""
                       }`}
                       style={{
@@ -3746,7 +3727,7 @@ function validateStaffHours() {
                     >
                       <span className="flex min-w-0 items-center gap-3">
                         <span
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md"
                           style={{
                             background: calendarConnection
                               ? "rgba(16,185,129,0.16)"
@@ -3800,7 +3781,7 @@ function validateStaffHours() {
 
           {selectedBranchId && staff.length > 0 ? (
             <div
-              className="mt-4 rounded-2xl border px-4 py-3 text-sm"
+              className="mt-4 rounded-md border px-4 py-3 text-sm"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-soft)",
@@ -3823,7 +3804,7 @@ function validateStaffHours() {
             />
 
             <div
-              className="relative z-10 w-full max-w-lg rounded-3xl border p-5 shadow-2xl"
+              className="relative z-10 w-full max-w-lg rounded border p-5 shadow-2xl"
               style={{
                 borderColor: "var(--border-color)",
                 background: "var(--bg-card)",
@@ -3848,7 +3829,7 @@ function validateStaffHours() {
                 <button
                   type="button"
                   onClick={() => setCalendarModalStaff(null)}
-                  className="orbyx-staff-energy flex h-10 w-10 items-center justify-center rounded-2xl border text-lg"
+                  className="orbyx-staff-energy flex h-10 w-10 items-center justify-center rounded-md border text-lg"
                   style={{
                     borderColor: "var(--border-color)",
                     background: "var(--bg-soft)",
@@ -3864,7 +3845,7 @@ function validateStaffHours() {
                   type="button"
                   onClick={() => connectStaffGoogleCalendar(calendarModalStaff.id)}
                   disabled={!tenantId || !selectedBranchId || !calendarModalStaff.id || !calendarId}
-                  className="orbyx-staff-energy flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60"
+                  className="orbyx-staff-energy flex w-full items-center justify-between gap-4 rounded-md border px-4 py-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60"
                   style={{
                     borderColor: "rgba(37,99,235,0.34)",
                     background:
@@ -3874,7 +3855,7 @@ function validateStaffHours() {
                 >
                   <span className="flex items-center gap-3">
                     <span
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border text-base font-bold"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border text-base font-bold"
                       style={{
                         borderColor: "rgba(37,99,235,0.25)",
                         background:
@@ -3915,7 +3896,7 @@ function validateStaffHours() {
                     key={option.label}
                     type="button"
                     disabled
-                    className="flex w-full cursor-not-allowed items-center justify-between gap-4 rounded-2xl border px-4 py-4 text-left opacity-65"
+                    className="flex w-full cursor-not-allowed items-center justify-between gap-4 rounded-md border px-4 py-4 text-left opacity-65"
                     style={{
                       borderColor: "var(--border-color)",
                       background: "var(--bg-soft)",
@@ -3924,7 +3905,7 @@ function validateStaffHours() {
                   >
                     <span className="flex items-center gap-3">
                       <span
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border text-base font-bold"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border text-base font-bold"
                         style={{
                           borderColor: "var(--border-color)",
                           background: "var(--bg-card)",
@@ -4027,7 +4008,7 @@ function validateStaffHours() {
               setConfirmModal({ open: false, type: null, staffItem: null })
             }
           />
-          <div className="relative z-10 bg-[#0f1729] border border-blue-900/40 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl shadow-blue-950/50">
+          <div className="relative z-10 bg-[#0f1729] border border-blue-900/40 rounded p-6 w-full max-w-sm mx-4 shadow-2xl shadow-blue-950/50">
             <div
               className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
                 confirmModal.type === "delete"
@@ -4104,13 +4085,13 @@ function validateStaffHours() {
                 onClick={() =>
                   setConfirmModal({ open: false, type: null, staffItem: null })
                 }
-                className="flex-1 py-2.5 rounded-xl border border-blue-900/40 text-gray-400 hover:text-white hover:border-blue-700/60 text-sm font-medium transition-colors"
+                className="flex-1 py-2.5 rounded-md border border-blue-900/40 text-gray-400 hover:text-white hover:border-blue-700/60 text-sm font-medium transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirmAction}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
+                className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-colors border ${
                   confirmModal.type === "delete"
                     ? "bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30 hover:border-red-500/50"
                     : "bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/30 hover:border-yellow-500/50"

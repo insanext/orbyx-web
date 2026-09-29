@@ -276,11 +276,9 @@ const PANEL_BG = "var(--ind-panel-bg)";
 const SHELL_HEADER_BG = "var(--ind-shell-header-bg)";
 const TABLE_HEAD_BG = "var(--ind-table-head-bg)";
 
-// Redondeo + sombra suave del rediseño visual de Indicadores (referencia de
-// dashboard con tarjetas blancas, esquinas redondeadas y sombra sutil sobre
-// fondo gris claro — ver comentario "Sistema visual" más abajo). Excepción
-// deliberada solo para este panel: el resto del dashboard usa esquinas
-// cuadradas (ver [[project_dashboard_squared_corners_convention]]).
+// Redondeo + sombra suave de Indicadores. Estandarización 2026-09-29 al
+// estilo "Mi Negocio": contenedor de sección (SectionShell) con esquinas
+// rectas (4px = `rounded`), tarjetas/inputs interiores con redondeo sutil.
 const RADIUS_LG = "var(--ind-radius-lg)"; // SectionShell (contenedor de sección)
 const RADIUS = "var(--ind-radius)"; // Panel, Kpi, botones, inputs
 const RADIUS_SM = "var(--ind-radius-sm)"; // chips, badges, barras de progreso
@@ -1883,9 +1881,9 @@ export default function DashboardHomePage() {
           --ind-locked-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0.03) 55%, #ffffff 100%);
           --ind-locked-border: rgba(37, 99, 235, 0.32);
 
-          --ind-radius-lg: 18px;
-          --ind-radius: 12px;
-          --ind-radius-sm: 8px;
+          --ind-radius-lg: 4px;
+          --ind-radius: 6px;
+          --ind-radius-sm: 4px;
           --ind-shadow: 0 1px 2px rgba(30, 27, 75, 0.04), 0 12px 28px -14px rgba(30, 27, 75, 0.18);
           --ind-shadow-sm: 0 1px 2px rgba(30, 27, 75, 0.05), 0 6px 16px -8px rgba(30, 27, 75, 0.14);
         }
