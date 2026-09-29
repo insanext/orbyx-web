@@ -341,6 +341,11 @@ export function AddonManager({
     { key: ExtraKey; flow: "renewal_mode" | "low_balance_recharge" } | null
   >(null);
   const [consentChecked, setConsentChecked] = useState(false);
+  // Packs de mensajes: cantidad a renovar elegida en el modal "Activar
+  // cobro automático mensual". Parte en la cantidad actual (no reduce nada
+  // sin pedirlo), pero se puede cambiar: los packs comprados sueltos no
+  // obligan a renovar esa misma cantidad para siempre.
+  const [renewalConsentQty, setRenewalConsentQty] = useState(1);
 
   // Los add-ons de Orbyx son intencionalmente solo de cobro mensual
   // recurrente vía Flow (decisión de producto cerrada) -- no existe un pago
@@ -550,11 +555,25 @@ export function AddonManager({
     return `Se te cobrará automáticamente ${formatCLP(monto)} + IVA cada ~30 días mientras este add-on esté activo, para mantener tus ${quantity} ${unidadPlural} de ${config.title} ${activaPlural}. Este cobro no se prorratea: la renovación de este addon se calcula desde la fecha de tu último pago de este addon en particular, no desde la fecha de tu plan. Puedes desactivar esta renovación cuando quieras desde "Mi suscripción" → Add-ons.`;
   }
 
-  function buildRenewalConsentText(key: ExtraKey): string {
+  // Cantidad y precio unitario de la renovación a autorizar. Packs: la
+  // cantidad elegida en el modal, al precio del tramo de su última unidad
+  // (mismo cálculo que hace el backend al guardar). Capacidad: la cantidad
+  // real activa, sin cambios (su quantity ES la capacidad del negocio).
+  function renewalTerms(key: ExtraKey): { quantity: number; unitPrice: number } {
     const config = extraConfig[key];
-    const quantity = addonBaseline[key]?.quantity || 0;
-    const unitPrice = addonBaseline[key]?.unit_price ?? config.unitPrice;
-    return buildRenewalConsentTextRaw(config, quantity, unitPrice);
+    if (isMessagePack(key)) {
+      const quantity = Math.max(1, renewalConsentQty);
+      return { quantity, unitPrice: addonUnitTierPrice(config, quantity - 1) };
+    }
+    return {
+      quantity: addonBaseline[key]?.quantity || 0,
+      unitPrice: addonBaseline[key]?.unit_price ?? config.unitPrice,
+    };
+  }
+
+  function buildRenewalConsentText(key: ExtraKey): string {
+    const { quantity, unitPrice } = renewalTerms(key);
+    return buildRenewalConsentTextRaw(extraConfig[key], quantity, unitPrice);
   }
 
   // Mismo texto legal, pero para el checkbox inline del modal de compra:
@@ -606,8 +625,7 @@ export function AddonManager({
 
   function buildRenewalPriceBreakdown(key: ExtraKey): ConsentPriceBreakdown {
     const config = extraConfig[key];
-    const quantity = addonBaseline[key]?.quantity || 0;
-    const unitPrice = addonBaseline[key]?.unit_price ?? config.unitPrice;
+    const { quantity, unitPrice } = renewalTerms(key);
     return computePriceBreakdown(unitPrice * quantity, unitPrice, config.unitPrice);
   }
 
@@ -638,7 +656,12 @@ export function AddonManager({
           addon_key: key,
           renewal_mode: nextMode,
           ...(consentAccepted
-            ? { consent_accepted: true, text_shown: buildRenewalConsentText(key) }
+            ? {
+                consent_accepted: true,
+                text_shown: buildRenewalConsentText(key),
+                // Packs: cantidad a renovar elegida en el modal.
+                ...(isMessagePack(key) ? { renewal_quantity: renewalTerms(key).quantity } : {}),
+              }
             : {}),
         }),
       });
@@ -651,8 +674,21 @@ export function AddonManager({
       setAddonBaseline((prev) => {
         const entry = prev[key];
         if (!entry) return prev;
-        return { ...prev, [key]: { ...entry, renewal_mode: data.renewal_mode } };
+        return {
+          ...prev,
+          [key]: {
+            ...entry,
+            renewal_mode: data.renewal_mode,
+            ...(typeof data.quantity === "number" ? { quantity: data.quantity } : {}),
+            ...(typeof data.unit_price === "number" ? { unit_price: data.unit_price } : {}),
+          },
+        };
       });
+      // Packs: la cantidad a renovar pudo cambiar en el modal — relee para
+      // que el contador local quede igual al servidor.
+      if (consentAccepted && isMessagePack(key)) {
+        await refreshAddons();
+      }
     } catch (error: unknown) {
       setAddonError(
         error instanceof Error ? error.message : "No se pudo cambiar el modo de renovación"
@@ -685,6 +721,7 @@ export function AddonManager({
     }
 
     setConsentChecked(false);
+    setRenewalConsentQty(Math.max(1, addonBaseline[key]?.quantity || 1));
     setConsentModal({ key, flow: "renewal_mode" });
   }
 
@@ -2030,6 +2067,22 @@ export function AddonManager({
           onCheckedChange={setConsentChecked}
           onCancel={() => setConsentModal(null)}
           onConfirm={handleConfirmConsentModal}
+          quantitySelector={
+            consentModal.flow === "renewal_mode" && isMessagePack(consentModal.key)
+              ? {
+                  value: renewalConsentQty,
+                  min: 1,
+                  max: 50,
+                  label: "Packs a renovar cada mes",
+                  hint: `${renewalConsentQty * (MESSAGE_PACK_SIZE[consentModal.key] || 0)} mensajes por mes · tu saldo actual no cambia`,
+                  onChange: (value) => {
+                    setRenewalConsentQty(value);
+                    // Cambió el monto: hay que volver a aceptar.
+                    setConsentChecked(false);
+                  },
+                }
+              : undefined
+          }
           confirming={
             consentModal.flow === "renewal_mode"
               ? renewalModeUpdating === consentModal.key

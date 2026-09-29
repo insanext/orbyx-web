@@ -28,6 +28,7 @@ export function AutoChargeConsentModal({
   onConfirm,
   confirming,
   confirmLabel = "Activar",
+  quantitySelector,
 }: {
   open: boolean;
   title: string;
@@ -40,6 +41,17 @@ export function AutoChargeConsentModal({
   onConfirm: () => void;
   confirming: boolean;
   confirmLabel?: string;
+  // Opcional (packs de mensajes): cantidad a renovar elegida en el propio
+  // modal. Quien usa el modal recalcula consentText/priceBreakdown con ese
+  // valor, así lo que se acepta es exactamente lo que se ve.
+  quantitySelector?: {
+    value: number;
+    min: number;
+    max: number;
+    label: string;
+    hint?: string;
+    onChange: (value: number) => void;
+  };
 }) {
   if (!open) return null;
 
@@ -60,6 +72,49 @@ export function AutoChargeConsentModal({
         <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
           {description}
         </p>
+
+        {quantitySelector ? (
+          <div
+            className="mt-4 flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5"
+            style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)" }}
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
+                {quantitySelector.label}
+              </p>
+              {quantitySelector.hint ? (
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {quantitySelector.hint}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex items-center rounded-lg border" style={{ borderColor: "var(--border-color)" }}>
+              <button
+                type="button"
+                onClick={() => quantitySelector.onChange(Math.max(quantitySelector.min, quantitySelector.value - 1))}
+                disabled={confirming || quantitySelector.value <= quantitySelector.min}
+                className="inline-flex h-9 w-9 items-center justify-center text-base transition disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ color: "var(--text-main)" }}
+                aria-label="Menos"
+              >
+                −
+              </button>
+              <span className="min-w-8 text-center text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                {quantitySelector.value}
+              </span>
+              <button
+                type="button"
+                onClick={() => quantitySelector.onChange(Math.min(quantitySelector.max, quantitySelector.value + 1))}
+                disabled={confirming || quantitySelector.value >= quantitySelector.max}
+                className="inline-flex h-9 w-9 items-center justify-center text-base transition disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ color: "var(--text-main)" }}
+                aria-label="Más"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <label
           className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3"
