@@ -10,6 +10,7 @@ import { PageHeader } from "../../../../components/dashboard/page-header";
 import { AddonManager } from "../../../../components/addons/AddonManager";
 import { cycleTotalPrice, getPlanLabel, PLAN_PRICES_ALL, type PlanSlug } from "@/lib/plans";
 import { usePermissions } from "@/lib/permissions-context";
+import { useLayoutAccountStatus } from "@/lib/account-status-context";
 
 const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
@@ -1201,6 +1202,20 @@ function BillingPageInner() {
   }
 
   const planLabel = getPlanLabel(plan);
+  // "Próx. renovación": sin suscripción active/trialing en Flow (nunca tuvo,
+  // o se canceló) no hay cobro real programado -- lo que manda es
+  // tenants.trial_ends_at (editable desde admin, PATCH
+  // /admin/tenants/:id/trial-end, mismo criterio active/trialing). Solo
+  // cambia lo que se muestra: billing_cycle_end no se toca. Reutiliza el
+  // accountStatus que ya cargó el layout (sin fetch nuevo).
+  const layoutAccountStatus = useLayoutAccountStatus();
+  const hasFlowSubscription =
+    layoutAccountStatus?.subscription_status === "active" ||
+    layoutAccountStatus?.subscription_status === "trialing";
+  const nextRenewalDate =
+    layoutAccountStatus && !hasFlowSubscription && layoutAccountStatus.trial_ends_at
+      ? layoutAccountStatus.trial_ends_at
+      : billingCycleEnd;
   const scheduledPlanLabel = scheduledPlanSlug ? getPlanLabel(scheduledPlanSlug) : null;
 
   const remainingDaysNumber = getRemainingDaysNumber(
@@ -1288,7 +1303,7 @@ function BillingPageInner() {
                 className="mt-0.5 text-sm font-semibold"
                 style={{ color: "var(--text-main)" }}
               >
-                {loading ? "..." : formatDate(billingCycleEnd)}
+                {loading ? "..." : formatDate(nextRenewalDate)}
               </p>
             </div>
 

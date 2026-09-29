@@ -43,6 +43,7 @@ import clsx from "clsx";
 import { useTheme } from "../../../lib/use-theme";
 import { createClient } from "../../../lib/supabase/client";
 import { PermissionsProvider, ROLE_LABEL, type ModulePermissions } from "../../../lib/permissions-context";
+import { AccountStatusProvider } from "../../../lib/account-status-context";
 import { AccountStatusWidget, useAccountStatus } from "../../../components/billing/AccountStatusWidget";
 import { WelcomeModal } from "../../../components/dashboard/WelcomeModal";
 import { getPlanLabel } from "../../../lib/plans";
@@ -435,6 +436,23 @@ export default function DashboardLayout({
   const trialBannerBlinking = Boolean(
     accountStatus?.trial_expired || (trialBannerDiasRestantes != null && trialBannerDiasRestantes <= 3)
   );
+  // Colores del banner de prueba, compartidos con la píldora de plan del
+  // header (mismas ventanas: 4-5 días advertencia, <=3 días/vencido urgente).
+  const TRIAL_WARNING_BG = "linear-gradient(135deg, rgb(217,119,6), rgb(245,158,11))";
+  const TRIAL_URGENT_BG = "linear-gradient(135deg, rgb(190,18,60), rgb(225,29,72))";
+  // Píldora "Plan X" del header: mismo criterio y mismas ventanas que el
+  // banner (showTrialBanner/trialBannerBlinking), sin cálculo nuevo. Fuera
+  // de esas ventanas (o con tarjeta inscrita) queda exactamente igual.
+  const trialPillState: "warning" | "urgent" | null = showTrialBanner
+    ? trialBannerBlinking
+      ? "urgent"
+      : "warning"
+    : null;
+  const trialPillSuffix = accountStatus?.trial_expired
+    ? "Vencido"
+    : trialBannerDiasRestantes != null
+      ? `${trialBannerDiasRestantes} día${trialBannerDiasRestantes === 1 ? "" : "s"}`
+      : "";
   const trialBannerMessage = accountStatus?.trial_expired
     ? "Tu prueba gratuita ya terminó. Inscribe tu tarjeta para continuar con tu negocio."
     : `Te quedan ${trialBannerDiasRestantes} día${trialBannerDiasRestantes === 1 ? "" : "s"} para terminar tu prueba gratuita. Inscribe tu tarjeta para continuar con tu negocio.`;
@@ -1898,14 +1916,25 @@ export default function DashboardLayout({
                   </h2>
                   {plan ? (
                     <span
-                      className="orbyx-plan-badge inline-flex h-6 shrink-0 items-center rounded-md border px-2 text-[10px] font-semibold sm:h-8 sm:px-3 sm:text-sm"
-                      style={{
-                        borderColor: isNocturno ? planBadgeStyle.borderDark : planBadgeStyle.borderLight,
-                        background: isNocturno ? planBadgeStyle.bgDark : planBadgeStyle.bgLight,
-                        color: isNocturno ? planBadgeStyle.textDark : planBadgeStyle.textLight,
-                      }}
+                      className={clsx(
+                        "orbyx-plan-badge inline-flex h-6 shrink-0 items-center rounded-md border px-2 text-[10px] font-semibold sm:h-8 sm:px-3 sm:text-sm",
+                        trialPillState === "urgent" && "orbyx-trial-banner-blink"
+                      )}
+                      style={
+                        trialPillState
+                          ? {
+                              borderColor: "transparent",
+                              background: trialPillState === "urgent" ? TRIAL_URGENT_BG : TRIAL_WARNING_BG,
+                              color: "#ffffff",
+                            }
+                          : {
+                              borderColor: isNocturno ? planBadgeStyle.borderDark : planBadgeStyle.borderLight,
+                              background: isNocturno ? planBadgeStyle.bgDark : planBadgeStyle.bgLight,
+                              color: isNocturno ? planBadgeStyle.textDark : planBadgeStyle.textLight,
+                            }
+                      }
                     >
-                      Plan {planLabel}
+                      {trialPillState ? `${planLabel} · ${trialPillSuffix}` : `Plan ${planLabel}`}
                     </span>
                   ) : null}
                 </div>
@@ -2194,9 +2223,7 @@ export default function DashboardLayout({
                 trialBannerBlinking && "orbyx-trial-banner-blink"
               )}
               style={{
-                background: trialBannerBlinking
-                  ? "linear-gradient(135deg, rgb(190,18,60), rgb(225,29,72))"
-                  : "linear-gradient(135deg, rgb(217,119,6), rgb(245,158,11))",
+                background: trialBannerBlinking ? TRIAL_URGENT_BG : TRIAL_WARNING_BG,
               }}
               role="status"
             >
@@ -2252,7 +2279,7 @@ export default function DashboardLayout({
                     isOwnerOrAdmin,
                   }}
                 >
-                  {children}
+                  <AccountStatusProvider value={accountStatus}>{children}</AccountStatusProvider>
                 </PermissionsProvider>
               )}
             </div>

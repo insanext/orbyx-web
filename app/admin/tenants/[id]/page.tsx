@@ -670,7 +670,19 @@ export default function AdminTenantDetailPage() {
             {!canEditTrialEnd ? (
               <Field label="Fin de prueba" value={formatTrialDate(plan.trial_ends_at)} />
             ) : null}
-            <Field label="Ciclo de facturación termina" value={formatDate(plan.billing_cycle_end)} />
+            {/* Sin suscripción active/trialing (canEditTrialEnd) no hay cobro
+                real de Flow programado: la próxima facturación es
+                trial_ends_at (la que se edita arriba), no el
+                billing_cycle_end guardado de una suscripción cancelada o
+                inexistente. Solo cambia lo mostrado, no el valor en BD. */}
+            <Field
+              label="Ciclo de facturación termina"
+              value={
+                canEditTrialEnd && plan.trial_ends_at
+                  ? formatTrialDate(plan.trial_ends_at)
+                  : formatDate(plan.billing_cycle_end)
+              }
+            />
             {plan.scheduled_plan_slug ? (
               <Field
                 label="Cambio programado"
