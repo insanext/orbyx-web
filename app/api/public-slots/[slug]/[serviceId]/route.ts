@@ -13,6 +13,11 @@ export async function GET(
     const date = searchParams.get("date");
     const staffId = searchParams.get("staff_id");
     const branchId = searchParams.get("branch_id");
+    // Modal "Nueva reserva" de Agenda: el backend quita anticipación mínima
+    // y máximo de días solo si además recibe la sesión de un miembro con
+    // permiso de Agenda (se reenvía el Authorization que agrega apiFetch).
+    const isDashboard = searchParams.get("origin") === "dashboard";
+    const authorization = request.headers.get("authorization");
 
     if (!slug || !serviceId) {
       return NextResponse.json(
@@ -39,10 +44,17 @@ export async function GET(
       backendQuery.set("branch_id", branchId);
     }
 
+    if (isDashboard) {
+      backendQuery.set("origin", "dashboard");
+    }
+
     const res = await fetch(
       `${BACKEND_URL}/public/slots/${encodeURIComponent(slug)}/${encodeURIComponent(serviceId)}?${backendQuery.toString()}`,
       {
         cache: "no-store",
+        ...(isDashboard && authorization
+          ? { headers: { Authorization: authorization } }
+          : {}),
       }
     );
 

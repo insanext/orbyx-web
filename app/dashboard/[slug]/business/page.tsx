@@ -4,6 +4,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, Building2, Store } from "lucide-react";
 import BusinessPanel from "./BusinessPanel";
 import BranchesPage from "../branches/page";
+import { usePermissions } from "../../../../lib/permissions-context";
 
 type TabKey = "negocio" | "sucursales";
 
@@ -22,7 +23,19 @@ export default function MiNegocioPage() {
     ((params as { Slug?: string })?.Slug as string) ||
     "";
 
-  const activeTab: TabKey = searchParams.get("tab") === "sucursales" ? "sucursales" : "negocio";
+  // Cada pestaña respeta su propio permiso de lectura (auditoría
+  // 2026-09-29 sesión 2, I8). Si no tiene acceso a ninguna, el layout ya
+  // bloquea la página completa.
+  const { canView } = usePermissions();
+  const canViewNegocio = canView("negocio");
+  const canViewSucursales = canView("sucursales");
+  const requestedTab: TabKey = searchParams.get("tab") === "sucursales" ? "sucursales" : "negocio";
+  const activeTab: TabKey =
+    requestedTab === "negocio" && !canViewNegocio && canViewSucursales
+      ? "sucursales"
+      : requestedTab === "sucursales" && !canViewSucursales && canViewNegocio
+      ? "negocio"
+      : requestedTab;
 
   function setTab(tab: TabKey) {
     const query = tab === "sucursales" ? "?tab=sucursales" : "";
@@ -57,6 +70,7 @@ export default function MiNegocioPage() {
       </section>
 
       <div className="flex items-center gap-1 border-b" style={{ borderColor: "var(--border-color)" }}>
+        {canViewNegocio ? (
         <button
           type="button"
           onClick={() => setTab("negocio")}
@@ -70,6 +84,8 @@ export default function MiNegocioPage() {
           <Briefcase className="h-4 w-4" />
           Negocio
         </button>
+        ) : null}
+        {canViewSucursales ? (
         <button
           type="button"
           onClick={() => setTab("sucursales")}
@@ -83,6 +99,7 @@ export default function MiNegocioPage() {
           <Store className="h-4 w-4" />
           Sucursales
         </button>
+        ) : null}
       </div>
 
       {activeTab === "negocio" ? <BusinessPanel /> : null}

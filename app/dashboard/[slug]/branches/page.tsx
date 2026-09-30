@@ -2,6 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { apiFetchConfirmingFutureAppointments } from "@/lib/future-appointments-confirm";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Copy, HelpCircle, Pencil, Plus, Store, Users } from "lucide-react";
@@ -570,7 +571,7 @@ export default function BranchesPage() {
       setSaveError("");
       setSaveOk("");
 
-      const response = await apiFetch(`${BACKEND_URL}/business-special-dates/${id}`, {
+      const response = await apiFetch(`${BACKEND_URL}/business-special-dates/${id}?tenant_id=${tenantId}`, {
         method: "DELETE",
       });
       const data = await response.json();
@@ -930,7 +931,7 @@ export default function BranchesPage() {
         throw new Error("Ya alcanzaste el limite de sucursales de tu plan");
       }
 
-      const response = await apiFetch(`${BACKEND_URL}/branches/${branch.id}`, {
+      const response = await apiFetchConfirmingFutureAppointments(`${BACKEND_URL}/branches/${branch.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -939,7 +940,7 @@ export default function BranchesPage() {
           tenant_id: tenantId,
           is_active: nextActive,
         }),
-      });
+      }, `La sucursal "${branch.name}"`);
 
       const data = await response.json();
 
@@ -998,7 +999,7 @@ export default function BranchesPage() {
       setSaveOk("");
 
       for (const branch of toDeactivate) {
-        const response = await apiFetch(`${BACKEND_URL}/branches/${branch.id}`, {
+        const response = await apiFetchConfirmingFutureAppointments(`${BACKEND_URL}/branches/${branch.id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -1007,7 +1008,7 @@ export default function BranchesPage() {
             tenant_id: tenantId,
             is_active: false,
           }),
-        });
+        }, `La sucursal "${branch.name}"`);
 
         const data = await response.json();
 

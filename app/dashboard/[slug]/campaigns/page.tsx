@@ -65,6 +65,8 @@ type Customer = {
   updated_at: string;
   segment?: CustomerSegment;
   is_inactive?: boolean;
+  // Se dio de baja de los correos de campaña de este negocio (I13).
+  marketing_opt_out?: boolean;
 };
 
 type AudienceRecipientSource = "segment" | "manual";
@@ -2113,8 +2115,17 @@ export default function CampaignsPage() {
       channel === "email" ? !!item.email : isValidChileanMobile(item.phone)
     );
 
+    // Clientes dados de baja de los correos de campaña (Ley 19.496, I13):
+    // fuera de la audiencia de email. El backend los excluye igual al enviar
+    // (también a destinatarios manuales dados de baja).
+    const optedOutRecipientIds = new Set(
+      customers
+        .filter((customer) => customer.marketing_opt_out)
+        .map((customer) => buildRecipientId("segment", customer.id))
+    );
+
     const segmentForChannel = segmentRecipients.filter((item) => {
-      if (channel === "email") return !!item.email;
+      if (channel === "email") return !!item.email && !optedOutRecipientIds.has(item.id);
       return isValidChileanMobile(item.phone);
     });
 
@@ -2124,7 +2135,7 @@ export default function CampaignsPage() {
     }));
 
     return merged;
-  }, [manualRecipients, segmentRecipients, channel, excludedRecipientIds]);
+  }, [manualRecipients, segmentRecipients, channel, excludedRecipientIds, customers]);
 
   const hasContactsForChannel = useMemo(() => {
     return allAudienceRecipients.some((item) =>
@@ -2183,12 +2194,18 @@ export default function CampaignsPage() {
           ).length
         : 0;
 
+    const excludedForEmailOptOut =
+      channel === "email"
+        ? customers.filter((c) => !!c.email && c.marketing_opt_out).length
+        : 0;
+
     return {
       totalVisible,
       included,
       excluded,
       manual,
       excludedForInvalidPhone,
+      excludedForEmailOptOut,
       withEmail:
         channel === "email"
           ? totalVisible
@@ -2826,8 +2843,15 @@ export default function CampaignsPage() {
               Business/Premium. Se oculta la tarjeta por completo (no
               bloqueada con candado) en vez de saltar directo al wizard de
               Email, para no perder el resto del contenido de esta pantalla
-              (hero, botón "Ver historial"). */}
-          {CHANNEL_OPTIONS.filter((item) => item.key !== "whatsapp" || isPlanAtLeast(plan, "business")).map((item) => {
+              (hero, botón "Ver historial"). Excepción (auditoría 2026-09-29
+              sesión 2, M16): si bajó a Starter con saldo de WhatsApp
+              Marketing ya pagado, el canal sigue visible hasta agotarlo. */}
+          {CHANNEL_OPTIONS.filter(
+            (item) =>
+              item.key !== "whatsapp" ||
+              isPlanAtLeast(plan, "business") ||
+              (waUsage?.remaining ?? 0) > 0
+          ).map((item) => {
             const Icon = item.icon;
             const usage = item.key === "email" ? emailUsage : waUsage;
 
@@ -3507,6 +3531,23 @@ export default function CampaignsPage() {
                   }}
                 />
               </div>
+
+              {channel === "email" && audienceStats.excludedForEmailOptOut > 0 ? (
+                <div
+                  className="rounded-md border px-4 py-3 text-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-soft)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {audienceStats.excludedForEmailOptOut} cliente
+                  {audienceStats.excludedForEmailOptOut === 1 ? "" : "s"} del segmento{" "}
+                  {audienceStats.excludedForEmailOptOut === 1 ? "se dio" : "se dieron"} de baja de
+                  tus correos, así que no {audienceStats.excludedForEmailOptOut === 1 ? "recibirá" : "recibirán"}{" "}
+                  esta campaña.
+                </div>
+              ) : null}
 
               {channel === "whatsapp" && audienceStats.excludedForInvalidPhone > 0 ? (
                 <div

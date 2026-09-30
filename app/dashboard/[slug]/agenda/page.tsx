@@ -2910,6 +2910,9 @@ next_control_custom_value:
         customer_email: manualBookingDraft.customer_email.trim(),
         customer_data:
           Object.keys(customerData).length > 0 ? customerData : null,
+        // Reserva hecha por el negocio: sin depósito, anticipación mínima
+        // ni máximo de días (el backend lo valida con la sesión).
+        booking_origin: "dashboard",
       };
 
       const res = await apiFetch("/api/appointments/slot", {
@@ -2993,9 +2996,11 @@ next_control_custom_value:
 
     Promise.all(
       dates.map(async (date) => {
-        const q = new URLSearchParams({ date, staff_id: manualDraftStaffId });
+        // origin=dashboard + sesión (apiFetch): sin anticipación mínima ni
+        // máximo de días, igual que al crear la reserva manual.
+        const q = new URLSearchParams({ date, staff_id: manualDraftStaffId, origin: "dashboard" });
         if (selectedBranchId) q.set("branch_id", selectedBranchId);
-        const res = await fetch(`/api/public-slots/${slug}/${manualDraftServiceId}?${q.toString()}`, {
+        const res = await apiFetch(`/api/public-slots/${slug}/${manualDraftServiceId}?${q.toString()}`, {
           cache: "no-store",
         });
         const data = await res.json().catch(() => null);
@@ -3192,11 +3197,15 @@ setDepositRequired(Boolean(businessData.business.deposit_required));
     loadInitial();
   }, [slug]);
 
-  async function loadPendingDeposits(currentTenantId: string) {
+  async function loadPendingDeposits(currentTenantId: string, currentBranchId: string) {
     if (!currentTenantId) return;
     try {
+      // Solo los de la sucursal activa, como el resto de la Agenda
+      // (auditoría 2026-09-29 sesión 2, M5).
+      const query = new URLSearchParams({ tenant_id: currentTenantId });
+      if (currentBranchId) query.set("branch_id", currentBranchId);
       const res = await apiFetch(
-        `${BACKEND_URL}/appointments/pending-deposits?tenant_id=${currentTenantId}`
+        `${BACKEND_URL}/appointments/pending-deposits?${query.toString()}`
       );
       const data = await res.json();
       if (res.ok) setPendingDeposits(data.deposits || []);
@@ -3216,11 +3225,11 @@ setDepositRequired(Boolean(businessData.business.deposit_required));
   useEffect(() => {
     if (!depositRequired || !tenantId) return;
 
-    loadPendingDeposits(tenantId);
+    loadPendingDeposits(tenantId, selectedBranchId);
 
     function handleNew(event: Event) {
       const row = (event as CustomEvent<Record<string, any>>).detail;
-      if (row?.deposit_status === "pending") loadPendingDeposits(tenantId);
+      if (row?.deposit_status === "pending") loadPendingDeposits(tenantId, selectedBranchId);
     }
 
     function handleUpdated(event: Event) {
@@ -3231,12 +3240,12 @@ setDepositRequired(Boolean(businessData.business.deposit_required));
       // payload.old puede traer solo la PK (según REPLICA IDENTITY), así que
       // basta con que la fila nueva tenga cualquier estado de depósito.
       if (detail?.row?.deposit_status || detail?.prev?.deposit_status) {
-        loadPendingDeposits(tenantId);
+        loadPendingDeposits(tenantId, selectedBranchId);
       }
     }
 
     function handleCanceled() {
-      loadPendingDeposits(tenantId);
+      loadPendingDeposits(tenantId, selectedBranchId);
     }
 
     window.addEventListener("orbyx-appointment-new", handleNew);
@@ -3248,7 +3257,7 @@ setDepositRequired(Boolean(businessData.business.deposit_required));
       window.removeEventListener("orbyx-appointment-updated", handleUpdated);
       window.removeEventListener("orbyx-appointment-canceled", handleCanceled);
     };
-  }, [depositRequired, tenantId]);
+  }, [depositRequired, tenantId, selectedBranchId]);
 
   // Cronómetro de las tarjetas del modal — un solo interval compartido en
   // vez de uno por tarjeta.

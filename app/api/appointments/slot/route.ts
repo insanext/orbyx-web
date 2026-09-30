@@ -22,6 +22,14 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    // Reserva manual desde Agenda: el backend la exime de depósito,
+    // anticipación mínima y máximo de días, pero solo si además recibe la
+    // sesión de un miembro del negocio con permiso de Agenda — por eso se
+    // reenvía el Authorization que ya agrega apiFetch. La reserva pública
+    // no manda ninguno de los dos.
+    const isDashboardBooking = body.booking_origin === "dashboard";
+    const authorization = req.headers.get("authorization");
+
     const payload = {
       calendar_id: normalizeUuidLike(body.calendar_id),
       branch_id: normalizeUuidLike(body.branch_id),
@@ -32,14 +40,16 @@ export async function POST(req: Request) {
       customer_name: body.customer_name,
       customer_phone: body.customer_phone,
       customer_email: body.customer_email,
-      source: "public_page",
+      source: isDashboardBooking ? "dashboard" : "public_page",
       customer_data: body.customer_data || null,
+      ...(isDashboardBooking ? { booking_origin: "dashboard" } : {}),
     };
 
     const res = await fetch(`${BACKEND_URL}/appointments/slot`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(isDashboardBooking && authorization ? { Authorization: authorization } : {}),
       },
       body: JSON.stringify(payload),
     });

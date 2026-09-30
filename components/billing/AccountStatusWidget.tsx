@@ -24,6 +24,8 @@ export type AccountStatus = {
   subscription_status: string;
   awaiting_payment: boolean;
   dias_restantes_pago: number | null;
+  // Último cobro rechazado; en gracia de 3 días mientras !blocked.
+  payment_failed?: boolean;
   blocked: boolean;
   blocked_reason: "trial_expired" | "payment_overdue" | "paused" | null;
   wa_confirmacion: UsageCounter;
@@ -653,7 +655,9 @@ export function AccountStatusWidget({
     pillLabel = `Trial: ${status.dias_restantes_trial} día${status.dias_restantes_trial === 1 ? "" : "s"}`;
     pillTone = "info";
   } else if (status.awaiting_payment) {
-    pillLabel = `Pago pendiente: ${status.dias_restantes_pago} día${status.dias_restantes_pago === 1 ? "" : "s"}`;
+    pillLabel = status.payment_failed
+      ? `Pago rechazado: ${status.dias_restantes_pago} día${status.dias_restantes_pago === 1 ? "" : "s"}`
+      : `Pago pendiente: ${status.dias_restantes_pago} día${status.dias_restantes_pago === 1 ? "" : "s"}`;
     pillTone = "warning";
   }
 
@@ -723,7 +727,9 @@ export function AccountStatusWidget({
             </div>
           ) : status.awaiting_payment ? (
             <div className="mb-3 rounded-xl border p-3 text-sm" style={{ borderColor: tone.border, background: tone.bg, color: tone.text }}>
-              Faltan {status.dias_restantes_pago} día{status.dias_restantes_pago === 1 ? "" : "s"} para que tu cuenta se limite por falta de un método de pago activo.
+              {status.payment_failed
+                ? `No pudimos cobrar tu último pago. Tienes ${status.dias_restantes_pago} día${status.dias_restantes_pago === 1 ? "" : "s"} para actualizar tu tarjeta en Suscripción antes de que tu cuenta se limite.`
+                : `Faltan ${status.dias_restantes_pago} día${status.dias_restantes_pago === 1 ? "" : "s"} para que tu cuenta se limite por falta de un método de pago activo.`}
             </div>
           ) : null}
 

@@ -46,6 +46,12 @@ type BillingPreviewResponse = {
   // sobre montos brutos de plan) — no se le vuelve a aplicar IVA acá.
   amount_today?: number;
   requires_card?: boolean;
+  // Upgrade durante el trial: sin cobro, gratis hasta trial_ends_at
+  // (auditoría 2026-09-30, P6).
+  trial_upgrade?: boolean;
+  trial_ends_at?: string;
+  // same_plan con un downgrade programado: se puede cancelar (M3).
+  scheduled_plan_slug?: string | null;
   billing_cycle_end?: string;
   scheduled_change_at?: string;
   message?: string;
@@ -906,7 +912,9 @@ function PlanesPageContent() {
 
       if (data?.change_type === "upgrade") {
         setApplyOk(
-          `Upgrade aplicado. Pagar hoy: ${formatCLP(Number(data?.amount_today || 0))}.`
+          data?.trial_upgrade
+            ? `Upgrade aplicado sin cobro: gratis hasta que termine tu prueba (${formatDate(data?.trial_ends_at)}).`
+            : `Upgrade aplicado. Pagar hoy: ${formatCLP(Number(data?.amount_today || 0))}.`
         );
         // El plan real cambió: refrescar disponibilidad y add-ons activos
         await refreshAddons();
@@ -917,6 +925,9 @@ function PlanesPageContent() {
             ? `Downgrade programado correctamente para el ${dateText}. Ese día quedará activo solo lo que elegiste.`
             : `Downgrade programado correctamente para el ${dateText}.`
         );
+      } else if (data?.change_type === "cancel_scheduled") {
+        setApplyOk("Cancelaste el cambio de plan programado. Sigues en tu plan actual.");
+        setPreview((prev) => (prev ? { ...prev, scheduled_plan_slug: null } : prev));
       } else {
         setApplyOk("Cambio aplicado correctamente.");
       }
@@ -945,7 +956,9 @@ function PlanesPageContent() {
         ? `Probar gratis ${TRIAL_LABEL}`
         : "Comenzar ahora"
       : previewType === "same_plan"
-      ? "Mantener este plan"
+      ? preview?.scheduled_plan_slug
+        ? "Cancelar cambio programado"
+        : "Mantener este plan"
       : previewType === "downgrade"
       ? "Programar downgrade"
       : previewType === "upgrade" && preview?.requires_card
@@ -2171,8 +2184,9 @@ function PlanesPageContent() {
               Confirmar cambio a {selectedPlan.name}
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              El cambio se aplicará de inmediato y se cobrará el prorrateo a
-              tu tarjeta registrada.
+              {preview?.trial_upgrade
+                ? `El cambio se aplicará de inmediato y es gratis hasta que termine tu prueba (${formatDate(preview?.trial_ends_at)}). Desde esa fecha se cobrará el precio del plan ${selectedPlan.name}.`
+                : "El cambio se aplicará de inmediato y se cobrará el prorrateo a tu tarjeta registrada."}
             </p>
 
             <div className="mt-4 flex items-center justify-between rounded-xl border border-cyan-300/15 bg-cyan-400/8 px-4 py-3">
@@ -2184,10 +2198,12 @@ function PlanesPageContent() {
               </span>
             </div>
 
-            <p className="mt-3 text-xs leading-5 text-amber-200/90">
-              Se cobrará {formatCLP(previewAmountToday)} ahora mismo a tu
-              tarjeta registrada.
-            </p>
+            {preview?.trial_upgrade ? null : (
+              <p className="mt-3 text-xs leading-5 text-amber-200/90">
+                Se cobrará {formatCLP(previewAmountToday)} ahora mismo a tu
+                tarjeta registrada.
+              </p>
+            )}
 
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
               <button
@@ -2207,7 +2223,7 @@ function PlanesPageContent() {
                 }}
                 className="inline-flex h-11 items-center justify-center rounded-lg bg-[#21d6c5] px-5 text-sm font-black text-slate-950 transition hover:bg-[#45eadb] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {applying ? "Procesando..." : "Confirmar cobro"}
+                {applying ? "Procesando..." : preview?.trial_upgrade ? "Confirmar cambio" : "Confirmar cobro"}
               </button>
             </div>
           </div>

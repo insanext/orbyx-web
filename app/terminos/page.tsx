@@ -7,8 +7,10 @@ import { PublicFooter } from "@/components/public/PublicFooter";
 
 const serif = { fontFamily: "var(--font-dm-serif), Georgia, serif" };
 
-// Fecha real de publicación de esta versión (1.0), fijada al momento del deploy.
-const FECHA_PUBLICACION = "16 de agosto de 2026";
+// Fecha real de publicación de esta versión (1.1: precios netos + IVA,
+// planes Starter/Business/Premium, add-ons acumulables/pago único —
+// auditoría 2026-09-30). Ajustar al día real del deploy.
+const FECHA_PUBLICACION = "30 de septiembre de 2026";
 
 type Block =
   | { t: "h2"; text: string }
@@ -147,23 +149,30 @@ const content: Block[] = [
   { t: "h3", text: "6.1 Planes vigentes" },
   {
     t: "table",
-    headers: ["Plan", "Precio mensual"],
+    headers: ["Plan", "Precio mensual neto", "Total mensual con IVA (19%)"],
     rows: [
-      ["Pro", "$12.990"],
-      ["Premium", "$29.990"],
-      ["VIP", "$54.990"],
-      ["Platinum", "$149.990"],
+      ["Starter", "$14.990", "$17.838"],
+      ["Business", "$29.990", "$35.688"],
+      ["Premium", "$54.990", "$65.438"],
     ],
   },
   {
     t: "p",
-    text: "Los precios se expresan en pesos chilenos e incluyen los impuestos aplicables, salvo indicación distinta al momento de contratar.",
+    text: "Los precios se expresan en pesos chilenos y son **netos**: a cada cobro se le suma el IVA (19%), como se indica en la tabla y al momento de contratar.",
   },
-  { t: "p", text: "Se aplican descuentos por pago semestral (10%) y anual (15%)." },
+  { t: "p", text: "Se aplican descuentos por pago semestral (10%) y anual (15%), calculados sobre el precio neto." },
   { t: "h3", text: "6.2 Complementos" },
   {
     t: "p",
-    text: "Determinados Planes permiten contratar complementos (paquetes de mensajes, usuarios o sucursales adicionales). Los complementos se facturan mensualmente con independencia del ciclo del Plan base y **no son acumulables**: las cuotas no utilizadas se reinician cada mes y no se traspasan al mes siguiente.",
+    text: "Determinados Planes permiten contratar complementos: paquetes de mensajes (WhatsApp de confirmación y recordatorio, campañas por WhatsApp o por correo) y capacidad adicional (profesionales, sucursales o cupos grupales). Sus precios también son netos, más IVA. Se pueden contratar con cobro automático mensual a la tarjeta registrada o con pago único:",
+  },
+  {
+    t: "ul",
+    items: [
+      "Paquetes de mensajes: **son acumulables**. Los mensajes comprados que no se usan en el mes se mantienen como saldo y se consumen después del cupo incluido en el Plan, que sí se reinicia cada mes. Con cobro automático, cada renovación mensual suma un nuevo paquete al saldo; con pago único, el saldo se usa hasta agotarse, sin fecha de vencimiento.",
+      "Capacidad adicional: con cobro automático se renueva cada mes; con pago único queda activa durante 30 días desde el pago.",
+      "Al cancelar el Plan, los complementos dejan de renovarse: lo ya pagado se mantiene hasta el término de su período o, en los paquetes de mensajes, hasta agotar el saldo.",
+    ],
   },
   { t: "h3", text: "6.3 Medio de pago" },
   {
@@ -949,7 +958,7 @@ function TerminosContent() {
           <p className="mt-3 text-base text-[var(--pub-text-muted)]">Orbyx Soluciones Digitales SpA</p>
 
           <div className="mx-auto mt-6 inline-flex flex-col items-start gap-1 rounded-xl border border-[var(--pub-border)] bg-[var(--pub-bg-soft)] px-5 py-4 text-left text-sm text-[var(--pub-text-muted)]">
-            <p>{renderInline("**Versión:** 1.0")}</p>
+            <p>{renderInline("**Versión:** 1.1")}</p>
             <p>{renderInline(`**Última actualización:** ${FECHA_PUBLICACION}`)}</p>
             <p>{renderInline("**Publicados en:** orbyx.cl/terminos")}</p>
           </div>

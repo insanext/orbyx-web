@@ -237,10 +237,19 @@ export default function AdminPlanesPage() {
     <div className="p-6 space-y-10">
       <div>
         <h1 className="text-lg font-semibold text-white mb-1">Planes</h1>
-        <p className="text-sm text-blue-300/50 mb-6">
-          Cambiar precio/trial_days aquí no afecta todavía lo que se cobra realmente en Flow
-          ni la página pública de /planes — ver nota de alcance.
-        </p>
+        {/* Aviso visible (auditoría 2026-09-30, I15): los precios de plan que
+            se cobran salen de PLAN_PRICES/BILLING_CYCLES fijos en server.js y
+            de lib/plans.ts, no de plan_config. Los límites y trial_days sí
+            se leen de plan_config. */}
+        <div className="mb-6 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+          <p className="font-semibold">⚠️ Editar el precio mensual o los descuentos semestral/anual NO cambia lo que se cobra.</p>
+          <p className="mt-1 text-amber-200/80">
+            Flow cobra los precios fijos del código (Starter $14.990, Business $29.990, Premium $54.990 + IVA) y la
+            página pública /planes también los usa. Para cambiar un precio hay que cambiarlo en el código. Los límites
+            (profesionales, sucursales, cupos, mensajes) sí se aplican de inmediato, y los días de prueba aplican a los
+            registros nuevos.
+          </p>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {ALL_PLANS.map((slug) => {
             const plan = plans.find((p) => p.plan_slug === slug)
@@ -286,10 +295,13 @@ export default function AdminPlanesPage() {
 
       <div>
         <h1 className="text-lg font-semibold text-white mb-1">Add-ons</h1>
-        <p className="text-sm text-blue-300/50 mb-6">
-          El precio promo se guarda aquí pero todavía no se aplica automáticamente al cobro real
-          — ver nota de alcance.
-        </p>
+        <div className="mb-6 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+          <p className="font-semibold">⚠️ La promoción (precio promo y fechas) NO se aplica al cobro real.</p>
+          <p className="mt-1 text-amber-200/80">
+            Los precios normales y por pack sí se usan en las compras nuevas. Quienes ya tienen el add-on con
+            renovación automática siguen pagando el precio con el que lo contrataron.
+          </p>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {addons.map((addon) => (
             <div key={addon.addon_key} className="rounded-2xl border border-blue-900/25 p-4" style={{ background: '#0f1729' }}>

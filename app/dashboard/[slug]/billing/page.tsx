@@ -2,6 +2,7 @@
 
 import { CSSProperties, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { apiFetchConfirmingFutureAppointments } from "@/lib/future-appointments-confirm";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { ChevronRight, CreditCard, Info, X } from "lucide-react";
@@ -463,6 +464,8 @@ function BillingPageInner() {
   const [scheduledPlanSlug, setScheduledPlanSlug] = useState<PlanSlug | null>(null);
   const [scheduledChangeAt, setScheduledChangeAt] = useState<string | null>(null);
   const [pendingChangeType, setPendingChangeType] = useState<string | null>(null);
+  const [cancelingScheduledChange, setCancelingScheduledChange] = useState(false);
+  const [cancelScheduledError, setCancelScheduledError] = useState("");
   const [showScheduledChangeInfo, setShowScheduledChangeInfo] = useState(false);
 
   const [branches, setBranches] = useState<BranchItem[]>([]);
@@ -1040,6 +1043,42 @@ function BillingPageInner() {
     }
   }
 
+  // Cancelar un downgrade programado (auditoría 2026-09-30, M3): elegir el
+  // plan actual en POST /billing/change-plan limpia el cambio programado.
+  // Nada se desactivó todavía (la selección solo se aplica el día del cambio).
+  async function handleCancelScheduledChange() {
+    if (!tenantId || !plan) return;
+    if (
+      !window.confirm(
+        "¿Cancelar el cambio de plan programado? Seguirás en tu plan actual y no se desactivará nada."
+      )
+    ) {
+      return;
+    }
+    try {
+      setCancelingScheduledChange(true);
+      setCancelScheduledError("");
+      const res = await apiFetch(`${BACKEND_URL}/billing/change-plan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId, new_plan: plan }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "No se pudo cancelar el cambio programado");
+      }
+      setScheduledPlanSlug(null);
+      setScheduledChangeAt(null);
+      setPendingChangeType(null);
+    } catch (error: unknown) {
+      setCancelScheduledError(
+        error instanceof Error ? error.message : "No se pudo cancelar el cambio programado"
+      );
+    } finally {
+      setCancelingScheduledChange(false);
+    }
+  }
+
   async function handleCancelSubscription() {
     try {
       setCanceling(true);
@@ -1054,6 +1093,12 @@ function BillingPageInner() {
 
       if (!res.ok) {
         throw new Error(data?.error || "No se pudo cancelar la suscripción");
+      }
+
+      // Plan cancelado, pero la renovación de add-ons no se pudo detener
+      // (el backend lo informa en vez de seguir cobrando en silencio).
+      if (data?.warning) {
+        window.alert(data.warning);
       }
 
       setCancelModalOpen(false);
@@ -1132,14 +1177,14 @@ function BillingPageInner() {
       if (!confirmed) return;
 
       for (const branch of branchesToDeactivate) {
-        const response = await apiFetch(`${BACKEND_URL}/branches/${branch.id}`, {
+        const response = await apiFetchConfirmingFutureAppointments(`${BACKEND_URL}/branches/${branch.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             tenant_id: tenantId,
             is_active: false,
           }),
-        });
+        }, `La sucursal "${branch.name}"`);
 
         const data = await response.json();
 
@@ -1151,7 +1196,7 @@ function BillingPageInner() {
       }
 
       for (const item of staffToDeactivate) {
-        const response = await apiFetch(`${BACKEND_URL}/staff/${item.id}`, {
+        const response = await apiFetchConfirmingFutureAppointments(`${BACKEND_URL}/staff/${item.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1159,7 +1204,7 @@ function BillingPageInner() {
             branch_id: item.branch_id,
             is_active: false,
           }),
-        });
+        }, `El profesional "${item.name}"`);
 
         const data = await response.json();
 
@@ -1337,6 +1382,22 @@ function BillingPageInner() {
               >
                 {loading ? "..." : scheduledPlanLabel || "Sin cambio"}
               </p>
+              {!loading && scheduledPlanSlug ? (
+                <button
+                  type="button"
+                  onClick={handleCancelScheduledChange}
+                  disabled={cancelingScheduledChange}
+                  className="mt-0.5 text-[11px] font-semibold underline disabled:opacity-60"
+                  style={{ color: "var(--accent-solid, rgb(37,99,235))" }}
+                >
+                  {cancelingScheduledChange ? "Cancelando..." : "Cancelar cambio"}
+                </button>
+              ) : null}
+              {cancelScheduledError ? (
+                <p className="mt-0.5 text-[11px]" style={{ color: "rgb(248 113 113)" }}>
+                  {cancelScheduledError}
+                </p>
+              ) : null}
 
               {showScheduledChangeInfo ? (
                 <>
@@ -1977,6 +2038,9 @@ function BillingPageInner() {
                     Al cancelar, tu suscripción dejará de renovarse automáticamente.
                     Podrás seguir usando tu plan hasta el final del ciclo actual
                     {billingCycleEnd ? ` (${formatDate(billingCycleEnd)})` : ""}.
+                    {" "}Tus add-ons también dejarán de renovarse: lo que ya pagaste se
+                    mantiene hasta que termine su mes (o, en packs de mensajes, hasta
+                    agotar el saldo).
                   </>}
             </p>
 

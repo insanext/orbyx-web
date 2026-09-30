@@ -758,6 +758,41 @@ export default function DashboardLayout({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOwnerOrAdmin, memberPermissions, accountStatus?.blocked]);
 
+  // "Sin acceso" a un módulo bloquea también la página, no solo el link del
+  // sidebar (auditoría 2026-09-29 sesión 2, I8) — antes, escribiendo la URL
+  // se veía igual. Un solo chequeo acá cubre todas las páginas del módulo
+  // (incluidas subrutas como /customers/[id]). El backend aplica la misma
+  // regla a las lecturas (requireModuleReadAccess en server.js). "Mi
+  // Negocio" se bloquea solo si no tiene acceso a ninguna de sus 2
+  // pestañas; cada pestaña se filtra en business/page.tsx.
+  const dashboardBasePath = `/dashboard/${slug}`;
+  const dashboardSubPath =
+    pathname && pathname.startsWith(dashboardBasePath)
+      ? pathname.slice(dashboardBasePath.length).replace(/\/$/, "")
+      : null;
+  let currentModuleKeys: string[] | null = null;
+  if (dashboardSubPath === "") {
+    currentModuleKeys = [NAV_MODULE_MAP[""]];
+  } else if (dashboardSubPath) {
+    if (dashboardSubPath === "/business" || dashboardSubPath.startsWith("/business/")) {
+      currentModuleKeys = ["negocio", "sucursales"];
+    } else if (dashboardSubPath === "/branches" || dashboardSubPath.startsWith("/branches/")) {
+      currentModuleKeys = ["sucursales"];
+    } else {
+      const matchedHref = Object.keys(NAV_MODULE_MAP).find(
+        (href) => href && (dashboardSubPath === href || dashboardSubPath.startsWith(`${href}/`))
+      );
+      if (matchedHref) currentModuleKeys = [NAV_MODULE_MAP[matchedHref]];
+    }
+  }
+  const currentModuleDenied =
+    memberLoaded &&
+    !isOwnerOrAdmin &&
+    Boolean(currentModuleKeys) &&
+    (currentModuleKeys || []).every((key) => getModuleAccessByKey(key) === false);
+  const firstAllowedHref =
+    visibleNavSections.flatMap((section) => section.items)[0]?.href ?? null;
+
   useEffect(() => {
     if (!tenantId) return;
     apiFetch(`${BACKEND_URL}/support/tickets/unread-count?tenant_id=${tenantId}`)
@@ -2288,7 +2323,32 @@ export default function DashboardLayout({
                     isOwnerOrAdmin,
                   }}
                 >
-                  <AccountStatusProvider value={accountStatus}>{children}</AccountStatusProvider>
+                  <AccountStatusProvider value={accountStatus}>
+                    {currentModuleDenied ? (
+                      <div
+                        className="mx-auto mt-10 max-w-lg rounded-3xl border p-8 text-center"
+                        style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                      >
+                        <h2 className="text-lg font-semibold" style={{ color: textMain }}>
+                          No tienes acceso a esta sección
+                        </h2>
+                        <p className="mt-2 text-sm" style={{ color: textMuted }}>
+                          El administrador de tu negocio no te dio permiso para ver este módulo. Si lo necesitas, pídele que lo habilite en Configuración → Equipo.
+                        </p>
+                        {firstAllowedHref !== null ? (
+                          <Link
+                            href={`/dashboard/${slug}${firstAllowedHref}`}
+                            className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-white"
+                            style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+                          >
+                            Ir a una sección disponible
+                          </Link>
+                        ) : null}
+                      </div>
+                    ) : (
+                      children
+                    )}
+                  </AccountStatusProvider>
                 </PermissionsProvider>
               )}
             </div>

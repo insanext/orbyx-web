@@ -2,6 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { apiFetchConfirmingFutureAppointments } from "@/lib/future-appointments-confirm";
 import { useParams } from "next/navigation";
 import { HelpCircle, UsersRound } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -1057,7 +1058,7 @@ async function loadStaffHours(id: string, staffId: string) {
       if (!confirmAction) return;
 
       for (const staffItem of toDeactivate) {
-        const res = await apiFetch(`${BACKEND_URL}/staff/${staffItem.id}`, {
+        const res = await apiFetchConfirmingFutureAppointments(`${BACKEND_URL}/staff/${staffItem.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1075,7 +1076,7 @@ async function loadStaffHours(id: string, staffId: string) {
                 : Boolean(staffItem.use_business_hours),
           }),
 
-        });
+        }, `El profesional "${staffItem.name}"`);
 
         const data = await res.json();
 
@@ -1421,13 +1422,13 @@ function validateStaffHours() {
 
       const method = editingId ? "PUT" : "POST";
 
-      const res = await apiFetch(url, {
+      const res = await apiFetchConfirmingFutureAppointments(url, {
         method,
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-      });
+      }, `El profesional "${payload.name}"`);
 
       const data = await res.json();
 
@@ -1489,7 +1490,7 @@ function validateStaffHours() {
 
   async function handleDelete(id: string) {
     try {
-      const res = await apiFetch(`${BACKEND_URL}/staff/${id}`, {
+      const res = await apiFetch(`${BACKEND_URL}/staff/${id}?tenant_id=${tenantId}`, {
         method: "DELETE",
       });
 
@@ -1517,7 +1518,7 @@ function validateStaffHours() {
       setSaveError("");
       setSaveOk("");
 
-      const res = await apiFetch(`${BACKEND_URL}/staff/${item.id}`, {
+      const res = await apiFetchConfirmingFutureAppointments(`${BACKEND_URL}/staff/${item.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1537,7 +1538,7 @@ function validateStaffHours() {
               : Boolean(item.use_business_hours),
           photo_url: item.photo_url || null,
         }),
-      });
+      }, `El profesional "${item.name}"`);
 
       const data = await res.json();
 
@@ -1728,7 +1729,7 @@ function validateStaffHours() {
       setSaveError("");
       setSaveOk("");
 
-      const res = await apiFetch(`${BACKEND_URL}/staff-special-dates/${id}`, {
+      const res = await apiFetch(`${BACKEND_URL}/staff-special-dates/${id}?tenant_id=${tenantId}`, {
         method: "DELETE",
       });
 
@@ -1771,7 +1772,7 @@ function validateStaffHours() {
       setSaveOk("");
 
       for (const id of ids) {
-        const res = await apiFetch(`${BACKEND_URL}/staff-special-dates/${id}`, {
+        const res = await apiFetch(`${BACKEND_URL}/staff-special-dates/${id}?tenant_id=${tenantId}`, {
           method: "DELETE",
         });
 

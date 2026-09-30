@@ -1211,7 +1211,7 @@ async function removeSpecialDateGroup(group: SpecialDateGroup) {
 
     for (const id of ids) {
       const res = await apiFetch(
-        `https://orbyx-backend.onrender.com/business-special-dates/${id}`,
+        `https://orbyx-backend.onrender.com/business-special-dates/${id}?tenant_id=${tenantId}`,
         {
           method: "DELETE",
         }

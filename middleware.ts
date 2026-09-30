@@ -70,7 +70,7 @@ export async function middleware(request: NextRequest) {
     if (dashboardSlug) {
       const { data: tenant } = await supabase
         .from("tenants")
-        .select("id, trial_ends_at, billing_cycle_end, paused_at")
+        .select("id, is_trial, trial_ends_at, billing_cycle_end, paused_at")
         .eq("slug", dashboardSlug)
         .eq("is_active", true)
         .maybeSingle();
@@ -134,8 +134,21 @@ export async function middleware(request: NextRequest) {
         const billingCycleEnd = tenant.billing_cycle_end ? new Date(tenant.billing_cycle_end) : null;
 
         const isPaused = Boolean(tenant.paused_at);
-        const trialActive = Boolean(!isPaused && trialEndsAt && now < trialEndsAt && !hasActiveSubscription);
+        // Misma fórmula que computeBillingAccessState en server.js
+        // (auditoría 2026-09-30, sesión 3) — mantener ambas iguales:
+        //   - 'trialing' no cuenta como trial activo (ya inscribió tarjeta).
+        //   - El fin de trial solo bloquea a quien nunca pagó
+        //     (is_trial !== false); quien ya pagó y cancela conserva acceso
+        //     hasta billing_cycle_end.
+        //   - Cobro rechazado ('error'): 3 días de gracia sobre el corte.
+        const PAYMENT_FAILED_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+        const paymentFailed = latestSub?.status === "error";
+        const hasPaidBefore = tenant.is_trial === false;
+        const trialActive = Boolean(
+          !isPaused && trialEndsAt && now < trialEndsAt && !hasActiveSubscription && !isTrialingInFlow
+        );
         const awaitingPayment = !hasActiveSubscription && !trialActive && !isTrialingInFlow;
+        const graceMs = paymentFailed ? PAYMENT_FAILED_GRACE_MS : 0;
         // trial_ends_at y billing_cycle_end son columnas independientes
         // (trial_ends_at se puede ajustar a mano desde el panel admin sin
         // tocar billing_cycle_end) -- sin este chequeo explícito, un trial
@@ -143,12 +156,29 @@ export async function middleware(request: NextRequest) {
         // hasta que billing_cycle_end también pasara, inconsistente con el
         // resto de los avisos de vencimiento (banner/email/directorio
         // admin), que ya usan trial_ends_at directamente.
-        const trialExpired = Boolean(!isPaused && awaitingPayment && trialEndsAt && now >= trialEndsAt);
+        const trialExpired = Boolean(
+          !isPaused &&
+            awaitingPayment &&
+            !hasPaidBefore &&
+            trialEndsAt &&
+            now.getTime() >= trialEndsAt.getTime() + graceMs
+        );
         // Pausado por Super Admin bloquea igual que vencido, independiente
         // del ciclo de facturación — mismo criterio que
         // GET /billing/account-status en server.js.
+        // Quien nunca pagó y tiene trial se rige solo por el fin del trial
+        // (su billing_cycle_end es el del alta y puede quedar antes si el
+        // admin extendió el trial).
+        const governedByTrial = Boolean(trialEndsAt && !hasPaidBefore);
         const blocked =
-          isPaused || trialExpired || Boolean(awaitingPayment && billingCycleEnd && now >= billingCycleEnd);
+          isPaused ||
+          trialExpired ||
+          Boolean(
+            awaitingPayment &&
+              !governedByTrial &&
+              billingCycleEnd &&
+              now.getTime() >= billingCycleEnd.getTime() + graceMs
+          );
 
         // DIAGNOSTICO TEMPORAL — sacar despues de confirmar la causa del
         // bloqueo indebido en tenants con suscripcion activa (ver sesion

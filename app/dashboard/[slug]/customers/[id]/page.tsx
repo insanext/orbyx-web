@@ -1212,6 +1212,7 @@ const lastValidAppointment = validAppointments[0] || null;
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            slug,
             reason,
             notes,
             diagnosis,

@@ -252,12 +252,35 @@ export default function AdminTenantDetailPage() {
     setDeleting(true)
     setDeleteError('')
     try {
-      const res = await authFetch(`/admin/tenants/${id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirm_slug: confirmText }),
-      })
-      const json = res ? await res.json() : null
+      const sendDelete = (forceWithoutFlowCancel: boolean) =>
+        authFetch(`/admin/tenants/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            confirm_slug: confirmText,
+            ...(forceWithoutFlowCancel ? { force_without_flow_cancel: true } : {}),
+          }),
+        })
+      let res = await sendDelete(false)
+      let json = res ? await res.json() : null
+      // El backend cancela primero la suscripción del tenant en Flow
+      // (auditoría 2026-09-30, C4). Si Flow falla, no borra nada y pide
+      // confirmación explícita — borrar igual deja la suscripción viva en
+      // Flow, y hay que cancelarla a mano en el panel de Flow.
+      if (res && json?.code === 'flow_cancel_failed') {
+        const detail = (json.failures || [])
+          .map((f: { subscription_id: string; error: string }) => `• ${f.subscription_id}: ${f.error}`)
+          .join('\n')
+        const proceed = window.confirm(
+          `No se pudo cancelar la suscripción de este tenant en Flow:\n${detail}\n\n` +
+            'Si borras igual, esa suscripción puede seguir cobrando y tendrás que cancelarla a mano en el panel de Flow. ¿Borrar igual?'
+        )
+        if (!proceed) {
+          throw new Error(json.error || 'No se pudo cancelar la suscripción en Flow')
+        }
+        res = await sendDelete(true)
+        json = res ? await res.json() : null
+      }
       if (!res || !res.ok || !json?.ok) {
         throw new Error(json?.error || 'Error borrando el tenant')
       }
