@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 // ─── Shared design tokens (espeja signup) ────────────────────────────────────
 const CARD_STYLE: React.CSSProperties = {
@@ -314,7 +315,7 @@ function OnboardingInner() {
   const [duration, setDuration] = useState("60");
   const [price, setPrice] = useState("");
 
-  const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
+  const backend = BACKEND_URL;
 
   // Mismo algoritmo que PATCH /tenants/:id en server.js para derivar el
   // slug desde el nombre del negocio -- se usa acá solo para PREDECIR si

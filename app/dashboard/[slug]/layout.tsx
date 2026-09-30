@@ -47,8 +47,7 @@ import { AccountStatusProvider } from "../../../lib/account-status-context";
 import { AccountStatusWidget, useAccountStatus } from "../../../components/billing/AccountStatusWidget";
 import { WelcomeModal } from "../../../components/dashboard/WelcomeModal";
 import { getPlanLabel } from "../../../lib/plans";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 // Paleta del badge de plan del header (efecto "reluciente" ya existe vía
 // .orbyx-plan-badge::after / @keyframes orbyxPlanShine, no se toca acá).

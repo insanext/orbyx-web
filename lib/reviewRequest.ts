@@ -6,8 +6,7 @@
 // handleInviteWhatsApp en customers/page.tsx). No duplicar la
 // construcción del link en cada callsite.
 import { apiFetch } from "@/lib/api";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 // Arma el link wa.me con el mensaje precargado. Devuelve null si el
 // teléfono no tiene dígitos (nada que limpiar/normalizar más allá de eso —

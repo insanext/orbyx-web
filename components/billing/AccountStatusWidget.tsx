@@ -5,8 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, Clock, Landmark, Lock, MessageCircle, X, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { createClient } from "../../lib/supabase/client";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type UsageCounter = {
   used: number;

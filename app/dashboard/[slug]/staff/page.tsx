@@ -9,6 +9,7 @@ import { Panel } from "../../../../components/dashboard/panel";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 import { usePermissions } from "../../../../lib/permissions-context";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type BusinessResponse = {
   business: {
@@ -119,7 +120,6 @@ type NoticeTone =
   | "danger"
   | "neutral";
 
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 const days = [
   { value: 0, label: "Domingo" },

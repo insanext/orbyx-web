@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 function normalizeUuidLike(value: unknown) {
   if (value === null || value === undefined) return null;

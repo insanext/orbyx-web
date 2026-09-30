@@ -19,8 +19,7 @@ import {
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { PLAN_LABELS, isKnownPlanSlug, isPlanAtLeast, type PlanSlug } from "../../../../lib/plans";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
 type CampaignChannel = "email" | "whatsapp";

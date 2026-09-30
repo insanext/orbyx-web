@@ -5,8 +5,7 @@ import { useParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { Star, EyeOff, Eye, MessageCircle, Trash2, ChevronDown } from "lucide-react";
 import { usePermissions } from "../../../../lib/permissions-context";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 // Mismo set fijo que ALLOWED_REVIEW_REACTIONS en server.js.
 const REACTIONS = ["👍", "❤️", "🙏", "😊"];

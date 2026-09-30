@@ -5,8 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "@/components/ui/password-visibility-toggle";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 function CompletarRegistroInner() {
   const searchParams = useSearchParams();

@@ -4,8 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPlanLabel } from '@/lib/plans'
 import { buildWhatsAppLink } from '@/lib/reviewRequest'
-
-const BACKEND_URL = 'https://orbyx-backend.onrender.com'
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type TenantRow = {
   id: string

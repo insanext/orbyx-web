@@ -1,4 +1,5 @@
 ﻿"use client";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
@@ -630,7 +631,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
         setLoadError("");
 
         const res = await apiFetch(
-          `https://orbyx-backend.onrender.com/public/business/${slug}`
+          `${BACKEND_URL}/public/business/${slug}`
         );
 
         const data: BusinessResponse | { error?: string } = await res.json();
@@ -651,7 +652,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
 	setCalendarId(data.calendar_id);
 
         const branchesRes = await apiFetch(
-          `https://orbyx-backend.onrender.com/branches?tenant_id=${data.business.id}`
+          `${BACKEND_URL}/branches?tenant_id=${data.business.id}`
         );
 
         const branchesData = await branchesRes.json();
@@ -848,7 +849,7 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
   async function loadBookingFields() {
     try {
       const res = await apiFetch(
-        `https://orbyx-backend.onrender.com/booking-fields/${slug}`
+        `${BACKEND_URL}/booking-fields/${slug}`
       );
 
       const data = await res.json();
@@ -869,7 +870,7 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
   async function loadBusinessHours(id: string) {
     try {
       const res = await apiFetch(
-        `https://orbyx-backend.onrender.com/business-hours?tenant_id=${id}&scope=global`
+        `${BACKEND_URL}/business-hours?tenant_id=${id}&scope=global`
       );
 
       const data = await res.json();
@@ -922,7 +923,7 @@ setBusinessHours(result);
   async function loadSpecialDates(id: string) {
     try {
       const res = await apiFetch(
-        `https://orbyx-backend.onrender.com/business-special-dates?tenant_id=${id}&scope=global`
+        `${BACKEND_URL}/business-special-dates?tenant_id=${id}&scope=global`
       );
 
       const data = await res.json();
@@ -1115,7 +1116,7 @@ setBusinessHours(result);
       if (editingSpecialDateId) {
         const item = items[0];
         const res = await apiFetch(
-          `https://orbyx-backend.onrender.com/business-special-dates/${editingSpecialDateId}`,
+          `${BACKEND_URL}/business-special-dates/${editingSpecialDateId}`,
           {
             method: "PUT",
             headers: {
@@ -1148,7 +1149,7 @@ setBusinessHours(result);
 
       for (const item of items) {
         const res = await apiFetch(
-          "https://orbyx-backend.onrender.com/business-special-dates",
+          `${BACKEND_URL}/business-special-dates`,
           {
             method: "POST",
             headers: {
@@ -1211,7 +1212,7 @@ async function removeSpecialDateGroup(group: SpecialDateGroup) {
 
     for (const id of ids) {
       const res = await apiFetch(
-        `https://orbyx-backend.onrender.com/business-special-dates/${id}?tenant_id=${tenantId}`,
+        `${BACKEND_URL}/business-special-dates/${id}?tenant_id=${tenantId}`,
         {
           method: "DELETE",
         }
@@ -1301,7 +1302,7 @@ for (const h of businessHours) {
 const cleanedHours = Object.values(grouped);
 
       const res = await apiFetch(
-        "https://orbyx-backend.onrender.com/business-hours",
+        `${BACKEND_URL}/business-hours`,
         {
           method: "PUT",
           headers: {
@@ -1493,7 +1494,7 @@ const cleanedHours = Object.values(grouped);
       setSavingFields(true);
 
       const res = await apiFetch(
-        `https://orbyx-backend.onrender.com/booking-fields/${slug}`,
+        `${BACKEND_URL}/booking-fields/${slug}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -1511,7 +1512,7 @@ const cleanedHours = Object.values(grouped);
 
       if (businessCategory === "generic") {
         const tenantRes = await apiFetch(
-          `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
+          `${BACKEND_URL}/tenants/${tenantId}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -1556,7 +1557,7 @@ async function saveSlotMinutes() {
     const value = Number(slotMinutes || 30);
 
     const res = await apiFetch(
-      `https://orbyx-backend.onrender.com/calendars/${calendarId}/slot-minutes`,
+      `${BACKEND_URL}/calendars/${calendarId}/slot-minutes`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -1603,7 +1604,7 @@ async function saveSlotMinutes() {
       };
 
       const res = await apiFetch(
-        `https://orbyx-backend.onrender.com/tenants/${tenantId}`,
+        `${BACKEND_URL}/tenants/${tenantId}`,
         {
           method: "PATCH",
           headers: {

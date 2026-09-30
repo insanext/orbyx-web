@@ -9,6 +9,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "../../components/ui/password-visibility-toggle";
 import { ParticleBackground } from "../../components/ui/particle-background";
 import { clearInstallBannerDismissal } from "@/components/pwa/InstallAppBanner";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 // Resuelve a dónde debe ir un usuario ya autenticado: provisiona el tenant si
 // es su primer login, lo manda a /onboarding si el negocio no completó el
@@ -48,7 +49,7 @@ async function resolveTenantDestination({
     .single();
 
   if (!tenantUserRow) {
-    const backend = process.env.NEXT_PUBLIC_BACKEND_URL!;
+    const backend = BACKEND_URL;
     const {
       data: { session },
     } = await supabase.auth.getSession();

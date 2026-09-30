@@ -7,8 +7,7 @@ import { Check, Lock, MessageCircle, Search, SlidersHorizontal, Star, UsersRound
 import { usePermissions } from "../../../../lib/permissions-context";
 import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
 import { isPlanAtLeast } from "@/lib/plans";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
 

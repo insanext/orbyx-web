@@ -6,8 +6,7 @@ import type { ExtraKey } from "@/lib/plans";
 import { Mail, Megaphone, MessageCircle, Minus, Store, Users, UsersRound } from "lucide-react";
 import { Panel } from "../dashboard/panel";
 import { AutoChargeConsentModal, type ConsentPriceBreakdown } from "./AutoChargeConsentModal";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type ExtraConfig = {
   title: string;

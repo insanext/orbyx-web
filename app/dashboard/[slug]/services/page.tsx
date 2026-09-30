@@ -26,6 +26,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type BusinessResponse = {
   business: {
@@ -96,7 +97,6 @@ type NoticeTone =
   | "danger"
   | "neutral";
 
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 function normalizePlanSlug(planSlug?: string | null) {
   const normalized = String(planSlug || "pro").toLowerCase();

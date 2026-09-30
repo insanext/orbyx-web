@@ -24,8 +24,7 @@ import {
 import { Panel } from "../../../../../components/dashboard/panel";
 import { apiFetch } from "@/lib/api";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 /* ================= TYPES ================= */
 

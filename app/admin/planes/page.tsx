@@ -2,8 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DateInputDMY } from '@/components/ui/date-input-dmy'
-
-const BACKEND_URL = 'https://orbyx-backend.onrender.com'
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type PlanConfig = {
   plan_slug: string

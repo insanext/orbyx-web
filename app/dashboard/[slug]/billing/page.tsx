@@ -12,8 +12,7 @@ import { AddonManager } from "../../../../components/addons/AddonManager";
 import { cycleTotalPrice, getPlanLabel, PLAN_PRICES_ALL, type PlanSlug } from "@/lib/plans";
 import { usePermissions } from "@/lib/permissions-context";
 import { useLayoutAccountStatus } from "@/lib/account-status-context";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type BusinessResponse = {
   business: {

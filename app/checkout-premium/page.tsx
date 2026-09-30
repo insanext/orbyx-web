@@ -19,8 +19,7 @@ import {
 import { TermsAcceptanceCheckbox } from "@/components/auth/TermsAcceptanceCheckbox";
 import { PhoneCountryInput } from "@/components/auth/PhoneCountryInput";
 import { isValidPhoneForCountry, toE164 } from "@/components/auth/countries";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 function formatCLP(value: number) {
   return `$${value.toLocaleString("es-CL")}`;

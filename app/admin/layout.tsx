@@ -4,8 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut, KeyRound, X } from 'lucide-react'
 import { PasswordVisibilityToggle } from '@/components/ui/password-visibility-toggle'
-
-const BACKEND_URL = 'https://orbyx-backend.onrender.com'
+import { BACKEND_URL } from "@/lib/backend-url";
 
 const NAV_ITEMS = [
   { href: '/admin/tickets', label: 'Tickets' },

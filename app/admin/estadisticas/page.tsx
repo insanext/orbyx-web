@@ -2,8 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getPlanLabel } from '@/lib/plans'
-
-const BACKEND_URL = 'https://orbyx-backend.onrender.com'
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type EstadisticasResponse = {
   ok: boolean

@@ -41,6 +41,7 @@ import {
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
 import { PhoneCountryInput } from "@/components/auth/PhoneCountryInput";
 import { isValidPhoneForCountry, toE164 } from "@/components/auth/countries";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type Appointment = {
   id: string;
@@ -322,7 +323,6 @@ type QuickUnblockDraft = {
   error: string;
 };
 
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
 const GROUP_ATTENDEE_PREVIEW_LIMIT = 3;
 
 const filterLabels: Record<FilterValue, string> = {

@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 // Baja de correos de campaña con un clic, sin login (Ley 19.496 art. 28 B,
 // auditoría 2026-09-29 sesión 2, I13). El enlace llega en el pie de cada

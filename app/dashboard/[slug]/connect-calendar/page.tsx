@@ -2,8 +2,7 @@
 
 import { useSearchParams, useParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+import { BACKEND_URL } from "@/lib/backend-url";
 
 export default function ConnectCalendarPage() {
   const params = useParams();

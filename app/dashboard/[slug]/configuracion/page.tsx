@@ -8,8 +8,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { PasswordVisibilityToggle } from "@/components/ui/password-visibility-toggle";
 import { Pencil, Trash2 } from "lucide-react";
 import { ROLE_LABEL, usePermissions } from "@/lib/permissions-context";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 // Fuente única de los módulos de permisos por panel (Parte A, auditoría
 // 2026-09-20) -- reusado en el form de invitar y en el modal de editar

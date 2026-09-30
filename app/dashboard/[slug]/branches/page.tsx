@@ -11,8 +11,7 @@ import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-mod
 import { usePermissions } from "../../../../lib/permissions-context";
 import { getPlanLabel, NEXT_PLAN_SUGGESTION, type PlanSlug } from "../../../../lib/plans";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type BusinessResponse = {
   business: {

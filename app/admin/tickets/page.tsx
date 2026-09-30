@@ -2,8 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-
-const BACKEND_URL = 'https://orbyx-backend.onrender.com'
+import { BACKEND_URL } from "@/lib/backend-url";
 
 const PLAN_BADGE: Record<string, { label: string; color: string }> = {
   platinum: { label: 'Platinum', color: 'bg-pink-500/15 text-pink-300 border-pink-500/25' },

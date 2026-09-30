@@ -4,8 +4,7 @@ import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetch } from '@/lib/api'
 import FaqAccordion from './FaqAccordion'
-
-const BACKEND_URL = 'https://orbyx-backend.onrender.com'
+import { BACKEND_URL } from "@/lib/backend-url";
 
 const CATEGORIES = [
   { value: 'agenda_reservas', label: 'Agenda y reservas' },

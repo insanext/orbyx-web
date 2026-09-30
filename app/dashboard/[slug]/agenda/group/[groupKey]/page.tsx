@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type Appointment = {
   id: string;

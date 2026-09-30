@@ -36,6 +36,7 @@ import {
   UsersRound,
   Zap,
 } from "lucide-react";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type BillingPreviewResponse = {
   ok?: boolean;
@@ -82,7 +83,6 @@ type ExtraConfig = {
   iconClass: string;
 };
 
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 const extraConfig: Record<ExtraKey, ExtraConfig> = {
   wa_confirmacion: {

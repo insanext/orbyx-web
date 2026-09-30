@@ -34,8 +34,7 @@ import { PageHeader } from "../../../components/dashboard/page-header";
 import { apiFetch } from "@/lib/api";
 import { isPlanAtLeast } from "@/lib/plans";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 // ---- Tipos — deben calzar con la respuesta de GET /stats/:slug (server.js) ----
 type ByStatus = { booked: number; completed: number; canceled: number; no_show: number; rescheduled: number };

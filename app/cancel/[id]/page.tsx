@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type ReservationData = {
   service?: string | null;
@@ -39,7 +40,7 @@ export default function CancelPage() {
         if (!id || !token) return;
 
         const res = await fetch(
-          `https://orbyx-backend.onrender.com/appointments/${id}?token=${token}`
+          `${BACKEND_URL}/appointments/${id}?token=${token}`
         );
 
         const data = await res.json().catch(() => ({}));
@@ -77,7 +78,7 @@ export default function CancelPage() {
       setMessage("Estamos cancelando tu reserva...");
 
       const res = await fetch(
-        `https://orbyx-backend.onrender.com/appointments/${id}?token=${token}`,
+        `${BACKEND_URL}/appointments/${id}?token=${token}`,
         {
           method: "POST",
         }

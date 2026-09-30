@@ -6,6 +6,7 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { PhoneCountryInput } from "../../components/auth/PhoneCountryInput";
 import { isValidPhoneForCountry, toE164 } from "../../components/auth/countries";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type StaffItem = {
   id: string;
@@ -198,7 +199,6 @@ type DepositPendingData = {
   time: string;
 };
 
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
 
 const subtypeFieldKeys = new Set([
   "unit_type",

@@ -4,8 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPlanLabel } from '@/lib/plans'
 import { DateInputDMY } from '@/components/ui/date-input-dmy'
-
-const BACKEND_URL = 'https://orbyx-backend.onrender.com'
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type TenantDetail = {
   ok: boolean

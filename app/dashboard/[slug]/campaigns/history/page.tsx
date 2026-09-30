@@ -13,8 +13,7 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 type CampaignChannel = "email" | "whatsapp";
 type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";

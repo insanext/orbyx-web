@@ -4,8 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import { StarsCanvas } from "../ui/stars-canvas";
-
-const BACKEND_URL = "https://orbyx-backend.onrender.com";
+import { BACKEND_URL } from "@/lib/backend-url";
 
 // Imagen del perrito según el mes actual (getMonth() es 0-indexado: 8 =
 // septiembre, 11 = diciembre). Cualquier otro mes usa la imagen genérica.
