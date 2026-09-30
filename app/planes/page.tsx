@@ -736,9 +736,6 @@ function PlanesPageContent() {
     if (current.key === "premium") {
       featuresLost.push("Soporte prioritario");
     }
-    if (target.key === "starter") {
-      featuresLost.push("Modo veterinario (fichas clinicas y mascotas)");
-    }
 
     const addonsCanceled: string[] = [];
     current.extras.forEach((extraKey) => {

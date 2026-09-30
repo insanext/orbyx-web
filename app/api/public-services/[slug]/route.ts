@@ -40,28 +40,12 @@ export async function GET(
       return NextResponse.json(servicesData, { status: servicesRes.status });
     }
 
-    const tenantId = servicesData?.business?.id;
-
-    let branches: any[] = [];
-
-    if (tenantId) {
-      const branchesRes = await fetch(
-        `${BACKEND_URL}/branches?tenant_id=${encodeURIComponent(tenantId)}`,
-        {
-          cache: "no-store",
-        }
-      );
-
-      const branchesData = await branchesRes.json().catch(() => ({
-        branches: [],
-      }));
-
-      if (branchesRes.ok && Array.isArray(branchesData?.branches)) {
-        branches = branchesData.branches.filter(
-          (branch: any) => branch?.is_active !== false
-        );
-      }
-    }
+    // Las sucursales activas vienen del propio GET /public/services/:slug
+    // (campos públicos). Antes se pedían a GET /branches, que exige sesión:
+    // fallaba con 401 y la página quedaba con una sola sucursal.
+    const branches: any[] = Array.isArray(servicesData?.branches)
+      ? servicesData.branches.filter((branch: any) => branch?.is_active !== false)
+      : [];
 
     return NextResponse.json(
       {

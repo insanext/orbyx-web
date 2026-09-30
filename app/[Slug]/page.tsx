@@ -26,6 +26,7 @@ type ServiceItem = {
   group_id?: string | null;
   requires_deposit?: boolean | null;
   deposit_amount?: number | null;
+  customer_instructions?: string | null;
 };
 
 type ServiceGroupItem = {
@@ -117,6 +118,7 @@ type BusinessItem = {
 };
 
 type PublicServicesResponse = {
+  booking_closed?: boolean;
   business?: BusinessItem;
   branch?: BranchItem | null;
   branches?: BranchItem[];
@@ -182,6 +184,7 @@ type BookingSuccessData = {
   staffName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  customerInstructions?: string;
   startIso: string;
   endIso: string;
 };
@@ -1229,6 +1232,9 @@ const [loadingNextSlots, setLoadingNextSlots] = useState(false);
   const [existingCustomerFound, setExistingCustomerFound] = useState(false);
 
   const [loadingPage, setLoadingPage] = useState(true);
+  // true cuando el backend indica que el negocio no acepta reservas
+  // públicas (pausado, o bloqueado por falta de pago hace más de 7 días).
+  const [bookingClosed, setBookingClosed] = useState(false);
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -1604,6 +1610,7 @@ const nextAvailableDays = useMemo(() => {
         const data: PublicServicesResponse = await res.json();
 
         setBusiness(data.business || null);
+        setBookingClosed(Boolean(data.booking_closed));
         setCalendarId(String(data.calendar_id || ""));
 
         const branchRowsFromArray: BranchItem[] = Array.isArray(data.branches)
@@ -2173,6 +2180,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           staffName: selectedStaff?.name || undefined,
           customerEmail: customerData.email.trim(),
           customerPhone: toE164(phoneIso2, customerData.phone.trim()),
+          customerInstructions:
+            String(selectedService.customer_instructions || "").trim() || undefined,
           startIso: startDate.toISOString(),
           endIso: endDate.toISOString(),
         });
@@ -2216,6 +2225,30 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (bookingClosed && !loadingPage) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 px-3 py-4 sm:px-4 md:px-8 md:py-10">
+        <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-xl items-center justify-center md:min-h-[calc(100vh-5rem)]">
+          <div className="w-full rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm md:p-10">
+            {business?.logo_url ? (
+              <img
+                src={business.logo_url}
+                alt={business.name || "Logo del negocio"}
+                className="mx-auto h-20 w-20 rounded-2xl object-cover"
+              />
+            ) : null}
+            {business?.name ? (
+              <p className="mt-4 text-lg font-bold text-slate-950">{business.name}</p>
+            ) : null}
+            <p className="mt-3 text-sm leading-6 text-slate-600 md:text-base">
+              Este negocio no está recibiendo reservas por ahora.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (depositAwaitingUpload) {
@@ -2550,6 +2583,19 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     value={bookingSuccess.customerEmail || "Correo no disponible"}
                   />
                 </div>
+
+                {/* Mismas instrucciones y misma condición que el correo de
+                    confirmación: solo si el servicio las tiene cargadas. */}
+                {bookingSuccess.customerInstructions ? (
+                  <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-amber-800">
+                      Antes de tu visita
+                    </p>
+                    <p className="mt-1 whitespace-pre-line text-sm leading-6 text-amber-900">
+                      {bookingSuccess.customerInstructions}
+                    </p>
+                  </div>
+                ) : null}
 
                 <a
                   href={googleCalendarUrl}

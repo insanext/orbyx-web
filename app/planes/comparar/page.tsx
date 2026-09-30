@@ -97,11 +97,6 @@ const comparisonRows: ComparisonRow[] = [
     info: "Correos automáticos que acompañan el flujo de reserva y comunicación básica con el cliente.",
   },
   {
-    label: "Recordatorios por email",
-    values: byPlan(() => "Sí"),
-    info: "Correos automáticos enviados antes de la cita para reducir ausencias.",
-  },
-  {
     label: "Campañas por email",
     values: byPlan((key) => {
       const n = plans.find((p) => p.key === key)!.includedEmailCampaigns;

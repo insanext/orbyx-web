@@ -60,7 +60,7 @@ function LandingContent() {
   const steps = [
     { icon: CalendarDays, title: "El cliente reserva", desc: "desde tu web, a cualquier hora" },
     { icon: CalendarCheck2, title: "Tu agenda se organiza", desc: "horarios, staff y sucursales al día" },
-    { icon: Bell, title: "Confirma y recuerda", desc: "por WhatsApp y email, sin ausencias" },
+    { icon: Bell, title: "Confirma y recuerda", desc: "confirmación por email y recordatorio por WhatsApp" },
     { icon: LayoutDashboard, title: "Ves todo en un solo lugar", desc: "reservas, clientes y métricas" },
     { icon: RefreshCcw, title: "Vuelves a contactarlos", desc: "con campañas cuando dejan de venir" },
   ];
