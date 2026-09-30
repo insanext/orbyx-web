@@ -789,18 +789,33 @@ async function uploadStaffImage(file: File, staffId: string) {
     }
   }
 
-  function connectStaffGoogleCalendar(staffId = editingId || "") {
+  // El backend exige sesión para iniciar la conexión y devuelve la URL de
+  // Google con un state de un solo uso (auditoría 2026-09-30 sesión 4, C1).
+  async function connectStaffGoogleCalendar(staffId = editingId || "") {
     if (!tenantId || !selectedBranchId || !staffId || !calendarId) return;
 
-    const params = new URLSearchParams({
-      tenant_id: tenantId,
-      branch_id: selectedBranchId,
-      staff_id: staffId,
-      scope_level: "staff",
-      calendar_id: calendarId,
-    });
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/calendar-connections/oauth-start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "google",
+          scope_level: "staff",
+          tenant_id: tenantId,
+          branch_id: selectedBranchId,
+          staff_id: staffId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
 
-    window.location.href = `${BACKEND_URL}/auth?${params.toString()}`;
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.error || "No se pudo iniciar la conexión del calendario");
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "No se pudo iniciar la conexión del calendario");
+    }
   }
 
 

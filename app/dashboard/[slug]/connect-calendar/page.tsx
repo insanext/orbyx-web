@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams, useParams } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -11,10 +12,27 @@ export default function ConnectCalendarPage() {
   const slug = params?.slug as string;
   const calendarId = searchParams.get("calendar_id");
 
-  function handleConnect() {
+  // El backend exige sesión para iniciar la conexión y devuelve la URL de
+  // Google con un state de un solo uso (auditoría 2026-09-30 sesión 4, C1).
+  async function handleConnect() {
     if (!calendarId) return;
 
-    window.location.href = `${BACKEND_URL}/auth?calendar_id=${calendarId}`;
+    try {
+      const res = await apiFetch(`${BACKEND_URL}/calendar-connections/oauth-start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: "google", calendar_id: calendarId }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.error || "No se pudo iniciar la conexión del calendario");
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "No se pudo iniciar la conexión del calendario");
+    }
   }
 
   return (
