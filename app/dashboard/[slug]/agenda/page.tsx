@@ -32,7 +32,6 @@ import {
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
-import { createClient } from "../../../../lib/supabase/client";
 import {
   APPOINTMENT_STATUS_COLORS,
   STATUS_STYLESHEET,
@@ -3207,35 +3206,47 @@ setDepositRequired(Boolean(businessData.business.deposit_required));
     }
   }
 
-  // Badge del toolbar: carga inicial + Realtime persistente (no depende de
-  // que el modal esté abierto, a diferencia del widget de cupo, porque acá
-  // el número tiene que verse aunque el modal esté cerrado). Mismo patrón
-  // de canal ya usado (tenant_id filtrado, subscribe/unsubscribe en el
-  // efecto) que AccountStatusWidget.tsx — simplificado a "en cualquier
-  // evento, recargar la lista" en vez de parchear el estado a mano, porque
-  // acá lo que importa es el conteo, no un valor numérico puntual.
+  // Badge del toolbar: carga inicial + actualización en vivo. Antes abría
+  // su propio canal Realtime sobre appointments y en producción no le
+  // llegaban los eventos (el contador quedaba fijo hasta recargar), aunque
+  // el canal del layout (appointments-notify-*) sí actualizaba calendario y
+  // notificaciones. Ahora escucha los mismos eventos que ya reenvía ese
+  // canal — "en cualquier cambio relevante, recargar la lista", porque acá
+  // lo que importa es el conteo exacto.
   useEffect(() => {
     if (!depositRequired || !tenantId) return;
 
     loadPendingDeposits(tenantId);
 
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`deposits-pending-${tenantId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "appointments",
-          filter: `tenant_id=eq.${tenantId}`,
-        },
-        () => loadPendingDeposits(tenantId)
-      )
-      .subscribe();
+    function handleNew(event: Event) {
+      const row = (event as CustomEvent<Record<string, any>>).detail;
+      if (row?.deposit_status === "pending") loadPendingDeposits(tenantId);
+    }
+
+    function handleUpdated(event: Event) {
+      const detail = (event as CustomEvent<{
+        row?: Record<string, any>;
+        prev?: Record<string, any>;
+      }>).detail;
+      // payload.old puede traer solo la PK (según REPLICA IDENTITY), así que
+      // basta con que la fila nueva tenga cualquier estado de depósito.
+      if (detail?.row?.deposit_status || detail?.prev?.deposit_status) {
+        loadPendingDeposits(tenantId);
+      }
+    }
+
+    function handleCanceled() {
+      loadPendingDeposits(tenantId);
+    }
+
+    window.addEventListener("orbyx-appointment-new", handleNew);
+    window.addEventListener("orbyx-appointment-updated", handleUpdated);
+    window.addEventListener("orbyx-appointment-canceled", handleCanceled);
 
     return () => {
-      supabase.removeChannel(channel);
+      window.removeEventListener("orbyx-appointment-new", handleNew);
+      window.removeEventListener("orbyx-appointment-updated", handleUpdated);
+      window.removeEventListener("orbyx-appointment-canceled", handleCanceled);
     };
   }, [depositRequired, tenantId]);
 

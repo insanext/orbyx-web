@@ -817,6 +817,15 @@ export default function DashboardLayout({
           const row = payload.new as Record<string, any>;
           const prevRow = payload.old as Record<string, any>;
 
+          // Aviso genérico para las páginas del dashboard que necesitan
+          // reaccionar a cualquier cambio de una cita (ej. el contador
+          // "Depósitos pendientes" de Agenda) sin abrir un canal propio.
+          window.dispatchEvent(
+            new CustomEvent("orbyx-appointment-updated", {
+              detail: { row, prev: prevRow },
+            })
+          );
+
           if (row.status === "canceled" && prevRow.status !== "canceled") {
             const now = Date.now();
             const event: NotificationEvent = {
